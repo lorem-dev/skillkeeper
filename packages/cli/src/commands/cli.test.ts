@@ -108,8 +108,23 @@ describe('skill install (hooks consent)', () => {
     consoleLogSpy.mockRestore();
   });
 
-  async function runInstall(allowHooks: boolean): Promise<void> {
-    // Build a fake fs seeded with the repo files needed for skill resolution.
+  interface RunOptions {
+    readonly allowHooks?: boolean;
+    /** When set, passed as --global instead of project scope. */
+    readonly global?: boolean;
+    /** When set, passed as --project <path>. */
+    readonly project?: string;
+    /** Value the injected cwd() returns (mirrors process.cwd in production). */
+    readonly cwd?: string;
+  }
+
+  /**
+   * Drive the real `skill install` wiring. The adapter env it builds carries a
+   * plain env with NO SKILLKEEPER_PROJECT_DIR -- exactly what production wiring
+   * produces. The project directory must therefore be resolved by the command
+   * itself from --project or the injected cwd, not handed in via the env.
+   */
+  async function runInstall(opts: RunOptions = {}): Promise<{ fs: ReturnType<typeof createMemFs> }> {
     const fs = createMemFs({
       [`${REPO_LOCAL_PATH}/testskill/SKILL.md`]:
         '---\nname: testskill\nversion: 1.0.0\nhooks:\n  - pre-edit\n---\nTest.',
@@ -119,12 +134,11 @@ describe('skill install (hooks consent)', () => {
     });
 
     const state = emptyState();
-    const repoId = 'repo-1';
     const stateWithRepo = {
       ...state,
       repositories: [
         {
-          id: repoId,
+          id: 'repo-1',
           name: 'myrepo',
           url: 'https://github.com/example/myrepo',
           kind: 'github' as const,
@@ -137,12 +151,11 @@ describe('skill install (hooks consent)', () => {
     await saveState(fs, STATE_PATH, stateWithRepo);
 
     const registry = makeRegistry();
+    // Production-shaped env: NO SKILLKEEPER_PROJECT_DIR present.
     const adapterEnv: AdapterHostEnv = {
       homeDir: '/home/testuser',
       platform: 'linux',
-      env: {
-        SKILLKEEPER_PROJECT_DIR: '/projects/myproject',
-      } as Record<string, string | undefined>,
+      env: {} as Record<string, string | undefined>,
       fs,
     };
 
@@ -157,10 +170,10 @@ describe('skill install (hooks consent)', () => {
       registry,
       adapterEnv,
       executableGlobs: [],
+      cwd: () => opts.cwd ?? '/default/cwd/project',
       t,
     });
 
-    // Intercept process.exit so tests don't terminate the runner.
     const exitSpy = vi
       .spyOn(process, 'exit')
       .mockImplementation((_code?: string | number | null) => {
@@ -176,15 +189,18 @@ describe('skill install (hooks consent)', () => {
         'testskill',
         '--agent',
         'claude',
-        ...(allowHooks ? ['--allow-hooks'] : []),
+        ...(opts.global === true ? ['--global'] : []),
+        ...(opts.project !== undefined ? ['--project', opts.project] : []),
+        ...(opts.allowHooks === true ? ['--allow-hooks'] : []),
       ]);
     } finally {
       exitSpy.mockRestore();
     }
+    return { fs };
   }
 
   it('prints hooks-skipped notice when --allow-hooks is absent and skill has hooks', async () => {
-    await runInstall(false);
+    await runInstall({ allowHooks: false });
     const noticed = consoleLogs.some(
       (line) => line.toLowerCase().includes('hook') && line.toLowerCase().includes('skip'),
     );
@@ -192,10 +208,37 @@ describe('skill install (hooks consent)', () => {
   });
 
   it('does NOT print hooks-skipped notice when --allow-hooks is present', async () => {
-    await runInstall(true);
+    await runInstall({ allowHooks: true });
     const noticed = consoleLogs.some(
       (line) => line.toLowerCase().includes('hook') && line.toLowerCase().includes('skip'),
     );
     expect(noticed).toBe(false);
+  });
+
+  it('project-scope install resolves the project dir from --project (no SKILLKEEPER_PROJECT_DIR in env)', async () => {
+    // Must NOT throw "No project directory available" -- the command injects the
+    // path resolved from --project into the adapter env itself.
+    const { fs } = await runInstall({ project: '/explicit/proj' });
+
+    // The skill body landed under the Claude project skills dir for that path.
+    const skillFile = '/explicit/proj/.claude/skills/testskill/SKILL.md';
+    expect(await fs.exists(skillFile)).toBe(true);
+
+    const errored = consoleLogs.some((l) => l.toLowerCase().includes('no project directory'));
+    expect(errored).toBe(false);
+
+    const installed = consoleLogs.some((l) => l.includes('/explicit/proj/.claude/skills'));
+    expect(installed).toBe(true);
+  });
+
+  it('project-scope install falls back to cwd when --project is omitted', async () => {
+    const { fs } = await runInstall({ cwd: '/cwd/proj' });
+    expect(await fs.exists('/cwd/proj/.claude/skills/testskill/SKILL.md')).toBe(true);
+  });
+
+  it('global install does not require a project dir', async () => {
+    const { fs } = await runInstall({ global: true });
+    // Global Claude skills live under the home dir, not a project.
+    expect(await fs.exists('/home/testuser/.claude/skills/testskill/SKILL.md')).toBe(true);
   });
 });

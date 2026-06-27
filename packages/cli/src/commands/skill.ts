@@ -19,7 +19,9 @@ import {
 } from '@skillkeeper/core';
 import type { AdapterRegistry } from '@skillkeeper/core';
 import type { Translator } from '@skillkeeper/i18n';
+import { PROJECT_DIR_ENV } from '@skillkeeper/agents';
 import type { AdapterHostEnv } from '@skillkeeper/agents';
+import { cliMessage } from '../messages.js';
 
 interface SkillDeps {
   readonly fs: FsPort;
@@ -31,6 +33,44 @@ interface SkillDeps {
   readonly executableGlobs: readonly string[];
   /** Env used by adapters (AdapterHostEnv). */
   readonly adapterEnv: AdapterHostEnv;
+  /**
+   * Resolve the current working directory. Injectable so tests can pin it
+   * without relying on the test runner's cwd. Defaults to process.cwd in main.
+   */
+  readonly cwd: () => string;
+}
+
+/**
+ * Resolve the adapter env and the AgentTarget for an operation, honoring scope.
+ *
+ * For a project-scope target the agents' path resolution requires
+ * {@link PROJECT_DIR_ENV} to be set in the env it is handed. Production wiring
+ * does not set it (the active project is a per-command concern, not a process
+ * one), so it is injected here: from `--project` when given, otherwise the
+ * current working directory. A project-scope op that cannot resolve a path
+ * fails with a clear, localized error instead of relying on an unset env var.
+ *
+ * The resolved project path is also recorded as `target.projectId` so the
+ * destination can be reconstructed by later operations.
+ */
+function resolveTarget(
+  deps: SkillDeps,
+  agent: AgentKind,
+  global: boolean,
+  projectOpt: string | undefined,
+): { env: AdapterHostEnv; target: AgentTarget } {
+  if (global) {
+    return { env: deps.adapterEnv, target: { agent, scope: 'global' } };
+  }
+  const projectPath = projectOpt ?? deps.cwd();
+  if (projectPath === undefined || projectPath.trim() === '') {
+    throw new Error(cliMessage('cli.project.required'));
+  }
+  const env: AdapterHostEnv = {
+    ...deps.adapterEnv,
+    env: { ...deps.adapterEnv.env, [PROJECT_DIR_ENV]: projectPath },
+  };
+  return { env, target: { agent, scope: 'project', projectId: projectPath } };
 }
 
 export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
@@ -91,12 +131,13 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
     .description('Install a skill for an agent')
     .requiredOption('--agent <agent>', 'Agent to install for (claude|codex|copilot|cursor|opencode)')
     .option('--global', 'Install globally (default: project scope)', false)
+    .option('--project <path>', 'Project directory for project scope (default: cwd)')
     .option('--allow-hooks', 'Also install hooks (requires explicit consent)', false)
     .action(async (
       id: string,
-      opts: { agent: string; global: boolean; allowHooks: boolean },
+      opts: { agent: string; global: boolean; project?: string; allowHooks: boolean },
     ) => {
-      const { fs, statePath, registry, adapterEnv, executableGlobs, t } = deps;
+      const { fs, statePath, registry, executableGlobs, t } = deps;
       const state = await loadState(fs, statePath);
 
       // Find the skill in tracked repositories.
@@ -127,16 +168,13 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
 
       const agentKind = opts.agent as AgentKind;
       const adapter = registry.get(agentKind);
-      const target: AgentTarget = {
-        agent: agentKind,
-        scope: opts.global ? 'global' : 'project',
-      };
+      const { env, target } = resolveTarget(deps, agentKind, opts.global, opts.project);
 
       const manifest = await installSkill({
         fs,
         adapter,
         target,
-        env: adapterEnv,
+        env,
         sourceRoot,
         skill: foundSkill,
         allowHooks: opts.allowHooks,
@@ -198,9 +236,10 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
     .command('update <id>')
     .description('Update an installed skill to the latest source')
     .option('--agent <agent>', 'Limit to a specific agent')
+    .option('--project <path>', 'Project directory for project-scope installs (default: recorded path or cwd)')
     .option('--allow-hooks', 'Re-apply hooks during update (requires consent)', false)
-    .action(async (id: string, opts: { agent?: string; allowHooks: boolean }) => {
-      const { fs, statePath, registry, adapterEnv, executableGlobs, t } = deps;
+    .action(async (id: string, opts: { agent?: string; project?: string; allowHooks: boolean }) => {
+      const { fs, statePath, registry, executableGlobs, t } = deps;
       const state = await loadState(fs, statePath);
       const matches = state.installs.filter((m) => {
         const fullId = m.skillId.group !== undefined
@@ -233,12 +272,15 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
           continue;
         }
         const adapter = registry.get(m.target.agent);
+        const isGlobal = m.target.scope === 'global';
+        const projectHint = opts.project ?? m.target.projectId;
+        const { env, target } = resolveTarget(deps, m.target.agent, isGlobal, projectHint);
         await uninstallSkill(fs, m);
         const newManifest = await installSkill({
           fs,
           adapter,
-          target: m.target,
-          env: adapterEnv,
+          target,
+          env,
           sourceRoot: repo.localPath,
           skill: resolved,
           allowHooks: opts.allowHooks,
@@ -304,9 +346,10 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
     .command('repair <id>')
     .description('Repair a drifted skill installation')
     .option('--agent <agent>', 'Limit to a specific agent')
+    .option('--project <path>', 'Project directory for project-scope installs (default: recorded path or cwd)')
     .option('--allow-hooks', 'Re-apply hooks during repair (requires consent)', false)
-    .action(async (id: string, opts: { agent?: string; allowHooks: boolean }) => {
-      const { fs, statePath, registry, adapterEnv, executableGlobs, t } = deps;
+    .action(async (id: string, opts: { agent?: string; project?: string; allowHooks: boolean }) => {
+      const { fs, statePath, registry, executableGlobs, t } = deps;
       const state = await loadState(fs, statePath);
       const matches = state.installs.filter((m) => {
         const fullId = m.skillId.group !== undefined
@@ -339,11 +382,14 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
           continue;
         }
         const adapter = registry.get(m.target.agent);
+        const isGlobal = m.target.scope === 'global';
+        const projectHint = opts.project ?? m.target.projectId;
+        const { env, target } = resolveTarget(deps, m.target.agent, isGlobal, projectHint);
         const newManifest = await repairInstall({
           fs,
           adapter,
-          target: m.target,
-          env: adapterEnv,
+          target,
+          env,
           sourceRoot: repo.localPath,
           skill: resolved,
           allowHooks: opts.allowHooks,

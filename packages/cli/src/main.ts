@@ -58,6 +58,7 @@ async function main(): Promise<void> {
     registry: wiring.registry,
     adapterEnv: wiring.adapterEnv,
     executableGlobs: configResult.config.executables.globs,
+    cwd: () => process.cwd(),
     t: wiring.t,
   });
 
