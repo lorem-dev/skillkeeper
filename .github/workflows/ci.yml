@@ -1,0 +1,46 @@
+# CI: lint, typecheck, coverage-gated tests, and lib build.
+# Runs on every push to main/develop and on all pull requests.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  ci:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Set up Node.js 20 with pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Test with coverage (90% gate)
+        # vitest run --coverage enforces the thresholds defined in vitest.config.ts.
+        # The build fails if lines or branches fall below 90%.
+        run: pnpm test:cov
+
+      - name: Build libraries
+        run: pnpm build:libs

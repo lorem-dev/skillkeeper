@@ -1,0 +1,148 @@
+# Release: build and package the desktop app on all three platforms,
+# then upload per-platform artifacts and publish on a v* tag push.
+#
+# electron-builder targets (AppImage, deb, dmg, nsis, appx/MSIX) are
+# configured in apps/desktop/build/ (the desktop app's electron-builder
+# config). This workflow only drives the build; target configuration and
+# Store metadata live under apps/desktop/build/.
+#
+# Signing secrets expected in the repository / environment:
+#   macOS: CSC_LINK (base64 .p12), CSC_KEY_PASSWORD, APPLE_ID,
+#          APPLE_ID_PASSWORD, APPLE_TEAM_ID (for notarization via
+#          electron-builder's notarize hook or @electron/notarize)
+#   Windows (NSIS): WINDOWS_CERTIFICATE (base64 .pfx),
+#                   WINDOWS_CERTIFICATE_PASSWORD
+#   Windows (MSIX / Microsoft Store): WINDOWS_PUBLISHER_ID,
+#                                     WINDOWS_STORE_APP_ID
+#          (Store submission is handled separately via the Partner Center
+#           API or a dedicated action; this workflow only builds the .msix)
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build and package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Set up Node.js 20 with pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build libraries
+        run: pnpm build:libs
+
+      - name: Build desktop app
+        run: pnpm --filter @skillkeeper/desktop run build
+
+      # -----------------------------------------------------------------------
+      # macOS: sign and notarize via electron-builder using CI secrets.
+      # CSC_LINK and CSC_KEY_PASSWORD must be set for code signing.
+      # APPLE_ID / APPLE_ID_PASSWORD / APPLE_TEAM_ID enable notarization.
+      # -----------------------------------------------------------------------
+      - name: Package (macOS -- dmg)
+        if: matrix.os == 'macos-latest'
+        run: pnpm --filter @skillkeeper/desktop run package
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      # -----------------------------------------------------------------------
+      # Linux: produces AppImage and deb; no signing needed.
+      # -----------------------------------------------------------------------
+      - name: Package (Linux -- AppImage and deb)
+        if: matrix.os == 'ubuntu-latest'
+        run: pnpm --filter @skillkeeper/desktop run package
+
+      # -----------------------------------------------------------------------
+      # Windows: produces the NSIS installer (signed) and the MSIX/appx package
+      # for the Microsoft Store. Both targets are declared in the desktop
+      # app's electron-builder config under apps/desktop/build/.
+      # WINDOWS_CERTIFICATE is a base64-encoded .pfx used for NSIS signing.
+      # The MSIX is built unsigned here; Store submission signs it on ingest.
+      # -----------------------------------------------------------------------
+      - name: Package (Windows -- NSIS installer and MSIX)
+        if: matrix.os == 'windows-latest'
+        run: pnpm --filter @skillkeeper/desktop run package
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          WINDOWS_PUBLISHER_ID: ${{ secrets.WINDOWS_PUBLISHER_ID }}
+          WINDOWS_STORE_APP_ID: ${{ secrets.WINDOWS_STORE_APP_ID }}
+
+      # -----------------------------------------------------------------------
+      # Upload all dist artifacts regardless of OS.
+      # The glob covers .dmg, .AppImage, .deb, .exe (NSIS), .msix/.appx.
+      # -----------------------------------------------------------------------
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: skillkeeper-${{ github.ref_name }}-${{ matrix.os }}
+          path: |
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/*.deb
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.msix
+            apps/desktop/dist/*.appx
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # Publish: runs only after all matrix builds succeed.
+  # Add your publish steps here (e.g. gh release upload, Store submission,
+  # Homebrew cask bump).  Secrets follow the same convention as above.
+  # ---------------------------------------------------------------------------
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-all
+
+      - name: Create GitHub release and attach artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-all/**/*
+          generate_release_notes: true
+        # GITHUB_TOKEN is automatically available; no extra secret needed.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # TODO: add Microsoft Store submission step here once Partner Center
+      # API credentials (secrets.STORE_TENANT_ID, STORE_CLIENT_ID,
+      # STORE_CLIENT_SECRET) are configured.
