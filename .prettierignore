@@ -1,0 +1,7 @@
+**/dist
+**/out
+**/coverage
+**/node_modules
+pnpm-lock.yaml
+.superpowers
+CHANGELOG.md

@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+*.tsbuildinfo
+
+# Electron packaging output
+release/
+dist-electron/
+.vite/
+
+# Test and coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.idea/
+*.swp
+
+# Agent and code-intelligence tooling (not shipped)
+.superpowers/
+.claude/
+.worktrees/
+.codegraph/
+
+# User working notes
+TODO*.md

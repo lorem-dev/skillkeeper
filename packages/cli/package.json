@@ -1,0 +1,20 @@
+{
+  "name": "@skillkeeper/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "skillkeeper": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@skillkeeper/agents": "workspace:*",
+    "@skillkeeper/config": "workspace:*",
+    "@skillkeeper/core": "workspace:*",
+    "@skillkeeper/i18n": "workspace:*",
+    "commander": "15.0.0"
+  }
+}
