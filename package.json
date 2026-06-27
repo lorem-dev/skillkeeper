@@ -10,6 +10,8 @@
     "node": ">=20"
   },
   "scripts": {
+    "postinstall": "node scripts/ensure-electron.mjs",
+    "dev": "pnpm --filter @skillkeeper/desktop dev",
     "build": "tsc -b tsconfig.build.json && pnpm --filter @skillkeeper/desktop run build",
     "build:libs": "tsc -b tsconfig.build.json",
     "typecheck": "pnpm -r typecheck",

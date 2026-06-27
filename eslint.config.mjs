@@ -12,6 +12,7 @@ export default tseslint.config(
       '**/coverage/**',
       '**/node_modules/**',
       '**/*.config.{js,mjs,ts}',
+      'scripts/**',
     ],
   },
   js.configs.recommended,
