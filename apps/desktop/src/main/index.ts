@@ -7,13 +7,14 @@
  */
 import { app, BrowserWindow, ipcMain, session } from 'electron';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { createNodeFs } from '@skillkeeper/core';
 import { loadConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
 import type { LoadConfigResult } from '@skillkeeper/config';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// `__dirname` is provided by electron-vite in the bundled main process (it is
+// injected for ESM output); do not redeclare it here or the module fails to load
+// with "Identifier '__dirname' has already been declared".
 
 // ---------------------------------------------------------------------------
 // Config path resolution (per-OS)
