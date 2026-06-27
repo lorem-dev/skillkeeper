@@ -25,6 +25,9 @@ export type {
 // Ports.
 export type { FileStat, FsPort, GitRef, CloneOptions, GitPort, HostEnv, Clock } from './ports.js';
 
+// Real filesystem port (production counterpart to the in-memory test fake).
+export { createNodeFs } from './node/nodeFs.js';
+
 // Hashing.
 export { sha256, hashTree } from './hashing.js';
 

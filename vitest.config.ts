@@ -38,6 +38,7 @@ export default defineConfig({
         '**/model.ts',
         '**/ports.ts',
         '**/adapter.ts',
+        '**/node/**',
       ],
       thresholds: {
         lines: 90,
