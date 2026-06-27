@@ -1,0 +1,15 @@
+site_name: SkillKeeper
+theme:
+  name: readthedocs
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+  - Skills and Hooks: skills-and-hooks.md
+  - Repositories: repositories.md
+  - Agents: agents.md
+  - Configuration: configuration.md
+  - CLI Reference: cli.md
+  - Security: security.md
+  - Development: development.md
+  - Releasing: releasing.md
