@@ -96,6 +96,10 @@ export {
 } from './git/systemGit.js';
 export type { GitRunner, RunResult } from './git/systemGit.js';
 
+// Application state store.
+export { loadState, saveState, emptyState, StateError, STATE_VERSION } from './state.js';
+export type { AppState } from './state.js';
+
 // Update detection and scheduler.
 export { repoHasUpdate, skillHasUpdate } from './updates.js';
 export { Scheduler } from './scheduler.js';
