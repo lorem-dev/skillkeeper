@@ -1,0 +1,64 @@
+import { en } from './catalogs/en.js';
+import { de } from './catalogs/de.js';
+import { ru } from './catalogs/ru.js';
+import type { MessageKey, Catalog } from './catalogs/en.js';
+
+/** Supported locale codes. */
+export type Lang = 'en' | 'de' | 'ru';
+
+export type { MessageKey, Catalog };
+
+/** Map of all available catalogs. */
+const catalogs: Record<Lang, Partial<Catalog>> = { en, de, ru };
+
+/**
+ * Interpolation variables bag: keys are placeholder names (without braces),
+ * values are string representations.
+ */
+export type Vars = Record<string, string>;
+
+/**
+ * Translator function returned by {@link createTranslator}.
+ *
+ * @param key A {@link MessageKey} from the English catalog.
+ * @param vars Optional interpolation variables. Each `{name}` token in the
+ *             resolved string is replaced with `vars[name]`.
+ * @returns The localized string, or the key itself when no translation exists.
+ */
+export type Translator = (key: MessageKey | (string & {}), vars?: Vars) => string;
+
+/**
+ * Replace all `{name}` tokens in `template` with values from `vars`.
+ */
+function interpolate(template: string, vars: Vars): string {
+  return template.replace(/\{([^}]+)\}/g, (_match, name: string) => {
+    const value = vars[name];
+    return value !== undefined ? value : `{${name}}`;
+  });
+}
+
+/**
+ * Create a translator bound to the given language.
+ *
+ * Lookup order for a key:
+ * 1. `lang` catalog (if `lang !== 'en'`)
+ * 2. `en` catalog (fallback for missing keys)
+ * 3. The raw key string (last resort)
+ *
+ * @param lang The desired language.
+ * @returns A `t(key, vars?)` function.
+ */
+export function createTranslator(lang: Lang): Translator {
+  const primary = catalogs[lang];
+  const fallback: Partial<Catalog> = catalogs['en'];
+
+  return function t(key: MessageKey | (string & {}), vars?: Vars): string {
+    // Cast needed because primary/fallback are Partial -- the key may not exist.
+    const raw =
+      (primary as Record<string, string>)[key] ??
+      (fallback as Record<string, string>)[key] ??
+      key;
+
+    return vars !== undefined ? interpolate(raw, vars) : raw;
+  };
+}
