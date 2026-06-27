@@ -8,7 +8,57 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "start": "electron-vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",
+    "package": "electron-builder",
+    "package:dir": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "dev.skillkeeper.app",
+    "productName": "SkillKeeper",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "!out/**/*.map"
+    ],
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64", "arm64"] },
+        { "target": "deb", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon.svg",
+      "category": "Development"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon.svg",
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64", "arm64"] },
+        { "target": "appx", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon.svg"
+    },
+    "appx": {
+      "applicationId": "SkillKeeper",
+      "backgroundColor": "#1e40af",
+      "displayName": "SkillKeeper",
+      "identityName": "dev.skillkeeper.SkillKeeper",
+      "publisher": "CN=SkillKeeper",
+      "publisherDisplayName": "SkillKeeper",
+      "languages": ["en-US"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "dependencies": {
     "@skillkeeper/agents": "workspace:*",
