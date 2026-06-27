@@ -57,16 +57,13 @@ pnpm build
 
 ---
 
-## Run the CLI (development)
+## Run the CLI
+
+Build the workspace once, then run the CLI entry point:
 
 ```bash
-pnpm --filter @skillkeeper/cli dev
-```
-
-Or after building:
-
-```bash
-node packages/cli/dist/index.js --help
+pnpm build:libs
+node packages/cli/dist/main.js --help
 ```
 
 ---
@@ -74,8 +71,34 @@ node packages/cli/dist/index.js --help
 ## Run the desktop app (development)
 
 ```bash
-pnpm --filter skillkeeper-desktop dev
+pnpm dev
 ```
+
+This is a shortcut for `pnpm --filter @skillkeeper/desktop dev` (electron-vite
+with hot reload). The Electron binary is downloaded automatically on
+`pnpm install`.
+
+To build and preview the production app, or to produce installers:
+
+```bash
+pnpm build
+pnpm --filter @skillkeeper/desktop start      # preview the built app
+pnpm --filter @skillkeeper/desktop package    # build installers (dmg/AppImage/nsis/MSIX)
+```
+
+---
+
+## Troubleshooting
+
+If `pnpm dev` fails with `Error: Electron uninstall`, the Electron binary was
+not downloaded. Re-run the installer:
+
+```bash
+node scripts/ensure-electron.mjs
+```
+
+(`pnpm install` runs this automatically; it is a no-op once the binary is
+present.)
 
 ---
 
