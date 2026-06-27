@@ -5,12 +5,12 @@
  * The renderer process is sandboxed and communicates only through the preload
  * bridge via ipcMain.handle channels.
  */
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, session } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { createNodeFs } from '@skillkeeper/core';
-import { loadConfig } from '@skillkeeper/config';
+import { loadConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
 import type { LoadConfigResult } from '@skillkeeper/config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -34,6 +34,47 @@ function resolveConfigPath(): string {
 }
 
 // ---------------------------------------------------------------------------
+// Content-Security-Policy
+// ---------------------------------------------------------------------------
+
+/**
+ * Strict production CSP: only same-origin scripts/resources, no plugins, no
+ * base-uri hijacking. The renderer loads a single external module script and
+ * makes no network requests, so this is sufficient.
+ */
+const PROD_CSP = "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'";
+
+/**
+ * Relaxed dev CSP. The electron-vite dev server serves an inline bootstrap
+ * script and drives HMR over a websocket, both of which the strict policy would
+ * block. This variant is only used when ELECTRON_RENDERER_URL is set (dev).
+ */
+const DEV_CSP =
+  "default-src 'self'; " +
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+  "style-src 'self' 'unsafe-inline'; " +
+  "connect-src 'self' ws: http: https:; " +
+  "object-src 'none'; base-uri 'none'";
+
+/**
+ * Apply a Content-Security-Policy response header to every request in the
+ * default session. Strict in production; relaxed in dev so Vite HMR works.
+ */
+function installCsp(): void {
+  const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined;
+  const policy = isDev ? DEV_CSP : PROD_CSP;
+
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [policy],
+      },
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // IPC handlers
 // ---------------------------------------------------------------------------
 
@@ -50,13 +91,14 @@ function registerHandlers(): void {
       return await loadConfig(fs, configPath);
     } catch (err) {
       // Defensive: should not happen because loadConfig handles missing files,
-      // but guard against unexpected I/O errors.
+      // but guard against unexpected I/O errors. The validity map is built from
+      // SECTIONS so it never drifts from the canonical section list.
       const message = err instanceof Error ? err.message : String(err);
-      const { defaultConfig } = await import('@skillkeeper/config');
-      const sections = ['general', 'updates', 'agents', 'executables', 'security', 'notifications'] as const;
       return {
         config: defaultConfig,
-        validity: Object.fromEntries(sections.map((s) => [s, 'invalid'])) as LoadConfigResult['validity'],
+        validity: Object.fromEntries(
+          SECTIONS.map((s) => [s, 'invalid']),
+        ) as LoadConfigResult['validity'],
         warnings: [`Failed to load config: ${message}`],
       };
     }
@@ -120,6 +162,7 @@ function createWindow(): void {
 registerHandlers();
 
 void app.whenReady().then(() => {
+  installCsp();
   createWindow();
 
   app.on('activate', () => {
