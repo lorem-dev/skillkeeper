@@ -207,3 +207,7 @@
 This project uses the following third-party libraries. Each library
 retains its original copyright and is distributed under its respective
 license.
+
+Entries in this section are maintained automatically by the `check-licenses`
+skill. Run that skill after editing any `package.json` to keep this list
+current and accurate.
