@@ -12,9 +12,10 @@ import { createNodeFs } from '@skillkeeper/core';
 import { loadConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
 import type { LoadConfigResult } from '@skillkeeper/config';
 
-// `__dirname` is provided by electron-vite in the bundled main process (it is
-// injected for ESM output); do not redeclare it here or the module fails to load
-// with "Identifier '__dirname' has already been declared".
+// ESM main process: `__dirname` is not a global, so derive the module directory
+// from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
+// conflict with bundler-injected `__dirname` shims.
+const moduleDir = import.meta.dirname;
 
 // ---------------------------------------------------------------------------
 // Config path resolution (per-OS)
@@ -39,11 +40,18 @@ function resolveConfigPath(): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Strict production CSP: only same-origin scripts/resources, no plugins, no
- * base-uri hijacking. The renderer loads a single external module script and
- * makes no network requests, so this is sufficient.
+ * Production CSP. Scripts are restricted to same-origin (the security-critical
+ * directive); inline styles are allowed because React and bundled CSS inject
+ * them, and images/fonts allow data: URIs. No plugins, no base-uri hijacking,
+ * no network origins.
  */
-const PROD_CSP = "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'";
+const PROD_CSP =
+  "default-src 'self'; " +
+  "script-src 'self'; " +
+  "style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data:; " +
+  "font-src 'self' data:; " +
+  "object-src 'none'; base-uri 'none'";
 
 /**
  * Relaxed dev CSP. The electron-vite dev server serves an inline bootstrap
@@ -133,7 +141,7 @@ function registerHandlers(): void {
 // ---------------------------------------------------------------------------
 
 function createWindow(): void {
-  const preloadPath = path.join(__dirname, '../preload/index.cjs');
+  const preloadPath = path.join(moduleDir, '../preload/index.cjs');
 
   const win = new BrowserWindow({
     width: 1024,
@@ -152,7 +160,7 @@ function createWindow(): void {
   if (rendererUrl !== undefined) {
     void win.loadURL(rendererUrl);
   } else {
-    void win.loadFile(path.join(__dirname, '../renderer/index.html'));
+    void win.loadFile(path.join(moduleDir, '../renderer/index.html'));
   }
 }
 

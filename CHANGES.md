@@ -28,4 +28,6 @@
 
 ### Fixes
 
-- None.
+- Make the desktop app launch reliably: auto-download the Electron binary, use
+  `import.meta.dirname` in the ESM main process, load the preload as CommonJS
+  with `electron` kept external, and allow inline styles in the production CSP.
