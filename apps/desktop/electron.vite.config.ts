@@ -17,13 +17,31 @@ const alias = {
 export default defineConfig({
   main: {
     resolve: { alias },
+    // `electron` is a devDependency, so externalizeDepsPlugin does not cover it;
+    // externalize it explicitly so the runtime API is used, not the npm shim.
     plugins: [externalizeDepsPlugin()],
-    build: { outDir: 'out/main' },
+    build: {
+      outDir: 'out/main',
+      rollupOptions: { external: ['electron'] },
+    },
   },
   preload: {
     resolve: { alias },
     plugins: [externalizeDepsPlugin()],
-    build: { outDir: 'out/preload' },
+    build: {
+      outDir: 'out/preload',
+      // A sandboxed preload (sandbox: true) must be CommonJS; ESM preloads do
+      // not load in the sandbox. Emit a .cjs file and reference it from main.
+      // `electron` must stay external or the npm path-shim gets bundled and
+      // contextBridge becomes undefined.
+      rollupOptions: {
+        external: ['electron'],
+        output: {
+          format: 'cjs',
+          entryFileNames: 'index.cjs',
+        },
+      },
+    },
   },
   renderer: {
     root: 'src/renderer',
