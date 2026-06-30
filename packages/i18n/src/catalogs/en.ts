@@ -22,11 +22,56 @@ export const en = {
    */
   'common.errorPrefix': 'Error: {message}',
 
+  'common.refresh': 'Refresh',
+  'common.comingSoon': 'Coming soon',
+  'common.close': 'Close',
+  'common.clear': 'Clear',
+
   /** Empty-state copy for each page. */
   'repositories.empty': 'No repositories added yet.',
-  'skills.empty': 'No skills installed yet.',
+  'repositories.add': 'Add repository',
+  'repositories.lfs': 'LFS',
+  'repositories.lastFetched': 'Last fetched: {when}',
+  'repositories.neverFetched': 'Never fetched',
+
   'projects.empty': 'No projects tracked yet.',
+  'projects.add': 'Add project',
+  'projects.addedAt': 'Added {when}',
+
+  'skills.empty': 'No skills installed yet.',
+  'skills.add': 'Install skill',
+  'skills.searchPlaceholder': 'Search skills',
+  'skills.filterAgent': 'Agent',
+  'skills.allAgents': 'All agents',
+  'skills.noVersion': 'No version',
+  'skills.installedFor': 'Installed for',
+  'skills.scope.project': 'Project',
+  'skills.scope.global': 'Global',
+  'skills.source.repo': 'From repository',
+  'skills.source.local': 'From local path',
+  'skills.details.title': 'Skill details',
+  'skills.details.files': '{n} files',
+  'skills.details.hooks': '{n} hooks',
+  'skills.details.installedAt': 'Installed: {when}',
+  'skills.details.destination': 'Destination',
+  'skills.verify': 'Verify',
+  'skills.update': 'Update',
+
   'settings.comingSoon': 'Settings screen coming soon.',
+  'settings.section.general': 'General',
+  'settings.section.updates': 'Updates',
+  'settings.section.agents': 'Agents',
+  'settings.section.executables': 'Executables',
+  'settings.section.security': 'Security',
+  'settings.section.notifications': 'Notifications',
+  'settings.valid': 'Valid',
+  'settings.invalid': 'Invalid',
+  'settings.openConfig': 'Open config file',
+  'settings.theme': 'Theme',
+  'settings.theme.system': 'System',
+  'settings.theme.light': 'Light',
+  'settings.theme.dark': 'Dark',
+  'settings.language': 'Language',
 
   /** Shown in the CLI/GUI when config.yaml has at least one invalid section. */
   'config.invalidBanner':
