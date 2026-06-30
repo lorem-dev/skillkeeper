@@ -18,39 +18,31 @@ import type { LoadConfigResult } from '@skillkeeper/config';
 const moduleDir = import.meta.dirname;
 
 // ---------------------------------------------------------------------------
-// Config path resolution (per-OS)
+// App-data path resolution (mirrors packages/cli/src/paths.ts exactly)
 // ---------------------------------------------------------------------------
 
-function resolveConfigPath(): string {
+function resolveAppDataDir(): string {
   const platform = process.platform;
   if (platform === 'win32') {
-    const appData = process.env['APPDATA'] ?? path.join(os.homedir(), 'AppData', 'Roaming');
-    return path.join(appData, 'skillkeeper', 'config.yaml');
+    const appData = process.env['APPDATA'];
+    if (appData !== undefined && appData.trim() !== '') {
+      return path.join(appData, 'skillkeeper');
+    }
+  } else {
+    const xdg = process.env['XDG_CONFIG_HOME'];
+    if (xdg !== undefined && xdg.trim() !== '') {
+      return path.join(xdg, 'skillkeeper');
+    }
   }
-  if (platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support', 'skillkeeper', 'config.yaml');
-  }
-  // Linux / XDG
-  const xdgConfig = process.env['XDG_CONFIG_HOME'] ?? path.join(os.homedir(), '.config');
-  return path.join(xdgConfig, 'skillkeeper', 'config.yaml');
+  return path.join(os.homedir(), '.config', 'skillkeeper');
 }
 
-// ---------------------------------------------------------------------------
-// State path resolution (per-OS)
-// ---------------------------------------------------------------------------
+function resolveConfigPath(): string {
+  return path.join(resolveAppDataDir(), 'config.yaml');
+}
 
 function resolveStatePath(): string {
-  const platform = process.platform;
-  if (platform === 'win32') {
-    const appData = process.env['APPDATA'] ?? path.join(os.homedir(), 'AppData', 'Roaming');
-    return path.join(appData, 'skillkeeper', 'state.json');
-  }
-  if (platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support', 'skillkeeper', 'state.json');
-  }
-  // Linux / XDG
-  const xdgConfig = process.env['XDG_CONFIG_HOME'] ?? path.join(os.homedir(), '.config');
-  return path.join(xdgConfig, 'skillkeeper', 'state.json');
+  return path.join(resolveAppDataDir(), 'state.json');
 }
 
 // ---------------------------------------------------------------------------
