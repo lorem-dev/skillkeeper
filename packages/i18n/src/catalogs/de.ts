@@ -74,8 +74,5 @@ export const de: Partial<Catalog> = {
   'config.invalidBanner':
     'Die Konfiguration enthält ungültige Abschnitte. Standardwerte werden verwendet. Führen Sie "skillkeeper config validate" aus.',
 
-  'hooks.requireConsent':
-    'Die Hook-Installation erfordert ausdrückliche Zustimmung (--allow-hooks). Skill-Text installiert; Hooks übersprungen.',
-
   'skills.count': '{n} Fähigkeit(en) installiert',
 };
