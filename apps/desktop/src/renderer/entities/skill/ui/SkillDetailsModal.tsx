@@ -1,5 +1,6 @@
 import type { InstalledSkillView } from '../lib/aggregateInstalls';
 import { Modal, Badge, Button, Tooltip } from '@/shared/ui';
+import './SkillDetailsModal.scss';
 
 export interface SkillDetailsModalProps {
   readonly skill: InstalledSkillView | null;
