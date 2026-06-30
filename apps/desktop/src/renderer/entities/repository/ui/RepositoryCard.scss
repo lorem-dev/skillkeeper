@@ -1,0 +1,22 @@
+.sk-repo-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sk-space-2);
+  }
+  &__name { font-weight: 600; color: var(--sk-color-label); }
+  &__badges { display: inline-flex; gap: var(--sk-space-1); }
+  &__url { color: var(--sk-color-label-2); font-size: 0.875rem; word-break: break-all; }
+  &__meta {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sk-space-2);
+    color: var(--sk-color-label-3);
+    font-size: 0.8125rem;
+  }
+}
