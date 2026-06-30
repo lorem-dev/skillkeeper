@@ -436,12 +436,11 @@ A `--sk-glass-regular` surface on the leading edge. Items use `--sk-radius-sm`,
 `--sk-text-footnote` in `--sk-color-label-2`. This is the primary navigation
 surface for the desktop window.
 
-> Implemented. The app shell and sidebar live in the `app/` layer:
-> [`app/App.tsx`](../../apps/desktop/src/renderer/app/App.tsx) with co-located
-> styles in [`app/App.scss`](../../apps/desktop/src/renderer/app/App.scss)
-> (classes `.sk-sidebar`, `.sk-nav-item`, `.sk-content`). Those files are the
-> source of truth for the shell; this entry describes intent. The glass surface
-> includes an opaque `@supports` fallback per Section 4.
+> Implemented as a reusable component:
+> [`shared/ui/Sidebar`](../../apps/desktop/src/renderer/shared/ui/Sidebar/Sidebar.tsx)
+> (`Sidebar` + `SidebarItem`, with an optional leading `Icon`). The app shell in
+> [`app/App.tsx`](../../apps/desktop/src/renderer/app/App.tsx) composes it. The
+> glass panel includes an opaque `@supports` fallback per Section 4.
 
 ### 8.7 Toolbars
 

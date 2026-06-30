@@ -13,8 +13,7 @@ import { RepositoriesPage } from '@/pages/Repositories';
 import { SkillsPage } from '@/pages/Skills';
 import { ProjectsPage } from '@/pages/Projects';
 import { SettingsPage } from '@/pages/Settings';
-import { Spinner } from '@/shared/ui';
-import { cx } from '@/shared/lib';
+import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
 import './App.scss';
 
 type View = 'repositories' | 'skills' | 'projects' | 'settings';
@@ -54,21 +53,18 @@ export function App() {
     <div className="sk-app">
       <ConfigBanner />
       <div className="sk-shell">
-        <nav className="sk-sidebar">
-          <div className="sk-sidebar__title">{t('app.title')}</div>
-          <div className="sk-nav">
-            {NAV_ITEMS.map(({ id, key }) => (
-              <button
-                key={id}
-                onClick={() => setActiveView(id)}
-                className={cx('sk-nav-item', activeView === id && 'sk-nav-item--active')}
-                aria-current={activeView === id ? 'page' : undefined}
-              >
-                {t(key)}
-              </button>
-            ))}
-          </div>
-        </nav>
+        <Sidebar title={t('app.title')}>
+          {NAV_ITEMS.map(({ id, key }) => (
+            <SidebarItem
+              key={id}
+              icon={<Icon name={id} />}
+              active={activeView === id}
+              onClick={() => setActiveView(id)}
+            >
+              {t(key)}
+            </SidebarItem>
+          ))}
+        </Sidebar>
 
         <div className="sk-content">
           {loading && (

@@ -80,6 +80,28 @@ Source: [shared/ui/GlassSurface/GlassSurface.tsx](../../apps/desktop/src/rendere
 and trailing actions (design-system.md 8.7).
 Source: [shared/ui/Toolbar/Toolbar.tsx](../../apps/desktop/src/renderer/shared/ui/Toolbar/Toolbar.tsx)
 
+### Sidebar / SidebarItem
+`<Sidebar title?>` is the leading-edge glass navigation panel; `<SidebarItem icon?
+active? onClick>label</SidebarItem>` is a nav row with an optional leading icon and
+an active state. Design-system.md 8.6.
+Source: [shared/ui/Sidebar](../../apps/desktop/src/renderer/shared/ui/Sidebar/Sidebar.tsx)
+
+```tsx
+<Sidebar title="SkillKeeper">
+  {items.map((it) => (
+    <SidebarItem key={it.id} icon={<Icon name={it.icon} />} active={active === it.id}
+      onClick={() => setActive(it.id)}>{it.label}</SidebarItem>
+  ))}
+</Sidebar>
+```
+
+### Icon
+`<Icon name size? label? />` -- a named line icon (inline SVG, 24x24, `currentColor`,
+stroke-based). Names: `repositories`, `skills`, `projects`, `settings`, `search`,
+`plus`, `check`, `chevron-right`. Decorative by default; pass `label` for an
+accessible name.
+Source: [shared/ui/Icon/Icon.tsx](../../apps/desktop/src/renderer/shared/ui/Icon/Icon.tsx)
+
 ### List / ListRow
 `<List>` is a grouped, rounded surface with hairline separators; `<ListRow>` has
 `leading` / `title` + `subtitle` / `trailing` slots and becomes a button when given
