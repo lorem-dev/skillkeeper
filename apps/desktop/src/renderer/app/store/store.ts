@@ -3,18 +3,14 @@
  *
  * Holds all UI state derived from IPC calls to the main process. The renderer
  * never owns domain logic -- it only stores results returned by the bridge.
- *
- * Imported types are from the preload bridge shape, not from @skillkeeper/*
- * core packages directly, because the renderer must not depend on Node modules.
  */
 import { create } from 'zustand';
-import type { SkillkeeperBridge } from '../../../preload/index';
-import type { SectionValidity, SkillKeeperConfig } from '@skillkeeper/config';
-import type { Repository, Project } from '@skillkeeper/core';
+import type { BridgeClient, SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest } from '@/services/bridge';
+import { bridgeClient } from '@/services/bridge';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
-export type { Repository, Project };
+export type { Repository, Project, InstallManifest };
 
 // ---------------------------------------------------------------------------
 // State shape
@@ -29,8 +25,8 @@ export interface SkillkeeperState {
   configWarnings: string[];
   /** Tracked repositories. */
   repositories: Repository[];
-  /** Installed skills (stub type in v1 shell). */
-  skills: unknown[];
+  /** Installed skills. */
+  skills: InstallManifest[];
   /** Tracked projects. */
   projects: Project[];
   /** Whether a background load is in progress. */
@@ -47,12 +43,14 @@ export interface SkillkeeperActions {
   setConfig(config: SkillKeeperConfig, validity: SectionValidity, warnings: string[]): void;
   setConfigValidity(validity: SectionValidity): void;
   setRepositories(repositories: Repository[]): void;
-  setSkills(skills: unknown[]): void;
+  setSkills(skills: InstallManifest[]): void;
   setProjects(projects: Project[]): void;
   setLoading(loading: boolean): void;
   setError(error: string | null): void;
-  /** Load all data from the main process via the window.skillkeeper bridge. */
-  loadAll(bridge: SkillkeeperBridge): Promise<void>;
+  /** Load all data from the main process via the bridge client. */
+  loadAll(client: BridgeClient): Promise<void>;
+  /** Reload all data using the singleton bridge client. */
+  reload(): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,16 +99,16 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set({ error });
   },
 
-  async loadAll(bridge) {
+  async loadAll(client) {
     const { setLoading, setError, setConfig, setRepositories, setSkills, setProjects } = get();
     setLoading(true);
     setError(null);
     try {
       const [configResult, repos, skills, projects] = await Promise.all([
-        bridge.getConfig(),
-        bridge.listRepositories(),
-        bridge.listSkills(),
-        bridge.listProjects(),
+        client.getConfig(),
+        client.listRepositories(),
+        client.listSkills(),
+        client.listProjects(),
       ]);
       setConfig(configResult.config, configResult.validity, configResult.warnings);
       setRepositories(repos);
@@ -122,5 +120,9 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     } finally {
       setLoading(false);
     }
+  },
+
+  async reload() {
+    await get().loadAll(bridgeClient);
   },
 }));

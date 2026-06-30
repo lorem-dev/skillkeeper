@@ -7,7 +7,7 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useSkillkeeperStore } from './store';
-import type { SectionValidity, SkillKeeperConfig, Repository, Project } from './store';
+import type { SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest } from './store';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -71,6 +71,15 @@ const mockProject: Project = {
   addedAt: '2026-01-01T00:00:00.000Z',
 };
 
+const mockInstall: InstallManifest = {
+  skillId: { name: 'test-skill' },
+  target: { agent: 'claude', scope: 'global' },
+  destinationRoot: '/tmp/dest',
+  installedAt: '2026-01-01T00:00:00.000Z',
+  files: [],
+  hookEdits: [],
+};
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -128,8 +137,7 @@ describe('useSkillkeeperStore', () => {
 
   describe('setSkills', () => {
     it('stores skills', () => {
-      const skill = { id: 's1', name: 'test-skill' };
-      useSkillkeeperStore.getState().setSkills([skill]);
+      useSkillkeeperStore.getState().setSkills([mockInstall]);
 
       expect(useSkillkeeperStore.getState().skills).toHaveLength(1);
     });

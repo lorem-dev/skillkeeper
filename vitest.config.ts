@@ -12,6 +12,7 @@ export default defineConfig({
       '@skillkeeper/config': fromRoot('./packages/config/src/index.ts'),
       '@skillkeeper/agents': fromRoot('./packages/agents/src/index.ts'),
       '@skillkeeper/i18n': fromRoot('./packages/i18n/src/index.ts'),
+      '@': fromRoot('./apps/desktop/src/renderer'),
     },
   },
   test: {

@@ -7,6 +7,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
+import { bridgeClient } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { ConfigBanner } from '@/features/configBanner';
 import { RepositoriesPage } from '@/pages/Repositories';
@@ -33,7 +34,7 @@ export function App() {
   const t = useTranslator();
 
   useEffect(() => {
-    void loadAll(window.skillkeeper);
+    void loadAll(bridgeClient);
   }, [loadAll]);
 
   function renderView() {
