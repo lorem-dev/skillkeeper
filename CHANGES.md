@@ -8,6 +8,9 @@
 
 ### Features
 
+- Build the desktop screens (Repositories, Projects, Skills, Settings) on the
+  shared UI kit with real read-only data via a renderer services layer, entity
+  cards, a skills search/filter and details view, and a light/dark theme toggle.
 - Add Storybook to the desktop app with stories for the shared UI kit
   (Button, Badge, Alert, Toggle, TextField, Select, Slider, Modal) and a
   light/dark theme toggle.

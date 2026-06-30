@@ -58,6 +58,10 @@ The reasoning is in [decision 0010](decisions/0010-layered-structure.md),
 [decision 0020](decisions/0020-cross-cutting-systems.md), and
 [decision 0050](decisions/0050-domain-vocabulary.md).
 
+The `services`, `entities`, and `domain` layers now back the four real screens
+(Repositories, Projects, Skills, Settings), which read live data through the
+`services/bridge` client and render it with the entity cards and shared UI kit.
+
 ---
 
 ## State Management
