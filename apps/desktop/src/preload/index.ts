@@ -8,7 +8,7 @@
  */
 import { contextBridge, ipcRenderer } from 'electron';
 import type { LoadConfigResult } from '@skillkeeper/config';
-import type { Repository, Project } from '@skillkeeper/core';
+import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
 
 // ---------------------------------------------------------------------------
 // Bridge type (exported so the renderer window.d.ts can import it)
@@ -20,8 +20,8 @@ export interface SkillkeeperBridge {
   getConfig(): Promise<LoadConfigResult>;
   /** List all tracked repositories. */
   listRepositories(): Promise<Repository[]>;
-  /** List all installed skills (stub in v1 shell). */
-  listSkills(): Promise<unknown[]>;
+  /** List all installed skills (install manifests from the state file). */
+  listSkills(): Promise<InstallManifest[]>;
   /** List all tracked projects. */
   listProjects(): Promise<Project[]>;
 }
@@ -37,8 +37,8 @@ const bridge: SkillkeeperBridge = {
   listRepositories(): Promise<Repository[]> {
     return ipcRenderer.invoke('repositories:list') as Promise<Repository[]>;
   },
-  listSkills(): Promise<unknown[]> {
-    return ipcRenderer.invoke('skills:list') as Promise<unknown[]>;
+  listSkills(): Promise<InstallManifest[]> {
+    return ipcRenderer.invoke('skills:list') as Promise<InstallManifest[]>;
   },
   listProjects(): Promise<Project[]> {
     return ipcRenderer.invoke('projects:list') as Promise<Project[]>;

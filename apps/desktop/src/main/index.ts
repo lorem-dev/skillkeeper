@@ -8,7 +8,7 @@
 import { app, BrowserWindow, ipcMain, session } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
-import { createNodeFs } from '@skillkeeper/core';
+import { createNodeFs, loadState, StateError } from '@skillkeeper/core';
 import { loadConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
 import type { LoadConfigResult } from '@skillkeeper/config';
 
@@ -33,6 +33,24 @@ function resolveConfigPath(): string {
   // Linux / XDG
   const xdgConfig = process.env['XDG_CONFIG_HOME'] ?? path.join(os.homedir(), '.config');
   return path.join(xdgConfig, 'skillkeeper', 'config.yaml');
+}
+
+// ---------------------------------------------------------------------------
+// State path resolution (per-OS)
+// ---------------------------------------------------------------------------
+
+function resolveStatePath(): string {
+  const platform = process.platform;
+  if (platform === 'win32') {
+    const appData = process.env['APPDATA'] ?? path.join(os.homedir(), 'AppData', 'Roaming');
+    return path.join(appData, 'skillkeeper', 'state.json');
+  }
+  if (platform === 'darwin') {
+    return path.join(os.homedir(), 'Library', 'Application Support', 'skillkeeper', 'state.json');
+  }
+  // Linux / XDG
+  const xdgConfig = process.env['XDG_CONFIG_HOME'] ?? path.join(os.homedir(), '.config');
+  return path.join(xdgConfig, 'skillkeeper', 'state.json');
 }
 
 // ---------------------------------------------------------------------------
@@ -90,6 +108,7 @@ function installCsp(): void {
 function registerHandlers(): void {
   const fs = createNodeFs();
   const configPath = resolveConfigPath();
+  const statePath = resolveStatePath();
 
   /**
    * config:get -- load the config file and return it together with per-section
@@ -114,25 +133,43 @@ function registerHandlers(): void {
   });
 
   /**
-   * repositories:list -- stub; returns empty array until the state layer is
-   * wired up in a subsequent task.
+   * repositories:list -- read tracked repositories from the state file.
+   * Returns empty array when the file is missing (emptyState) or corrupt
+   * (StateError).
    */
   ipcMain.handle('repositories:list', async () => {
-    return [];
+    try {
+      return (await loadState(fs, statePath)).repositories;
+    } catch (err) {
+      if (err instanceof StateError) return [];
+      throw err;
+    }
   });
 
   /**
-   * skills:list -- stub; returns empty array.
-   */
-  ipcMain.handle('skills:list', async () => {
-    return [];
-  });
-
-  /**
-   * projects:list -- stub; returns empty array.
+   * projects:list -- read tracked projects from the state file.
+   * Returns empty array when the file is missing or corrupt.
    */
   ipcMain.handle('projects:list', async () => {
-    return [];
+    try {
+      return (await loadState(fs, statePath)).projects;
+    } catch (err) {
+      if (err instanceof StateError) return [];
+      throw err;
+    }
+  });
+
+  /**
+   * skills:list -- read install manifests from the state file.
+   * Returns empty array when the file is missing or corrupt.
+   */
+  ipcMain.handle('skills:list', async () => {
+    try {
+      return (await loadState(fs, statePath)).installs;
+    } catch (err) {
+      if (err instanceof StateError) return [];
+      throw err;
+    }
   });
 }
 
