@@ -1,0 +1,25 @@
+// Shared glass treatments, included by the co-located glass component styles
+// via `@use '../../../styles/glass'`.
+
+// Thin gradient border (the --sk-glass-border ring), painted on an ::after and
+// masked to the padding ring so only the border shows. The including selector
+// must establish a positioning context (position: relative or isolate).
+@mixin border {
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: var(--sk-glass-border-width);
+    background: var(--sk-glass-border);
+    pointer-events: none;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+}

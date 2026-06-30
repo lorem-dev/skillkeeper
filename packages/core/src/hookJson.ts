@@ -88,8 +88,8 @@ export function findOwnedNode(jsonText: string, markerId: string): unknown {
 function ownerId(node: JsonValue): string | undefined {
   if (!isObject(node)) return undefined;
   const marker = node[MARKER_FIELD];
-  if (marker !== undefined && isObject(marker) && typeof marker.id === 'string') {
-    return marker.id;
+  if (marker !== undefined && isObject(marker) && typeof marker['id'] === 'string') {
+    return marker['id'];
   }
   return undefined;
 }

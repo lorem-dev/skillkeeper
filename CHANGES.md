@@ -8,6 +8,9 @@
 
 ### Features
 
+- Add Storybook to the desktop app with stories for the shared UI kit
+  (Button, Badge, Alert, Toggle, TextField, Select, Slider, Modal) and a
+  light/dark theme toggle.
 - Scaffold the pnpm and TypeScript monorepo with shared ESLint, Prettier, and a
   90% Vitest coverage gate.
 - Add the domain core: skill resolution (flat, grouped, and repo-config schemes),
@@ -31,3 +34,5 @@
 - Make the desktop app launch reliably: auto-download the Electron binary, use
   `import.meta.dirname` in the ESM main process, load the preload as CommonJS
   with `electron` kept external, and allow inline styles in the production CSP.
+- Restrict macOS packaging to arm64; the x64 target is not supported in CI.
+- Attribute the bundled Inter and Cormorant Garamond fonts (OFL-1.1) in LICENSE.

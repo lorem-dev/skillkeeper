@@ -1,0 +1,22 @@
+// Page layout styles. Co-located with Page.tsx; tokens only. The content area
+// (.sk-content in the app shell) already supplies outer padding, so the page is
+// just a vertical column with a title.
+
+.sk-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+}
+
+.sk-page__title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--sk-color-label);
+}
+
+// Muted empty-state text used by placeholder screens.
+.sk-empty {
+  color: var(--sk-color-label-2);
+}

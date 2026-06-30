@@ -1,0 +1,28 @@
+// Spinner styles. Co-located with Spinner.tsx; tokens only. The base layer
+// disables the animation under prefers-reduced-motion.
+
+.sk-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  color: var(--sk-color-label-2);
+}
+
+.sk-spinner__ring {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--sk-radius-pill);
+  border: 2px solid var(--sk-color-fill-1);
+  border-top-color: var(--sk-color-accent);
+  animation: sk-spin 0.7s linear infinite;
+}
+
+.sk-spinner__label {
+  font-size: 13px;
+}
+
+@keyframes sk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

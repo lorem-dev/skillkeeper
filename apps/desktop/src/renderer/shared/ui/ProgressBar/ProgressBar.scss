@@ -1,0 +1,31 @@
+// Progress bar styles. Co-located; tokens only (design-system.md 8.10).
+
+.sk-progress {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-color-fill-1);
+  overflow: hidden;
+}
+
+.sk-progress__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--sk-color-accent);
+  transition: width var(--sk-duration-medium) var(--sk-ease-standard);
+}
+
+.sk-progress--indeterminate .sk-progress__fill {
+  width: 40%;
+  animation: sk-progress-slide 1.1s ease-in-out infinite;
+}
+
+@keyframes sk-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}

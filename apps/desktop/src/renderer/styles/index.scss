@@ -1,0 +1,7 @@
+// Renderer global stylesheet entry. Imported once from main.tsx.
+// This file holds only global foundations; component styles live next to their
+// component (e.g. App.scss beside App.tsx) and are imported from there.
+// Order matters: fonts and tokens must be available before base styles use them.
+@use 'fonts';
+@use 'tokens';
+@use 'base';

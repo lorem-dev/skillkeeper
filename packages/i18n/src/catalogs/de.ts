@@ -18,6 +18,14 @@ export const de: Partial<Catalog> = {
   'nav.projects': 'Projekte',
   'nav.settings': 'Einstellungen',
 
+  'common.loading': 'Wird geladen',
+  'common.errorPrefix': 'Fehler: {message}',
+
+  'repositories.empty': 'Noch keine Repositories hinzugefugt.',
+  'skills.empty': 'Noch keine Fahigkeiten installiert.',
+  'projects.empty': 'Noch keine Projekte erfasst.',
+  'settings.comingSoon': 'Einstellungen folgen in Kurze.',
+
   'config.invalidBanner':
     'Die Konfiguration enthalt ungultige Abschnitte. Standardwerte werden verwendet. Fuhren Sie "skillkeeper config validate" aus.',
 

@@ -1,0 +1,20 @@
+// Glass surface styles. Co-located. The backdrop-filter (refraction) is set at
+// runtime by useGlassRefraction on this element; overflow:hidden clips it to the
+// rounded shape, and the gradient border (glass mixin) draws the rim.
+
+@use '../../../styles/glass';
+
+.sk-glass-surface {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--sk-radius-xl);
+  background: var(--sk-glass-tint);
+  color: var(--sk-color-label);
+  box-shadow: var(--sk-shadow-2);
+
+  @include glass.border;
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    background: var(--sk-color-bg-tertiary);
+  }
+}

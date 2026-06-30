@@ -5,6 +5,7 @@ allowBuilds:
   electron: true
   esbuild: true
   electron-winstaller: false
+  '@parcel/watcher': false
 minimumReleaseAgeExclude:
   - eslint@10.6.0
   - prettier@3.9.0

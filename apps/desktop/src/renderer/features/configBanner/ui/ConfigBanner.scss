@@ -1,0 +1,15 @@
+// Config-validity banner styles. Co-located with ConfigBanner.tsx; tokens only.
+// A warning surface tinted with the system orange/red accent.
+
+.sk-config-banner {
+  padding: var(--sk-space-3) var(--sk-space-5);
+  font-size: 13px;
+  color: var(--sk-color-label);
+  background: color-mix(in srgb, var(--sk-red) 22%, var(--sk-color-bg-secondary));
+  border-bottom: 0.5px solid var(--sk-color-separator);
+}
+
+.sk-config-banner__list {
+  margin-top: var(--sk-space-2);
+  padding-left: var(--sk-space-6);
+}

@@ -1,0 +1,25 @@
+// Grouped list container styles. Co-located; tokens only (design-system.md 8.5).
+
+.sk-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--sk-color-bg-tertiary);
+  border-radius: var(--sk-radius-md);
+  overflow: hidden;
+}
+
+.sk-list > * + * {
+  border-top: 0.5px solid var(--sk-color-separator);
+}
+
+// Round the first/last rows' outer corners to match the container, so an
+// interactive row's inset focus ring follows the rounded edge.
+.sk-list > :first-child {
+  border-top-left-radius: var(--sk-radius-md);
+  border-top-right-radius: var(--sk-radius-md);
+}
+
+.sk-list > :last-child {
+  border-bottom-left-radius: var(--sk-radius-md);
+  border-bottom-right-radius: var(--sk-radius-md);
+}

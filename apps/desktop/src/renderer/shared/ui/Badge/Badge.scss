@@ -1,0 +1,37 @@
+// Badge styles. Co-located; tokens only. Tones tint the accent hues.
+
+.sk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  padding: 2px var(--sk-space-3);
+  border-radius: var(--sk-radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.sk-badge--neutral {
+  background: var(--sk-color-fill-2);
+  color: var(--sk-color-label-2);
+}
+
+.sk-badge--accent {
+  background: color-mix(in srgb, var(--sk-blue) 18%, var(--sk-color-bg-tertiary));
+  color: var(--sk-blue);
+}
+
+.sk-badge--success {
+  background: color-mix(in srgb, var(--sk-green) 18%, var(--sk-color-bg-tertiary));
+  color: var(--sk-green);
+}
+
+.sk-badge--warning {
+  background: color-mix(in srgb, var(--sk-orange) 20%, var(--sk-color-bg-tertiary));
+  color: var(--sk-orange);
+}
+
+.sk-badge--danger {
+  background: color-mix(in srgb, var(--sk-red) 18%, var(--sk-color-bg-tertiary));
+  color: var(--sk-red);
+}

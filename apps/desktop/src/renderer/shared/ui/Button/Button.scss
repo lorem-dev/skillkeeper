@@ -1,0 +1,112 @@
+// Button primitive styles. Co-located with Button.tsx. Implements
+// docs/ui/design-system.md Section 8.2 (Buttons) and the shared interaction
+// states from Section 8.1.
+
+@use '../../../styles/glass';
+
+.sk-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sk-space-2);
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.3;
+  padding: var(--sk-space-3) var(--sk-space-5);
+  border-radius: var(--sk-radius-xl);
+  color: var(--sk-color-label);
+  transition:
+    background var(--sk-duration-fast) var(--sk-ease-standard),
+    filter var(--sk-duration-fast) var(--sk-ease-standard),
+    transform var(--sk-duration-fast) var(--sk-ease-standard);
+
+  &:focus-visible {
+    outline: 2px solid var(--sk-color-accent);
+    outline-offset: 2px;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    color: var(--sk-color-label-3);
+    cursor: default;
+  }
+
+  &--primary {
+    background: var(--sk-color-accent);
+    color: #fff;
+    box-shadow: var(--sk-shadow-1);
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+  }
+
+  &--secondary {
+    background: var(--sk-color-fill-2);
+
+    &:hover:not(:disabled) {
+      background: var(--sk-color-fill-1);
+    }
+  }
+
+  &--tinted {
+    background: color-mix(in srgb, var(--sk-color-accent) 16%, var(--sk-color-bg-tertiary));
+    color: var(--sk-color-accent);
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--sk-color-accent) 26%, var(--sk-color-bg-tertiary));
+    }
+  }
+
+  &--plain {
+    background: transparent;
+    color: var(--sk-color-accent);
+
+    &:hover:not(:disabled) {
+      background: var(--sk-color-fill-3);
+    }
+  }
+
+  &--destructive {
+    background: transparent;
+    color: var(--sk-red);
+
+    &:hover:not(:disabled) {
+      background: var(--sk-color-fill-3);
+    }
+  }
+
+  // useGlassRefraction sets the backdrop refraction on the element; clip it to
+  // the pill and draw the gradient rim, matching the other glass surfaces.
+  &--glass {
+    position: relative;
+    overflow: hidden;
+    background: var(--sk-glass-tint);
+    // Softer fade between states for the glass look.
+    transition:
+      background var(--sk-duration-medium) var(--sk-ease-standard),
+      transform var(--sk-duration-fast) var(--sk-ease-standard);
+
+    @include glass.border;
+
+    // Glass stays translucent (it is the exception to the solid-surface rule), so
+    // the press feedback is a gentle translucent tint of the label color rather
+    // than a solid fill -- it darkens slightly in light, brightens in dark.
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--sk-color-label) 8%, var(--sk-glass-tint));
+    }
+
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      background: var(--sk-color-bg-tertiary);
+    }
+  }
+}

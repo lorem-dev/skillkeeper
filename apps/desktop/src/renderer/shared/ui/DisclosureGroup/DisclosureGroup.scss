@@ -1,0 +1,68 @@
+// Disclosure group styles. Co-located; tokens only.
+
+.sk-disclosure {
+  display: flex;
+  flex-direction: column;
+}
+
+.sk-disclosure__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  width: 100%;
+  padding: var(--sk-space-3) 0;
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sk-color-label);
+  text-align: left;
+
+  &:focus-visible {
+    outline: 2px solid var(--sk-color-accent);
+    outline-offset: 2px;
+    border-radius: var(--sk-radius-xs);
+  }
+}
+
+.sk-disclosure__chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-disclosure__title {
+  flex: 1;
+  min-width: 0;
+}
+
+// Jump-free collapse: animate the grid row from 0fr to 1fr. No height
+// measurement, so there is no snap on open/close. The inner element must clip
+// its overflow and allow shrinking to zero (min-height: 0).
+.sk-disclosure__wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--sk-duration-medium) var(--sk-ease-standard);
+}
+
+.sk-disclosure__wrap--open {
+  grid-template-rows: 1fr;
+}
+
+.sk-disclosure__inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sk-disclosure__body {
+  padding-bottom: var(--sk-space-4);
+  font-size: 14px;
+  color: var(--sk-color-label);
+}

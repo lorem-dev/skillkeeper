@@ -2,11 +2,13 @@
  * Renderer entry point.
  *
  * Creates the React root and mounts the application. This is a thin bootstrap;
- * all state and logic lives in App.tsx and store.ts.
+ * all state and logic lives under the layered renderer tree (`@/app`, `@/pages`,
+ * ...).
  */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './App';
+import { App } from '@/app/App';
+import '@/styles/index.scss';
 
 const container = document.getElementById('root');
 if (container === null) {

@@ -1,0 +1,39 @@
+// Base element styles built on the design tokens. Layout primitives (full-height
+// flex column) match the previous inline reset so existing views keep their
+// layout; colors and typography now come from tokens.
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100vh;
+}
+
+body {
+  font-family: var(--sk-font-sans);
+  font-optical-sizing: auto; // drives Inter's opsz axis from the font-size
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background: var(--sk-color-bg-secondary);
+  color: var(--sk-color-label);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

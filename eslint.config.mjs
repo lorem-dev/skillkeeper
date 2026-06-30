@@ -11,6 +11,7 @@ export default tseslint.config(
       '**/out/**',
       '**/coverage/**',
       '**/node_modules/**',
+      '**/storybook-static/**',
       '**/*.config.{js,mjs,ts}',
       'scripts/**',
     ],
@@ -37,6 +38,17 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    },
+  },
+  // Story files legitimately export non-component values (the CSF default
+  // meta and named story objects), and a CSF `render` function is invoked as a
+  // component by Storybook's runtime even though it is syntactically a plain
+  // arrow -- so neither fast-refresh nor rules-of-hooks constraints apply.
+  {
+    files: ['apps/desktop/src/renderer/**/*.stories.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+      'react-hooks/rules-of-hooks': 'off',
     },
   },
   // Keep this last: disable formatting rules that conflict with Prettier.

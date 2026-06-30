@@ -1,0 +1,35 @@
+// Toolbar styles. Co-located; tokens only (design-system.md 8.7). Glass surface
+// with an opaque fallback per Section 4.
+
+.sk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  height: 48px;
+  padding: 0 var(--sk-space-5);
+  background: var(--sk-glass-tint);
+  backdrop-filter: blur(15px) saturate(180%);
+  -webkit-backdrop-filter: blur(15px) saturate(180%);
+  border-bottom: 0.5px solid var(--sk-color-separator);
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    background: var(--sk-color-bg-secondary);
+  }
+}
+
+.sk-toolbar__title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--sk-color-label);
+}
+
+.sk-toolbar__leading,
+.sk-toolbar__trailing {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+}
+
+.sk-toolbar__spacer {
+  flex: 1;
+}

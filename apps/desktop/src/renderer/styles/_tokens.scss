@@ -1,0 +1,122 @@
+// SkillKeeper desktop design tokens.
+//
+// Canonical source: docs/ui/design-system.md (Section 7). Keep this file in sync
+// with the spec; the spec is authoritative. Components must reference the emitted
+// CSS custom properties (var(--sk-*)), never hardcoded hex/px values.
+//
+// Theme-varying tokens live in Sass maps and are emitted as CSS custom properties
+// by a single mixin, so the light and dark blocks can never drift apart. Static
+// tokens (type, radii, spacing, elevation, motion) are declared once in :root.
+
+@use 'sass:map';
+
+$themes: (
+  light: (
+    'blue': #0088ff, 'indigo': #6155f5, 'teal': #00c8b3, 'cyan': #00c3d0,
+    'green': #34c759, 'yellow': #ffcc00, 'orange': #ff9230, 'red': #ff383c,
+    'pink': #ff2d55, 'purple': #cb30e0, 'brown': #ac7f5e,
+
+    'gray-1': #f2f2f7, 'gray-2': #e5e5ea, 'gray-3': #d1d1d6,
+    'gray-4': #c7c7cc, 'gray-5': #aeaeb2, 'gray-6': #8e8e93,
+
+    'color-label': #000000,
+    'color-label-2': #8a8a8e,
+    'color-label-3': #b8b8bd,
+    'color-label-4': #ceced2,
+    'color-fill-1': #d4d4da,
+    'color-fill-2': #e0e0e5,
+    'color-fill-3': #eaeaee,
+    'color-separator': #c9c9cd,
+    'color-bg': #ffffff,
+    'color-bg-secondary': #f2f2f7,
+    'color-bg-tertiary': #ffffff,
+    'glass-tint': rgba(255, 255, 255, 0.62),
+  ),
+  dark: (
+    'blue': #0091ff, 'indigo': #6d7cff, 'teal': #00dac3, 'cyan': #3cd3fe,
+    'green': #30d158, 'yellow': #ffd600, 'orange': #ff8d28, 'red': #ff4245,
+    'pink': #ff375f, 'purple': #db34f2, 'brown': #b78a66,
+
+    'gray-1': #1c1c1e, 'gray-2': #2c2c2e, 'gray-3': #3a3a3c,
+    'gray-4': #48484a, 'gray-5': #636366, 'gray-6': #8e8e93,
+
+    'color-label': #ffffff,
+    'color-label-2': #98989e,
+    'color-label-3': #5c5c61,
+    'color-label-4': #3e3e43,
+    'color-fill-1': #48484c,
+    'color-fill-2': #3d3d41,
+    'color-fill-3': #333337,
+    'color-separator': #3a3a3d,
+    'color-bg': #000000,
+    'color-bg-secondary': #1c1c1e,
+    'color-bg-tertiary': #2c2c2e,
+    'glass-tint': rgba(30, 30, 32, 0.72),
+  ),
+);
+
+@mixin emit-theme($key) {
+  @each $name, $value in map.get($themes, $key) {
+    --sk-#{$name}: #{$value};
+  }
+}
+
+// Default theme is light; data-theme="dark" on <html> switches the ramp.
+:root {
+  @include emit-theme(light);
+
+  --sk-color-accent: var(--sk-blue);
+
+  // type
+  --sk-font-sans: "Inter", system-ui, sans-serif;
+  --sk-font-display: "Cormorant Garamond", Georgia, serif;
+
+  // radii
+  --sk-radius-xs: 4px;
+  --sk-radius-sm: 10px;
+  --sk-radius-md: 14px;
+  --sk-radius-lg: 16px;
+  --sk-radius-xl: 22px;
+  --sk-radius-2xl: 26px;
+  --sk-radius-pill: 9999px;
+
+  // spacing (4px scale)
+  --sk-space-1: 2px;
+  --sk-space-2: 4px;
+  --sk-space-3: 8px;
+  --sk-space-4: 12px;
+  --sk-space-5: 16px;
+  --sk-space-6: 20px;
+  --sk-space-7: 24px;
+  --sk-space-8: 32px;
+
+  // elevation
+  --sk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --sk-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --sk-shadow-3: 0 12px 40px rgba(0, 0, 0, 0.20);
+  // White control knobs (slider/toggle) need a crisp rim + drop shadow so they
+  // stay visible on light backgrounds, not just a soft elevation shadow.
+  --sk-shadow-knob: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.28),
+    0 3px 8px rgba(0, 0, 0, 0.12);
+  // Glass edge: a thin gradient border, bright at the top-left and bottom-right
+  // corners and fading to transparent at the other two, so the rim catches light
+  // on one diagonal and blends into the backdrop elsewhere.
+  --sk-glass-border-width: 1px;
+  --sk-glass-border: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0) 38%,
+    rgba(255, 255, 255, 0) 62%,
+    rgba(255, 255, 255, 0.8)
+  );
+
+  // motion
+  --sk-ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --sk-duration-fast: 150ms;
+  --sk-duration-medium: 250ms;
+  --sk-duration-slow: 350ms;
+}
+
+[data-theme='dark'] {
+  @include emit-theme(dark);
+}

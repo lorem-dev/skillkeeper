@@ -14,6 +14,20 @@ export const en = {
   'nav.projects': 'Projects',
   'nav.settings': 'Settings',
 
+  /** Generic activity/loading label. */
+  'common.loading': 'Loading',
+  /**
+   * Generic error line shown in the content area.
+   * Interpolation: {message} = the error text.
+   */
+  'common.errorPrefix': 'Error: {message}',
+
+  /** Empty-state copy for each page. */
+  'repositories.empty': 'No repositories added yet.',
+  'skills.empty': 'No skills installed yet.',
+  'projects.empty': 'No projects tracked yet.',
+  'settings.comingSoon': 'Settings screen coming soon.',
+
   /** Shown in the CLI/GUI when config.yaml has at least one invalid section. */
   'config.invalidBanner':
     'Configuration has invalid sections. Defaults are in use. Run "skillkeeper config validate" for details.',

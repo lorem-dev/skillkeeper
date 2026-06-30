@@ -17,6 +17,14 @@ export const ru: Partial<Catalog> = {
   'nav.projects': 'Проекты',
   'nav.settings': 'Настройки',
 
+  'common.loading': 'Загрузка',
+  'common.errorPrefix': 'Ошибка: {message}',
+
+  'repositories.empty': 'Репозитории еще не добавлены.',
+  'skills.empty': 'Навыки еще не установлены.',
+  'projects.empty': 'Проекты еще не отслеживаются.',
+  'settings.comingSoon': 'Экран настроек скоро появится.',
+
   'config.invalidBanner':
     'Конфигурация содержит недопустимые разделы. Используются значения по умолчанию.',
 

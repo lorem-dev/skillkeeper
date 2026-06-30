@@ -1,0 +1,23 @@
+// Tooltip styles. Co-located; tokens only. The bubble inverts label/background
+// so it reads on any surface.
+
+.sk-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.sk-tooltip__bubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 50;
+  transform-origin: bottom center;
+  white-space: nowrap;
+  pointer-events: none;
+  font-size: 12px;
+  padding: var(--sk-space-2) var(--sk-space-3);
+  border-radius: var(--sk-radius-sm);
+  background: var(--sk-color-label);
+  color: var(--sk-color-bg);
+  box-shadow: var(--sk-shadow-2);
+}

@@ -1,0 +1,68 @@
+// Checkbox styles. Co-located; tokens only. The native input is visually hidden
+// but remains focusable; the box reflects state via sibling selectors.
+
+.sk-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  color: var(--sk-color-label);
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.sk-checkbox--disabled {
+  cursor: default;
+  color: var(--sk-color-label-3);
+}
+
+.sk-checkbox__input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+.sk-checkbox__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--sk-radius-xs);
+  background: var(--sk-color-fill-2);
+  border: 1px solid var(--sk-color-separator);
+  color: #fff;
+  transition:
+    background var(--sk-duration-fast) var(--sk-ease-standard),
+    border-color var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+.sk-checkbox__check {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+.sk-checkbox__input:checked + .sk-checkbox__box {
+  background: var(--sk-color-accent);
+  border-color: transparent;
+}
+
+.sk-checkbox__input:checked + .sk-checkbox__box .sk-checkbox__check {
+  opacity: 1;
+}
+
+.sk-checkbox__input:focus-visible + .sk-checkbox__box {
+  outline: 2px solid var(--sk-color-accent);
+  outline-offset: 2px;
+}
+
+.sk-checkbox__input:disabled + .sk-checkbox__box {
+  opacity: 0.5;
+}

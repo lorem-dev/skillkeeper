@@ -1,0 +1,27 @@
+// Skeleton styles. Co-located; tokens only. The shimmer stops under
+// prefers-reduced-motion (handled globally by the base layer).
+
+.sk-skeleton {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 1em;
+  background: var(--sk-color-fill-2);
+  border-radius: var(--sk-radius-sm);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, var(--sk-color-fill-1), transparent);
+    animation: sk-shimmer 1.4s infinite;
+  }
+}
+
+@keyframes sk-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

@@ -33,6 +33,9 @@ Thumbs.db
 .idea/
 *.swp
 
+# Storybook
+apps/desktop/storybook-static/
+
 # Agent and code-intelligence tooling (not shipped)
 .superpowers/
 .claude/

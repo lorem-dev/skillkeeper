@@ -7,10 +7,13 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "analyze": "electron-vite build --mode analyze",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",
     "package": "electron-builder",
-    "package:dir": "electron-builder --dir"
+    "package:dir": "electron-builder --dir",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "build": {
     "appId": "dev.skillkeeper.app",
@@ -25,23 +28,52 @@
     ],
     "linux": {
       "target": [
-        { "target": "AppImage", "arch": ["x64", "arm64"] },
-        { "target": "deb", "arch": ["x64", "arm64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "icon": "build/icon.svg",
       "category": "Development"
     },
     "mac": {
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
       ],
       "icon": "build/icon.svg",
       "category": "public.app-category.developer-tools"
     },
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64", "arm64"] },
-        { "target": "appx", "arch": ["x64", "arm64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "appx",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "icon": "build/icon.svg"
     },
@@ -52,7 +84,9 @@
       "identityName": "dev.skillkeeper.SkillKeeper",
       "publisher": "CN=SkillKeeper",
       "publisherDisplayName": "SkillKeeper",
-      "languages": ["en-US"]
+      "languages": [
+        "en-US"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -65,17 +99,23 @@
     "@skillkeeper/config": "workspace:*",
     "@skillkeeper/core": "workspace:*",
     "@skillkeeper/i18n": "workspace:*",
+    "motion": "12.42.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "zustand": "5.0.14"
   },
   "devDependencies": {
+    "@storybook/react": "10.4.6",
+    "@storybook/react-vite": "10.4.6",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.3",
     "electron": "42.5.0",
     "electron-builder": "26.15.3",
     "electron-vite": "5.0.0",
+    "sass": "1.101.0",
+    "sonda": "0.13.1",
+    "storybook": "10.4.6",
     "vite": "8.1.0"
   }
 }

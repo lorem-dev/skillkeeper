@@ -1,0 +1,76 @@
+// Radio group styles. Co-located; tokens only. Native inputs stay focusable.
+
+.sk-radio-group {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--sk-space-3);
+}
+
+.sk-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  color: var(--sk-color-label);
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.sk-radio--disabled {
+  cursor: default;
+  color: var(--sk-color-label-3);
+}
+
+.sk-radio__input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+.sk-radio__dot {
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-color-fill-2);
+  border: 1px solid var(--sk-color-separator);
+  transition:
+    background var(--sk-duration-fast) var(--sk-ease-standard),
+    border-color var(--sk-duration-fast) var(--sk-ease-standard);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--sk-radius-pill);
+    background: #fff;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform var(--sk-duration-fast) var(--sk-ease-standard);
+  }
+}
+
+.sk-radio__input:checked + .sk-radio__dot {
+  background: var(--sk-color-accent);
+  border-color: transparent;
+
+  &::after {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.sk-radio__input:focus-visible + .sk-radio__dot {
+  outline: 2px solid var(--sk-color-accent);
+  outline-offset: 2px;
+}
+
+.sk-radio__input:disabled + .sk-radio__dot {
+  opacity: 0.5;
+}

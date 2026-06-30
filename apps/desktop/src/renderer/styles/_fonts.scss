@@ -1,0 +1,39 @@
+// Bundled font faces. The renderer is Chromium-only, so WOFF2 is the single
+// shipped format. The variable TTFs are kept in assets/fonts as the source of
+// truth (and for tooling) but are intentionally not referenced here, so the
+// bundler ships only the smaller WOFF2 files. Inter is the system UI face;
+// Cormorant Garamond is the optional display face.
+
+$font-dir: '../assets/fonts';
+
+@font-face {
+  font-family: 'Inter';
+  src: url('#{$font-dir}/Inter-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('#{$font-dir}/Inter-Italic-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('#{$font-dir}/CormorantGaramond-Variable.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('#{$font-dir}/CormorantGaramond-Italic-Variable.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: italic;
+  font-display: swap;
+}

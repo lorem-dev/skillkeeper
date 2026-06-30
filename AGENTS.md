@@ -68,9 +68,21 @@ All four commands must pass before a pull request is ready.
 
 - Module system: `NodeNext`. All relative imports in source files must end with
   `.js` (the compiled extension), not `.ts`.
-- `isolatedModules` is on. Use `export type` / `import type` for type-only
-  exports and imports.
-- Strict mode is on. No `any` without a comment explaining why it is safe.
+- `isolatedModules` and `verbatimModuleSyntax` are on. Mark every type-only export
+  and import with `export type` / `import type`.
+- The toolchain runs at the maximum practical strictness, configured once in
+  `tsconfig.base.json` and inherited by every package. On top of `strict`:
+  `noUncheckedIndexedAccess`, `noImplicitOverride`, `noImplicitReturns`,
+  `noFallthroughCasesInSwitch`, `noUnusedLocals`, `noUnusedParameters`,
+  `noPropertyAccessFromIndexSignature`, `allowUnreachableCode: false`, and
+  `allowUnusedLabels: false`. Treat `pnpm typecheck` as a hard gate: fix the code,
+  never loosen a flag to make an error go away.
+- `exactOptionalPropertyTypes` is the one strict flag deliberately left OFF. The
+  domain model uses clean `prop?: T` optionals and is largely produced by zod
+  parsing, where this flag forces either `| undefined` type-widening (which negates
+  it) or verbose conditional construction, for little real safety. Do not enable it
+  without reworking those types first.
+- No `any` without a comment explaining why it is safe.
 
 ### Text and Encoding
 
@@ -103,6 +115,13 @@ The project uses CodeGraph MCP tools (`codegraph_*`) for structural code
 navigation. The index lives in `.codegraph/` which is git-ignored and not
 shipped.
 
+CodeGraph is an optional accelerator, not a project dependency. If the
+`codegraph_*` tools are not installed or are otherwise unavailable in the
+environment, do not require them and do not prompt the user to set them up:
+silently fall back to the native search and read tools and continue. (This
+differs from "installed but not initialized" - the no-index case below, where
+offering to build the index is appropriate.)
+
 When to use each tool:
 
 - `codegraph_search` -- find a symbol by name (returns kind, location,
@@ -129,6 +148,63 @@ Design specs and implementation plans live in `.superpowers/` which is
 git-ignored. When planning a multi-step task, write a plan there first. The
 `superpowers:writing-plans` skill guides the process. CHANGES.md entries are
 planned at the plan stage, not after the fact.
+
+---
+
+## Desktop UI Design System
+
+The visual language for the desktop app is specified in
+[docs/ui/design-system.md](./docs/ui/design-system.md): color palette, typography
+(Inter), translucent "glass" materials, radii, spacing, elevation, motion, and
+per-component rules. Read it before adding or restyling any renderer UI; build
+components against the semantic tokens, never hardcoded hex/px values.
+
+The tokens themselves are implemented once, in
+`apps/desktop/src/renderer/styles/_tokens.scss` -- that SCSS file is the single
+source of truth for the `--sk-*` custom properties (light + dark), and the spec
+documents it rather than duplicating the values.
+
+Style organization: `styles/` holds only the global foundation (`_tokens.scss`,
+`_fonts.scss`, `_base.scss`), composed by `styles/index.scss` and imported once
+from `main.tsx`. Component styles are co-located with their component (for example
+`App.scss` next to `App.tsx`) and imported from that component's module, not from
+`styles/`. Component styles reference `--sk-*` tokens only; never hardcode hex/px.
+
+Bundled fonts live in `apps/desktop/src/renderer/assets/fonts/` (Inter as the
+system face, Cormorant Garamond as an optional display face), each with its SIL OFL
+license file.
+
+### Storybook
+
+The generic `shared/ui` kit has a Storybook for browsing components in
+isolation, in both light and dark themes. Config lives in
+`apps/desktop/.storybook/`; stories are co-located with their component as
+`Component.stories.tsx`. Run it with
+`pnpm --filter @skillkeeper/desktop run storybook` (port 6006); build the
+static site with `build-storybook`. Storybook is a standalone dev tool -- it
+does not run under electron-vite and is NOT part of the
+lint/typecheck/test:cov/build gates. When you add a `shared/ui` primitive, add
+a story for it; pass display text as plain ASCII props (stories do not use
+i18n, the same as the components themselves).
+
+---
+
+## Desktop Frontend Architecture (must read)
+
+Before writing or restructuring renderer code, read the frontend architecture
+docs in [apps/desktop/docs/](./apps/desktop/docs/):
+
+- [architecture.md](./apps/desktop/docs/architecture.md) - the layered structure
+  (FSD-inspired, under `src/renderer/`), import boundaries, barrels, naming, and
+  how the renderer consumes the workspace packages over the IPC bridge.
+- [glossary.md](./apps/desktop/docs/glossary.md) - plain-language definitions of
+  the layer and module terms.
+- [decisions/readme.md](./apps/desktop/docs/decisions/readme.md) - the design
+  decision log behind the structure.
+
+The renderer holds state in Zustand and reaches the Electron main process only
+through the typed `window.skillkeeper` IPC bridge; it imports types from the
+`@skillkeeper/*` packages but never calls their runtime directly.
 
 ---
 

@@ -1,0 +1,47 @@
+// Alert styles. Co-located. Padding lives on the inner body so the outer element
+// can collapse its height cleanly during the exit animation.
+//
+// Alerts are a glass surface: useGlassRefraction sets the backdrop blur on the
+// element, and the background blends the tone color into the translucent glass
+// tint so the frosting shows through, tinted by the tone. Each tone just sets
+// --sk-alert-tone; a solid fallback applies where backdrop-filter is absent.
+
+.sk-alert {
+  overflow: hidden;
+  border: 0.5px solid var(--sk-color-separator);
+  border-radius: var(--sk-radius-lg);
+  background: color-mix(in srgb, var(--sk-alert-tone) 22%, var(--sk-glass-tint));
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    background: color-mix(in srgb, var(--sk-alert-tone) 14%, var(--sk-color-bg-secondary));
+  }
+}
+
+.sk-alert__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sk-space-4) var(--sk-space-5);
+  font-size: 13px;
+  color: var(--sk-color-label);
+}
+
+.sk-alert__title {
+  font-weight: 600;
+}
+
+.sk-alert--info {
+  --sk-alert-tone: var(--sk-blue);
+}
+
+.sk-alert--success {
+  --sk-alert-tone: var(--sk-green);
+}
+
+.sk-alert--warning {
+  --sk-alert-tone: var(--sk-orange);
+}
+
+.sk-alert--danger {
+  --sk-alert-tone: var(--sk-red);
+}

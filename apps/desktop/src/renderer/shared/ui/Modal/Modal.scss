@@ -1,0 +1,46 @@
+// Modal styles. Co-located (design-system.md 8.9). Thick glass panel over a
+// dimmed scrim, with an opaque fallback per Section 4.
+
+@use '../../../styles/glass';
+
+.sk-modal__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sk-space-7);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.sk-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  // useGlassRefraction sets the backdrop refraction; clip it to the rounded
+  // shape and draw the gradient rim, matching the other glass surfaces.
+  overflow: hidden;
+  border-radius: var(--sk-radius-2xl);
+  box-shadow: var(--sk-shadow-3);
+  background: var(--sk-glass-tint);
+
+  @include glass.border;
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    background: var(--sk-color-bg-tertiary);
+  }
+}
+
+.sk-modal__title {
+  padding: var(--sk-space-5) var(--sk-space-5) 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--sk-color-label);
+}
+
+.sk-modal__body {
+  padding: var(--sk-space-5);
+  font-size: 14px;
+  color: var(--sk-color-label);
+}
