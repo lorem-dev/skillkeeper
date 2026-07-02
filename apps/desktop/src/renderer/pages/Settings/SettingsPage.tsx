@@ -4,7 +4,8 @@ import { useTranslator } from '@/systems/i18n';
 import { useTheme, type ThemePref } from '@/systems/theme';
 import { buildLanguageOptions } from '@/domain';
 import type { Lang } from '@/services/bridge';
-import { Page, FormSection, FormRow, Select, SegmentedControl, TextField } from '@/shared/ui';
+import { Page, Toolbar, FormSection, FormRow, Select, SegmentedControl, TextField } from '@/shared/ui';
+import { OpenConfigButton } from './OpenConfigButton';
 import './SettingsPage.scss';
 
 interface GitRowProps {
@@ -49,6 +50,10 @@ export function SettingsPage() {
 
   return (
     <Page title={t('nav.settings')}>
+      {/* Interim placement: Page has no toolbar slot yet, so the toolbar is
+          rendered as a plain row without a title (Page already renders the
+          h1). Migrate to Page's toolbar slot once it lands. */}
+      <Toolbar trailing={<OpenConfigButton />} />
       <div className="sk-settings">
         <FormSection title={t('settings.section.general')}>
           <FormRow label={t('settings.language')}>
