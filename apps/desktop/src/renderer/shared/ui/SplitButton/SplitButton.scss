@@ -1,0 +1,77 @@
+// SplitButton styles. Co-located; tokens only. The chevron rotates to point
+// down while its resting orientation (from the shared chevron-right asset)
+// points at the primary button.
+
+.sk-split-button {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+
+  &__primary,
+  &__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--sk-color-fill-2);
+    color: var(--sk-color-label);
+    border: 0;
+    cursor: pointer;
+    padding: var(--sk-space-2) var(--sk-space-3);
+  }
+
+  &__primary {
+    border-radius: var(--sk-radius-sm) 0 0 var(--sk-radius-sm);
+    gap: var(--sk-space-2);
+  }
+
+  &__toggle {
+    border-radius: 0 var(--sk-radius-sm) var(--sk-radius-sm) 0;
+    margin-inline-start: 1px;
+  }
+
+  &__chevron {
+    transform: rotate(90deg);
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + var(--sk-space-1));
+    inset-inline-end: 0;
+    margin: 0;
+    padding: var(--sk-space-1);
+    list-style: none;
+    min-width: 220px;
+    background: var(--sk-color-bg-tertiary);
+    border: 1px solid var(--sk-color-separator);
+    border-radius: var(--sk-radius-md);
+    box-shadow: var(--sk-shadow-2);
+    z-index: 10;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--sk-space-2);
+    width: 100%;
+    padding: var(--sk-space-2) var(--sk-space-3);
+    background: none;
+    border: 0;
+    border-radius: var(--sk-radius-sm);
+    text-align: start;
+    color: var(--sk-color-label);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--sk-color-fill-2);
+    }
+  }
+
+  &__item-icon {
+    display: inline-flex;
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+  }
+}

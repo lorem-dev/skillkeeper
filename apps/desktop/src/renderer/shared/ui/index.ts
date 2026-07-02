@@ -29,6 +29,8 @@ export type { DisclosureGroupProps } from './DisclosureGroup';
 // Actions / controls
 export { Button } from './Button';
 export type { ButtonProps, ButtonVariant } from './Button';
+export { SplitButton } from './SplitButton';
+export type { SplitButtonProps, SplitButtonItem } from './SplitButton';
 export { Checkbox } from './Checkbox';
 export type { CheckboxProps } from './Checkbox';
 export { Toggle } from './Toggle';
