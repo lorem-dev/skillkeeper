@@ -70,6 +70,9 @@ export const de: Partial<Catalog> = {
   'settings.theme.light': 'Hell',
   'settings.theme.dark': 'Dunkel',
   'settings.language': 'Sprache',
+  'settings.section.repositories': 'Repositories',
+  'settings.git': 'Git',
+  'settings.gitDescription': 'Pfad zur Git-Programmdatei',
 
   'config.invalidBanner':
     'Die Konfiguration enthält ungültige Abschnitte. Standardwerte werden verwendet. Führen Sie "skillkeeper config validate" aus.',

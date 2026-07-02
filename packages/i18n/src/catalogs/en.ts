@@ -72,6 +72,9 @@ export const en = {
   'settings.theme.light': 'Light',
   'settings.theme.dark': 'Dark',
   'settings.language': 'Language',
+  'settings.section.repositories': 'Repositories',
+  'settings.git': 'Git',
+  'settings.gitDescription': 'Path to the git executable',
 
   /** Shown in the CLI/GUI when config.yaml has at least one invalid section. */
   'config.invalidBanner':

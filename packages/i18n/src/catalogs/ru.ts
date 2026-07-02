@@ -69,6 +69,9 @@ export const ru: Partial<Catalog> = {
   'settings.theme.light': 'Светлая',
   'settings.theme.dark': 'Тёмная',
   'settings.language': 'Язык',
+  'settings.section.repositories': 'Репозитории',
+  'settings.git': 'Git',
+  'settings.gitDescription': 'Путь к исполняемому файлу git',
 
   'config.invalidBanner':
     'Конфигурация содержит недопустимые разделы. Используются значения по умолчанию.',
