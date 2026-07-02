@@ -67,12 +67,17 @@ const PROD_CSP =
 /**
  * Relaxed dev CSP. The electron-vite dev server serves an inline bootstrap
  * script and drives HMR over a websocket, both of which the strict policy would
- * block. This variant is only used when ELECTRON_RENDERER_URL is set (dev).
+ * block. This variant is only used when ELECTRON_RENDERER_URL is set (dev). It
+ * keeps prod's data: allowance for images/fonts -- without an explicit img-src
+ * these fall back to default-src 'self', which blocks the data: URLs used for
+ * editor icons (app.getFileIcon -> toDataURL).
  */
 const DEV_CSP =
   "default-src 'self'; " +
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
   "style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data:; " +
+  "font-src 'self' data:; " +
   "connect-src 'self' ws: http: https:; " +
   "object-src 'none'; base-uri 'none'";
 
