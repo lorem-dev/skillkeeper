@@ -9,8 +9,8 @@ import { app, BrowserWindow, ipcMain, session } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
 import { createNodeFs, loadState, StateError } from '@skillkeeper/core';
-import { loadConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
-import type { LoadConfigResult } from '@skillkeeper/config';
+import { loadConfig, saveConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
+import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
 // from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
@@ -123,6 +123,30 @@ function registerHandlers(): void {
       };
     }
   });
+
+  /**
+   * config:set -- persist the given config and return the reloaded result
+   * (config, validity, warnings). Never throws; errors are surfaced as
+   * warnings, mirroring the config:get fallback.
+   */
+  ipcMain.handle(
+    'config:set',
+    async (_event, config: SkillKeeperConfig): Promise<LoadConfigResult> => {
+      try {
+        await saveConfig(fs, configPath, config);
+        return await loadConfig(fs, configPath);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          config: defaultConfig,
+          validity: Object.fromEntries(
+            SECTIONS.map((s) => [s, 'invalid']),
+          ) as LoadConfigResult['validity'],
+          warnings: [`Failed to save config: ${message}`],
+        };
+      }
+    },
+  );
 
   /**
    * repositories:list -- read tracked repositories from the state file.

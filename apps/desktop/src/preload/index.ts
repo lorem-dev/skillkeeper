@@ -7,7 +7,7 @@
  * explicitly listed here.
  */
 import { contextBridge, ipcRenderer } from 'electron';
-import type { LoadConfigResult } from '@skillkeeper/config';
+import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
 
 // ---------------------------------------------------------------------------
@@ -18,6 +18,8 @@ import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
 export interface SkillkeeperBridge {
   /** Load config, validity, and warnings from the main process. */
   getConfig(): Promise<LoadConfigResult>;
+  /** Persist the config and return the reloaded result. */
+  setConfig(config: SkillKeeperConfig): Promise<LoadConfigResult>;
   /** List all tracked repositories. */
   listRepositories(): Promise<Repository[]>;
   /** List all installed skills (install manifests from the state file). */
@@ -33,6 +35,9 @@ export interface SkillkeeperBridge {
 const bridge: SkillkeeperBridge = {
   getConfig(): Promise<LoadConfigResult> {
     return ipcRenderer.invoke('config:get') as Promise<LoadConfigResult>;
+  },
+  setConfig(config: SkillKeeperConfig): Promise<LoadConfigResult> {
+    return ipcRenderer.invoke('config:set', config) as Promise<LoadConfigResult>;
   },
   listRepositories(): Promise<Repository[]> {
     return ipcRenderer.invoke('repositories:list') as Promise<Repository[]>;

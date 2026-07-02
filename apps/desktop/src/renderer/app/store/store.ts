@@ -5,12 +5,28 @@
  * never owns domain logic -- it only stores results returned by the bridge.
  */
 import { create } from 'zustand';
-import type { BridgeClient, SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest } from '@/services/bridge';
+import type {
+  BridgeClient,
+  SectionValidity,
+  SkillKeeperConfig,
+  GeneralConfig,
+  RepositoriesConfig,
+  Repository,
+  Project,
+  InstallManifest,
+} from '@/services/bridge';
 import { bridgeClient } from '@/services/bridge';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
+export type { GeneralConfig, RepositoriesConfig };
 export type { Repository, Project, InstallManifest };
+
+/** A partial update to the config, merged into the current config on write. */
+export interface ConfigPatch {
+  general?: Partial<GeneralConfig>;
+  repositories?: Partial<RepositoriesConfig>;
+}
 
 // ---------------------------------------------------------------------------
 // State shape
@@ -51,6 +67,8 @@ export interface SkillkeeperActions {
   loadAll(client: BridgeClient): Promise<void>;
   /** Reload all data using the singleton bridge client. */
   reload(): Promise<void>;
+  /** Merge a partial config patch into the current config and persist it. */
+  updateConfig(patch: ConfigPatch): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -124,5 +142,19 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   async reload() {
     await get().loadAll(bridgeClient);
+  },
+
+  async updateConfig(patch) {
+    const current = get().config;
+    if (current === null) return;
+    const merged: SkillKeeperConfig = {
+      ...current,
+      ...(patch.general !== undefined ? { general: { ...current.general, ...patch.general } } : {}),
+      ...(patch.repositories !== undefined
+        ? { repositories: { ...current.repositories, ...patch.repositories } }
+        : {}),
+    };
+    const result = await bridgeClient.setConfig(merged);
+    get().setConfig(result.config, result.validity, result.warnings);
   },
 }));

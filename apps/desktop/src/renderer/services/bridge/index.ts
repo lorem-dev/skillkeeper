@@ -9,4 +9,7 @@ export type {
   LoadConfigResult,
   SectionValidity,
   SkillKeeperConfig,
+  GeneralConfig,
+  RepositoriesConfig,
+  Lang,
 } from './types';

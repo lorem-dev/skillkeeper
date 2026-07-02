@@ -197,6 +197,11 @@ describe('useSkillkeeperStore', () => {
           validity: validValidity,
           warnings: [],
         }),
+        setConfig: async () => ({
+          config: mockConfig,
+          validity: validValidity,
+          warnings: [],
+        }),
         listRepositories: async () => [mockRepo],
         listSkills: async () => [],
         listProjects: async () => [mockProject],
@@ -215,6 +220,9 @@ describe('useSkillkeeperStore', () => {
     it('stores error message and clears loading when bridge throws', async () => {
       const bridge = {
         getConfig: async (): Promise<never> => {
+          throw new Error('IPC failure');
+        },
+        setConfig: async (): Promise<never> => {
           throw new Error('IPC failure');
         },
         listRepositories: async () => [],
