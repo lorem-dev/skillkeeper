@@ -8,6 +8,8 @@
 
 ### Features
 
+- Watch the config file (polled once per second) and live-reload it in the app
+  when it changes on disk, so external edits are reflected without a restart.
 - Add a control on the Settings screen to open the config file in an editor: a
   split button listing detected editors with their system icons (macOS/Windows),
   a default-app fallback, and the selected editor remembered locally.
