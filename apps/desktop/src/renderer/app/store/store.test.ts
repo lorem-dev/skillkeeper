@@ -207,6 +207,7 @@ describe('useSkillkeeperStore', () => {
         listProjects: async () => [mockProject],
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
+        onConfigChanged: () => () => {},
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);
@@ -232,6 +233,7 @@ describe('useSkillkeeperStore', () => {
         listProjects: async () => [],
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
+        onConfigChanged: () => () => {},
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);

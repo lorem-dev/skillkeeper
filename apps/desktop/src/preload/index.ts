@@ -7,6 +7,7 @@
  * explicitly listed here.
  */
 import { contextBridge, ipcRenderer } from 'electron';
+import type { IpcRendererEvent } from 'electron';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
 import type { EditorOption, OpenResult } from '../main/editors.js';
@@ -31,6 +32,8 @@ export interface SkillkeeperBridge {
   listEditors(): Promise<EditorOption[]>;
   /** Open the config file in the given allowlisted editor id. */
   openConfigInEditor(editorId: string): Promise<OpenResult>;
+  /** Subscribe to config-file changes detected by the main process. Returns an unsubscribe fn. */
+  onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -58,6 +61,13 @@ const bridge: SkillkeeperBridge = {
   },
   openConfigInEditor(editorId: string): Promise<OpenResult> {
     return ipcRenderer.invoke('config:openInEditor', editorId) as Promise<OpenResult>;
+  },
+  onConfigChanged(callback: (result: LoadConfigResult) => void): () => void {
+    const listener = (_event: IpcRendererEvent, result: LoadConfigResult): void => callback(result);
+    ipcRenderer.on('config:changed', listener);
+    return () => {
+      ipcRenderer.removeListener('config:changed', listener);
+    };
   },
 };
 

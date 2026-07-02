@@ -17,6 +17,7 @@ export interface BridgeClient {
   listProjects(): Promise<Project[]>;
   listEditors(): Promise<EditorOption[]>;
   openConfigInEditor(editorId: string): Promise<OpenResult>;
+  onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
 }
 
 /** The live client, backed by the preload bridge on window.skillkeeper. */
@@ -28,4 +29,5 @@ export const bridgeClient: BridgeClient = {
   listProjects: () => window.skillkeeper.listProjects(),
   listEditors: () => window.skillkeeper.listEditors(),
   openConfigInEditor: (editorId) => window.skillkeeper.openConfigInEditor(editorId),
+  onConfigChanged: (callback) => window.skillkeeper.onConfigChanged(callback),
 };
