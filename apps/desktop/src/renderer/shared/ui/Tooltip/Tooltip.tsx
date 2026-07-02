@@ -20,6 +20,12 @@ export interface TooltipProps {
   readonly children: ReactNode;
   /** Side to render on. `auto` (default) picks a side that fits the window. */
   readonly placement?: TooltipPlacement;
+  /**
+   * When true, the trigger renders without a tooltip. Use it to suppress the
+   * bubble while an overlay it belongs to is open (e.g. a SplitButton menu),
+   * so the tooltip does not cover that overlay.
+   */
+  readonly disabled?: boolean;
   readonly className?: string;
 }
 
@@ -65,8 +71,10 @@ function pickSide(trigger: DOMRect, w: number, h: number): Side {
   return AUTO_ORDER.find(fits) ?? 'top';
 }
 
-export function Tooltip({ content, children, placement = 'auto', className }: TooltipProps) {
+export function Tooltip({ content, children, placement = 'auto', disabled = false, className }: TooltipProps) {
   const [open, setOpen] = useState(false);
+  // Suppress the bubble when disabled, even if the trigger is still hovered.
+  const show = open && !disabled;
   const [side, setSide] = useState<Side>(placement === 'auto' ? 'top' : placement);
   // Cross-axis offset (px) applied to the active edge's left/top.
   const [offset, setOffset] = useState(0);
@@ -78,7 +86,7 @@ export function Tooltip({ content, children, placement = 'auto', className }: To
   // bubble is in the DOM. Runs before paint, so there is no visible jump.
   // offsetWidth/Height are used because they ignore the scale reveal transform.
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!show) return;
     const root = rootRef.current;
     const el = bubbleRef.current;
     if (root === null || el === null) return;
@@ -101,7 +109,7 @@ export function Tooltip({ content, children, placement = 'auto', className }: To
 
     setSide(resolved);
     setOffset(next);
-  }, [open, placement]);
+  }, [show, placement]);
 
   const horizontal = side === 'top' || side === 'bottom';
   const style: CSSProperties = horizontal
@@ -117,9 +125,9 @@ export function Tooltip({ content, children, placement = 'auto', className }: To
       onFocus={() => setOpen(true)}
       onBlur={() => setOpen(false)}
     >
-      <span aria-describedby={open ? id : undefined}>{children}</span>
+      <span aria-describedby={show ? id : undefined}>{children}</span>
       <AnimatePresence>
-        {open && (
+        {show && (
           <motion.span
             ref={bubbleRef}
             role="tooltip"

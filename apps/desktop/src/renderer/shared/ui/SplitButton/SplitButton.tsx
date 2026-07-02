@@ -53,7 +53,7 @@ export function SplitButton({ icon, tooltip, onPrimary, items, menuLabel, disabl
 
   return (
     <div ref={rootRef} className="sk-split-button">
-      <Tooltip content={tooltip}>
+      <Tooltip content={tooltip} disabled={open}>
         <button
           type="button"
           className="sk-split-button__primary"
