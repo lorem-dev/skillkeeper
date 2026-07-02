@@ -60,6 +60,15 @@ pnpm build         # tsc project references for all packages + electron-vite for
 
 All four commands must pass before a pull request is ready.
 
+### Verification workflow
+
+Run the full coverage and type verification (`pnpm test:cov`, `pnpm typecheck`,
+`pnpm build`) as a single dedicated step at the END of a change -- not after
+every task. While iterating, write only the minimal tests needed to guarantee
+the code works, and run just the focused test for what you changed (at most a
+quick typecheck of the package you touched). The comprehensive gate above is the
+single final check before a change is considered done or a pull request opened.
+
 ---
 
 ## Conventions
