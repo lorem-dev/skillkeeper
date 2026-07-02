@@ -1,28 +1,46 @@
-/**
- * Settings page: config section validity badges, theme control, language
- * read-only display, and a deferred open-config action.
- */
+import { useEffect, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { useTheme, type ThemePref } from '@/systems/theme';
-import { Page, Card, Badge, Button, Tooltip, SegmentedControl } from '@/shared/ui';
+import { buildLanguageOptions } from '@/domain';
+import type { Lang } from '@/services/bridge';
+import { Page, FormSection, FormRow, Select, TextField } from '@/shared/ui';
 import './SettingsPage.scss';
 
-const SECTION_KEYS = [
-  'general',
-  'updates',
-  'agents',
-  'executables',
-  'security',
-  'notifications',
-] as const;
+interface GitRowProps {
+  readonly value: string;
+  readonly label: string;
+  readonly description: string;
+  readonly onCommit: (value: string) => void;
+}
+
+function GitRow({ value, label, description, onCommit }: GitRowProps) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+  return (
+    <FormRow label={label} description={description}>
+      <TextField
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          const next = draft.trim();
+          if (next !== value) onCommit(next);
+        }}
+      />
+    </FormRow>
+  );
+}
 
 export function SettingsPage() {
   const config = useSkillkeeperStore((s) => s.config);
-  const validity = useSkillkeeperStore((s) => s.configValidity);
+  const updateConfig = useSkillkeeperStore((s) => s.updateConfig);
   const t = useTranslator();
   const { pref, setPref } = useTheme();
 
+  if (config === null) return null;
+
+  const lang = config.general.language;
+  const languageOptions = buildLanguageOptions(lang);
   const themeOptions = [
     { value: 'system', label: t('settings.theme.system') },
     { value: 'light', label: t('settings.theme.light') },
@@ -32,40 +50,31 @@ export function SettingsPage() {
   return (
     <Page title={t('nav.settings')}>
       <div className="sk-settings">
-        <Card className="sk-settings__row">
-          <span>{t('settings.theme')}</span>
-          <SegmentedControl
-            label={t('settings.theme')}
-            options={themeOptions}
-            value={pref}
-            onChange={(v) => setPref(v as ThemePref)}
+        <FormSection title={t('settings.section.general')}>
+          <FormRow label={t('settings.language')}>
+            <Select
+              options={languageOptions}
+              value={lang}
+              onChange={(e) => void updateConfig({ general: { language: e.target.value as Lang } })}
+            />
+          </FormRow>
+          <FormRow label={t('settings.theme')}>
+            <Select
+              options={themeOptions}
+              value={pref}
+              onChange={(e) => setPref(e.target.value as ThemePref)}
+            />
+          </FormRow>
+        </FormSection>
+
+        <FormSection title={t('settings.section.repositories')}>
+          <GitRow
+            value={config.repositories.gitPath}
+            label={t('settings.git')}
+            description={t('settings.gitDescription')}
+            onCommit={(gitPath) => void updateConfig({ repositories: { gitPath } })}
           />
-        </Card>
-
-        {config !== null && (
-          <Card className="sk-settings__row">
-            <span>{t('settings.language')}</span>
-            <Badge tone="neutral">{config.general.language}</Badge>
-          </Card>
-        )}
-
-        {SECTION_KEYS.map((key) => {
-          const state = validity?.[key];
-          return (
-            <Card key={key} className="sk-settings__row">
-              <span>{t(`settings.section.${key}`)}</span>
-              <Badge tone={state === 'invalid' ? 'danger' : 'success'}>
-                {state === 'invalid' ? t('settings.invalid') : t('settings.valid')}
-              </Badge>
-            </Card>
-          );
-        })}
-
-        <div className="sk-settings__actions">
-          <Tooltip content={t('common.comingSoon')}>
-            <Button variant="secondary" disabled>{t('settings.openConfig')}</Button>
-          </Tooltip>
-        </div>
+        </FormSection>
       </div>
     </Page>
   );
