@@ -4,7 +4,7 @@ import { useTranslator } from '@/systems/i18n';
 import { useTheme, type ThemePref } from '@/systems/theme';
 import { buildLanguageOptions } from '@/domain';
 import type { Lang } from '@/services/bridge';
-import { Page, FormSection, FormRow, Select, TextField } from '@/shared/ui';
+import { Page, FormSection, FormRow, Select, SegmentedControl, TextField } from '@/shared/ui';
 import './SettingsPage.scss';
 
 interface GitRowProps {
@@ -59,10 +59,11 @@ export function SettingsPage() {
             />
           </FormRow>
           <FormRow label={t('settings.theme')}>
-            <Select
+            <SegmentedControl
+              label={t('settings.theme')}
               options={themeOptions}
               value={pref}
-              onChange={(e) => setPref(e.target.value as ThemePref)}
+              onChange={(value) => setPref(value as ThemePref)}
             />
           </FormRow>
         </FormSection>
