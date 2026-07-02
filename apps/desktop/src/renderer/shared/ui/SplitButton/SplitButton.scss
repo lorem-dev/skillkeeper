@@ -9,6 +9,14 @@
   display: inline-flex;
   align-items: stretch;
 
+  // Tooltip wraps the primary button in nested spans; the trigger span is
+  // inline by default, so its inline strut makes the primary segment taller
+  // than the toggle and bends the divider. Flex the trigger so the button fills
+  // the shell height cleanly, keeping both segments the same size.
+  .sk-tooltip > span:not(.sk-tooltip__bubble) {
+    display: inline-flex;
+  }
+
   &__primary,
   &__toggle {
     display: inline-flex;
