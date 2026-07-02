@@ -20,7 +20,7 @@ type Story = StoryObj<typeof meta>;
 const dot =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-const editImg = <Icon name="settings" />;
+const editImg = <Icon name="edit" />;
 
 export const WithSystemIcons: Story = {
   args: {

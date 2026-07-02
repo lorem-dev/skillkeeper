@@ -1,5 +1,7 @@
-// SplitButton styles. Co-located; tokens only. The chevron rotates to point
-// down while its resting orientation (from the shared chevron-right asset)
+// SplitButton styles. Co-located; tokens only. Two flush segments -- a primary
+// action and a dropdown toggle -- share one rounded shell, parted by a hairline
+// divider. Interaction states follow design-system 8.1. The chevron rotates to
+// point down while its resting orientation (from the shared chevron-right asset)
 // points at the primary button.
 
 .sk-split-button {
@@ -17,6 +19,30 @@
     border: 0;
     cursor: pointer;
     padding: var(--sk-space-2) var(--sk-space-3);
+    transition: background var(--sk-duration-fast) var(--sk-ease-standard);
+
+    &:hover:not(:disabled) {
+      background: var(--sk-color-fill-1);
+    }
+
+    &:active:not(:disabled) {
+      background: var(--sk-color-fill-1);
+      transform: scale(0.98);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--sk-color-accent);
+      outline-offset: 2px;
+      // Lift the focused segment so its ring draws over the neighbour, keeping
+      // the joined corner crisp.
+      position: relative;
+      z-index: 1;
+    }
+
+    &:disabled {
+      color: var(--sk-color-label-3);
+      cursor: default;
+    }
   }
 
   &__primary {
@@ -26,7 +52,9 @@
 
   &__toggle {
     border-radius: 0 var(--sk-radius-sm) var(--sk-radius-sm) 0;
-    margin-inline-start: 1px;
+    // Hairline divider between the segments -- replaces the old 1px gap that let
+    // the page background show through as a crooked seam.
+    border-inline-start: 1px solid var(--sk-color-separator);
   }
 
   &__chevron {
