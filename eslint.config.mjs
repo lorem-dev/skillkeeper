@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import prettier from 'eslint-config-prettier';
@@ -31,6 +32,7 @@ export default tseslint.config(
   {
     files: ['apps/desktop/src/renderer/**/*.{ts,tsx}'],
     plugins: {
+      react,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
     },
@@ -41,14 +43,7 @@ export default tseslint.config(
       // Guard against XSS: dangerouslySetInnerHTML is banned by default. A
       // genuinely safe use (trusted build-time markup, never user input) may
       // opt in with an eslint-disable-next-line carrying a justification.
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
-          message:
-            'Avoid dangerouslySetInnerHTML (XSS risk). If the markup is a trusted build-time asset, opt in with an eslint-disable-next-line and explain why.',
-        },
-      ],
+      'react/no-danger': 'error',
     },
   },
   // Story files legitimately export non-component values (the CSF default
