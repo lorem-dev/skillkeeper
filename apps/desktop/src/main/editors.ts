@@ -67,19 +67,41 @@ function macAppPath(appName: string): string | undefined {
   return candidates.find((p) => fs.existsSync(p));
 }
 
+/**
+ * Derive an `.app` bundle from a CLI path by resolving symlinks and taking the
+ * enclosing bundle. Many editor CLIs (e.g. VS Code's `code`) are symlinks into
+ * `.../Foo.app/Contents/...`, so this recovers the real app -- and thus a crisp
+ * icon -- when the app is not in a standard /Applications location.
+ */
+function macAppFromCli(cliPath: string): string | undefined {
+  try {
+    const real = fs.realpathSync(cliPath);
+    const marker = real.indexOf('.app/');
+    if (marker !== -1) return real.slice(0, marker + '.app'.length);
+  } catch {
+    // Ignore: fall back to the CLI path for the icon.
+  }
+  return undefined;
+}
+
 /** Resolve a launchable spec to { cliPath?, appPath? } when available. */
 function resolveEditor(spec: EditorSpec): { cliPath?: string; appPath?: string } | undefined {
+  const cliPath = spec.cli !== undefined ? whichCli(spec.cli) : undefined;
+
   if (process.platform === 'darwin' && spec.macApp !== undefined) {
-    const appPath = macAppPath(spec.macApp);
-    if (appPath !== undefined) return { appPath, ...(spec.cli ? { cliPath: whichCli(spec.cli) } : {}) };
+    // Prefer the real .app bundle so the icon is the app's, not a generic
+    // executable glyph: a standard location first, then derived from the CLI
+    // symlink when the app lives elsewhere.
+    const appPath =
+      macAppPath(spec.macApp) ?? (cliPath !== undefined ? macAppFromCli(cliPath) : undefined);
+    if (appPath !== undefined) {
+      return { appPath, ...(cliPath !== undefined ? { cliPath } : {}) };
+    }
   }
-  if (spec.cli !== undefined) {
-    const cliPath = whichCli(spec.cli);
-    if (cliPath !== undefined) return { cliPath };
-  }
+  if (cliPath !== undefined) return { cliPath };
   if (process.platform === 'win32' && spec.winExe !== undefined) {
-    const cliPath = whichCli(spec.winExe);
-    if (cliPath !== undefined) return { cliPath };
+    const winPath = whichCli(spec.winExe);
+    if (winPath !== undefined) return { cliPath: winPath };
   }
   return undefined;
 }
