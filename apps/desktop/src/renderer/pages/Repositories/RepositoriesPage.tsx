@@ -24,8 +24,7 @@ export function RepositoriesPage() {
   );
 
   return (
-    <Page title={t('nav.repositories')}>
-      <Toolbar trailing={trailing} />
+    <Page toolbar={<Toolbar title={t('nav.repositories')} trailing={trailing} />}>
       {repositories.length === 0 ? (
         <p className="sk-empty">{t('repositories.empty')}</p>
       ) : (

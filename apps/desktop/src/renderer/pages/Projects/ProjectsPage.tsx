@@ -23,8 +23,7 @@ export function ProjectsPage() {
   );
 
   return (
-    <Page title={t('nav.projects')}>
-      <Toolbar trailing={trailing} />
+    <Page toolbar={<Toolbar title={t('nav.projects')} trailing={trailing} />}>
       {projects.length === 0 ? (
         <p className="sk-empty">{t('projects.empty')}</p>
       ) : (

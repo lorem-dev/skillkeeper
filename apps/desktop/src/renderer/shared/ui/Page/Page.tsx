@@ -7,7 +7,8 @@ import type { ReactNode } from 'react';
 import './Page.scss';
 
 export interface PageProps {
-  readonly title: string;
+  /** Page heading. Optional when a `toolbar` supplies the heading instead. */
+  readonly title?: string;
   /**
    * Optional Toolbar rendered as the page header. When provided it supplies the
    * heading (its own title) and any trailing actions, and the default title
@@ -20,7 +21,7 @@ export interface PageProps {
 export function Page({ title, toolbar, children }: PageProps) {
   return (
     <main className="sk-page">
-      {toolbar ?? <h1 className="sk-page__title">{title}</h1>}
+      {toolbar ?? (title !== undefined && <h1 className="sk-page__title">{title}</h1>)}
       {children}
     </main>
   );
