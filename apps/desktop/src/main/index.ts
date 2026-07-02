@@ -11,6 +11,7 @@ import os from 'node:os';
 import { createNodeFs, loadState, StateError } from '@skillkeeper/core';
 import { loadConfig, saveConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
+import { listEditors, openInEditor } from './editors.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
 // from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
@@ -147,6 +148,27 @@ function registerHandlers(): void {
       }
     },
   );
+
+  /**
+   * editors:list -- detect installed editors (plus the OS default app) that
+   * can open the config file. Never throws; failures surface as an empty
+   * list so the renderer can fall back gracefully.
+   */
+  ipcMain.handle('editors:list', async () => {
+    try {
+      return await listEditors(configPath);
+    } catch {
+      return [];
+    }
+  });
+
+  /**
+   * config:openInEditor -- launch the given allowlisted editor id (or the OS
+   * default app) on the config file.
+   */
+  ipcMain.handle('config:openInEditor', async (_event, editorId: string) => {
+    return openInEditor(editorId, configPath);
+  });
 
   /**
    * repositories:list -- read tracked repositories from the state file.
