@@ -21,6 +21,7 @@ import plus from './assets/plus.svg?raw';
 import check from './assets/check.svg?raw';
 import chevronRight from './assets/chevron-right.svg?raw';
 import edit from './assets/edit.svg?raw';
+import placeholder from './assets/placeholder.svg?raw';
 
 export type IconName =
   | 'repositories'
@@ -31,7 +32,8 @@ export type IconName =
   | 'plus'
   | 'check'
   | 'chevron-right'
-  | 'edit';
+  | 'edit'
+  | 'placeholder';
 
 const ICONS: Record<IconName, string> = {
   repositories: stripSvgRoot(repositories),
@@ -43,6 +45,7 @@ const ICONS: Record<IconName, string> = {
   check: stripSvgRoot(check),
   'chevron-right': stripSvgRoot(chevronRight),
   edit: stripSvgRoot(edit),
+  placeholder: stripSvgRoot(placeholder),
 };
 
 export interface IconProps {
