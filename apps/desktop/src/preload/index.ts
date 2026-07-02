@@ -9,6 +9,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
+import type { EditorOption, OpenResult } from '../main/editors.js';
 
 // ---------------------------------------------------------------------------
 // Bridge type (exported so the renderer window.d.ts can import it)
@@ -26,6 +27,10 @@ export interface SkillkeeperBridge {
   listSkills(): Promise<InstallManifest[]>;
   /** List all tracked projects. */
   listProjects(): Promise<Project[]>;
+  /** List text editors available on this machine, plus the default-app entry. */
+  listEditors(): Promise<EditorOption[]>;
+  /** Open the config file in the given allowlisted editor id. */
+  openConfigInEditor(editorId: string): Promise<OpenResult>;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,6 +53,14 @@ const bridge: SkillkeeperBridge = {
   listProjects(): Promise<Project[]> {
     return ipcRenderer.invoke('projects:list') as Promise<Project[]>;
   },
+  listEditors(): Promise<EditorOption[]> {
+    return ipcRenderer.invoke('editors:list') as Promise<EditorOption[]>;
+  },
+  openConfigInEditor(editorId: string): Promise<OpenResult> {
+    return ipcRenderer.invoke('config:openInEditor', editorId) as Promise<OpenResult>;
+  },
 };
 
 contextBridge.exposeInMainWorld('skillkeeper', bridge);
+
+export type { EditorOption, OpenResult } from '../main/editors.js';

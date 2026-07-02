@@ -12,4 +12,6 @@ export type {
   GeneralConfig,
   RepositoriesConfig,
   Lang,
+  EditorOption,
+  OpenResult,
 } from './types';

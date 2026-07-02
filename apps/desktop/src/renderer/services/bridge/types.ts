@@ -14,3 +14,4 @@ export type {
   RepositoriesConfig,
 } from '@skillkeeper/config';
 export type { Lang } from '@skillkeeper/i18n';
+export type { EditorOption, OpenResult } from '../../../main/editors.js';
