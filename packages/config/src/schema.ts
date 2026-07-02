@@ -7,8 +7,8 @@ import { z } from 'zod';
 export const generalSchema = z.object({
   /** Display language. Defaults to English. */
   language: z.enum(['en', 'de', 'ru']).default('en'),
-  /** Theme placeholder for future UI use. */
-  theme: z.string().optional(),
+  /** UI theme preference. */
+  theme: z.enum(['system', 'light', 'dark']).default('system'),
   /** Shell command used to open files in the user's editor. */
   defaultEditor: z.string().optional(),
 });
@@ -85,6 +85,17 @@ export const notificationsSchema = z.object({
 export type NotificationsConfig = z.infer<typeof notificationsSchema>;
 
 // ---------------------------------------------------------------------------
+// Section: repositories
+// ---------------------------------------------------------------------------
+
+export const repositoriesSchema = z.object({
+  /** Path to the git executable used for repository operations. */
+  gitPath: z.string().default('git'),
+});
+
+export type RepositoriesConfig = z.infer<typeof repositoriesSchema>;
+
+// ---------------------------------------------------------------------------
 // Aggregate
 // ---------------------------------------------------------------------------
 
@@ -96,6 +107,7 @@ export interface SkillKeeperConfig {
   executables: ExecutablesConfig;
   security: SecurityConfig;
   notifications: NotificationsConfig;
+  repositories: RepositoriesConfig;
 }
 
 /** The config section names as a union type. */
@@ -109,4 +121,5 @@ export const SECTIONS: readonly Section[] = [
   'executables',
   'security',
   'notifications',
+  'repositories',
 ] as const;

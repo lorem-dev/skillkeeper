@@ -31,6 +31,9 @@ security:
 
 notifications:
   enabled: true
+
+repositories:
+  gitPath: /usr/bin/git
 `.trim();
 
 const CONFIG_PATH = '/home/user/.config/skillkeeper/config.yaml';
@@ -46,6 +49,7 @@ describe('loadConfig', () => {
     expect(result.config.executables.globs).toEqual(['*.sh', 'bin/*']);
     expect(result.config.security.hookConsentPolicy).toBe('always-ask');
     expect(result.config.notifications.enabled).toBe(true);
+    expect(result.config.repositories.gitPath).toBe('/usr/bin/git');
 
     expect(result.validity.general).toBe('valid');
     expect(result.validity.updates).toBe('valid');
@@ -53,6 +57,7 @@ describe('loadConfig', () => {
     expect(result.validity.executables).toBe('valid');
     expect(result.validity.security).toBe('valid');
     expect(result.validity.notifications).toBe('valid');
+    expect(result.validity.repositories).toBe('valid');
 
     expect(result.warnings).toHaveLength(0);
   });
@@ -94,6 +99,7 @@ notifications:
     expect(result.validity.executables).toBe('valid');
     expect(result.validity.security).toBe('valid');
     expect(result.validity.notifications).toBe('valid');
+    expect(result.validity.repositories).toBe('valid');
 
     // A warning is added for the invalid section
     expect(result.warnings.length).toBeGreaterThanOrEqual(1);
@@ -193,6 +199,39 @@ notifications:
     // All sections fall back to defaults because raw is an array, not an object.
     expect(result.config).toEqual(defaultConfig);
     expect(Object.values(result.validity).every((v) => v === 'valid')).toBe(true);
+  });
+
+  it('defaults the repositories section to gitPath "git"', async () => {
+    const fs = createMemFs({});
+    const { config, validity } = await loadConfig(fs, '/does/not/exist.yaml');
+    expect(config.repositories.gitPath).toBe('git');
+    expect(validity.repositories).toBe('valid');
+  });
+
+  it('defaults theme to system', async () => {
+    const fs = createMemFs({});
+    const { config } = await loadConfig(fs, '/does/not/exist.yaml');
+    expect(config.general.theme).toBe('system');
+  });
+
+  it('marks repositories section invalid when gitPath is not a string', async () => {
+    const yaml = 'repositories:\n  gitPath: 123\n';
+    const fs = createMemFs({ [CONFIG_PATH]: yaml });
+    const result = await loadConfig(fs, CONFIG_PATH);
+
+    expect(result.validity.repositories).toBe('invalid');
+    expect(result.config.repositories).toEqual(defaultConfig.repositories);
+    expect(result.warnings.some((w) => w.includes('repositories'))).toBe(true);
+  });
+
+  it('marks general section invalid when theme is an unknown value', async () => {
+    const yaml = 'general:\n  theme: neon\n';
+    const fs = createMemFs({ [CONFIG_PATH]: yaml });
+    const result = await loadConfig(fs, CONFIG_PATH);
+
+    expect(result.validity.general).toBe('invalid');
+    expect(result.config.general).toEqual(defaultConfig.general);
+    expect(result.warnings.some((w) => w.includes('general'))).toBe(true);
   });
 });
 

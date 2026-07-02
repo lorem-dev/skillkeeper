@@ -11,6 +11,7 @@ export type {
   ExecutablesConfig,
   SecurityConfig,
   NotificationsConfig,
+  RepositoriesConfig,
   SkillKeeperConfig,
   Section,
 } from './schema.js';
