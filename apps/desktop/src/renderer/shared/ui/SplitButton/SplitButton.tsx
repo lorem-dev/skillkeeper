@@ -61,7 +61,7 @@ export function SplitButton({ icon, tooltip, onPrimary, items, menuLabel, disabl
           disabled={disabled}
           aria-label={tooltip}
         >
-          {icon}
+          <span className="sk-split-button__primary-icon">{icon}</span>
         </button>
       </Tooltip>
       <button
