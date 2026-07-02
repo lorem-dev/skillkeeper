@@ -49,6 +49,7 @@ describe('printConfigWarning', () => {
         executables: 'valid',
         security: 'valid',
         notifications: 'valid',
+        repositories: 'valid',
       },
       warnings: ['Config section "updates" is invalid; using defaults.'],
     };
@@ -75,6 +76,7 @@ describe('printConfigWarning', () => {
         executables: 'valid',
         security: 'valid',
         notifications: 'valid',
+        repositories: 'valid',
       },
       warnings: [],
     };
