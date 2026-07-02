@@ -9,7 +9,9 @@
 .sk-tooltip__bubble {
   position: absolute;
   bottom: calc(100% + 6px);
-  left: 50%;
+  // Centered on the trigger, plus a JS-computed nudge that keeps the bubble
+  // inside the window near an edge (see Tooltip.tsx).
+  left: calc(50% + var(--sk-tooltip-shift, 0px));
   z-index: 50;
   transform-origin: bottom center;
   white-space: nowrap;
