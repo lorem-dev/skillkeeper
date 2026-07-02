@@ -11,6 +11,10 @@
 - Build the desktop screens (Repositories, Projects, Skills, Settings) on the
   shared UI kit with real read-only data via a renderer services layer, entity
   cards, a skills search/filter and details view, and a light/dark theme toggle.
+- Rebuild the desktop Settings screen on the Form kit and persist changes to the
+  config file: live language switch, theme (system/light/dark) via a segmented
+  control, and the git executable path, with a new config write path and a
+  repositories config section.
 - Add Storybook to the desktop app with stories for the shared UI kit
   (Button, Badge, Alert, Toggle, TextField, Select, Slider, Modal) and a
   light/dark theme toggle.
