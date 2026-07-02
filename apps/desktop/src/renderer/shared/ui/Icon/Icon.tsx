@@ -66,6 +66,9 @@ export function Icon({ name, size = 20, label, className }: IconProps) {
       role={label === undefined ? 'presentation' : 'img'}
       aria-hidden={label === undefined ? true : undefined}
       aria-label={label}
+      // ICONS holds our own build-time ./assets/*.svg geometry, never user
+      // input, so injecting it as markup is safe.
+      // eslint-disable-next-line no-restricted-syntax -- trusted build-time icon asset
       dangerouslySetInnerHTML={{ __html: ICONS[name] }}
     />
   );

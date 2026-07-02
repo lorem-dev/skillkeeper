@@ -38,6 +38,17 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // Guard against XSS: dangerouslySetInnerHTML is banned by default. A
+      // genuinely safe use (trusted build-time markup, never user input) may
+      // opt in with an eslint-disable-next-line carrying a justification.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
+          message:
+            'Avoid dangerouslySetInnerHTML (XSS risk). If the markup is a trusted build-time asset, opt in with an eslint-disable-next-line and explain why.',
+        },
+      ],
     },
   },
   // Story files legitimately export non-component values (the CSF default
