@@ -444,10 +444,18 @@ surface for the desktop window.
 
 ### 8.7 Toolbars
 
-A `--sk-glass-regular` bar at the top of a view. Holds icon buttons, a title
-(`--sk-text-title-3`), and trailing actions. Bottom hairline border
-`--sk-color-separator`. Toolbar buttons are plain/glass; the primary action may be
-accent. On scroll, the toolbar stays pinned and content blurs beneath it.
+A transparent header row at the top of a view, composed inside a `Page` via its
+`toolbar` slot. Holds the page title (rendered as the screen `<h1>`), plus
+leading and trailing controls (icon buttons, segmented controls,
+primary/secondary actions). It carries no surface of its own, so it sits flush
+with the page content; an optional bottom hairline (`--sk-color-separator`) is
+available via the `separator` prop when a view wants a divider under the header.
+Controls are vertically centred regardless of height.
+
+> Implemented as [`shared/ui/Toolbar`](../../apps/desktop/src/renderer/shared/ui/Toolbar/Toolbar.tsx)
+> (`title` / `leading` / `trailing` / `separator`). Compose it through
+> [`shared/ui/Page`](../../apps/desktop/src/renderer/shared/ui/Page/Page.tsx)'s
+> `toolbar` slot; see `SettingsPage`, `ProjectsPage`, and `RepositoriesPage`.
 
 ### 8.8 Menus and popovers
 
