@@ -3,36 +3,16 @@ import type { ReactNode } from 'react';
 import { bridgeClient } from '@/services/bridge';
 import type { EditorOption } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
-import { SplitButton, Button, Tooltip } from '@/shared/ui';
+import { SplitButton, Button, Tooltip, Icon } from '@/shared/ui';
 
 const STORAGE_KEY = 'sk-config-editor';
 const DEFAULT_ID = 'default';
-
-/** Small inline "edit" icon (pencil) -- avoids touching the shared Icon set. */
-function EditGlyph() {
-  return (
-    <svg
-      width={20}
-      height={20}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
 
 function editorIcon(option: EditorOption | undefined): ReactNode {
   if (option?.iconDataUrl !== undefined) {
     return <img src={option.iconDataUrl} width={20} height={20} alt="" />;
   }
-  return <EditGlyph />;
+  return <Icon name="edit" />;
 }
 
 /**
@@ -77,7 +57,7 @@ export function OpenConfigButton() {
     return (
       <Tooltip content={tooltip}>
         <Button variant="secondary" aria-label={tooltip} onClick={() => void open(DEFAULT_ID)}>
-          <EditGlyph />
+          <Icon name="edit" />
         </Button>
       </Tooltip>
     );
