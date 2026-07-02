@@ -12,11 +12,24 @@ import { createNodeFs, loadState, StateError } from '@skillkeeper/core';
 import { loadConfig, saveConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import { listEditors, openInEditor } from './editors.js';
+import { createConfigWatcher } from './configWatcher.js';
+import type { ConfigWatcher } from './configWatcher.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
 // from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
 // conflict with bundler-injected `__dirname` shims.
 const moduleDir = import.meta.dirname;
+
+let configWatcher: ConfigWatcher | undefined;
+
+/**
+ * Push a reloaded config result to the renderer, e.g. after an external edit
+ * of the config file is detected by the watcher.
+ */
+function broadcastConfig(result: LoadConfigResult): void {
+  const [win] = BrowserWindow.getAllWindows();
+  win?.webContents.send('config:changed', result);
+}
 
 // ---------------------------------------------------------------------------
 // App-data path resolution (mirrors packages/cli/src/paths.ts exactly)
@@ -107,6 +120,7 @@ function registerHandlers(): void {
   const fs = createNodeFs();
   const configPath = resolveConfigPath();
   const statePath = resolveStatePath();
+  configWatcher = createConfigWatcher(fs, configPath, broadcastConfig);
 
   /**
    * config:get -- load the config file and return it together with per-section
@@ -140,7 +154,9 @@ function registerHandlers(): void {
     async (_event, config: SkillKeeperConfig): Promise<LoadConfigResult> => {
       try {
         await saveConfig(fs, configPath, config);
-        return await loadConfig(fs, configPath);
+        const result = await loadConfig(fs, configPath);
+        await configWatcher?.noteWritten();
+        return result;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return {
@@ -242,6 +258,9 @@ function createWindow(): void {
   } else {
     void win.loadFile(path.join(moduleDir, '../renderer/index.html'));
   }
+
+  configWatcher?.start();
+  win.on('closed', () => configWatcher?.stop());
 }
 
 // ---------------------------------------------------------------------------
