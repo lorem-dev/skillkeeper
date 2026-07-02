@@ -49,11 +49,12 @@ export function SettingsPage() {
   ];
 
   return (
-    <Page title={t('nav.settings')}>
-      {/* Interim placement: Page has no toolbar slot yet, so the toolbar is
-          rendered as a plain row without a title (Page already renders the
-          h1). Migrate to Page's toolbar slot once it lands. */}
-      <Toolbar trailing={<OpenConfigButton />} />
+    <Page
+      title={t('nav.settings')}
+      toolbar={
+        <Toolbar title={t('nav.settings')} trailing={<OpenConfigButton />} separator />
+      }
+    >
       <div className="sk-settings">
         <FormSection title={t('settings.section.general')}>
           <FormRow label={t('settings.language')}>

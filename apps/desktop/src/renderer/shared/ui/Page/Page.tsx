@@ -8,13 +8,19 @@ import './Page.scss';
 
 export interface PageProps {
   readonly title: string;
+  /**
+   * Optional Toolbar rendered as the page header. When provided it supplies the
+   * heading (its own title) and any trailing actions, and the default title
+   * `<h1>` is not rendered. See shared/ui Toolbar.
+   */
+  readonly toolbar?: ReactNode;
   readonly children?: ReactNode;
 }
 
-export function Page({ title, children }: PageProps) {
+export function Page({ title, toolbar, children }: PageProps) {
   return (
     <main className="sk-page">
-      <h1 className="sk-page__title">{title}</h1>
+      {toolbar ?? <h1 className="sk-page__title">{title}</h1>}
       {children}
     </main>
   );
