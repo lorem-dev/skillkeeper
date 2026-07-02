@@ -52,7 +52,7 @@ export function SettingsPage() {
     <Page
       title={t('nav.settings')}
       toolbar={
-        <Toolbar title={t('nav.settings')} trailing={<OpenConfigButton />} separator />
+        <Toolbar title={t('nav.settings')} trailing={<OpenConfigButton />} />
       }
     >
       <div className="sk-settings">
