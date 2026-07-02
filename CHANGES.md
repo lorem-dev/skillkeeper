@@ -8,6 +8,9 @@
 
 ### Features
 
+- Add a control on the Settings screen to open the config file in an editor: a
+  split button listing detected editors with their system icons (macOS/Windows),
+  a default-app fallback, and the selected editor remembered locally.
 - Build the desktop screens (Repositories, Projects, Skills, Settings) on the
   shared UI kit with real read-only data via a renderer services layer, entity
   cards, a skills search/filter and details view, and a light/dark theme toggle.
