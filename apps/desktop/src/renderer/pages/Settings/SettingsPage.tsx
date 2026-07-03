@@ -2,9 +2,20 @@ import { useEffect, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { useTheme, type ThemePref } from '@/systems/theme';
-import { buildLanguageOptions } from '@/domain';
-import type { Lang } from '@/services/bridge';
-import { Page, Toolbar, FormSection, FormRow, Select, SegmentedControl, TextField } from '@/shared/ui';
+import { buildLanguageOptions, AGENT_LABELS, ALL_AGENTS } from '@/domain';
+import type { Lang, AgentKind, UpdatesConfig } from '@/services/bridge';
+import {
+  Page,
+  Toolbar,
+  FormSection,
+  FormRow,
+  Select,
+  SegmentedControl,
+  TextField,
+  Stepper,
+  Toggle,
+  MultiSelect,
+} from '@/shared/ui';
 import { OpenConfigButton } from './OpenConfigButton';
 import './SettingsPage.scss';
 
@@ -70,6 +81,60 @@ export function SettingsPage() {
               options={themeOptions}
               value={pref}
               onChange={(value) => setPref(value as ThemePref)}
+            />
+          </FormRow>
+        </FormSection>
+
+        <FormSection title={t('settings.section.updates')}>
+          <FormRow label={t('settings.updates.mode')}>
+            <SegmentedControl
+              label={t('settings.updates.mode')}
+              options={[
+                { value: 'manual', label: t('settings.updates.mode.manual') },
+                { value: 'on-startup', label: t('settings.updates.mode.onStartup') },
+                { value: 'scheduled', label: t('settings.updates.mode.scheduled') },
+              ]}
+              value={config.updates.mode}
+              onChange={(v) => void updateConfig({ updates: { mode: v as UpdatesConfig['mode'] } })}
+            />
+          </FormRow>
+          <FormRow label={t('settings.updates.interval')}>
+            <Stepper
+              value={config.updates.intervalHours}
+              onChange={(intervalHours) => void updateConfig({ updates: { intervalHours } })}
+              min={1}
+              max={168}
+              label={t('settings.updates.interval')}
+              decreaseLabel={t('common.decrease')}
+              increaseLabel={t('common.increase')}
+            />
+          </FormRow>
+          <FormRow label={t('settings.updates.checkOnStartup')}>
+            <Toggle
+              checked={config.updates.checkOnStartup}
+              onChange={(e) => void updateConfig({ updates: { checkOnStartup: e.target.checked } })}
+            />
+          </FormRow>
+        </FormSection>
+
+        <FormSection title={t('settings.section.agents')}>
+          <FormRow label={t('settings.agents.enabled')}>
+            <MultiSelect
+              options={ALL_AGENTS.map((a) => ({ value: a, label: AGENT_LABELS[a] }))}
+              value={config.agents.enabled}
+              onChange={(next) => void updateConfig({ agents: { enabled: next as AgentKind[] } })}
+              placeholder={t('settings.agents.placeholder')}
+              summary={(count) => t('settings.agents.selected', { count: String(count) })}
+              ariaLabel={t('settings.agents.enabled')}
+            />
+          </FormRow>
+        </FormSection>
+
+        <FormSection title={t('settings.section.notifications')}>
+          <FormRow label={t('settings.notifications.enabled')}>
+            <Toggle
+              checked={config.notifications.enabled}
+              onChange={(e) => void updateConfig({ notifications: { enabled: e.target.checked } })}
             />
           </FormRow>
         </FormSection>

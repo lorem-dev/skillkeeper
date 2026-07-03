@@ -10,6 +10,9 @@ import type {
   SectionValidity,
   SkillKeeperConfig,
   GeneralConfig,
+  UpdatesConfig,
+  AgentsConfig,
+  NotificationsConfig,
   RepositoriesConfig,
   Repository,
   Project,
@@ -19,12 +22,15 @@ import { bridgeClient } from '@/services/bridge';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
-export type { GeneralConfig, RepositoriesConfig };
+export type { GeneralConfig, UpdatesConfig, AgentsConfig, NotificationsConfig, RepositoriesConfig };
 export type { Repository, Project, InstallManifest };
 
 /** A partial update to the config, merged into the current config on write. */
 export interface ConfigPatch {
   general?: Partial<GeneralConfig>;
+  updates?: Partial<UpdatesConfig>;
+  agents?: Partial<AgentsConfig>;
+  notifications?: Partial<NotificationsConfig>;
   repositories?: Partial<RepositoriesConfig>;
 }
 
@@ -150,6 +156,11 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     const merged: SkillKeeperConfig = {
       ...current,
       ...(patch.general !== undefined ? { general: { ...current.general, ...patch.general } } : {}),
+      ...(patch.updates !== undefined ? { updates: { ...current.updates, ...patch.updates } } : {}),
+      ...(patch.agents !== undefined ? { agents: { ...current.agents, ...patch.agents } } : {}),
+      ...(patch.notifications !== undefined
+        ? { notifications: { ...current.notifications, ...patch.notifications } }
+        : {}),
       ...(patch.repositories !== undefined
         ? { repositories: { ...current.repositories, ...patch.repositories } }
         : {}),

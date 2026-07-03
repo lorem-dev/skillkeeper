@@ -11,6 +11,9 @@ export type {
   SectionValidity,
   SkillKeeperConfig,
   GeneralConfig,
+  UpdatesConfig,
+  AgentsConfig,
+  NotificationsConfig,
   RepositoriesConfig,
 } from '@skillkeeper/config';
 export type { Lang } from '@skillkeeper/i18n';
