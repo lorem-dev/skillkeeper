@@ -90,6 +90,10 @@ $themes: (
   --sk-space-7: 24px;
   --sk-space-8: 32px;
 
+  // Shared height for interactive controls (buttons, text fields, selects,
+  // search, segmented, stepper) so they align on one baseline in rows/toolbars.
+  --sk-control-height: 32px;
+
   // elevation
   --sk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.08);
   --sk-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.12);

@@ -4,12 +4,16 @@
 .sk-stepper {
   display: inline-flex;
   align-items: stretch;
+  height: var(--sk-control-height);
   background: var(--sk-color-fill-2);
   border-radius: var(--sk-radius-lg);
   overflow: hidden;
 }
 
 .sk-stepper__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   appearance: none;
   border: none;
   background: transparent;
@@ -21,7 +25,7 @@
   line-height: 1;
   color: var(--sk-color-label);
   width: 34px;
-  padding: var(--sk-space-2) 0;
+  padding: 0;
   transition: background var(--sk-duration-fast) var(--sk-ease-standard);
 
   &:hover:not(:disabled) {
@@ -60,6 +64,9 @@
   font-size: 14px;
   font-variant-numeric: tabular-nums;
   color: var(--sk-color-label);
+  // The value is a display, not selectable text.
+  user-select: none;
+  -webkit-user-select: none;
   border-left: 0.5px solid var(--sk-color-separator);
   border-right: 0.5px solid var(--sk-color-separator);
 }

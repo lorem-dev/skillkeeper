@@ -15,13 +15,14 @@
   // labels do not fit, the component swaps to a "Selected N" summary (see
   // MultiSelect.tsx) rather than stretching.
   width: 240px;
+  height: var(--sk-control-height);
   font: inherit;
   font-size: 14px;
   color: var(--sk-color-label);
   background: var(--sk-color-fill-3);
   border: 1px solid transparent;
   border-radius: var(--sk-radius-sm);
-  padding: var(--sk-space-3) var(--sk-space-3) var(--sk-space-3) var(--sk-space-4);
+  padding: 0 var(--sk-space-3) 0 var(--sk-space-4);
   cursor: pointer;
   transition:
     border-color var(--sk-duration-fast) var(--sk-ease-standard),

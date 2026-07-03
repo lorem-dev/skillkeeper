@@ -19,7 +19,8 @@
   background: var(--sk-color-fill-3);
   border: 1px solid transparent;
   border-radius: var(--sk-radius-sm);
-  padding: var(--sk-space-3) var(--sk-space-4);
+  height: var(--sk-control-height);
+  padding: 0 var(--sk-space-4);
   transition:
     border-color var(--sk-duration-fast) var(--sk-ease-standard),
     background var(--sk-duration-fast) var(--sk-ease-standard);
