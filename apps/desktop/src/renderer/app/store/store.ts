@@ -47,6 +47,8 @@ export interface SkillkeeperState {
   configWarnings: string[];
   /** Tracked repositories. */
   repositories: Repository[];
+  /** Per-repository UI status (not persisted). */
+  repoStatus: Record<string, { phase: 'idle' | 'cloning' | 'syncing'; hasUpdate: boolean }>;
   /** Installed skills. */
   skills: InstallManifest[];
   /** Tracked projects. */
@@ -75,6 +77,11 @@ export interface SkillkeeperActions {
   reload(): Promise<void>;
   /** Merge a partial config patch into the current config and persist it. */
   updateConfig(patch: ConfigPatch): Promise<void>;
+  addRepository(url: string, name: string): Promise<void>;
+  updateRepository(id: string, name: string, url: string): Promise<void>;
+  removeRepository(id: string): Promise<void>;
+  syncRepository(id: string): Promise<void>;
+  refreshRepoUpdates(): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,6 +96,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   configValidity: null,
   configWarnings: [],
   repositories: [],
+  repoStatus: {},
   skills: [],
   projects: [],
   loading: false,
@@ -167,5 +175,83 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     };
     const result = await bridgeClient.setConfig(merged);
     get().setConfig(result.config, result.validity, result.warnings);
+  },
+
+  addRepository(url, name) {
+    return (async () => {
+      const added = await bridgeClient.addRepository(url, name);
+      if (!added.ok) {
+        get().setError(added.error);
+        return;
+      }
+      const repo = added.repository;
+      set((s) => ({
+        repositories: [...s.repositories, repo],
+        repoStatus: { ...s.repoStatus, [repo.id]: { phase: 'cloning', hasUpdate: false } },
+      }));
+      const cloned = await bridgeClient.cloneRepository(repo.id);
+      set((s) => ({
+        repositories: cloned.ok
+          ? s.repositories.map((r) => (r.id === repo.id ? cloned.repository : r))
+          : s.repositories,
+        repoStatus: { ...s.repoStatus, [repo.id]: { phase: 'idle', hasUpdate: false } },
+      }));
+      if (!cloned.ok) get().setError(cloned.error);
+    })();
+  },
+
+  updateRepository(id, name, url) {
+    return (async () => {
+      const res = await bridgeClient.updateRepository(id, name, url);
+      if (!res.ok) {
+        get().setError(res.error);
+        return;
+      }
+      const updated = res.repository;
+      set((s) => ({ repositories: s.repositories.map((r) => (r.id === id ? updated : r)) }));
+    })();
+  },
+
+  removeRepository(id) {
+    return (async () => {
+      const res = await bridgeClient.removeRepository(id);
+      if (!res.ok) {
+        get().setError(res.error);
+        return;
+      }
+      set((s) => {
+        const { [id]: _removed, ...rest } = s.repoStatus;
+        return { repositories: s.repositories.filter((r) => r.id !== id), repoStatus: rest };
+      });
+    })();
+  },
+
+  syncRepository(id) {
+    return (async () => {
+      set((s) => ({ repoStatus: { ...s.repoStatus, [id]: { phase: 'syncing', hasUpdate: s.repoStatus[id]?.hasUpdate ?? false } } }));
+      const res = await bridgeClient.syncRepository(id);
+      set((s) => ({
+        repositories: res.ok ? s.repositories.map((r) => (r.id === id ? res.repository : r)) : s.repositories,
+        repoStatus: { ...s.repoStatus, [id]: { phase: 'idle', hasUpdate: false } },
+      }));
+      if (!res.ok) get().setError(res.error);
+    })();
+  },
+
+  refreshRepoUpdates() {
+    return (async () => {
+      const repos = get().repositories;
+      await Promise.all(
+        repos.map(async (r) => {
+          const hasUpdate = await bridgeClient.repoHasUpdate(r.id);
+          set((s) => ({
+            repoStatus: {
+              ...s.repoStatus,
+              [r.id]: { phase: s.repoStatus[r.id]?.phase ?? 'idle', hasUpdate },
+            },
+          }));
+        }),
+      );
+    })();
   },
 }));
