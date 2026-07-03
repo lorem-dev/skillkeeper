@@ -87,3 +87,49 @@ export const Actions: Story = {
     />
   ),
 };
+
+export const Listbox: Story = {
+  render: () => {
+    const [value, setValue] = useState('New York');
+    const anchorRef = useRef<HTMLSpanElement>(null);
+    const [open, setOpen] = useState(false);
+    return (
+      <div style={{ padding: 40 }}>
+        <span ref={anchorRef} style={{ display: 'inline-flex' }}>
+          <Button onClick={() => setOpen((v) => !v)}>{`City: ${value}`}</Button>
+        </span>
+        <Menu
+          open={open}
+          onClose={() => setOpen(false)}
+          anchorRef={anchorRef}
+          role="listbox"
+          ariaLabel="City"
+          items={cities.map((c) => ({ id: c, label: c, selected: c === value, onSelect: () => setValue(c) }))}
+        />
+      </div>
+    );
+  },
+};
+
+export const LongScrolling: Story = {
+  render: () => {
+    const anchorRef = useRef<HTMLSpanElement>(null);
+    const [open, setOpen] = useState(false);
+    const many = Array.from({ length: 40 }, (_, i) => `Item ${i + 1}`);
+    return (
+      <div style={{ padding: 40 }}>
+        <span ref={anchorRef} style={{ display: 'inline-flex' }}>
+          <Button onClick={() => setOpen((v) => !v)}>Long list</Button>
+        </span>
+        <Menu
+          open={open}
+          onClose={() => setOpen(false)}
+          anchorRef={anchorRef}
+          role="listbox"
+          ariaLabel="Long list"
+          items={many.map((m) => ({ id: m, label: m, selected: false, onSelect: () => {} }))}
+        />
+      </div>
+    );
+  },
+};
