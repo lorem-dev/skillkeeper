@@ -8,12 +8,22 @@
 import { app, BrowserWindow, ipcMain, session } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
-import { createNodeFs, loadState, StateError } from '@skillkeeper/core';
+import { createNodeFs, loadState, StateError, createSystemGit } from '@skillkeeper/core';
+import type { HostEnv } from '@skillkeeper/core';
 import { loadConfig, saveConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import { listEditors, openInEditor } from './editors.js';
 import { createConfigWatcher } from './configWatcher.js';
 import type { ConfigWatcher } from './configWatcher.js';
+import {
+  addRepository,
+  cloneRepository,
+  updateRepository,
+  removeRepository,
+  syncRepository,
+  hasRepoUpdate,
+} from './repositories.js';
+import type { RepoDeps } from './repositories.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
 // from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
@@ -121,6 +131,18 @@ function registerHandlers(): void {
   const configPath = resolveConfigPath();
   const statePath = resolveStatePath();
   configWatcher = createConfigWatcher(fs, configPath, broadcastConfig);
+
+  const hostEnv: HostEnv = {
+    homeDir: os.homedir(),
+    platform: process.platform,
+    env: process.env as Record<string, string | undefined>,
+  };
+  const repoDeps: RepoDeps = {
+    fs,
+    git: createSystemGit(hostEnv),
+    statePath,
+    reposDir: path.join(resolveAppDataDir(), 'repositories'),
+  };
 
   /**
    * config:get -- load the config file and return it together with per-section
@@ -230,6 +252,15 @@ function registerHandlers(): void {
       throw err;
     }
   });
+
+  ipcMain.handle('repositories:add', (_e, args: { url: string; name: string }) => addRepository(repoDeps, args));
+  ipcMain.handle('repositories:clone', (_e, args: { id: string }) => cloneRepository(repoDeps, args));
+  ipcMain.handle('repositories:update', (_e, args: { id: string; name: string; url: string }) =>
+    updateRepository(repoDeps, args),
+  );
+  ipcMain.handle('repositories:remove', (_e, args: { id: string }) => removeRepository(repoDeps, args));
+  ipcMain.handle('repositories:sync', (_e, args: { id: string }) => syncRepository(repoDeps, args));
+  ipcMain.handle('repositories:hasUpdate', (_e, args: { id: string }) => hasRepoUpdate(repoDeps, args));
 }
 
 // ---------------------------------------------------------------------------
