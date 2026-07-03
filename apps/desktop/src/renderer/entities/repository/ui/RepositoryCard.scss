@@ -30,8 +30,16 @@
 .sk-repo-card__actions {
   display: flex;
   align-items: center;
-  gap: var(--sk-space-3);
+  gap: var(--sk-space-2);
   flex: none;
+}
+
+// Square icon buttons (Sync / Edit): drop the text-button horizontal padding so
+// each is a control-height square with a centered glyph -- even sizing and even
+// spacing across the action row.
+.sk-repo-card__icon-btn {
+  width: var(--sk-control-height);
+  padding: 0;
 }
 
 // Fixed-width slot so the row does not reflow between dot / spinner / empty.

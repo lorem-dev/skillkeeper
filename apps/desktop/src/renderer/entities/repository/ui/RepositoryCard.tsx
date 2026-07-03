@@ -41,10 +41,21 @@ export function RepositoryCard({
             <span className="sk-repo-card__update-dot" title={updateLabel} />
           ) : null}
         </span>
-        <Button variant="plain" onClick={onSync} disabled={busy} aria-label={syncLabel}>
+        <Button
+          variant="secondary"
+          className="sk-repo-card__icon-btn"
+          onClick={onSync}
+          disabled={busy}
+          aria-label={syncLabel}
+        >
           <Icon name="sync" />
         </Button>
-        <Button variant="plain" onClick={onEdit} aria-label={editLabel}>
+        <Button
+          variant="secondary"
+          className="sk-repo-card__icon-btn"
+          onClick={onEdit}
+          aria-label={editLabel}
+        >
           <Icon name="edit" />
         </Button>
       </div>
