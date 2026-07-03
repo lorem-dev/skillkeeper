@@ -10,6 +10,7 @@ import check from './assets/check.svg?raw';
 import chevronRight from './assets/chevron-right.svg?raw';
 import edit from './assets/edit.svg?raw';
 import placeholder from './assets/placeholder.svg?raw';
+import sync from './assets/sync.svg?raw';
 
 const assets: Record<string, string> = {
   repositories,
@@ -22,6 +23,7 @@ const assets: Record<string, string> = {
   'chevron-right': chevronRight,
   edit,
   placeholder,
+  sync,
 };
 
 describe('Icon assets', () => {

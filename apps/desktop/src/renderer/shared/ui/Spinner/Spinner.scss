@@ -21,6 +21,20 @@
   font-size: 13px;
 }
 
+// Icon-only spinner: keep the label for assistive tech but remove it visually
+// (and from layout, so the ring stands alone with no gap).
+.sk-spinner__label--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @keyframes sk-spin {
   to {
     transform: rotate(360deg);

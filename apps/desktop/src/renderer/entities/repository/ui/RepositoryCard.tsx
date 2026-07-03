@@ -35,14 +35,14 @@ export function RepositoryCard({
         <span className="sk-repo-card__status" aria-hidden={!busy && !hasUpdate}>
           {busy ? (
             <div className="sk-repo-card__spinner-box">
-              <Spinner />
+              <Spinner labelHidden />
             </div>
           ) : hasUpdate ? (
             <span className="sk-repo-card__update-dot" title={updateLabel} />
           ) : null}
         </span>
-        <Button variant="secondary" onClick={onSync} disabled={busy}>
-          {syncLabel}
+        <Button variant="plain" onClick={onSync} disabled={busy} aria-label={syncLabel}>
+          <Icon name="sync" />
         </Button>
         <Button variant="plain" onClick={onEdit} aria-label={editLabel}>
           <Icon name="edit" />
