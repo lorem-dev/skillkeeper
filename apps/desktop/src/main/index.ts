@@ -15,6 +15,7 @@ import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import { listEditors, openInEditor } from './editors.js';
 import { createConfigWatcher } from './configWatcher.js';
 import type { ConfigWatcher } from './configWatcher.js';
+import { ensureSshAgent, stopSshAgent } from './sshAgent.js';
 import {
   addRepository,
   cloneRepository,
@@ -300,7 +301,8 @@ function createWindow(): void {
 
 registerHandlers();
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
+  await ensureSshAgent();
   installCsp();
   createWindow();
 
@@ -310,6 +312,10 @@ void app.whenReady().then(() => {
       createWindow();
     }
   });
+});
+
+app.on('before-quit', () => {
+  stopSshAgent();
 });
 
 app.on('window-all-closed', () => {
