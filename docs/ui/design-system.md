@@ -465,6 +465,10 @@ Controls are vertically centred regardless of height.
 - Popover: `--sk-glass-regular`, `--sk-radius-xl`, `--sk-shadow-2`, with an optional
   arrow toward its anchor. Used for transient detail/edit panels.
 
+> Implemented as [`shared/ui/Menu`](../../apps/desktop/src/renderer/shared/ui/Menu/Menu.tsx):
+> a portaled, window-aware floating list (single/multi/action items) that backs
+> the app's dropdowns. Selection state is owned by the consumer.
+
 ### 8.9 Alerts and sheets
 
 - Alert: centered `--sk-glass-thick` panel, `--sk-radius-2xl`, max width ~320px,
