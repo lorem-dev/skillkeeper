@@ -20,7 +20,9 @@ export interface GlassSurfaceProps extends GlassRefractionOptions {
 
 export function GlassSurface({ children, className, ...options }: GlassSurfaceProps) {
   const ref = useRef<HTMLDivElement>(null);
-  useGlassRefraction(ref, options);
+  // A slightly stronger default backdrop blur reads as more solid frosted glass;
+  // callers can still override `blur` via props.
+  useGlassRefraction(ref, { blur: 4, ...options });
   return (
     <div ref={ref} className={cx('sk-glass-surface', className)}>
       {children}
