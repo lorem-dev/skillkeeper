@@ -26,12 +26,14 @@ export const Idle: Story = {
     repository: sampleRepository,
     phase: 'idle',
     hasUpdate: false,
+    errorLabel: 'Click to view the error',
     syncLabel: 'Sync',
     syncingLabel: 'Syncing',
     editLabel: 'Edit repository',
     updateLabel: 'Update available',
     onSync: () => {},
     onEdit: () => {},
+    onErrorClick: () => {},
   },
 };
 
@@ -40,12 +42,14 @@ export const HasUpdate: Story = {
     repository: sampleRepository,
     phase: 'idle',
     hasUpdate: true,
+    errorLabel: 'Click to view the error',
     syncLabel: 'Sync',
     syncingLabel: 'Syncing',
     editLabel: 'Edit repository',
     updateLabel: 'Update available',
     onSync: () => {},
     onEdit: () => {},
+    onErrorClick: () => {},
   },
 };
 
@@ -54,12 +58,14 @@ export const Cloning: Story = {
     repository: sampleRepository,
     phase: 'cloning',
     hasUpdate: false,
+    errorLabel: 'Click to view the error',
     syncLabel: 'Sync',
     syncingLabel: 'Syncing',
     editLabel: 'Edit repository',
     updateLabel: 'Update available',
     onSync: () => {},
     onEdit: () => {},
+    onErrorClick: () => {},
   },
 };
 
@@ -68,11 +74,30 @@ export const Syncing: Story = {
     repository: sampleRepository,
     phase: 'syncing',
     hasUpdate: false,
+    errorLabel: 'Click to view the error',
     syncLabel: 'Sync',
     syncingLabel: 'Syncing',
     editLabel: 'Edit repository',
     updateLabel: 'Update available',
     onSync: () => {},
     onEdit: () => {},
+    onErrorClick: () => {},
+  },
+};
+
+export const HasError: Story = {
+  args: {
+    repository: sampleRepository,
+    phase: 'idle',
+    hasUpdate: false,
+    error: 'clone failed: repository not found',
+    errorLabel: 'Click to view the error',
+    syncLabel: 'Sync',
+    syncingLabel: 'Syncing',
+    editLabel: 'Edit repository',
+    updateLabel: 'Update available',
+    onSync: () => {},
+    onEdit: () => {},
+    onErrorClick: () => {},
   },
 };

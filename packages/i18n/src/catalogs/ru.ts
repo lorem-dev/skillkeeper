@@ -43,6 +43,7 @@ export const ru: Partial<Catalog> = {
   'repositories.delete': 'Удалить',
   'repositories.deleteConfirm': 'Подтвердить удаление',
   'repositories.hasUpdate': 'Доступно обновление',
+  'repositories.viewError': 'Нажмите, чтобы посмотреть ошибку',
 
   'projects.empty': 'Проекты еще не отслеживаются.',
   'projects.add': 'Добавить проект',

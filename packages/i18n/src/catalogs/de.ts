@@ -44,6 +44,7 @@ export const de: Partial<Catalog> = {
   'repositories.delete': 'Löschen',
   'repositories.deleteConfirm': 'Löschen bestätigen',
   'repositories.hasUpdate': 'Update verfügbar',
+  'repositories.viewError': 'Zum Anzeigen des Fehlers klicken',
 
   'projects.empty': 'Noch keine Projekte erfasst.',
   'projects.add': 'Projekt hinzufügen',

@@ -64,3 +64,16 @@
   border-radius: var(--sk-radius-pill);
   background: var(--sk-color-accent);
 }
+
+// "View error" dot: a clickable red circle, priority over the update dot.
+.sk-repo-card__error-dot {
+  display: block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-red);
+  cursor: pointer;
+}

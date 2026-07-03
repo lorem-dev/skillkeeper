@@ -46,6 +46,7 @@ export const en = {
   'repositories.delete': 'Delete',
   'repositories.deleteConfirm': 'Confirm delete',
   'repositories.hasUpdate': 'Update available',
+  'repositories.viewError': 'Click to view the error',
 
   'projects.empty': 'No projects tracked yet.',
   'projects.add': 'Add project',

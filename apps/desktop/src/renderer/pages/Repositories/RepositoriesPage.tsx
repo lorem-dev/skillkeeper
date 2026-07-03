@@ -18,6 +18,7 @@ export function RepositoriesPage() {
   const syncRepository = useSkillkeeperStore((s) => s.syncRepository);
   const refreshRepoUpdates = useSkillkeeperStore((s) => s.refreshRepoUpdates);
   const reload = useSkillkeeperStore((s) => s.reload);
+  const showRepoError = useSkillkeeperStore((s) => s.showRepoError);
   const t = useTranslator();
   const [editing, setEditing] = useState<Repository | null>(null);
 
@@ -44,12 +45,15 @@ export function RepositoriesPage() {
               repository={r}
               phase={repoStatus[r.id]?.phase ?? 'idle'}
               hasUpdate={repoStatus[r.id]?.hasUpdate ?? false}
+              error={repoStatus[r.id]?.error}
               syncLabel={t('repositories.sync')}
               syncingLabel={t('repositories.syncing')}
               editLabel={t('repositories.edit')}
               updateLabel={t('repositories.hasUpdate')}
+              errorLabel={t('repositories.viewError')}
               onSync={() => void syncRepository(r.id)}
               onEdit={() => setEditing(r)}
+              onErrorClick={() => showRepoError(r.id)}
             />
           ))}
         </div>
