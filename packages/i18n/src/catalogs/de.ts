@@ -28,6 +28,8 @@ export const de: Partial<Catalog> = {
   'common.decrease': 'Verringern',
   'common.increase': 'Erhöhen',
 
+  'notifications.error': 'Fehler',
+
   'repositories.empty': 'Noch keine Repositories hinzugefügt.',
   'repositories.add': 'Repository hinzufügen',
   'repositories.lfs': 'LFS',

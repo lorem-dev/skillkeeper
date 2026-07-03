@@ -27,6 +27,8 @@ export const ru: Partial<Catalog> = {
   'common.decrease': 'Уменьшить',
   'common.increase': 'Увеличить',
 
+  'notifications.error': 'Ошибка',
+
   'repositories.empty': 'Репозитории еще не добавлены.',
   'repositories.add': 'Добавить репозиторий',
   'repositories.lfs': 'LFS',

@@ -29,6 +29,8 @@ export const en = {
   'common.decrease': 'Decrease',
   'common.increase': 'Increase',
 
+  'notifications.error': 'Error',
+
   /** Empty-state copy for each page. */
   'repositories.empty': 'No repositories added yet.',
   'repositories.add': 'Add repository',

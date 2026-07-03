@@ -17,6 +17,7 @@ import { SkillsPage } from '@/pages/Skills';
 import { ProjectsPage } from '@/pages/Projects';
 import { SettingsPage } from '@/pages/Settings';
 import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
+import { Toasts } from '@/systems/notifications';
 import './App.scss';
 
 type View = 'repositories' | 'skills' | 'projects' | 'settings';
@@ -85,6 +86,7 @@ export function App() {
           {!loading && renderView()}
         </div>
       </div>
+      <Toasts />
     </div>
   );
 }
