@@ -37,6 +37,7 @@ export const ru: Partial<Catalog> = {
   'repositories.edit': 'Редактировать репозиторий',
   'repositories.save': 'Сохранить',
   'repositories.sync': 'Синхронизировать',
+  'repositories.syncing': 'Синхронизация…',
   'repositories.delete': 'Удалить',
   'repositories.deleteConfirm': 'Подтвердить удаление',
   'repositories.hasUpdate': 'Доступно обновление',

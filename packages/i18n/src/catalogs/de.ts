@@ -38,6 +38,7 @@ export const de: Partial<Catalog> = {
   'repositories.edit': 'Repository bearbeiten',
   'repositories.save': 'Speichern',
   'repositories.sync': 'Sync',
+  'repositories.syncing': 'Wird synchronisiert',
   'repositories.delete': 'Löschen',
   'repositories.deleteConfirm': 'Löschen bestätigen',
   'repositories.hasUpdate': 'Update verfügbar',

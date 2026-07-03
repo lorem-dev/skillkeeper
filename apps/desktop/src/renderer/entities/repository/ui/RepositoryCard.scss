@@ -54,8 +54,10 @@
   padding: 0;
 }
 
-// "Update available" dot, trailing the repository name.
+// "Update available" dot, trailing the repository name. display:block so its
+// width/height apply even when it sits inside the Tooltip's inline wrapper span.
 .sk-repo-card__update-dot {
+  display: block;
   flex: none;
   width: 8px;
   height: 8px;

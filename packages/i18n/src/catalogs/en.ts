@@ -40,6 +40,7 @@ export const en = {
   'repositories.edit': 'Edit repository',
   'repositories.save': 'Save',
   'repositories.sync': 'Sync',
+  'repositories.syncing': 'Syncing',
   'repositories.delete': 'Delete',
   'repositories.deleteConfirm': 'Confirm delete',
   'repositories.hasUpdate': 'Update available',

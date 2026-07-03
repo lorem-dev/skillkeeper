@@ -45,6 +45,7 @@ export function RepositoriesPage() {
               phase={repoStatus[r.id]?.phase ?? 'idle'}
               hasUpdate={repoStatus[r.id]?.hasUpdate ?? false}
               syncLabel={t('repositories.sync')}
+              syncingLabel={t('repositories.syncing')}
               editLabel={t('repositories.edit')}
               updateLabel={t('repositories.hasUpdate')}
               onSync={() => void syncRepository(r.id)}
