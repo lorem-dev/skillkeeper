@@ -3,7 +3,7 @@
  * a Menu as a single-select listbox. Generic -- no product knowledge; text via
  * props. See docs/ui/components.md.
  */
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { cx } from '../../lib';
 import { Menu } from '../Menu';
@@ -33,6 +33,7 @@ export interface SelectProps {
 export function Select({ label, options, value, onChange, placeholder, ariaLabel, disabled, className }: SelectProps) {
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
+  const labelId = useId();
 
   const current = options.find((o) => o.value === value);
   const items: MenuItem[] = options.map((o) => ({
@@ -52,6 +53,7 @@ export function Select({ label, options, value, onChange, placeholder, ariaLabel
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
+        aria-labelledby={label !== undefined ? labelId : undefined}
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
       >
@@ -75,7 +77,7 @@ export function Select({ label, options, value, onChange, placeholder, ariaLabel
 
   return (
     <span className={cx('sk-select', className)}>
-      <span className="sk-select__label">{label}</span>
+      <span id={labelId} className="sk-select__label">{label}</span>
       {control}
     </span>
   );
