@@ -61,7 +61,7 @@ export function SettingsPage() {
             <Select
               options={languageOptions}
               value={lang}
-              onChange={(e) => void updateConfig({ general: { language: e.target.value as Lang } })}
+              onChange={(v) => void updateConfig({ general: { language: v as Lang } })}
             />
           </FormRow>
           <FormRow label={t('settings.theme')}>

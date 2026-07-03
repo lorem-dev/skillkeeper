@@ -31,7 +31,7 @@ export const Settings: Story = {
           <FormRow label="Language">
             <Select
               value={lang}
-              onChange={(e) => setLang(e.target.value)}
+              onChange={setLang}
               options={[
                 { value: 'en', label: 'English' },
                 { value: 'de', label: 'Deutsch' },

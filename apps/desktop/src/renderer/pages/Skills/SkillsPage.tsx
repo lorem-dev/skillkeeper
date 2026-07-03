@@ -54,7 +54,7 @@ export function SkillsPage() {
         label={t('skills.filterAgent')}
         options={agentOptions}
         value={agent}
-        onChange={(e) => setAgent(e.target.value as AgentKind | 'all')}
+        onChange={(v) => setAgent(v as AgentKind | 'all')}
       />
     </>
   );

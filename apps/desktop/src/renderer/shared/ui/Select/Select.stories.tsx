@@ -5,6 +5,7 @@ import { Select } from './Select';
 const meta = {
   title: 'shared/ui/Select',
   component: Select,
+  args: { options: [], value: '', onChange: () => {} },
 } satisfies Meta<typeof Select>;
 
 export default meta;
@@ -22,13 +23,13 @@ const options = [
 export const Default: Story = {
   render: () => {
     const [value, setValue] = useState('claude');
-    return <Select label="Agent" options={options} value={value} onChange={(e) => setValue(e.target.value)} />;
+    return <Select label="Agent" options={options} value={value} onChange={setValue} />;
   },
 };
 
 export const NoLabel: Story = {
   render: () => {
     const [value, setValue] = useState('claude');
-    return <Select options={options} value={value} onChange={(e) => setValue(e.target.value)} />;
+    return <Select options={options} value={value} onChange={setValue} />;
   },
 };

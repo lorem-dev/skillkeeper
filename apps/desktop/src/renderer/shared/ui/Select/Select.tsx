@@ -1,10 +1,14 @@
 /**
- * Select primitive. A styled native <select> (the open list stays OS-native for
- * accessibility) with a custom chevron. Pass `options` or <option> children.
- * Generic -- no product knowledge. See docs/ui/components.md.
+ * Select primitive: a pop-up trigger showing the current value's label, opening
+ * a Menu as a single-select listbox. Generic -- no product knowledge; text via
+ * props. See docs/ui/components.md.
  */
-import type { SelectHTMLAttributes, ReactNode } from 'react';
+import { useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { cx } from '../../lib';
+import { Menu } from '../Menu';
+import type { MenuItem } from '../Menu';
+import { Icon } from '../Icon';
 import './Select.scss';
 
 export interface SelectOption {
@@ -13,37 +17,55 @@ export interface SelectOption {
   readonly disabled?: boolean;
 }
 
-export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps {
   /** Optional label rendered above the control. */
   readonly label?: ReactNode;
-  /** Convenience option list; alternatively pass <option> children. */
-  readonly options?: readonly SelectOption[];
+  readonly options: readonly SelectOption[];
+  readonly value: string;
+  readonly onChange: (value: string) => void;
+  /** Shown when `value` matches no option. */
+  readonly placeholder?: ReactNode;
+  readonly ariaLabel?: string;
+  readonly disabled?: boolean;
+  readonly className?: string;
 }
 
-export function Select({ label, options, className, children, ...rest }: SelectProps) {
+export function Select({ label, options, value, onChange, placeholder, ariaLabel, disabled, className }: SelectProps) {
+  const anchorRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+
+  const current = options.find((o) => o.value === value);
+  const items: MenuItem[] = options.map((o) => ({
+    id: o.value,
+    label: o.label,
+    disabled: o.disabled,
+    selected: o.value === value,
+    onSelect: () => onChange(o.value),
+  }));
+
   const control = (
     <span className="sk-select__wrap">
-      <select className="sk-select__input" {...rest}>
-        {options !== undefined
-          ? options.map((o) => (
-              <option key={o.value} value={o.value} disabled={o.disabled}>
-                {o.label}
-              </option>
-            ))
-          : children}
-      </select>
-      <span className="sk-select__chevron" aria-hidden="true">
-        <svg viewBox="0 0 12 12">
-          <path
-            d="M3 4.5 L6 7.5 L9 4.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
+      <button
+        ref={anchorRef}
+        type="button"
+        className="sk-select__trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="sk-select__value">{current?.label ?? placeholder}</span>
+        <Icon name="chevron-right" className="sk-select__chevron" size={16} />
+      </button>
+      <Menu
+        open={open}
+        onClose={() => setOpen(false)}
+        anchorRef={anchorRef}
+        items={items}
+        role="listbox"
+        ariaLabel={ariaLabel}
+      />
     </span>
   );
 
@@ -52,9 +74,9 @@ export function Select({ label, options, className, children, ...rest }: SelectP
   }
 
   return (
-    <label className={cx('sk-select', className)}>
+    <span className={cx('sk-select', className)}>
       <span className="sk-select__label">{label}</span>
       {control}
-    </label>
+    </span>
   );
 }
