@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useSkillkeeperStore } from './store';
 import type { SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest } from './store';
+import type { RepoResult, RemoveResult } from '@/services/bridge';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -208,6 +209,12 @@ describe('useSkillkeeperStore', () => {
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
         onConfigChanged: () => () => {},
+        addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        cloneRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        updateRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        removeRepository: async () => ({ ok: true } as RemoveResult),
+        syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        repoHasUpdate: async () => false,
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);
@@ -234,6 +241,12 @@ describe('useSkillkeeperStore', () => {
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
         onConfigChanged: () => () => {},
+        addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        cloneRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        updateRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        removeRepository: async () => ({ ok: true } as RemoveResult),
+        syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        repoHasUpdate: async () => false,
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);

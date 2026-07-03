@@ -11,6 +11,7 @@ import type { IpcRendererEvent } from 'electron';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
 import type { EditorOption, OpenResult } from '../main/editors.js';
+import type { RepoResult, RemoveResult } from '../main/repositories.js';
 
 // ---------------------------------------------------------------------------
 // Bridge type (exported so the renderer window.d.ts can import it)
@@ -34,6 +35,12 @@ export interface SkillkeeperBridge {
   openConfigInEditor(editorId: string): Promise<OpenResult>;
   /** Subscribe to config-file changes detected by the main process. Returns an unsubscribe fn. */
   onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
+  addRepository(url: string, name: string): Promise<RepoResult>;
+  cloneRepository(id: string): Promise<RepoResult>;
+  updateRepository(id: string, name: string, url: string): Promise<RepoResult>;
+  removeRepository(id: string): Promise<RemoveResult>;
+  syncRepository(id: string): Promise<RepoResult>;
+  repoHasUpdate(id: string): Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,8 +76,27 @@ const bridge: SkillkeeperBridge = {
       ipcRenderer.removeListener('config:changed', listener);
     };
   },
+  addRepository(url, name) {
+    return ipcRenderer.invoke('repositories:add', { url, name }) as Promise<RepoResult>;
+  },
+  cloneRepository(id) {
+    return ipcRenderer.invoke('repositories:clone', { id }) as Promise<RepoResult>;
+  },
+  updateRepository(id, name, url) {
+    return ipcRenderer.invoke('repositories:update', { id, name, url }) as Promise<RepoResult>;
+  },
+  removeRepository(id) {
+    return ipcRenderer.invoke('repositories:remove', { id }) as Promise<RemoveResult>;
+  },
+  syncRepository(id) {
+    return ipcRenderer.invoke('repositories:sync', { id }) as Promise<RepoResult>;
+  },
+  repoHasUpdate(id) {
+    return ipcRenderer.invoke('repositories:hasUpdate', { id }) as Promise<boolean>;
+  },
 };
 
 contextBridge.exposeInMainWorld('skillkeeper', bridge);
 
 export type { EditorOption, OpenResult } from '../main/editors.js';
+export type { RepoResult, RemoveResult } from '../main/repositories.js';

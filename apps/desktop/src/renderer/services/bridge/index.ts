@@ -17,4 +17,6 @@ export type {
   Lang,
   EditorOption,
   OpenResult,
+  RepoResult,
+  RemoveResult,
 } from './types';
