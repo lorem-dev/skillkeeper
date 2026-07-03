@@ -30,6 +30,14 @@ export const de: Partial<Catalog> = {
 
   'notifications.error': 'Fehler',
 
+  'statusbar.notifications': 'Fehler: {count}',
+
+  'logs.title': 'Fehlerprotokoll',
+  'logs.empty': 'Keine Fehler protokolliert.',
+  'logs.copy': 'Kopieren',
+  'logs.copyAll': 'Alle kopieren',
+  'logs.clear': 'Protokoll leeren',
+
   'repositories.empty': 'Noch keine Repositories hinzugefügt.',
   'repositories.add': 'Repository hinzufügen',
   'repositories.lfs': 'LFS',

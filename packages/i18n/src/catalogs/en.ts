@@ -31,6 +31,14 @@ export const en = {
 
   'notifications.error': 'Error',
 
+  'statusbar.notifications': 'Errors: {count}',
+
+  'logs.title': 'Error log',
+  'logs.empty': 'No errors logged.',
+  'logs.copy': 'Copy',
+  'logs.copyAll': 'Copy all',
+  'logs.clear': 'Clear log',
+
   /** Empty-state copy for each page. */
   'repositories.empty': 'No repositories added yet.',
   'repositories.add': 'Add repository',

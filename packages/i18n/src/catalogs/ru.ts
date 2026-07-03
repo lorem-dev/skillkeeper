@@ -29,6 +29,14 @@ export const ru: Partial<Catalog> = {
 
   'notifications.error': 'Ошибка',
 
+  'statusbar.notifications': 'Ошибки: {count}',
+
+  'logs.title': 'Журнал ошибок',
+  'logs.empty': 'Ошибок пока нет.',
+  'logs.copy': 'Копировать',
+  'logs.copyAll': 'Копировать все',
+  'logs.clear': 'Очистить журнал',
+
   'repositories.empty': 'Репозитории еще не добавлены.',
   'repositories.add': 'Добавить репозиторий',
   'repositories.lfs': 'LFS',
