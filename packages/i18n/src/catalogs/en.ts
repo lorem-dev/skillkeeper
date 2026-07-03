@@ -85,7 +85,6 @@ export const en = {
   'settings.updates.mode.onStartup': 'On startup',
   'settings.updates.mode.scheduled': 'Scheduled',
   'settings.updates.interval': 'Check interval (hours)',
-  'settings.updates.checkOnStartup': 'Check on startup',
   'settings.agents.enabled': 'Enabled agents',
   'settings.agents.placeholder': 'Choose agents',
   'settings.agents.selected': 'Selected {count}',

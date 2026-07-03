@@ -21,10 +21,13 @@ export type GeneralConfig = z.infer<typeof generalSchema>;
 
 export const updatesSchema = z.object({
   /** When to check for skill and repository updates. */
-  mode: z.enum(['manual', 'on-startup', 'scheduled']).default('manual'),
+  mode: z.enum(['manual', 'on-startup', 'scheduled']).default('on-startup'),
   /** How often to check (hours) when mode is "scheduled". Must be positive. */
   intervalHours: z.number().int().positive().default(24),
-  /** Run a check each time SkillKeeper starts (independent of mode). */
+  /**
+   * For "scheduled" mode: also run a check on startup (not just on the interval).
+   * Not shown in Settings -- the "on-startup" mode covers the common case.
+   */
   checkOnStartup: z.boolean().default(false),
 });
 

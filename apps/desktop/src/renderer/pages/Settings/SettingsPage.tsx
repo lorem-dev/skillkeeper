@@ -109,12 +109,6 @@ export function SettingsPage() {
               increaseLabel={t('common.increase')}
             />
           </FormRow>
-          <FormRow label={t('settings.updates.checkOnStartup')}>
-            <Toggle
-              checked={config.updates.checkOnStartup}
-              onChange={(e) => void updateConfig({ updates: { checkOnStartup: e.target.checked } })}
-            />
-          </FormRow>
         </FormSection>
 
         <FormSection title={t('settings.section.agents')}>

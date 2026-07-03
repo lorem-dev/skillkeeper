@@ -83,7 +83,6 @@ export const de: Partial<Catalog> = {
   'settings.updates.mode.onStartup': 'Beim Start',
   'settings.updates.mode.scheduled': 'Geplant',
   'settings.updates.interval': 'Prüfintervall (Stunden)',
-  'settings.updates.checkOnStartup': 'Beim Start prüfen',
   'settings.agents.enabled': 'Aktivierte Agenten',
   'settings.agents.placeholder': 'Agenten wählen',
   'settings.agents.selected': 'Ausgewählt: {count}',

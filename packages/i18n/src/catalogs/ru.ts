@@ -82,7 +82,6 @@ export const ru: Partial<Catalog> = {
   'settings.updates.mode.onStartup': 'При запуске',
   'settings.updates.mode.scheduled': 'По расписанию',
   'settings.updates.interval': 'Интервал проверки (часы)',
-  'settings.updates.checkOnStartup': 'Проверять при запуске',
   'settings.agents.enabled': 'Активные агенты',
   'settings.agents.placeholder': 'Выберите агентов',
   'settings.agents.selected': 'Выбрано: {count}',
