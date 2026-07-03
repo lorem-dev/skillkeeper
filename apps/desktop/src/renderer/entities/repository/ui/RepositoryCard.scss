@@ -17,11 +17,12 @@
 .sk-repo-card__name-row {
   display: flex;
   align-items: center;
-  gap: var(--sk-space-2);
+  gap: var(--sk-space-3);
   min-width: 0;
 }
 
 .sk-repo-card__name {
+  min-width: 0;
   font-size: 14px;
   font-weight: 600;
   color: var(--sk-color-label);
