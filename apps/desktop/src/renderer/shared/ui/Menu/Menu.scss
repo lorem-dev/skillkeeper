@@ -11,7 +11,9 @@
   flex-direction: column;
   min-width: 180px;
   max-width: 320px;
-  padding: var(--sk-space-1);
+  // 3px inner padding: a touch more breathing room around the items than the
+  // 2px --sk-space-1 (no token sits at 3px).
+  padding: 3px;
   margin: 0;
   overflow: hidden;
   outline: none;
