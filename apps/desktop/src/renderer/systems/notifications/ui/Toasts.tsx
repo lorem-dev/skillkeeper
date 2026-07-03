@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Alert } from '@/shared/ui';
+import { fadeRise } from '@/shared/lib';
 import './Toasts.scss';
 
 /** How long a toast stays before it auto-dismisses (ms). */
@@ -20,8 +21,8 @@ export function Toasts() {
 
   // One stable auto-dismiss timer per toast. Timers live in a ref so a newly
   // added toast never resets an existing toast's countdown; gone toasts have
-  // their timer cleared. (The motion.div stays a direct AnimatePresence child so
-  // its exit animation runs -- hence timers are managed here, not in a wrapper.)
+  // their timer cleared. (The motion.button stays a direct AnimatePresence child
+  // so its exit animation runs -- hence timers are managed here, not in a wrapper.)
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   useEffect(() => {
     for (const toast of toasts) {
@@ -52,23 +53,20 @@ export function Toasts() {
     <div className="sk-toasts" aria-live="polite">
       <AnimatePresence>
         {toasts.map((toast) => (
-          <motion.div
+          <motion.button
             key={toast.id}
+            type="button"
             className="sk-toasts__item"
-            role="button"
-            tabIndex={0}
             onClick={() => dismissToast(toast.id)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') dismissToast(toast.id);
-            }}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
+            variants={fadeRise}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
             <Alert tone="danger" title={t('notifications.error')}>
               {toast.message}
             </Alert>
-          </motion.div>
+          </motion.button>
         ))}
       </AnimatePresence>
     </div>
