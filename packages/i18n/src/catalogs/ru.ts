@@ -24,6 +24,8 @@ export const ru: Partial<Catalog> = {
   'common.comingSoon': 'Скоро будет',
   'common.close': 'Закрыть',
   'common.clear': 'Очистить',
+  'common.decrease': 'Уменьшить',
+  'common.increase': 'Увеличить',
 
   'repositories.empty': 'Репозитории еще не добавлены.',
   'repositories.add': 'Добавить репозиторий',
@@ -75,6 +77,16 @@ export const ru: Partial<Catalog> = {
   'settings.section.repositories': 'Репозитории',
   'settings.git': 'Git',
   'settings.gitDescription': 'Путь к исполняемому файлу git',
+  'settings.updates.mode': 'Проверка обновлений',
+  'settings.updates.mode.manual': 'Вручную',
+  'settings.updates.mode.onStartup': 'При запуске',
+  'settings.updates.mode.scheduled': 'По расписанию',
+  'settings.updates.interval': 'Интервал проверки (часы)',
+  'settings.updates.checkOnStartup': 'Проверять при запуске',
+  'settings.agents.enabled': 'Активные агенты',
+  'settings.agents.placeholder': 'Выберите агентов',
+  'settings.agents.selected': 'Выбрано: {count}',
+  'settings.notifications.enabled': 'Системные уведомления',
 
   'config.invalidBanner':
     'Конфигурация содержит недопустимые разделы. Используются значения по умолчанию.',

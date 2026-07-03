@@ -25,6 +25,8 @@ export const de: Partial<Catalog> = {
   'common.comingSoon': 'Demnächst verfügbar',
   'common.close': 'Schließen',
   'common.clear': 'Löschen',
+  'common.decrease': 'Verringern',
+  'common.increase': 'Erhöhen',
 
   'repositories.empty': 'Noch keine Repositories hinzugefügt.',
   'repositories.add': 'Repository hinzufügen',
@@ -76,6 +78,16 @@ export const de: Partial<Catalog> = {
   'settings.section.repositories': 'Repositories',
   'settings.git': 'Git',
   'settings.gitDescription': 'Pfad zur Git-Programmdatei',
+  'settings.updates.mode': 'Aktualisierungen',
+  'settings.updates.mode.manual': 'Manuell',
+  'settings.updates.mode.onStartup': 'Beim Start',
+  'settings.updates.mode.scheduled': 'Geplant',
+  'settings.updates.interval': 'Prüfintervall (Stunden)',
+  'settings.updates.checkOnStartup': 'Beim Start prüfen',
+  'settings.agents.enabled': 'Aktivierte Agenten',
+  'settings.agents.placeholder': 'Agenten wählen',
+  'settings.agents.selected': 'Ausgewählt: {count}',
+  'settings.notifications.enabled': 'Systembenachrichtigungen',
 
   'config.invalidBanner':
     'Die Konfiguration enthält ungültige Abschnitte. Standardwerte werden verwendet. Führen Sie "skillkeeper config validate" aus.',

@@ -26,6 +26,8 @@ export const en = {
   'common.comingSoon': 'Coming soon',
   'common.close': 'Close',
   'common.clear': 'Clear',
+  'common.decrease': 'Decrease',
+  'common.increase': 'Increase',
 
   /** Empty-state copy for each page. */
   'repositories.empty': 'No repositories added yet.',
@@ -78,6 +80,16 @@ export const en = {
   'settings.section.repositories': 'Repositories',
   'settings.git': 'Git',
   'settings.gitDescription': 'Path to the git executable',
+  'settings.updates.mode': 'Update checks',
+  'settings.updates.mode.manual': 'Manual',
+  'settings.updates.mode.onStartup': 'On startup',
+  'settings.updates.mode.scheduled': 'Scheduled',
+  'settings.updates.interval': 'Check interval (hours)',
+  'settings.updates.checkOnStartup': 'Check on startup',
+  'settings.agents.enabled': 'Enabled agents',
+  'settings.agents.placeholder': 'Choose agents',
+  'settings.agents.selected': 'Selected {count}',
+  'settings.notifications.enabled': 'System notifications',
 
   /** Shown in the CLI/GUI when config.yaml has at least one invalid section. */
   'config.invalidBanner':
