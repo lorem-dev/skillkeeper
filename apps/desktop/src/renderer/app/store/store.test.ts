@@ -256,4 +256,30 @@ describe('useSkillkeeperStore', () => {
       expect(state.error).toBe('IPC failure');
     });
   });
+
+  describe('error-log page state', () => {
+    beforeEach(() => {
+      useSkillkeeperStore.setState({ errorLog: [], toasts: [], repoStatus: {}, logsOpen: false });
+    });
+
+    it('openLogs / closeLogs toggle logsOpen', () => {
+      const s = useSkillkeeperStore.getState();
+      expect(useSkillkeeperStore.getState().logsOpen).toBe(false);
+      s.openLogs();
+      expect(useSkillkeeperStore.getState().logsOpen).toBe(true);
+      s.closeLogs();
+      expect(useSkillkeeperStore.getState().logsOpen).toBe(false);
+    });
+
+    it('clearErrorLog empties the log but leaves toasts and repo errors intact', () => {
+      const s = useSkillkeeperStore.getState();
+      s.notify('boom', 'repo-1');
+      expect(useSkillkeeperStore.getState().errorLog).toHaveLength(1);
+      expect(useSkillkeeperStore.getState().toasts).toHaveLength(1);
+      useSkillkeeperStore.getState().clearErrorLog();
+      expect(useSkillkeeperStore.getState().errorLog).toHaveLength(0);
+      expect(useSkillkeeperStore.getState().toasts).toHaveLength(1);
+      expect(useSkillkeeperStore.getState().repoStatus['repo-1']?.error).toBe('boom');
+    });
+  });
 });

@@ -62,6 +62,8 @@ export interface SkillkeeperState {
   errorLog: ErrorEntry[];
   /** Currently-visible toasts. */
   toasts: ErrorEntry[];
+  /** Whether the full-screen error-log page is open. */
+  logsOpen: boolean;
   /** Installed skills. */
   skills: InstallManifest[];
   /** Tracked projects. */
@@ -101,6 +103,12 @@ export interface SkillkeeperActions {
   dismissToast(id: string): void;
   /** Re-show the toast for a repo's current error (does not re-log). */
   showRepoError(repoId: string): void;
+  /** Open the full-screen error-log page. */
+  openLogs(): void;
+  /** Close the full-screen error-log page. */
+  closeLogs(): void;
+  /** Empty the error log. Leaves toasts and per-repo errors intact. */
+  clearErrorLog(): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +126,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   repoStatus: {},
   errorLog: [],
   toasts: [],
+  logsOpen: false,
   skills: [],
   projects: [],
   loading: false,
@@ -185,6 +194,18 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     if (message === undefined) return;
     const entry: ErrorEntry = { id: crypto.randomUUID(), message, repoId, at: new Date().toISOString() };
     set((s) => ({ toasts: [...s.toasts, entry] }));
+  },
+
+  openLogs() {
+    set({ logsOpen: true });
+  },
+
+  closeLogs() {
+    set({ logsOpen: false });
+  },
+
+  clearErrorLog() {
+    set({ errorLog: [] });
   },
 
   async loadAll(client) {
