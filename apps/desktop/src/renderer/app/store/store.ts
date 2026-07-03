@@ -232,7 +232,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const res = await bridgeClient.syncRepository(id);
       set((s) => ({
         repositories: res.ok ? s.repositories.map((r) => (r.id === id ? res.repository : r)) : s.repositories,
-        repoStatus: { ...s.repoStatus, [id]: { phase: 'idle', hasUpdate: false } },
+        repoStatus: {
+          ...s.repoStatus,
+          [id]: { phase: 'idle', hasUpdate: res.ok ? false : (s.repoStatus[id]?.hasUpdate ?? false) },
+        },
       }));
       if (!res.ok) get().setError(res.error);
     })();
