@@ -3,7 +3,7 @@
  * per-entry and copy-all clipboard actions and a clear-log action. Open state
  * lives in the store (logsOpen); Escape or the close button dismisses it.
  */
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
@@ -29,6 +29,13 @@ export function LogsPage() {
   // Newest first, without mutating store state.
   const entries = [...errorLog].reverse();
 
+  // Focus the overlay once when it opens (not on every re-render -- a background
+  // notify() re-renders this component and must not yank focus back).
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (logsOpen) overlayRef.current?.focus();
+  }, [logsOpen]);
+
   const copy = useCallback((text: string) => {
     void navigator.clipboard.writeText(text);
   }, []);
@@ -47,7 +54,7 @@ export function LogsPage() {
           aria-label={t('logs.title')}
           tabIndex={-1}
           onKeyDown={onKeyDown}
-          ref={(node) => node?.focus()}
+          ref={overlayRef}
           variants={fade}
           initial="initial"
           animate="animate"

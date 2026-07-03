@@ -28,6 +28,8 @@
   padding: 0 var(--sk-space-1);
   border-radius: var(--sk-radius-pill);
   background: var(--sk-red);
+  // Always-white count text on the red pill; there is no on-danger token, so this
+  // is the one allowed literal here (mirrors Badge's danger treatment).
   color: #fff;
   font-size: 10px;
   line-height: 16px;
