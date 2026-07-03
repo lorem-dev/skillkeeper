@@ -11,6 +11,9 @@ import chevronRight from './assets/chevron-right.svg?raw';
 import edit from './assets/edit.svg?raw';
 import placeholder from './assets/placeholder.svg?raw';
 import sync from './assets/sync.svg?raw';
+import bell from './assets/bell.svg?raw';
+import copy from './assets/copy.svg?raw';
+import close from './assets/close.svg?raw';
 
 const assets: Record<string, string> = {
   repositories,
@@ -24,6 +27,9 @@ const assets: Record<string, string> = {
   edit,
   placeholder,
   sync,
+  bell,
+  copy,
+  close,
 };
 
 describe('Icon assets', () => {
