@@ -13,10 +13,21 @@
   min-width: 0;
 }
 
+// Title row: the name plus a trailing "update available" dot.
+.sk-repo-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  min-width: 0;
+}
+
 .sk-repo-card__name {
   font-size: 14px;
   font-weight: 600;
   color: var(--sk-color-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sk-repo-card__url {
@@ -42,24 +53,9 @@
   padding: 0;
 }
 
-// Fixed-width slot so the row does not reflow between dot / spinner / empty.
-.sk-repo-card__status {
-  display: inline-flex;
-  width: 16px;
-  height: 16px;
-  align-items: center;
-  justify-content: center;
-}
-
-.sk-repo-card__spinner-box {
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+// "Update available" dot, trailing the repository name.
 .sk-repo-card__update-dot {
+  flex: none;
   width: 8px;
   height: 8px;
   border-radius: var(--sk-radius-pill);

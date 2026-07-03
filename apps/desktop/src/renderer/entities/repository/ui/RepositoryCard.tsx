@@ -28,19 +28,13 @@ export function RepositoryCard({
   return (
     <Card className="sk-repo-card">
       <div className="sk-repo-card__main">
-        <span className="sk-repo-card__name">{repository.name}</span>
+        <span className="sk-repo-card__name-row">
+          <span className="sk-repo-card__name">{repository.name}</span>
+          {hasUpdate && <span className="sk-repo-card__update-dot" title={updateLabel} />}
+        </span>
         <span className="sk-repo-card__url">{repository.url}</span>
       </div>
       <div className="sk-repo-card__actions">
-        <span className="sk-repo-card__status" aria-hidden={!busy && !hasUpdate}>
-          {busy ? (
-            <div className="sk-repo-card__spinner-box">
-              <Spinner labelHidden />
-            </div>
-          ) : hasUpdate ? (
-            <span className="sk-repo-card__update-dot" title={updateLabel} />
-          ) : null}
-        </span>
         <Button
           variant="secondary"
           className="sk-repo-card__icon-btn"
@@ -48,7 +42,7 @@ export function RepositoryCard({
           disabled={busy}
           aria-label={syncLabel}
         >
-          <Icon name="sync" />
+          {busy ? <Spinner labelHidden /> : <Icon name="sync" />}
         </Button>
         <Button
           variant="secondary"
