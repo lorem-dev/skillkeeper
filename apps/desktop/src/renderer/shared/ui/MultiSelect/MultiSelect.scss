@@ -3,14 +3,17 @@
 
 .sk-multiselect {
   display: inline-flex;
+  max-width: 100%;
 }
 
 .sk-multiselect__trigger {
   display: inline-flex;
   align-items: center;
   gap: var(--sk-space-2);
-  width: 100%;
-  min-width: 160px;
+  // Stay tidy: size to content between a floor and a ceiling; the value
+  // ellipsizes past the ceiling instead of stretching without bound.
+  min-width: 140px;
+  max-width: 240px;
   font: inherit;
   font-size: 14px;
   color: var(--sk-color-label);
