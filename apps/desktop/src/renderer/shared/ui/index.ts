@@ -65,3 +65,5 @@ export { Alert } from './Alert';
 export type { AlertProps, AlertTone } from './Alert';
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
+export { Menu } from './Menu';
+export type { MenuItem, MenuProps, MenuPlacement } from './Menu';

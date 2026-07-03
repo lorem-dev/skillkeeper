@@ -1,0 +1,83 @@
+// Menu styles. Co-located; tokens only (design-system.md 8.8). A floating glass
+// list positioned in a portal (see Menu.tsx). Opaque @supports fallback per
+// Section 4, matching the other glass surfaces.
+
+@use '../../../styles/glass';
+
+.sk-menu {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  max-width: 320px;
+  padding: var(--sk-space-1);
+  margin: 0;
+  overflow: hidden;
+  outline: none;
+  background: var(--sk-glass-tint);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: var(--sk-radius-lg);
+  box-shadow: var(--sk-shadow-2);
+
+  @include glass.border;
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    background: var(--sk-color-bg-tertiary);
+  }
+}
+
+.sk-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  width: 100%;
+  padding: var(--sk-space-2) var(--sk-space-3);
+  border: 0;
+  border-radius: var(--sk-radius-sm);
+  background: none;
+  color: var(--sk-color-label);
+  font: inherit;
+  font-size: 14px;
+  text-align: start;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+
+  &--active:not(:disabled) {
+    background: var(--sk-color-fill-3);
+  }
+
+  &:disabled {
+    color: var(--sk-color-label-3);
+    cursor: default;
+  }
+}
+
+.sk-menu__check {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--sk-color-accent);
+}
+
+.sk-menu__icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.sk-menu__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
