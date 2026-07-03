@@ -50,6 +50,11 @@ export function buildLfsPullArgs(): string[] {
   return ['lfs', 'pull'];
 }
 
+/** Build `git remote set-url origin <url>` arguments. */
+export function buildSetRemoteUrlArgs(url: string): string[] {
+  return ['remote', 'set-url', 'origin', '--', url];
+}
+
 /** The default runner shells out via execFile (argument array, no shell). */
 function defaultRunner(env: HostEnv): GitRunner {
   return {
@@ -93,6 +98,9 @@ export function createSystemGit(env: HostEnv, runner?: GitRunner): GitPort {
     },
     async lfsPull(repoPath: string): Promise<void> {
       await r.run(buildLfsPullArgs(), repoPath);
+    },
+    async setRemoteUrl(repoPath: string, url: string): Promise<void> {
+      await r.run(buildSetRemoteUrlArgs(url), repoPath);
     },
   };
 }

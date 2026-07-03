@@ -40,6 +40,10 @@ export { parseSkillManifest, parseHookManifest, ManifestError } from './manifest
 export { repoConfigSchema, parseRepoConfig, RepoConfigError } from './repoConfig.js';
 export type { RepoConfig } from './repoConfig.js';
 
+// Remote URL parsing.
+export { parseRemote } from './repoRemote.js';
+export type { ParsedRemote } from './repoRemote.js';
+
 // Resolver.
 export { resolveSkills } from './resolver.js';
 export type { ResolveResult } from './resolver.js';
@@ -93,6 +97,7 @@ export {
   buildPullArgs,
   buildRevParseArgs,
   buildLfsPullArgs,
+  buildSetRemoteUrlArgs,
 } from './git/systemGit.js';
 export type { GitRunner, RunResult } from './git/systemGit.js';
 

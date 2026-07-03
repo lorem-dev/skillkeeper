@@ -74,6 +74,8 @@ export interface GitPort {
   revParse(repoPath: string, rev: string): Promise<GitRef>;
   /** Run `git lfs pull` in the given repository. */
   lfsPull(repoPath: string): Promise<void>;
+  /** Point the `origin` remote at a new URL (`git remote set-url origin <url>`). */
+  setRemoteUrl(repoPath: string, url: string): Promise<void>;
 }
 
 /** Host environment values the adapters and ports need. */

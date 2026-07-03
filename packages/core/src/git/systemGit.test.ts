@@ -5,6 +5,7 @@ import {
   buildLfsPullArgs,
   buildPullArgs,
   buildRevParseArgs,
+  buildSetRemoteUrlArgs,
   createSystemGit,
 } from './systemGit.js';
 import type { HostEnv } from '../ports.js';
@@ -60,6 +61,10 @@ describe('git argument builders', () => {
 
   it('builds lfs pull args', () => {
     expect(buildLfsPullArgs()).toEqual(['lfs', 'pull']);
+  });
+
+  it('builds set-url args with a -- guard', () => {
+    expect(buildSetRemoteUrlArgs('git@x:y.git')).toEqual(['remote', 'set-url', 'origin', '--', 'git@x:y.git']);
   });
 });
 
