@@ -69,39 +69,6 @@
     transform: rotate(90deg);
   }
 
-  &__menu {
-    position: absolute;
-    top: calc(100% + var(--sk-space-1));
-    inset-inline-end: 0;
-    margin: 0;
-    padding: var(--sk-space-1);
-    list-style: none;
-    min-width: 220px;
-    background: var(--sk-color-bg-tertiary);
-    border: 1px solid var(--sk-color-separator);
-    border-radius: var(--sk-radius-md);
-    box-shadow: var(--sk-shadow-2);
-    z-index: 10;
-  }
-
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: var(--sk-space-3);
-    width: 100%;
-    padding: var(--sk-space-2) var(--sk-space-3);
-    background: none;
-    border: 0;
-    border-radius: var(--sk-radius-sm);
-    text-align: start;
-    color: var(--sk-color-label);
-    cursor: pointer;
-
-    &:hover {
-      background: var(--sk-color-fill-2);
-    }
-  }
-
   // Fixed 20x20 icon slots. Reserving the box up front means an editor icon
   // (an <img> loaded from a data URL) claims its space immediately, so the
   // control does not reflow when the image finishes loading.
