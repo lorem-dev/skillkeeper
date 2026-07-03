@@ -1,0 +1,12 @@
+.sk-repo-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4);
+}
+
+.sk-repo-form__actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+}
