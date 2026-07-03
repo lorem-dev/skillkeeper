@@ -34,6 +34,15 @@ export interface ConfigPatch {
   repositories?: Partial<RepositoriesConfig>;
 }
 
+/** A recorded error (repository op failure). Feeds toasts and the error log. */
+export interface ErrorEntry {
+  readonly id: string;
+  readonly message: string;
+  readonly repoId?: string;
+  /** ISO timestamp. */
+  readonly at: string;
+}
+
 // ---------------------------------------------------------------------------
 // State shape
 // ---------------------------------------------------------------------------
@@ -48,7 +57,11 @@ export interface SkillkeeperState {
   /** Tracked repositories. */
   repositories: Repository[];
   /** Per-repository UI status (not persisted). */
-  repoStatus: Record<string, { phase: 'idle' | 'cloning' | 'syncing'; hasUpdate: boolean }>;
+  repoStatus: Record<string, { phase: 'idle' | 'cloning' | 'syncing'; hasUpdate: boolean; error?: string }>;
+  /** Every recorded error (newest last); consumed by the logs page. */
+  errorLog: ErrorEntry[];
+  /** Currently-visible toasts. */
+  toasts: ErrorEntry[];
   /** Installed skills. */
   skills: InstallManifest[];
   /** Tracked projects. */
@@ -82,6 +95,12 @@ export interface SkillkeeperActions {
   removeRepository(id: string): Promise<void>;
   syncRepository(id: string): Promise<void>;
   refreshRepoUpdates(): Promise<void>;
+  /** Record an error: append to the log + toasts, and mark the repo (if given). */
+  notify(message: string, repoId?: string): void;
+  /** Remove one toast (keeps the log and the repo dot). */
+  dismissToast(id: string): void;
+  /** Re-show the toast for a repo's current error (does not re-log). */
+  showRepoError(repoId: string): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -97,6 +116,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   configWarnings: [],
   repositories: [],
   repoStatus: {},
+  errorLog: [],
+  toasts: [],
   skills: [],
   projects: [],
   loading: false,
@@ -129,6 +150,41 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   setError(error) {
     set({ error });
+  },
+
+  notify(message, repoId) {
+    const entry: ErrorEntry = {
+      id: crypto.randomUUID(),
+      message,
+      repoId,
+      at: new Date().toISOString(),
+    };
+    set((s) => ({
+      errorLog: [...s.errorLog, entry],
+      toasts: [...s.toasts, entry],
+      repoStatus:
+        repoId === undefined
+          ? s.repoStatus
+          : {
+              ...s.repoStatus,
+              [repoId]: {
+                phase: s.repoStatus[repoId]?.phase ?? 'idle',
+                hasUpdate: s.repoStatus[repoId]?.hasUpdate ?? false,
+                error: message,
+              },
+            },
+    }));
+  },
+
+  dismissToast(id) {
+    set((s) => ({ toasts: s.toasts.filter((toast) => toast.id !== id) }));
+  },
+
+  showRepoError(repoId) {
+    const message = get().repoStatus[repoId]?.error;
+    if (message === undefined) return;
+    const entry: ErrorEntry = { id: crypto.randomUUID(), message, repoId, at: new Date().toISOString() };
+    set((s) => ({ toasts: [...s.toasts, entry] }));
   },
 
   async loadAll(client) {
@@ -181,7 +237,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     return (async () => {
       const added = await bridgeClient.addRepository(url, name);
       if (!added.ok) {
-        get().setError(added.error);
+        get().notify(added.error);
         return;
       }
       const repo = added.repository;
@@ -194,9 +250,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         repositories: cloned.ok
           ? s.repositories.map((r) => (r.id === repo.id ? cloned.repository : r))
           : s.repositories,
+        // Success clears any error; a failure's error is set by notify() below.
         repoStatus: { ...s.repoStatus, [repo.id]: { phase: 'idle', hasUpdate: false } },
       }));
-      if (!cloned.ok) get().setError(cloned.error);
+      if (!cloned.ok) get().notify(cloned.error, repo.id);
     })();
   },
 
@@ -204,11 +261,21 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     return (async () => {
       const res = await bridgeClient.updateRepository(id, name, url);
       if (!res.ok) {
-        get().setError(res.error);
+        get().notify(res.error, id);
         return;
       }
       const updated = res.repository;
-      set((s) => ({ repositories: s.repositories.map((r) => (r.id === id ? updated : r)) }));
+      set((s) => ({
+        repositories: s.repositories.map((r) => (r.id === id ? updated : r)),
+        repoStatus: {
+          ...s.repoStatus,
+          [id]: {
+            phase: s.repoStatus[id]?.phase ?? 'idle',
+            hasUpdate: s.repoStatus[id]?.hasUpdate ?? false,
+            error: undefined,
+          },
+        },
+      }));
     })();
   },
 
@@ -216,7 +283,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     return (async () => {
       const res = await bridgeClient.removeRepository(id);
       if (!res.ok) {
-        get().setError(res.error);
+        get().notify(res.error, id);
         return;
       }
       set((s) => {
@@ -228,16 +295,30 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   syncRepository(id) {
     return (async () => {
-      set((s) => ({ repoStatus: { ...s.repoStatus, [id]: { phase: 'syncing', hasUpdate: s.repoStatus[id]?.hasUpdate ?? false } } }));
+      set((s) => ({
+        repoStatus: {
+          ...s.repoStatus,
+          [id]: {
+            phase: 'syncing',
+            hasUpdate: s.repoStatus[id]?.hasUpdate ?? false,
+            error: s.repoStatus[id]?.error,
+          },
+        },
+      }));
       const res = await bridgeClient.syncRepository(id);
       set((s) => ({
         repositories: res.ok ? s.repositories.map((r) => (r.id === id ? res.repository : r)) : s.repositories,
         repoStatus: {
           ...s.repoStatus,
-          [id]: { phase: 'idle', hasUpdate: res.ok ? false : (s.repoStatus[id]?.hasUpdate ?? false) },
+          [id]: {
+            phase: 'idle',
+            hasUpdate: res.ok ? false : (s.repoStatus[id]?.hasUpdate ?? false),
+            // Success clears the error; a failure's error is set by notify() below.
+            error: res.ok ? undefined : s.repoStatus[id]?.error,
+          },
         },
       }));
-      if (!res.ok) get().setError(res.error);
+      if (!res.ok) get().notify(res.error, id);
     })();
   },
 
@@ -250,7 +331,11 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           set((s) => ({
             repoStatus: {
               ...s.repoStatus,
-              [r.id]: { phase: s.repoStatus[r.id]?.phase ?? 'idle', hasUpdate },
+              [r.id]: {
+                phase: s.repoStatus[r.id]?.phase ?? 'idle',
+                hasUpdate,
+                error: s.repoStatus[r.id]?.error,
+              },
             },
           }));
         }),
