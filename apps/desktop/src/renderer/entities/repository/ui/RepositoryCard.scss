@@ -1,22 +1,59 @@
 .sk-repo-card {
   display: flex;
-  flex-direction: column;
-  gap: var(--sk-space-2);
+  align-items: center;
+  gap: var(--sk-space-4);
+  padding: var(--sk-space-4) var(--sk-space-5);
+}
 
-  &__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sk-space-2);
-  }
-  &__name { font-weight: 600; color: var(--sk-color-label); }
-  &__badges { display: inline-flex; gap: var(--sk-space-1); }
-  &__url { color: var(--sk-color-label-2); font-size: 0.875rem; word-break: break-all; }
-  &__meta {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--sk-space-2);
-    color: var(--sk-color-label-3);
-    font-size: 0.8125rem;
-  }
+.sk-repo-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sk-repo-card__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sk-color-label);
+}
+
+.sk-repo-card__url {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-repo-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  flex: none;
+}
+
+// Fixed-width slot so the row does not reflow between dot / spinner / empty.
+.sk-repo-card__status {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.sk-repo-card__spinner-box {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sk-repo-card__update-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-color-accent);
 }

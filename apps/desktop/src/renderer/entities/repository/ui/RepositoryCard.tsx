@@ -1,30 +1,52 @@
 import type { Repository } from '@/services/bridge';
-import { Card, Badge } from '@/shared/ui';
+import { Card, Button, Icon, Spinner } from '@/shared/ui';
 import './RepositoryCard.scss';
 
 export interface RepositoryCardProps {
   readonly repository: Repository;
-  /** Already-translated "LFS" label. */
-  readonly lfsLabel: string;
-  /** Already-translated, fully-formatted last-fetched line. */
-  readonly lastFetchedLabel: string;
+  readonly phase: 'idle' | 'cloning' | 'syncing';
+  readonly hasUpdate: boolean;
+  /** Translated labels. */
+  readonly syncLabel: string;
+  readonly editLabel: string;
+  readonly updateLabel: string;
+  readonly onSync: () => void;
+  readonly onEdit: () => void;
 }
 
-export function RepositoryCard({ repository, lfsLabel, lastFetchedLabel }: RepositoryCardProps) {
+export function RepositoryCard({
+  repository,
+  phase,
+  hasUpdate,
+  syncLabel,
+  editLabel,
+  updateLabel,
+  onSync,
+  onEdit,
+}: RepositoryCardProps) {
+  const busy = phase !== 'idle';
   return (
     <Card className="sk-repo-card">
-      <div className="sk-repo-card__head">
+      <div className="sk-repo-card__main">
         <span className="sk-repo-card__name">{repository.name}</span>
-        <span className="sk-repo-card__badges">
-          <Badge tone="accent">{repository.kind}</Badge>
-          <Badge tone="neutral">{repository.transport}</Badge>
-          {repository.lfs && <Badge tone="neutral">{lfsLabel}</Badge>}
-        </span>
+        <span className="sk-repo-card__url">{repository.url}</span>
       </div>
-      <div className="sk-repo-card__url">{repository.url}</div>
-      <div className="sk-repo-card__meta">
-        <span className="sk-repo-card__path">{repository.localPath}</span>
-        <span className="sk-repo-card__fetched">{lastFetchedLabel}</span>
+      <div className="sk-repo-card__actions">
+        <span className="sk-repo-card__status" aria-hidden={!busy && !hasUpdate}>
+          {busy ? (
+            <div className="sk-repo-card__spinner-box">
+              <Spinner />
+            </div>
+          ) : hasUpdate ? (
+            <span className="sk-repo-card__update-dot" title={updateLabel} />
+          ) : null}
+        </span>
+        <Button variant="secondary" onClick={onSync} disabled={busy}>
+          {syncLabel}
+        </Button>
+        <Button variant="plain" onClick={onEdit} aria-label={editLabel}>
+          <Icon name="edit" />
+        </Button>
       </div>
     </Card>
   );
