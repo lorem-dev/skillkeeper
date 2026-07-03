@@ -12,12 +12,11 @@
   flex-direction: column;
   min-width: 180px;
   max-width: 320px;
-  // 5px inner padding: a little breathing room around the items (no --sk-space
-  // token sits at 5px).
-  padding: 5px;
   margin: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  // The frame itself does not scroll -- the inner list does. Keeping overflow
+  // hidden here clips the rounded corners and pins the gradient border (an
+  // absolutely-positioned ::after) so it does not scroll away with the content.
+  overflow: hidden;
   outline: none;
   background: var(--sk-glass-tint);
   backdrop-filter: blur(20px) saturate(180%);
@@ -30,6 +29,19 @@
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     background: var(--sk-color-bg-tertiary);
   }
+}
+
+// The scrolling region. min-height:0 lets it shrink within the frame's capped
+// height so it scrolls instead of overflowing; 5px inner padding gives the items
+// breathing room (no --sk-space token sits at 5px).
+.sk-menu__list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 5px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: none;
 }
 
 .sk-menu__item {

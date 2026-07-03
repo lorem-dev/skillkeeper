@@ -87,6 +87,7 @@ export function Menu({
   className,
 }: MenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   const [pos, setPos] = useState<Position | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -105,8 +106,11 @@ export function Menu({
     const place = (): void => {
       const anchor = anchorRef.current;
       const menu = menuRef.current;
-      if (anchor === null || menu === null) return;
-      setPos(computePosition(anchor.getBoundingClientRect(), menu.offsetWidth, menu.scrollHeight, placement));
+      const list = listRef.current;
+      if (anchor === null || menu === null || list === null) return;
+      // Measure the scrolling list's content height (scrollHeight) so the cap
+      // does not feed back; width from the outer frame.
+      setPos(computePosition(anchor.getBoundingClientRect(), menu.offsetWidth, list.scrollHeight, placement));
     };
     place();
     window.addEventListener('resize', place);
@@ -122,7 +126,7 @@ export function Menu({
     if (!open) return undefined;
     const anchor = anchorRef.current;
     setActiveIndex(-1);
-    menuRef.current?.focus();
+    listRef.current?.focus();
     return () => {
       anchor?.focus();
     };
@@ -218,19 +222,23 @@ export function Menu({
       {open && (
         <motion.div
           ref={menuRef}
-          role={role}
-          aria-label={ariaLabel}
-          aria-multiselectable={isListbox ? multiselectable : undefined}
-          aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
-          tabIndex={-1}
           className={cx('sk-menu', className)}
           style={style}
-          onKeyDown={onKeyDown}
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1, transition: { duration: SK_DURATION.fast, ease: SK_EASE } }}
           exit={{ opacity: 0, scale: 0.96, transition: { duration: SK_DURATION.fast } }}
         >
-          {items.map((item, i) => {
+          <div
+            ref={listRef}
+            role={role}
+            aria-label={ariaLabel}
+            aria-multiselectable={isListbox ? multiselectable : undefined}
+            aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
+            tabIndex={-1}
+            className="sk-menu__list"
+            onKeyDown={onKeyDown}
+          >
+            {items.map((item, i) => {
             const itemRole = isListbox
               ? 'option'
               : item.selected === undefined
@@ -264,6 +272,7 @@ export function Menu({
               </div>
             );
           })}
+          </div>
         </motion.div>
       )}
     </AnimatePresence>,
