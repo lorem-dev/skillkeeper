@@ -49,6 +49,8 @@ export { Slider } from './Slider';
 export type { SliderProps } from './Slider';
 export { Stepper } from './Stepper';
 export type { StepperProps } from './Stepper';
+export { MultiSelect } from './MultiSelect';
+export type { MultiSelectOption, MultiSelectProps } from './MultiSelect';
 
 // Feedback / content
 export { Badge } from './Badge';
