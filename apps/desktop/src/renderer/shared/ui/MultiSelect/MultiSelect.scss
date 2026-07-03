@@ -7,13 +7,14 @@
 }
 
 .sk-multiselect__trigger {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--sk-space-2);
-  // Stay tidy: size to content between a floor and a ceiling; the value
-  // ellipsizes past the ceiling instead of stretching without bound.
-  min-width: 140px;
-  max-width: 240px;
+  // Fixed width: the control never resizes with the selection. When the joined
+  // labels do not fit, the component swaps to a "Selected N" summary (see
+  // MultiSelect.tsx) rather than stretching.
+  width: 240px;
   font: inherit;
   font-size: 14px;
   color: var(--sk-color-label);
@@ -45,6 +46,17 @@
   white-space: nowrap;
   text-align: start;
   color: var(--sk-color-label);
+}
+
+// Hidden probe holding the full (nowrap) joined text so its natural width can be
+// compared against the visible value's available width to detect overflow.
+.sk-multiselect__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .sk-multiselect__chevron {

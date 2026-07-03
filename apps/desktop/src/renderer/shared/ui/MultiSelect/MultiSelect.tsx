@@ -1,8 +1,10 @@
 /**
- * MultiSelect: a pop-up trigger showing the selected labels, opening a Menu as a
- * multiselectable listbox. Generic -- no product knowledge; text via props.
+ * MultiSelect: a fixed-width pop-up trigger showing the selected labels, opening
+ * a Menu as a multiselectable listbox. When the joined labels do not fit, the
+ * trigger falls back to a caller-supplied summary ("Selected N"). Generic -- no
+ * product knowledge; text via props.
  */
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { cx } from '../../lib';
 import { Menu } from '../Menu';
@@ -22,6 +24,8 @@ export interface MultiSelectProps {
   readonly onChange: (next: string[]) => void;
   /** Shown on the trigger when nothing is selected. */
   readonly placeholder?: ReactNode;
+  /** Fallback shown when the joined labels do not fit (e.g. `(n) => "Selected " + n`). */
+  readonly summary?: (count: number) => ReactNode;
   readonly ariaLabel?: string;
   readonly disabled?: boolean;
   readonly className?: string;
@@ -32,14 +36,33 @@ export function MultiSelect({
   value,
   onChange,
   placeholder,
+  summary,
   ariaLabel,
   disabled,
   className,
 }: MultiSelectProps) {
   const anchorRef = useRef<HTMLButtonElement>(null);
+  const valueRef = useRef<HTMLSpanElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
+  const [overflow, setOverflow] = useState(false);
 
   const selectedLabels = options.filter((o) => value.includes(o.value)).map((o) => o.label);
+  const joined = selectedLabels.join(', ');
+
+  // Does the joined text fit? The hidden measure span holds the full nowrap text
+  // (natural width); compare to the value span's available width. Decoupled from
+  // what is displayed, so switching to the summary does not oscillate.
+  useLayoutEffect(() => {
+    const v = valueRef.current;
+    const m = measureRef.current;
+    if (v === null || m === null) {
+      setOverflow(false);
+      return;
+    }
+    setOverflow(m.scrollWidth > v.clientWidth);
+  }, [joined]);
+
   const toggle = (v: string): void =>
     onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
 
@@ -50,6 +73,9 @@ export function MultiSelect({
     selected: value.includes(o.value),
     onSelect: () => toggle(o.value),
   }));
+
+  const hasSelection = selectedLabels.length > 0;
+  const showSummary = hasSelection && overflow && summary !== undefined;
 
   return (
     <span className={cx('sk-multiselect', className)}>
@@ -63,9 +89,14 @@ export function MultiSelect({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="sk-multiselect__value">
-          {selectedLabels.length > 0 ? selectedLabels.join(', ') : placeholder}
+        <span ref={valueRef} className="sk-multiselect__value">
+          {!hasSelection ? placeholder : showSummary ? summary(selectedLabels.length) : joined}
         </span>
+        {hasSelection && (
+          <span ref={measureRef} className="sk-multiselect__measure" aria-hidden="true">
+            {joined}
+          </span>
+        )}
         <Icon name="chevron-right" className="sk-multiselect__chevron" size={16} />
       </button>
       <Menu

@@ -22,10 +22,19 @@ const agents = [
 
 export const Interactive: Story = {
   render: () => {
-    const [value, setValue] = useState<string[]>(['claude', 'codex']);
+    // Start with all selected so the joined labels overflow the fixed width and
+    // the trigger shows the "Selected N" summary; deselect to see the labels.
+    const [value, setValue] = useState<string[]>(['claude', 'codex', 'copilot', 'cursor', 'opencode']);
     return (
-      <div style={{ padding: 40, width: 280 }}>
-        <MultiSelect options={agents} value={value} onChange={setValue} placeholder="Choose agents" ariaLabel="Agents" />
+      <div style={{ padding: 40 }}>
+        <MultiSelect
+          options={agents}
+          value={value}
+          onChange={setValue}
+          placeholder="Choose agents"
+          summary={(n) => `Selected ${n}`}
+          ariaLabel="Agents"
+        />
       </div>
     );
   },
