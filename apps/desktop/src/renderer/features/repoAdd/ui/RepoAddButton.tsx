@@ -19,6 +19,11 @@ export function RepoAddButton() {
     setNameEdited(false);
   };
 
+  const cancel = (): void => {
+    setOpen(false);
+    reset();
+  };
+
   const onUrlChange = (value: string): void => {
     setUrl(value);
     if (!nameEdited) setName(deriveRepoName(value));
@@ -36,7 +41,7 @@ export function RepoAddButton() {
       <Button variant="primary" onClick={() => setOpen(true)}>
         {t('repositories.add')}
       </Button>
-      <Modal open={open} onClose={() => setOpen(false)} title={t('repositories.add')}>
+      <Modal open={open} onClose={cancel} title={t('repositories.add')}>
         <div className="sk-repo-form">
           <TextField
             placeholder={t('repositories.addRemote')}
@@ -52,7 +57,7 @@ export function RepoAddButton() {
             }}
           />
           <div className="sk-repo-form__actions">
-            <Button variant="secondary" onClick={() => setOpen(false)}>
+            <Button variant="secondary" onClick={cancel}>
               {t('common.close')}
             </Button>
             <Button variant="primary" onClick={submit} disabled={url.trim() === ''}>

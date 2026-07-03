@@ -3,7 +3,7 @@ import type { Repository } from '@/services/bridge';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Modal, TextField } from '@/shared/ui';
-import '../../../features/repoAdd/ui/RepoAddButton.scss';
+import './RepoEditModal.scss';
 
 export interface RepoEditModalProps {
   readonly repository: Repository | null;
@@ -26,19 +26,19 @@ export function RepoEditModal({ repository, onClose }: RepoEditModalProps) {
     }
   }, [repository]);
 
-  if (repository === null) return null;
-
   const save = (): void => {
+    if (repository === null) return;
     void updateRepository(repository.id, name.trim(), url.trim());
     onClose();
   };
   const remove = (): void => {
+    if (repository === null) return;
     void removeRepository(repository.id);
     onClose();
   };
 
   return (
-    <Modal open onClose={onClose} title={t('repositories.edit')}>
+    <Modal open={repository !== null} onClose={onClose} title={t('repositories.edit')}>
       <div className="sk-repo-form">
         <TextField value={name} onChange={(e) => setName(e.target.value)} placeholder={t('repositories.addName')} />
         <TextField value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t('repositories.addRemote')} />
