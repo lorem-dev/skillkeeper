@@ -18,9 +18,11 @@
   // absolutely-positioned ::after) so it does not scroll away with the content.
   overflow: hidden;
   outline: none;
-  background: var(--sk-glass-tint);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  // A touch more translucent than the base tint, with a stronger blur, so the
+  // menu reads as lighter frosted glass over the content behind it.
+  background: color-mix(in srgb, var(--sk-glass-tint) 88%, transparent);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
   border-radius: var(--sk-radius-lg);
   box-shadow: var(--sk-shadow-2);
 
