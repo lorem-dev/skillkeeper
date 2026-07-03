@@ -106,8 +106,50 @@ function resolveEditor(spec: EditorSpec): { cliPath?: string; appPath?: string }
   return undefined;
 }
 
+/**
+ * Extract a macOS `.app`'s real icon as a PNG data URL. `app.getFileIcon`
+ * returns a generic bundle icon for apps, and nativeImage cannot read `.icns`,
+ * so we resolve the bundle's icon file (CFBundleIconFile) and rasterize it with
+ * the native `sips` tool. All spawns use argument arrays (no shell); the only
+ * path passed is the allowlist-resolved bundle. Returns undefined on any miss so
+ * the caller can fall back to getFileIcon.
+ */
+function macAppIconDataUrl(appPath: string): string | undefined {
+  try {
+    const info = spawnSync('defaults', ['read', path.join(appPath, 'Contents', 'Info'), 'CFBundleIconFile'], {
+      encoding: 'utf8',
+    });
+    if (info.status !== 0) return undefined;
+    let name = info.stdout.trim();
+    if (name === '') return undefined;
+    if (!name.endsWith('.icns')) name += '.icns';
+    const icns = path.join(appPath, 'Contents', 'Resources', name);
+    if (!fs.existsSync(icns)) return undefined;
+
+    // Rasterize to 40px (crisp at the 20px display size on retina). sips writes
+    // to a file, so use a pid+bundle-unique temp path and remove it after.
+    const out = path.join(os.tmpdir(), `sk-editor-icon-${process.pid}-${path.basename(icns, '.icns')}.png`);
+    const conv = spawnSync('sips', ['-s', 'format', 'png', '-z', '40', '40', icns, '--out', out], {
+      encoding: 'utf8',
+    });
+    if (conv.status !== 0 || !fs.existsSync(out)) return undefined;
+    const b64 = fs.readFileSync(out).toString('base64');
+    fs.rmSync(out, { force: true });
+    return `data:image/png;base64,${b64}`;
+  } catch {
+    return undefined;
+  }
+}
+
 async function iconFor(targetPath: string): Promise<string | undefined> {
   if (process.platform === 'linux') return undefined;
+  // macOS: app.getFileIcon returns a generic glyph for .app bundles, so pull the
+  // real icon out of the bundle first; fall back to getFileIcon (correct for
+  // plain files such as the config, and for non-bundle targets).
+  if (process.platform === 'darwin' && targetPath.endsWith('.app')) {
+    const fromBundle = macAppIconDataUrl(targetPath);
+    if (fromBundle !== undefined) return fromBundle;
+  }
   try {
     const img = await app.getFileIcon(targetPath, { size: 'normal' });
     if (img.isEmpty()) return undefined;
