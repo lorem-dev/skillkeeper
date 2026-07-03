@@ -1,0 +1,35 @@
+// Bottom status bar: a thin glass strip with a top hairline. Holds status
+// icons (currently just the notifications bell), right-aligned.
+.sk-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: none;
+  height: var(--sk-control-height);
+  padding: 0 var(--sk-space-3);
+  border-top: 1px solid var(--sk-color-separator);
+  background: var(--sk-glass-tint);
+}
+
+.sk-statusbar__bell {
+  position: relative;
+}
+
+.sk-statusbar__bell--empty {
+  color: var(--sk-color-label-3);
+}
+
+.sk-statusbar__badge {
+  position: absolute;
+  top: 2px;
+  inset-inline-end: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--sk-space-1);
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-red);
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
