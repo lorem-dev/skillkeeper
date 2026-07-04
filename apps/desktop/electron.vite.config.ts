@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
       plugins: [externalizeDepsPlugin()],
       build: {
         outDir: 'out/main',
-        rollupOptions: { external: ['electron'] },
+        rollupOptions: { external: ['electron', 'node-pty'] },
       },
     },
     preload: {

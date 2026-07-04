@@ -16,6 +16,7 @@ import { listEditors, openInEditor } from './editors.js';
 import { createConfigWatcher } from './configWatcher.js';
 import type { ConfigWatcher } from './configWatcher.js';
 import { ensureSshAgent, stopSshAgent } from './sshAgent.js';
+import { getTerminal } from './terminal.js';
 import {
   addRepository,
   cloneRepository,
@@ -305,6 +306,24 @@ function registerHandlers(): void {
   ipcMain.handle('repositories:sync', (_e, args: { id: string }) => syncRepository(repoDeps, args));
   ipcMain.handle('repositories:hasUpdate', (_e, args: { id: string }) => hasRepoUpdate(repoDeps, args));
   ipcMain.handle('repositories:describe', (_e, args: { id: string }) => describeRepository(repoDeps, args));
+
+  const terminal = getTerminal();
+  terminal.on('data', (chunk: string) => {
+    for (const w of BrowserWindow.getAllWindows()) w.webContents.send('terminal:data', chunk);
+  });
+  terminal.on('exit', () => {
+    for (const w of BrowserWindow.getAllWindows()) w.webContents.send('terminal:exit');
+  });
+  ipcMain.handle('terminal:start', (_e, { cols, rows }: { cols: number; rows: number }) =>
+    terminal.start(cols, rows),
+  );
+  ipcMain.on('terminal:input', (_e, data: string) => terminal.write(data));
+  ipcMain.on('terminal:resize', (_e, { cols, rows }: { cols: number; rows: number }) =>
+    terminal.resize(cols, rows),
+  );
+  ipcMain.handle('terminal:runSshAdd', () => {
+    terminal.runSshAdd();
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -365,6 +384,7 @@ void app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   stopSshAgent();
+  getTerminal().dispose();
 });
 
 app.on('window-all-closed', () => {
