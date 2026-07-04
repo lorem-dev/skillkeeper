@@ -27,7 +27,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: var(--sk-space-5) var(--sk-space-5) var(--sk-space-4);
+  padding: var(--sk-space-7) var(--sk-space-5) var(--sk-space-6);
 
   &::before {
     content: '';
@@ -81,7 +81,7 @@
   position: absolute;
   left: 0;
   right: var(--sk-scrollbar-w, 0);
-  height: 56px;
+  height: 88px;
   z-index: 5;
   pointer-events: none;
   opacity: 0;
