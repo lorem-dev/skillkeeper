@@ -95,6 +95,9 @@ export async function cloneRepository(deps: RepoDeps, args: { id: string }): Pro
   try {
     const repo = await findRepo(deps, args.id);
     if (repo === null) return { ok: false, error: 'not-found' };
+    // git clone runs in cwd=dirname(destination)=reposDir; that directory must
+    // exist or execFile fails with "spawn git ENOENT" before git even starts.
+    await deps.fs.mkdir(deps.reposDir);
     // Slow clone runs unlocked; the stamp re-reads fresh state under the lock.
     await deps.git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });
     return await persistRepo(deps, args.id, { lastFetched: new Date().toISOString() });
@@ -157,8 +160,15 @@ export async function syncRepository(deps: RepoDeps, args: { id: string }): Prom
   try {
     const repo = await findRepo(deps, args.id);
     if (repo === null) return { ok: false, error: 'not-found' };
-    // Slow pull runs unlocked; the stamp re-reads fresh state under the lock.
-    await deps.git.pull(repo.localPath);
+    // Slow git work runs unlocked; the stamp re-reads fresh state under the lock.
+    // If the clone dir is missing (e.g. an earlier clone failed), re-clone --
+    // pulling in a non-existent cwd would fail with "spawn git ENOENT".
+    if (await deps.fs.exists(repo.localPath)) {
+      await deps.git.pull(repo.localPath);
+    } else {
+      await deps.fs.mkdir(deps.reposDir);
+      await deps.git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });
+    }
     return await persistRepo(deps, args.id, { lastFetched: new Date().toISOString() });
   } catch (err) {
     return { ok: false, error: message(err) };
