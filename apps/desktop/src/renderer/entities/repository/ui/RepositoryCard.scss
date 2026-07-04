@@ -45,6 +45,15 @@
   white-space: nowrap;
 }
 
+// Branch + skill-count badges under the URL.
+.sk-repo-card__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  margin-top: var(--sk-space-1);
+  min-width: 0;
+}
+
 // Actions stay hidden until the card is hovered (or a control is focused, so
 // keyboard users can still reach them); the opacity transition fades them in/out.
 .sk-repo-card__actions {

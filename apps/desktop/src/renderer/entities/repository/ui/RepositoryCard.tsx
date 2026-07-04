@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Repository } from '@/services/bridge';
-import { Card, Button, Icon, Spinner, Tooltip } from '@/shared/ui';
+import { Badge, Card, Button, Icon, Spinner, Tooltip } from '@/shared/ui';
 import { transitionFast } from '@/shared/lib';
 import './RepositoryCard.scss';
 
@@ -18,6 +18,10 @@ export interface RepositoryCardProps {
   readonly editLabel: string;
   readonly updateLabel: string;
   readonly errorLabel: string;
+  /** Current branch name; shows a gray badge when set. */
+  readonly branch?: string | null;
+  /** Pre-formatted, pluralized skill count (e.g. "3 skills"); shows a blue badge when set. */
+  readonly skillCountLabel?: string;
   readonly onSync: () => void;
   readonly onEdit: () => void;
   readonly onErrorClick: () => void;
@@ -33,6 +37,8 @@ export function RepositoryCard({
   editLabel,
   updateLabel,
   errorLabel,
+  branch,
+  skillCountLabel,
   onSync,
   onEdit,
   onErrorClick,
@@ -96,6 +102,12 @@ export function RepositoryCard({
           </AnimatePresence>
         </span>
         <span className="sk-repo-card__url">{repository.url}</span>
+        {(branch != null && branch !== '') || skillCountLabel !== undefined ? (
+          <span className="sk-repo-card__badges">
+            {branch != null && branch !== '' && <Badge tone="neutral">{branch}</Badge>}
+            {skillCountLabel !== undefined && <Badge tone="accent">{skillCountLabel}</Badge>}
+          </span>
+        ) : null}
       </div>
       <div className="sk-repo-card__actions">
         <Tooltip content={busy ? syncingLabel : syncLabel}>

@@ -15,8 +15,10 @@ import './RepositoriesPage.scss';
 export function RepositoriesPage() {
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const repoStatus = useSkillkeeperStore((s) => s.repoStatus);
+  const repoInfo = useSkillkeeperStore((s) => s.repoInfo);
   const syncRepository = useSkillkeeperStore((s) => s.syncRepository);
   const refreshRepoUpdates = useSkillkeeperStore((s) => s.refreshRepoUpdates);
+  const refreshRepoInfo = useSkillkeeperStore((s) => s.refreshRepoInfo);
   const reload = useSkillkeeperStore((s) => s.reload);
   const showRepoError = useSkillkeeperStore((s) => s.showRepoError);
   const t = useTranslator();
@@ -24,7 +26,8 @@ export function RepositoriesPage() {
 
   useEffect(() => {
     void refreshRepoUpdates();
-  }, [refreshRepoUpdates]);
+    void refreshRepoInfo();
+  }, [refreshRepoUpdates, refreshRepoInfo]);
 
   const trailing = (
     <>
@@ -51,6 +54,12 @@ export function RepositoriesPage() {
               editLabel={t('repositories.edit')}
               updateLabel={t('repositories.hasUpdate')}
               errorLabel={t('repositories.viewError')}
+              branch={repoInfo[r.id]?.branch}
+              skillCountLabel={
+                repoInfo[r.id] !== undefined
+                  ? t.plural('repositories.skillCount', repoInfo[r.id]!.skillCount)
+                  : undefined
+              }
               onSync={() => void syncRepository(r.id)}
               onEdit={() => setEditing(r)}
               onErrorClick={() => showRepoError(r.id)}
