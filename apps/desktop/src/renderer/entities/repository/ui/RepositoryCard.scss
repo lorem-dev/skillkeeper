@@ -60,9 +60,11 @@
 }
 
 // Tooltip wrapper around the URL: shrink to the (truncated) text width, capped
-// at the card width. So the hover/tooltip trigger covers only the link text,
-// not the empty space beside a short URL.
+// at the card width. align-self:flex-start stops the flex column from
+// stretching it to full width, so the hover/tooltip trigger covers only the
+// link text, not the empty space beside a short URL.
 .sk-repo-card__url-tip {
+  align-self: flex-start;
   max-width: 100%;
   min-width: 0;
 }
