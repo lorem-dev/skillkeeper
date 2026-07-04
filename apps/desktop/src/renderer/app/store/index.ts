@@ -12,4 +12,6 @@ export type {
   NotificationEntry,
   NotificationLevel,
   NotificationMessage,
+  RepoTask,
+  RepoTaskStatus,
 } from './store';

@@ -64,6 +64,20 @@ export interface NotificationEntry {
   readonly at: string;
 }
 
+/** Lifecycle of a queued repository task. */
+export type RepoTaskStatus = 'queued' | 'running' | 'done' | 'error';
+
+/** A repository operation queued for sequential execution (shown in the task list). */
+export interface RepoTask {
+  readonly id: string;
+  readonly repoId: string;
+  readonly repoName: string;
+  readonly kind: 'sync';
+  readonly status: RepoTaskStatus;
+  /** ISO timestamp of when it was queued. */
+  readonly at: string;
+}
+
 // ---------------------------------------------------------------------------
 // State shape
 // ---------------------------------------------------------------------------
@@ -89,6 +103,8 @@ export interface SkillkeeperState {
   notifications: NotificationEntry[];
   /** Currently-visible toasts. */
   toasts: NotificationEntry[];
+  /** Sync task queue (newest last); executed one at a time. */
+  tasks: RepoTask[];
   /** Whether the full-screen error-log page is open. */
   logsOpen: boolean;
   /** Whether the full-screen terminal page is open. */
@@ -125,6 +141,8 @@ export interface SkillkeeperActions {
   updateRepository(id: string, name: string, url: string): Promise<void>;
   removeRepository(id: string): Promise<void>;
   syncRepository(id: string): Promise<void>;
+  /** Remove finished (done/error) tasks from the task list. */
+  clearFinishedTasks(): void;
   refreshRepoUpdates(): Promise<void>;
   /** Fetch branch + skill count for every repo into `repoInfo`. */
   refreshRepoInfo(): Promise<void>;
@@ -156,6 +174,9 @@ export interface SkillkeeperActions {
 
 export type SkillkeeperStore = SkillkeeperState & SkillkeeperActions;
 
+/** Serializes queued repository tasks so they run one at a time, in order. */
+let taskChain: Promise<unknown> = Promise.resolve();
+
 export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   // Initial state
   config: null,
@@ -166,6 +187,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   repoInfo: {},
   notifications: [],
   toasts: [],
+  tasks: [],
   logsOpen: false,
   terminalOpen: false,
   skills: [],
@@ -383,7 +405,29 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   },
 
   syncRepository(id) {
-    return (async () => {
+    // Enqueue a task and process the queue one at a time (in order). The card
+    // shows 'syncing' while its task runs; the task list shows queued/running/
+    // done/error.
+    const repo = get().repositories.find((r) => r.id === id);
+    const taskId = crypto.randomUUID();
+    const setTaskStatus = (status: RepoTask['status']): void =>
+      set((s) => ({ tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)) }));
+    set((s) => ({
+      tasks: [
+        ...s.tasks,
+        {
+          id: taskId,
+          repoId: id,
+          repoName: repo?.name ?? id,
+          kind: 'sync' as const,
+          status: 'queued' as const,
+          at: new Date().toISOString(),
+        },
+      ],
+    }));
+
+    const runTask = async (): Promise<void> => {
+      setTaskStatus('running');
       set((s) => ({
         repoStatus: {
           ...s.repoStatus,
@@ -394,27 +438,51 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           },
         },
       }));
-      const res = await bridgeClient.syncRepository(id);
-      set((s) => ({
-        repositories: res.ok ? s.repositories.map((r) => (r.id === id ? res.repository : r)) : s.repositories,
-        repoStatus: {
-          ...s.repoStatus,
-          [id]: {
-            phase: 'idle',
-            hasUpdate: res.ok ? false : (s.repoStatus[id]?.hasUpdate ?? false),
-            // Success clears the error; a failure's error is set by notify() below.
-            error: res.ok ? undefined : s.repoStatus[id]?.error,
+      try {
+        const res = await bridgeClient.syncRepository(id);
+        set((s) => ({
+          repositories: res.ok
+            ? s.repositories.map((r) => (r.id === id ? res.repository : r))
+            : s.repositories,
+          repoStatus: {
+            ...s.repoStatus,
+            [id]: {
+              phase: 'idle',
+              hasUpdate: res.ok ? false : (s.repoStatus[id]?.hasUpdate ?? false),
+              error: res.ok ? undefined : s.repoStatus[id]?.error,
+            },
           },
-        },
-      }));
-      if (res.ok) {
-        // Branch / skill count may have changed with the pulled content.
-        const info = await bridgeClient.describeRepository(id);
-        set((s) => ({ repoInfo: { ...s.repoInfo, [id]: info } }));
-      } else {
-        get().notify(res.error, 'error', id);
+        }));
+        if (res.ok) {
+          const info = await bridgeClient.describeRepository(id);
+          set((s) => ({ repoInfo: { ...s.repoInfo, [id]: info } }));
+          setTaskStatus('done');
+        } else {
+          get().notify(res.error, 'error', id);
+          setTaskStatus('error');
+        }
+      } catch {
+        // Never wedge the queue: mark idle+error and continue with the next task.
+        set((s) => ({
+          repoStatus: {
+            ...s.repoStatus,
+            [id]: { phase: 'idle', hasUpdate: s.repoStatus[id]?.hasUpdate ?? false, error: s.repoStatus[id]?.error },
+          },
+        }));
+        setTaskStatus('error');
       }
-    })();
+    };
+    // Run after the previous task regardless of how it settled (like withStateLock).
+    const run = taskChain.then(runTask, runTask);
+    taskChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  },
+
+  clearFinishedTasks() {
+    set((s) => ({ tasks: s.tasks.filter((t) => t.status === 'queued' || t.status === 'running') }));
   },
 
   refreshRepoUpdates() {

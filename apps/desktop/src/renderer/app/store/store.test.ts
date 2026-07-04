@@ -324,4 +324,34 @@ describe('useSkillkeeperStore', () => {
       expect(useSkillkeeperStore.getState().repoStatus['repo-1']?.error).toBe('boom');
     });
   });
+
+  describe('sync task queue', () => {
+    beforeEach(() => {
+      useSkillkeeperStore.setState({ tasks: [], repositories: [mockRepo], repoStatus: {} });
+    });
+
+    it('syncRepository enqueues a task for the repo', () => {
+      // Do not await: the bridge singleton is unavailable in node, but the task
+      // is enqueued synchronously before the async work runs.
+      void useSkillkeeperStore.getState().syncRepository('repo-1');
+      const tasks = useSkillkeeperStore.getState().tasks;
+      expect(tasks).toHaveLength(1);
+      expect(tasks[0]!.repoId).toBe('repo-1');
+      expect(tasks[0]!.kind).toBe('sync');
+      expect(['queued', 'running']).toContain(tasks[0]!.status);
+    });
+
+    it('clearFinishedTasks removes done/error tasks but keeps queued/running', () => {
+      useSkillkeeperStore.setState({
+        tasks: [
+          { id: 'a', repoId: 'r', repoName: 'R', kind: 'sync', status: 'done', at: '' },
+          { id: 'b', repoId: 'r', repoName: 'R', kind: 'sync', status: 'error', at: '' },
+          { id: 'c', repoId: 'r', repoName: 'R', kind: 'sync', status: 'queued', at: '' },
+          { id: 'd', repoId: 'r', repoName: 'R', kind: 'sync', status: 'running', at: '' },
+        ],
+      });
+      useSkillkeeperStore.getState().clearFinishedTasks();
+      expect(useSkillkeeperStore.getState().tasks.map((t) => t.id)).toEqual(['c', 'd']);
+    });
+  });
 });
