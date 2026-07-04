@@ -52,6 +52,10 @@ export const ru: Partial<Catalog> = {
   'repositories.deleteConfirm': 'Подтвердить удаление',
   'repositories.hasUpdate': 'Доступно обновление',
   'repositories.viewError': 'Нажмите, чтобы посмотреть ошибку',
+  'repositories.skillCount.one': '{count} навык',
+  'repositories.skillCount.few': '{count} навыка',
+  'repositories.skillCount.many': '{count} навыков',
+  'repositories.skillCount.other': '{count} навыков',
 
   'projects.empty': 'Проекты еще не отслеживаются.',
   'projects.add': 'Добавить проект',

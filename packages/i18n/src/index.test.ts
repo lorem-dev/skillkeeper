@@ -87,6 +87,28 @@ describe('createTranslator', () => {
     expect(result).not.toBe('config.invalidBanner');
   });
 
+  it('selects English plural forms (one vs other) and interpolates count', () => {
+    const t = createTranslator('en');
+    expect(t.plural('repositories.skillCount', 1)).toBe('1 skill');
+    expect(t.plural('repositories.skillCount', 0)).toBe('0 skills');
+    expect(t.plural('repositories.skillCount', 5)).toBe('5 skills');
+  });
+
+  it('selects Russian plural forms (one/few/many)', () => {
+    const t = createTranslator('ru');
+    expect(t.plural('repositories.skillCount', 1)).toBe('1 навык');
+    expect(t.plural('repositories.skillCount', 3)).toBe('3 навыка');
+    expect(t.plural('repositories.skillCount', 5)).toBe('5 навыков');
+    expect(t.plural('repositories.skillCount', 21)).toBe('21 навык');
+  });
+
+  it('falls back to the other form when a category key is missing (de few/many)', () => {
+    const t = createTranslator('de');
+    // German only defines one/other; select(2) is "other".
+    expect(t.plural('repositories.skillCount', 1)).toBe('1 Fähigkeit');
+    expect(t.plural('repositories.skillCount', 2)).toBe('2 Fähigkeiten');
+  });
+
   it('leaves a placeholder unchanged when its var is not supplied', () => {
     // skills.count uses {n}; pass an empty vars object so {n} is not found.
     const t = createTranslator('en');

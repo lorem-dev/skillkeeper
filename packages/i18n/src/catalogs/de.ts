@@ -53,6 +53,8 @@ export const de: Partial<Catalog> = {
   'repositories.deleteConfirm': 'Löschen bestätigen',
   'repositories.hasUpdate': 'Update verfügbar',
   'repositories.viewError': 'Zum Anzeigen des Fehlers klicken',
+  'repositories.skillCount.one': '{count} Fähigkeit',
+  'repositories.skillCount.other': '{count} Fähigkeiten',
 
   'projects.empty': 'Noch keine Projekte erfasst.',
   'projects.add': 'Projekt hinzufügen',

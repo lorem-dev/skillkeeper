@@ -25,7 +25,16 @@ export type Vars = Record<string, string>;
  *             resolved string is replaced with `vars[name]`.
  * @returns The localized string, or the key itself when no translation exists.
  */
-export type Translator = (key: MessageKey | (string & {}), vars?: Vars) => string;
+export interface Translator {
+  (key: MessageKey | (string & {}), vars?: Vars): string;
+  /**
+   * Select a plural form for `count`. Looks up `${baseKey}.${category}`, where
+   * `category` is chosen by `Intl.PluralRules` for the bound language (`one`,
+   * `few`, `many`, `other`, ...), falling back to `${baseKey}.other`. `{count}`
+   * is interpolated automatically (extra `vars` are merged in).
+   */
+  plural(baseKey: string, count: number, vars?: Vars): string;
+}
 
 /**
  * Replace all `{name}` tokens in `template` with values from `vars`.
@@ -51,8 +60,13 @@ function interpolate(template: string, vars: Vars): string {
 export function createTranslator(lang: Lang): Translator {
   const primary = catalogs[lang];
   const fallback: Partial<Catalog> = catalogs['en'];
+  const pluralRules = new Intl.PluralRules(lang);
 
-  return function t(key: MessageKey | (string & {}), vars?: Vars): string {
+  const has = (key: string): boolean =>
+    (primary as Record<string, string>)[key] !== undefined ||
+    (fallback as Record<string, string>)[key] !== undefined;
+
+  const t = function t(key: MessageKey | (string & {}), vars?: Vars): string {
     // Cast needed because primary/fallback are Partial -- the key may not exist.
     const raw =
       (primary as Record<string, string>)[key] ??
@@ -60,5 +74,14 @@ export function createTranslator(lang: Lang): Translator {
       key;
 
     return vars !== undefined ? interpolate(raw, vars) : raw;
+  } as Translator;
+
+  t.plural = (baseKey: string, count: number, vars?: Vars): string => {
+    const category = pluralRules.select(count);
+    const categoryKey = `${baseKey}.${category}`;
+    const key = has(categoryKey) ? categoryKey : `${baseKey}.other`;
+    return t(key, { count: String(count), ...vars });
   };
+
+  return t;
 }

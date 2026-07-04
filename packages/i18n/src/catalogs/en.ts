@@ -55,6 +55,11 @@ export const en = {
   'repositories.deleteConfirm': 'Confirm delete',
   'repositories.hasUpdate': 'Update available',
   'repositories.viewError': 'Click to view the error',
+  /** Skill-count badge. Plural forms selected via Intl.PluralRules. */
+  'repositories.skillCount.one': '{count} skill',
+  'repositories.skillCount.few': '{count} skills',
+  'repositories.skillCount.many': '{count} skills',
+  'repositories.skillCount.other': '{count} skills',
 
   'projects.empty': 'No projects tracked yet.',
   'projects.add': 'Add project',
