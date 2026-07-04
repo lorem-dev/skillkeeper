@@ -1,13 +1,14 @@
 /**
  * Modal dialog. Renders into a portal over a dimmed scrim, animated with Framer
- * Motion presence (scrim fades, dialog rises). Closes on Escape or scrim click.
- * Generic -- no product knowledge. See design-system.md Section 8.9.
+ * Motion presence (scrim fades, dialog fades + scales in). Closes on Escape or
+ * scrim click. A solid elevated surface (no backdrop refraction) so the
+ * entrance never flickers. Generic -- no product knowledge. See 8.9.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { cx, fade, fadeRise, useGlassRefraction } from '../../lib';
+import { cx, fade, fadeScale } from '../../lib';
 import './Modal.scss';
 
 export interface ModalProps {
@@ -19,10 +20,6 @@ export interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  // Refract the backdrop while the dialog is open (re-applies when it opens).
-  useGlassRefraction(ref, { enabled: open, radius: 26, strength: 50, chromaticAberration: 2 });
-
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e: KeyboardEvent): void => {
@@ -44,11 +41,10 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
           onClick={onClose}
         >
           <motion.div
-            ref={ref}
             role="dialog"
             aria-modal="true"
             className={cx('sk-modal', className)}
-            variants={fadeRise}
+            variants={fadeScale}
             initial="initial"
             animate="animate"
             exit="exit"
