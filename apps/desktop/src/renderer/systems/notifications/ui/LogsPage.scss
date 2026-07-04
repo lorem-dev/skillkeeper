@@ -18,11 +18,15 @@
   border-bottom: 1px solid var(--sk-color-separator);
 }
 
+// Match the standard page/toolbar title (sans, not the serif display font).
 .sk-logs__title {
   flex: 1;
   margin: 0;
-  font-family: var(--sk-font-display);
-  font-size: 20px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--sk-color-label);
 }
 
 .sk-logs__actions {
