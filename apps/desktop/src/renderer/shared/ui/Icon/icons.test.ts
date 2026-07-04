@@ -14,6 +14,7 @@ import sync from './assets/sync.svg?raw';
 import bell from './assets/bell.svg?raw';
 import copy from './assets/copy.svg?raw';
 import close from './assets/close.svg?raw';
+import terminal from './assets/terminal.svg?raw';
 
 const assets: Record<string, string> = {
   repositories,
@@ -30,6 +31,7 @@ const assets: Record<string, string> = {
   bell,
   copy,
   close,
+  terminal,
 };
 
 describe('Icon assets', () => {
