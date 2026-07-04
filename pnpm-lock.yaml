@@ -62,9 +62,18 @@ importers:
       '@skillkeeper/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@xterm/addon-fit':
+        specifier: ^0.11.0
+        version: 0.11.0
+      '@xterm/xterm':
+        specifier: ^6.0.0
+        version: 6.0.0
       motion:
         specifier: 12.42.0
         version: 12.42.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      node-pty:
+        specifier: ^1.1.0
+        version: 1.1.0
       react:
         specifier: 19.2.7
         version: 19.2.7
@@ -75,6 +84,9 @@ importers:
         specifier: 5.0.14
         version: 5.0.14(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
     devDependencies:
+      '@electron/rebuild':
+        specifier: ^4.1.0
+        version: 4.1.0
       '@storybook/react':
         specifier: 10.4.6
         version: 10.4.6(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(storybook@10.4.6(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.9.0)(react@19.2.7))(typescript@6.0.3)
@@ -285,6 +297,11 @@ packages:
 
   '@electron/rebuild@4.0.4':
     resolution: {integrity: sha512-Rzc39XPdk/+/wBG8MfwAHohXflep0ITUfulb6Rgz3R0NeSB1noE+E9/M/cb8ftCAiyDD9PPhLuuWgE1GaInbKg==}
+    engines: {node: '>=22.12.0'}
+    hasBin: true
+
+  '@electron/rebuild@4.1.0':
+    resolution: {integrity: sha512-GFky+1JeO8fpSqtZCh+2wFRN/MVbAhm7tXI2M7BA1Os79OR8LEoxRtAbRPyxvmKWhEMF/p10rNJkkgP1klI13g==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
@@ -1330,6 +1347,12 @@ packages:
   '@xmldom/xmldom@0.8.13':
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
+
+  '@xterm/addon-fit@0.11.0':
+    resolution: {integrity: sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g==}
+
+  '@xterm/xterm@6.0.0':
+    resolution: {integrity: sha512-TQwDdQGtwwDt+2cgKDLn0IRaSxYu1tSUjgKarSDkUM0ZNiSRXFpjxEsvc/Zgc5kq5omJ+V0a8/kIM2WD3sMOYg==}
 
   abbrev@4.0.0:
     resolution: {integrity: sha512-a1wflyaL0tHtJSmLSOVybYhy22vRih4eduhhrkcjgrWGnRfrZtovJ2FRjxuTtkkj47O/baf0R86QU5OuYpz8fA==}
@@ -2699,6 +2722,9 @@ packages:
   node-int64@0.4.0:
     resolution: {integrity: sha512-O5lz91xSOeoXP6DulyHfllpq+Eg00MWitZIbtPfoSEvqIHdl5gfcY6hYzDWnj0qD5tz52PI08u9qUvSVeUBeHw==}
 
+  node-pty@1.1.0:
+    resolution: {integrity: sha512-20JqtutY6JPXTUnL0ij1uad7Qe1baT46lyolh2sSENDd4sTzKZ4nmAFkeAARDKwmlLjPx6XKRlwRUxwjOy+lUg==}
+
   node-releases@2.0.50:
     resolution: {integrity: sha512-J6l92tKHX6w8Jy5nO1Vuc01NoIiRGi/d6qBKVxh+IQ8Cr3b6HbVNfKiF8ZpFKufTwpwxMmce2W3iQZ861ZRyTg==}
     engines: {node: '>=18'}
@@ -3782,6 +3808,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@electron/rebuild@4.1.0':
+    dependencies:
+      '@malept/cross-spawn-promise': 2.0.0
+      debug: 4.4.3
+      node-abi: 4.31.0
+      node-api-version: 0.2.1
+      node-gyp: 12.4.0
+      read-binary-file-arch: 1.0.6
+    transitivePeerDependencies:
+      - supports-color
+
   '@electron/universal@2.0.3':
     dependencies:
       '@electron/asar': 3.4.1
@@ -4683,6 +4720,10 @@ snapshots:
   '@webcontainer/env@1.1.1': {}
 
   '@xmldom/xmldom@0.8.13': {}
+
+  '@xterm/addon-fit@0.11.0': {}
+
+  '@xterm/xterm@6.0.0': {}
 
   abbrev@4.0.0: {}
 
@@ -6226,8 +6267,7 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  node-addon-api@7.1.1:
-    optional: true
+  node-addon-api@7.1.1: {}
 
   node-api-version@0.2.1:
     dependencies:
@@ -6254,6 +6294,10 @@ snapshots:
       which: 6.0.1
 
   node-int64@0.4.0: {}
+
+  node-pty@1.1.0:
+    dependencies:
+      node-addon-api: 7.1.1
 
   node-releases@2.0.50: {}
 
