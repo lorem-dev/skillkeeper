@@ -54,8 +54,11 @@
   min-width: 0;
 }
 
-// Actions stay hidden until the card is hovered (or a control is focused, so
-// keyboard users can still reach them); the opacity transition fades them in/out.
+// Actions stay hidden until the card is hovered (or a control is focused via the
+// keyboard, so keyboard users can still reach them); the opacity transition
+// fades them in/out. `:has(:focus-visible)` -- not `:focus-within` -- so a mouse
+// click, which does not set :focus-visible, does not keep the actions revealed
+// after the pointer leaves the card.
 .sk-repo-card__actions {
   display: flex;
   align-items: center;
@@ -66,7 +69,7 @@
 }
 
 .sk-repo-card:hover .sk-repo-card__actions,
-.sk-repo-card:focus-within .sk-repo-card__actions {
+.sk-repo-card:has(:focus-visible) .sk-repo-card__actions {
   opacity: 1;
 }
 
