@@ -193,9 +193,6 @@ function registerHandlers(): void {
         return { stdout: '', stderr: '' };
       },
     }),
-    requestTerminalOpen: () => {
-      for (const w of BrowserWindow.getAllWindows()) w.webContents.send('terminal:requestOpen');
-    },
   };
 
   /**
@@ -326,6 +323,11 @@ function registerHandlers(): void {
   });
   terminal.on('exit', () => {
     for (const w of BrowserWindow.getAllWindows()) w.webContents.send('terminal:exit');
+  });
+  // A background git command asked for input (ssh passphrase, etc.) -> surface
+  // the terminal so the user can answer. Commands that need no input stay hidden.
+  terminal.on('needsInput', () => {
+    for (const w of BrowserWindow.getAllWindows()) w.webContents.send('terminal:requestOpen');
   });
   ipcMain.handle('terminal:start', (_e, { cols, rows }: { cols: number; rows: number }) =>
     terminal.start(cols, rows),

@@ -19,6 +19,9 @@ import { EventEmitter } from 'node:events';
 
 const MAX_BUFFER = 256 * 1024; // retained scrollback (bytes)
 
+/** git/ssh output that means the command is blocked waiting for user input. */
+const NEEDS_INPUT = /enter passphrase|password:|\(yes\/no|continue connecting/i;
+
 function defaultShell(): string {
   if (process.platform === 'win32') return process.env['COMSPEC'] ?? 'powershell.exe';
   return process.env['SHELL'] ?? '/bin/bash';
@@ -115,7 +118,16 @@ class TerminalManager extends EventEmitter {
             env: process.env as Record<string, string>,
           });
           this.activeCmd = cmd;
-          cmd.onData((data) => this.append(data));
+          // Runs in the background; the terminal is only surfaced if git actually
+          // asks for input (ssh key passphrase, password, host-key confirmation).
+          let promptedForInput = false;
+          cmd.onData((data) => {
+            this.append(data);
+            if (!promptedForInput && NEEDS_INPUT.test(data)) {
+              promptedForInput = true;
+              this.emit('needsInput');
+            }
+          });
           cmd.onExit(({ exitCode }) => {
             if (this.activeCmd === cmd) this.activeCmd = undefined;
             this.append('\r\n');

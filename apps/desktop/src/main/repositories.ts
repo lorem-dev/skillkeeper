@@ -23,8 +23,6 @@ export interface RepoDeps {
    * clone/sync fall back to `git`. Update checks always use `git` (silent).
    */
   readonly terminalGit?: GitPort;
-  /** Ask any open window to show the terminal overlay (before a terminal git op). */
-  readonly requestTerminalOpen?: () => void;
 }
 
 export type RepoResult = { ok: true; repository: Repository } | { ok: false; error: string };
@@ -116,10 +114,9 @@ export async function cloneRepository(deps: RepoDeps, args: { id: string }): Pro
     // git clone runs in cwd=dirname(destination)=reposDir; that directory must
     // exist or execFile fails with "spawn git ENOENT" before git even starts.
     await deps.fs.mkdir(deps.reposDir);
-    // Run in the terminal (visible + can answer an ssh passphrase prompt) when
-    // available; open it first so the user sees the clone and can respond.
+    // Runs in the terminal session (arg-array, no shell). It stays in the
+    // background unless git asks for input (then the terminal surfaces itself).
     const git = deps.terminalGit ?? deps.git;
-    if (deps.terminalGit !== undefined) deps.requestTerminalOpen?.();
     await git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });
     return await persistRepo(deps, args.id, { lastFetched: new Date().toISOString() });
   } catch (err) {
@@ -181,10 +178,9 @@ export async function syncRepository(deps: RepoDeps, args: { id: string }): Prom
   try {
     const repo = await findRepo(deps, args.id);
     if (repo === null) return { ok: false, error: 'not-found' };
-    // Run in the terminal when available (visible output + inline ssh passphrase
-    // prompt); open it first. The update check uses the silent execFile git.
+    // Runs in the terminal session (background unless git needs input). The
+    // update check uses the silent execFile git.
     const git = deps.terminalGit ?? deps.git;
-    if (deps.terminalGit !== undefined) deps.requestTerminalOpen?.();
     // If the clone dir is missing (e.g. an earlier clone failed), re-clone --
     // pulling in a non-existent cwd would fail with "spawn git ENOENT".
     if (await deps.fs.exists(repo.localPath)) {
