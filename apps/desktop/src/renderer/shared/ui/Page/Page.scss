@@ -42,7 +42,7 @@
     // near-white), darkens in the dark theme (bg is near-black).
     background: linear-gradient(
       to bottom,
-      color-mix(in srgb, var(--sk-color-bg) 16%, transparent),
+      color-mix(in srgb, var(--sk-color-bg) 32%, transparent),
       transparent
     );
   }
