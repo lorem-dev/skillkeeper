@@ -1,9 +1,14 @@
 /**
- * Generic page layout: a titled content column. No product knowledge -- the
- * concrete screens live in `pages/` and compose this. Styling is token-based and
- * co-located in Page.scss.
+ * Generic page layout: a scrollable content column with a sticky header. No
+ * product knowledge -- the concrete screens live in `pages/` and compose this.
+ *
+ * The header (a Toolbar via the `toolbar` slot, or a plain title) stays pinned
+ * to the top while the body scrolls under it; a progressive-blur backdrop blurs
+ * the content passing beneath. Styling is token-based and co-located in
+ * Page.scss.
  */
 import type { ReactNode } from 'react';
+import { Row } from '../Row';
 import './Page.scss';
 
 export interface PageProps {
@@ -19,10 +24,18 @@ export interface PageProps {
 }
 
 export function Page({ title, toolbar, children }: PageProps) {
+  const header =
+    toolbar ??
+    (title !== undefined ? (
+      <Row className="sk-page__title-row">
+        <h1 className="sk-page__title">{title}</h1>
+      </Row>
+    ) : null);
+
   return (
     <main className="sk-page">
-      {toolbar ?? (title !== undefined && <h1 className="sk-page__title">{title}</h1>)}
-      {children}
+      {header != null && <div className="sk-page__header">{header}</div>}
+      <div className="sk-page__body">{children}</div>
     </main>
   );
 }

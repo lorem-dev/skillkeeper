@@ -13,10 +13,13 @@
   overflow: hidden;
 }
 
+// Holds the active Page, which is itself the scroll container (sticky header +
+// scrollable body). This area just gives the Page a flex slot to fill.
 .sk-content {
   flex: 1;
-  overflow: auto;
-  padding: var(--sk-space-5);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 // Transient loading / error states shown in the content area.

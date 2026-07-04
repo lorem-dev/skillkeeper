@@ -1,11 +1,55 @@
-// Page layout styles. Co-located with Page.tsx; tokens only. The content area
-// (.sk-content in the app shell) already supplies outer padding, so the page is
-// just a vertical column with a title.
+// Page layout styles. Co-located with Page.tsx; tokens only. The page is the
+// scroll container: a sticky header (toolbar/title) stays pinned while the body
+// scrolls under it.
 
 .sk-page {
   display: flex;
   flex-direction: column;
-  gap: var(--sk-space-5);
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+// Sticky header. The ::before layer is a progressive-blur backdrop: it blurs the
+// content scrolling underneath, strongest at the top and fading toward the
+// bottom edge so the lower part of the toolbar reads as a gentler blur.
+.sk-page__header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: var(--sk-space-4) var(--sk-space-5);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    // Mask fades the blurred layer out toward the bottom (black = keep,
+    // transparent = drop). Mask alpha only -- not a themed color.
+    mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    // Faint tint (also masked) for legibility over busy content.
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--sk-color-bg-secondary) 55%, transparent),
+      transparent
+    );
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    &::before {
+      mask-image: none;
+      -webkit-mask-image: none;
+      background: var(--sk-color-bg-secondary);
+    }
+  }
+}
+
+.sk-page__title-row {
+  min-height: var(--sk-control-height);
 }
 
 .sk-page__title {
@@ -14,6 +58,14 @@
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: var(--sk-color-label);
+}
+
+// Scrollable content column. Owns the page's inner padding and vertical rhythm.
+.sk-page__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+  padding: var(--sk-space-5);
 }
 
 // Muted empty-state text used by placeholder screens.
