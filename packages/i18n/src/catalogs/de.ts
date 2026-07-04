@@ -32,8 +32,10 @@ export const de: Partial<Catalog> = {
   'notifications.info': 'Benachrichtigung',
 
   'statusbar.notifications': 'Fehler: {count}',
+  'statusbar.terminal': 'Terminal',
 
   'logs.title': 'Benachrichtigungen',
+  'terminal.title': 'Terminal',
   'logs.empty': 'Nichts anzuzeigen.',
   'logs.copy': 'Kopieren',
   'logs.copyAll': 'Alle kopieren',

@@ -91,6 +91,8 @@ export interface SkillkeeperState {
   toasts: NotificationEntry[];
   /** Whether the full-screen error-log page is open. */
   logsOpen: boolean;
+  /** Whether the full-screen terminal page is open. */
+  terminalOpen: boolean;
   /** Installed skills. */
   skills: InstallManifest[];
   /** Tracked projects. */
@@ -140,6 +142,10 @@ export interface SkillkeeperActions {
   openLogs(): void;
   /** Close the full-screen notifications log page. */
   closeLogs(): void;
+  /** Open the full-screen terminal page. */
+  openTerminal(): void;
+  /** Close the full-screen terminal page. */
+  closeTerminal(): void;
   /** Empty the notifications log. Leaves toasts and per-repo errors intact. */
   clearNotifications(): void;
 }
@@ -161,6 +167,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   notifications: [],
   toasts: [],
   logsOpen: false,
+  terminalOpen: false,
   skills: [],
   projects: [],
   loading: false,
@@ -250,6 +257,14 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   closeLogs() {
     set({ logsOpen: false });
+  },
+
+  openTerminal() {
+    set({ terminalOpen: true });
+  },
+
+  closeTerminal() {
+    set({ terminalOpen: false });
   },
 
   clearNotifications() {

@@ -216,6 +216,13 @@ describe('useSkillkeeperStore', () => {
         syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
         repoHasUpdate: async () => false,
         describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
+        startTerminal: async () => '',
+        writeTerminal: () => {},
+        resizeTerminal: () => {},
+        runSshAdd: async () => {},
+        onTerminalData: () => () => {},
+        onTerminalExit: () => () => {},
+        onTerminalRequestOpen: () => () => {},
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);
@@ -249,6 +256,13 @@ describe('useSkillkeeperStore', () => {
         syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
         repoHasUpdate: async () => false,
         describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
+        startTerminal: async () => '',
+        writeTerminal: () => {},
+        resizeTerminal: () => {},
+        runSshAdd: async () => {},
+        onTerminalData: () => () => {},
+        onTerminalExit: () => () => {},
+        onTerminalRequestOpen: () => () => {},
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);
@@ -261,7 +275,13 @@ describe('useSkillkeeperStore', () => {
 
   describe('notifications log + page state', () => {
     beforeEach(() => {
-      useSkillkeeperStore.setState({ notifications: [], toasts: [], repoStatus: {}, logsOpen: false });
+      useSkillkeeperStore.setState({
+        notifications: [],
+        toasts: [],
+        repoStatus: {},
+        logsOpen: false,
+        terminalOpen: false,
+      });
     });
 
     it('openLogs / closeLogs toggle logsOpen', () => {
@@ -271,6 +291,15 @@ describe('useSkillkeeperStore', () => {
       expect(useSkillkeeperStore.getState().logsOpen).toBe(true);
       s.closeLogs();
       expect(useSkillkeeperStore.getState().logsOpen).toBe(false);
+    });
+
+    it('openTerminal / closeTerminal toggle terminalOpen', () => {
+      const s = useSkillkeeperStore.getState();
+      expect(useSkillkeeperStore.getState().terminalOpen).toBe(false);
+      s.openTerminal();
+      expect(useSkillkeeperStore.getState().terminalOpen).toBe(true);
+      s.closeTerminal();
+      expect(useSkillkeeperStore.getState().terminalOpen).toBe(false);
     });
 
     it('an error notification marks the repo status; info does not', () => {

@@ -31,8 +31,10 @@ export const ru: Partial<Catalog> = {
   'notifications.info': 'Уведомление',
 
   'statusbar.notifications': 'Ошибки: {count}',
+  'statusbar.terminal': 'Терминал',
 
   'logs.title': 'Уведомления',
+  'terminal.title': 'Терминал',
   'logs.empty': 'Нечего показать.',
   'logs.copy': 'Копировать',
   'logs.copyAll': 'Копировать все',

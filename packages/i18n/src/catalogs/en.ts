@@ -33,8 +33,10 @@ export const en = {
   'notifications.info': 'Notification',
 
   'statusbar.notifications': 'Errors: {count}',
+  'statusbar.terminal': 'Terminal',
 
   'logs.title': 'Notifications',
+  'terminal.title': 'Terminal',
   'logs.empty': 'Nothing to show.',
   'logs.copy': 'Copy',
   'logs.copyAll': 'Copy all',
