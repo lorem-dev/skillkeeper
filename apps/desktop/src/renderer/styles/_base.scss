@@ -34,6 +34,44 @@ body {
   background: color-mix(in srgb, var(--sk-color-accent) 24%, transparent);
 }
 
+// Thin, unobtrusive scrollbars. The track is transparent and the thumb stays
+// invisible while idle -- so a scrollbar never draws attention (and reads as
+// absent when content fits) -- then tints subtly while hovering the scrollable
+// area. Overflow hints are carried by the Page fade overlays instead.
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
+  scrollbar-color: color-mix(in srgb, var(--sk-color-label) 22%, transparent) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: var(--sk-radius-pill);
+  background-clip: padding-box;
+}
+
+:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--sk-color-label) 22%, transparent);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
