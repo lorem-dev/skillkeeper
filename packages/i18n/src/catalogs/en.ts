@@ -59,9 +59,9 @@ export const en = {
   'repositories.deleteConfirm': 'Confirm delete',
   'repositories.hasUpdate': 'Update available',
   'repositories.viewError': 'Click to view the error',
-  'repositories.copyBranch': 'Copy',
+  'repositories.copyBranch': 'Copy branch name',
   'repositories.branchCopied': 'Branch name copied to the clipboard',
-  'repositories.copyRemote': 'Copy',
+  'repositories.copyRemote': 'Copy link',
   'repositories.remoteCopied': 'Remote URL copied to the clipboard',
   /** Skill-count badge. Plural forms selected via Intl.PluralRules. */
   'repositories.skillCount.one': '{count} skill',

@@ -111,3 +111,30 @@ export const HasError: Story = {
     onErrorClick: () => {},
   },
 };
+
+// A very long remote URL (and branch) to show truncation + the copy tooltip.
+export const LongRemote: Story = {
+  args: {
+    repository: {
+      ...sampleRepository,
+      name: 'Very Long Repository Name That Also Overflows',
+      url: 'git@github.example.com:acme-organization/really-long-monorepo-name-with-many-skills-and-hooks.git?ref=some/very/deeply/nested/feature/branch/name/that/keeps/going',
+    },
+    phase: 'idle',
+    hasUpdate: true,
+    errorLabel: 'Click to view the error',
+    syncLabel: 'Sync',
+    syncingLabel: 'Syncing',
+    editLabel: 'Edit repository',
+    updateLabel: 'Update available',
+    urlCopyLabel: 'Copy link',
+    onUrlClick: () => {},
+    branch: 'feature/a-very-long-branch-name-that-exceeds-the-badge-limit',
+    branchCopyLabel: 'Copy branch name',
+    onBranchClick: () => {},
+    skillCountLabel: '42 skills',
+    onSync: () => {},
+    onEdit: () => {},
+    onErrorClick: () => {},
+  },
+};

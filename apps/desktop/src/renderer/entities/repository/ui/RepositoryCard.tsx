@@ -37,9 +37,11 @@ export interface RepositoryCardProps {
 
 /** Longest branch name shown on the badge before it is truncated with "...". */
 const BRANCH_MAX = 25;
+/** Hard cap on the remote URL string length (CSS also ellipsizes to the card). */
+const URL_MAX = 256;
 
-function truncateBranch(name: string): string {
-  return name.length > BRANCH_MAX ? `${name.slice(0, BRANCH_MAX)}...` : name;
+function truncate(value: string, max: number): string {
+  return value.length > max ? `${value.slice(0, max)}...` : value;
 }
 
 export function RepositoryCard({
@@ -121,18 +123,18 @@ export function RepositoryCard({
           </AnimatePresence>
         </span>
         {onUrlClick !== undefined ? (
-          <Tooltip content={urlCopyLabel ?? ''}>
+          <Tooltip content={urlCopyLabel ?? ''} className="sk-repo-card__url-tip">
             <button
               type="button"
               className="sk-repo-card__url sk-repo-card__url--button"
               onClick={onUrlClick}
               aria-label={urlCopyLabel}
             >
-              {repository.url}
+              {truncate(repository.url, URL_MAX)}
             </button>
           </Tooltip>
         ) : (
-          <span className="sk-repo-card__url">{repository.url}</span>
+          <span className="sk-repo-card__url">{truncate(repository.url, URL_MAX)}</span>
         )}
         {(branch != null && branch !== '') || skillCountLabel !== undefined ? (
           <span className="sk-repo-card__badges">
@@ -144,7 +146,7 @@ export function RepositoryCard({
                   onClick={onBranchClick}
                   aria-label={branchCopyLabel}
                 >
-                  <Badge tone="neutral">{truncateBranch(branch)}</Badge>
+                  <Badge tone="neutral">{truncate(branch, BRANCH_MAX)}</Badge>
                 </button>
               </Tooltip>
             )}
