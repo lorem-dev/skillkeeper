@@ -42,6 +42,20 @@ export interface SkillkeeperBridge {
   syncRepository(id: string): Promise<RepoResult>;
   repoHasUpdate(id: string): Promise<boolean>;
   describeRepository(id: string): Promise<RepoInfo>;
+  /** Start (or attach to) the persistent PTY and return its retained buffer. */
+  startTerminal(cols: number, rows: number): Promise<string>;
+  /** Write input into the PTY. */
+  writeTerminal(data: string): void;
+  /** Resize the PTY. */
+  resizeTerminal(cols: number, rows: number): void;
+  /** Run ssh-add on the PTY so the passphrase prompt appears there. */
+  runSshAdd(): Promise<void>;
+  /** Subscribe to PTY output chunks. Returns an unsubscribe fn. */
+  onTerminalData(callback: (chunk: string) => void): () => void;
+  /** Subscribe to the PTY exiting. Returns an unsubscribe fn. */
+  onTerminalExit(callback: () => void): () => void;
+  /** Subscribe to the main process requesting the terminal overlay be opened. Returns an unsubscribe fn. */
+  onTerminalRequestOpen(callback: () => void): () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -97,6 +111,39 @@ const bridge: SkillkeeperBridge = {
   },
   describeRepository(id) {
     return ipcRenderer.invoke('repositories:describe', { id }) as Promise<RepoInfo>;
+  },
+  startTerminal(cols: number, rows: number): Promise<string> {
+    return ipcRenderer.invoke('terminal:start', { cols, rows }) as Promise<string>;
+  },
+  writeTerminal(data: string): void {
+    ipcRenderer.send('terminal:input', data);
+  },
+  resizeTerminal(cols: number, rows: number): void {
+    ipcRenderer.send('terminal:resize', { cols, rows });
+  },
+  runSshAdd(): Promise<void> {
+    return ipcRenderer.invoke('terminal:runSshAdd') as Promise<void>;
+  },
+  onTerminalData(callback: (chunk: string) => void): () => void {
+    const listener = (_event: IpcRendererEvent, chunk: string): void => callback(chunk);
+    ipcRenderer.on('terminal:data', listener);
+    return () => {
+      ipcRenderer.removeListener('terminal:data', listener);
+    };
+  },
+  onTerminalExit(callback: () => void): () => void {
+    const listener = (): void => callback();
+    ipcRenderer.on('terminal:exit', listener);
+    return () => {
+      ipcRenderer.removeListener('terminal:exit', listener);
+    };
+  },
+  onTerminalRequestOpen(callback: () => void): () => void {
+    const listener = (): void => callback();
+    ipcRenderer.on('terminal:requestOpen', listener);
+    return () => {
+      ipcRenderer.removeListener('terminal:requestOpen', listener);
+    };
   },
 };
 

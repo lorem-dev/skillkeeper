@@ -28,6 +28,13 @@ export interface BridgeClient {
   syncRepository(id: string): Promise<RepoResult>;
   repoHasUpdate(id: string): Promise<boolean>;
   describeRepository(id: string): Promise<RepoInfo>;
+  startTerminal(cols: number, rows: number): Promise<string>;
+  writeTerminal(data: string): void;
+  resizeTerminal(cols: number, rows: number): void;
+  runSshAdd(): Promise<void>;
+  onTerminalData(callback: (chunk: string) => void): () => void;
+  onTerminalExit(callback: () => void): () => void;
+  onTerminalRequestOpen(callback: () => void): () => void;
 }
 
 /** The live client, backed by the preload bridge on window.skillkeeper. */
@@ -47,4 +54,11 @@ export const bridgeClient: BridgeClient = {
   syncRepository: (id) => window.skillkeeper.syncRepository(id),
   repoHasUpdate: (id) => window.skillkeeper.repoHasUpdate(id),
   describeRepository: (id) => window.skillkeeper.describeRepository(id),
+  startTerminal: (cols, rows) => window.skillkeeper.startTerminal(cols, rows),
+  writeTerminal: (data) => window.skillkeeper.writeTerminal(data),
+  resizeTerminal: (cols, rows) => window.skillkeeper.resizeTerminal(cols, rows),
+  runSshAdd: () => window.skillkeeper.runSshAdd(),
+  onTerminalData: (callback) => window.skillkeeper.onTerminalData(callback),
+  onTerminalExit: (callback) => window.skillkeeper.onTerminalExit(callback),
+  onTerminalRequestOpen: (callback) => window.skillkeeper.onTerminalRequestOpen(callback),
 };
