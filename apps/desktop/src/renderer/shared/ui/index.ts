@@ -13,6 +13,8 @@ export { Toolbar } from './Toolbar';
 export type { ToolbarProps } from './Toolbar';
 export { Sidebar, SidebarItem } from './Sidebar';
 export type { SidebarProps, SidebarItemProps } from './Sidebar';
+export { Row } from './Row';
+export type { RowProps } from './Row';
 export { Icon } from './Icon';
 export type { IconProps, IconName } from './Icon';
 export { List } from './List';

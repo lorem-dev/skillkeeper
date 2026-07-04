@@ -1,0 +1,66 @@
+// Row layout primitive. Co-located; tokens only. A horizontal flex container
+// with token-based gaps and alignment modifiers.
+.sk-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-width: 0;
+}
+
+.sk-row--align-start {
+  align-items: flex-start;
+}
+.sk-row--align-center {
+  align-items: center;
+}
+.sk-row--align-end {
+  align-items: flex-end;
+}
+.sk-row--align-stretch {
+  align-items: stretch;
+}
+.sk-row--align-baseline {
+  align-items: baseline;
+}
+
+.sk-row--justify-start {
+  justify-content: flex-start;
+}
+.sk-row--justify-center {
+  justify-content: center;
+}
+.sk-row--justify-end {
+  justify-content: flex-end;
+}
+.sk-row--justify-between {
+  justify-content: space-between;
+}
+
+.sk-row--wrap {
+  flex-wrap: wrap;
+}
+
+.sk-row--gap-1 {
+  gap: var(--sk-space-1);
+}
+.sk-row--gap-2 {
+  gap: var(--sk-space-2);
+}
+.sk-row--gap-3 {
+  gap: var(--sk-space-3);
+}
+.sk-row--gap-4 {
+  gap: var(--sk-space-4);
+}
+.sk-row--gap-5 {
+  gap: var(--sk-space-5);
+}
+.sk-row--gap-6 {
+  gap: var(--sk-space-6);
+}
+.sk-row--gap-7 {
+  gap: var(--sk-space-7);
+}
+.sk-row--gap-8 {
+  gap: var(--sk-space-8);
+}
