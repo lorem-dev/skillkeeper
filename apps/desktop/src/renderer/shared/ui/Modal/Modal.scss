@@ -12,10 +12,10 @@
   justify-content: center;
   padding: var(--sk-space-7);
   background: rgba(0, 0, 0, 0.4);
-  // A gentle blur on the dimmed backdrop. Declared statically (not applied after
+  // A subtle blur on the dimmed backdrop. Declared statically (not applied after
   // mount) and the scrim only fades opacity, so it does not flicker on open.
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .sk-modal {
