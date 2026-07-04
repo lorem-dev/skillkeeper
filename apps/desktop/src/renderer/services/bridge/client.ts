@@ -8,6 +8,7 @@ import type {
   OpenResult,
   RepoResult,
   RemoveResult,
+  RepoInfo,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the main process. */
@@ -26,6 +27,7 @@ export interface BridgeClient {
   removeRepository(id: string): Promise<RemoveResult>;
   syncRepository(id: string): Promise<RepoResult>;
   repoHasUpdate(id: string): Promise<boolean>;
+  describeRepository(id: string): Promise<RepoInfo>;
 }
 
 /** The live client, backed by the preload bridge on window.skillkeeper. */
@@ -44,4 +46,5 @@ export const bridgeClient: BridgeClient = {
   removeRepository: (id) => window.skillkeeper.removeRepository(id),
   syncRepository: (id) => window.skillkeeper.syncRepository(id),
   repoHasUpdate: (id) => window.skillkeeper.repoHasUpdate(id),
+  describeRepository: (id) => window.skillkeeper.describeRepository(id),
 };

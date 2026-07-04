@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { rm } from 'node:fs/promises';
 import type { FsPort, GitPort, Repository } from '@skillkeeper/core';
-import { loadState, saveState, parseRemote, repoHasUpdate } from '@skillkeeper/core';
+import { loadState, saveState, parseRemote, repoHasUpdate, resolveSkills } from '@skillkeeper/core';
 
 export interface RepoDeps {
   readonly fs: FsPort;
@@ -19,6 +19,14 @@ export interface RepoDeps {
 
 export type RepoResult = { ok: true; repository: Repository } | { ok: false; error: string };
 export type RemoveResult = { ok: true } | { ok: false; error: string };
+
+/** Branch + skill-count summary for a cloned repository (for the card badges). */
+export interface RepoInfo {
+  /** Current branch, or null when the clone is missing or detached-unknown. */
+  readonly branch: string | null;
+  /** Number of skills resolved in the working tree. */
+  readonly skillCount: number;
+}
 
 const message = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
@@ -175,6 +183,27 @@ export async function syncRepository(deps: RepoDeps, args: { id: string }): Prom
     return await persistRepo(deps, args.id, { lastFetched: new Date().toISOString() });
   } catch (err) {
     return { ok: false, error: message(err) };
+  }
+}
+
+/** Branch + skill count for a clone; zeros/null when missing or on any failure. */
+export async function describeRepository(deps: RepoDeps, args: { id: string }): Promise<RepoInfo> {
+  try {
+    const repo = await findRepo(deps, args.id);
+    if (repo === null || !(await deps.fs.exists(repo.localPath))) {
+      return { branch: null, skillCount: 0 };
+    }
+    let branch: string | null = null;
+    try {
+      const b = await deps.git.currentBranch(repo.localPath);
+      branch = b === '' || b === 'HEAD' ? null : b;
+    } catch {
+      branch = null;
+    }
+    const { skills } = await resolveSkills(deps.fs, repo.localPath);
+    return { branch, skillCount: skills.length };
+  } catch {
+    return { branch: null, skillCount: 0 };
   }
 }
 

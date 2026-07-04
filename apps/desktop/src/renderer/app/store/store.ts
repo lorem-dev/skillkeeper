@@ -17,6 +17,7 @@ import type {
   Repository,
   Project,
   InstallManifest,
+  RepoInfo,
 } from '@/services/bridge';
 import { bridgeClient } from '@/services/bridge';
 
@@ -58,6 +59,12 @@ export interface SkillkeeperState {
   repositories: Repository[];
   /** Per-repository UI status (not persisted). */
   repoStatus: Record<string, { phase: 'idle' | 'cloning' | 'syncing'; hasUpdate: boolean; error?: string }>;
+  /**
+   * Per-repository branch + skill count for the card badges (not persisted).
+   * Kept separate from `repoStatus` so phase/hasUpdate/error updates never need
+   * to carry these forward.
+   */
+  repoInfo: Record<string, RepoInfo>;
   /** Every recorded error (newest last); consumed by the logs page. */
   errorLog: ErrorEntry[];
   /** Currently-visible toasts. */
@@ -97,6 +104,8 @@ export interface SkillkeeperActions {
   removeRepository(id: string): Promise<void>;
   syncRepository(id: string): Promise<void>;
   refreshRepoUpdates(): Promise<void>;
+  /** Fetch branch + skill count for every repo into `repoInfo`. */
+  refreshRepoInfo(): Promise<void>;
   /** Record an error: append to the log + toasts, and mark the repo (if given). */
   notify(message: string, repoId?: string): void;
   /** Remove one toast (keeps the log and the repo dot). */
@@ -124,6 +133,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   configWarnings: [],
   repositories: [],
   repoStatus: {},
+  repoInfo: {},
   errorLog: [],
   toasts: [],
   logsOpen: false,
@@ -309,7 +319,12 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       }
       set((s) => {
         const { [id]: _removed, ...rest } = s.repoStatus;
-        return { repositories: s.repositories.filter((r) => r.id !== id), repoStatus: rest };
+        const { [id]: _removedInfo, ...restInfo } = s.repoInfo;
+        return {
+          repositories: s.repositories.filter((r) => r.id !== id),
+          repoStatus: rest,
+          repoInfo: restInfo,
+        };
       });
     })();
   },
@@ -339,7 +354,13 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           },
         },
       }));
-      if (!res.ok) get().notify(res.error, id);
+      if (res.ok) {
+        // Branch / skill count may have changed with the pulled content.
+        const info = await bridgeClient.describeRepository(id);
+        set((s) => ({ repoInfo: { ...s.repoInfo, [id]: info } }));
+      } else {
+        get().notify(res.error, id);
+      }
     })();
   },
 
@@ -359,6 +380,18 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
               },
             },
           }));
+        }),
+      );
+    })();
+  },
+
+  refreshRepoInfo() {
+    return (async () => {
+      const repos = get().repositories;
+      await Promise.all(
+        repos.map(async (r) => {
+          const info = await bridgeClient.describeRepository(r.id);
+          set((s) => ({ repoInfo: { ...s.repoInfo, [r.id]: info } }));
         }),
       );
     })();

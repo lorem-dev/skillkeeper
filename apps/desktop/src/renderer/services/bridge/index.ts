@@ -19,4 +19,5 @@ export type {
   OpenResult,
   RepoResult,
   RemoveResult,
+  RepoInfo,
 } from './types';

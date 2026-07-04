@@ -18,4 +18,4 @@ export type {
 } from '@skillkeeper/config';
 export type { Lang } from '@skillkeeper/i18n';
 export type { EditorOption, OpenResult } from '../../../main/editors.js';
-export type { RepoResult, RemoveResult } from '../../../main/repositories.js';
+export type { RepoResult, RemoveResult, RepoInfo } from '../../../main/repositories.js';

@@ -215,6 +215,7 @@ describe('useSkillkeeperStore', () => {
         removeRepository: async () => ({ ok: true } as RemoveResult),
         syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
         repoHasUpdate: async () => false,
+        describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);
@@ -247,6 +248,7 @@ describe('useSkillkeeperStore', () => {
         removeRepository: async () => ({ ok: true } as RemoveResult),
         syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
         repoHasUpdate: async () => false,
+        describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);

@@ -11,7 +11,7 @@ import type { IpcRendererEvent } from 'electron';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
 import type { EditorOption, OpenResult } from '../main/editors.js';
-import type { RepoResult, RemoveResult } from '../main/repositories.js';
+import type { RepoResult, RemoveResult, RepoInfo } from '../main/repositories.js';
 
 // ---------------------------------------------------------------------------
 // Bridge type (exported so the renderer window.d.ts can import it)
@@ -41,6 +41,7 @@ export interface SkillkeeperBridge {
   removeRepository(id: string): Promise<RemoveResult>;
   syncRepository(id: string): Promise<RepoResult>;
   repoHasUpdate(id: string): Promise<boolean>;
+  describeRepository(id: string): Promise<RepoInfo>;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,6 +94,9 @@ const bridge: SkillkeeperBridge = {
   },
   repoHasUpdate(id) {
     return ipcRenderer.invoke('repositories:hasUpdate', { id }) as Promise<boolean>;
+  },
+  describeRepository(id) {
+    return ipcRenderer.invoke('repositories:describe', { id }) as Promise<RepoInfo>;
   },
 };
 

@@ -23,6 +23,7 @@ import {
   removeRepository,
   syncRepository,
   hasRepoUpdate,
+  describeRepository,
 } from './repositories.js';
 import type { RepoDeps } from './repositories.js';
 
@@ -303,6 +304,7 @@ function registerHandlers(): void {
   ipcMain.handle('repositories:remove', (_e, args: { id: string }) => removeRepository(repoDeps, args));
   ipcMain.handle('repositories:sync', (_e, args: { id: string }) => syncRepository(repoDeps, args));
   ipcMain.handle('repositories:hasUpdate', (_e, args: { id: string }) => hasRepoUpdate(repoDeps, args));
+  ipcMain.handle('repositories:describe', (_e, args: { id: string }) => describeRepository(repoDeps, args));
 }
 
 // ---------------------------------------------------------------------------
