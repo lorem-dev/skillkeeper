@@ -28,6 +28,12 @@ body {
   flex-direction: column;
 }
 
+// Soften the text-selection highlight: a translucent accent tint instead of the
+// browser's strong opaque default. Text color stays readable in both themes.
+::selection {
+  background: color-mix(in srgb, var(--sk-color-accent) 24%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
