@@ -87,7 +87,7 @@
   z-index: 5;
   pointer-events: none;
   opacity: 0;
-  transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
+  transition: opacity var(--sk-duration-medium) var(--sk-ease-standard);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   // Same theme-adaptive tint as the header backdrop (masked to fade toward the
