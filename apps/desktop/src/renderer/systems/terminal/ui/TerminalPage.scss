@@ -1,0 +1,38 @@
+// Full-screen embedded-terminal overlay. Opaque background so it fully
+// covers the app. z-index sits just above the logs overlay's 300 -- the two
+// are mutually exclusive in practice, so whichever opens last wins.
+.sk-terminal-page {
+  position: fixed;
+  inset: 0;
+  z-index: 310;
+  display: flex;
+  flex-direction: column;
+  background: var(--sk-color-bg);
+  color: var(--sk-color-label);
+  outline: none;
+}
+
+.sk-terminal-page__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-4);
+  padding: var(--sk-space-5);
+  border-bottom: 1px solid var(--sk-color-separator);
+}
+
+// Match the standard page/toolbar title (sans, not the serif display font).
+.sk-terminal-page__title {
+  flex: 1;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--sk-color-label);
+}
+
+.sk-terminal-page__body {
+  flex: 1;
+  overflow: hidden;
+  padding: var(--sk-space-3) var(--sk-space-5);
+}

@@ -19,6 +19,7 @@ import { ProjectsPage } from '@/pages/Projects';
 import { SettingsPage } from '@/pages/Settings';
 import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
 import { Toasts, StatusBar, LogsPage } from '@/systems/notifications';
+import { TerminalPage } from '@/systems/terminal';
 import './App.scss';
 
 type View = 'repositories' | 'skills' | 'projects' | 'settings';
@@ -43,6 +44,15 @@ export function App() {
   useEffect(() => {
     void loadAll(bridgeClient);
   }, [loadAll]);
+
+  // A background ssh auth failure requests the terminal (for the passphrase
+  // prompt); subscribed once for the app's lifetime.
+  useEffect(() => {
+    const off = bridgeClient.onTerminalRequestOpen(() => {
+      useSkillkeeperStore.getState().openTerminal();
+    });
+    return off;
+  }, []);
 
   function renderView() {
     switch (activeView) {
@@ -91,6 +101,7 @@ export function App() {
       <StatusBar />
       <Toasts />
       <LogsPage />
+      <TerminalPage />
     </div>
   );
 }
