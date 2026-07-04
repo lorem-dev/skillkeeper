@@ -51,7 +51,7 @@ export function RepositoryCard({
     indicatorKey = 'busy';
     indicator = (
       <Tooltip content={syncingLabel}>
-        <span className="sk-repo-card__update-dot" />
+        <span className="sk-repo-card__update-dot sk-repo-card__update-dot--pulse" />
       </Tooltip>
     );
   } else if (error !== undefined) {

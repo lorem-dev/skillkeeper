@@ -79,7 +79,8 @@
 
 // "Update available" / "in progress" dot, trailing the repository name.
 // display:block so its width/height apply even inside the Tooltip's inline
-// wrapper span. The ::after ring is Ant Design's "processing" badge animation:
+// wrapper span. Static by default (an available update); the --pulse modifier
+// (used only while cloning/syncing) adds Ant Design's "processing" badge ring:
 // an expanding, fading pulse.
 .sk-repo-card__update-dot {
   position: relative;
@@ -91,7 +92,7 @@
   background: var(--sk-color-accent);
 }
 
-.sk-repo-card__update-dot::after {
+.sk-repo-card__update-dot--pulse::after {
   content: '';
   position: absolute;
   inset: 0;
