@@ -18,13 +18,24 @@ export interface RepositoryCardProps {
   readonly editLabel: string;
   readonly updateLabel: string;
   readonly errorLabel: string;
-  /** Current branch name; shows a gray badge when set. */
+  /** Current branch name (full); shows a gray badge (truncated) when set. */
   readonly branch?: string | null;
+  /** Tooltip for the branch badge (e.g. "Copy"). */
+  readonly branchCopyLabel?: string;
+  /** Called when the branch badge is clicked (copies the full branch name). */
+  readonly onBranchClick?: () => void;
   /** Pre-formatted, pluralized skill count (e.g. "3 skills"); shows a blue badge when set. */
   readonly skillCountLabel?: string;
   readonly onSync: () => void;
   readonly onEdit: () => void;
   readonly onErrorClick: () => void;
+}
+
+/** Longest branch name shown on the badge before it is truncated with "...". */
+const BRANCH_MAX = 25;
+
+function truncateBranch(name: string): string {
+  return name.length > BRANCH_MAX ? `${name.slice(0, BRANCH_MAX)}...` : name;
 }
 
 export function RepositoryCard({
@@ -38,6 +49,8 @@ export function RepositoryCard({
   updateLabel,
   errorLabel,
   branch,
+  branchCopyLabel,
+  onBranchClick,
   skillCountLabel,
   onSync,
   onEdit,
@@ -104,7 +117,18 @@ export function RepositoryCard({
         <span className="sk-repo-card__url">{repository.url}</span>
         {(branch != null && branch !== '') || skillCountLabel !== undefined ? (
           <span className="sk-repo-card__badges">
-            {branch != null && branch !== '' && <Badge tone="neutral">{branch}</Badge>}
+            {branch != null && branch !== '' && (
+              <Tooltip content={branchCopyLabel ?? ''}>
+                <button
+                  type="button"
+                  className="sk-repo-card__branch"
+                  onClick={onBranchClick}
+                  aria-label={branchCopyLabel}
+                >
+                  <Badge tone="neutral">{truncateBranch(branch)}</Badge>
+                </button>
+              </Tooltip>
+            )}
             {skillCountLabel !== undefined && <Badge tone="accent">{skillCountLabel}</Badge>}
           </span>
         ) : null}

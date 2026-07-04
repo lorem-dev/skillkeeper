@@ -21,8 +21,14 @@ export function RepositoriesPage() {
   const refreshRepoInfo = useSkillkeeperStore((s) => s.refreshRepoInfo);
   const reload = useSkillkeeperStore((s) => s.reload);
   const showRepoError = useSkillkeeperStore((s) => s.showRepoError);
+  const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
   const [editing, setEditing] = useState<Repository | null>(null);
+
+  function copyBranch(branch: string): void {
+    void navigator.clipboard.writeText(branch);
+    notify(t('repositories.branchCopied'), 'info');
+  }
 
   useEffect(() => {
     void refreshRepoUpdates();
@@ -55,6 +61,11 @@ export function RepositoriesPage() {
               updateLabel={t('repositories.hasUpdate')}
               errorLabel={t('repositories.viewError')}
               branch={repoInfo[r.id]?.branch}
+              branchCopyLabel={t('repositories.copyBranch')}
+              onBranchClick={() => {
+                const branch = repoInfo[r.id]?.branch;
+                if (branch != null && branch !== '') copyBranch(branch);
+              }}
               skillCountLabel={
                 repoInfo[r.id] !== undefined
                   ? t.plural('repositories.skillCount', repoInfo[r.id]!.skillCount)

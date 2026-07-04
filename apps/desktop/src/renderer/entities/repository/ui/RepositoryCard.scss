@@ -54,6 +54,16 @@
   min-width: 0;
 }
 
+// Clickable branch badge (copies the full branch name). Button reset so only
+// the Badge shows.
+.sk-repo-card__branch {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
 // Actions stay hidden until the card is hovered (or a control is focused via the
 // keyboard, so keyboard users can still reach them); the opacity transition
 // fades them in/out. `:has(:focus-visible)` -- not `:focus-within` -- so a mouse
