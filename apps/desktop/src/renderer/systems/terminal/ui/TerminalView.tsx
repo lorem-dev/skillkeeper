@@ -26,14 +26,23 @@ export function TerminalView() {
 
     const term = new Terminal({
       cursorBlink: true,
-      fontFamily: 'var(--sk-font-mono, monospace)',
+      // xterm needs a literal font stack -- it cannot resolve a CSS var().
+      fontFamily: cssVar('--sk-font-mono') || 'Menlo, Monaco, "SF Mono", "Courier New", monospace',
       fontSize: 13,
       allowProposedApi: true,
       theme: {
-        background: cssVar('--sk-color-bg') || 'transparent',
-        foreground: cssVar('--sk-color-label') || undefined,
+        background: cssVar('--sk-color-bg') || '#000000',
+        foreground: cssVar('--sk-color-label') || '#ffffff',
       },
     });
+    // Swallow terminal color queries (OSC 10/11/12). Programs/shells query the
+    // fg/bg/cursor color at startup; xterm's default reply travels back over
+    // async IPC and lands at the shell prompt too late, where ZLE echoes it as
+    // garbage (e.g. "11;rgb:ffff/ffff/ffff"). Returning true marks them handled
+    // so xterm sends no reply; apps fall back to their defaults.
+    for (const code of [10, 11, 12]) {
+      term.parser.registerOscHandler(code, () => true);
+    }
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(el);
