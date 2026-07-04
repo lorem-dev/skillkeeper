@@ -56,10 +56,10 @@ export function buildSetRemoteUrlArgs(url: string): string[] {
 }
 
 /** The default runner shells out via execFile (argument array, no shell). */
-function defaultRunner(env: HostEnv): GitRunner {
+function defaultRunner(env: HostEnv, resolveGitPath: () => string): GitRunner {
   return {
     async run(args: readonly string[], cwd: string): Promise<RunResult> {
-      const { stdout, stderr } = await execFileAsync('git', [...args], {
+      const { stdout, stderr } = await execFileAsync(resolveGitPath(), [...args], {
         cwd,
         env: env.env,
       });
@@ -76,9 +76,16 @@ function defaultRunner(env: HostEnv): GitRunner {
  *
  * @param env Host environment (supplies the process env for the subprocess).
  * @param runner Optional runner override (defaults to an execFile-backed one).
+ * @param resolveGitPath Resolves the git executable to spawn, evaluated per run
+ *   so a configured path can change without rebuilding the port. Defaults to
+ *   `"git"` (resolved via the subprocess PATH). Ignored when `runner` is given.
  */
-export function createSystemGit(env: HostEnv, runner?: GitRunner): GitPort {
-  const r = runner ?? defaultRunner(env);
+export function createSystemGit(
+  env: HostEnv,
+  runner?: GitRunner,
+  resolveGitPath: () => string = () => 'git',
+): GitPort {
+  const r = runner ?? defaultRunner(env, resolveGitPath);
   return {
     async clone(options: CloneOptions): Promise<void> {
       await r.run(buildCloneArgs(options), dirname(options.destination));

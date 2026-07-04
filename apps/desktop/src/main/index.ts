@@ -38,8 +38,39 @@ let configWatcher: ConfigWatcher | undefined;
  * of the config file is detected by the watcher.
  */
 function broadcastConfig(result: LoadConfigResult): void {
+  rememberGitPath(result.config);
   const [win] = BrowserWindow.getAllWindows();
   win?.webContents.send('config:changed', result);
+}
+
+/**
+ * Latest git executable path from config. The git port reads this via a resolver
+ * (evaluated per command) so editing the path in Settings takes effect without a
+ * restart. Defaults to "git" (resolved via PATH); seeded at startup and refreshed
+ * on every config load/save/watch.
+ */
+let gitPath = 'git';
+
+/** Remember the configured git executable path for subsequent git commands. */
+function rememberGitPath(config: SkillKeeperConfig): void {
+  gitPath = config.repositories.gitPath;
+}
+
+/**
+ * GUI apps launched outside a login shell (Finder/dock on macOS) inherit a
+ * minimal PATH that often omits Homebrew/local bin dirs, so `git` (and
+ * git-lfs/ssh) may not be found -- the "spawn git ENOENT" failure. Append the
+ * common locations to process.env.PATH IN PLACE (same object, so the ssh-agent's
+ * later SSH_AUTH_SOCK injection stays visible to git). No-op on Windows, where
+ * git installers put themselves on PATH.
+ */
+function ensureToolPathDirs(): void {
+  if (process.platform === 'win32') return;
+  const parts = (process.env['PATH'] ?? '').split(':').filter(Boolean);
+  for (const dir of ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin']) {
+    if (!parts.includes(dir)) parts.push(dir);
+  }
+  process.env['PATH'] = parts.join(':');
 }
 
 // ---------------------------------------------------------------------------
@@ -128,6 +159,9 @@ function installCsp(): void {
 // ---------------------------------------------------------------------------
 
 function registerHandlers(): void {
+  // Widen PATH before anything spawns git/ssh so the default `git` resolves.
+  ensureToolPathDirs();
+
   const fs = createNodeFs();
   const configPath = resolveConfigPath();
   const statePath = resolveStatePath();
@@ -136,11 +170,15 @@ function registerHandlers(): void {
   const hostEnv: HostEnv = {
     homeDir: os.homedir(),
     platform: process.platform,
+    // The same process.env object (by reference), so the ssh-agent's later
+    // SSH_AUTH_SOCK injection is visible to git subprocesses.
     env: process.env as Record<string, string | undefined>,
   };
   const repoDeps: RepoDeps = {
     fs,
-    git: createSystemGit(hostEnv),
+    // Resolver (not a fixed string) so a Settings change to the git path applies
+    // to the next command without rebuilding the port or restarting.
+    git: createSystemGit(hostEnv, undefined, () => gitPath),
     statePath,
     reposDir: path.join(resolveAppDataDir(), 'repositories'),
   };
@@ -151,7 +189,9 @@ function registerHandlers(): void {
    */
   ipcMain.handle('config:get', async (): Promise<LoadConfigResult> => {
     try {
-      return await loadConfig(fs, configPath);
+      const result = await loadConfig(fs, configPath);
+      rememberGitPath(result.config);
+      return result;
     } catch (err) {
       // Defensive: should not happen because loadConfig handles missing files,
       // but guard against unexpected I/O errors. The validity map is built from
@@ -178,6 +218,7 @@ function registerHandlers(): void {
       try {
         await saveConfig(fs, configPath, config);
         const result = await loadConfig(fs, configPath);
+        rememberGitPath(result.config);
         await configWatcher?.noteWritten();
         return result;
       } catch (err) {
@@ -302,6 +343,12 @@ function createWindow(): void {
 registerHandlers();
 
 void app.whenReady().then(async () => {
+  // Seed the git path from config before the first git command may run.
+  try {
+    rememberGitPath((await loadConfig(createNodeFs(), resolveConfigPath())).config);
+  } catch {
+    // Keep the "git" default; config:get will refresh it once the renderer loads.
+  }
   await ensureSshAgent();
   installCsp();
   createWindow();
