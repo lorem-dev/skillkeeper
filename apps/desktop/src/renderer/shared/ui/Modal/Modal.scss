@@ -14,8 +14,8 @@
   background: rgba(0, 0, 0, 0.4);
   // A subtle blur on the dimmed backdrop. Declared statically (not applied after
   // mount) and the scrim only fades opacity, so it does not flicker on open.
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
 }
 
 .sk-modal {
