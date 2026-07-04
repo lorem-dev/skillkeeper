@@ -9,6 +9,7 @@ import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Alert } from '@/shared/ui';
 import { fadeRise } from '@/shared/lib';
+import { resolveNotification } from '../resolveNotification';
 import './Toasts.scss';
 
 /** How long a toast stays before it auto-dismisses (ms). */
@@ -67,7 +68,7 @@ export function Toasts() {
               tone={toast.level === 'error' ? 'danger' : 'info'}
               title={toast.level === 'error' ? t('notifications.error') : t('notifications.info')}
             >
-              {toast.message}
+              {resolveNotification(toast, t)}
             </Alert>
           </motion.button>
         ))}

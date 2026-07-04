@@ -11,13 +11,15 @@ import { useSkillkeeperStore } from '@/app/store';
 import type { NotificationEntry } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon, MultiSelect } from '@/shared/ui';
+import type { Translator } from '@/systems/i18n';
 import { cx, fade } from '@/shared/lib';
+import { resolveNotification } from '../resolveNotification';
 import './LogsPage.scss';
 
 /** Serialize one entry for the clipboard: "<at> [<repoId>] <message>". */
-function formatEntry(entry: NotificationEntry): string {
+function formatEntry(entry: NotificationEntry, t: Translator): string {
   const repo = entry.repoId !== undefined ? ` [${entry.repoId}]` : '';
-  return `${entry.at}${repo} ${entry.message}`;
+  return `${entry.at}${repo} ${resolveNotification(entry, t)}`;
 }
 
 export function LogsPage() {
@@ -91,7 +93,7 @@ export function LogsPage() {
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => copy(entries.map(formatEntry).join('\n'))}
+                onClick={() => copy(entries.map((e) => formatEntry(e, t)).join('\n'))}
                 disabled={entries.length === 0}
               >
                 {t('logs.copyAll')}
@@ -121,11 +123,11 @@ export function LogsPage() {
                       <span className="sk-logs__repo">{entry.repoId}</span>
                     )}
                   </div>
-                  <p className="sk-logs__message">{entry.message}</p>
+                  <p className="sk-logs__message">{resolveNotification(entry, t)}</p>
                   <Button
                     variant="plain"
                     className="sk-logs__copy"
-                    onClick={() => copy(formatEntry(entry))}
+                    onClick={() => copy(formatEntry(entry, t))}
                     aria-label={t('logs.copy')}
                   >
                     <Icon name="copy" size={16} />

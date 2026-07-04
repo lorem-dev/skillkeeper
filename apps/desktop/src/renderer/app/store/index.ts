@@ -11,4 +11,5 @@ export type {
   Project,
   NotificationEntry,
   NotificationLevel,
+  NotificationMessage,
 } from './store';

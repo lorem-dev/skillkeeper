@@ -39,13 +39,26 @@ export interface ConfigPatch {
 export type NotificationLevel = 'error' | 'info';
 
 /**
+ * A notification's message: either raw text (e.g. a git error, which cannot be
+ * translated) or an i18n key with optional interpolation vars (resolved at
+ * DISPLAY time, so switching language re-translates existing entries).
+ */
+export type NotificationMessage = string | { readonly key: string; readonly vars?: Record<string, string> };
+
+/**
  * A recorded notification (an error or an informational message). Feeds the
- * bottom toasts and the notifications log.
+ * bottom toasts and the notifications log. Stores either raw `text` or a
+ * translation `key` (+ `vars`) -- never the pre-translated string -- so the log
+ * follows the current language.
  */
 export interface NotificationEntry {
   readonly id: string;
-  readonly message: string;
   readonly level: NotificationLevel;
+  /** Raw text shown as-is (untranslatable, e.g. a git error). */
+  readonly text?: string;
+  /** i18n key resolved at display time. */
+  readonly key?: string;
+  readonly vars?: Record<string, string>;
   readonly repoId?: string;
   /** ISO timestamp. */
   readonly at: string;
@@ -118,7 +131,7 @@ export interface SkillkeeperActions {
    * with a `repoId` also marks that repo's status (the red dot); `info` never
    * touches repo status.
    */
-  notify(message: string, level: NotificationLevel, repoId?: string): void;
+  notify(message: NotificationMessage, level: NotificationLevel, repoId?: string): void;
   /** Remove one toast (keeps the log and the repo dot). */
   dismissToast(id: string): void;
   /** Re-show the toast for a repo's current error (does not re-log). */
@@ -183,10 +196,14 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   },
 
   notify(message, level, repoId) {
+    // Raw text is stored verbatim; a keyed message stores key (+ vars) and is
+    // translated at display time so the log follows the current language.
+    const payload =
+      typeof message === 'string' ? { text: message } : { key: message.key, vars: message.vars };
     const entry: NotificationEntry = {
       id: crypto.randomUUID(),
-      message,
       level,
+      ...payload,
       repoId,
       at: new Date().toISOString(),
     };
@@ -194,6 +211,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       notifications: [...s.notifications, entry],
       toasts: [...s.toasts, entry],
       // Only an error marks the repo's status (the red dot); info never does.
+      // Repo errors are always raw text (a git error), so store that text.
       repoStatus:
         level !== 'error' || repoId === undefined
           ? s.repoStatus
@@ -202,7 +220,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
               [repoId]: {
                 phase: s.repoStatus[repoId]?.phase ?? 'idle',
                 hasUpdate: s.repoStatus[repoId]?.hasUpdate ?? false,
-                error: message,
+                error: typeof message === 'string' ? message : message.key,
               },
             },
     }));
@@ -215,10 +233,11 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   showRepoError(repoId) {
     const message = get().repoStatus[repoId]?.error;
     if (message === undefined) return;
+    // Repo errors are raw git text (untranslatable), stored as `text`.
     const entry: NotificationEntry = {
       id: crypto.randomUUID(),
-      message,
       level: 'error',
+      text: message,
       repoId,
       at: new Date().toISOString(),
     };

@@ -27,12 +27,13 @@ export function RepositoriesPage() {
 
   function copyBranch(branch: string): void {
     void navigator.clipboard.writeText(branch);
-    notify(t('repositories.branchCopied'), 'info');
+    // Store the key (not the translated text) so the log follows the language.
+    notify({ key: 'repositories.branchCopied' }, 'info');
   }
 
   function copyRemote(url: string): void {
     void navigator.clipboard.writeText(url);
-    notify(t('repositories.remoteCopied'), 'info');
+    notify({ key: 'repositories.remoteCopied' }, 'info');
   }
 
   useEffect(() => {
