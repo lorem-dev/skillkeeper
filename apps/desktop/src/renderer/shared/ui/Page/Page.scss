@@ -18,7 +18,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: var(--sk-space-4) var(--sk-space-5);
+  padding: var(--sk-space-6) var(--sk-space-5) var(--sk-space-5);
 
   &::before {
     content: '';
