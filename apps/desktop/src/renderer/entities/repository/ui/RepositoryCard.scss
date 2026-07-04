@@ -3,6 +3,12 @@
   align-items: center;
   gap: var(--sk-space-4);
   padding: var(--sk-space-4) var(--sk-space-5);
+  transition: background var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+// Hover lifts the surface a touch lighter (matches the ListRow/Sidebar hover fill).
+.sk-repo-card:hover {
+  background: var(--sk-color-fill-3);
 }
 
 .sk-repo-card__main {
@@ -39,11 +45,20 @@
   white-space: nowrap;
 }
 
+// Actions stay hidden until the card is hovered (or a control is focused, so
+// keyboard users can still reach them); the opacity transition fades them in/out.
 .sk-repo-card__actions {
   display: flex;
   align-items: center;
   gap: var(--sk-space-2);
   flex: none;
+  opacity: 0;
+  transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+.sk-repo-card:hover .sk-repo-card__actions,
+.sk-repo-card:focus-within .sk-repo-card__actions {
+  opacity: 1;
 }
 
 // Square icon buttons (Sync / Edit): drop the text-button horizontal padding so
@@ -54,15 +69,46 @@
   padding: 0;
 }
 
-// "Update available" dot, trailing the repository name. display:block so its
-// width/height apply even when it sits inside the Tooltip's inline wrapper span.
+// AnimatePresence wrapper for the status dot -- keeps the dot from collapsing
+// the row and carries the enter/exit scale-fade.
+.sk-repo-card__indicator {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+// "Update available" / "in progress" dot, trailing the repository name.
+// display:block so its width/height apply even inside the Tooltip's inline
+// wrapper span. The ::after ring is Ant Design's "processing" badge animation:
+// an expanding, fading pulse.
 .sk-repo-card__update-dot {
+  position: relative;
   display: block;
   flex: none;
   width: 8px;
   height: 8px;
   border-radius: var(--sk-radius-pill);
   background: var(--sk-color-accent);
+}
+
+.sk-repo-card__update-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--sk-color-accent);
+  animation: sk-repo-dot-pulse 1.2s var(--sk-ease-standard) infinite;
+}
+
+@keyframes sk-repo-dot-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
 }
 
 // "View error" dot: a clickable red circle, priority over the update dot.
