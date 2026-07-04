@@ -1,12 +1,14 @@
 /**
  * Tooltip: a small label shown on hover/focus of its trigger, animated with
- * Framer Motion presence. Positioned on one of four sides; `auto` (the default)
- * measures the room around the trigger and picks a side that fits, then nudges
- * the bubble along its cross axis so it stays inside the window. Generic -- no
- * product knowledge.
+ * Framer Motion presence. The bubble is rendered in a portal and positioned
+ * `fixed`, so it is never clipped by an ancestor's overflow (scroll areas, the
+ * sidebar, etc.). Positioned on one of four sides; `auto` (the default) measures
+ * the room around the trigger and picks a side that fits, then clamps the bubble
+ * so it stays inside the window. Generic -- no product knowledge.
  */
-import { useId, useLayoutEffect, useRef, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cx, SK_DURATION, SK_EASE } from '../../lib';
 import './Tooltip.scss';
@@ -21,6 +23,12 @@ export interface TooltipProps {
   /** Side to render on. `auto` (default) picks a side that fits the window. */
   readonly placement?: TooltipPlacement;
   /**
+   * For top/bottom placements, whether the bubble centers on the trigger
+   * (default) or aligns to its start (left) edge -- useful for a wide trigger
+   * like a full-width link, so the bubble sits over the start, not the middle.
+   */
+  readonly align?: 'center' | 'start';
+  /**
    * When true, the trigger renders without a tooltip. Use it to suppress the
    * bubble while an overlay it belongs to is open (e.g. a SplitButton menu),
    * so the tooltip does not cover that overlay.
@@ -29,7 +37,7 @@ export interface TooltipProps {
   readonly className?: string;
 }
 
-/** Gap between trigger and bubble (matches the offset in Tooltip.scss). */
+/** Gap between trigger and bubble. */
 const GAP = 6;
 /** Minimum gap kept between the bubble and the window edge. */
 const EDGE_MARGIN = 8;
@@ -38,7 +46,7 @@ const AUTO_ORDER: readonly Side[] = ['top', 'bottom', 'right', 'left'];
 
 // Reveal is opacity + scale only; the directional feel comes from the
 // per-placement transform-origin in CSS, so the animation never fights the
-// positional (left/top) placement.
+// positional (fixed top/left) placement.
 const bubble = {
   initial: { opacity: 0, scale: 0.96 },
   animate: { opacity: 1, scale: 1, transition: { duration: SK_DURATION.fast, ease: SK_EASE } },
@@ -71,22 +79,26 @@ function pickSide(trigger: DOMRect, w: number, h: number): Side {
   return AUTO_ORDER.find(fits) ?? 'top';
 }
 
-export function Tooltip({ content, children, placement = 'auto', disabled = false, className }: TooltipProps) {
+export function Tooltip({
+  content,
+  children,
+  placement = 'auto',
+  align = 'center',
+  disabled = false,
+  className,
+}: TooltipProps) {
   const [open, setOpen] = useState(false);
   // Suppress the bubble when disabled, even if the trigger is still hovered.
   const show = open && !disabled;
   const [side, setSide] = useState<Side>(placement === 'auto' ? 'top' : placement);
-  // Cross-axis offset (px) applied to the active edge's left/top.
-  const [offset, setOffset] = useState(0);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const rootRef = useRef<HTMLSpanElement>(null);
   const bubbleRef = useRef<HTMLSpanElement>(null);
   const id = useId();
 
-  // Resolve the side (for `auto`) and the clamped cross-axis offset once the
-  // bubble is in the DOM. Runs before paint, so there is no visible jump.
-  // offsetWidth/Height are used because they ignore the scale reveal transform.
-  useLayoutEffect(() => {
-    if (!show) return;
+  // Resolve the side (for `auto`) and the window-clamped fixed position once the
+  // bubble is in the DOM. offsetWidth/Height ignore the scale reveal transform.
+  const reposition = useCallback(() => {
     const root = rootRef.current;
     const el = bubbleRef.current;
     if (root === null || el === null) return;
@@ -96,25 +108,38 @@ export function Tooltip({ content, children, placement = 'auto', disabled = fals
     const bh = el.offsetHeight;
     const resolved = placement === 'auto' ? pickSide(trigger, bw, bh) : placement;
 
-    let next: number;
+    let top: number;
+    let left: number;
     if (resolved === 'top' || resolved === 'bottom') {
-      const centered = trigger.left + (root.offsetWidth - bw) / 2;
-      const clamped = clamp(centered, EDGE_MARGIN, window.innerWidth - EDGE_MARGIN - bw);
-      next = clamped - trigger.left;
+      top = resolved === 'top' ? trigger.top - GAP - bh : trigger.bottom + GAP;
+      left = align === 'start' ? trigger.left : trigger.left + (trigger.width - bw) / 2;
     } else {
-      const centered = trigger.top + (root.offsetHeight - bh) / 2;
-      const clamped = clamp(centered, EDGE_MARGIN, window.innerHeight - EDGE_MARGIN - bh);
-      next = clamped - trigger.top;
+      left = resolved === 'left' ? trigger.left - GAP - bw : trigger.right + GAP;
+      top = trigger.top + (trigger.height - bh) / 2;
     }
+    left = clamp(left, EDGE_MARGIN, window.innerWidth - EDGE_MARGIN - bw);
+    top = clamp(top, EDGE_MARGIN, window.innerHeight - EDGE_MARGIN - bh);
 
     setSide(resolved);
-    setOffset(next);
-  }, [show, placement]);
+    setPos({ top, left });
+  }, [placement, align]);
 
-  const horizontal = side === 'top' || side === 'bottom';
-  const style: CSSProperties = horizontal
-    ? ({ '--sk-tooltip-x': `${offset}px` } as CSSProperties)
-    : ({ '--sk-tooltip-y': `${offset}px` } as CSSProperties);
+  useLayoutEffect(() => {
+    if (!show) {
+      setPos(null);
+      return undefined;
+    }
+    reposition();
+    // Keep the bubble anchored if the page scrolls or the window resizes while
+    // it is open (capture phase catches scrolls in nested containers).
+    const onChange = (): void => reposition();
+    window.addEventListener('scroll', onChange, true);
+    window.addEventListener('resize', onChange);
+    return () => {
+      window.removeEventListener('scroll', onChange, true);
+      window.removeEventListener('resize', onChange);
+    };
+  }, [show, reposition]);
 
   return (
     <span
@@ -126,24 +151,29 @@ export function Tooltip({ content, children, placement = 'auto', disabled = fals
       onBlur={() => setOpen(false)}
     >
       <span aria-describedby={show ? id : undefined}>{children}</span>
-      <AnimatePresence>
-        {show && (
-          <motion.span
-            ref={bubbleRef}
-            role="tooltip"
-            id={id}
-            className="sk-tooltip__bubble"
-            data-placement={side}
-            style={style}
-            variants={bubble}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-          >
-            {content}
-          </motion.span>
-        )}
-      </AnimatePresence>
+      {createPortal(
+        <AnimatePresence>
+          {show && (
+            <motion.span
+              ref={bubbleRef}
+              role="tooltip"
+              id={id}
+              className="sk-tooltip__bubble"
+              data-placement={side}
+              // Kept offscreen for the first (pre-measurement) frame so it never
+              // flashes at 0,0; the layout effect positions it before paint.
+              style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999 }}
+              variants={bubble}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              {content}
+            </motion.span>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </span>
   );
 }

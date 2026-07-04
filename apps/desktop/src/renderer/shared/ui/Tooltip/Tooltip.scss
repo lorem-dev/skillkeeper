@@ -8,9 +8,13 @@
   display: inline-flex;
 }
 
+// Portaled to <body> and positioned `fixed` via inline top/left (see Tooltip.tsx)
+// so no ancestor overflow can clip it. Above every overlay (Menu 400) so a
+// tooltip is always on top. Only the transform-origin varies per side, to give
+// the reveal a directional feel.
 .sk-tooltip__bubble {
-  position: absolute;
-  z-index: 50;
+  position: fixed;
+  z-index: 500;
   white-space: nowrap;
   pointer-events: none;
   font-size: 12px;
@@ -21,26 +25,18 @@
   box-shadow: var(--sk-shadow-2);
 
   &[data-placement='top'] {
-    bottom: calc(100% + 6px);
-    left: var(--sk-tooltip-x, 0px);
     transform-origin: bottom center;
   }
 
   &[data-placement='bottom'] {
-    top: calc(100% + 6px);
-    left: var(--sk-tooltip-x, 0px);
     transform-origin: top center;
   }
 
   &[data-placement='left'] {
-    right: calc(100% + 6px);
-    top: var(--sk-tooltip-y, 0px);
     transform-origin: center right;
   }
 
   &[data-placement='right'] {
-    left: calc(100% + 6px);
-    top: var(--sk-tooltip-y, 0px);
     transform-origin: center left;
   }
 }
