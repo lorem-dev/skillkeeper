@@ -63,7 +63,10 @@ export function Toasts() {
             animate="animate"
             exit="exit"
           >
-            <Alert tone="danger" title={t('notifications.error')}>
+            <Alert
+              tone={toast.level === 'error' ? 'danger' : 'info'}
+              title={toast.level === 'error' ? t('notifications.error') : t('notifications.info')}
+            >
               {toast.message}
             </Alert>
           </motion.button>

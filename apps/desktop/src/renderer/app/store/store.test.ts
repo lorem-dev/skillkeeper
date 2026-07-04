@@ -259,9 +259,9 @@ describe('useSkillkeeperStore', () => {
     });
   });
 
-  describe('error-log page state', () => {
+  describe('notifications log + page state', () => {
     beforeEach(() => {
-      useSkillkeeperStore.setState({ errorLog: [], toasts: [], repoStatus: {}, logsOpen: false });
+      useSkillkeeperStore.setState({ notifications: [], toasts: [], repoStatus: {}, logsOpen: false });
     });
 
     it('openLogs / closeLogs toggle logsOpen', () => {
@@ -273,13 +273,24 @@ describe('useSkillkeeperStore', () => {
       expect(useSkillkeeperStore.getState().logsOpen).toBe(false);
     });
 
-    it('clearErrorLog empties the log but leaves toasts and repo errors intact', () => {
+    it('an error notification marks the repo status; info does not', () => {
       const s = useSkillkeeperStore.getState();
-      s.notify('boom', 'repo-1');
-      expect(useSkillkeeperStore.getState().errorLog).toHaveLength(1);
+      s.notify('boom', 'error', 'repo-1');
+      s.notify('copied', 'info', 'repo-2');
+      const state = useSkillkeeperStore.getState();
+      expect(state.notifications).toHaveLength(2);
+      expect(state.notifications.map((n) => n.level)).toEqual(['error', 'info']);
+      expect(state.repoStatus['repo-1']?.error).toBe('boom');
+      expect(state.repoStatus['repo-2']).toBeUndefined();
+    });
+
+    it('clearNotifications empties the log but leaves toasts and repo errors intact', () => {
+      const s = useSkillkeeperStore.getState();
+      s.notify('boom', 'error', 'repo-1');
+      expect(useSkillkeeperStore.getState().notifications).toHaveLength(1);
       expect(useSkillkeeperStore.getState().toasts).toHaveLength(1);
-      useSkillkeeperStore.getState().clearErrorLog();
-      expect(useSkillkeeperStore.getState().errorLog).toHaveLength(0);
+      useSkillkeeperStore.getState().clearNotifications();
+      expect(useSkillkeeperStore.getState().notifications).toHaveLength(0);
       expect(useSkillkeeperStore.getState().toasts).toHaveLength(1);
       expect(useSkillkeeperStore.getState().repoStatus['repo-1']?.error).toBe('boom');
     });

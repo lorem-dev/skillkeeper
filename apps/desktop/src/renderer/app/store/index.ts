@@ -9,5 +9,6 @@ export type {
   SkillKeeperConfig,
   Repository,
   Project,
-  ErrorEntry,
+  NotificationEntry,
+  NotificationLevel,
 } from './store';

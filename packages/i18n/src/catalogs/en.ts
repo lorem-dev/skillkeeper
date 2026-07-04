@@ -30,14 +30,18 @@ export const en = {
   'common.increase': 'Increase',
 
   'notifications.error': 'Error',
+  'notifications.info': 'Notification',
 
   'statusbar.notifications': 'Errors: {count}',
 
-  'logs.title': 'Error log',
-  'logs.empty': 'No errors logged.',
+  'logs.title': 'Notifications',
+  'logs.empty': 'Nothing to show.',
   'logs.copy': 'Copy',
   'logs.copyAll': 'Copy all',
-  'logs.clear': 'Clear log',
+  'logs.clear': 'Clear',
+  'logs.filter': 'Show',
+  'logs.level.error': 'Errors',
+  'logs.level.info': 'Messages',
 
   /** Empty-state copy for each page. */
   'repositories.empty': 'No repositories added yet.',
@@ -55,6 +59,8 @@ export const en = {
   'repositories.deleteConfirm': 'Confirm delete',
   'repositories.hasUpdate': 'Update available',
   'repositories.viewError': 'Click to view the error',
+  'repositories.copyBranch': 'Copy',
+  'repositories.branchCopied': 'Branch name copied to the clipboard',
   /** Skill-count badge. Plural forms selected via Intl.PluralRules. */
   'repositories.skillCount.one': '{count} skill',
   'repositories.skillCount.few': '{count} skills',

@@ -1,33 +1,45 @@
 /**
- * Full-screen error-log overlay. Lists every errorLog entry (newest first) with
- * per-entry and copy-all clipboard actions and a clear-log action. Open state
+ * Full-screen notifications log overlay. Lists notification entries (newest
+ * first) with per-entry and copy-all clipboard actions, a level filter
+ * (errors/messages; errors only by default), and a clear action. Open state
  * lives in the store (logsOpen); Escape or the close button dismisses it.
  */
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
-import type { ErrorEntry } from '@/app/store';
+import type { NotificationEntry } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { Button, Icon } from '@/shared/ui';
-import { fade } from '@/shared/lib';
+import { Button, Icon, MultiSelect } from '@/shared/ui';
+import { cx, fade } from '@/shared/lib';
 import './LogsPage.scss';
 
 /** Serialize one entry for the clipboard: "<at> [<repoId>] <message>". */
-function formatEntry(entry: ErrorEntry): string {
+function formatEntry(entry: NotificationEntry): string {
   const repo = entry.repoId !== undefined ? ` [${entry.repoId}]` : '';
   return `${entry.at}${repo} ${entry.message}`;
 }
 
 export function LogsPage() {
   const logsOpen = useSkillkeeperStore((s) => s.logsOpen);
-  const errorLog = useSkillkeeperStore((s) => s.errorLog);
+  const notifications = useSkillkeeperStore((s) => s.notifications);
   const closeLogs = useSkillkeeperStore((s) => s.closeLogs);
-  const clearErrorLog = useSkillkeeperStore((s) => s.clearErrorLog);
+  const clearNotifications = useSkillkeeperStore((s) => s.clearNotifications);
   const t = useTranslator();
 
-  // Newest first, without mutating store state.
-  const entries = [...errorLog].reverse();
+  // Which levels to show. Errors only by default.
+  const [levels, setLevels] = useState<string[]>(['error']);
+
+  // Newest first, filtered by the selected levels; never mutates store state.
+  const entries = useMemo(
+    () => notifications.filter((n) => levels.includes(n.level)).reverse(),
+    [notifications, levels],
+  );
+
+  const levelOptions = [
+    { value: 'error', label: t('logs.level.error') },
+    { value: 'info', label: t('logs.level.info') },
+  ];
 
   // Focus the overlay once when it opens (not on every re-render -- a background
   // notify() re-renders this component and must not yank focus back).
@@ -63,10 +75,17 @@ export function LogsPage() {
           <header className="sk-logs__header">
             <h1 className="sk-logs__title">{t('logs.title')}</h1>
             <div className="sk-logs__actions">
+              <MultiSelect
+                options={levelOptions}
+                value={levels}
+                onChange={setLevels}
+                ariaLabel={t('logs.filter')}
+                placeholder={t('logs.filter')}
+              />
               <Button
                 variant="destructive"
-                onClick={clearErrorLog}
-                disabled={entries.length === 0}
+                onClick={clearNotifications}
+                disabled={notifications.length === 0}
               >
                 {t('logs.clear')}
               </Button>
@@ -93,7 +112,7 @@ export function LogsPage() {
           ) : (
             <ul className="sk-logs__list">
               {entries.map((entry) => (
-                <li key={entry.id} className="sk-logs__row">
+                <li key={entry.id} className={cx('sk-logs__row', `sk-logs__row--${entry.level}`)}>
                   <div className="sk-logs__meta">
                     <time className="sk-logs__time" dateTime={entry.at}>
                       {entry.at}

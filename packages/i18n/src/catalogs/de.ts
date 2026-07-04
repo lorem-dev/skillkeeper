@@ -29,14 +29,18 @@ export const de: Partial<Catalog> = {
   'common.increase': 'Erhöhen',
 
   'notifications.error': 'Fehler',
+  'notifications.info': 'Benachrichtigung',
 
   'statusbar.notifications': 'Fehler: {count}',
 
-  'logs.title': 'Fehlerprotokoll',
-  'logs.empty': 'Keine Fehler protokolliert.',
+  'logs.title': 'Benachrichtigungen',
+  'logs.empty': 'Nichts anzuzeigen.',
   'logs.copy': 'Kopieren',
   'logs.copyAll': 'Alle kopieren',
-  'logs.clear': 'Protokoll leeren',
+  'logs.clear': 'Leeren',
+  'logs.filter': 'Anzeigen',
+  'logs.level.error': 'Fehler',
+  'logs.level.info': 'Meldungen',
 
   'repositories.empty': 'Noch keine Repositories hinzugefügt.',
   'repositories.add': 'Repository hinzufügen',
@@ -53,6 +57,8 @@ export const de: Partial<Catalog> = {
   'repositories.deleteConfirm': 'Löschen bestätigen',
   'repositories.hasUpdate': 'Update verfügbar',
   'repositories.viewError': 'Zum Anzeigen des Fehlers klicken',
+  'repositories.copyBranch': 'Kopieren',
+  'repositories.branchCopied': 'Branch-Name in die Zwischenablage kopiert',
   'repositories.skillCount.one': '{count} Fähigkeit',
   'repositories.skillCount.other': '{count} Fähigkeiten',
 

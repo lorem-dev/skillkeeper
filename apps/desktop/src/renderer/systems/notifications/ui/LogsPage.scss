@@ -67,10 +67,15 @@
 .sk-logs__message {
   grid-column: 1;
   margin: 0;
-  color: var(--sk-red);
+  color: var(--sk-color-label);
   font-family: var(--sk-font-mono, monospace);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+// Errors read in red; info messages stay in the default label color.
+.sk-logs__row--error .sk-logs__message {
+  color: var(--sk-red);
 }
 
 .sk-logs__copy {

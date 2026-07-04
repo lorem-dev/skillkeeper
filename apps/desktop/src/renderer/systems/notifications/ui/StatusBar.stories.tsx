@@ -14,9 +14,9 @@ export const WithErrors: Story = {
     useEffect(() => {
       // Seed the store so the badge renders a count.
       const state = useSkillkeeperStore.getState();
-      state.notify('Example error 1');
-      state.notify('Example error 2');
-      state.notify('Example error 3');
+      state.notify('Example error 1', 'error');
+      state.notify('Example error 2', 'error');
+      state.notify('Example message', 'info');
     }, []);
     return <StatusBar />;
   },

@@ -35,10 +35,17 @@ export interface ConfigPatch {
   repositories?: Partial<RepositoriesConfig>;
 }
 
-/** A recorded error (repository op failure). Feeds toasts and the error log. */
-export interface ErrorEntry {
+/** Severity of a notification entry. */
+export type NotificationLevel = 'error' | 'info';
+
+/**
+ * A recorded notification (an error or an informational message). Feeds the
+ * bottom toasts and the notifications log.
+ */
+export interface NotificationEntry {
   readonly id: string;
   readonly message: string;
+  readonly level: NotificationLevel;
   readonly repoId?: string;
   /** ISO timestamp. */
   readonly at: string;
@@ -65,10 +72,10 @@ export interface SkillkeeperState {
    * to carry these forward.
    */
   repoInfo: Record<string, RepoInfo>;
-  /** Every recorded error (newest last); consumed by the logs page. */
-  errorLog: ErrorEntry[];
+  /** Every recorded notification (newest last); consumed by the logs page. */
+  notifications: NotificationEntry[];
   /** Currently-visible toasts. */
-  toasts: ErrorEntry[];
+  toasts: NotificationEntry[];
   /** Whether the full-screen error-log page is open. */
   logsOpen: boolean;
   /** Installed skills. */
@@ -106,18 +113,22 @@ export interface SkillkeeperActions {
   refreshRepoUpdates(): Promise<void>;
   /** Fetch branch + skill count for every repo into `repoInfo`. */
   refreshRepoInfo(): Promise<void>;
-  /** Record an error: append to the log + toasts, and mark the repo (if given). */
-  notify(message: string, repoId?: string): void;
+  /**
+   * Record a notification: append to the log + toasts. An `error` notification
+   * with a `repoId` also marks that repo's status (the red dot); `info` never
+   * touches repo status.
+   */
+  notify(message: string, level: NotificationLevel, repoId?: string): void;
   /** Remove one toast (keeps the log and the repo dot). */
   dismissToast(id: string): void;
   /** Re-show the toast for a repo's current error (does not re-log). */
   showRepoError(repoId: string): void;
-  /** Open the full-screen error-log page. */
+  /** Open the full-screen notifications log page. */
   openLogs(): void;
-  /** Close the full-screen error-log page. */
+  /** Close the full-screen notifications log page. */
   closeLogs(): void;
-  /** Empty the error log. Leaves toasts and per-repo errors intact. */
-  clearErrorLog(): void;
+  /** Empty the notifications log. Leaves toasts and per-repo errors intact. */
+  clearNotifications(): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -134,7 +145,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   repositories: [],
   repoStatus: {},
   repoInfo: {},
-  errorLog: [],
+  notifications: [],
   toasts: [],
   logsOpen: false,
   skills: [],
@@ -171,18 +182,20 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set({ error });
   },
 
-  notify(message, repoId) {
-    const entry: ErrorEntry = {
+  notify(message, level, repoId) {
+    const entry: NotificationEntry = {
       id: crypto.randomUUID(),
       message,
+      level,
       repoId,
       at: new Date().toISOString(),
     };
     set((s) => ({
-      errorLog: [...s.errorLog, entry],
+      notifications: [...s.notifications, entry],
       toasts: [...s.toasts, entry],
+      // Only an error marks the repo's status (the red dot); info never does.
       repoStatus:
-        repoId === undefined
+        level !== 'error' || repoId === undefined
           ? s.repoStatus
           : {
               ...s.repoStatus,
@@ -202,7 +215,13 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   showRepoError(repoId) {
     const message = get().repoStatus[repoId]?.error;
     if (message === undefined) return;
-    const entry: ErrorEntry = { id: crypto.randomUUID(), message, repoId, at: new Date().toISOString() };
+    const entry: NotificationEntry = {
+      id: crypto.randomUUID(),
+      message,
+      level: 'error',
+      repoId,
+      at: new Date().toISOString(),
+    };
     set((s) => ({ toasts: [...s.toasts, entry] }));
   },
 
@@ -214,8 +233,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set({ logsOpen: false });
   },
 
-  clearErrorLog() {
-    set({ errorLog: [] });
+  clearNotifications() {
+    set({ notifications: [] });
   },
 
   async loadAll(client) {
@@ -268,7 +287,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     return (async () => {
       const added = await bridgeClient.addRepository(url, name);
       if (!added.ok) {
-        get().notify(added.error);
+        get().notify(added.error, 'error');
         return;
       }
       const repo = added.repository;
@@ -284,7 +303,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         // Success clears any error; a failure's error is set by notify() below.
         repoStatus: { ...s.repoStatus, [repo.id]: { phase: 'idle', hasUpdate: false } },
       }));
-      if (!cloned.ok) get().notify(cloned.error, repo.id);
+      if (!cloned.ok) get().notify(cloned.error, 'error', repo.id);
     })();
   },
 
@@ -292,7 +311,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     return (async () => {
       const res = await bridgeClient.updateRepository(id, name, url);
       if (!res.ok) {
-        get().notify(res.error, id);
+        get().notify(res.error, 'error', id);
         return;
       }
       const updated = res.repository;
@@ -314,7 +333,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     return (async () => {
       const res = await bridgeClient.removeRepository(id);
       if (!res.ok) {
-        get().notify(res.error, id);
+        get().notify(res.error, 'error', id);
         return;
       }
       set((s) => {
@@ -359,7 +378,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         const info = await bridgeClient.describeRepository(id);
         set((s) => ({ repoInfo: { ...s.repoInfo, [id]: info } }));
       } else {
-        get().notify(res.error, id);
+        get().notify(res.error, 'error', id);
       }
     })();
   },

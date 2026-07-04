@@ -28,14 +28,18 @@ export const ru: Partial<Catalog> = {
   'common.increase': 'Увеличить',
 
   'notifications.error': 'Ошибка',
+  'notifications.info': 'Уведомление',
 
   'statusbar.notifications': 'Ошибки: {count}',
 
-  'logs.title': 'Журнал ошибок',
-  'logs.empty': 'Ошибок пока нет.',
+  'logs.title': 'Уведомления',
+  'logs.empty': 'Нечего показать.',
   'logs.copy': 'Копировать',
   'logs.copyAll': 'Копировать все',
-  'logs.clear': 'Очистить журнал',
+  'logs.clear': 'Очистить',
+  'logs.filter': 'Показывать',
+  'logs.level.error': 'Ошибки',
+  'logs.level.info': 'Сообщения',
 
   'repositories.empty': 'Репозитории еще не добавлены.',
   'repositories.add': 'Добавить репозиторий',
@@ -52,6 +56,8 @@ export const ru: Partial<Catalog> = {
   'repositories.deleteConfirm': 'Подтвердить удаление',
   'repositories.hasUpdate': 'Доступно обновление',
   'repositories.viewError': 'Нажмите, чтобы посмотреть ошибку',
+  'repositories.copyBranch': 'Скопировать',
+  'repositories.branchCopied': 'Название ветки скопировано в буфер обмена',
   'repositories.skillCount.one': '{count} навык',
   'repositories.skillCount.few': '{count} навыка',
   'repositories.skillCount.many': '{count} навыков',
