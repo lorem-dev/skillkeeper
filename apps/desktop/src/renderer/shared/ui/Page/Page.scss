@@ -38,9 +38,11 @@
     -webkit-backdrop-filter: blur(30px) saturate(180%);
     mask-image: linear-gradient(to bottom, #000 60%, transparent);
     -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
+    // Tint toward the window background: lightens in the light theme (bg is
+    // near-white), darkens in the dark theme (bg is near-black).
     background: linear-gradient(
       to bottom,
-      color-mix(in srgb, var(--sk-color-bg-secondary) 10%, transparent),
+      color-mix(in srgb, var(--sk-color-bg) 16%, transparent),
       transparent
     );
   }
@@ -88,6 +90,9 @@
   transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
+  // Same theme-adaptive tint as the header backdrop (masked to fade toward the
+  // content edge): lighter in the light theme, darker in the dark theme.
+  background: color-mix(in srgb, var(--sk-color-bg) 16%, transparent);
 }
 
 .sk-page__fade--visible {
