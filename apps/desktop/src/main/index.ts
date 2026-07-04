@@ -183,10 +183,16 @@ function registerHandlers(): void {
     git: createSystemGit(hostEnv, undefined, () => gitPath),
     statePath,
     reposDir: path.join(resolveAppDataDir(), 'repositories'),
-    terminal: {
-      echo: (t: string) => getTerminal().echo(t),
-      runSshAdd: () => getTerminal().runSshAdd(),
-    },
+    // Runs clone/sync IN the terminal PTY: git executes with an argument array
+    // (no shell -- no injection), its output streams to the terminal, and an ssh
+    // passphrase prompt reads the terminal's input. Non-zero exit -> error.
+    terminalGit: createSystemGit(hostEnv, {
+      run: async (args: readonly string[], cwd: string) => {
+        const code = await getTerminal().runGit(gitPath, args, cwd);
+        if (code !== 0) throw new Error(`git ${args[0] ?? ''} exited with code ${String(code)}`);
+        return { stdout: '', stderr: '' };
+      },
+    }),
     requestTerminalOpen: () => {
       for (const w of BrowserWindow.getAllWindows()) w.webContents.send('terminal:requestOpen');
     },

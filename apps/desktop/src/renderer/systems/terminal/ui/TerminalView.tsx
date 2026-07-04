@@ -43,6 +43,10 @@ export function TerminalView() {
     for (const code of [10, 11, 12]) {
       term.parser.registerOscHandler(code, () => true);
     }
+    // Same for cursor/device status reports (CSI n -- e.g. CPR from `\e[6n`):
+    // the late reply otherwise leaks a stray "R" into the shell prompt, which
+    // then runs as a bogus command. Size detection uses SIGWINCH/resize, not CPR.
+    term.parser.registerCsiHandler({ final: 'n' }, () => true);
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(el);

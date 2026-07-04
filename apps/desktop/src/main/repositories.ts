@@ -16,20 +16,16 @@ export interface RepoDeps {
   /** Directory clones live under: <appData>/repositories */
   readonly reposDir: string;
   /**
-   * Embedded terminal hooks (optional so existing RepoDeps test construction
-   * still compiles). echo() displays git activity; runSshAdd() re-prompts for
-   * an encrypted ssh key's passphrase on the PTY after an auth failure.
+   * A GitPort that runs user-initiated clone/sync IN the embedded terminal
+   * session (its output is the terminal's output, and an ssh key passphrase
+   * prompt reads the terminal's input) instead of out-of-band. Optional so
+   * existing RepoDeps test construction (and the CLI) still work; when absent,
+   * clone/sync fall back to `git`. Update checks always use `git` (silent).
    */
-  readonly terminal?: { echo: (text: string) => void; runSshAdd: () => void };
-  /** Ask any open window to show the terminal overlay (e.g. before runSshAdd). */
+  readonly terminalGit?: GitPort;
+  /** Ask any open window to show the terminal overlay (before a terminal git op). */
   readonly requestTerminalOpen?: () => void;
 }
-
-/** True when a caught git error message looks like an ssh auth failure. */
-const isSshAuthFailure = (msg: string): boolean =>
-  /permission denied|could not read from remote|host key verification|authentication failed/i.test(
-    msg,
-  );
 
 export type RepoResult = { ok: true; repository: Repository } | { ok: false; error: string };
 export type RemoveResult = { ok: true } | { ok: false; error: string };
@@ -120,17 +116,14 @@ export async function cloneRepository(deps: RepoDeps, args: { id: string }): Pro
     // git clone runs in cwd=dirname(destination)=reposDir; that directory must
     // exist or execFile fails with "spawn git ENOENT" before git even starts.
     await deps.fs.mkdir(deps.reposDir);
-    deps.terminal?.echo(`\r\n$ git clone (${repo.name})\r\n`);
-    // Slow clone runs unlocked; the stamp re-reads fresh state under the lock.
-    await deps.git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });
+    // Run in the terminal (visible + can answer an ssh passphrase prompt) when
+    // available; open it first so the user sees the clone and can respond.
+    const git = deps.terminalGit ?? deps.git;
+    if (deps.terminalGit !== undefined) deps.requestTerminalOpen?.();
+    await git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });
     return await persistRepo(deps, args.id, { lastFetched: new Date().toISOString() });
   } catch (err) {
-    const msg = message(err);
-    if (isSshAuthFailure(msg)) {
-      deps.requestTerminalOpen?.();
-      deps.terminal?.runSshAdd();
-    }
-    return { ok: false, error: msg };
+    return { ok: false, error: message(err) };
   }
 }
 
@@ -188,27 +181,24 @@ export async function syncRepository(deps: RepoDeps, args: { id: string }): Prom
   try {
     const repo = await findRepo(deps, args.id);
     if (repo === null) return { ok: false, error: 'not-found' };
-    // Slow git work runs unlocked; the stamp re-reads fresh state under the lock.
+    // Run in the terminal when available (visible output + inline ssh passphrase
+    // prompt); open it first. The update check uses the silent execFile git.
+    const git = deps.terminalGit ?? deps.git;
+    if (deps.terminalGit !== undefined) deps.requestTerminalOpen?.();
     // If the clone dir is missing (e.g. an earlier clone failed), re-clone --
     // pulling in a non-existent cwd would fail with "spawn git ENOENT".
-    deps.terminal?.echo(`\r\n$ git pull (${repo.name})\r\n`);
     if (await deps.fs.exists(repo.localPath)) {
       // Force the clone to match the remote exactly, discarding any local edits,
       // so an app-managed repo never diverges or hits merge conflicts.
-      await deps.git.forcePull(repo.localPath);
-      if (repo.lfs) await deps.git.lfsPull(repo.localPath);
+      await git.forcePull(repo.localPath);
+      if (repo.lfs) await git.lfsPull(repo.localPath);
     } else {
       await deps.fs.mkdir(deps.reposDir);
-      await deps.git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });
+      await git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });
     }
     return await persistRepo(deps, args.id, { lastFetched: new Date().toISOString() });
   } catch (err) {
-    const msg = message(err);
-    if (isSshAuthFailure(msg)) {
-      deps.requestTerminalOpen?.();
-      deps.terminal?.runSshAdd();
-    }
-    return { ok: false, error: msg };
+    return { ok: false, error: message(err) };
   }
 }
 
