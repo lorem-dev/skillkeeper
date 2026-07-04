@@ -95,6 +95,8 @@ export {
   buildCloneArgs,
   buildFetchArgs,
   buildPullArgs,
+  buildResetHardArgs,
+  buildCleanArgs,
   buildRevParseArgs,
   buildLfsPullArgs,
   buildSetRemoteUrlArgs,

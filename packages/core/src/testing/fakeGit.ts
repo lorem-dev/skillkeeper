@@ -2,7 +2,7 @@ import type { CloneOptions, GitPort, GitRef } from '../ports.js';
 
 /** A recorded git operation, for assertions in tests. */
 export interface GitCall {
-  readonly op: 'clone' | 'fetch' | 'pull' | 'revParse' | 'lfsPull' | 'setRemoteUrl';
+  readonly op: 'clone' | 'fetch' | 'pull' | 'forcePull' | 'revParse' | 'lfsPull' | 'setRemoteUrl';
   readonly args: Record<string, unknown>;
 }
 
@@ -41,6 +41,9 @@ export function createFakeGit(options: FakeGitOptions = {}): FakeGit {
     },
     async pull(repoPath: string): Promise<void> {
       calls.push({ op: 'pull', args: { repoPath } });
+    },
+    async forcePull(repoPath: string): Promise<void> {
+      calls.push({ op: 'forcePull', args: { repoPath } });
     },
     async revParse(repoPath: string, rev: string): Promise<GitRef> {
       calls.push({ op: 'revParse', args: { repoPath, rev } });

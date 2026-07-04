@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildCloneArgs,
+  buildCleanArgs,
   buildFetchArgs,
   buildLfsPullArgs,
   buildPullArgs,
+  buildResetHardArgs,
   buildRevParseArgs,
   buildSetRemoteUrlArgs,
   createSystemGit,
@@ -52,6 +54,14 @@ describe('git argument builders', () => {
 
   it('builds pull args with --ff-only', () => {
     expect(buildPullArgs()).toEqual(['pull', '--ff-only']);
+  });
+
+  it('builds reset --hard args targeting the upstream', () => {
+    expect(buildResetHardArgs()).toEqual(['reset', '--hard', '@{u}']);
+  });
+
+  it('builds clean args that drop untracked files and directories', () => {
+    expect(buildCleanArgs()).toEqual(['clean', '-fd']);
   });
 
   it('builds rev-parse args for a revision', () => {
@@ -111,6 +121,23 @@ describe('createSystemGit', () => {
     expect(calls[0]!.args).toEqual(['fetch', '--prune']);
     expect(calls[1]!.args).toEqual(['pull', '--ff-only']);
     expect(calls[2]!.args).toEqual(['lfs', 'pull']);
+  });
+
+  it('forcePull fetches, hard-resets to upstream, then cleans -- all in the repo path', async () => {
+    const calls: Array<{ args: readonly string[]; cwd: string }> = [];
+    const git = createSystemGit(ENV, {
+      run: async (args, cwd) => {
+        calls.push({ args, cwd });
+        return { stdout: '', stderr: '' };
+      },
+    });
+    await git.forcePull('/repo');
+    expect(calls.map((c) => c.cwd)).toEqual(['/repo', '/repo', '/repo']);
+    expect(calls.map((c) => c.args)).toEqual([
+      ['fetch', '--prune'],
+      ['reset', '--hard', '@{u}'],
+      ['clean', '-fd'],
+    ]);
   });
 
   it('revParse trims runner stdout into an oid', async () => {

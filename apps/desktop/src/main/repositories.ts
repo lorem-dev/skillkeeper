@@ -164,7 +164,10 @@ export async function syncRepository(deps: RepoDeps, args: { id: string }): Prom
     // If the clone dir is missing (e.g. an earlier clone failed), re-clone --
     // pulling in a non-existent cwd would fail with "spawn git ENOENT".
     if (await deps.fs.exists(repo.localPath)) {
-      await deps.git.pull(repo.localPath);
+      // Force the clone to match the remote exactly, discarding any local edits,
+      // so an app-managed repo never diverges or hits merge conflicts.
+      await deps.git.forcePull(repo.localPath);
+      if (repo.lfs) await deps.git.lfsPull(repo.localPath);
     } else {
       await deps.fs.mkdir(deps.reposDir);
       await deps.git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });

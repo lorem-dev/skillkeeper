@@ -40,6 +40,16 @@ export function buildPullArgs(): string[] {
   return ['pull', '--ff-only'];
 }
 
+/** Build `git reset --hard @{u}` arguments (force the tree to match upstream). */
+export function buildResetHardArgs(): string[] {
+  return ['reset', '--hard', '@{u}'];
+}
+
+/** Build `git clean -fd` arguments (drop untracked files and directories). */
+export function buildCleanArgs(): string[] {
+  return ['clean', '-fd'];
+}
+
 /** Build `git rev-parse` arguments for a revision. */
 export function buildRevParseArgs(rev: string): string[] {
   return ['rev-parse', rev];
@@ -98,6 +108,13 @@ export function createSystemGit(
     },
     async pull(repoPath: string): Promise<void> {
       await r.run(buildPullArgs(), repoPath);
+    },
+    async forcePull(repoPath: string): Promise<void> {
+      // Match the upstream exactly, discarding local commits/edits and untracked
+      // files, so a user-modified clone can never diverge or hit merge conflicts.
+      await r.run(buildFetchArgs(), repoPath);
+      await r.run(buildResetHardArgs(), repoPath);
+      await r.run(buildCleanArgs(), repoPath);
     },
     async revParse(repoPath: string, rev: string): Promise<GitRef> {
       const { stdout } = await r.run(buildRevParseArgs(rev), repoPath);

@@ -70,6 +70,12 @@ export interface GitPort {
   fetch(repoPath: string): Promise<void>;
   /** Fast-forward only pull. */
   pull(repoPath: string): Promise<void>;
+  /**
+   * Force the working tree to match its upstream, discarding any local commits,
+   * edits, and untracked files (fetch + `reset --hard @{u}` + `clean -fd`). Used
+   * for app-managed clones that must never diverge or hit merge conflicts.
+   */
+  forcePull(repoPath: string): Promise<void>;
   /** Resolve a revision (for example `HEAD` or `@{upstream}`) to an oid. */
   revParse(repoPath: string, rev: string): Promise<GitRef>;
   /** Run `git lfs pull` in the given repository. */
