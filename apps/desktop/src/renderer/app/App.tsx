@@ -11,6 +11,7 @@ import { bridgeClient } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { useTheme } from '@/systems/theme';
 import { useConfigWatch } from '@/systems/config';
+import { useUpdateSchedule } from '@/systems/updates';
 import { ConfigBanner } from '@/features/configBanner';
 import { RepositoriesPage } from '@/pages/Repositories';
 import { SkillsPage } from '@/pages/Skills';
@@ -32,6 +33,7 @@ const NAV_ITEMS: { id: View; key: 'nav.repositories' | 'nav.skills' | 'nav.proje
 export function App() {
   useTheme();
   useConfigWatch();
+  useUpdateSchedule();
   const [activeView, setActiveView] = useState<View>('repositories');
   const loadAll = useSkillkeeperStore((s) => s.loadAll);
   const loading = useSkillkeeperStore((s) => s.loading);

@@ -19,7 +19,6 @@ export function RepositoriesPage() {
   const syncRepository = useSkillkeeperStore((s) => s.syncRepository);
   const refreshRepoUpdates = useSkillkeeperStore((s) => s.refreshRepoUpdates);
   const refreshRepoInfo = useSkillkeeperStore((s) => s.refreshRepoInfo);
-  const reload = useSkillkeeperStore((s) => s.reload);
   const showRepoError = useSkillkeeperStore((s) => s.showRepoError);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
@@ -36,15 +35,25 @@ export function RepositoriesPage() {
     notify({ key: 'repositories.remoteCopied' }, 'info');
   }
 
+  // Branch/skill info is local and cheap -- refresh it on mount. The network
+  // update check (refreshRepoUpdates) is driven by the Refresh button and the
+  // startup/scheduled checks (useUpdateSchedule), not on every navigation.
   useEffect(() => {
-    void refreshRepoUpdates();
     void refreshRepoInfo();
-  }, [refreshRepoUpdates, refreshRepoInfo]);
+  }, [refreshRepoInfo]);
 
   const trailing = (
     <>
       <RepoAddButton />
-      <Button variant="secondary" onClick={() => void reload()}>{t('common.refresh')}</Button>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          void refreshRepoUpdates();
+          void refreshRepoInfo();
+        }}
+      >
+        {t('common.refresh')}
+      </Button>
     </>
   );
 
