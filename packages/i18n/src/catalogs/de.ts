@@ -33,6 +33,7 @@ export const de: Partial<Catalog> = {
 
   'statusbar.notifications': 'Fehler: {count}',
   'statusbar.terminal': 'Terminal',
+  'statusbar.tasks': 'Aufgaben',
 
   'logs.title': 'Benachrichtigungen',
   'terminal.title': 'Terminal',
@@ -43,6 +44,14 @@ export const de: Partial<Catalog> = {
   'logs.filter': 'Anzeigen',
   'logs.level.error': 'Fehler',
   'logs.level.info': 'Meldungen',
+
+  'tasks.title': 'Aufgaben',
+  'tasks.empty': 'Keine Aufgaben.',
+  'tasks.clear': 'Erledigte leeren',
+  'tasks.status.queued': 'In Warteschlange',
+  'tasks.status.running': 'Läuft',
+  'tasks.status.done': 'Fertig',
+  'tasks.status.error': 'Fehlgeschlagen',
 
   'repositories.empty': 'Noch keine Repositories hinzugefügt.',
   'repositories.add': 'Repository hinzufügen',

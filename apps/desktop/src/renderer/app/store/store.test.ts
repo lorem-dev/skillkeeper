@@ -281,6 +281,7 @@ describe('useSkillkeeperStore', () => {
         repoStatus: {},
         logsOpen: false,
         terminalOpen: false,
+        tasksOpen: false,
       });
     });
 
@@ -300,6 +301,15 @@ describe('useSkillkeeperStore', () => {
       expect(useSkillkeeperStore.getState().terminalOpen).toBe(true);
       s.closeTerminal();
       expect(useSkillkeeperStore.getState().terminalOpen).toBe(false);
+    });
+
+    it('openTasks / closeTasks toggle tasksOpen', () => {
+      const s = useSkillkeeperStore.getState();
+      expect(useSkillkeeperStore.getState().tasksOpen).toBe(false);
+      s.openTasks();
+      expect(useSkillkeeperStore.getState().tasksOpen).toBe(true);
+      s.closeTasks();
+      expect(useSkillkeeperStore.getState().tasksOpen).toBe(false);
     });
 
     it('an error notification marks the repo status; info does not', () => {

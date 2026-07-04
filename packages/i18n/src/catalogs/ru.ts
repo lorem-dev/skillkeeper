@@ -32,6 +32,7 @@ export const ru: Partial<Catalog> = {
 
   'statusbar.notifications': 'Ошибки: {count}',
   'statusbar.terminal': 'Терминал',
+  'statusbar.tasks': 'Задачи',
 
   'logs.title': 'Уведомления',
   'terminal.title': 'Терминал',
@@ -42,6 +43,14 @@ export const ru: Partial<Catalog> = {
   'logs.filter': 'Показывать',
   'logs.level.error': 'Ошибки',
   'logs.level.info': 'Сообщения',
+
+  'tasks.title': 'Задачи',
+  'tasks.empty': 'Задач нет.',
+  'tasks.clear': 'Очистить завершённые',
+  'tasks.status.queued': 'В очереди',
+  'tasks.status.running': 'Выполняется',
+  'tasks.status.done': 'Готово',
+  'tasks.status.error': 'Ошибка',
 
   'repositories.empty': 'Репозитории еще не добавлены.',
   'repositories.add': 'Добавить репозиторий',

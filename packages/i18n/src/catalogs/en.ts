@@ -34,6 +34,7 @@ export const en = {
 
   'statusbar.notifications': 'Errors: {count}',
   'statusbar.terminal': 'Terminal',
+  'statusbar.tasks': 'Tasks',
 
   'logs.title': 'Notifications',
   'terminal.title': 'Terminal',
@@ -44,6 +45,14 @@ export const en = {
   'logs.filter': 'Show',
   'logs.level.error': 'Errors',
   'logs.level.info': 'Messages',
+
+  'tasks.title': 'Tasks',
+  'tasks.empty': 'No tasks.',
+  'tasks.clear': 'Clear finished',
+  'tasks.status.queued': 'Queued',
+  'tasks.status.running': 'Running',
+  'tasks.status.done': 'Done',
+  'tasks.status.error': 'Failed',
 
   /** Empty-state copy for each page. */
   'repositories.empty': 'No repositories added yet.',

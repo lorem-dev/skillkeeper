@@ -20,6 +20,7 @@ import { SettingsPage } from '@/pages/Settings';
 import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
 import { Toasts, StatusBar, LogsPage } from '@/systems/notifications';
 import { TerminalPage } from '@/systems/terminal';
+import { TasksPage } from '@/systems/tasks';
 import './App.scss';
 
 type View = 'repositories' | 'skills' | 'projects' | 'settings';
@@ -102,6 +103,7 @@ export function App() {
       <Toasts />
       <LogsPage />
       <TerminalPage />
+      <TasksPage />
     </div>
   );
 }
