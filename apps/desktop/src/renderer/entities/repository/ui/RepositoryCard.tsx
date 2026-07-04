@@ -18,6 +18,10 @@ export interface RepositoryCardProps {
   readonly editLabel: string;
   readonly updateLabel: string;
   readonly errorLabel: string;
+  /** Tooltip for the remote URL (e.g. "Copy"). */
+  readonly urlCopyLabel?: string;
+  /** Called when the remote URL is clicked (copies the URL). */
+  readonly onUrlClick?: () => void;
   /** Current branch name (full); shows a gray badge (truncated) when set. */
   readonly branch?: string | null;
   /** Tooltip for the branch badge (e.g. "Copy"). */
@@ -48,6 +52,8 @@ export function RepositoryCard({
   editLabel,
   updateLabel,
   errorLabel,
+  urlCopyLabel,
+  onUrlClick,
   branch,
   branchCopyLabel,
   onBranchClick,
@@ -114,7 +120,20 @@ export function RepositoryCard({
             )}
           </AnimatePresence>
         </span>
-        <span className="sk-repo-card__url">{repository.url}</span>
+        {onUrlClick !== undefined ? (
+          <Tooltip content={urlCopyLabel ?? ''}>
+            <button
+              type="button"
+              className="sk-repo-card__url sk-repo-card__url--button"
+              onClick={onUrlClick}
+              aria-label={urlCopyLabel}
+            >
+              {repository.url}
+            </button>
+          </Tooltip>
+        ) : (
+          <span className="sk-repo-card__url">{repository.url}</span>
+        )}
         {(branch != null && branch !== '') || skillCountLabel !== undefined ? (
           <span className="sk-repo-card__badges">
             {branch != null && branch !== '' && (

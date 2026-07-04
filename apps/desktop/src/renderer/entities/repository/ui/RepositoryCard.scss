@@ -38,11 +38,24 @@
 }
 
 .sk-repo-card__url {
+  display: block;
+  max-width: 100%;
   font-size: 12px;
   color: var(--sk-color-label-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// Clickable remote URL (copies the URL). Button reset so it reads as the URL
+// text; left-aligned, inherits font, non-selectable via the global rule.
+.sk-repo-card__url--button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
 }
 
 // Branch + skill-count badges under the URL.

@@ -59,6 +59,8 @@ export const de: Partial<Catalog> = {
   'repositories.viewError': 'Zum Anzeigen des Fehlers klicken',
   'repositories.copyBranch': 'Kopieren',
   'repositories.branchCopied': 'Branch-Name in die Zwischenablage kopiert',
+  'repositories.copyRemote': 'Kopieren',
+  'repositories.remoteCopied': 'Remote-URL in die Zwischenablage kopiert',
   'repositories.skillCount.one': '{count} Fähigkeit',
   'repositories.skillCount.other': '{count} Fähigkeiten',
 

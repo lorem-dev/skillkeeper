@@ -58,6 +58,8 @@ export const ru: Partial<Catalog> = {
   'repositories.viewError': 'Нажмите, чтобы посмотреть ошибку',
   'repositories.copyBranch': 'Скопировать',
   'repositories.branchCopied': 'Название ветки скопировано в буфер обмена',
+  'repositories.copyRemote': 'Скопировать',
+  'repositories.remoteCopied': 'URL удалённого репозитория скопирован в буфер обмена',
   'repositories.skillCount.one': '{count} навык',
   'repositories.skillCount.few': '{count} навыка',
   'repositories.skillCount.many': '{count} навыков',

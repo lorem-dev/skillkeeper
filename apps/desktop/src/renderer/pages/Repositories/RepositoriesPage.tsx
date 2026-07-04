@@ -30,6 +30,11 @@ export function RepositoriesPage() {
     notify(t('repositories.branchCopied'), 'info');
   }
 
+  function copyRemote(url: string): void {
+    void navigator.clipboard.writeText(url);
+    notify(t('repositories.remoteCopied'), 'info');
+  }
+
   useEffect(() => {
     void refreshRepoUpdates();
     void refreshRepoInfo();
@@ -60,6 +65,8 @@ export function RepositoriesPage() {
               editLabel={t('repositories.edit')}
               updateLabel={t('repositories.hasUpdate')}
               errorLabel={t('repositories.viewError')}
+              urlCopyLabel={t('repositories.copyRemote')}
+              onUrlClick={() => copyRemote(r.url)}
               branch={repoInfo[r.id]?.branch}
               branchCopyLabel={t('repositories.copyBranch')}
               onBranchClick={() => {

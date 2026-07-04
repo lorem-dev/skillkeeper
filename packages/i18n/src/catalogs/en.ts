@@ -61,6 +61,8 @@ export const en = {
   'repositories.viewError': 'Click to view the error',
   'repositories.copyBranch': 'Copy',
   'repositories.branchCopied': 'Branch name copied to the clipboard',
+  'repositories.copyRemote': 'Copy',
+  'repositories.remoteCopied': 'Remote URL copied to the clipboard',
   /** Skill-count badge. Plural forms selected via Intl.PluralRules. */
   'repositories.skillCount.one': '{count} skill',
   'repositories.skillCount.few': '{count} skills',
