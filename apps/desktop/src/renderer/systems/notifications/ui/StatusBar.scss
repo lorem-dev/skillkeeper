@@ -43,3 +43,9 @@
   line-height: 16px;
   text-align: center;
 }
+
+// Active-task count is informational, not an error -- use the accent color so it
+// does not read as alarming like the red error-count badge.
+.sk-statusbar__badge--accent {
+  background: var(--sk-color-accent);
+}

@@ -34,7 +34,9 @@ export function StatusBar() {
         aria-label={t('statusbar.tasks')}
       >
         <Icon name="check" size={18} />
-        {activeTaskCount > 0 && <span className="sk-statusbar__badge">{activeTaskCount}</span>}
+        {activeTaskCount > 0 && (
+          <span className="sk-statusbar__badge sk-statusbar__badge--accent">{activeTaskCount}</span>
+        )}
       </Button>
       <Button variant="plain" onClick={openTerminal} aria-label={t('statusbar.terminal')}>
         <Icon name="terminal" size={18} />
