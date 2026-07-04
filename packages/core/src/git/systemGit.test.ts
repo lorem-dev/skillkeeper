@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   buildCloneArgs,
   buildCleanArgs,
+  buildCurrentBranchArgs,
   buildFetchArgs,
   buildLfsPullArgs,
   buildPullArgs,
@@ -67,6 +68,10 @@ describe('git argument builders', () => {
   it('builds rev-parse args for a revision', () => {
     expect(buildRevParseArgs('HEAD')).toEqual(['rev-parse', 'HEAD']);
     expect(buildRevParseArgs('@{upstream}')).toEqual(['rev-parse', '@{upstream}']);
+  });
+
+  it('builds current-branch args', () => {
+    expect(buildCurrentBranchArgs()).toEqual(['rev-parse', '--abbrev-ref', 'HEAD']);
   });
 
   it('builds lfs pull args', () => {
@@ -146,6 +151,19 @@ describe('createSystemGit', () => {
     });
     const ref = await git.revParse('/repo', 'HEAD');
     expect(ref.oid).toBe('deadbeef');
+  });
+
+  it('currentBranch runs abbrev-ref and trims the branch name', async () => {
+    const calls: Array<readonly string[]> = [];
+    const git = createSystemGit(ENV, {
+      run: async (args) => {
+        calls.push(args);
+        return { stdout: 'main\n', stderr: '' };
+      },
+    });
+    const branch = await git.currentBranch('/repo');
+    expect(branch).toBe('main');
+    expect(calls[0]).toEqual(['rev-parse', '--abbrev-ref', 'HEAD']);
   });
 
   it('defaults to a real execFile-backed runner when none is injected', () => {

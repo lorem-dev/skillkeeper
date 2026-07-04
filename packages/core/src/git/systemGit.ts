@@ -55,6 +55,11 @@ export function buildRevParseArgs(rev: string): string[] {
   return ['rev-parse', rev];
 }
 
+/** Build `git rev-parse --abbrev-ref HEAD` arguments (current branch name). */
+export function buildCurrentBranchArgs(): string[] {
+  return ['rev-parse', '--abbrev-ref', 'HEAD'];
+}
+
 /** Build `git lfs pull` arguments. */
 export function buildLfsPullArgs(): string[] {
   return ['lfs', 'pull'];
@@ -119,6 +124,10 @@ export function createSystemGit(
     async revParse(repoPath: string, rev: string): Promise<GitRef> {
       const { stdout } = await r.run(buildRevParseArgs(rev), repoPath);
       return { oid: stdout.trim() };
+    },
+    async currentBranch(repoPath: string): Promise<string> {
+      const { stdout } = await r.run(buildCurrentBranchArgs(), repoPath);
+      return stdout.trim();
     },
     async lfsPull(repoPath: string): Promise<void> {
       await r.run(buildLfsPullArgs(), repoPath);

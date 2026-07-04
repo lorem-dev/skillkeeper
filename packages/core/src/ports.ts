@@ -78,6 +78,8 @@ export interface GitPort {
   forcePull(repoPath: string): Promise<void>;
   /** Resolve a revision (for example `HEAD` or `@{upstream}`) to an oid. */
   revParse(repoPath: string, rev: string): Promise<GitRef>;
+  /** Current branch name (`git rev-parse --abbrev-ref HEAD`; `HEAD` if detached). */
+  currentBranch(repoPath: string): Promise<string>;
   /** Run `git lfs pull` in the given repository. */
   lfsPull(repoPath: string): Promise<void>;
   /** Point the `origin` remote at a new URL (`git remote set-url origin <url>`). */

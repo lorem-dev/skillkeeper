@@ -2,7 +2,15 @@ import type { CloneOptions, GitPort, GitRef } from '../ports.js';
 
 /** A recorded git operation, for assertions in tests. */
 export interface GitCall {
-  readonly op: 'clone' | 'fetch' | 'pull' | 'forcePull' | 'revParse' | 'lfsPull' | 'setRemoteUrl';
+  readonly op:
+    | 'clone'
+    | 'fetch'
+    | 'pull'
+    | 'forcePull'
+    | 'revParse'
+    | 'currentBranch'
+    | 'lfsPull'
+    | 'setRemoteUrl';
   readonly args: Record<string, unknown>;
 }
 
@@ -14,6 +22,8 @@ export interface FakeGitOptions {
    */
   readonly refs?: Record<string, string>;
   readonly defaultOid?: string;
+  /** Branch name returned by {@link GitPort.currentBranch}. Defaults to `main`. */
+  readonly branch?: string;
 }
 
 /** A fake {@link GitPort} that records calls and returns canned refs. */
@@ -30,6 +40,7 @@ export function createFakeGit(options: FakeGitOptions = {}): FakeGit {
   const calls: GitCall[] = [];
   const refs = options.refs ?? {};
   const defaultOid = options.defaultOid ?? '0000000000000000000000000000000000000000';
+  const branch = options.branch ?? 'main';
 
   return {
     calls,
@@ -48,6 +59,10 @@ export function createFakeGit(options: FakeGitOptions = {}): FakeGit {
     async revParse(repoPath: string, rev: string): Promise<GitRef> {
       calls.push({ op: 'revParse', args: { repoPath, rev } });
       return { oid: refs[`${repoPath}::${rev}`] ?? defaultOid };
+    },
+    async currentBranch(repoPath: string): Promise<string> {
+      calls.push({ op: 'currentBranch', args: { repoPath } });
+      return branch;
     },
     async lfsPull(repoPath: string): Promise<void> {
       calls.push({ op: 'lfsPull', args: { repoPath } });

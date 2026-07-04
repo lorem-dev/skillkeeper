@@ -98,6 +98,7 @@ export {
   buildResetHardArgs,
   buildCleanArgs,
   buildRevParseArgs,
+  buildCurrentBranchArgs,
   buildLfsPullArgs,
   buildSetRemoteUrlArgs,
 } from './git/systemGit.js';
