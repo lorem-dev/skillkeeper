@@ -15,7 +15,21 @@ export interface RepoDeps {
   readonly statePath: string;
   /** Directory clones live under: <appData>/repositories */
   readonly reposDir: string;
+  /**
+   * Embedded terminal hooks (optional so existing RepoDeps test construction
+   * still compiles). echo() displays git activity; runSshAdd() re-prompts for
+   * an encrypted ssh key's passphrase on the PTY after an auth failure.
+   */
+  readonly terminal?: { echo: (text: string) => void; runSshAdd: () => void };
+  /** Ask any open window to show the terminal overlay (e.g. before runSshAdd). */
+  readonly requestTerminalOpen?: () => void;
 }
+
+/** True when a caught git error message looks like an ssh auth failure. */
+const isSshAuthFailure = (msg: string): boolean =>
+  /permission denied|could not read from remote|host key verification|authentication failed/i.test(
+    msg,
+  );
 
 export type RepoResult = { ok: true; repository: Repository } | { ok: false; error: string };
 export type RemoveResult = { ok: true } | { ok: false; error: string };
@@ -106,11 +120,17 @@ export async function cloneRepository(deps: RepoDeps, args: { id: string }): Pro
     // git clone runs in cwd=dirname(destination)=reposDir; that directory must
     // exist or execFile fails with "spawn git ENOENT" before git even starts.
     await deps.fs.mkdir(deps.reposDir);
+    deps.terminal?.echo(`\r\n$ git clone (${repo.name})\r\n`);
     // Slow clone runs unlocked; the stamp re-reads fresh state under the lock.
     await deps.git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });
     return await persistRepo(deps, args.id, { lastFetched: new Date().toISOString() });
   } catch (err) {
-    return { ok: false, error: message(err) };
+    const msg = message(err);
+    if (isSshAuthFailure(msg)) {
+      deps.requestTerminalOpen?.();
+      deps.terminal?.runSshAdd();
+    }
+    return { ok: false, error: msg };
   }
 }
 
@@ -171,6 +191,7 @@ export async function syncRepository(deps: RepoDeps, args: { id: string }): Prom
     // Slow git work runs unlocked; the stamp re-reads fresh state under the lock.
     // If the clone dir is missing (e.g. an earlier clone failed), re-clone --
     // pulling in a non-existent cwd would fail with "spawn git ENOENT".
+    deps.terminal?.echo(`\r\n$ git pull (${repo.name})\r\n`);
     if (await deps.fs.exists(repo.localPath)) {
       // Force the clone to match the remote exactly, discarding any local edits,
       // so an app-managed repo never diverges or hits merge conflicts.
@@ -182,7 +203,12 @@ export async function syncRepository(deps: RepoDeps, args: { id: string }): Prom
     }
     return await persistRepo(deps, args.id, { lastFetched: new Date().toISOString() });
   } catch (err) {
-    return { ok: false, error: message(err) };
+    const msg = message(err);
+    if (isSshAuthFailure(msg)) {
+      deps.requestTerminalOpen?.();
+      deps.terminal?.runSshAdd();
+    }
+    return { ok: false, error: msg };
   }
 }
 

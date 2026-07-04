@@ -183,6 +183,13 @@ function registerHandlers(): void {
     git: createSystemGit(hostEnv, undefined, () => gitPath),
     statePath,
     reposDir: path.join(resolveAppDataDir(), 'repositories'),
+    terminal: {
+      echo: (t: string) => getTerminal().echo(t),
+      runSshAdd: () => getTerminal().runSshAdd(),
+    },
+    requestTerminalOpen: () => {
+      for (const w of BrowserWindow.getAllWindows()) w.webContents.send('terminal:requestOpen');
+    },
   };
 
   /**
