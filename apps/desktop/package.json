@@ -24,7 +24,11 @@
     },
     "files": [
       "out/**/*",
-      "!out/**/*.map"
+      "!out/**/*.map",
+      "node_modules/node-pty/**/*"
+    ],
+    "asarUnpack": [
+      "**/node_modules/node-pty/**"
     ],
     "linux": {
       "target": [
