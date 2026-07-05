@@ -59,6 +59,7 @@ export const de: Partial<Catalog> = {
   'repositories.lastFetched': 'Zuletzt abgerufen: {when}',
   'repositories.neverFetched': 'Nie abgerufen',
   'repositories.addRemote': 'Remote-URL',
+  'repositories.invalidRemote': 'Gültige Remote-URL eingeben (https://... oder git@host:pfad).',
   'repositories.addName': 'Name',
   'repositories.edit': 'Repository bearbeiten',
   'repositories.save': 'Speichern',

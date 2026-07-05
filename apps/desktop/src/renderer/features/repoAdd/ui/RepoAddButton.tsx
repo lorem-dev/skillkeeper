@@ -5,6 +5,16 @@ import { deriveRepoName } from '@/entities/repository';
 import { Button, Modal, TextField } from '@/shared/ui';
 import './RepoAddButton.scss';
 
+/**
+ * Minimal remote-URL check: accept https/http/git/ssh URLs and scp-style
+ * `user@host:path`. Not a security boundary (the shell values are escaped where
+ * git runs) -- just guards against obviously wrong input in the form.
+ */
+function isValidRemote(url: string): boolean {
+  const u = url.trim();
+  return /^(?:https?|git|ssh):\/\/[^\s]+$/i.test(u) || /^[\w.+-]+@[\w.-]+:[^\s]+$/i.test(u);
+}
+
 export function RepoAddButton() {
   const t = useTranslator();
   const addRepository = useSkillkeeperStore((s) => s.addRepository);
@@ -29,8 +39,11 @@ export function RepoAddButton() {
     if (!nameEdited) setName(deriveRepoName(value));
   };
 
+  const valid = isValidRemote(url);
+  const showError = url.trim() !== '' && !valid;
+
   const submit = (): void => {
-    if (url.trim() === '') return;
+    if (!valid) return;
     void addRepository(url.trim(), name.trim());
     setOpen(false);
     reset();
@@ -48,6 +61,7 @@ export function RepoAddButton() {
             value={url}
             onChange={(e) => onUrlChange(e.target.value)}
           />
+          {showError && <p className="sk-repo-form__error">{t('repositories.invalidRemote')}</p>}
           <TextField
             placeholder={t('repositories.addName')}
             value={name}
@@ -60,7 +74,7 @@ export function RepoAddButton() {
             <Button variant="secondary" onClick={cancel}>
               {t('common.close')}
             </Button>
-            <Button variant="primary" onClick={submit} disabled={url.trim() === ''}>
+            <Button variant="primary" onClick={submit} disabled={!valid}>
               {t('repositories.add')}
             </Button>
           </div>

@@ -61,6 +61,7 @@ export const en = {
   'repositories.lastFetched': 'Last fetched: {when}',
   'repositories.neverFetched': 'Never fetched',
   'repositories.addRemote': 'Remote URL',
+  'repositories.invalidRemote': 'Enter a valid remote URL (https://... or git@host:path).',
   'repositories.addName': 'Name',
   'repositories.edit': 'Edit repository',
   'repositories.save': 'Save',

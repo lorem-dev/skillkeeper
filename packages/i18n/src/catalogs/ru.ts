@@ -58,6 +58,7 @@ export const ru: Partial<Catalog> = {
   'repositories.lastFetched': 'Последнее обновление: {when}',
   'repositories.neverFetched': 'Не обновлялось',
   'repositories.addRemote': 'URL удалённого репозитория',
+  'repositories.invalidRemote': 'Введите корректный URL репозитория (https://... или git@host:путь).',
   'repositories.addName': 'Название',
   'repositories.edit': 'Редактировать репозиторий',
   'repositories.save': 'Сохранить',
