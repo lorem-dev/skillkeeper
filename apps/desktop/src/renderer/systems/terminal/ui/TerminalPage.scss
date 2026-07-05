@@ -34,5 +34,7 @@
 .sk-terminal-page__body {
   flex: 1;
   overflow: hidden;
-  padding: var(--sk-space-3) var(--sk-space-5);
+  // No right padding so the terminal (and its scrollbar) sit flush against the
+  // window edge; a small inset on the left. Vertical padding unchanged.
+  padding: var(--sk-space-3) 0 var(--sk-space-3) var(--sk-space-3);
 }
