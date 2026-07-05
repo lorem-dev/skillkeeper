@@ -30,9 +30,19 @@ export function TerminalView() {
       fontFamily: cssVar('--sk-font-mono') || 'Menlo, Monaco, "SF Mono", "Courier New", monospace',
       fontSize: 13,
       allowProposedApi: true,
+      // xterm's scrollbar (a VS Code scrollable element) defaults to a chunky
+      // 14px. Its width is driven by overviewRuler.width; the overview ruler
+      // itself only renders when decorations register for it (we register none),
+      // so this just thins the scrollbar to match the app's 8px bars.
+      overviewRuler: { width: 8 },
       theme: {
         background: cssVar('--sk-color-bg') || '#000000',
         foreground: cssVar('--sk-color-label') || '#ffffff',
+        // Subtle, theme-neutral scrollbar slider (visible on light and dark),
+        // in place of xterm's default near-invisible translucent white.
+        scrollbarSliderBackground: 'rgba(128, 128, 128, 0.28)',
+        scrollbarSliderHoverBackground: 'rgba(128, 128, 128, 0.45)',
+        scrollbarSliderActiveBackground: 'rgba(128, 128, 128, 0.6)',
         // Explicit, theme-aware selection colors: xterm's default translucent
         // white is invisible on the light theme, which reads as "selection does
         // not work". Accent fill with the background as the text color stays
