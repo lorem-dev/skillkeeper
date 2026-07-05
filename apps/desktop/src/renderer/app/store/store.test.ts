@@ -351,6 +351,20 @@ describe('useSkillkeeperStore', () => {
       expect(['queued', 'running']).toContain(tasks[0]!.status);
     });
 
+    it('marks the repo syncing immediately on enqueue (before the task runs)', () => {
+      void useSkillkeeperStore.getState().syncRepository('repo-1');
+      // The card must enter the busy state the instant the task is queued.
+      expect(useSkillkeeperStore.getState().repoStatus['repo-1']?.phase).toBe('syncing');
+    });
+
+    it('refreshRepoUpdates enqueues a check task per repo', () => {
+      void useSkillkeeperStore.getState().refreshRepoUpdates();
+      const tasks = useSkillkeeperStore.getState().tasks;
+      expect(tasks).toHaveLength(1);
+      expect(tasks[0]!.kind).toBe('check');
+      expect(tasks[0]!.repoId).toBe('repo-1');
+    });
+
     it('clearFinishedTasks removes done/error tasks but keeps queued/running', () => {
       useSkillkeeperStore.setState({
         tasks: [

@@ -48,6 +48,8 @@ export const de: Partial<Catalog> = {
   'tasks.title': 'Aufgaben',
   'tasks.empty': 'Keine Aufgaben.',
   'tasks.clear': 'Erledigte leeren',
+  'tasks.kind.sync': 'Synchronisieren',
+  'tasks.kind.check': 'Nach Updates suchen',
   'tasks.status.queued': 'In Warteschlange',
   'tasks.status.running': 'Läuft',
   'tasks.status.done': 'Fertig',

@@ -47,6 +47,8 @@ export const ru: Partial<Catalog> = {
   'tasks.title': 'Задачи',
   'tasks.empty': 'Задач нет.',
   'tasks.clear': 'Очистить завершённые',
+  'tasks.kind.sync': 'Синхронизация',
+  'tasks.kind.check': 'Проверка обновлений',
   'tasks.status.queued': 'В очереди',
   'tasks.status.running': 'Выполняется',
   'tasks.status.done': 'Готово',

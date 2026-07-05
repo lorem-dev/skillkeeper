@@ -72,7 +72,8 @@ export interface RepoTask {
   readonly id: string;
   readonly repoId: string;
   readonly repoName: string;
-  readonly kind: 'sync';
+  /** 'sync' force-pulls; 'check' fetches to refresh the update indicator. */
+  readonly kind: 'sync' | 'check';
   readonly status: RepoTaskStatus;
   /** ISO timestamp of when it was queued. */
   readonly at: string;
@@ -182,6 +183,16 @@ export type SkillkeeperStore = SkillkeeperState & SkillkeeperActions;
 
 /** Serializes queued repository tasks so they run one at a time, in order. */
 let taskChain: Promise<unknown> = Promise.resolve();
+
+/** Append `run` to the task chain so it starts only after the previous task settles. */
+function enqueue(run: () => Promise<void>): Promise<void> {
+  const next = taskChain.then(run, run);
+  taskChain = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next;
+}
 
 export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   // Initial state
@@ -421,8 +432,9 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   syncRepository(id) {
     // Enqueue a task and process the queue one at a time (in order). The card
-    // shows 'syncing' while its task runs; the task list shows queued/running/
-    // done/error.
+    // enters the 'syncing' state the instant the task is queued -- not only when
+    // it starts running -- and stays there until the task is FULLY done (sync +
+    // describe). The task list shows queued/running/done/error.
     const repo = get().repositories.find((r) => r.id === id);
     const taskId = crypto.randomUUID();
     const setTaskStatus = (status: RepoTask['status']): void =>
@@ -439,61 +451,55 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           at: new Date().toISOString(),
         },
       ],
+      // Mark the card busy immediately, while the task is still queued.
+      repoStatus: {
+        ...s.repoStatus,
+        [id]: {
+          phase: 'syncing',
+          hasUpdate: s.repoStatus[id]?.hasUpdate ?? false,
+          error: s.repoStatus[id]?.error,
+        },
+      },
     }));
+
+    const idle = (s: SkillkeeperState, patch: Partial<{ hasUpdate: boolean; error?: string }>) => ({
+      repoStatus: {
+        ...s.repoStatus,
+        [id]: {
+          phase: 'idle' as const,
+          hasUpdate: s.repoStatus[id]?.hasUpdate ?? false,
+          error: s.repoStatus[id]?.error,
+          ...patch,
+        },
+      },
+    });
 
     const runTask = async (): Promise<void> => {
       setTaskStatus('running');
-      set((s) => ({
-        repoStatus: {
-          ...s.repoStatus,
-          [id]: {
-            phase: 'syncing',
-            hasUpdate: s.repoStatus[id]?.hasUpdate ?? false,
-            error: s.repoStatus[id]?.error,
-          },
-        },
-      }));
       try {
         const res = await bridgeClient.syncRepository(id);
-        set((s) => ({
-          repositories: res.ok
-            ? s.repositories.map((r) => (r.id === id ? res.repository : r))
-            : s.repositories,
-          repoStatus: {
-            ...s.repoStatus,
-            [id]: {
-              phase: 'idle',
-              hasUpdate: res.ok ? false : (s.repoStatus[id]?.hasUpdate ?? false),
-              error: res.ok ? undefined : s.repoStatus[id]?.error,
-            },
-          },
-        }));
         if (res.ok) {
+          // Stay 'syncing' until describe finishes, then leave the busy state in
+          // a single update so the card only settles once the task is complete.
           const info = await bridgeClient.describeRepository(id);
-          set((s) => ({ repoInfo: { ...s.repoInfo, [id]: info } }));
+          set((s) => ({
+            repositories: s.repositories.map((r) => (r.id === id ? res.repository : r)),
+            repoInfo: { ...s.repoInfo, [id]: info },
+            ...idle(s, { hasUpdate: false, error: undefined }),
+          }));
           setTaskStatus('done');
         } else {
           get().notify(res.error, 'error', id);
+          set((s) => idle(s, {}));
           setTaskStatus('error');
         }
       } catch {
         // Never wedge the queue: mark idle+error and continue with the next task.
-        set((s) => ({
-          repoStatus: {
-            ...s.repoStatus,
-            [id]: { phase: 'idle', hasUpdate: s.repoStatus[id]?.hasUpdate ?? false, error: s.repoStatus[id]?.error },
-          },
-        }));
+        set((s) => idle(s, {}));
         setTaskStatus('error');
       }
     };
-    // Run after the previous task regardless of how it settled (like withStateLock).
-    const run = taskChain.then(runTask, runTask);
-    taskChain = run.then(
-      () => undefined,
-      () => undefined,
-    );
-    return run;
+    return enqueue(runTask);
   },
 
   clearFinishedTasks() {
@@ -501,10 +507,30 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   },
 
   refreshRepoUpdates() {
-    return (async () => {
-      const repos = get().repositories;
-      await Promise.all(
-        repos.map(async (r) => {
+    // Each repo's update-check fetch runs as its own queued task (sequentially,
+    // via the shared task chain), so checks are visible in the task list and
+    // never race a sync on the same repo -- rather than a parallel burst.
+    const repos = get().repositories;
+    const runs = repos.map((r) => {
+      const taskId = crypto.randomUUID();
+      const setTaskStatus = (status: RepoTask['status']): void =>
+        set((s) => ({ tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)) }));
+      set((s) => ({
+        tasks: [
+          ...s.tasks,
+          {
+            id: taskId,
+            repoId: r.id,
+            repoName: r.name,
+            kind: 'check' as const,
+            status: 'queued' as const,
+            at: new Date().toISOString(),
+          },
+        ],
+      }));
+      return enqueue(async () => {
+        setTaskStatus('running');
+        try {
           const hasUpdate = await bridgeClient.repoHasUpdate(r.id);
           set((s) => ({
             repoStatus: {
@@ -516,9 +542,13 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
               },
             },
           }));
-        }),
-      );
-    })();
+          setTaskStatus('done');
+        } catch {
+          setTaskStatus('error');
+        }
+      });
+    });
+    return Promise.all(runs).then(() => undefined);
   },
 
   refreshRepoInfo() {

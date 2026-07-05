@@ -49,6 +49,8 @@ export const en = {
   'tasks.title': 'Tasks',
   'tasks.empty': 'No tasks.',
   'tasks.clear': 'Clear finished',
+  'tasks.kind.sync': 'Sync',
+  'tasks.kind.check': 'Check for updates',
   'tasks.status.queued': 'Queued',
   'tasks.status.running': 'Running',
   'tasks.status.done': 'Done',
