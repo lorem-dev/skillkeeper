@@ -71,6 +71,12 @@
     &:hover:not(:disabled) {
       filter: brightness(1.08);
     }
+
+    // Disabled keeps the blue fill, so grey text is illegible on it -- use a
+    // light tint of the accent (the background, but lighter) instead.
+    &:disabled {
+      color: color-mix(in srgb, var(--sk-color-accent) 40%, #fff);
+    }
   }
 
   &--secondary {
