@@ -33,7 +33,34 @@ export function TerminalView() {
       theme: {
         background: cssVar('--sk-color-bg') || '#000000',
         foreground: cssVar('--sk-color-label') || '#ffffff',
+        // Explicit, theme-aware selection colors: xterm's default translucent
+        // white is invisible on the light theme, which reads as "selection does
+        // not work". Accent fill with the background as the text color stays
+        // legible in both themes.
+        selectionBackground: cssVar('--sk-color-accent') || '#3b82f6',
+        selectionInactiveBackground: cssVar('--sk-color-accent') || '#3b82f6',
+        selectionForeground: cssVar('--sk-color-bg') || '#000000',
       },
+    });
+    // xterm never copies/pastes on its own. Wire the platform shortcuts:
+    // copy on Cmd+C (macOS) or Ctrl+Shift+C; paste on Cmd+V or Ctrl+Shift+V.
+    // A bare Ctrl+C with no selection still falls through to send SIGINT.
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.type !== 'keydown') return true;
+      const modCombo = (e.metaKey && !e.ctrlKey) || (e.ctrlKey && e.shiftKey);
+      if (modCombo && e.code === 'KeyC') {
+        const selection = term.getSelection();
+        if (selection.length === 0) return true;
+        void navigator.clipboard.writeText(selection);
+        return false;
+      }
+      if (modCombo && e.code === 'KeyV') {
+        void navigator.clipboard.readText().then((text) => {
+          if (text.length > 0) term.paste(text);
+        });
+        return false;
+      }
+      return true;
     });
     // Swallow terminal color queries (OSC 10/11/12). Programs/shells query the
     // fg/bg/cursor color at startup; xterm's default reply travels back over
