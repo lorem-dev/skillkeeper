@@ -364,6 +364,8 @@ function createWindow(): void {
   const rendererUrl = process.env['ELECTRON_RENDERER_URL'];
   if (rendererUrl !== undefined) {
     void win.loadURL(rendererUrl);
+    // In dev, open the DevTools in their own detached window.
+    win.webContents.openDevTools({ mode: 'detach' });
   } else {
     void win.loadFile(path.join(moduleDir, '../renderer/index.html'));
   }
