@@ -378,14 +378,21 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         repoStatus: { ...s.repoStatus, [repo.id]: { phase: 'cloning', hasUpdate: false } },
       }));
       const cloned = await bridgeClient.cloneRepository(repo.id);
+      if (!cloned.ok) {
+        set((s) => ({
+          repoStatus: { ...s.repoStatus, [repo.id]: { phase: 'idle', hasUpdate: false } },
+        }));
+        get().notify(cloned.error, 'error', repo.id);
+        return;
+      }
+      // Populate the branch + skill-count info so the card's badges appear right
+      // after the clone, without waiting for a manual refresh.
+      const info = await bridgeClient.describeRepository(repo.id);
       set((s) => ({
-        repositories: cloned.ok
-          ? s.repositories.map((r) => (r.id === repo.id ? cloned.repository : r))
-          : s.repositories,
-        // Success clears any error; a failure's error is set by notify() below.
+        repositories: s.repositories.map((r) => (r.id === repo.id ? cloned.repository : r)),
+        repoInfo: { ...s.repoInfo, [repo.id]: info },
         repoStatus: { ...s.repoStatus, [repo.id]: { phase: 'idle', hasUpdate: false } },
       }));
-      if (!cloned.ok) get().notify(cloned.error, 'error', repo.id);
     })();
   },
 
