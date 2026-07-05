@@ -51,7 +51,7 @@ export function RepoAddButton() {
 
   return (
     <>
-      <Button variant="primary" onClick={() => setOpen(true)}>
+      <Button variant="primary" loading={open} onClick={() => setOpen(true)}>
         {t('repositories.add')}
       </Button>
       <Modal open={open} onClose={cancel} title={t('repositories.add')}>
