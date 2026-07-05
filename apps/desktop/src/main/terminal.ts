@@ -80,11 +80,15 @@ function shq(value: string): string {
  * own prompt (e.g. starship's error indicator).
  */
 function integrationSetup(shell: string): string | undefined {
+  // Also enable "ignore space": commands typed with a leading space are kept out
+  // of the shell history. Every command we inject is space-prefixed (see the
+  // write sites), so the app's git commands never land in ~/.zsh_history and
+  // never surface (via the up arrow) in the user's other shell sessions.
   if (/(^|\/)zsh$/.test(shell)) {
-    return "__skk_pc() { local e=$?; printf '\\033]777;skk;%d\\007' \"$e\"; return $e; }; precmd_functions=(__skk_pc $precmd_functions)";
+    return "setopt hist_ignore_space; __skk_pc() { local e=$?; printf '\\033]777;skk;%d\\007' \"$e\"; return $e; }; precmd_functions=(__skk_pc $precmd_functions)";
   }
   if (/(^|\/)(bash|sh)$/.test(shell)) {
-    return "__skk_pc() { local e=$?; printf '\\033]777;skk;%d\\007' \"$e\"; return $e; }; PROMPT_COMMAND=\"__skk_pc${PROMPT_COMMAND:+; $PROMPT_COMMAND}\"";
+    return "HISTCONTROL=ignorespace; __skk_pc() { local e=$?; printf '\\033]777;skk;%d\\007' \"$e\"; return $e; }; PROMPT_COMMAND=\"__skk_pc${PROMPT_COMMAND:+; $PROMPT_COMMAND}\"";
   }
   return undefined;
 }
@@ -243,7 +247,8 @@ class TerminalManager extends EventEmitter {
     }
     this.hookSent = true;
     this.hideHook = true;
-    this.pty.write(`${setup}\r`);
+    // Leading space keeps the hook line out of history (hist_ignore_space).
+    this.pty.write(` ${setup}\r`);
     // If the marker never comes, the hook did not take: reveal output and fall
     // back to the arg-array PTY path so git never hangs on a missing marker.
     this.confirmTimer = setTimeout(() => {
@@ -348,8 +353,9 @@ class TerminalManager extends EventEmitter {
 
   /**
    * POSIX: type the escaped git command into the interactive shell, once it is
-   * ready for input. A subshell keeps `cd` from persisting; the exit code comes
-   * from the shell's invisible prompt marker, so the command line stays clean.
+   * ready for input. `git -C <dir>` runs in the repo directly (no cd/subshell),
+   * so the line carries no shell operators; the exit code comes from the shell's
+   * invisible prompt marker, keeping the command line clean.
    */
   private async runGitInShell(gitPath: string, args: readonly string[], cwd: string): Promise<number> {
     this.start(this.cols, this.rows);
@@ -360,10 +366,15 @@ class TerminalManager extends EventEmitter {
       this.idle = false;
       this.pendingResolve = resolve;
       this.pendingPrompted = false;
-      const command = [shq(gitPath), ...args.map(shq)].join(' ');
-      // A subshell keeps `cd` from persisting; the trailing CR runs it. The line
-      // is only typed once the shell is ready (idle), so it echoes exactly once.
-      this.pty?.write(`( cd ${shq(cwd)} && ${command} )\r`);
+      // `git -C <dir> ...` instead of `( cd <dir> && git ... )`: no cd, no
+      // subshell, and -- crucially -- no `&&` or parentheses, the operator
+      // glyphs zsh-syntax-highlighting intermittently dropped from the echo when
+      // re-rendering rapidly queued commands. Typed only once the shell is ready
+      // (idle) so it echoes cleanly; the trailing CR runs it.
+      // Leading space keeps the command out of history (hist_ignore_space), so
+      // the app's git commands never surface in the user's other shell sessions.
+      const command = [shq(gitPath), '-C', shq(cwd), ...args.map(shq)].join(' ');
+      this.pty?.write(` ${command}\r`);
     });
   }
 
@@ -399,7 +410,8 @@ class TerminalManager extends EventEmitter {
   /** Run ssh-add on the interactive shell so its passphrase prompt shows here. */
   runSshAdd(): void {
     this.start(this.cols, this.rows);
-    const cmd = process.platform === 'darwin' ? 'ssh-add --apple-use-keychain\r' : 'ssh-add\r';
+    // Leading space keeps it out of history (hist_ignore_space).
+    const cmd = process.platform === 'darwin' ? ' ssh-add --apple-use-keychain\r' : ' ssh-add\r';
     this.pty?.write(cmd);
   }
 
