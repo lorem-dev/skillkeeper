@@ -9,4 +9,36 @@
     width: 100%;
     height: 100%;
   }
+
+  // xterm.css hardcodes the viewport background to #000. The renderer paints the
+  // cell rows on a canvas, so the partial row below the last full row shows that
+  // black through -- an obvious black strip at the bottom in the light theme.
+  // Match it to the terminal background, and give it a thin scrollbar in line
+  // with the rest of the app (transparent track; thumb tints only on hover).
+  .xterm-viewport {
+    background-color: var(--sk-color-bg);
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: transparent;
+      border-radius: var(--sk-radius-pill);
+    }
+  }
+
+  &:hover .xterm-viewport {
+    scrollbar-color: color-mix(in srgb, var(--sk-color-label) 22%, transparent) transparent;
+
+    &::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--sk-color-label) 22%, transparent);
+    }
+  }
 }
