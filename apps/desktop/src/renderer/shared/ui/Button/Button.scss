@@ -41,6 +41,28 @@
     cursor: default;
   }
 
+  // Loading: keep the (disabled) label in place and sweep a skeleton shimmer
+  // across the button. Clipped to the pill; the sweep stops under
+  // prefers-reduced-motion via the global base-layer rule.
+  &--loading {
+    position: relative;
+    overflow: hidden;
+  }
+
+  &__shimmer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--sk-color-label) 16%, transparent),
+      transparent
+    );
+    animation: sk-button-shimmer 1.4s infinite;
+  }
+
   &--primary {
     background: var(--sk-color-accent);
     color: #fff;
@@ -109,5 +131,11 @@
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
       background: var(--sk-color-bg-tertiary);
     }
+  }
+}
+
+@keyframes sk-button-shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }

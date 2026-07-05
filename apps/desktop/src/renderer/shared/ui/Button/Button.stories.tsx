@@ -17,3 +17,5 @@ export const Plain: Story = { args: { variant: 'plain' } };
 export const Destructive: Story = { args: { variant: 'destructive', children: 'Uninstall' } };
 export const Glass: Story = { args: { variant: 'glass' } };
 export const Disabled: Story = { args: { variant: 'primary', disabled: true } };
+export const Loading: Story = { args: { variant: 'secondary', loading: true, children: 'Refresh' } };
+export const LoadingPrimary: Story = { args: { variant: 'primary', loading: true, children: 'Refresh' } };

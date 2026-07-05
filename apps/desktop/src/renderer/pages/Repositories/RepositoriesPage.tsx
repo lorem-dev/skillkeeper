@@ -23,6 +23,7 @@ export function RepositoriesPage() {
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
   const [editing, setEditing] = useState<Repository | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   function copyBranch(branch: string): void {
     void navigator.clipboard.writeText(branch);
@@ -47,9 +48,14 @@ export function RepositoriesPage() {
       <RepoAddButton />
       <Button
         variant="secondary"
+        loading={refreshing}
         onClick={() => {
-          void refreshRepoUpdates();
-          void refreshRepoInfo();
+          // Loading (and non-clickable) until every queued update-check task
+          // and the info refresh have fully settled.
+          setRefreshing(true);
+          void Promise.all([refreshRepoUpdates(), refreshRepoInfo()]).finally(() =>
+            setRefreshing(false),
+          );
         }}
       >
         {t('common.refresh')}

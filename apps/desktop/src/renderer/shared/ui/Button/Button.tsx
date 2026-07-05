@@ -20,11 +20,18 @@ export type ButtonVariant =
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style. Defaults to `secondary`. */
   readonly variant?: ButtonVariant;
+  /**
+   * Shows a skeleton shimmer over the button and makes it non-interactive --
+   * e.g. while a background task the button started is still running.
+   */
+  readonly loading?: boolean;
   readonly children: ReactNode;
 }
 
 export function Button({
   variant = 'secondary',
+  loading = false,
+  disabled,
   className,
   type = 'button',
   children,
@@ -39,10 +46,14 @@ export function Button({
       ref={ref}
       // A constant union; the lint rule for static button type is satisfied.
       type={type}
-      className={cx('sk-button', `sk-button--${variant}`, className)}
+      className={cx('sk-button', `sk-button--${variant}`, loading && 'sk-button--loading', className)}
+      // Loading is non-interactive: disable it so it cannot be clicked or focused.
+      disabled={disabled === true || loading}
+      aria-busy={loading || undefined}
       {...rest}
     >
       {children}
+      {loading && <span className="sk-button__shimmer" aria-hidden="true" />}
     </button>
   );
 }
