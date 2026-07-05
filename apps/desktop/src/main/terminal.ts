@@ -10,12 +10,14 @@
  *
  * Clean display is achieved with shell integration instead of a visible marker:
  * a precmd/PROMPT_COMMAND hook prints an INVISIBLE OSC sequence carrying the
- * last command's exit code right before each prompt. The hook is installed only
- * once the shell has gone quiet at its first prompt (never during the noisy,
- * query-blocked startup, where typed input is lost), and its own line is hidden.
- * The main process strips the OSC from the view and uses it for two things: the
- * command's exit code, and an "idle / prompt is ready" signal so the next
- * command is only typed once the shell is ready (no double echo, no races).
+ * last command's exit code right before each prompt. The hook is installed (and
+ * its own line hidden) only when the shell enables bracketed paste
+ * (ESC[?2004h) -- the exact moment its line editor is ready to read a command;
+ * typing during the noisy startup would lose the input. The main process strips
+ * the OSC from the view and uses it for the command's exit code, while the
+ * bracketed-paste-enable is the "ready for the next command" signal, so a
+ * command is typed only once the prompt is truly ready (no double echo, no
+ * mangled input).
  *
  * If the hook is never confirmed, or on Windows (POSIX quoting does not apply),
  * git runs as its own arg-array PTY instead; output/input still share the view.
@@ -99,6 +101,8 @@ class TerminalManager extends EventEmitter {
   // Shell-integration state (POSIX in-shell execution).
   private useIntegration = integrationSetup(defaultShell()) !== undefined;
   private hookSent = false;
+  /** True once a marker has proven the hook works. */
+  private integrationConfirmed = false;
   /** Hides the hook-install line until the first marker confirms it. */
   private hideHook = false;
   private quietTimer: ReturnType<typeof setTimeout> | undefined;
@@ -138,8 +142,9 @@ class TerminalManager extends EventEmitter {
     for (const wake of waiters) wake();
   }
 
-  /** A prompt is (re)appearing with the last command's exit code. */
+  /** The just-finished command's exit code arrived (emitted by precmd). */
   private onMarker(code: number): void {
+    this.integrationConfirmed = true;
     this.hideHook = false;
     if (this.confirmTimer !== undefined) {
       clearTimeout(this.confirmTimer);
@@ -151,6 +156,14 @@ class TerminalManager extends EventEmitter {
       this.pendingPrompted = false;
       resolve(code);
     }
+  }
+
+  /**
+   * The line editor is ready to read a command (bracketed paste re-enabled).
+   * This -- not the earlier precmd marker -- is when the next command may be
+   * typed; typing on the marker races the prompt and mangles the input.
+   */
+  private markReady(): void {
     this.idle = true;
     this.wakeIdleWaiters();
   }
@@ -165,13 +178,19 @@ class TerminalManager extends EventEmitter {
   /** Strip invisible markers from shell output; display + act on the rest. */
   private handleShellData(chunk: string): void {
     this.answerQueries(chunk);
+    // The shell enables bracketed paste (ESC [ ? 2004 h) exactly when its line
+    // editor is ready to read a command at the prompt: the reliable moment both
+    // to install the hook and to release the next command. A mid-startup lull is
+    // NOT ready (input is lost), so the quiet timer is only a fallback.
+    const ready = chunk.includes('\x1b[?2004h');
+    let justInstalled = false;
     if (this.useIntegration && !this.hookSent) {
-      // The shell enables bracketed paste (ESC [ ? 2004 h) exactly when its line
-      // editor is ready to read a command at the prompt -- the reliable moment
-      // to install the hook. A mid-startup lull is NOT ready (input is lost), so
-      // the quiet timer is only a long fallback for shells lacking this signal.
-      if (chunk.includes('\x1b[?2004h')) this.installHook();
-      else this.armHookTimer();
+      if (ready) {
+        this.installHook();
+        justInstalled = true;
+      } else {
+        this.armHookTimer();
+      }
     }
 
     const stream = this.markerCarry + chunk;
@@ -198,6 +217,10 @@ class TerminalManager extends EventEmitter {
       }
     }
     this.show(rest);
+
+    // Release the next command only once the shell is back at a ready prompt --
+    // never on the same chunk that just installed the hook (still running it).
+    if (ready && this.hookSent && !justInstalled) this.markReady();
   }
 
   /** (Re)start the quiet-timer that installs the integration hook. */
@@ -224,7 +247,7 @@ class TerminalManager extends EventEmitter {
     // If the marker never comes, the hook did not take: reveal output and fall
     // back to the arg-array PTY path so git never hangs on a missing marker.
     this.confirmTimer = setTimeout(() => {
-      if (this.idle) return; // a marker already confirmed integration
+      if (this.integrationConfirmed) return; // a marker proved the hook works
       this.hideHook = false;
       this.useIntegration = false;
       this.wakeIdleWaiters();
@@ -242,6 +265,7 @@ class TerminalManager extends EventEmitter {
     const shell = defaultShell();
     this.useIntegration = integrationSetup(shell) !== undefined;
     this.hookSent = false;
+    this.integrationConfirmed = false;
     this.hideHook = false;
     this.idle = false;
     const args = process.platform === 'win32' ? [] : ['-l'];
@@ -337,9 +361,9 @@ class TerminalManager extends EventEmitter {
       this.pendingResolve = resolve;
       this.pendingPrompted = false;
       const command = [shq(gitPath), ...args.map(shq)].join(' ');
-      // Bracketed paste inserts the line atomically (no per-char autosuggest /
-      // re-highlight redraw); the trailing CR accepts and runs it.
-      this.pty?.write(`\x1b[200~( cd ${shq(cwd)} && ${command} )\x1b[201~\r`);
+      // A subshell keeps `cd` from persisting; the trailing CR runs it. The line
+      // is only typed once the shell is ready (idle), so it echoes exactly once.
+      this.pty?.write(`( cd ${shq(cwd)} && ${command} )\r`);
     });
   }
 
