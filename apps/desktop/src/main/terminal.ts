@@ -366,15 +366,16 @@ class TerminalManager extends EventEmitter {
       this.idle = false;
       this.pendingResolve = resolve;
       this.pendingPrompted = false;
-      // `git -C <dir> ...` instead of `( cd <dir> && git ... )`: no cd, no
-      // subshell, and -- crucially -- no `&&` or parentheses, the operator
-      // glyphs zsh-syntax-highlighting intermittently dropped from the echo when
-      // re-rendering rapidly queued commands. Typed only once the shell is ready
-      // (idle) so it echoes cleanly; the trailing CR runs it.
-      // Leading space keeps the command out of history (hist_ignore_space), so
-      // the app's git commands never surface in the user's other shell sessions.
+      // `git -C <dir> ...` runs in the repo without cd/subshell.
       const command = [shq(gitPath), '-C', shq(cwd), ...args.map(shq)].join(' ');
-      this.pty?.write(` ${command}\r`);
+      // Bracketed paste inserts the whole line at once. Without it the shell
+      // echoes char-by-char and zsh-syntax-highlighting redraws each keystroke,
+      // which under rapidly queued commands intermittently drops a glyph from
+      // the display (e.g. `-C` or `&&`). We only type once the shell has
+      // re-enabled bracketed paste (idle is set on ESC[?2004h), so the 200~/201~
+      // wrappers are consumed rather than shown. The leading space keeps the
+      // command out of history (hist_ignore_space); the trailing CR runs it.
+      this.pty?.write(`\x1b[200~ ${command}\x1b[201~\r`);
     });
   }
 
