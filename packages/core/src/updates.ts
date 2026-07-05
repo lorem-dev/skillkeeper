@@ -11,11 +11,18 @@ const UPSTREAM = '@{upstream}';
  * to the tracked upstream ref. The repository "can be updated" when they differ.
  * Read-only: a fetch does not modify the working tree or any install.
  *
- * @param git Git port.
+ * @param git Git port for the local, instant comparisons (rev-parse).
  * @param repo Repository whose `localPath` is checked.
+ * @param fetchGit Git port used for the network fetch; defaults to `git`. Pass a
+ *   terminal-backed port so the fetch runs in the interactive shell (visible,
+ *   ssh-capable) like a pull, while the rev-parse comparisons stay silent.
  */
-export async function repoHasUpdate(git: GitPort, repo: Repository): Promise<boolean> {
-  await git.fetch(repo.localPath);
+export async function repoHasUpdate(
+  git: GitPort,
+  repo: Repository,
+  fetchGit: GitPort = git,
+): Promise<boolean> {
+  await fetchGit.fetch(repo.localPath);
   const local = await git.revParse(repo.localPath, 'HEAD');
   const upstream = await git.revParse(repo.localPath, UPSTREAM);
   return local.oid !== upstream.oid;

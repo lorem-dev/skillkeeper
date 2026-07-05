@@ -224,7 +224,9 @@ export async function hasRepoUpdate(deps: RepoDeps, args: { id: string }): Promi
   try {
     const repo = await findRepo(deps, args.id);
     if (repo === null) return false;
-    return await repoHasUpdate(deps.git, repo);
+    // Run the fetch in the terminal (visible, ssh-capable) like a pull; the
+    // rev-parse comparisons stay on the silent port.
+    return await repoHasUpdate(deps.git, repo, deps.terminalGit ?? deps.git);
   } catch {
     return false;
   }

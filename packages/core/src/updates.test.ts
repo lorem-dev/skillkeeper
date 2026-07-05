@@ -56,6 +56,18 @@ describe('repoHasUpdate', () => {
     });
     expect(await repoHasUpdate(git, REPO)).toBe(false);
   });
+
+  it('runs the fetch on the fetchGit port and the comparisons on git', async () => {
+    const git = createFakeGit({
+      refs: { '/repos/r1::HEAD': 'aaa', '/repos/r1::@{upstream}': 'bbb' },
+    });
+    const fetchGit = createFakeGit({});
+    expect(await repoHasUpdate(git, REPO, fetchGit)).toBe(true);
+    // The network fetch goes to the separate (terminal-backed) port...
+    expect(fetchGit.calls.map((c) => c.op)).toEqual(['fetch']);
+    // ...while `git` only runs the two local rev-parse comparisons.
+    expect(git.calls.map((c) => c.op)).toEqual(['revParse', 'revParse']);
+  });
 });
 
 describe('skillHasUpdate', () => {
