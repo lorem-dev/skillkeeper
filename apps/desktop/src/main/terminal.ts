@@ -9,15 +9,17 @@
  * URLs/paths cannot inject shell metacharacters.
  *
  * Clean display is achieved with shell integration instead of a visible marker:
- * a precmd/PROMPT_COMMAND hook (installed once at start) prints an INVISIBLE OSC
- * sequence carrying the last command's exit code right before each prompt. The
- * main process strips that sequence from the view and uses it for two things:
- * the command's exit code, and an "idle / prompt is ready" signal so the next
+ * a precmd/PROMPT_COMMAND hook prints an INVISIBLE OSC sequence carrying the
+ * last command's exit code right before each prompt. The hook is installed only
+ * once the shell has gone quiet at its first prompt (never during the noisy,
+ * query-blocked startup, where typed input is lost), and its own line is hidden.
+ * The main process strips the OSC from the view and uses it for two things: the
+ * command's exit code, and an "idle / prompt is ready" signal so the next
  * command is only typed once the shell is ready (no double echo, no races).
  *
- * On shells without a supported hook (or on Windows, where POSIX quoting does
- * not apply) git runs as its own arg-array PTY instead; output/input still
- * share the view. A bounded rolling buffer lets a re-attaching renderer replay.
+ * If the hook is never confirmed, or on Windows (POSIX quoting does not apply),
+ * git runs as its own arg-array PTY instead; output/input still share the view.
+ * A bounded rolling buffer lets a re-attaching renderer replay recent output.
  */
 import { spawn } from 'node-pty';
 import type { IPty } from 'node-pty';
@@ -33,6 +35,31 @@ const NEEDS_INPUT = /enter passphrase|password:|\(yes\/no|continue connecting/i;
 const MARKER_PREFIX = '\x1b]777;skk;';
 // eslint-disable-next-line no-control-regex -- matches the OSC/BEL marker bytes.
 const MARKER_RE = /\x1b\]777;skk;(\d+)\x07/g;
+
+/** Fallback (shells without bracketed paste): silence this long => "at prompt". */
+const HOOK_QUIET_MS = 2000;
+/** Reveal output / give up on integration if no marker arrives this soon after. */
+const HOOK_CONFIRM_MS = 3000;
+
+/**
+ * Terminal queries a shell/prompt (e.g. starship) sends at startup, with the
+ * canned reply the main process writes back immediately. Answering here -- not
+ * in the renderer -- means the shell reaches its prompt even before any xterm
+ * is mounted (eager start), so it never stalls waiting for a reply that would
+ * otherwise arrive late and echo as garbage at the prompt.
+ */
+const QUERY_REPLIES: ReadonlyArray<readonly [RegExp, string]> = [
+  // eslint-disable-next-line no-control-regex
+  [/\x1b\]10;\?(?:\x07|\x1b\\)/, '\x1b]10;rgb:d4d4/d4d4/d4d4\x07'], // foreground color
+  // eslint-disable-next-line no-control-regex
+  [/\x1b\]11;\?(?:\x07|\x1b\\)/, '\x1b]11;rgb:1e1e/1e1e/1e1e\x07'], // background color
+  // eslint-disable-next-line no-control-regex
+  [/\x1b\]12;\?(?:\x07|\x1b\\)/, '\x1b]12;rgb:d4d4/d4d4/d4d4\x07'], // cursor color
+  // eslint-disable-next-line no-control-regex
+  [/\x1b\[6n/, '\x1b[1;1R'], // cursor position report
+  // eslint-disable-next-line no-control-regex
+  [/\x1b\[0?c/, '\x1b[?1;2c'], // primary device attributes
+];
 
 function defaultShell(): string {
   if (process.platform === 'win32') return process.env['COMSPEC'] ?? 'powershell.exe';
@@ -71,10 +98,13 @@ class TerminalManager extends EventEmitter {
 
   // Shell-integration state (POSIX in-shell execution).
   private useIntegration = integrationSetup(defaultShell()) !== undefined;
+  private hookSent = false;
+  /** Hides the hook-install line until the first marker confirms it. */
+  private hideHook = false;
+  private quietTimer: ReturnType<typeof setTimeout> | undefined;
+  private confirmTimer: ReturnType<typeof setTimeout> | undefined;
   /** Leftover bytes of a marker that was split across data chunks. */
   private markerCarry = '';
-  /** True while startup noise (hook install, shell banner) is being hidden. */
-  private suppressStartup = false;
   /** True when the shell is at a prompt and ready for the next command. */
   private idle = false;
   private idleWaiters: Array<() => void> = [];
@@ -91,9 +121,9 @@ class TerminalManager extends EventEmitter {
     this.emit('data', data);
   }
 
-  /** Display shell output (dropping it while startup noise is suppressed). */
+  /** Display shell output (dropping only the hidden hook-install line). */
   private show(text: string): void {
-    if (text.length === 0 || this.suppressStartup) return;
+    if (text.length === 0 || this.hideHook) return;
     if (this.pendingResolve !== undefined && !this.pendingPrompted && NEEDS_INPUT.test(text)) {
       this.pendingPrompted = true;
       this.emit('needsInput');
@@ -101,9 +131,20 @@ class TerminalManager extends EventEmitter {
     this.append(text);
   }
 
+  /** Wake anything waiting for the shell to be ready (or for integration to end). */
+  private wakeIdleWaiters(): void {
+    const waiters = this.idleWaiters;
+    this.idleWaiters = [];
+    for (const wake of waiters) wake();
+  }
+
   /** A prompt is (re)appearing with the last command's exit code. */
   private onMarker(code: number): void {
-    this.suppressStartup = false;
+    this.hideHook = false;
+    if (this.confirmTimer !== undefined) {
+      clearTimeout(this.confirmTimer);
+      this.confirmTimer = undefined;
+    }
     if (this.pendingResolve !== undefined) {
       const resolve = this.pendingResolve;
       this.pendingResolve = undefined;
@@ -111,13 +152,28 @@ class TerminalManager extends EventEmitter {
       resolve(code);
     }
     this.idle = true;
-    const waiters = this.idleWaiters;
-    this.idleWaiters = [];
-    for (const wake of waiters) wake();
+    this.wakeIdleWaiters();
+  }
+
+  /** Reply to any terminal queries in this chunk so the shell never stalls. */
+  private answerQueries(chunk: string): void {
+    for (const [pattern, reply] of QUERY_REPLIES) {
+      if (pattern.test(chunk)) this.pty?.write(reply);
+    }
   }
 
   /** Strip invisible markers from shell output; display + act on the rest. */
   private handleShellData(chunk: string): void {
+    this.answerQueries(chunk);
+    if (this.useIntegration && !this.hookSent) {
+      // The shell enables bracketed paste (ESC [ ? 2004 h) exactly when its line
+      // editor is ready to read a command at the prompt -- the reliable moment
+      // to install the hook. A mid-startup lull is NOT ready (input is lost), so
+      // the quiet timer is only a long fallback for shells lacking this signal.
+      if (chunk.includes('\x1b[?2004h')) this.installHook();
+      else this.armHookTimer();
+    }
+
     const stream = this.markerCarry + chunk;
     this.markerCarry = '';
     MARKER_RE.lastIndex = 0;
@@ -144,17 +200,50 @@ class TerminalManager extends EventEmitter {
     this.show(rest);
   }
 
-  /** Resolves once the shell is at a prompt and ready for the next command. */
+  /** (Re)start the quiet-timer that installs the integration hook. */
+  private armHookTimer(): void {
+    if (this.quietTimer !== undefined) clearTimeout(this.quietTimer);
+    this.quietTimer = setTimeout(() => this.installHook(), HOOK_QUIET_MS);
+  }
+
+  /** Type the hook once the shell is idle; hide its line; arm a confirm timeout. */
+  private installHook(): void {
+    if (this.hookSent || this.pty === undefined) return;
+    if (this.quietTimer !== undefined) {
+      clearTimeout(this.quietTimer);
+      this.quietTimer = undefined;
+    }
+    const setup = integrationSetup(defaultShell());
+    if (setup === undefined) {
+      this.useIntegration = false;
+      return;
+    }
+    this.hookSent = true;
+    this.hideHook = true;
+    this.pty.write(`${setup}\r`);
+    // If the marker never comes, the hook did not take: reveal output and fall
+    // back to the arg-array PTY path so git never hangs on a missing marker.
+    this.confirmTimer = setTimeout(() => {
+      if (this.idle) return; // a marker already confirmed integration
+      this.hideHook = false;
+      this.useIntegration = false;
+      this.wakeIdleWaiters();
+    }, HOOK_CONFIRM_MS);
+  }
+
+  /** Resolves once the shell is ready, or once integration has been abandoned. */
   private whenIdle(): Promise<void> {
-    if (this.idle) return Promise.resolve();
+    if (this.idle || !this.useIntegration) return Promise.resolve();
     return new Promise<void>((resolve) => this.idleWaiters.push(resolve));
   }
 
   /** Spawn the interactive shell and auto-restart it if it exits (e.g. `exit`). */
   private spawnShell(): void {
     const shell = defaultShell();
-    const setup = integrationSetup(shell);
-    this.useIntegration = setup !== undefined;
+    this.useIntegration = integrationSetup(shell) !== undefined;
+    this.hookSent = false;
+    this.hideHook = false;
+    this.idle = false;
     const args = process.platform === 'win32' ? [] : ['-l'];
     const pty = spawn(shell, args, {
       name: 'xterm-256color',
@@ -164,16 +253,14 @@ class TerminalManager extends EventEmitter {
       env: process.env as Record<string, string>,
     });
     this.pty = pty;
-    this.idle = false;
+    // The hook timer is armed by handleShellData once real output arrives, not
+    // here: firing during the initial silence would type into a shell that is
+    // not yet reading input, and the command would be lost.
     pty.onData((data) => this.handleShellData(data));
-    if (setup !== undefined) {
-      // Hide the hook install + shell banner; the view starts at the first
-      // clean prompt (the first marker), which also flips the shell to idle.
-      this.suppressStartup = true;
-      pty.write(`${setup}\r`);
-    }
     pty.onExit(() => {
       if (this.pty === pty) this.pty = undefined;
+      if (this.quietTimer !== undefined) clearTimeout(this.quietTimer);
+      if (this.confirmTimer !== undefined) clearTimeout(this.confirmTimer);
       if (this.disposing) {
         this.emit('exit');
         return;
@@ -243,6 +330,8 @@ class TerminalManager extends EventEmitter {
   private async runGitInShell(gitPath: string, args: readonly string[], cwd: string): Promise<number> {
     this.start(this.cols, this.rows);
     await this.whenIdle();
+    // Integration may have been abandoned while waiting; fall back cleanly.
+    if (!this.useIntegration) return this.runGitProcess(gitPath, args, cwd);
     return new Promise<number>((resolve) => {
       this.idle = false;
       this.pendingResolve = resolve;
@@ -292,6 +381,8 @@ class TerminalManager extends EventEmitter {
 
   dispose(): void {
     this.disposing = true;
+    if (this.quietTimer !== undefined) clearTimeout(this.quietTimer);
+    if (this.confirmTimer !== undefined) clearTimeout(this.confirmTimer);
     this.activeCmd?.kill();
     this.activeCmd = undefined;
     this.pty?.kill();
