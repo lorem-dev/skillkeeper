@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Repository } from '@/services/bridge';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
+import { MAX_REPO_NAME_LENGTH } from '@/entities/repository';
 import { Button, Modal, TextField } from '@/shared/ui';
 import './RepoEditModal.scss';
 
@@ -40,7 +41,12 @@ export function RepoEditModal({ repository, onClose }: RepoEditModalProps) {
   return (
     <Modal open={repository !== null} onClose={onClose} title={t('repositories.edit')}>
       <div className="sk-repo-form">
-        <TextField value={name} onChange={(e) => setName(e.target.value)} placeholder={t('repositories.addName')} />
+        <TextField
+          value={name}
+          maxLength={MAX_REPO_NAME_LENGTH}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('repositories.addName')}
+        />
         <TextField value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t('repositories.addRemote')} />
         <div className="sk-repo-form__actions">
           <Button variant="destructive" onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}>

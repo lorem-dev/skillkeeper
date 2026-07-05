@@ -1,3 +1,3 @@
 export { RepositoryCard } from './ui/RepositoryCard';
 export type { RepositoryCardProps } from './ui/RepositoryCard';
-export { deriveRepoName } from './lib/deriveRepoName';
+export { deriveRepoName, MAX_REPO_NAME_LENGTH } from './lib/deriveRepoName';

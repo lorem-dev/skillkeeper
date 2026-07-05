@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { deriveRepoName } from '@/entities/repository';
+import { deriveRepoName, MAX_REPO_NAME_LENGTH } from '@/entities/repository';
 import { Button, Modal, TextField } from '@/shared/ui';
 import './RepoAddButton.scss';
 
@@ -65,6 +65,7 @@ export function RepoAddButton() {
           <TextField
             placeholder={t('repositories.addName')}
             value={name}
+            maxLength={MAX_REPO_NAME_LENGTH}
             onChange={(e) => {
               setNameEdited(true);
               setName(e.target.value);

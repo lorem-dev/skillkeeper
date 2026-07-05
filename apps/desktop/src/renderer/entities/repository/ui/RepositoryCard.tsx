@@ -38,7 +38,7 @@ export interface RepositoryCardProps {
 /** Longest branch name shown on the badge before it is truncated with "...". */
 const BRANCH_MAX = 25;
 /** Hard cap on the remote URL string length (CSS also ellipsizes to the card). */
-const URL_MAX = 256;
+const URL_MAX = 80;
 
 function truncate(value: string, max: number): string {
   return value.length > max ? `${value.slice(0, max)}...` : value;

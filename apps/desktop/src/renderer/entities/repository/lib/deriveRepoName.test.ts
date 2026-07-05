@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveRepoName } from './deriveRepoName';
+import { deriveRepoName, MAX_REPO_NAME_LENGTH } from './deriveRepoName';
 
 describe('deriveRepoName', () => {
   it('kebab-cased path before .git', () => {
@@ -13,5 +13,9 @@ describe('deriveRepoName', () => {
   });
   it('empty for a blank url', () => {
     expect(deriveRepoName('')).toBe('');
+  });
+  it('caps the derived name at MAX_REPO_NAME_LENGTH', () => {
+    const long = 'a'.repeat(80);
+    expect(deriveRepoName(`https://example.com/foo/${long}.git`).length).toBe(MAX_REPO_NAME_LENGTH);
   });
 });
