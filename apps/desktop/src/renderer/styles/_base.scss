@@ -12,7 +12,22 @@
 
 html,
 body {
-  height: 100vh;
+  // 100% of the actual window, not 100vh: a viewport unit can round to a
+  // fraction larger than the client height and leave a hairline overflow that
+  // shows a permanent window scrollbar with nothing to scroll. The app never
+  // scrolls at the window level -- each Page owns its own scroll area -- so the
+  // window overflow is clipped outright.
+  height: 100%;
+  overflow: hidden;
+}
+
+// The React mount point fills the flex-column body so descendants size from a
+// real height (no viewport units) instead of collapsing to their content.
+#root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 body {
