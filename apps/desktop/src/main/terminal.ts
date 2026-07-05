@@ -49,6 +49,10 @@ class TerminalManager extends EventEmitter {
   private pendingResolve: ((code: number) => void) | undefined;
   private pendingPrompted = false;
   private scanBuf = '';
+  // Resolves once the interactive shell has finished init and is reading input,
+  // so a command is never typed into a half-initialized shell.
+  private ready: Promise<void> = Promise.resolve();
+  private readyResolve: (() => void) | undefined;
   private buffer = '';
   private cols = 80;
   private rows = 24;
@@ -58,10 +62,15 @@ class TerminalManager extends EventEmitter {
     this.emit('data', data);
   }
 
-  /** Scan interactive-shell output for the in-shell command's end-marker + prompts. */
+  /** Scan interactive-shell output for the ready marker, command end-marker, prompts. */
   private handleShellData(data: string): void {
+    this.scanBuf = (this.scanBuf + data).slice(-4096);
+    if (this.readyResolve !== undefined && this.scanBuf.includes('__SKK_READY__')) {
+      const resolveReady = this.readyResolve;
+      this.readyResolve = undefined;
+      resolveReady();
+    }
     if (this.pendingMarker !== undefined) {
-      this.scanBuf = (this.scanBuf + data).slice(-4096);
       const match = new RegExp(`${this.pendingMarker}:(\\d+)`).exec(this.scanBuf);
       if (match !== null) {
         const resolve = this.pendingResolve;
@@ -90,7 +99,14 @@ class TerminalManager extends EventEmitter {
       env: process.env as Record<string, string>,
     });
     this.pty = pty;
+    // Readiness: the shell buffers this until it finishes init and starts reading
+    // input, at which point the marker echoes and `ready` resolves. Its own line
+    // is erased so it is not visible.
+    this.ready = new Promise<void>((resolve) => {
+      this.readyResolve = resolve;
+    });
     pty.onData((data) => this.handleShellData(data));
+    pty.write("printf '\\r\\033[2K__SKK_READY__\\r\\033[2K'\r");
     pty.onExit(() => {
       if (this.pty === pty) this.pty = undefined;
       if (this.disposing) {
@@ -154,9 +170,11 @@ class TerminalManager extends EventEmitter {
     return run;
   }
 
-  /** POSIX: type the escaped git command into the interactive shell. */
-  private runGitInShell(gitPath: string, args: readonly string[], cwd: string): Promise<number> {
+  /** POSIX: type the escaped git command into the interactive shell (once ready). */
+  private async runGitInShell(gitPath: string, args: readonly string[], cwd: string): Promise<number> {
     this.start(this.cols, this.rows);
+    // Never type into a half-initialized shell -- wait until it is reading input.
+    await this.ready;
     return new Promise<number>((resolve) => {
       const marker = `__SKK_${String(this.cmdSeq++)}__`;
       const command = [shq(gitPath), ...args.map(shq)].join(' ');

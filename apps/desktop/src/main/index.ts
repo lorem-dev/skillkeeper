@@ -386,6 +386,10 @@ void app.whenReady().then(async () => {
     // Keep the "git" default; config:get will refresh it once the renderer loads.
   }
   await ensureSshAgent();
+  // Start the terminal session now (after the ssh-agent env is set, so the shell
+  // inherits SSH_AUTH_SOCK) so it is initialized before any task runs; runGit
+  // waits for the shell to be ready before typing a command.
+  getTerminal().start(80, 24);
   installCsp();
   createWindow();
 
