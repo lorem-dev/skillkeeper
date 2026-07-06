@@ -27,13 +27,30 @@ export interface SelectProps {
   readonly placeholder?: ReactNode;
   readonly ariaLabel?: string;
   readonly disabled?: boolean;
+  /** Notified when the dropdown opens/closes (e.g. to suppress a wrapping tooltip). */
+  readonly onOpenChange?: (open: boolean) => void;
   readonly className?: string;
 }
 
-export function Select({ label, options, value, onChange, placeholder, ariaLabel, disabled, className }: SelectProps) {
+export function Select({
+  label,
+  options,
+  value,
+  onChange,
+  placeholder,
+  ariaLabel,
+  disabled,
+  onOpenChange,
+  className,
+}: SelectProps) {
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const labelId = useId();
+
+  const changeOpen = (next: boolean): void => {
+    setOpen(next);
+    onOpenChange?.(next);
+  };
 
   const current = options.find((o) => o.value === value);
   const items: MenuItem[] = options.map((o) => ({
@@ -55,14 +72,14 @@ export function Select({ label, options, value, onChange, placeholder, ariaLabel
         aria-label={ariaLabel}
         aria-labelledby={label !== undefined ? labelId : undefined}
         disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => changeOpen(!open)}
       >
         <span className="sk-select__value">{current?.label ?? placeholder}</span>
         <Icon name="chevron-right" className="sk-select__chevron" size={16} />
       </button>
       <Menu
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => changeOpen(false)}
         anchorRef={anchorRef}
         items={items}
         role="listbox"
