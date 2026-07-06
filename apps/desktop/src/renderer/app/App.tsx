@@ -28,8 +28,8 @@ type View = 'repositories' | 'skills' | 'projects' | 'settings';
 
 const NAV_ITEMS: { id: View; key: 'nav.repositories' | 'nav.skills' | 'nav.projects' | 'nav.settings' }[] = [
   { id: 'repositories', key: 'nav.repositories' },
-  { id: 'skills', key: 'nav.skills' },
   { id: 'projects', key: 'nav.projects' },
+  { id: 'skills', key: 'nav.skills' },
   { id: 'settings', key: 'nav.settings' },
 ];
 

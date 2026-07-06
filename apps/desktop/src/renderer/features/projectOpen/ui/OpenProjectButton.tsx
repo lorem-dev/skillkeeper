@@ -37,6 +37,21 @@ function openerIcon(option: EditorOption | undefined): ReactNode {
   return <Icon name="folder" />;
 }
 
+/**
+ * Primary-button icons. For the file-manager default, a single folder icon.
+ * For a chosen editor, its app icon followed by a project glyph ("open <project>
+ * in <app>").
+ */
+function primaryIcon(option: EditorOption | undefined): ReactNode {
+  if (option === undefined || option.id === DEFAULT_ID) return <Icon name="folder" />;
+  return (
+    <>
+      {openerIcon(option)}
+      <Icon name="projects" size={16} />
+    </>
+  );
+}
+
 export interface OpenProjectButtonProps {
   /** Project folder to open. */
   readonly path: string;
@@ -98,7 +113,7 @@ export function OpenProjectButton({ path, beforeOpen }: OpenProjectButtonProps) 
   return (
     <SplitButton
       size="compact"
-      icon={openerIcon(selectedOption)}
+      icon={primaryIcon(selectedOption)}
       tooltip={tooltip}
       menuLabel={tooltip}
       onPrimary={() => void open(selected)}

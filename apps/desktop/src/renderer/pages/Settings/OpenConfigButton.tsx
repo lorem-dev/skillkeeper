@@ -42,6 +42,23 @@ function editorIcon(option: EditorOption | undefined): ReactNode {
 }
 
 /**
+ * Primary-button icons: the chosen editor's app icon followed by an edit glyph,
+ * so the control reads as "edit in <app>". When there is no app icon (the OS
+ * default app), just the edit glyph.
+ */
+function primaryIcon(option: EditorOption | undefined): ReactNode {
+  if (option?.iconDataUrl !== undefined) {
+    return (
+      <>
+        <EditorIconImage src={option.iconDataUrl} />
+        <Icon name="edit" size={16} />
+      </>
+    );
+  }
+  return <Icon name="edit" />;
+}
+
+/**
  * Opens the config file in the user's preferred editor. Renders a
  * SplitButton listing the detected editors (persisting the last choice in
  * localStorage, not in config), or a single plain Button when no editors
@@ -101,7 +118,7 @@ export function OpenConfigButton() {
   return (
     <SplitButton
       size="compact"
-      icon={editorIcon(selectedOption)}
+      icon={primaryIcon(selectedOption)}
       tooltip={tooltip}
       menuLabel={tooltip}
       onPrimary={() => void open(selected)}

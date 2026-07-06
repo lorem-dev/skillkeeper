@@ -85,28 +85,6 @@ export function SettingsPage() {
           </FormRow>
         </FormSection>
 
-        <FormSection title={t('settings.section.agents')}>
-          <FormRow label={t('settings.agents.enabled')}>
-            <MultiSelect
-              options={ALL_AGENTS.map((a) => ({ value: a, label: AGENT_LABELS[a] }))}
-              value={config.agents.enabled}
-              onChange={(next) => void updateConfig({ agents: { enabled: next as AgentKind[] } })}
-              placeholder={t('settings.agents.placeholder')}
-              summary={(count) => t('settings.agents.selected', { count: String(count) })}
-              ariaLabel={t('settings.agents.enabled')}
-            />
-          </FormRow>
-        </FormSection>
-
-        <FormSection title={t('settings.section.notifications')}>
-          <FormRow label={t('settings.notifications.enabled')}>
-            <Toggle
-              checked={config.notifications.enabled}
-              onChange={(e) => void updateConfig({ notifications: { enabled: e.target.checked } })}
-            />
-          </FormRow>
-        </FormSection>
-
         <FormSection title={t('settings.section.repositories')}>
           <GitRow
             value={config.repositories.gitPath}
@@ -151,6 +129,28 @@ export function SettingsPage() {
               hoursUnitLabel={t('settings.interval.hoursUnit')}
               decreaseLabel={t('common.decrease')}
               increaseLabel={t('common.increase')}
+            />
+          </FormRow>
+        </FormSection>
+
+        <FormSection title={t('settings.section.agents')}>
+          <FormRow label={t('settings.agents.enabled')}>
+            <MultiSelect
+              options={ALL_AGENTS.map((a) => ({ value: a, label: AGENT_LABELS[a] }))}
+              value={config.agents.enabled}
+              onChange={(next) => void updateConfig({ agents: { enabled: next as AgentKind[] } })}
+              placeholder={t('settings.agents.placeholder')}
+              summary={(count) => t('settings.agents.selected', { count: String(count) })}
+              ariaLabel={t('settings.agents.enabled')}
+            />
+          </FormRow>
+        </FormSection>
+
+        <FormSection title={t('settings.section.notifications')}>
+          <FormRow label={t('settings.notifications.enabled')}>
+            <Toggle
+              checked={config.notifications.enabled}
+              onChange={(e) => void updateConfig({ notifications: { enabled: e.target.checked } })}
             />
           </FormRow>
         </FormSection>

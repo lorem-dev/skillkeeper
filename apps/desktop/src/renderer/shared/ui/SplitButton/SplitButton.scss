@@ -111,4 +111,16 @@
       -webkit-user-drag: none;
     }
   }
+
+  // The primary slot may hold two glyphs (a context icon + the app/opener icon),
+  // so it lays them out in a row and sizes to content; each <img> keeps 20x20.
+  &__primary-icon {
+    width: auto;
+    gap: var(--sk-space-1);
+
+    img {
+      width: 20px;
+      height: 20px;
+    }
+  }
 }
