@@ -3,3 +3,19 @@
   flex-direction: column;
   gap: var(--sk-space-3);
 }
+
+// Toolbar search: a compact field that yields space before the action buttons.
+.sk-list-search {
+  flex: 0 1 9rem;
+  width: auto;
+  // Without this the flex item's min-content floor (which grows when the clear
+  // button appears) would push the field wider than its 9rem basis as you type.
+  min-width: 0;
+}
+
+// Search footer (stats + reset). `margin-top: auto` pins it to the bottom of
+// the (viewport-filling) page body when the list is short; a long list pushes
+// it down naturally so it scrolls into view at the end.
+.sk-list-footer {
+  margin-top: auto;
+}

@@ -1,0 +1,17 @@
+// Search-summary footer styles. Co-located; tokens only. Centered under the
+// list: the counts line above a reset button.
+
+.sk-search-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sk-space-3);
+  padding: var(--sk-space-5) 0 var(--sk-space-2);
+  text-align: center;
+}
+
+.sk-search-summary__counts {
+  margin: 0;
+  font-size: 13px;
+  color: var(--sk-color-label-2);
+}

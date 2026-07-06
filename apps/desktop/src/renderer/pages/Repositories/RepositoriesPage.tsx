@@ -3,13 +3,15 @@
  * add options in the toolbar.
  */
 import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { RepositoryCard } from '@/entities/repository';
 import { RepoAddButton } from '@/features/repoAdd';
 import { RepoEditModal } from '@/features/repoEdit';
 import type { Repository } from '@/services/bridge';
-import { Page, Toolbar, Button } from '@/shared/ui';
+import { Page, Toolbar, Button, SearchField, SearchSummary } from '@/shared/ui';
+import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
 import './RepositoriesPage.scss';
 
 export function RepositoriesPage() {
@@ -24,6 +26,7 @@ export function RepositoriesPage() {
   const t = useTranslator();
   const [editing, setEditing] = useState<Repository | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [query, setQuery] = useState('');
 
   function copyBranch(branch: string): void {
     void navigator.clipboard.writeText(branch);
@@ -43,8 +46,27 @@ export function RepositoriesPage() {
     void refreshRepoInfo();
   }, [refreshRepoInfo]);
 
+  // Fuzzy search by name, remote URL, and tracked branch. The field only
+  // appears once there are at least two cards to sift through.
+  const searching = query.trim() !== '';
+  const filtered = fuzzyFilter(repositories, query, (r) => [
+    r.name,
+    r.url,
+    repoInfo[r.id]?.branch ?? '',
+  ]);
+
   const trailing = (
     <>
+      {repositories.length >= 2 && (
+        <SearchField
+          className="sk-list-search"
+          placeholder={t('common.search')}
+          aria-label={t('common.search')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onClear={() => setQuery('')}
+        />
+      )}
       <RepoAddButton />
       <Button
         variant="secondary"
@@ -68,10 +90,19 @@ export function RepositoriesPage() {
       {repositories.length === 0 ? (
         <p className="sk-empty">{t('repositories.empty')}</p>
       ) : (
+        <>
         <div className="sk-repo-list">
-          {repositories.map((r) => (
-            <RepositoryCard
+          <AnimatePresence mode="popLayout" initial={false}>
+          {filtered.map((r) => (
+            <motion.div
               key={r.id}
+              layout
+              variants={fadeRise}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+            <RepositoryCard
               repository={r}
               phase={repoStatus[r.id]?.phase ?? 'idle'}
               hasUpdate={repoStatus[r.id]?.hasUpdate ?? false}
@@ -99,8 +130,30 @@ export function RepositoriesPage() {
               onEdit={() => setEditing(r)}
               onErrorClick={() => showRepoError(r.id)}
             />
+            </motion.div>
           ))}
+          </AnimatePresence>
         </div>
+        <AnimatePresence>
+          {searching && (
+            <motion.div
+              key="footer"
+              className="sk-list-footer"
+              variants={fade}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <SearchSummary
+                foundLabel={t.plural('repositories.searchFound', filtered.length)}
+                totalLabel={t.plural('repositories.searchTotal', repositories.length)}
+                showAllLabel={t('repositories.showAll')}
+                onShowAll={() => setQuery('')}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        </>
       )}
       <RepoEditModal repository={editing} onClose={() => setEditing(null)} />
     </Page>

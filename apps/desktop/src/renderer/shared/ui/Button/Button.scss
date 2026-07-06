@@ -18,6 +18,9 @@
   font-weight: 600;
   font-size: 14px;
   line-height: 1.3;
+  // Labels stay on one line; in a tight flex row the button keeps its full
+  // width (its min-content is the whole label) rather than wrapping.
+  white-space: nowrap;
   height: var(--sk-control-height);
   padding: 0 var(--sk-space-5);
   border-radius: var(--sk-radius-xl);

@@ -25,6 +25,7 @@ export const de: Partial<Catalog> = {
   'common.comingSoon': 'Demnächst verfügbar',
   'common.close': 'Schließen',
   'common.clear': 'Löschen',
+  'common.search': 'Suchen',
   'common.decrease': 'Verringern',
   'common.increase': 'Erhöhen',
 
@@ -80,6 +81,11 @@ export const de: Partial<Catalog> = {
   'repositories.branchNone': 'Kein passender Branch',
   'repositories.skillCount.one': '{count} Fähigkeit',
   'repositories.skillCount.other': '{count} Fähigkeiten',
+  'repositories.searchFound.one': '{count} Repository gefunden',
+  'repositories.searchFound.other': '{count} Repositories gefunden',
+  'repositories.searchTotal.one': '{count} Repository insgesamt',
+  'repositories.searchTotal.other': '{count} Repositories insgesamt',
+  'repositories.showAll': 'Alle Repositories anzeigen',
 
   'projects.empty': 'Noch keine Projekte erfasst.',
   'projects.add': 'Projekt hinzufügen',
@@ -99,6 +105,11 @@ export const de: Partial<Catalog> = {
   'projects.skillCount.one': '{count} Fähigkeit',
   'projects.skillCount.other': '{count} Fähigkeiten',
   'projects.fromRepos': '{count} aus Repos',
+  'projects.searchFound.one': '{count} Projekt gefunden',
+  'projects.searchFound.other': '{count} Projekte gefunden',
+  'projects.searchTotal.one': '{count} Projekt insgesamt',
+  'projects.searchTotal.other': '{count} Projekte insgesamt',
+  'projects.showAll': 'Alle Projekte anzeigen',
 
   'skills.empty': 'Noch keine Fähigkeiten installiert.',
   'skills.add': 'Skill installieren',

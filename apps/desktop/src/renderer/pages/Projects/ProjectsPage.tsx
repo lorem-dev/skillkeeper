@@ -3,6 +3,7 @@
  * add-via-folder-picker action, and a refresh that re-reads the skill counts.
  */
 import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { ProjectCard } from '@/entities/project';
@@ -10,7 +11,8 @@ import { ProjectAddButton } from '@/features/projectAdd';
 import { ProjectEditModal } from '@/features/projectEdit';
 import { OpenProjectButton } from '@/features/projectOpen';
 import type { Project } from '@/services/bridge';
-import { Page, Toolbar, Button } from '@/shared/ui';
+import { Page, Toolbar, Button, SearchField, SearchSummary } from '@/shared/ui';
+import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
 import './ProjectsPage.scss';
 
 export function ProjectsPage() {
@@ -25,6 +27,7 @@ export function ProjectsPage() {
   const t = useTranslator();
   const [editing, setEditing] = useState<Project | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [query, setQuery] = useState('');
 
   // Skill counts are local and cheap -- refresh them on mount.
   useEffect(() => {
@@ -44,8 +47,23 @@ export function ProjectsPage() {
     notify({ key: 'projects.pathCopied' }, 'info');
   }
 
+  // Fuzzy search by name and path. The field only appears once there are at
+  // least two cards to sift through.
+  const searching = query.trim() !== '';
+  const filtered = fuzzyFilter(projects, query, (p) => [p.name, p.path]);
+
   const trailing = (
     <>
+      {projects.length >= 2 && (
+        <SearchField
+          className="sk-list-search"
+          placeholder={t('common.search')}
+          aria-label={t('common.search')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onClear={() => setQuery('')}
+        />
+      )}
       <ProjectAddButton />
       <Button
         variant="secondary"
@@ -66,33 +84,68 @@ export function ProjectsPage() {
       {projects.length === 0 ? (
         <p className="sk-empty">{t('projects.empty')}</p>
       ) : (
+        <>
         <div className="sk-project-list">
-          {projects.map((p) => {
-            const info = projectInfo[p.id];
-            return (
-              <ProjectCard
-                key={p.id}
-                project={p}
-                infoPending={info === undefined}
-                skillCountLabel={info !== undefined ? t.plural('projects.skillCount', info.skillCount) : undefined}
-                fromReposLabel={
-                  info !== undefined ? t('projects.fromRepos', { count: String(info.fromReposCount) }) : undefined
-                }
-                missing={projectMissing[p.id] === true}
-                missingLabel={t('projects.missing')}
-                pathCopyLabel={t('projects.copyPath')}
-                onPathClick={() => copyPath(p.path)}
-                editLabel={t('projects.edit')}
-                removeLabel={t('projects.remove')}
-                openControl={
-                  <OpenProjectButton path={p.path} beforeOpen={() => ensureProjectAvailable(p.id)} />
-                }
-                onEdit={() => edit(p)}
-                onRemove={() => void removeProject(p.id)}
-              />
-            );
-          })}
+          <AnimatePresence mode="popLayout" initial={false}>
+            {filtered.map((p) => {
+              const info = projectInfo[p.id];
+              return (
+                <motion.div
+                  key={p.id}
+                  layout
+                  variants={fadeRise}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  <ProjectCard
+                    project={p}
+                    infoPending={info === undefined}
+                    skillCountLabel={
+                      info !== undefined ? t.plural('projects.skillCount', info.skillCount) : undefined
+                    }
+                    fromReposLabel={
+                      info !== undefined
+                        ? t('projects.fromRepos', { count: String(info.fromReposCount) })
+                        : undefined
+                    }
+                    missing={projectMissing[p.id] === true}
+                    missingLabel={t('projects.missing')}
+                    pathCopyLabel={t('projects.copyPath')}
+                    onPathClick={() => copyPath(p.path)}
+                    editLabel={t('projects.edit')}
+                    removeLabel={t('projects.remove')}
+                    openControl={
+                      <OpenProjectButton path={p.path} beforeOpen={() => ensureProjectAvailable(p.id)} />
+                    }
+                    onEdit={() => edit(p)}
+                    onRemove={() => void removeProject(p.id)}
+                  />
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
+        <AnimatePresence>
+          {searching && (
+            <motion.div
+              key="footer"
+              className="sk-list-footer"
+              variants={fade}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <SearchSummary
+                foundLabel={t.plural('projects.searchFound', filtered.length)}
+                totalLabel={t.plural('projects.searchTotal', projects.length)}
+                showAllLabel={t('projects.showAll')}
+                onShowAll={() => setQuery('')}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        </>
       )}
       <ProjectEditModal project={editing} onClose={() => setEditing(null)} />
     </Page>
