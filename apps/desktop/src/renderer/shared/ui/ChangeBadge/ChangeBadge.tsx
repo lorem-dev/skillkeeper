@@ -3,7 +3,7 @@
  * pending change. Three kinds:
  *   - `add`     -- green circle, a "+" cut out ("will be added")
  *   - `remove`  -- red circle, a "-" cut out ("will be removed")
- *   - `present` -- dark-green circle, a check cut out ("already present")
+ *   - `present` -- gray circle, a check cut out ("already present")
  *
  * The glyph is a true knockout (an SVG mask) so it shows the background through,
  * reading correctly on any row background. Generic -- no product knowledge; the

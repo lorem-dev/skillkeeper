@@ -22,8 +22,8 @@
   color: var(--sk-red);
 }
 
-// Darker green so "already present" reads as settled, distinct from the
-// brighter "add" green.
+// Neutral gray so "already present" reads as settled, distinct from the
+// green "add" and red "remove".
 .sk-change-badge--present {
-  color: color-mix(in srgb, var(--sk-green), #000 34%);
+  color: var(--sk-color-label-2);
 }

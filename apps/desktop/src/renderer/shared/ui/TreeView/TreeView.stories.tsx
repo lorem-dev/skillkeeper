@@ -249,7 +249,7 @@ export const CheckboxesLongLabels: Story = {
 
 // Install-diff column (built with the separate ChangeBadge component, not
 // TreeView itself, via each leaf's `detail`): initially-installed skills show a
-// dark-green check; unchecking one turns it into a red "will be removed"; a
+// gray check; unchecking one turns it into a red "will be removed"; a
 // newly-checked skill shows a green "will be added".
 const INSTALLED = ['p-sk-brainstorm', 'p-sk-worktrees', 'p-sk-review'];
 
@@ -294,6 +294,31 @@ function InstallDiff() {
 
 export const InstallStatusColumn: Story = {
   render: () => <InstallDiff />,
+};
+
+// Install-diff column with a long skill name: the label ellipsizes before the
+// status badge and the checkbox column.
+function InstallDiffLongLabels() {
+  const installedLong = useMemo(() => new Set(['sk-long']), []);
+  const [checkedIds, setCheckedIds] = useState<string[]>(['sk-long']);
+  const nodes = withInstallDiff(longLabels, installedLong, new Set(checkedIds));
+  return (
+    <div style={{ width: 360 }}>
+      <TreeView
+        nodes={nodes}
+        checkable
+        checkboxLevels={[1, 2]}
+        checkedIds={checkedIds}
+        onCheckedChange={setCheckedIds}
+        defaultExpandedIds={['repo-long', 'grp-long']}
+        ariaLabel="Install diff"
+      />
+    </div>
+  );
+}
+
+export const InstallStatusLongLabels: Story = {
+  render: () => <InstallDiffLongLabels />,
 };
 
 // A branch ("folder") selected as a whole -- the unit for group operations.
