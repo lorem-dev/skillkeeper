@@ -27,6 +27,8 @@ import bell from './assets/bell.svg?raw';
 import copy from './assets/copy.svg?raw';
 import close from './assets/close.svg?raw';
 import terminal from './assets/terminal.svg?raw';
+import deleteIcon from './assets/delete.svg?raw';
+import folder from './assets/folder.svg?raw';
 
 export type IconName =
   | 'repositories'
@@ -43,7 +45,9 @@ export type IconName =
   | 'bell'
   | 'copy'
   | 'close'
-  | 'terminal';
+  | 'terminal'
+  | 'delete'
+  | 'folder';
 
 const ICONS: Record<IconName, string> = {
   repositories: stripSvgRoot(repositories),
@@ -61,6 +65,8 @@ const ICONS: Record<IconName, string> = {
   copy: stripSvgRoot(copy),
   close: stripSvgRoot(close),
   terminal: stripSvgRoot(terminal),
+  delete: stripSvgRoot(deleteIcon),
+  folder: stripSvgRoot(folder),
 };
 
 export interface IconProps {

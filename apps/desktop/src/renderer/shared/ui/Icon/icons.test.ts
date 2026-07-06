@@ -15,6 +15,8 @@ import bell from './assets/bell.svg?raw';
 import copy from './assets/copy.svg?raw';
 import close from './assets/close.svg?raw';
 import terminal from './assets/terminal.svg?raw';
+import deleteIcon from './assets/delete.svg?raw';
+import folder from './assets/folder.svg?raw';
 
 const assets: Record<string, string> = {
   repositories,
@@ -32,6 +34,8 @@ const assets: Record<string, string> = {
   copy,
   close,
   terminal,
+  delete: deleteIcon,
+  folder,
 };
 
 describe('Icon assets', () => {
