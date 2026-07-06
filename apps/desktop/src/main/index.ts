@@ -27,6 +27,7 @@ import {
   hasRepoUpdate,
   describeRepository,
   listBranches,
+  listAvailableSkills,
 } from './repositories.js';
 import type { RepoDeps } from './repositories.js';
 import { addProject, updateProject, removeProject, describeProject, projectExists } from './projects.js';
@@ -344,6 +345,8 @@ function registerHandlers(): void {
   ipcMain.handle('repositories:sync', (_e, args: { id: string }) => syncRepository(repoDeps, args));
   ipcMain.handle('repositories:hasUpdate', (_e, args: { id: string }) => hasRepoUpdate(repoDeps, args));
   ipcMain.handle('repositories:describe', (_e, args: { id: string }) => describeRepository(repoDeps, args));
+  // skills:available -- every skill resolved across all cloned repositories.
+  ipcMain.handle('skills:available', () => listAvailableSkills(repoDeps));
 
   const terminal = getTerminal();
   terminal.on('data', (chunk: string) => {

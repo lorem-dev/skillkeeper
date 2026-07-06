@@ -9,6 +9,7 @@ import type {
   RepoResult,
   RemoveResult,
   RepoInfo,
+  AvailableSkill,
   ProjectResult,
   ProjectInfo,
 } from './types';
@@ -19,6 +20,7 @@ export interface BridgeClient {
   setConfig(config: SkillKeeperConfig): Promise<LoadConfigResult>;
   listRepositories(): Promise<Repository[]>;
   listSkills(): Promise<InstallManifest[]>;
+  listAvailableSkills(): Promise<AvailableSkill[]>;
   listProjects(): Promise<Project[]>;
   listEditors(): Promise<EditorOption[]>;
   openConfigInEditor(editorId: string): Promise<OpenResult>;
@@ -54,6 +56,7 @@ export const bridgeClient: BridgeClient = {
   setConfig: (config) => window.skillkeeper.setConfig(config),
   listRepositories: () => window.skillkeeper.listRepositories(),
   listSkills: () => window.skillkeeper.listSkills() as Promise<InstallManifest[]>,
+  listAvailableSkills: () => window.skillkeeper.listAvailableSkills() as Promise<AvailableSkill[]>,
   listProjects: () => window.skillkeeper.listProjects(),
   listEditors: () => window.skillkeeper.listEditors(),
   openConfigInEditor: (editorId) => window.skillkeeper.openConfigInEditor(editorId),

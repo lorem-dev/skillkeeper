@@ -1,5 +1,5 @@
 export { cx } from './cx';
-export { levenshtein, fuzzyFilter } from './fuzzyMatch';
+export { levenshtein, fuzzyFilter, fuzzyMatches } from './fuzzyMatch';
 export {
   SK_EASE,
   SK_DURATION,

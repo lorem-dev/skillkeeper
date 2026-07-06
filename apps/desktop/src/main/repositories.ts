@@ -226,6 +226,50 @@ export async function describeRepository(deps: RepoDeps, args: { id: string }): 
   }
 }
 
+/** One skill available in a repository's working tree (for the Skills page tree). */
+export interface AvailableSkill {
+  readonly repoId: string;
+  readonly repoName: string;
+  /** Optional one-level group (SkillId.group). */
+  readonly group?: string;
+  readonly name: string;
+  readonly version?: string;
+  readonly description?: string;
+}
+
+/**
+ * Every skill available across all cloned repositories, resolved from each
+ * working tree. Repos whose clone is missing or fails to resolve are skipped.
+ */
+export async function listAvailableSkills(deps: RepoDeps): Promise<AvailableSkill[]> {
+  const out: AvailableSkill[] = [];
+  let repos: readonly Repository[];
+  try {
+    repos = (await loadState(deps.fs, deps.statePath)).repositories;
+  } catch {
+    return out;
+  }
+  for (const repo of repos) {
+    try {
+      if (!(await deps.fs.exists(repo.localPath))) continue;
+      const { skills } = await resolveSkills(deps.fs, repo.localPath);
+      for (const skill of skills) {
+        out.push({
+          repoId: repo.id,
+          repoName: repo.name,
+          group: skill.id.group,
+          name: skill.id.name,
+          version: skill.manifest.version,
+          description: skill.manifest.description,
+        });
+      }
+    } catch {
+      // Skip a repo that cannot be resolved; others still list.
+    }
+  }
+  return out;
+}
+
 /** Local + origin branch names for a clone; empty when missing or on any failure. */
 export async function listBranches(deps: RepoDeps, args: { id: string }): Promise<string[]> {
   try {

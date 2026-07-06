@@ -21,6 +21,7 @@ export type {
   RepoResult,
   RemoveResult,
   RepoInfo,
+  AvailableSkill,
   ProjectResult,
   ProjectInfo,
 } from './types';

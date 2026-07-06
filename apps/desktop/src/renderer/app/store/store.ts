@@ -18,6 +18,7 @@ import type {
   Repository,
   Project,
   InstallManifest,
+  AvailableSkill,
   RepoInfo,
   ProjectInfo,
 } from '@/services/bridge';
@@ -117,6 +118,8 @@ export interface SkillkeeperState {
   tasksOpen: boolean;
   /** Installed skills. */
   skills: InstallManifest[];
+  /** Every skill available across all cloned repositories (for the Skills page). */
+  availableSkills: AvailableSkill[];
   /** Tracked projects. */
   projects: Project[];
   /** Per-project skill counts for the card badges (not persisted). */
@@ -139,6 +142,8 @@ export interface SkillkeeperActions {
   setRepositories(repositories: Repository[]): void;
   setSkills(skills: InstallManifest[]): void;
   setProjects(projects: Project[]): void;
+  /** Refetch the available-skills catalog from all repos. */
+  refreshAvailableSkills(): Promise<void>;
   setLoading(loading: boolean): void;
   setError(error: string | null): void;
   /** Load all data from the main process via the bridge client. */
@@ -235,6 +240,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   terminalOpen: false,
   tasksOpen: false,
   skills: [],
+  availableSkills: [],
   projects: [],
   loading: false,
   error: null,
@@ -350,15 +356,17 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     setLoading(true);
     setError(null);
     try {
-      const [configResult, repos, skills, projects] = await Promise.all([
+      const [configResult, repos, skills, available, projects] = await Promise.all([
         client.getConfig(),
         client.listRepositories(),
         client.listSkills(),
+        client.listAvailableSkills(),
         client.listProjects(),
       ]);
       setConfig(configResult.config, configResult.validity, configResult.warnings);
       setRepositories(repos);
       setSkills(skills);
+      set({ availableSkills: available });
       setProjects(projects);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -597,6 +605,13 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           set((s) => ({ repoInfo: { ...s.repoInfo, [r.id]: info } }));
         }),
       );
+    })();
+  },
+
+  refreshAvailableSkills() {
+    return (async () => {
+      const available = await bridgeClient.listAvailableSkills();
+      set({ availableSkills: available });
     })();
   },
 

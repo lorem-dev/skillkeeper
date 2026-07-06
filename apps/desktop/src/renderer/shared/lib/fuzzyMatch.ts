@@ -66,6 +66,16 @@ function bestScore(query: string, text: string): number | null {
 }
 
 /**
+ * Whether `text` fuzzy-matches `query` (same scoring as {@link fuzzyFilter}). An
+ * empty/whitespace query matches everything. Useful for per-node tree filtering.
+ */
+export function fuzzyMatches(text: string, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (q === '') return true;
+  return bestScore(q, text.toLowerCase()) !== null;
+}
+
+/**
  * Filter `items` by fuzzy-matching `query` against the strings `toText` returns
  * for each item (e.g. a project's name and path). An empty/whitespace query
  * returns a copy of all items in their original order. Otherwise only matching

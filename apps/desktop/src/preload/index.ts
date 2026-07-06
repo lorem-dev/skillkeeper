@@ -11,7 +11,7 @@ import type { IpcRendererEvent } from 'electron';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
 import type { EditorOption, OpenResult } from '../main/editors.js';
-import type { RepoResult, RemoveResult, RepoInfo } from '../main/repositories.js';
+import type { RepoResult, RemoveResult, RepoInfo, AvailableSkill } from '../main/repositories.js';
 import type { ProjectResult, ProjectInfo } from '../main/projects.js';
 
 // ---------------------------------------------------------------------------
@@ -28,6 +28,8 @@ export interface SkillkeeperBridge {
   listRepositories(): Promise<Repository[]>;
   /** List all installed skills (install manifests from the state file). */
   listSkills(): Promise<InstallManifest[]>;
+  /** List every skill available across all cloned repositories. */
+  listAvailableSkills(): Promise<AvailableSkill[]>;
   /** List all tracked projects. */
   listProjects(): Promise<Project[]>;
   /** List text editors available on this machine, plus the default-app entry. */
@@ -89,6 +91,9 @@ const bridge: SkillkeeperBridge = {
   },
   listSkills(): Promise<InstallManifest[]> {
     return ipcRenderer.invoke('skills:list') as Promise<InstallManifest[]>;
+  },
+  listAvailableSkills(): Promise<AvailableSkill[]> {
+    return ipcRenderer.invoke('skills:available') as Promise<AvailableSkill[]>;
   },
   listProjects(): Promise<Project[]> {
     return ipcRenderer.invoke('projects:list') as Promise<Project[]>;
