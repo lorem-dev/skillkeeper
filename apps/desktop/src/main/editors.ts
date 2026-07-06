@@ -36,14 +36,16 @@ interface EditorSpec {
   readonly macApp?: string;
   /** Windows executable basenames probed on PATH / PATHEXT. */
   readonly winExe?: string;
+  /** CLI flag that forces opening the target in a NEW window, when supported. */
+  readonly newWindowArg?: string;
 }
 
 /** Fixed allowlist. Order is the display order. */
 const EDITORS: readonly EditorSpec[] = [
-  { id: 'vscode', name: 'Visual Studio Code', cli: 'code', macApp: 'Visual Studio Code.app', winExe: 'code' },
-  { id: 'cursor', name: 'Cursor', cli: 'cursor', macApp: 'Cursor.app', winExe: 'cursor' },
+  { id: 'vscode', name: 'Visual Studio Code', cli: 'code', macApp: 'Visual Studio Code.app', winExe: 'code', newWindowArg: '-n' },
+  { id: 'cursor', name: 'Cursor', cli: 'cursor', macApp: 'Cursor.app', winExe: 'cursor', newWindowArg: '-n' },
   { id: 'zed', name: 'Zed', cli: 'zed', macApp: 'Zed.app' },
-  { id: 'sublime', name: 'Sublime Text', cli: 'subl', macApp: 'Sublime Text.app', winExe: 'subl' },
+  { id: 'sublime', name: 'Sublime Text', cli: 'subl', macApp: 'Sublime Text.app', winExe: 'subl', newWindowArg: '-n' },
   { id: 'textedit', name: 'TextEdit', macApp: 'TextEdit.app' },
   { id: 'notepad', name: 'Notepad', winExe: 'notepad' },
 ];
@@ -180,22 +182,31 @@ export async function listEditors(configPath: string): Promise<EditorOption[]> {
 }
 
 /** Open configPath in the given allowlisted editor id (or the default app). */
-export async function openInEditor(editorId: string, configPath: string): Promise<OpenResult> {
+export async function openInEditor(
+  editorId: string,
+  targetPath: string,
+  newWindow = false,
+): Promise<OpenResult> {
   try {
     if (editorId === DEFAULT_EDITOR_ID) {
-      const err = await shell.openPath(configPath);
+      const err = await shell.openPath(targetPath);
       return err === '' ? { ok: true } : { ok: false, error: err };
     }
     const spec = EDITORS.find((e) => e.id === editorId);
     if (spec === undefined) return { ok: false, error: `Unknown editor: ${editorId}` };
     const resolved = resolveEditor(spec);
     if (resolved === undefined) return { ok: false, error: `Editor not available: ${editorId}` };
+    // Force a new window when asked (opening a project) and the editor's CLI
+    // supports it -- so it never reuses/replaces the user's current window.
+    const nw = newWindow && spec.newWindowArg !== undefined ? [spec.newWindowArg] : [];
     if (resolved.cliPath !== undefined) {
-      spawn(resolved.cliPath, [configPath], { detached: true, stdio: 'ignore' }).unref();
+      spawn(resolved.cliPath, [...nw, targetPath], { detached: true, stdio: 'ignore' }).unref();
       return { ok: true };
     }
     if (resolved.appPath !== undefined) {
-      spawn('open', ['-a', resolved.appPath, configPath], { detached: true, stdio: 'ignore' }).unref();
+      // `open -n` launches a fresh instance (a new window) of the app.
+      const openArgs = newWindow ? ['-n', '-a', resolved.appPath, targetPath] : ['-a', resolved.appPath, targetPath];
+      spawn('open', openArgs, { detached: true, stdio: 'ignore' }).unref();
       return { ok: true };
     }
     return { ok: false, error: `Editor not launchable: ${editorId}` };

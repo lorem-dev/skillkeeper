@@ -315,7 +315,8 @@ function registerHandlers(): void {
   // Open the project folder in the given editor id, or the OS file manager
   // (DEFAULT_EDITOR_ID / shell.openPath) -- the default for a folder.
   ipcMain.handle('projects:open', (_e, args: { path: string; editorId: string }) =>
-    openInEditor(args.editorId, args.path),
+    // Always open a project in a NEW editor window (never reuse the current one).
+    openInEditor(args.editorId, args.path, true),
   );
 
   /**
