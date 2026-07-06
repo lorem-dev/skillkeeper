@@ -85,6 +85,12 @@
   color: var(--sk-color-label-2);
 }
 
+// Block SVGs so no inline baseline strut shifts the glyphs off the row center.
+.sk-tree__chevron svg,
+.sk-tree__icon svg {
+  display: block;
+}
+
 .sk-tree__label {
   flex: 1;
   min-width: 0;
@@ -116,6 +122,15 @@
 .sk-tree__count-selected,
 .sk-tree__count--all {
   color: var(--sk-color-accent);
+}
+
+// A tooltip trigger is an inline span by default; its baseline strut shifts an
+// icon detail (e.g. a ChangeBadge) off the row center. Flex it so the badge
+// centers cleanly (same pattern as SplitButton).
+.sk-tree__detail .sk-tooltip,
+.sk-tree__detail .sk-tooltip > span:not(.sk-tooltip__bubble) {
+  display: inline-flex;
+  align-items: center;
 }
 
 // Trailing selection checkbox, pushed right by the flex-growing label. Fixed
