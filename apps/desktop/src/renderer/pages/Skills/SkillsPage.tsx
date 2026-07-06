@@ -17,10 +17,10 @@ import {
   Button,
   SearchField,
   Select,
+  MultiCombobox,
   SearchSummary,
   TreeView,
   ChangeBadge,
-  Tooltip,
 } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import {
@@ -44,10 +44,11 @@ export function SkillsPage() {
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
 
-  const [mode, setMode] = useState<Mode>('repositories');
+  const [mode, setMode] = useState<Mode>('projects');
   const [query, setQuery] = useState('');
-  const [selectOpen, setSelectOpen] = useState(false);
-  const [tipSuppressed, setTipSuppressed] = useState(false);
+  // Repo/project ids to include in the tree (empty = all).
+  const [repoFilter, setRepoFilter] = useState<string[]>([]);
+  const [projectFilter, setProjectFilter] = useState<string[]>([]);
   const [repoChecked, setRepoChecked] = useState<string[]>([]);
   const [projectChecked, setProjectChecked] = useState<string[]>(() => installedLeafIds(installs));
 
@@ -58,12 +59,22 @@ export function SkillsPage() {
     setProjectChecked([...installedSet]);
   }, [installedSet]);
 
+  // The filters narrow which repos/projects appear (empty = all).
+  const shownRepos = useMemo(
+    () => (repoFilter.length === 0 ? repositories : repositories.filter((r) => repoFilter.includes(r.id))),
+    [repositories, repoFilter],
+  );
+  const shownProjects = useMemo(
+    () => (projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id))),
+    [projects, projectFilter],
+  );
+
   const baseTree = useMemo(
     () =>
       mode === 'repositories'
-        ? buildRepoTree(availableSkills, repositories)
-        : buildProjectTree(availableSkills, repositories, projects),
-    [mode, availableSkills, repositories, projects],
+        ? buildRepoTree(availableSkills, shownRepos)
+        : buildProjectTree(availableSkills, shownRepos, shownProjects),
+    [mode, availableSkills, shownRepos, shownProjects],
   );
 
   const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
@@ -126,51 +137,74 @@ export function SkillsPage() {
     { value: 'projects', label: t('skills.source.projects') },
   ];
 
-  const trailing = (
-    <>
-      <SearchField
-        className="sk-skills-search"
-        placeholder={t('skills.searchPlaceholder')}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onClear={() => setQuery('')}
-        clearLabel={t('common.clear')}
-      />
-      {/* Suppress the tooltip while the dropdown is open, and after a selection
-          (focus returns to the trigger) until the pointer/focus leaves and
-          comes back -- so picking an option closes the tooltip too. */}
-      <span
-        className="sk-skills-source"
-        onMouseEnter={() => setTipSuppressed(false)}
-        onBlurCapture={() => setTipSuppressed(false)}
-      >
-        <Tooltip content={t('skills.source')} disabled={selectOpen || tipSuppressed}>
-          <Select
-            ariaLabel={t('skills.source')}
-            options={sourceOptions}
-            value={mode}
-            onChange={(v) => {
-              setTipSuppressed(true);
-              changeMode(v as Mode);
-            }}
-            onOpenChange={setSelectOpen}
-          />
-        </Tooltip>
+  const repoOptions = repositories.map((r) => ({ value: r.id, label: r.name }));
+  const projectOptions = projects.map((p) => ({ value: p.id, label: p.name }));
+  const checkboxLevels = mode === 'repositories' ? [1, 2] : [1, 2, 3];
+
+  const actions =
+    mode === 'repositories' ? (
+      <Button variant="primary" disabled={repoChecked.length === 0} onClick={onAdd}>
+        {t('skills.action.add')}
+      </Button>
+    ) : (
+      <Button variant="primary" disabled={pendingAdd === 0 && pendingRemove === 0} onClick={onSave}>
+        {t('skills.action.save')}
+      </Button>
+    );
+
+  // Second toolbar row: search (labeled), display mode, and the repo/project
+  // multi-select filters that narrow which nodes the tree shows.
+  const filters = (
+    <div className="sk-skills-filters">
+      <span className="sk-skills-field">
+        <span className="sk-skills-field__label">{t('common.search')}</span>
+        <SearchField
+          className="sk-skills-search"
+          placeholder={t('skills.searchPlaceholder')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onClear={() => setQuery('')}
+          clearLabel={t('common.clear')}
+        />
       </span>
-      {mode === 'repositories' ? (
-        <Button variant="primary" disabled={repoChecked.length === 0} onClick={onAdd}>
-          {t('skills.action.add')}
-        </Button>
-      ) : (
-        <Button variant="primary" disabled={pendingAdd === 0 && pendingRemove === 0} onClick={onSave}>
-          {t('skills.action.save')}
-        </Button>
+      <Select
+        label={t('skills.source')}
+        options={sourceOptions}
+        value={mode}
+        onChange={(v) => changeMode(v as Mode)}
+      />
+      <MultiCombobox
+        label={t('skills.filterRepositories')}
+        options={repoOptions}
+        value={repoFilter}
+        onChange={setRepoFilter}
+        placeholder={t('skills.filterRepositoriesPlaceholder')}
+        emptyText={t('skills.filterRepositoriesEmpty')}
+        ariaLabel={t('skills.filterRepositories')}
+      />
+      {mode === 'projects' && (
+        <MultiCombobox
+          label={t('skills.filterProjects')}
+          options={projectOptions}
+          value={projectFilter}
+          onChange={setProjectFilter}
+          placeholder={t('skills.filterProjectsPlaceholder')}
+          emptyText={t('skills.filterProjectsEmpty')}
+          ariaLabel={t('skills.filterProjects')}
+        />
       )}
-    </>
+    </div>
   );
 
   return (
-    <Page toolbar={<Toolbar title={t('nav.skills')} trailing={trailing} />}>
+    <Page
+      toolbar={
+        <div className="sk-skills-header">
+          <Toolbar title={t('nav.skills')} trailing={actions} />
+          {filters}
+        </div>
+      }
+    >
       {baseTree.length === 0 ? (
         <p className="sk-empty">
           {mode === 'repositories' ? t('skills.emptyRepositories') : t('skills.emptyProjects')}
@@ -181,7 +215,7 @@ export function SkillsPage() {
             key={mode}
             nodes={decorated}
             checkable
-            checkboxLevels={[1, 2]}
+            checkboxLevels={checkboxLevels}
             checkedIds={checkedIds}
             onCheckedChange={onCheckedChange}
             defaultExpandedIds={expandedIds}

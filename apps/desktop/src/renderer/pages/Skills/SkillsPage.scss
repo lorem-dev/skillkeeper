@@ -1,4 +1,32 @@
-// Toolbar search: compact, yields space before the source Select.
+// Two-row page header: the title + actions row, then a filters row.
+.sk-skills-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4);
+}
+
+// Filters row: labeled controls aligned along their bottom edge.
+.sk-skills-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sk-space-5);
+}
+
+// A labeled field (matches the Select/MultiCombobox label above their control),
+// used to give the search field a matching label in the filters row.
+.sk-skills-field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+  min-width: 0;
+}
+
+.sk-skills-field__label {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+// Toolbar search: compact, yields space before the action button.
 .sk-skills-search {
   flex: 0 1 12rem;
   width: auto;

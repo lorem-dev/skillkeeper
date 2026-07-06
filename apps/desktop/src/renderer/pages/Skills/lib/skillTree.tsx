@@ -82,37 +82,49 @@ export function buildRepoTree(available: readonly AvailableSkill[], repos: reado
   return nodes;
 }
 
-/** Projects -> ("repo / group" or "repo") -> skills. Roots are not selectable. */
+/** Projects -> repositories -> (groups ->) skills. Roots are not selectable. */
 export function buildProjectTree(
   available: readonly AvailableSkill[],
   repos: readonly Repository[],
   projects: readonly Project[],
 ): TreeNode[] {
-  const repoName = new Map(repos.map((r) => [r.id, r.name] as const));
+  const byRepo = new Map<string, AvailableSkill[]>();
+  for (const s of available) pushTo(byRepo, s.repoId, s);
 
   const nodes: TreeNode[] = [];
   for (const project of projects) {
-    const combos = new Map<string, AvailableSkill[]>();
-    for (const s of available) pushTo(combos, `${s.repoId}${SEP}${s.group ?? ''}`, s);
+    const repoNodes: TreeNode[] = [];
+    for (const repo of repos) {
+      const skills = byRepo.get(repo.id);
+      if (skills === undefined || skills.length === 0) continue;
 
-    const children: TreeNode[] = [];
-    for (const [key, gs] of combos.entries()) {
-      const [repoId, group] = key.split(SEP);
-      const rName = repoName.get(repoId ?? '') ?? repoId ?? '';
-      const label = group !== undefined && group !== '' ? `${rName} / ${group}` : rName;
-      children.push({
-        id: `${project.id}${SEP}${key}`,
-        label,
-        icon: groupIcon,
-        children: [...gs].sort(byName).map((s) => ({
-          id: projectSkillKey(project.id, s.repoId, s.group, s.name),
-          label: s.name,
-          icon: skillIcon,
-        })),
-      });
+      const groups = new Map<string, AvailableSkill[]>();
+      const ungrouped: AvailableSkill[] = [];
+      for (const s of skills) {
+        if (s.group !== undefined && s.group !== '') pushTo(groups, s.group, s);
+        else ungrouped.push(s);
+      }
+
+      const children: TreeNode[] = [];
+      for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+        children.push({
+          id: `${project.id}${SEP}${repo.id}${SEP}${group}`,
+          label: group,
+          icon: groupIcon,
+          children: [...gs].sort(byName).map((s) => ({
+            id: projectSkillKey(project.id, repo.id, s.group, s.name),
+            label: s.name,
+            icon: skillIcon,
+          })),
+        });
+      }
+      for (const s of [...ungrouped].sort(byName)) {
+        children.push({ id: projectSkillKey(project.id, repo.id, undefined, s.name), label: s.name, icon: skillIcon });
+      }
+
+      repoNodes.push({ id: `${project.id}${SEP}repo${SEP}${repo.id}`, label: repo.name, icon: repoIcon, children });
     }
-    children.sort((a, b) => String(a.label).localeCompare(String(b.label)));
-    nodes.push({ id: `proj${SEP}${project.id}`, label: project.name, icon: projectIcon, selectable: false, children });
+    nodes.push({ id: `proj${SEP}${project.id}`, label: project.name, icon: projectIcon, selectable: false, children: repoNodes });
   }
   return nodes;
 }
