@@ -45,6 +45,8 @@ export { TextField } from './TextField';
 export type { TextFieldProps } from './TextField';
 export { Select } from './Select';
 export type { SelectProps, SelectOption } from './Select';
+export { Combobox } from './Combobox';
+export type { ComboboxProps, ComboboxOption } from './Combobox';
 export { SearchField } from './SearchField';
 export type { SearchFieldProps } from './SearchField';
 export { Slider } from './Slider';
