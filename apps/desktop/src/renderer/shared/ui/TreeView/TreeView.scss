@@ -25,7 +25,9 @@
   display: flex;
   align-items: center;
   gap: var(--sk-space-2);
-  height: 30px;
+  min-height: 30px;
+  // A little vertical breathing room around each row's content.
+  padding-block: var(--sk-space-1);
   // Depth-driven indent; the base keeps the first level off the edge.
   padding-inline: calc(var(--sk-space-2) + var(--sk-tree-depth, 0) * var(--sk-space-5))
     var(--sk-space-3);
