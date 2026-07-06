@@ -76,6 +76,9 @@
   gap: var(--sk-space-2);
   margin-top: var(--sk-space-1);
   min-width: 0;
+  // Reserve the badge height so the row is present (skeletons or badges) from the
+  // moment the card appears -- the card's height never jumps once info loads.
+  min-height: 20px;
 }
 
 // Clickable branch badge (copies the full branch name). Button reset so only

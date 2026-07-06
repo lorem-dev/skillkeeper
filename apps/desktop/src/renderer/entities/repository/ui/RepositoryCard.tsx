@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Repository } from '@/services/bridge';
-import { Badge, Card, Button, Icon, Spinner, Tooltip } from '@/shared/ui';
+import { Badge, Card, Button, Icon, Skeleton, Spinner, Tooltip } from '@/shared/ui';
 import { transitionFast } from '@/shared/lib';
 import './RepositoryCard.scss';
 
@@ -30,6 +30,9 @@ export interface RepositoryCardProps {
   readonly onBranchClick?: () => void;
   /** Pre-formatted, pluralized skill count (e.g. "3 skills"); shows a blue badge when set. */
   readonly skillCountLabel?: string;
+  /** Branch/skill info not fetched yet (e.g. right after add): show skeletons in
+   * the badges row so its height is reserved and never jumps. */
+  readonly infoPending?: boolean;
   readonly onSync: () => void;
   readonly onEdit: () => void;
   readonly onErrorClick: () => void;
@@ -60,6 +63,7 @@ export function RepositoryCard({
   branchCopyLabel,
   onBranchClick,
   skillCountLabel,
+  infoPending,
   onSync,
   onEdit,
   onErrorClick,
@@ -136,23 +140,32 @@ export function RepositoryCard({
         ) : (
           <span className="sk-repo-card__url">{truncate(repository.url, URL_MAX)}</span>
         )}
-        {(branch != null && branch !== '') || skillCountLabel !== undefined ? (
-          <span className="sk-repo-card__badges">
-            {branch != null && branch !== '' && (
-              <Tooltip content={branchCopyLabel ?? ''}>
-                <button
-                  type="button"
-                  className="sk-repo-card__branch"
-                  onClick={onBranchClick}
-                  aria-label={branchCopyLabel}
-                >
-                  <Badge tone="neutral">{truncate(branch, BRANCH_MAX)}</Badge>
-                </button>
-              </Tooltip>
-            )}
-            {skillCountLabel !== undefined && <Badge tone="accent">{skillCountLabel}</Badge>}
-          </span>
-        ) : null}
+        {/* Always rendered with a reserved height so the card never jumps: skeleton
+            placeholders while info loads, then the real branch + skill badges. */}
+        <span className="sk-repo-card__badges">
+          {infoPending === true ? (
+            <>
+              <Skeleton width={92} height={20} radius="var(--sk-radius-pill)" />
+              <Skeleton width={56} height={20} radius="var(--sk-radius-pill)" />
+            </>
+          ) : (
+            <>
+              {branch != null && branch !== '' && (
+                <Tooltip content={branchCopyLabel ?? ''}>
+                  <button
+                    type="button"
+                    className="sk-repo-card__branch"
+                    onClick={onBranchClick}
+                    aria-label={branchCopyLabel}
+                  >
+                    <Badge tone="neutral">{truncate(branch, BRANCH_MAX)}</Badge>
+                  </button>
+                </Tooltip>
+              )}
+              {skillCountLabel !== undefined && <Badge tone="accent">{skillCountLabel}</Badge>}
+            </>
+          )}
+        </span>
       </div>
       <div className="sk-repo-card__actions">
         <Tooltip content={busy ? syncingLabel : syncLabel}>

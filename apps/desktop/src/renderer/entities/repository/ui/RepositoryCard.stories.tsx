@@ -39,6 +39,25 @@ export const Idle: Story = {
   },
 };
 
+// Just added: branch/skill info not fetched yet -> skeleton badges keep the
+// card's height stable until the checkout + describe finish.
+export const InfoPending: Story = {
+  args: {
+    repository: sampleRepository,
+    phase: 'cloning',
+    hasUpdate: false,
+    errorLabel: 'Click to view the error',
+    syncLabel: 'Sync',
+    syncingLabel: 'Syncing',
+    editLabel: 'Edit repository',
+    updateLabel: 'Update available',
+    infoPending: true,
+    onSync: () => {},
+    onEdit: () => {},
+    onErrorClick: () => {},
+  },
+};
+
 export const HasUpdate: Story = {
   args: {
     repository: sampleRepository,

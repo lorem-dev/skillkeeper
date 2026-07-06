@@ -94,6 +94,7 @@ export function RepositoriesPage() {
                   ? t.plural('repositories.skillCount', repoInfo[r.id]!.skillCount)
                   : undefined
               }
+              infoPending={repoInfo[r.id] === undefined}
               onSync={() => void syncRepository(r.id)}
               onEdit={() => setEditing(r)}
               onErrorClick={() => showRepoError(r.id)}
