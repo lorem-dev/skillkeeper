@@ -213,6 +213,7 @@ export function SkillsPage() {
         <>
           <TreeView
             key={mode}
+            className="sk-skills-tree"
             nodes={decorated}
             checkable
             checkboxLevels={checkboxLevels}

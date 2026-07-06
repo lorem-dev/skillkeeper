@@ -20,6 +20,11 @@
   min-width: 0;
 }
 
+// Spacer between the (sticky) header and the tree.
+.sk-skills-tree {
+  margin-top: var(--sk-space-4);
+}
+
 // Search footer (stats + reset). Pinned to the bottom of the viewport-filling
 // page body when the tree is short; a long tree pushes it down to scroll.
 .sk-list-footer {
