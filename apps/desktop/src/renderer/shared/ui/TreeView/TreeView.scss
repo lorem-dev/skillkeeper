@@ -100,11 +100,15 @@
 // truncated label never runs into the number.
 .sk-tree__detail,
 .sk-tree__count {
+  // Flex box (not inline text) so an icon detail -- e.g. a ChangeBadge -- is
+  // vertically centered in the row rather than sitting on the text baseline.
+  display: inline-flex;
   flex: none;
+  align-items: center;
+  justify-content: flex-end;
   margin-inline-start: var(--sk-space-3);
   color: var(--sk-color-label-2);
   font-size: 13px;
-  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
