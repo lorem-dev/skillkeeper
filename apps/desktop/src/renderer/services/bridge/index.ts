@@ -14,6 +14,7 @@ export type {
   AgentsConfig,
   NotificationsConfig,
   RepositoriesConfig,
+  ProjectsConfig,
   Lang,
   EditorOption,
   OpenResult,

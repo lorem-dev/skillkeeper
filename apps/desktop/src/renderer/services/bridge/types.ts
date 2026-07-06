@@ -15,6 +15,7 @@ export type {
   AgentsConfig,
   NotificationsConfig,
   RepositoriesConfig,
+  ProjectsConfig,
 } from '@skillkeeper/config';
 export type { Lang } from '@skillkeeper/i18n';
 export type { EditorOption, OpenResult } from '../../../main/editors.js';

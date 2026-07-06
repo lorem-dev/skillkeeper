@@ -47,6 +47,8 @@ export { Select } from './Select';
 export type { SelectProps, SelectOption } from './Select';
 export { Combobox } from './Combobox';
 export type { ComboboxProps, ComboboxOption } from './Combobox';
+export { IntervalStepper } from './IntervalStepper';
+export type { IntervalStepperProps } from './IntervalStepper';
 export { SearchField } from './SearchField';
 export type { SearchFieldProps } from './SearchField';
 export { Slider } from './Slider';

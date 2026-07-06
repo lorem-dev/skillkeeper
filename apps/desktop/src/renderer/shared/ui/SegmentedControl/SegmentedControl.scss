@@ -52,3 +52,12 @@
   position: relative;
   z-index: 1;
 }
+
+// Disabled: dimmed and non-interactive (the buttons carry the disabled attr).
+.sk-segmented--disabled {
+  opacity: 0.5;
+
+  .sk-segmented__option {
+    cursor: default;
+  }
+}

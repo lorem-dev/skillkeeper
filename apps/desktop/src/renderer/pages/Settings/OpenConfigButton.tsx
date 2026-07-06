@@ -100,6 +100,7 @@ export function OpenConfigButton() {
 
   return (
     <SplitButton
+      size="compact"
       icon={editorIcon(selectedOption)}
       tooltip={tooltip}
       menuLabel={tooltip}

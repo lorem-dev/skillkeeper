@@ -36,6 +36,7 @@ const validValidity: SectionValidity = {
   security: 'valid',
   notifications: 'valid',
   repositories: 'valid',
+  projects: 'valid',
 };
 
 const partiallyInvalidValidity: SectionValidity = {
@@ -46,16 +47,18 @@ const partiallyInvalidValidity: SectionValidity = {
   security: 'valid',
   notifications: 'valid',
   repositories: 'valid',
+  projects: 'valid',
 };
 
 const mockConfig: SkillKeeperConfig = {
   general: { language: 'en', theme: 'system' },
-  updates: { mode: 'manual', intervalHours: 24, checkOnStartup: false },
+  updates: { mode: 'manual', intervalMinutes: 720, checkOnStartup: false },
   agents: { enabled: ['claude', 'codex', 'copilot', 'cursor', 'opencode'], overrides: {} },
   executables: { globs: [] },
   security: { hookConsentPolicy: 'always-ask' },
   notifications: { enabled: true },
   repositories: { gitPath: 'git' },
+  projects: { checkIntervalMinutes: 1 },
 };
 
 const mockRepo: Repository = {

@@ -70,3 +70,13 @@
   border-left: 0.5px solid var(--sk-color-separator);
   border-right: 0.5px solid var(--sk-color-separator);
 }
+
+// Disabled: a dimmer (more recessed) fill and greyed value + buttons, so the
+// whole control reads as inactive -- matching the disabled buttons.
+.sk-stepper--disabled {
+  background: var(--sk-color-fill-3);
+}
+
+.sk-stepper--disabled .sk-stepper__value {
+  color: var(--sk-color-label-3);
+}

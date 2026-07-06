@@ -12,7 +12,7 @@ import {
   Select,
   SegmentedControl,
   TextField,
-  Stepper,
+  IntervalStepper,
   Toggle,
   MultiSelect,
 } from '@/shared/ui';
@@ -85,32 +85,6 @@ export function SettingsPage() {
           </FormRow>
         </FormSection>
 
-        <FormSection title={t('settings.section.updates')}>
-          <FormRow label={t('settings.updates.mode')}>
-            <SegmentedControl
-              label={t('settings.updates.mode')}
-              options={[
-                { value: 'manual', label: t('settings.updates.mode.manual') },
-                { value: 'on-startup', label: t('settings.updates.mode.onStartup') },
-                { value: 'scheduled', label: t('settings.updates.mode.scheduled') },
-              ]}
-              value={config.updates.mode}
-              onChange={(v) => void updateConfig({ updates: { mode: v as UpdatesConfig['mode'] } })}
-            />
-          </FormRow>
-          <FormRow label={t('settings.updates.interval')}>
-            <Stepper
-              value={config.updates.intervalHours}
-              onChange={(intervalHours) => void updateConfig({ updates: { intervalHours } })}
-              min={1}
-              max={168}
-              label={t('settings.updates.interval')}
-              decreaseLabel={t('common.decrease')}
-              increaseLabel={t('common.increase')}
-            />
-          </FormRow>
-        </FormSection>
-
         <FormSection title={t('settings.section.agents')}>
           <FormRow label={t('settings.agents.enabled')}>
             <MultiSelect
@@ -140,6 +114,45 @@ export function SettingsPage() {
             description={t('settings.gitDescription')}
             onCommit={(gitPath) => void updateConfig({ repositories: { gitPath } })}
           />
+          <FormRow label={t('settings.updates.mode')}>
+            <SegmentedControl
+              label={t('settings.updates.mode')}
+              options={[
+                { value: 'manual', label: t('settings.updates.mode.manual') },
+                { value: 'on-startup', label: t('settings.updates.mode.onStartup') },
+                { value: 'scheduled', label: t('settings.updates.mode.scheduled') },
+              ]}
+              value={config.updates.mode}
+              onChange={(v) => void updateConfig({ updates: { mode: v as UpdatesConfig['mode'] } })}
+            />
+          </FormRow>
+          <FormRow label={t('settings.updates.interval')}>
+            <IntervalStepper
+              minutes={config.updates.intervalMinutes}
+              onChange={(intervalMinutes) => void updateConfig({ updates: { intervalMinutes } })}
+              // The interval only applies to scheduled checks.
+              disabled={config.updates.mode !== 'scheduled'}
+              label={t('settings.updates.interval')}
+              minutesUnitLabel={t('settings.interval.minutesUnit')}
+              hoursUnitLabel={t('settings.interval.hoursUnit')}
+              decreaseLabel={t('common.decrease')}
+              increaseLabel={t('common.increase')}
+            />
+          </FormRow>
+        </FormSection>
+
+        <FormSection title={t('settings.section.projects')}>
+          <FormRow label={t('settings.projects.checkInterval')}>
+            <IntervalStepper
+              minutes={config.projects.checkIntervalMinutes}
+              onChange={(checkIntervalMinutes) => void updateConfig({ projects: { checkIntervalMinutes } })}
+              label={t('settings.projects.checkInterval')}
+              minutesUnitLabel={t('settings.interval.minutesUnit')}
+              hoursUnitLabel={t('settings.interval.hoursUnit')}
+              decreaseLabel={t('common.decrease')}
+              increaseLabel={t('common.increase')}
+            />
+          </FormRow>
         </FormSection>
       </div>
     </Page>

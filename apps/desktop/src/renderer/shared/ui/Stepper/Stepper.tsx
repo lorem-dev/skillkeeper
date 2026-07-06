@@ -45,7 +45,11 @@ export function Stepper({
   const atMin = min !== undefined && value <= min;
   const atMax = max !== undefined && value >= max;
   return (
-    <div className={cx('sk-stepper', className)} role="group" aria-label={label}>
+    <div
+      className={cx('sk-stepper', disabled === true && 'sk-stepper--disabled', className)}
+      role="group"
+      aria-label={label}
+    >
       <button
         type="button"
         className="sk-stepper__btn"

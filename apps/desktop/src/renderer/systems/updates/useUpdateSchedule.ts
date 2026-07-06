@@ -2,7 +2,7 @@
  * Drives repository update checks from `config.updates`:
  * - a one-time check on startup for `on-startup` mode (or `scheduled` with
  *   `checkOnStartup`),
- * - a recurring check every `intervalHours` for `scheduled` mode.
+ * - a recurring check every `intervalMinutes` for `scheduled` mode.
  * `manual` mode does neither -- the Repositories "Refresh" button covers it.
  *
  * A check fetches each repo and highlights the ones whose current (checked-out)
@@ -13,7 +13,7 @@ import { useSkillkeeperStore } from '@/app/store';
 
 export function useUpdateSchedule(): void {
   const mode = useSkillkeeperStore((s) => s.config?.updates.mode);
-  const intervalHours = useSkillkeeperStore((s) => s.config?.updates.intervalHours);
+  const intervalMinutes = useSkillkeeperStore((s) => s.config?.updates.intervalMinutes);
   const checkOnStartup = useSkillkeeperStore((s) => s.config?.updates.checkOnStartup);
   const loading = useSkillkeeperStore((s) => s.loading);
   const refreshRepoUpdates = useSkillkeeperStore((s) => s.refreshRepoUpdates);
@@ -30,8 +30,8 @@ export function useUpdateSchedule(): void {
 
   // Recurring check for scheduled mode.
   useEffect(() => {
-    if (mode !== 'scheduled' || intervalHours === undefined) return undefined;
-    const id = setInterval(() => void refreshRepoUpdates(), intervalHours * 60 * 60 * 1000);
+    if (mode !== 'scheduled' || intervalMinutes === undefined) return undefined;
+    const id = setInterval(() => void refreshRepoUpdates(), intervalMinutes * 60 * 1000);
     return () => clearInterval(id);
-  }, [mode, intervalHours, refreshRepoUpdates]);
+  }, [mode, intervalMinutes, refreshRepoUpdates]);
 }

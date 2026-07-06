@@ -19,6 +19,7 @@ export interface SegmentedControlProps {
   readonly onChange: (value: string) => void;
   /** Accessible group label. */
   readonly label?: string;
+  readonly disabled?: boolean;
   readonly className?: string;
 }
 
@@ -27,11 +28,17 @@ export function SegmentedControl({
   value,
   onChange,
   label,
+  disabled,
   className,
 }: SegmentedControlProps) {
   const groupId = useId();
   return (
-    <div role="radiogroup" aria-label={label} className={cx('sk-segmented', className)}>
+    <div
+      role="radiogroup"
+      aria-label={label}
+      aria-disabled={disabled}
+      className={cx('sk-segmented', disabled === true && 'sk-segmented--disabled', className)}
+    >
       {options.map((o) => {
         const selected = o.value === value;
         return (
@@ -40,6 +47,7 @@ export function SegmentedControl({
             type="button"
             role="radio"
             aria-checked={selected}
+            disabled={disabled}
             className={cx('sk-segmented__option', selected && 'sk-segmented__option--selected')}
             onClick={() => onChange(o.value)}
           >
