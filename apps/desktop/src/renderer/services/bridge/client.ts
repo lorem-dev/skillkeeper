@@ -9,6 +9,8 @@ import type {
   RepoResult,
   RemoveResult,
   RepoInfo,
+  ProjectResult,
+  ProjectInfo,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the main process. */
@@ -29,6 +31,12 @@ export interface BridgeClient {
   repoHasUpdate(id: string): Promise<boolean>;
   describeRepository(id: string): Promise<RepoInfo>;
   listBranches(id: string): Promise<string[]>;
+  selectFolder(): Promise<string | null>;
+  addProject(path: string, name: string): Promise<ProjectResult>;
+  updateProject(id: string, path: string, name: string): Promise<ProjectResult>;
+  removeProject(id: string): Promise<RemoveResult>;
+  describeProject(id: string): Promise<ProjectInfo>;
+  openProject(path: string, editorId: string): Promise<OpenResult>;
   startTerminal(cols: number, rows: number): Promise<string>;
   writeTerminal(data: string): void;
   resizeTerminal(cols: number, rows: number): void;
@@ -57,6 +65,12 @@ export const bridgeClient: BridgeClient = {
   repoHasUpdate: (id) => window.skillkeeper.repoHasUpdate(id),
   describeRepository: (id) => window.skillkeeper.describeRepository(id),
   listBranches: (id) => window.skillkeeper.listBranches(id),
+  selectFolder: () => window.skillkeeper.selectFolder(),
+  addProject: (path, name) => window.skillkeeper.addProject(path, name),
+  updateProject: (id, path, name) => window.skillkeeper.updateProject(id, path, name),
+  removeProject: (id) => window.skillkeeper.removeProject(id),
+  describeProject: (id) => window.skillkeeper.describeProject(id),
+  openProject: (path, editorId) => window.skillkeeper.openProject(path, editorId),
   startTerminal: (cols, rows) => window.skillkeeper.startTerminal(cols, rows),
   writeTerminal: (data) => window.skillkeeper.writeTerminal(data),
   resizeTerminal: (cols, rows) => window.skillkeeper.resizeTerminal(cols, rows),

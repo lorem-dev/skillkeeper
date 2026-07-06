@@ -18,6 +18,7 @@ import type {
   Project,
   InstallManifest,
   RepoInfo,
+  ProjectInfo,
 } from '@/services/bridge';
 import { bridgeClient } from '@/services/bridge';
 
@@ -116,6 +117,8 @@ export interface SkillkeeperState {
   skills: InstallManifest[];
   /** Tracked projects. */
   projects: Project[];
+  /** Per-project skill counts for the card badges (not persisted). */
+  projectInfo: Record<string, ProjectInfo>;
   /** Whether a background load is in progress. */
   loading: boolean;
   /** Last error message, if any. */
@@ -149,6 +152,13 @@ export interface SkillkeeperActions {
   refreshRepoUpdates(): Promise<void>;
   /** Fetch branch + skill count for every repo into `repoInfo`. */
   refreshRepoInfo(): Promise<void>;
+  /** Track a project for a chosen folder (name pre-derived from the folder). */
+  addProject(path: string, name: string): Promise<void>;
+  updateProject(id: string, path: string, name: string): Promise<void>;
+  /** Stop tracking a project (the folder on disk is left untouched). */
+  removeProject(id: string): Promise<void>;
+  /** Fetch skill counts for every project into `projectInfo`. */
+  refreshProjectInfo(): Promise<void>;
   /**
    * Record a notification: append to the log + toasts. An `error` notification
    * with a `repoId` also marks that repo's status (the red dot); `info` never
@@ -202,6 +212,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   repositories: [],
   repoStatus: {},
   repoInfo: {},
+  projectInfo: {},
   notifications: [],
   toasts: [],
   tasks: [],
@@ -568,6 +579,62 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         repos.map(async (r) => {
           const info = await bridgeClient.describeRepository(r.id);
           set((s) => ({ repoInfo: { ...s.repoInfo, [r.id]: info } }));
+        }),
+      );
+    })();
+  },
+
+  addProject(path, name) {
+    return (async () => {
+      const res = await bridgeClient.addProject(path, name);
+      if (!res.ok) {
+        get().notify(res.error, 'error');
+        return;
+      }
+      const info = await bridgeClient.describeProject(res.project.id);
+      set((s) => ({
+        projects: [...s.projects, res.project],
+        projectInfo: { ...s.projectInfo, [res.project.id]: info },
+      }));
+    })();
+  },
+
+  updateProject(id, path, name) {
+    return (async () => {
+      const res = await bridgeClient.updateProject(id, path, name);
+      if (!res.ok) {
+        get().notify(res.error, 'error');
+        return;
+      }
+      const info = await bridgeClient.describeProject(id);
+      set((s) => ({
+        projects: s.projects.map((p) => (p.id === id ? res.project : p)),
+        projectInfo: { ...s.projectInfo, [id]: info },
+      }));
+    })();
+  },
+
+  removeProject(id) {
+    return (async () => {
+      const res = await bridgeClient.removeProject(id);
+      if (!res.ok) {
+        get().notify(res.error, 'error');
+        return;
+      }
+      set((s) => {
+        const { [id]: _removed, ...restInfo } = s.projectInfo;
+        return { projects: s.projects.filter((p) => p.id !== id), projectInfo: restInfo };
+      });
+    })();
+  },
+
+  refreshProjectInfo() {
+    return (async () => {
+      const projects = get().projects;
+      await Promise.all(
+        projects.map(async (p) => {
+          const info = await bridgeClient.describeProject(p.id);
+          set((s) => ({ projectInfo: { ...s.projectInfo, [p.id]: info } }));
         }),
       );
     })();

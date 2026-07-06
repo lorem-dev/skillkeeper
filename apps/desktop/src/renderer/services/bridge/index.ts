@@ -20,4 +20,6 @@ export type {
   RepoResult,
   RemoveResult,
   RepoInfo,
+  ProjectResult,
+  ProjectInfo,
 } from './types';

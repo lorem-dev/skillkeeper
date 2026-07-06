@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useSkillkeeperStore } from './store';
 import type { SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest } from './store';
-import type { RepoResult, RemoveResult } from '@/services/bridge';
+import type { RepoResult, RemoveResult, ProjectResult } from '@/services/bridge';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -217,6 +217,12 @@ describe('useSkillkeeperStore', () => {
         repoHasUpdate: async () => false,
         describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
         listBranches: async () => [],
+        selectFolder: async () => null,
+        addProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
+        updateProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
+        removeProject: async () => ({ ok: true } as RemoveResult),
+        describeProject: async () => ({ skillCount: 0, fromReposCount: 0 }),
+        openProject: async () => ({ ok: true }),
         startTerminal: async () => '',
         writeTerminal: () => {},
         resizeTerminal: () => {},
@@ -259,6 +265,12 @@ describe('useSkillkeeperStore', () => {
         repoHasUpdate: async () => false,
         describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
         listBranches: async () => [],
+        selectFolder: async () => null,
+        addProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
+        updateProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
+        removeProject: async () => ({ ok: true } as RemoveResult),
+        describeProject: async () => ({ skillCount: 0, fromReposCount: 0 }),
+        openProject: async () => ({ ok: true }),
         startTerminal: async () => '',
         writeTerminal: () => {},
         resizeTerminal: () => {},

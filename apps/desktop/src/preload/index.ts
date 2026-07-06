@@ -12,6 +12,7 @@ import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
 import type { EditorOption, OpenResult } from '../main/editors.js';
 import type { RepoResult, RemoveResult, RepoInfo } from '../main/repositories.js';
+import type { ProjectResult, ProjectInfo } from '../main/projects.js';
 
 // ---------------------------------------------------------------------------
 // Bridge type (exported so the renderer window.d.ts can import it)
@@ -44,6 +45,14 @@ export interface SkillkeeperBridge {
   describeRepository(id: string): Promise<RepoInfo>;
   /** Local + origin branch names for a clone (empty if missing). */
   listBranches(id: string): Promise<string[]>;
+  /** Open a native folder picker; resolves to the chosen path or null. */
+  selectFolder(): Promise<string | null>;
+  addProject(path: string, name: string): Promise<ProjectResult>;
+  updateProject(id: string, path: string, name: string): Promise<ProjectResult>;
+  removeProject(id: string): Promise<RemoveResult>;
+  describeProject(id: string): Promise<ProjectInfo>;
+  /** Open the project folder in an editor id, or the OS file manager. */
+  openProject(path: string, editorId: string): Promise<OpenResult>;
   /** Start (or attach to) the persistent PTY and return its retained buffer. */
   startTerminal(cols: number, rows: number): Promise<string>;
   /** Write input into the PTY. */
@@ -118,6 +127,24 @@ const bridge: SkillkeeperBridge = {
   },
   listBranches(id) {
     return ipcRenderer.invoke('repositories:listBranches', { id }) as Promise<string[]>;
+  },
+  selectFolder() {
+    return ipcRenderer.invoke('dialog:selectFolder') as Promise<string | null>;
+  },
+  addProject(path, name) {
+    return ipcRenderer.invoke('projects:add', { path, name }) as Promise<ProjectResult>;
+  },
+  updateProject(id, path, name) {
+    return ipcRenderer.invoke('projects:update', { id, path, name }) as Promise<ProjectResult>;
+  },
+  removeProject(id) {
+    return ipcRenderer.invoke('projects:remove', { id }) as Promise<RemoveResult>;
+  },
+  describeProject(id) {
+    return ipcRenderer.invoke('projects:describe', { id }) as Promise<ProjectInfo>;
+  },
+  openProject(path, editorId) {
+    return ipcRenderer.invoke('projects:open', { path, editorId }) as Promise<OpenResult>;
   },
   startTerminal(cols: number, rows: number): Promise<string> {
     return ipcRenderer.invoke('terminal:start', { cols, rows }) as Promise<string>;
