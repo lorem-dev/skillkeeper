@@ -141,7 +141,7 @@ export interface SkillkeeperActions {
   /** Merge a partial config patch into the current config and persist it. */
   updateConfig(patch: ConfigPatch): Promise<void>;
   addRepository(url: string, name: string): Promise<void>;
-  updateRepository(id: string, name: string, url: string): Promise<void>;
+  updateRepository(id: string, name: string, url: string, branch?: string): Promise<void>;
   removeRepository(id: string): Promise<void>;
   syncRepository(id: string): Promise<void>;
   /** Remove finished (done/error) tasks from the task list. */
@@ -396,9 +396,9 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     })();
   },
 
-  updateRepository(id, name, url) {
+  updateRepository(id, name, url, branch) {
     return (async () => {
-      const res = await bridgeClient.updateRepository(id, name, url);
+      const res = await bridgeClient.updateRepository(id, name, url, branch);
       if (!res.ok) {
         get().notify(res.error, 'error', id);
         return;
@@ -415,6 +415,9 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           },
         },
       }));
+      // A branch checkout changes the current branch; refresh the card badge.
+      const info = await bridgeClient.describeRepository(id);
+      set((s) => ({ repoInfo: { ...s.repoInfo, [id]: info } }));
     })();
   },
 

@@ -77,6 +77,9 @@ export const en = {
   'repositories.branchCopied': 'Branch name copied to the clipboard',
   'repositories.copyRemote': 'Copy link',
   'repositories.remoteCopied': 'Remote URL copied to the clipboard',
+  'repositories.branch': 'Branch',
+  'repositories.branchSearch': 'Search branches',
+  'repositories.branchNone': 'No matching branch',
   /** Skill-count badge. Plural forms selected via Intl.PluralRules. */
   'repositories.skillCount.one': '{count} skill',
   'repositories.skillCount.few': '{count} skills',

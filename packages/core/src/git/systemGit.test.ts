@@ -9,6 +9,9 @@ import {
   buildResetHardArgs,
   buildRevParseArgs,
   buildSetRemoteUrlArgs,
+  buildBranchListArgs,
+  parseBranchList,
+  buildForceCheckoutArgs,
   createSystemGit,
 } from './systemGit.js';
 import type { HostEnv } from '../ports.js';
@@ -80,6 +83,26 @@ describe('git argument builders', () => {
 
   it('builds set-url args with a -- guard', () => {
     expect(buildSetRemoteUrlArgs('git@x:y.git')).toEqual(['remote', 'set-url', 'origin', '--', 'git@x:y.git']);
+  });
+
+  it('builds branch-list args over local + origin refs', () => {
+    expect(buildBranchListArgs()).toEqual([
+      'for-each-ref',
+      '--format=%(refname:short)',
+      'refs/heads',
+      'refs/remotes/origin',
+    ]);
+  });
+
+  it('builds force-checkout args', () => {
+    expect(buildForceCheckoutArgs('develop')).toEqual(['checkout', '-f', 'develop']);
+  });
+
+  it('parses branch lists: strips origin/, drops origin/HEAD, dedupes, sorts', () => {
+    const stdout = ['main', 'develop', 'origin/main', 'origin/develop', 'origin/release', 'origin/HEAD', ''].join(
+      '\n',
+    );
+    expect(parseBranchList(stdout)).toEqual(['develop', 'main', 'release']);
   });
 });
 
@@ -164,6 +187,33 @@ describe('createSystemGit', () => {
     const branch = await git.currentBranch('/repo');
     expect(branch).toBe('main');
     expect(calls[0]).toEqual(['rev-parse', '--abbrev-ref', 'HEAD']);
+  });
+
+  it('listBranches runs for-each-ref in the repo and normalizes the output', async () => {
+    const calls: Array<{ args: readonly string[]; cwd: string }> = [];
+    const git = createSystemGit(ENV, {
+      run: async (args, cwd) => {
+        calls.push({ args, cwd });
+        return { stdout: 'main\norigin/main\norigin/dev\norigin/HEAD\n', stderr: '' };
+      },
+    });
+    const branches = await git.listBranches('/repo');
+    expect(calls[0]!.args).toEqual(['for-each-ref', '--format=%(refname:short)', 'refs/heads', 'refs/remotes/origin']);
+    expect(calls[0]!.cwd).toBe('/repo');
+    expect(branches).toEqual(['dev', 'main']);
+  });
+
+  it('checkout force-switches to the branch in the repo', async () => {
+    const calls: Array<{ args: readonly string[]; cwd: string }> = [];
+    const git = createSystemGit(ENV, {
+      run: async (args, cwd) => {
+        calls.push({ args, cwd });
+        return { stdout: '', stderr: '' };
+      },
+    });
+    await git.checkout('/repo', 'develop');
+    expect(calls[0]!.args).toEqual(['checkout', '-f', 'develop']);
+    expect(calls[0]!.cwd).toBe('/repo');
   });
 
   it('defaults to a real execFile-backed runner when none is injected', () => {

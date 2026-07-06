@@ -25,6 +25,7 @@ import {
   syncRepository,
   hasRepoUpdate,
   describeRepository,
+  listBranches,
 } from './repositories.js';
 import type { RepoDeps } from './repositories.js';
 
@@ -309,9 +310,10 @@ function registerHandlers(): void {
 
   ipcMain.handle('repositories:add', (_e, args: { url: string; name: string }) => addRepository(repoDeps, args));
   ipcMain.handle('repositories:clone', (_e, args: { id: string }) => cloneRepository(repoDeps, args));
-  ipcMain.handle('repositories:update', (_e, args: { id: string; name: string; url: string }) =>
+  ipcMain.handle('repositories:update', (_e, args: { id: string; name: string; url: string; branch?: string }) =>
     updateRepository(repoDeps, args),
   );
+  ipcMain.handle('repositories:listBranches', (_e, args: { id: string }) => listBranches(repoDeps, args));
   ipcMain.handle('repositories:remove', (_e, args: { id: string }) => removeRepository(repoDeps, args));
   ipcMain.handle('repositories:sync', (_e, args: { id: string }) => syncRepository(repoDeps, args));
   ipcMain.handle('repositories:hasUpdate', (_e, args: { id: string }) => hasRepoUpdate(repoDeps, args));

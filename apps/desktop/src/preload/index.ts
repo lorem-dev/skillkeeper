@@ -37,11 +37,13 @@ export interface SkillkeeperBridge {
   onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
   addRepository(url: string, name: string): Promise<RepoResult>;
   cloneRepository(id: string): Promise<RepoResult>;
-  updateRepository(id: string, name: string, url: string): Promise<RepoResult>;
+  updateRepository(id: string, name: string, url: string, branch?: string): Promise<RepoResult>;
   removeRepository(id: string): Promise<RemoveResult>;
   syncRepository(id: string): Promise<RepoResult>;
   repoHasUpdate(id: string): Promise<boolean>;
   describeRepository(id: string): Promise<RepoInfo>;
+  /** Local + origin branch names for a clone (empty if missing). */
+  listBranches(id: string): Promise<string[]>;
   /** Start (or attach to) the persistent PTY and return its retained buffer. */
   startTerminal(cols: number, rows: number): Promise<string>;
   /** Write input into the PTY. */
@@ -97,8 +99,8 @@ const bridge: SkillkeeperBridge = {
   cloneRepository(id) {
     return ipcRenderer.invoke('repositories:clone', { id }) as Promise<RepoResult>;
   },
-  updateRepository(id, name, url) {
-    return ipcRenderer.invoke('repositories:update', { id, name, url }) as Promise<RepoResult>;
+  updateRepository(id, name, url, branch) {
+    return ipcRenderer.invoke('repositories:update', { id, name, url, branch }) as Promise<RepoResult>;
   },
   removeRepository(id) {
     return ipcRenderer.invoke('repositories:remove', { id }) as Promise<RemoveResult>;
@@ -111,6 +113,9 @@ const bridge: SkillkeeperBridge = {
   },
   describeRepository(id) {
     return ipcRenderer.invoke('repositories:describe', { id }) as Promise<RepoInfo>;
+  },
+  listBranches(id) {
+    return ipcRenderer.invoke('repositories:listBranches', { id }) as Promise<string[]>;
   },
   startTerminal(cols: number, rows: number): Promise<string> {
     return ipcRenderer.invoke('terminal:start', { cols, rows }) as Promise<string>;

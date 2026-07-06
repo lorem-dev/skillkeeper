@@ -70,6 +70,30 @@ export function buildSetRemoteUrlArgs(url: string): string[] {
   return ['remote', 'set-url', 'origin', '--', url];
 }
 
+/** Build args listing local + origin branch short-names, one per line. */
+export function buildBranchListArgs(): string[] {
+  return ['for-each-ref', '--format=%(refname:short)', 'refs/heads', 'refs/remotes/origin'];
+}
+
+/**
+ * Normalize `git for-each-ref` short-names into a unique, sorted branch list:
+ * drops the `origin/` prefix and the `origin/HEAD` symbolic ref.
+ */
+export function parseBranchList(stdout: string): string[] {
+  const names = new Set<string>();
+  for (const raw of stdout.split('\n')) {
+    const line = raw.trim();
+    if (line === '' || line === 'origin/HEAD') continue;
+    names.add(line.startsWith('origin/') ? line.slice('origin/'.length) : line);
+  }
+  return [...names].sort((a, b) => a.localeCompare(b));
+}
+
+/** Build `git checkout -f <branch>` arguments (force-switch, discarding edits). */
+export function buildForceCheckoutArgs(branch: string): string[] {
+  return ['checkout', '-f', branch];
+}
+
 /** The default runner shells out via execFile (argument array, no shell). */
 function defaultRunner(env: HostEnv, resolveGitPath: () => string): GitRunner {
   return {
@@ -128,6 +152,13 @@ export function createSystemGit(
     async currentBranch(repoPath: string): Promise<string> {
       const { stdout } = await r.run(buildCurrentBranchArgs(), repoPath);
       return stdout.trim();
+    },
+    async listBranches(repoPath: string): Promise<string[]> {
+      const { stdout } = await r.run(buildBranchListArgs(), repoPath);
+      return parseBranchList(stdout);
+    },
+    async checkout(repoPath: string, branch: string): Promise<void> {
+      await r.run(buildForceCheckoutArgs(branch), repoPath);
     },
     async lfsPull(repoPath: string): Promise<void> {
       await r.run(buildLfsPullArgs(), repoPath);

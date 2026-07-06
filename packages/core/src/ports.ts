@@ -80,6 +80,10 @@ export interface GitPort {
   revParse(repoPath: string, rev: string): Promise<GitRef>;
   /** Current branch name (`git rev-parse --abbrev-ref HEAD`; `HEAD` if detached). */
   currentBranch(repoPath: string): Promise<string>;
+  /** Unique, sorted local + origin branch names (origin/ prefix and HEAD dropped). */
+  listBranches(repoPath: string): Promise<string[]>;
+  /** Force-switch to a branch, discarding local edits (`git checkout -f <branch>`). */
+  checkout(repoPath: string, branch: string): Promise<void>;
   /** Run `git lfs pull` in the given repository. */
   lfsPull(repoPath: string): Promise<void>;
   /** Point the `origin` remote at a new URL (`git remote set-url origin <url>`). */

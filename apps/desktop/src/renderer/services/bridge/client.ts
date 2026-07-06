@@ -23,11 +23,12 @@ export interface BridgeClient {
   onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
   addRepository(url: string, name: string): Promise<RepoResult>;
   cloneRepository(id: string): Promise<RepoResult>;
-  updateRepository(id: string, name: string, url: string): Promise<RepoResult>;
+  updateRepository(id: string, name: string, url: string, branch?: string): Promise<RepoResult>;
   removeRepository(id: string): Promise<RemoveResult>;
   syncRepository(id: string): Promise<RepoResult>;
   repoHasUpdate(id: string): Promise<boolean>;
   describeRepository(id: string): Promise<RepoInfo>;
+  listBranches(id: string): Promise<string[]>;
   startTerminal(cols: number, rows: number): Promise<string>;
   writeTerminal(data: string): void;
   resizeTerminal(cols: number, rows: number): void;
@@ -49,11 +50,12 @@ export const bridgeClient: BridgeClient = {
   onConfigChanged: (callback) => window.skillkeeper.onConfigChanged(callback),
   addRepository: (url, name) => window.skillkeeper.addRepository(url, name),
   cloneRepository: (id) => window.skillkeeper.cloneRepository(id),
-  updateRepository: (id, name, url) => window.skillkeeper.updateRepository(id, name, url),
+  updateRepository: (id, name, url, branch) => window.skillkeeper.updateRepository(id, name, url, branch),
   removeRepository: (id) => window.skillkeeper.removeRepository(id),
   syncRepository: (id) => window.skillkeeper.syncRepository(id),
   repoHasUpdate: (id) => window.skillkeeper.repoHasUpdate(id),
   describeRepository: (id) => window.skillkeeper.describeRepository(id),
+  listBranches: (id) => window.skillkeeper.listBranches(id),
   startTerminal: (cols, rows) => window.skillkeeper.startTerminal(cols, rows),
   writeTerminal: (data) => window.skillkeeper.writeTerminal(data),
   resizeTerminal: (cols, rows) => window.skillkeeper.resizeTerminal(cols, rows),

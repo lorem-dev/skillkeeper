@@ -9,6 +9,8 @@ export interface GitCall {
     | 'forcePull'
     | 'revParse'
     | 'currentBranch'
+    | 'listBranches'
+    | 'checkout'
     | 'lfsPull'
     | 'setRemoteUrl';
   readonly args: Record<string, unknown>;
@@ -24,6 +26,8 @@ export interface FakeGitOptions {
   readonly defaultOid?: string;
   /** Branch name returned by {@link GitPort.currentBranch}. Defaults to `main`. */
   readonly branch?: string;
+  /** Branch names returned by {@link GitPort.listBranches}. Defaults to `[]`. */
+  readonly branches?: readonly string[];
 }
 
 /** A fake {@link GitPort} that records calls and returns canned refs. */
@@ -63,6 +67,13 @@ export function createFakeGit(options: FakeGitOptions = {}): FakeGit {
     async currentBranch(repoPath: string): Promise<string> {
       calls.push({ op: 'currentBranch', args: { repoPath } });
       return branch;
+    },
+    async listBranches(repoPath: string): Promise<string[]> {
+      calls.push({ op: 'listBranches', args: { repoPath } });
+      return [...(options.branches ?? [])];
+    },
+    async checkout(repoPath: string, targetBranch: string): Promise<void> {
+      calls.push({ op: 'checkout', args: { repoPath, branch: targetBranch } });
     },
     async lfsPull(repoPath: string): Promise<void> {
       calls.push({ op: 'lfsPull', args: { repoPath } });

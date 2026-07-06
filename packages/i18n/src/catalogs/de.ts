@@ -75,6 +75,9 @@ export const de: Partial<Catalog> = {
   'repositories.branchCopied': 'Branch-Name in die Zwischenablage kopiert',
   'repositories.copyRemote': 'Link kopieren',
   'repositories.remoteCopied': 'Remote-URL in die Zwischenablage kopiert',
+  'repositories.branch': 'Branch',
+  'repositories.branchSearch': 'Branches suchen',
+  'repositories.branchNone': 'Kein passender Branch',
   'repositories.skillCount.one': '{count} Fähigkeit',
   'repositories.skillCount.other': '{count} Fähigkeiten',
 

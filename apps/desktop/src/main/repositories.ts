@@ -127,7 +127,7 @@ export async function cloneRepository(deps: RepoDeps, args: { id: string }): Pro
 /** Edit name and/or remote. Changing the URL re-points origin and re-derives kind/transport. */
 export async function updateRepository(
   deps: RepoDeps,
-  args: { id: string; name: string; url: string },
+  args: { id: string; name: string; url: string; branch?: string },
 ): Promise<RepoResult> {
   try {
     const repo = await findRepo(deps, args.id);
@@ -140,11 +140,23 @@ export async function updateRepository(
       }
     }
     const { kind, transport } = parseRemote(args.url);
+    const branch = args.branch !== undefined && args.branch !== '' ? args.branch : undefined;
+    if (branch !== undefined && (await deps.fs.exists(repo.localPath))) {
+      // Force-checkout the chosen branch in the terminal (visible, discards local
+      // edits) so the repo tracks it. If the clone is missing the branch is still
+      // recorded below and sync applies it on the next run.
+      try {
+        await (deps.terminalGit ?? deps.git).checkout(repo.localPath, branch);
+      } catch (err) {
+        return { ok: false, error: message(err) };
+      }
+    }
     return await persistRepo(deps, args.id, {
       name: args.name.trim() === '' ? repo.name : args.name.trim(),
       url: args.url,
       kind,
       transport,
+      ...(branch !== undefined ? { branch } : {}),
     });
   } catch (err) {
     return { ok: false, error: message(err) };
@@ -184,13 +196,22 @@ export async function syncRepository(deps: RepoDeps, args: { id: string }): Prom
     // If the clone dir is missing (e.g. an earlier clone failed), re-clone --
     // pulling in a non-existent cwd would fail with "spawn git ENOENT".
     if (await deps.fs.exists(repo.localPath)) {
-      // Force the clone to match the remote exactly, discarding any local edits,
-      // so an app-managed repo never diverges or hits merge conflicts.
+      // Force-switch to the tracked branch first (if set) so forcePull's
+      // `reset --hard @{u}` applies that branch's upstream. Force the clone to
+      // match the remote exactly, discarding any local edits, so an app-managed
+      // repo never diverges or hits merge conflicts.
+      if (repo.branch !== undefined && repo.branch !== '') {
+        await git.checkout(repo.localPath, repo.branch);
+      }
       await git.forcePull(repo.localPath);
       if (repo.lfs) await git.lfsPull(repo.localPath);
     } else {
       await deps.fs.mkdir(deps.reposDir);
       await git.clone({ url: repo.url, destination: repo.localPath, lfs: repo.lfs });
+      // A fresh clone lands on the remote default branch; switch to the tracked one.
+      if (repo.branch !== undefined && repo.branch !== '') {
+        await git.checkout(repo.localPath, repo.branch);
+      }
     }
     return await persistRepo(deps, args.id, { lastFetched: new Date().toISOString() });
   } catch (err) {
@@ -216,6 +237,17 @@ export async function describeRepository(deps: RepoDeps, args: { id: string }): 
     return { branch, skillCount: skills.length };
   } catch {
     return { branch: null, skillCount: 0 };
+  }
+}
+
+/** Local + origin branch names for a clone; empty when missing or on any failure. */
+export async function listBranches(deps: RepoDeps, args: { id: string }): Promise<string[]> {
+  try {
+    const repo = await findRepo(deps, args.id);
+    if (repo === null || !(await deps.fs.exists(repo.localPath))) return [];
+    return await deps.git.listBranches(repo.localPath);
+  } catch {
+    return [];
   }
 }
 

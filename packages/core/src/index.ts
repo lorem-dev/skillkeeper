@@ -101,6 +101,9 @@ export {
   buildCurrentBranchArgs,
   buildLfsPullArgs,
   buildSetRemoteUrlArgs,
+  buildBranchListArgs,
+  parseBranchList,
+  buildForceCheckoutArgs,
 } from './git/systemGit.js';
 export type { GitRunner, RunResult } from './git/systemGit.js';
 

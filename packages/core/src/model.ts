@@ -97,6 +97,9 @@ export interface Repository {
   readonly lfs: boolean;
   readonly localPath: string;
   readonly lastFetched?: string;
+  /** User-selected branch to track; the repo is force-checked-out to it and
+   * updates apply it. Absent means the clone's default branch. */
+  readonly branch?: string;
 }
 
 /** A concrete (agent, scope) destination for an install. */
