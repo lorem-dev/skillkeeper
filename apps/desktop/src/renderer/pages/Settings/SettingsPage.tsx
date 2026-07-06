@@ -126,7 +126,7 @@ export function SettingsPage() {
               onChange={(v) => void updateConfig({ updates: { mode: v as UpdatesConfig['mode'] } })}
             />
           </FormRow>
-          <FormRow label={t('settings.updates.interval')}>
+          <FormRow label={t('settings.updates.interval')} disabled={config.updates.mode !== 'scheduled'}>
             <IntervalStepper
               minutes={config.updates.intervalMinutes}
               onChange={(intervalMinutes) => void updateConfig({ updates: { intervalMinutes } })}

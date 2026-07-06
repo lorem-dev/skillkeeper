@@ -40,6 +40,15 @@
   color: var(--sk-color-label-2);
 }
 
+// Disabled row: grey the label so it matches the disabled control beside it.
+.sk-form-row--disabled .sk-form-row__label-text {
+  color: var(--sk-color-label-3);
+}
+
+.sk-form-row--disabled .sk-form-row__desc {
+  color: var(--sk-color-label-3);
+}
+
 .sk-form-row__control {
   display: flex;
   align-items: center;

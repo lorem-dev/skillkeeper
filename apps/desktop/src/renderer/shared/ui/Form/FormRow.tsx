@@ -18,6 +18,8 @@ export interface FormRowProps {
   readonly htmlFor?: string;
   /** Vertical alignment of label vs control. `top` suits multi-line controls. */
   readonly align?: 'center' | 'top';
+  /** Dims the label to signal the row's control is disabled. */
+  readonly disabled?: boolean;
   readonly className?: string;
 }
 
@@ -27,11 +29,14 @@ export function FormRow({
   children,
   htmlFor,
   align = 'center',
+  disabled,
   className,
 }: FormRowProps) {
   const hasLabel = label !== undefined || description !== undefined;
   return (
-    <div className={cx('sk-form-row', `sk-form-row--${align}`, className)}>
+    <div
+      className={cx('sk-form-row', `sk-form-row--${align}`, disabled === true && 'sk-form-row--disabled', className)}
+    >
       {hasLabel && (
         <label className="sk-form-row__label" htmlFor={htmlFor}>
           {label !== undefined && <span className="sk-form-row__label-text">{label}</span>}
