@@ -237,6 +237,14 @@ export const CheckboxesLeavesOnly: Story = {
   ),
 };
 
+// Long labels with checkboxes: the title ellipsizes before the count and the
+// checkbox column (one skill checked, so the group is "1/2" and mixed).
+export const CheckboxesLongLabels: Story = {
+  render: () => (
+    <Checkable nodes={longLabels} expanded={['repo-long', 'grp-long']} levels={[1, 2]} initial={['sk-long']} />
+  ),
+};
+
 // A branch ("folder") selected as a whole -- the unit for group operations.
 export const FolderSelected: Story = {
   render: () => {
