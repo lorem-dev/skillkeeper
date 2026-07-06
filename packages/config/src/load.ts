@@ -8,6 +8,7 @@ import {
   securitySchema,
   notificationsSchema,
   repositoriesSchema,
+  projectsSchema,
   SECTIONS,
 } from './schema.js';
 import type { SkillKeeperConfig, Section } from './schema.js';
@@ -25,6 +26,7 @@ export const defaultConfig: SkillKeeperConfig = {
   security: securitySchema.parse({}),
   notifications: notificationsSchema.parse({}),
   repositories: repositoriesSchema.parse({}),
+  projects: projectsSchema.parse({}),
 };
 
 // ---------------------------------------------------------------------------
@@ -158,6 +160,14 @@ export async function loadConfig(fs: FsPort, path: string): Promise<LoadConfigRe
   } else {
     validity['repositories'] = 'invalid';
     warnings.push(`Config section "repositories" is invalid; using defaults.`);
+  }
+
+  const projects = validateSection(projectsSchema, rawObj['projects']);
+  if (projects !== undefined) {
+    config.projects = projects;
+  } else {
+    validity['projects'] = 'invalid';
+    warnings.push(`Config section "projects" is invalid; using defaults.`);
   }
 
   return { config, validity, warnings };

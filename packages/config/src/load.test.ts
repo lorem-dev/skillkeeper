@@ -10,7 +10,7 @@ general:
 
 updates:
   mode: scheduled
-  intervalHours: 12
+  intervalMinutes: 12
   checkOnStartup: true
 
 agents:
@@ -44,7 +44,7 @@ describe('loadConfig', () => {
     const result = await loadConfig(fs, CONFIG_PATH);
 
     expect(result.config.general.language).toBe('de');
-    expect(result.config.updates.intervalHours).toBe(12);
+    expect(result.config.updates.intervalMinutes).toBe(12);
     expect(result.config.agents.enabled).toEqual(['claude', 'codex']);
     expect(result.config.executables.globs).toEqual(['*.sh', 'bin/*']);
     expect(result.config.security.hookConsentPolicy).toBe('always-ask');
@@ -69,7 +69,7 @@ general:
 
 updates:
   mode: manual
-  intervalHours: -999
+  intervalMinutes: -999
 
 agents:
   enabled:
@@ -90,7 +90,7 @@ notifications:
 
     // Invalid section falls back to default
     expect(result.validity.updates).toBe('invalid');
-    expect(result.config.updates.intervalHours).toBe(defaultConfig.updates.intervalHours);
+    expect(result.config.updates.intervalMinutes).toBe(defaultConfig.updates.intervalMinutes);
 
     // Other sections remain as parsed
     expect(result.validity.general).toBe('valid');
@@ -107,7 +107,7 @@ notifications:
 
     // The file on disk is NOT rewritten
     const raw = await fs.readFile(CONFIG_PATH);
-    expect(raw).toContain('intervalHours: -999');
+    expect(raw).toContain('intervalMinutes: -999');
   });
 
   it('returns full defaults when the file does not exist', async () => {

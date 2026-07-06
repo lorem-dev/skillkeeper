@@ -19,11 +19,20 @@ export type GeneralConfig = z.infer<typeof generalSchema>;
 // Section: updates
 // ---------------------------------------------------------------------------
 
+/** Minimum/maximum for an interval, in minutes: 1 minute .. 23 hours. */
+export const MIN_INTERVAL_MINUTES = 1;
+export const MAX_INTERVAL_MINUTES = 23 * 60;
+
 export const updatesSchema = z.object({
   /** When to check for skill and repository updates. */
   mode: z.enum(['manual', 'on-startup', 'scheduled']).default('on-startup'),
-  /** How often to check (hours) when mode is "scheduled". Must be positive. */
-  intervalHours: z.number().int().positive().default(24),
+  /** How often to check (minutes) when mode is "scheduled". 1 min .. 23 h. */
+  intervalMinutes: z
+    .number()
+    .int()
+    .min(MIN_INTERVAL_MINUTES)
+    .max(MAX_INTERVAL_MINUTES)
+    .default(12 * 60),
   /**
    * For "scheduled" mode: also run a check on startup (not just on the interval).
    * Not shown in Settings -- the "on-startup" mode covers the common case.
@@ -32,6 +41,26 @@ export const updatesSchema = z.object({
 });
 
 export type UpdatesConfig = z.infer<typeof updatesSchema>;
+
+// ---------------------------------------------------------------------------
+// Section: projects
+// ---------------------------------------------------------------------------
+
+export const projectsSchema = z.object({
+  /**
+   * How often to re-check that tracked project folders still exist (minutes).
+   * The check always runs (on startup and on this interval); only the interval
+   * is configurable. 1 min .. 23 h.
+   */
+  checkIntervalMinutes: z
+    .number()
+    .int()
+    .min(MIN_INTERVAL_MINUTES)
+    .max(MAX_INTERVAL_MINUTES)
+    .default(1),
+});
+
+export type ProjectsConfig = z.infer<typeof projectsSchema>;
 
 // ---------------------------------------------------------------------------
 // Section: agents
@@ -111,6 +140,7 @@ export interface SkillKeeperConfig {
   security: SecurityConfig;
   notifications: NotificationsConfig;
   repositories: RepositoriesConfig;
+  projects: ProjectsConfig;
 }
 
 /** The config section names as a union type. */
@@ -125,4 +155,5 @@ export const SECTIONS: readonly Section[] = [
   'security',
   'notifications',
   'repositories',
+  'projects',
 ] as const;
