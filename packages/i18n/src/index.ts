@@ -7,10 +7,33 @@ import { fr } from './catalogs/fr.js';
 import { ja } from './catalogs/ja.js';
 import { zhCn } from './catalogs/zh-cn.js';
 import { pl } from './catalogs/pl.js';
+import { srCyrl } from './catalogs/sr-cyrl.js';
+import { srLatn } from './catalogs/sr-latn.js';
+import { zhTw } from './catalogs/zh-tw.js';
+import { es } from './catalogs/es.js';
+import { pt } from './catalogs/pt.js';
+import { ko } from './catalogs/ko.js';
+import { it } from './catalogs/it.js';
 import type { MessageKey, Catalog } from './catalogs/en.js';
 
 /** Supported locale codes. */
-export type Lang = 'en' | 'de' | 'ru' | 'uk' | 'be' | 'fr' | 'ja' | 'zh-cn' | 'pl';
+export type Lang =
+  | 'en'
+  | 'de'
+  | 'ru'
+  | 'uk'
+  | 'be'
+  | 'fr'
+  | 'ja'
+  | 'zh-cn'
+  | 'pl'
+  | 'sr-cyrl'
+  | 'sr-latn'
+  | 'zh-tw'
+  | 'es'
+  | 'pt'
+  | 'ko'
+  | 'it';
 
 export type { MessageKey, Catalog };
 
@@ -28,6 +51,13 @@ const catalogs: Record<Lang, Partial<Catalog>> = {
   ja,
   'zh-cn': zhCn,
   pl,
+  'sr-cyrl': srCyrl,
+  'sr-latn': srLatn,
+  'zh-tw': zhTw,
+  es,
+  pt,
+  ko,
+  it,
 };
 
 /** All selectable locale codes (the catalog keys), for runtime validation. */

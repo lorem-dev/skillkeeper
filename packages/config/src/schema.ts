@@ -6,7 +6,26 @@ import { z } from 'zod';
 
 export const generalSchema = z.object({
   /** Display language. Defaults to English. */
-  language: z.enum(['en', 'de', 'ru', 'uk', 'be', 'fr', 'ja', 'zh-cn', 'pl']).default('en'),
+  language: z
+    .enum([
+      'en',
+      'de',
+      'ru',
+      'uk',
+      'be',
+      'fr',
+      'ja',
+      'zh-cn',
+      'pl',
+      'sr-cyrl',
+      'sr-latn',
+      'zh-tw',
+      'es',
+      'pt',
+      'ko',
+      'it',
+    ])
+    .default('en'),
   /** UI theme preference. */
   theme: z.enum(['system', 'light', 'dark']).default('system'),
   /** Shell command used to open files in the user's editor. */

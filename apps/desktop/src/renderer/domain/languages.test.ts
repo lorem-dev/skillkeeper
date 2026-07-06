@@ -19,12 +19,19 @@ describe('buildLanguageOptions', () => {
       'be',
       'de',
       'en',
+      'es',
       'fr',
+      'it',
       'ja',
+      'ko',
       'pl',
+      'pt',
       'ru',
+      'sr-cyrl',
+      'sr-latn',
       'uk',
       'zh-cn',
+      'zh-tw',
     ]);
     for (const o of opts) expect(o.label[0]).toBe(o.label[0]?.toUpperCase());
   });

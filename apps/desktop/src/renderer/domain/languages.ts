@@ -1,6 +1,23 @@
 import type { Lang } from '@/services/bridge';
 
-const LANGS: readonly Lang[] = ['en', 'de', 'ru', 'uk', 'be', 'fr', 'ja', 'zh-cn', 'pl'];
+const LANGS: readonly Lang[] = [
+  'en',
+  'de',
+  'ru',
+  'uk',
+  'be',
+  'fr',
+  'ja',
+  'zh-cn',
+  'pl',
+  'sr-cyrl',
+  'sr-latn',
+  'zh-tw',
+  'es',
+  'pt',
+  'ko',
+  'it',
+];
 
 function capitalize(s: string): string {
   return s.length === 0 ? s : s.charAt(0).toUpperCase() + s.slice(1);
