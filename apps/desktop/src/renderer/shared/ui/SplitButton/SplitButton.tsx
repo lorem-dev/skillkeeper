@@ -5,6 +5,7 @@
  */
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { cx } from '../../lib';
 import { Tooltip } from '../Tooltip';
 import { Icon } from '../Icon';
 import { Menu } from '../Menu';
@@ -30,9 +31,15 @@ export interface SplitButtonProps {
   /** Accessible name for the dropdown menu. */
   readonly menuLabel: string;
   readonly disabled?: boolean;
+  /**
+   * 'default' is the standard toolbar size. 'compact' matches the round icon
+   * buttons: control-height segments with the same larger corner radius, so it
+   * sits flush beside an icon button (e.g. Edit) on a card.
+   */
+  readonly size?: 'default' | 'compact';
 }
 
-export function SplitButton({ icon, tooltip, onPrimary, items, menuLabel, disabled }: SplitButtonProps) {
+export function SplitButton({ icon, tooltip, onPrimary, items, menuLabel, disabled, size = 'default' }: SplitButtonProps) {
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
@@ -44,7 +51,7 @@ export function SplitButton({ icon, tooltip, onPrimary, items, menuLabel, disabl
   }));
 
   return (
-    <div className="sk-split-button">
+    <div className={cx('sk-split-button', size === 'compact' && 'sk-split-button--compact')}>
       <Tooltip content={tooltip} disabled={open}>
         <button
           type="button"

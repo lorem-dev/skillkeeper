@@ -69,6 +69,25 @@
     transform: rotate(90deg);
   }
 
+  // Compact: control-height segments with the larger (icon-button) corner
+  // radius, so the control lines up flush with the round icon buttons on a card.
+  // A touch more padding on the outer (rounded) edges so the glyphs are not
+  // cramped against the pill ends.
+  &--compact &__primary,
+  &--compact &__toggle {
+    height: var(--sk-control-height);
+  }
+
+  &--compact &__primary {
+    border-radius: var(--sk-radius-xl) 0 0 var(--sk-radius-xl);
+    padding: 0 var(--sk-space-2) 0 var(--sk-space-3);
+  }
+
+  &--compact &__toggle {
+    border-radius: 0 var(--sk-radius-xl) var(--sk-radius-xl) 0;
+    padding: 0 var(--sk-space-3) 0 var(--sk-space-2);
+  }
+
   // Fixed 20x20 icon slots. Reserving the box up front means an editor icon
   // (an <img> loaded from a data URL) claims its space immediately, so the
   // control does not reflow when the image finishes loading.

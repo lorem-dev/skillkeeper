@@ -97,6 +97,7 @@ export function OpenProjectButton({ path, beforeOpen }: OpenProjectButtonProps) 
 
   return (
     <SplitButton
+      size="compact"
       icon={openerIcon(selectedOption)}
       tooltip={tooltip}
       menuLabel={tooltip}

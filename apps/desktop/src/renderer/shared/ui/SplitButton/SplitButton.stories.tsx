@@ -43,3 +43,19 @@ export const LinuxNoIcons: Story = {
     ],
   },
 };
+
+// Compact size: control-height segments with the larger icon-button radius, so
+// it sits flush beside a round icon button (e.g. on a project card).
+export const Compact: Story = {
+  args: {
+    size: 'compact',
+    icon: <Icon name="folder" />,
+    tooltip: 'Open project',
+    menuLabel: 'Open in',
+    items: [
+      { id: 'default', label: 'Open in file manager', icon: <Icon name="folder" />, onSelect: () => {} },
+      { id: 'vscode', label: 'Visual Studio Code', onSelect: () => {} },
+      { id: 'zed', label: 'Zed', onSelect: () => {} },
+    ],
+  },
+};
