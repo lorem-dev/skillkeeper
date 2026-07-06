@@ -142,7 +142,7 @@ notifications:
   });
 
   it('marks general section invalid when language is an unknown value', async () => {
-    const yaml = 'general:\n  language: fr\n';
+    const yaml = 'general:\n  language: klingon\n';
     const fs = createMemFs({ [CONFIG_PATH]: yaml });
     const result = await loadConfig(fs, CONFIG_PATH);
 

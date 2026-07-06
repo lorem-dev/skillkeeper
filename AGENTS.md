@@ -27,7 +27,7 @@ skillkeeper/
                 verify/repair, git port, scheduler, adapter interface
     config/     YAML + zod sectioned validation
     agents/     adapter registry + Claude/Codex/Copilot/Cursor/OpenCode adapters
-    i18n/       typed catalogs (en/de/ru) + lookup function
+    i18n/       typed catalogs (en source + translations) + lookup function
     cli/        commander-based CLI
   apps/
     desktop/    Electron main/preload/renderer (React + Zustand); shell only in v1
@@ -98,8 +98,26 @@ single final check before a change is considered done or a pull request opened.
 - All source code and documentation are ASCII-only. No Unicode punctuation
   (curly quotes, em dashes, ellipsis characters) outside of i18n catalogs and
   UI strings.
-- Exception: `packages/i18n/` catalogs for `de` and `ru` may contain non-ASCII
-  characters because German and Russian text requires them.
+- Exception: `packages/i18n/` catalogs (all non-English locales) may contain
+  non-ASCII characters because their text requires them.
+
+### Internationalization
+
+- `packages/i18n/src/catalogs/en.ts` is the source of truth: every message key
+  and its English value live there. Other locales are `Partial<Catalog>` and
+  fall back to English per-key at runtime.
+- Default behaviour: new/changed UI strings are added to `en.ts` only. Do NOT
+  translate them into other locales as part of feature work -- untranslated
+  keys simply show English until they are localized.
+- Translations are added in a dedicated pass BEFORE a release (or when the user
+  explicitly asks to add/complete a language). At that point, translate the
+  full catalog for the target locale(s), preserving `{token}` placeholders and
+  providing the CLDR plural categories that locale uses.
+- To add a new selectable language: extend `Lang` and the `catalogs` map in
+  `packages/i18n/src/index.ts`, the `language` enum in
+  `packages/config/src/schema.ts`, and `LANGS` in
+  `apps/desktop/src/renderer/domain/languages.ts`. Store Chinese Simplified as
+  `zh-cn`.
 
 ### Commit Rules
 

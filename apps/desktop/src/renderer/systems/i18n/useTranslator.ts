@@ -6,7 +6,7 @@
  * so component re-renders only when the language actually changes.
  */
 import { useMemo } from 'react';
-import { createTranslator } from '@skillkeeper/i18n';
+import { createTranslator, SUPPORTED_LANGS } from '@skillkeeper/i18n';
 import type { Translator, Lang } from '@skillkeeper/i18n';
 import { useSkillkeeperStore } from '@/app/store';
 
@@ -14,12 +14,12 @@ export type { Translator };
 
 export function useTranslator(): Translator {
   const config = useSkillkeeperStore((s) => s.config);
+  const current = config?.general?.language;
+  // Accept any supported locale (the config is schema-validated); fall back to
+  // English when unset or unrecognized.
   const lang: Lang =
-    config?.general?.language !== undefined &&
-    (config.general.language === 'en' ||
-      config.general.language === 'de' ||
-      config.general.language === 'ru')
-      ? (config.general.language as Lang)
+    current !== undefined && (SUPPORTED_LANGS as readonly string[]).includes(current)
+      ? (current as Lang)
       : 'en';
 
   return useMemo(() => createTranslator(lang), [lang]);

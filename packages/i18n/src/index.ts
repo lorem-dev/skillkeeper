@@ -1,15 +1,37 @@
 import { en } from './catalogs/en.js';
 import { de } from './catalogs/de.js';
 import { ru } from './catalogs/ru.js';
+import { uk } from './catalogs/uk.js';
+import { be } from './catalogs/be.js';
+import { fr } from './catalogs/fr.js';
+import { ja } from './catalogs/ja.js';
+import { zhCn } from './catalogs/zh-cn.js';
+import { pl } from './catalogs/pl.js';
 import type { MessageKey, Catalog } from './catalogs/en.js';
 
 /** Supported locale codes. */
-export type Lang = 'en' | 'de' | 'ru';
+export type Lang = 'en' | 'de' | 'ru' | 'uk' | 'be' | 'fr' | 'ja' | 'zh-cn' | 'pl';
 
 export type { MessageKey, Catalog };
 
-/** Map of all available catalogs. */
-const catalogs: Record<Lang, Partial<Catalog>> = { en, de, ru };
+/**
+ * Map of all available catalogs. Any keys a catalog omits fall back to English
+ * at runtime (see the fallback in createTranslator).
+ */
+const catalogs: Record<Lang, Partial<Catalog>> = {
+  en,
+  de,
+  ru,
+  uk,
+  be,
+  fr,
+  ja,
+  'zh-cn': zhCn,
+  pl,
+};
+
+/** All selectable locale codes (the catalog keys), for runtime validation. */
+export const SUPPORTED_LANGS = Object.keys(catalogs) as Lang[];
 
 /**
  * Interpolation variables bag: keys are placeholder names (without braces),

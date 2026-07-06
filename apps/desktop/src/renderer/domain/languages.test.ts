@@ -15,7 +15,17 @@ describe('buildLanguageOptions', () => {
 
   it('returns one option per supported language, first letter capitalized', () => {
     const opts = buildLanguageOptions('ru');
-    expect(opts.map((o) => o.value).sort()).toEqual(['de', 'en', 'ru']);
+    expect(opts.map((o) => o.value).sort()).toEqual([
+      'be',
+      'de',
+      'en',
+      'fr',
+      'ja',
+      'pl',
+      'ru',
+      'uk',
+      'zh-cn',
+    ]);
     for (const o of opts) expect(o.label[0]).toBe(o.label[0]?.toUpperCase());
   });
 });
