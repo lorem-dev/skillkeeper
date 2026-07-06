@@ -335,6 +335,7 @@ function registerHandlers(): void {
     terminal.start(cols, rows),
   );
   ipcMain.on('terminal:input', (_e, data: string) => terminal.write(data));
+  ipcMain.on('terminal:clearBuffer', () => terminal.clearBuffer());
   ipcMain.on('terminal:resize', (_e, { cols, rows }: { cols: number; rows: number }) =>
     terminal.resize(cols, rows),
   );

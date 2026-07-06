@@ -32,6 +32,7 @@ export interface BridgeClient {
   startTerminal(cols: number, rows: number): Promise<string>;
   writeTerminal(data: string): void;
   resizeTerminal(cols: number, rows: number): void;
+  clearTerminalBuffer(): void;
   runSshAdd(): Promise<void>;
   onTerminalData(callback: (chunk: string) => void): () => void;
   onTerminalExit(callback: () => void): () => void;
@@ -59,6 +60,7 @@ export const bridgeClient: BridgeClient = {
   startTerminal: (cols, rows) => window.skillkeeper.startTerminal(cols, rows),
   writeTerminal: (data) => window.skillkeeper.writeTerminal(data),
   resizeTerminal: (cols, rows) => window.skillkeeper.resizeTerminal(cols, rows),
+  clearTerminalBuffer: () => window.skillkeeper.clearTerminalBuffer(),
   runSshAdd: () => window.skillkeeper.runSshAdd(),
   onTerminalData: (callback) => window.skillkeeper.onTerminalData(callback),
   onTerminalExit: (callback) => window.skillkeeper.onTerminalExit(callback),

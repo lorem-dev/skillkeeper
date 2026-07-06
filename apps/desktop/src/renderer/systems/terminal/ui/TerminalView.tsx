@@ -99,8 +99,17 @@ export function TerminalView() {
     });
 
     const onInput = term.onData((data) => bridgeClient.writeTerminal(data));
+    let prevCols = term.cols;
     const ro = new ResizeObserver(() => {
       fit.fit();
+      if (term.cols !== prevCols) {
+        prevCols = term.cols;
+        // Scrollback was laid out at the old width; the shell's line-editor
+        // repaints would reflow to the wrong columns. Drop it (both the on-screen
+        // buffer and the retained one) -- the shell redraws its prompt on resize.
+        term.clear();
+        bridgeClient.clearTerminalBuffer();
+      }
       bridgeClient.resizeTerminal(term.cols, term.rows);
     });
     ro.observe(el);

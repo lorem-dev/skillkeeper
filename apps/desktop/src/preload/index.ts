@@ -50,6 +50,8 @@ export interface SkillkeeperBridge {
   writeTerminal(data: string): void;
   /** Resize the PTY. */
   resizeTerminal(cols: number, rows: number): void;
+  /** Drop the retained scrollback (e.g. on a window resize). */
+  clearTerminalBuffer(): void;
   /** Run ssh-add on the PTY so the passphrase prompt appears there. */
   runSshAdd(): Promise<void>;
   /** Subscribe to PTY output chunks. Returns an unsubscribe fn. */
@@ -122,6 +124,9 @@ const bridge: SkillkeeperBridge = {
   },
   writeTerminal(data: string): void {
     ipcRenderer.send('terminal:input', data);
+  },
+  clearTerminalBuffer(): void {
+    ipcRenderer.send('terminal:clearBuffer');
   },
   resizeTerminal(cols: number, rows: number): void {
     ipcRenderer.send('terminal:resize', { cols, rows });

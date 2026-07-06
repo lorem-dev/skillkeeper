@@ -339,6 +339,12 @@ class TerminalManager extends EventEmitter {
     this.append(text);
   }
 
+  /** Drop the retained scrollback (e.g. on a window resize, when old-width lines
+   * would reflow wrong). The live shell is untouched; it redraws on the resize. */
+  clearBuffer(): void {
+    this.buffer = '';
+  }
+
   /** Run git in the session, sequentially. Resolves with the exit code. */
   runGit(gitPath: string, args: readonly string[], cwd: string): Promise<number> {
     const run = this.queue.then(() =>
