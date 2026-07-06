@@ -4,3 +4,8 @@
   gap: var(--sk-space-6);
   width: 100%;
 }
+
+// Language picker: wide enough to fit "<native> (<name in current locale>)".
+.sk-settings-language {
+  width: 18rem;
+}

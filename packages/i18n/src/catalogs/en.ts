@@ -192,6 +192,7 @@ export const en = {
   'settings.theme.light': 'Light',
   'settings.theme.dark': 'Dark',
   'settings.language': 'Language',
+  'settings.languageEmpty': 'No matching language',
   'settings.section.repositories': 'Repositories',
   'settings.section.projects': 'Projects',
   'settings.git': 'Git',

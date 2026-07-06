@@ -9,7 +9,7 @@ import {
   Toolbar,
   FormSection,
   FormRow,
-  Select,
+  Combobox,
   SegmentedControl,
   TextField,
   IntervalStepper,
@@ -69,10 +69,14 @@ export function SettingsPage() {
       <div className="sk-settings">
         <FormSection title={t('settings.section.general')}>
           <FormRow label={t('settings.language')}>
-            <Select
+            <Combobox
+              className="sk-settings-language"
               options={languageOptions}
               value={lang}
               onChange={(v) => void updateConfig({ general: { language: v as Lang } })}
+              ariaLabel={t('settings.language')}
+              placeholder={t('settings.language')}
+              emptyText={t('settings.languageEmpty')}
             />
           </FormRow>
           <FormRow label={t('settings.theme')}>
