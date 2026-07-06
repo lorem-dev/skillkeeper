@@ -37,8 +37,8 @@ export interface LanguageOption {
 }
 
 /**
- * Language picker options, sorted by label as a Unicode (code-point) string.
- * The current language shows only its native name; every other language shows
+ * Language picker options, sorted by language code. The current language shows
+ * only its native name; every other language shows
  * "<native> (<name in the current locale>)".
  */
 export function buildLanguageOptions(current: Lang): LanguageOption[] {
@@ -46,5 +46,5 @@ export function buildLanguageOptions(current: Lang): LanguageOption[] {
     const native = displayName(lang, lang);
     const label = lang === current ? native : `${native} (${displayName(lang, current)})`;
     return { value: lang, label };
-  }).sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
+  }).sort((a, b) => (a.value < b.value ? -1 : a.value > b.value ? 1 : 0));
 }
