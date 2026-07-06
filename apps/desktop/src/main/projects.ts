@@ -96,6 +96,18 @@ export async function removeProject(deps: ProjectDeps, args: { id: string }): Pr
   });
 }
 
+/** Whether the project's folder still exists on disk (false if untracked/gone). */
+export async function projectExists(deps: ProjectDeps, args: { id: string }): Promise<boolean> {
+  try {
+    const state = await loadState(deps.fs, deps.statePath);
+    const project = state.projects.find((p) => p.id === args.id);
+    if (project === undefined) return false;
+    return await deps.fs.exists(project.path);
+  } catch {
+    return false;
+  }
+}
+
 /** Skill counts for a project, derived from the install manifests in state. */
 export async function describeProject(deps: ProjectDeps, args: { id: string }): Promise<ProjectInfo> {
   try {

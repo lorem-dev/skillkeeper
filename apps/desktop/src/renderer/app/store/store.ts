@@ -121,6 +121,8 @@ export interface SkillkeeperState {
   projects: Project[];
   /** Per-project skill counts for the card badges (not persisted). */
   projectInfo: Record<string, ProjectInfo>;
+  /** Projects whose folder no longer exists (deleted/moved); not persisted. */
+  projectMissing: Record<string, boolean>;
   /** Whether a background load is in progress. */
   loading: boolean;
   /** Last error message, if any. */
@@ -161,6 +163,13 @@ export interface SkillkeeperActions {
   removeProject(id: string): Promise<void>;
   /** Fetch skill counts for every project into `projectInfo`. */
   refreshProjectInfo(): Promise<void>;
+  /** Check every project's folder exists and update `projectMissing`. */
+  checkProjects(): Promise<void>;
+  /** Run the folder check now and (re)schedule the next run after the interval. */
+  sweepProjects(): Promise<void>;
+  /** Re-check one project's folder before an action; notifies + marks it missing
+   * when the folder is gone. Resolves to whether the folder still exists. */
+  ensureProjectAvailable(id: string): Promise<boolean>;
   /**
    * Record a notification: append to the log + toasts. An `error` notification
    * with a `repoId` also marks that repo's status (the red dot); `info` never
@@ -196,6 +205,9 @@ export type SkillkeeperStore = SkillkeeperState & SkillkeeperActions;
 /** Serializes queued repository tasks so they run one at a time, in order. */
 let taskChain: Promise<unknown> = Promise.resolve();
 
+/** Pending timer for the next project-folder sweep (self-rescheduling loop). */
+let projectSweepTimer: ReturnType<typeof setTimeout> | undefined;
+
 /** Append `run` to the task chain so it starts only after the previous task settles. */
 function enqueue(run: () => Promise<void>): Promise<void> {
   const next = taskChain.then(run, run);
@@ -215,6 +227,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   repoStatus: {},
   repoInfo: {},
   projectInfo: {},
+  projectMissing: {},
   notifications: [],
   toasts: [],
   tasks: [],
@@ -626,7 +639,12 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       }
       set((s) => {
         const { [id]: _removed, ...restInfo } = s.projectInfo;
-        return { projects: s.projects.filter((p) => p.id !== id), projectInfo: restInfo };
+        const { [id]: _removedMissing, ...restMissing } = s.projectMissing;
+        return {
+          projects: s.projects.filter((p) => p.id !== id),
+          projectInfo: restInfo,
+          projectMissing: restMissing,
+        };
       });
     })();
   },
@@ -640,6 +658,40 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           set((s) => ({ projectInfo: { ...s.projectInfo, [p.id]: info } }));
         }),
       );
+    })();
+  },
+
+  checkProjects() {
+    return (async () => {
+      const projects = get().projects;
+      await Promise.all(
+        projects.map(async (p) => {
+          const exists = await bridgeClient.projectExists(p.id);
+          set((s) => ({ projectMissing: { ...s.projectMissing, [p.id]: !exists } }));
+        }),
+      );
+    })();
+  },
+
+  sweepProjects() {
+    return (async () => {
+      if (projectSweepTimer !== undefined) {
+        clearTimeout(projectSweepTimer);
+        projectSweepTimer = undefined;
+      }
+      await get().checkProjects();
+      // Reschedule after the configured interval: run to completion, then again.
+      const minutes = get().config?.projects.checkIntervalMinutes ?? 1;
+      projectSweepTimer = setTimeout(() => void get().sweepProjects(), minutes * 60 * 1000);
+    })();
+  },
+
+  ensureProjectAvailable(id) {
+    return (async () => {
+      const exists = await bridgeClient.projectExists(id);
+      set((s) => ({ projectMissing: { ...s.projectMissing, [id]: !exists } }));
+      if (!exists) get().notify({ key: 'projects.missing' }, 'error');
+      return exists;
     })();
   },
 }));

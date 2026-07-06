@@ -12,6 +12,7 @@ import { useTranslator } from '@/systems/i18n';
 import { useTheme } from '@/systems/theme';
 import { useConfigWatch } from '@/systems/config';
 import { useUpdateSchedule } from '@/systems/updates';
+import { useProjectCheckSchedule } from '@/systems/projects';
 import { ConfigBanner } from '@/features/configBanner';
 import { RepositoriesPage } from '@/pages/Repositories';
 import { SkillsPage } from '@/pages/Skills';
@@ -36,6 +37,7 @@ export function App() {
   useTheme();
   useConfigWatch();
   useUpdateSchedule();
+  useProjectCheckSchedule();
   const [activeView, setActiveView] = useState<View>('repositories');
   const loadAll = useSkillkeeperStore((s) => s.loadAll);
   const loading = useSkillkeeperStore((s) => s.loading);

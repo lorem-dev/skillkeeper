@@ -51,6 +51,8 @@ export interface SkillkeeperBridge {
   updateProject(id: string, path: string, name: string): Promise<ProjectResult>;
   removeProject(id: string): Promise<RemoveResult>;
   describeProject(id: string): Promise<ProjectInfo>;
+  /** Whether the project's folder still exists on disk. */
+  projectExists(id: string): Promise<boolean>;
   /** Open the project folder in an editor id, or the OS file manager. */
   openProject(path: string, editorId: string): Promise<OpenResult>;
   /** Start (or attach to) the persistent PTY and return its retained buffer. */
@@ -142,6 +144,9 @@ const bridge: SkillkeeperBridge = {
   },
   describeProject(id) {
     return ipcRenderer.invoke('projects:describe', { id }) as Promise<ProjectInfo>;
+  },
+  projectExists(id) {
+    return ipcRenderer.invoke('projects:exists', { id }) as Promise<boolean>;
   },
   openProject(path, editorId) {
     return ipcRenderer.invoke('projects:open', { path, editorId }) as Promise<OpenResult>;

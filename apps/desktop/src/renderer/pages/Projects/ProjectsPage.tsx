@@ -16,7 +16,10 @@ import './ProjectsPage.scss';
 export function ProjectsPage() {
   const projects = useSkillkeeperStore((s) => s.projects);
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
+  const projectMissing = useSkillkeeperStore((s) => s.projectMissing);
   const refreshProjectInfo = useSkillkeeperStore((s) => s.refreshProjectInfo);
+  const sweepProjects = useSkillkeeperStore((s) => s.sweepProjects);
+  const ensureProjectAvailable = useSkillkeeperStore((s) => s.ensureProjectAvailable);
   const removeProject = useSkillkeeperStore((s) => s.removeProject);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
@@ -27,6 +30,13 @@ export function ProjectsPage() {
   useEffect(() => {
     void refreshProjectInfo();
   }, [refreshProjectInfo]);
+
+  // Edit only when the folder still exists; otherwise notify + mark it missing.
+  function edit(project: Project): void {
+    void ensureProjectAvailable(project.id).then((ok) => {
+      if (ok) setEditing(project);
+    });
+  }
 
   function copyPath(path: string): void {
     void navigator.clipboard.writeText(path);
@@ -41,8 +51,9 @@ export function ProjectsPage() {
         variant="secondary"
         loading={refreshing}
         onClick={() => {
+          // Run the folder check now (reschedules the loop) plus the info refresh.
           setRefreshing(true);
-          void refreshProjectInfo().finally(() => setRefreshing(false));
+          void Promise.all([sweepProjects(), refreshProjectInfo()]).finally(() => setRefreshing(false));
         }}
       >
         {t('common.refresh')}
@@ -67,13 +78,16 @@ export function ProjectsPage() {
                 fromReposLabel={
                   info !== undefined ? t('projects.fromRepos', { count: String(info.fromReposCount) }) : undefined
                 }
+                missing={projectMissing[p.id] === true}
                 missingLabel={t('projects.missing')}
                 pathCopyLabel={t('projects.copyPath')}
                 onPathClick={() => copyPath(p.path)}
                 editLabel={t('projects.edit')}
                 removeLabel={t('projects.remove')}
-                openControl={<OpenProjectButton path={p.path} />}
-                onEdit={() => setEditing(p)}
+                openControl={
+                  <OpenProjectButton path={p.path} beforeOpen={() => ensureProjectAvailable(p.id)} />
+                }
+                onEdit={() => edit(p)}
                 onRemove={() => void removeProject(p.id)}
               />
             );

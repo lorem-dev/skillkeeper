@@ -36,6 +36,7 @@ export interface BridgeClient {
   updateProject(id: string, path: string, name: string): Promise<ProjectResult>;
   removeProject(id: string): Promise<RemoveResult>;
   describeProject(id: string): Promise<ProjectInfo>;
+  projectExists(id: string): Promise<boolean>;
   openProject(path: string, editorId: string): Promise<OpenResult>;
   startTerminal(cols: number, rows: number): Promise<string>;
   writeTerminal(data: string): void;
@@ -70,6 +71,7 @@ export const bridgeClient: BridgeClient = {
   updateProject: (id, path, name) => window.skillkeeper.updateProject(id, path, name),
   removeProject: (id) => window.skillkeeper.removeProject(id),
   describeProject: (id) => window.skillkeeper.describeProject(id),
+  projectExists: (id) => window.skillkeeper.projectExists(id),
   openProject: (path, editorId) => window.skillkeeper.openProject(path, editorId),
   startTerminal: (cols, rows) => window.skillkeeper.startTerminal(cols, rows),
   writeTerminal: (data) => window.skillkeeper.writeTerminal(data),

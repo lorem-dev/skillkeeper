@@ -28,7 +28,7 @@ import {
   listBranches,
 } from './repositories.js';
 import type { RepoDeps } from './repositories.js';
-import { addProject, updateProject, removeProject, describeProject } from './projects.js';
+import { addProject, updateProject, removeProject, describeProject, projectExists } from './projects.js';
 import type { ProjectDeps } from './projects.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
@@ -312,6 +312,7 @@ function registerHandlers(): void {
   );
   ipcMain.handle('projects:remove', (_e, args: { id: string }) => removeProject(projectDeps, args));
   ipcMain.handle('projects:describe', (_e, args: { id: string }) => describeProject(projectDeps, args));
+  ipcMain.handle('projects:exists', (_e, args: { id: string }) => projectExists(projectDeps, args));
   // Open the project folder in the given editor id, or the OS file manager
   // (DEFAULT_EDITOR_ID / shell.openPath) -- the default for a folder.
   ipcMain.handle('projects:open', (_e, args: { path: string; editorId: string }) =>
