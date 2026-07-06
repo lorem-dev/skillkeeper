@@ -5,7 +5,7 @@
  * The renderer process is sandboxed and communicates only through the preload
  * bridge via ipcMain.handle channels.
  */
-import { app, BrowserWindow, ipcMain, session } from 'electron';
+import { app, BrowserWindow, ipcMain, session, dialog } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
 import { createNodeFs, loadState, StateError, createSystemGit } from '@skillkeeper/core';
@@ -28,6 +28,8 @@ import {
   listBranches,
 } from './repositories.js';
 import type { RepoDeps } from './repositories.js';
+import { addProject, updateProject, removeProject, describeProject } from './projects.js';
+import type { ProjectDeps } from './projects.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
 // from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
@@ -294,6 +296,27 @@ function registerHandlers(): void {
       throw err;
     }
   });
+
+  const projectDeps: ProjectDeps = { fs, statePath };
+  // Native folder picker for adding/editing a project; null when cancelled.
+  ipcMain.handle('dialog:selectFolder', async (event): Promise<string | null> => {
+    const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
+    const result = win
+      ? await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+      : await dialog.showOpenDialog({ properties: ['openDirectory'] });
+    return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0]!;
+  });
+  ipcMain.handle('projects:add', (_e, args: { path: string; name: string }) => addProject(projectDeps, args));
+  ipcMain.handle('projects:update', (_e, args: { id: string; path: string; name: string }) =>
+    updateProject(projectDeps, args),
+  );
+  ipcMain.handle('projects:remove', (_e, args: { id: string }) => removeProject(projectDeps, args));
+  ipcMain.handle('projects:describe', (_e, args: { id: string }) => describeProject(projectDeps, args));
+  // Open the project folder in the given editor id, or the OS file manager
+  // (DEFAULT_EDITOR_ID / shell.openPath) -- the default for a folder.
+  ipcMain.handle('projects:open', (_e, args: { path: string; editorId: string }) =>
+    openInEditor(args.editorId, args.path),
+  );
 
   /**
    * skills:list -- read install manifests from the state file.

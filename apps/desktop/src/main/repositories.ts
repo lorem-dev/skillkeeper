@@ -8,6 +8,7 @@ import path from 'node:path';
 import { rm } from 'node:fs/promises';
 import type { FsPort, GitPort, Repository } from '@skillkeeper/core';
 import { loadState, saveState, parseRemote, repoHasUpdate, resolveSkills } from '@skillkeeper/core';
+import { withStateLock } from './stateLock.js';
 
 export interface RepoDeps {
   readonly fs: FsPort;
@@ -37,21 +38,6 @@ export interface RepoInfo {
 }
 
 const message = (err: unknown): string => (err instanceof Error ? err.message : String(err));
-
-// Serialize the state read-modify-write critical section. IPC handlers run
-// concurrently, and `saveState` overwrites the whole file, so two interleaved
-// load-mutate-save sequences would lose an update (e.g. a slow background clone
-// finishing after a second `add` writes its own snapshot). Slow git work stays
-// OUTSIDE this lock; the locked sections always re-read fresh state.
-let stateLock: Promise<unknown> = Promise.resolve();
-function withStateLock<T>(fn: () => Promise<T>): Promise<T> {
-  const run = stateLock.then(fn, fn);
-  stateLock = run.then(
-    () => undefined,
-    () => undefined,
-  );
-  return run;
-}
 
 /** Find a repo by id in fresh state (locked). */
 async function findRepo(deps: RepoDeps, id: string): Promise<Repository | null> {
