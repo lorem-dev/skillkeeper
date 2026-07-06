@@ -1,0 +1,29 @@
+.sk-project-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4);
+}
+
+// Folder row: the current path (ellipsized) with a change-folder button.
+.sk-project-form__folder {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+}
+
+.sk-project-form__path {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--sk-color-label-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-project-form__actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+}

@@ -1,2 +1,2 @@
-export { ProjectRow } from './ui/ProjectRow';
-export type { ProjectRowProps } from './ui/ProjectRow';
+export { ProjectCard } from './ui/ProjectCard';
+export type { ProjectCardProps } from './ui/ProjectCard';
