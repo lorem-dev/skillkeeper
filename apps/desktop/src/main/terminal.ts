@@ -84,8 +84,10 @@ function integrationSetup(shell: string): string | undefined {
   // of the shell history. Every command we inject is space-prefixed (see the
   // write sites), so the app's git commands never land in ~/.zsh_history and
   // never surface (via the up arrow) in the user's other shell sessions.
+  // zle_highlight paste:none stops zsh from showing our bracketed-paste command
+  // as an inverse-video "selected" region while it is inserted.
   if (/(^|\/)zsh$/.test(shell)) {
-    return "setopt hist_ignore_space; __skk_pc() { local e=$?; printf '\\033]777;skk;%d\\007' \"$e\"; return $e; }; precmd_functions=(__skk_pc $precmd_functions)";
+    return "setopt hist_ignore_space; zle_highlight=(paste:none); __skk_pc() { local e=$?; printf '\\033]777;skk;%d\\007' \"$e\"; return $e; }; precmd_functions=(__skk_pc $precmd_functions)";
   }
   if (/(^|\/)(bash|sh)$/.test(shell)) {
     return "HISTCONTROL=ignorespace; __skk_pc() { local e=$?; printf '\\033]777;skk;%d\\007' \"$e\"; return $e; }; PROMPT_COMMAND=\"__skk_pc${PROMPT_COMMAND:+; $PROMPT_COMMAND}\"";
