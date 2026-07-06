@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { TreeView } from './TreeView';
 import type { TreeNode } from './TreeView';
 import { Icon } from '../Icon';
+import { ChangeBadge } from '../ChangeBadge';
 
 const meta = {
   title: 'shared/ui/TreeView',
@@ -243,6 +245,55 @@ export const CheckboxesLongLabels: Story = {
   render: () => (
     <Checkable nodes={longLabels} expanded={['repo-long', 'grp-long']} levels={[1, 2]} initial={['sk-long']} />
   ),
+};
+
+// Install-diff column (built with the separate ChangeBadge component, not
+// TreeView itself, via each leaf's `detail`): initially-installed skills show a
+// dark-green check; unchecking one turns it into a red "will be removed"; a
+// newly-checked skill shows a green "will be added".
+const INSTALLED = ['p-sk-brainstorm', 'p-sk-worktrees', 'p-sk-review'];
+
+function withInstallDiff(
+  nodes: readonly TreeNode[],
+  installed: ReadonlySet<string>,
+  checked: ReadonlySet<string>,
+): TreeNode[] {
+  return nodes.map((node) => {
+    if (node.children !== undefined && node.children.length > 0) {
+      return { ...node, children: withInstallDiff(node.children, installed, checked) };
+    }
+    const wasInstalled = installed.has(node.id);
+    const isChecked = checked.has(node.id);
+    let detail: ReactNode;
+    if (wasInstalled && isChecked) detail = <ChangeBadge kind="present" label="Skill already installed" />;
+    else if (wasInstalled && !isChecked) detail = <ChangeBadge kind="remove" label="Skill will be removed" />;
+    else if (!wasInstalled && isChecked) detail = <ChangeBadge kind="add" label="Skill will be added" />;
+    else detail = undefined;
+    return { ...node, detail };
+  });
+}
+
+function InstallDiff() {
+  const installed = useMemo(() => new Set(INSTALLED), []);
+  const [checkedIds, setCheckedIds] = useState<string[]>(INSTALLED);
+  const nodes = withInstallDiff(projectInstalled, installed, new Set(checkedIds));
+  return (
+    <div style={{ width: 360 }}>
+      <TreeView
+        nodes={nodes}
+        checkable
+        checkboxLevels={[1, 2]}
+        checkedIds={checkedIds}
+        onCheckedChange={setCheckedIds}
+        defaultExpandedIds={['proj-1', 'p-grp-core']}
+        ariaLabel="Install diff"
+      />
+    </div>
+  );
+}
+
+export const InstallStatusColumn: Story = {
+  render: () => <InstallDiff />,
 };
 
 // A branch ("folder") selected as a whole -- the unit for group operations.

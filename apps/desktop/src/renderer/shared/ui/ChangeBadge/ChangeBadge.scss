@@ -1,0 +1,29 @@
+// ChangeBadge styles. Co-located; tokens only. A filled status dot whose color
+// carries the meaning; the glyph is knocked out via an SVG mask.
+
+.sk-change-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  line-height: 0;
+
+  svg {
+    display: block;
+  }
+}
+
+.sk-change-badge--add {
+  color: var(--sk-green);
+}
+
+.sk-change-badge--remove {
+  color: var(--sk-red);
+}
+
+// Darker green so "already present" reads as settled, distinct from the
+// brighter "add" green.
+.sk-change-badge--present {
+  color: color-mix(in srgb, var(--sk-green), #000 34%);
+}

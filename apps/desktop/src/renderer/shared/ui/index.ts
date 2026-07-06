@@ -65,6 +65,8 @@ export type { MultiSelectOption, MultiSelectProps } from './MultiSelect';
 // Feedback / content
 export { Badge } from './Badge';
 export type { BadgeProps, BadgeTone } from './Badge';
+export { ChangeBadge } from './ChangeBadge';
+export type { ChangeBadgeProps, ChangeBadgeKind } from './ChangeBadge';
 export { Spinner } from './Spinner/Spinner';
 export type { SpinnerProps } from './Spinner/Spinner';
 export { ProgressBar } from './ProgressBar';
