@@ -3,6 +3,7 @@
  * styled box drawn beside it. Generic -- no product knowledge.
  * See docs/ui/components.md and design-system.md Section 8.3.
  */
+import { useEffect, useRef } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { cx } from '../../lib';
 import './Checkbox.scss';
@@ -10,12 +11,38 @@ import './Checkbox.scss';
 export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   /** Optional label rendered next to the box. */
   readonly label?: ReactNode;
+  /**
+   * Third ("mixed") state: shows a dash instead of a check. Sets the native
+   * `indeterminate` DOM property, which the `:indeterminate` styles key off.
+   * Takes visual precedence over `checked`.
+   */
+  readonly indeterminate?: boolean;
 }
 
-export function Checkbox({ label, className, disabled, ...rest }: CheckboxProps) {
+export function Checkbox({
+  label,
+  className,
+  disabled,
+  indeterminate = false,
+  ...rest
+}: CheckboxProps) {
+  // `indeterminate` is a DOM property, not an attribute, so it must be set on
+  // the element directly; the `:indeterminate` pseudo-class then styles the box.
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current !== null) ref.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+
   return (
-    <label className={cx('sk-checkbox', disabled && 'sk-checkbox--disabled', className)}>
-      <input type="checkbox" className="sk-checkbox__input" disabled={disabled} {...rest} />
+    <label
+      className={cx(
+        'sk-checkbox',
+        disabled && 'sk-checkbox--disabled',
+        indeterminate && 'sk-checkbox--indeterminate',
+        className,
+      )}
+    >
+      <input ref={ref} type="checkbox" className="sk-checkbox__input" disabled={disabled} {...rest} />
       <span className="sk-checkbox__box" aria-hidden="true">
         <svg viewBox="0 0 12 12" className="sk-checkbox__check">
           <path
@@ -26,6 +53,9 @@ export function Checkbox({ label, className, disabled, ...rest }: CheckboxProps)
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+        </svg>
+        <svg viewBox="0 0 12 12" className="sk-checkbox__dash">
+          <path d="M3 6 L9 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       </span>
       {label !== undefined && <span className="sk-checkbox__label">{label}</span>}

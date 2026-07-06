@@ -27,6 +27,7 @@
 }
 
 .sk-checkbox__box {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -55,6 +56,34 @@
 }
 
 .sk-checkbox__input:checked + .sk-checkbox__box .sk-checkbox__check {
+  opacity: 1;
+}
+
+// Third state: a centered dash, overlaid so it never shifts the check's layout.
+.sk-checkbox__dash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+// Third state is class-driven (not the :indeterminate pseudo) so it is
+// deterministic regardless of the native property's timing: the dash takes
+// precedence over the check.
+.sk-checkbox--indeterminate .sk-checkbox__box {
+  background: var(--sk-color-accent);
+  border-color: transparent;
+}
+
+.sk-checkbox--indeterminate .sk-checkbox__check {
+  opacity: 0;
+}
+
+.sk-checkbox--indeterminate .sk-checkbox__dash {
   opacity: 1;
 }
 
