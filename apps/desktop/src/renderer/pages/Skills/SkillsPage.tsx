@@ -20,6 +20,7 @@ import {
   SearchSummary,
   TreeView,
   ChangeBadge,
+  Tooltip,
 } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import {
@@ -40,12 +41,13 @@ export function SkillsPage() {
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const projects = useSkillkeeperStore((s) => s.projects);
   const installs = useSkillkeeperStore((s) => s.skills);
-  const reload = useSkillkeeperStore((s) => s.reload);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
 
   const [mode, setMode] = useState<Mode>('repositories');
   const [query, setQuery] = useState('');
+  const [selectOpen, setSelectOpen] = useState(false);
+  const [tipSuppressed, setTipSuppressed] = useState(false);
   const [repoChecked, setRepoChecked] = useState<string[]>([]);
   const [projectChecked, setProjectChecked] = useState<string[]>(() => installedLeafIds(installs));
 
@@ -124,7 +126,7 @@ export function SkillsPage() {
     { value: 'projects', label: t('skills.source.projects') },
   ];
 
-  const leading = (
+  const trailing = (
     <>
       <SearchField
         className="sk-skills-search"
@@ -134,17 +136,27 @@ export function SkillsPage() {
         onClear={() => setQuery('')}
         clearLabel={t('common.clear')}
       />
-      <Select
-        label={t('skills.source')}
-        options={sourceOptions}
-        value={mode}
-        onChange={(v) => changeMode(v as Mode)}
-      />
-    </>
-  );
-
-  const trailing = (
-    <>
+      {/* Suppress the tooltip while the dropdown is open, and after a selection
+          (focus returns to the trigger) until the pointer/focus leaves and
+          comes back -- so picking an option closes the tooltip too. */}
+      <span
+        className="sk-skills-source"
+        onMouseEnter={() => setTipSuppressed(false)}
+        onBlurCapture={() => setTipSuppressed(false)}
+      >
+        <Tooltip content={t('skills.source')} disabled={selectOpen || tipSuppressed}>
+          <Select
+            ariaLabel={t('skills.source')}
+            options={sourceOptions}
+            value={mode}
+            onChange={(v) => {
+              setTipSuppressed(true);
+              changeMode(v as Mode);
+            }}
+            onOpenChange={setSelectOpen}
+          />
+        </Tooltip>
+      </span>
       {mode === 'repositories' ? (
         <Button variant="primary" disabled={repoChecked.length === 0} onClick={onAdd}>
           {t('skills.action.add')}
@@ -154,15 +166,11 @@ export function SkillsPage() {
           {t('skills.action.save')}
         </Button>
       )}
-      <Button variant="secondary" onClick={() => void reload()}>
-        {t('common.refresh')}
-      </Button>
     </>
   );
 
   return (
-    <Page title={t('nav.skills')}>
-      <Toolbar leading={leading} trailing={trailing} />
+    <Page toolbar={<Toolbar title={t('nav.skills')} trailing={trailing} />}>
       {baseTree.length === 0 ? (
         <p className="sk-empty">
           {mode === 'repositories' ? t('skills.emptyRepositories') : t('skills.emptyProjects')}
@@ -170,7 +178,7 @@ export function SkillsPage() {
       ) : (
         <>
           <TreeView
-            key={`${mode}|${query}`}
+            key={mode}
             nodes={decorated}
             checkable
             checkboxLevels={[1, 2]}
