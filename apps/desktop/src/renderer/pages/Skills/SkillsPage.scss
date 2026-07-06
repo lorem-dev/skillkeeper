@@ -1,5 +1,12 @@
-.sk-skill-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sk-space-3);
+// Toolbar search: compact, yields space before the source Select.
+.sk-skills-search {
+  flex: 0 1 12rem;
+  width: auto;
+  min-width: 0;
+}
+
+// Search footer (stats + reset). Pinned to the bottom of the viewport-filling
+// page body when the tree is short; a long tree pushes it down to scroll.
+.sk-list-footer {
+  margin-top: auto;
 }

@@ -1,49 +1,133 @@
-import { useMemo, useState } from 'react';
+/**
+ * Skills page. Two modes chosen by a Select:
+ *   - Repositories: a tree of repo -> (group ->) skills; check skills to add.
+ *   - Projects: a tree of project -> ("repo / group" ->) skills, pre-checked
+ *     where installed, with a per-skill install-status badge; save applies the
+ *     diff.
+ * A search box fuzzy-filters the whole tree (matches keep their ancestors as
+ * context); a footer summarizes the result and clears the search.
+ */
+import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import {
-  aggregateInstalls, SkillCard, SkillDetailsModal,
-  type InstalledSkillView,
-} from '@/entities/skill';
-import { AGENT_LABELS, ALL_AGENTS, formatVersion, formatDate } from '@/domain';
-import type { AgentKind } from '@/services/bridge';
-import { Page, Toolbar, Button, Tooltip, SearchField, Select } from '@/shared/ui';
-import { filterSkills } from './lib/filterSkills';
+  Page,
+  Toolbar,
+  Button,
+  SearchField,
+  Select,
+  SearchSummary,
+  TreeView,
+  ChangeBadge,
+} from '@/shared/ui';
+import type { TreeNode } from '@/shared/ui';
+import {
+  buildRepoTree,
+  buildProjectTree,
+  installedLeafIds,
+  filterTree,
+  collectBranchIds,
+  rootIds,
+  countLeaves,
+} from './lib/skillTree';
 import './SkillsPage.scss';
 
+type Mode = 'repositories' | 'projects';
+
 export function SkillsPage() {
+  const availableSkills = useSkillkeeperStore((s) => s.availableSkills);
+  const repositories = useSkillkeeperStore((s) => s.repositories);
+  const projects = useSkillkeeperStore((s) => s.projects);
   const installs = useSkillkeeperStore((s) => s.skills);
   const reload = useSkillkeeperStore((s) => s.reload);
+  const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
 
+  const [mode, setMode] = useState<Mode>('repositories');
   const [query, setQuery] = useState('');
-  const [agent, setAgent] = useState<AgentKind | 'all'>('all');
-  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [repoChecked, setRepoChecked] = useState<string[]>([]);
+  const [projectChecked, setProjectChecked] = useState<string[]>(() => installedLeafIds(installs));
 
-  const views = useMemo(() => aggregateInstalls(installs), [installs]);
-  const shown = useMemo(() => filterSkills(views, { query, agent }), [views, query, agent]);
-  const selected: InstalledSkillView | null = useMemo(
-    () => views.find((v) => v.key === openKey) ?? null,
-    [views, openKey],
+  // The installed skills are the project-mode baseline (pre-checked). Re-seed the
+  // project selection whenever that baseline changes (initial load, save, reload).
+  const installedSet = useMemo(() => new Set(installedLeafIds(installs)), [installs]);
+  useEffect(() => {
+    setProjectChecked([...installedSet]);
+  }, [installedSet]);
+
+  const baseTree = useMemo(
+    () =>
+      mode === 'repositories'
+        ? buildRepoTree(availableSkills, repositories)
+        : buildProjectTree(availableSkills, repositories, projects),
+    [mode, availableSkills, repositories, projects],
   );
 
-  const agentOptions = [
-    { value: 'all', label: t('skills.allAgents') },
-    ...ALL_AGENTS.map((a) => ({ value: a, label: AGENT_LABELS[a] })),
+  const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
+
+  // Project mode: tag each visible skill leaf with its install-status badge.
+  const decorated = useMemo(() => {
+    if (mode !== 'projects') return shownTree;
+    const checkedSet = new Set(projectChecked);
+    const decorate = (nodes: readonly TreeNode[]): TreeNode[] =>
+      nodes.map((node) => {
+        if (node.children !== undefined && node.children.length > 0) {
+          return { ...node, children: decorate(node.children) };
+        }
+        const wasInstalled = installedSet.has(node.id);
+        const isChecked = checkedSet.has(node.id);
+        let detail: ReactNode;
+        if (wasInstalled && isChecked) detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
+        else if (wasInstalled && !isChecked) detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
+        else if (!wasInstalled && isChecked) detail = <ChangeBadge kind="add" label={t('skills.status.add')} />;
+        else detail = undefined;
+        return { ...node, detail };
+      });
+    return decorate(shownTree);
+  }, [mode, shownTree, projectChecked, installedSet, t]);
+
+  const searching = query.trim() !== '';
+  const totalSkills = useMemo(() => countLeaves(baseTree), [baseTree]);
+  const shownSkills = useMemo(() => countLeaves(decorated), [decorated]);
+  const expandedIds = searching ? collectBranchIds(decorated) : rootIds(baseTree);
+
+  const checkedIds = mode === 'repositories' ? repoChecked : projectChecked;
+  const onCheckedChange = mode === 'repositories' ? setRepoChecked : setProjectChecked;
+
+  // Project-mode pending change (drives the Save button + its notification).
+  const pendingAdd = projectChecked.filter((id) => !installedSet.has(id)).length;
+  const pendingRemove = useMemo(() => {
+    const checkedSet = new Set(projectChecked);
+    return [...installedSet].filter((id) => !checkedSet.has(id)).length;
+  }, [projectChecked, installedSet]);
+
+  function changeMode(next: Mode): void {
+    setMode(next);
+    setQuery('');
+  }
+
+  function onAdd(): void {
+    // Execution (install into a chosen target) is a follow-up; surface the intent.
+    notify(t('skills.installPending', { count: String(repoChecked.length) }), 'info');
+  }
+
+  function onSave(): void {
+    notify(
+      t('skills.savePending', { add: String(pendingAdd), remove: String(pendingRemove) }),
+      'info',
+    );
+  }
+
+  const sourceOptions = [
+    { value: 'repositories', label: t('skills.source.repositories') },
+    { value: 'projects', label: t('skills.source.projects') },
   ];
-
-  const trailing = (
-    <>
-      <Tooltip content={t('common.comingSoon')}>
-        <Button variant="primary" disabled>{t('skills.add')}</Button>
-      </Tooltip>
-      <Button variant="secondary" onClick={() => void reload()}>{t('common.refresh')}</Button>
-    </>
-  );
 
   const leading = (
     <>
       <SearchField
+        className="sk-skills-search"
         placeholder={t('skills.searchPlaceholder')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -51,46 +135,62 @@ export function SkillsPage() {
         clearLabel={t('common.clear')}
       />
       <Select
-        label={t('skills.filterAgent')}
-        options={agentOptions}
-        value={agent}
-        onChange={(v) => setAgent(v as AgentKind | 'all')}
+        label={t('skills.source')}
+        options={sourceOptions}
+        value={mode}
+        onChange={(v) => changeMode(v as Mode)}
       />
+    </>
+  );
+
+  const trailing = (
+    <>
+      {mode === 'repositories' ? (
+        <Button variant="primary" disabled={repoChecked.length === 0} onClick={onAdd}>
+          {t('skills.action.add')}
+        </Button>
+      ) : (
+        <Button variant="primary" disabled={pendingAdd === 0 && pendingRemove === 0} onClick={onSave}>
+          {t('skills.action.save')}
+        </Button>
+      )}
+      <Button variant="secondary" onClick={() => void reload()}>
+        {t('common.refresh')}
+      </Button>
     </>
   );
 
   return (
     <Page title={t('nav.skills')}>
       <Toolbar leading={leading} trailing={trailing} />
-      {views.length === 0 ? (
-        <p className="sk-empty">{t('skills.empty')}</p>
+      {baseTree.length === 0 ? (
+        <p className="sk-empty">
+          {mode === 'repositories' ? t('skills.emptyRepositories') : t('skills.emptyProjects')}
+        </p>
       ) : (
-        <div className="sk-skill-list">
-          {shown.map((v) => (
-            <SkillCard
-              key={v.key}
-              skill={v}
-              versionLabel={formatVersion(v.version)}
-              agentLabels={v.agents.map((a) => AGENT_LABELS[a])}
-              onOpen={() => setOpenKey(v.key)}
-            />
-          ))}
-        </div>
+        <>
+          <TreeView
+            key={`${mode}|${query}`}
+            nodes={decorated}
+            checkable
+            checkboxLevels={[1, 2]}
+            checkedIds={checkedIds}
+            onCheckedChange={onCheckedChange}
+            defaultExpandedIds={expandedIds}
+            ariaLabel={t('nav.skills')}
+          />
+          {searching && (
+            <div className="sk-list-footer">
+              <SearchSummary
+                foundLabel={t.plural('skills.searchFound', shownSkills)}
+                totalLabel={t.plural('skills.searchTotal', totalSkills)}
+                showAllLabel={t('skills.showAll')}
+                onShowAll={() => setQuery('')}
+              />
+            </div>
+          )}
+        </>
       )}
-      <SkillDetailsModal
-        skill={selected}
-        open={selected !== null}
-        onClose={() => setOpenKey(null)}
-        title={t('skills.details.title')}
-        agentLabels={selected !== null ? selected.agents.map((a) => AGENT_LABELS[a]) : []}
-        filesLabel={t('skills.details.files', { n: String(selected?.fileCount ?? 0) })}
-        hooksLabel={t('skills.details.hooks', { n: String(selected?.hookCount ?? 0) })}
-        installedAtLabel={t('skills.details.installedAt', { when: formatDate(selected?.installedAt) })}
-        destinationLabel={t('skills.details.destination')}
-        verifyLabel={t('skills.verify')}
-        updateLabel={t('skills.update')}
-        comingSoonLabel={t('common.comingSoon')}
-      />
     </Page>
   );
 }
