@@ -1,0 +1,138 @@
+// MultiCombobox styles. Co-located; tokens only. Mirrors Combobox: the input
+// matches the Select trigger; the popup list matches the Menu (glass, portal).
+
+@use '../../../styles/glass';
+
+.sk-multicombobox {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+}
+
+.sk-multicombobox__label {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-multicombobox__wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sk-multicombobox__input {
+  width: 100%;
+  min-width: 140px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--sk-color-label);
+  background: var(--sk-color-fill-3);
+  border: 1px solid transparent;
+  border-radius: var(--sk-radius-sm);
+  height: var(--sk-control-height);
+  padding: 0 calc(var(--sk-space-4) + 16px) 0 var(--sk-space-4);
+  cursor: text;
+  text-overflow: ellipsis;
+  transition:
+    border-color var(--sk-duration-fast) var(--sk-ease-standard),
+    background var(--sk-duration-fast) var(--sk-ease-standard);
+
+  &::placeholder {
+    color: var(--sk-color-label-3);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--sk-color-accent);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.sk-multicombobox__chevron {
+  position: absolute;
+  inset-inline-end: var(--sk-space-3);
+  flex: none;
+  color: var(--sk-color-label-2);
+  transform: rotate(90deg);
+  pointer-events: none;
+}
+
+.sk-multicombobox__popup {
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--sk-glass-tint) 88%, transparent);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-radius: var(--sk-radius-lg);
+  box-shadow: var(--sk-shadow-2);
+
+  @include glass.border;
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    background: var(--sk-color-bg-tertiary);
+  }
+}
+
+.sk-multicombobox__list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 5px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: none;
+}
+
+.sk-multicombobox__option {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  width: 100%;
+  padding: var(--sk-space-2) var(--sk-space-3);
+  border-radius: var(--sk-radius-sm);
+  color: var(--sk-color-label);
+  font-size: 14px;
+  text-align: start;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+
+  &--active:not([aria-disabled='true']) {
+    background: var(--sk-color-fill-3);
+  }
+
+  &[aria-disabled='true'] {
+    color: var(--sk-color-label-3);
+    cursor: default;
+  }
+}
+
+.sk-multicombobox__check {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--sk-color-accent);
+}
+
+.sk-multicombobox__option-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-multicombobox__empty {
+  padding: var(--sk-space-2) var(--sk-space-3);
+  font-size: 14px;
+  color: var(--sk-color-label-3);
+}
