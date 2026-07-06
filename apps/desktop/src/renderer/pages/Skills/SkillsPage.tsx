@@ -141,32 +141,32 @@ export function SkillsPage() {
   const projectOptions = projects.map((p) => ({ value: p.id, label: p.name }));
   const checkboxLevels = mode === 'repositories' ? [1, 2] : [1, 2, 3];
 
-  const actions =
-    mode === 'repositories' ? (
-      <Button variant="primary" disabled={repoChecked.length === 0} onClick={onAdd}>
-        {t('skills.action.add')}
-      </Button>
-    ) : (
-      <Button variant="primary" disabled={pendingAdd === 0 && pendingRemove === 0} onClick={onSave}>
-        {t('skills.action.save')}
-      </Button>
-    );
+  const actions = (
+    <>
+      <SearchField
+        className="sk-skills-search"
+        placeholder={t('skills.searchPlaceholder')}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onClear={() => setQuery('')}
+        clearLabel={t('common.clear')}
+      />
+      {mode === 'repositories' ? (
+        <Button variant="primary" disabled={repoChecked.length === 0} onClick={onAdd}>
+          {t('skills.action.add')}
+        </Button>
+      ) : (
+        <Button variant="primary" disabled={pendingAdd === 0 && pendingRemove === 0} onClick={onSave}>
+          {t('skills.action.save')}
+        </Button>
+      )}
+    </>
+  );
 
-  // Second toolbar row: search (labeled), display mode, and the repo/project
-  // multi-select filters that narrow which nodes the tree shows.
+  // Second toolbar row: display mode and the repo/project multi-select filters
+  // that narrow which nodes the tree shows.
   const filters = (
     <div className="sk-skills-filters">
-      <span className="sk-skills-field">
-        <span className="sk-skills-field__label">{t('common.search')}</span>
-        <SearchField
-          className="sk-skills-search"
-          placeholder={t('skills.searchPlaceholder')}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onClear={() => setQuery('')}
-          clearLabel={t('common.clear')}
-        />
-      </span>
       <Select
         label={t('skills.source')}
         options={sourceOptions}
