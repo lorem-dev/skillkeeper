@@ -94,11 +94,35 @@
   font-size: 14px;
 }
 
-.sk-tree__detail {
+// Trailing count / detail. Right-aligned with tabular figures so the numbers
+// line up in a column across rows (the reserved checkbox slot keeps that column
+// at a constant offset from the edge). A small spacer sits before it so a
+// truncated label never runs into the number.
+.sk-tree__detail,
+.sk-tree__count {
   flex: none;
   margin-inline-start: var(--sk-space-3);
   color: var(--sk-color-label-2);
   font-size: 13px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+// Selected count (the "N") and the all-selected total use the checkbox accent.
+.sk-tree__count-selected,
+.sk-tree__count--all {
+  color: var(--sk-color-accent);
+}
+
+// Trailing selection checkbox, pushed right by the flex-growing label. Fixed
+// width so the empty spacer variant reserves the same column.
+.sk-tree__checkbox {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  margin-inline-start: var(--sk-space-2);
 }
 
 // Jump-free collapse: animate the grid row from 0fr to 1fr. The inner element

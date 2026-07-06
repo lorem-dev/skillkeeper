@@ -124,6 +124,33 @@ const longLabels: TreeNode[] = [
   },
 ];
 
+function Checkable({
+  nodes,
+  expanded,
+  levels,
+  initial,
+}: {
+  readonly nodes: TreeNode[];
+  readonly expanded: string[];
+  readonly levels?: number[];
+  readonly initial?: string[];
+}) {
+  const [checkedIds, setCheckedIds] = useState<string[]>(initial ?? []);
+  return (
+    <div style={{ width: 340 }}>
+      <TreeView
+        nodes={nodes}
+        checkable
+        checkboxLevels={levels}
+        checkedIds={checkedIds}
+        onCheckedChange={setCheckedIds}
+        defaultExpandedIds={expanded}
+        ariaLabel="Selectable tree"
+      />
+    </div>
+  );
+}
+
 function Interactive({ nodes, expanded }: { readonly nodes: TreeNode[]; readonly expanded: string[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   return (
@@ -158,6 +185,56 @@ export const Collapsed: Story = {
 // Long labels ellipsize to the container width.
 export const LongLabels: Story = {
   render: () => <Interactive nodes={longLabels} expanded={['repo-long', 'grp-long']} />,
+};
+
+// Checkbox selection on groups and skills (not the root). One skill is
+// pre-checked, so its group shows the "mixed" (dash) state.
+export const Checkboxes: Story = {
+  render: () => (
+    <Checkable
+      nodes={repoWithGroups}
+      expanded={['repo-1', 'grp-writing', 'grp-debug']}
+      levels={[1, 2]}
+      initial={['sk-brainstorm']}
+    />
+  ),
+};
+
+// Checkboxes on every level (default). Checking the root checks every skill;
+// a partial selection makes the root and a group indeterminate.
+export const CheckboxesAllLevels: Story = {
+  render: () => (
+    <Checkable
+      nodes={projectInstalled}
+      expanded={['proj-1', 'p-grp-core']}
+      initial={['p-sk-brainstorm', 'p-sk-worktrees']}
+    />
+  ),
+};
+
+// A fully-selected group: the folder checkbox shows a check (not just a fill)
+// and its count renders as the accent-colored total.
+export const CheckboxesGroupAllSelected: Story = {
+  render: () => (
+    <Checkable
+      nodes={repoWithGroups}
+      expanded={['repo-1', 'grp-writing', 'grp-debug']}
+      levels={[1, 2]}
+      initial={['sk-systematic', 'sk-root-cause']}
+    />
+  ),
+};
+
+// Checkboxes on the leaves only (skills), with none on the groups or root.
+export const CheckboxesLeavesOnly: Story = {
+  render: () => (
+    <Checkable
+      nodes={repoWithGroups}
+      expanded={['repo-1', 'grp-writing', 'grp-debug']}
+      levels={[2]}
+      initial={['sk-plans', 'sk-clear']}
+    />
+  ),
 };
 
 // A branch ("folder") selected as a whole -- the unit for group operations.
