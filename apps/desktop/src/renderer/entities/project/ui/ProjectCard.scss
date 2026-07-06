@@ -13,6 +13,15 @@
   background: var(--sk-color-fill-3);
 }
 
+// Leading project glyph, vertically centred against the name/path column.
+.sk-project-card__leading {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--sk-color-label-2);
+}
+
 .sk-project-card__main {
   display: flex;
   flex-direction: column;

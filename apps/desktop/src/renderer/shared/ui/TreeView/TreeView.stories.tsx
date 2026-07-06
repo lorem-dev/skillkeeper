@@ -16,7 +16,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const folder = <Icon name="folder" size={18} />;
+const group = <Icon name="skill-group" size={18} />;
 const skill = <Icon name="skills" size={18} />;
 const repo = <Icon name="repositories" size={18} />;
 const project = <Icon name="projects" size={18} />;
@@ -33,7 +33,7 @@ const repoWithGroups: TreeNode[] = [
       {
         id: 'grp-writing',
         label: 'Writing',
-        icon: folder,
+        icon: group,
         detail: '3',
         children: [
           { id: 'sk-brainstorm', label: 'Brainstorming', icon: skill },
@@ -44,7 +44,7 @@ const repoWithGroups: TreeNode[] = [
       {
         id: 'grp-debug',
         label: 'Debugging',
-        icon: folder,
+        icon: group,
         detail: '2',
         children: [
           { id: 'sk-systematic', label: 'Systematic debugging', icon: skill },
@@ -83,7 +83,7 @@ const projectInstalled: TreeNode[] = [
       {
         id: 'p-grp-core',
         label: 'Core',
-        icon: folder,
+        icon: group,
         detail: '2',
         children: [
           { id: 'p-sk-brainstorm', label: 'Brainstorming', icon: skill },
@@ -97,8 +97,8 @@ const projectInstalled: TreeNode[] = [
   },
 ];
 
-// A skill whose name exceeds the 64-character cap; the label truncates with an
-// ellipsis (the full text stays available in the row's tooltip).
+// Labels wider than the container are truncated with a CSS ellipsis; the full
+// text stays available in the row's tooltip.
 const longLabels: TreeNode[] = [
   {
     id: 'repo-long',
@@ -109,7 +109,7 @@ const longLabels: TreeNode[] = [
       {
         id: 'grp-long',
         label: 'A skill group with an unusually long descriptive name that keeps going',
-        icon: folder,
+        icon: group,
         children: [
           {
             id: 'sk-long',
@@ -155,8 +155,7 @@ export const Collapsed: Story = {
   render: () => <Interactive nodes={repoWithGroups} expanded={[]} />,
 };
 
-// Labels past 64 characters are truncated with an ellipsis; the wider container
-// shows the character cap rather than the CSS width ellipsis.
+// Long labels ellipsize to the container width.
 export const LongLabels: Story = {
   render: () => <Interactive nodes={longLabels} expanded={['repo-long', 'grp-long']} />,
 };

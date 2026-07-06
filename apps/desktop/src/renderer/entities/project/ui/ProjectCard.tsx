@@ -63,6 +63,9 @@ export function ProjectCard({
 }: ProjectCardProps) {
   return (
     <Card className="sk-project-card">
+      <span className="sk-project-card__leading" aria-hidden="true">
+        <Icon name="projects" />
+      </span>
       <div className="sk-project-card__main">
         <span className="sk-project-card__name-row">
           <span className="sk-project-card__name">{truncateEnd(project.name, NAME_MAX)}</span>

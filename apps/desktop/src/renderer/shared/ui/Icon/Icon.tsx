@@ -14,6 +14,7 @@ import { cx } from '../../lib';
 import { stripSvgRoot } from './stripSvgRoot';
 import repositories from './assets/repositories.svg?raw';
 import skills from './assets/skills.svg?raw';
+import skillGroup from './assets/skill-group.svg?raw';
 import projects from './assets/projects.svg?raw';
 import settings from './assets/settings.svg?raw';
 import search from './assets/search.svg?raw';
@@ -33,6 +34,7 @@ import folder from './assets/folder.svg?raw';
 export type IconName =
   | 'repositories'
   | 'skills'
+  | 'skill-group'
   | 'projects'
   | 'settings'
   | 'search'
@@ -52,6 +54,7 @@ export type IconName =
 const ICONS: Record<IconName, string> = {
   repositories: stripSvgRoot(repositories),
   skills: stripSvgRoot(skills),
+  'skill-group': stripSvgRoot(skillGroup),
   projects: stripSvgRoot(projects),
   settings: stripSvgRoot(settings),
   search: stripSvgRoot(search),
