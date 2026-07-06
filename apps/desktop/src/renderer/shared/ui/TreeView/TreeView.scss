@@ -1,0 +1,117 @@
+// TreeView styles. Co-located; tokens only. An inline outline: indented rows
+// with a rotating chevron, a leading glyph, a label, and an optional trailing
+// detail. Branches collapse with the jump-free grid technique (as
+// DisclosureGroup). Indentation is driven by the per-row `--sk-tree-depth`.
+
+.sk-tree,
+.sk-tree__group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sk-tree {
+  gap: 1px;
+}
+
+.sk-tree__item {
+  display: flex;
+  flex-direction: column;
+}
+
+.sk-tree__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  height: 30px;
+  // Depth-driven indent; the base keeps the first level off the edge.
+  padding-inline: calc(var(--sk-space-2) + var(--sk-tree-depth, 0) * var(--sk-space-5))
+    var(--sk-space-3);
+  border-radius: var(--sk-radius-md);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  color: var(--sk-color-label);
+  transition: background var(--sk-duration-fast) var(--sk-ease-standard);
+
+  &:hover {
+    background: var(--sk-color-fill-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sk-color-accent);
+    outline-offset: -2px;
+  }
+}
+
+.sk-tree__row--selected,
+.sk-tree__row--selected:hover {
+  background: var(--sk-color-fill-2);
+}
+
+.sk-tree__chevron {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--sk-color-label-3);
+  cursor: pointer;
+}
+
+// Leaves reserve the chevron's box so their labels line up under branch labels.
+.sk-tree__chevron--spacer {
+  cursor: inherit;
+}
+
+.sk-tree__chevron-glyph {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+}
+
+.sk-tree__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-tree__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.sk-tree__detail {
+  flex: none;
+  margin-inline-start: var(--sk-space-3);
+  color: var(--sk-color-label-2);
+  font-size: 13px;
+}
+
+// Jump-free collapse: animate the grid row from 0fr to 1fr. The inner element
+// clips overflow and allows shrinking to zero.
+.sk-tree__wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--sk-duration-medium) var(--sk-ease-standard);
+}
+
+.sk-tree__wrap--open {
+  grid-template-rows: 1fr;
+}
+
+.sk-tree__inner {
+  min-height: 0;
+  overflow: hidden;
+}
