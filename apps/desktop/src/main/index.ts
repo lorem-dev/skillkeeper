@@ -17,6 +17,7 @@ import { createConfigWatcher } from './configWatcher.js';
 import type { ConfigWatcher } from './configWatcher.js';
 import { ensureSshAgent, stopSshAgent } from './sshAgent.js';
 import { getTerminal } from './terminal.js';
+import { primeMacDiskAccess } from './diskAccess.js';
 import {
   addRepository,
   cloneRepository,
@@ -422,6 +423,9 @@ void app.whenReady().then(async () => {
   getTerminal().start(80, 24);
   installCsp();
   createWindow();
+  // macOS: surface the disk-access prompt early so project folders in protected
+  // locations are readable when needed. No-op elsewhere; never blocks startup.
+  void primeMacDiskAccess();
 
   app.on('activate', () => {
     // macOS: re-create window when dock icon is clicked and no windows are open.
