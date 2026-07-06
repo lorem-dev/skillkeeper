@@ -10,6 +10,15 @@
   background: var(--sk-color-bg);
   color: var(--sk-color-label);
   outline: none;
+  transition: opacity var(--sk-duration-medium) var(--sk-ease-standard);
+}
+
+// Hidden, but kept mounted and full-size so the terminal stays sized to the
+// window (the PTY width tracks the display even while closed). Not painted and
+// click-through; `inert` (set in the component) blocks focus/interaction.
+.sk-terminal-page--hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sk-terminal-page__header {

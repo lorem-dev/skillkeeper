@@ -1,9 +1,9 @@
 /**
  * xterm.js terminal surface. Starts (or re-attaches to) the main-process PTY,
  * replays its retained buffer, and pipes data + resize both ways over the
- * bridge. Mounted only while the terminal overlay is open (see TerminalPage),
- * so a fresh xterm instance is created each time and the buffer replay keeps
- * the screen looking continuous across opens.
+ * bridge. Stays mounted for the app's lifetime (TerminalPage only toggles the
+ * overlay's visibility), so the PTY is always sized to the window and receives
+ * live output continuously.
  */
 import { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
