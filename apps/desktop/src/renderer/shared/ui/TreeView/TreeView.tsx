@@ -45,18 +45,7 @@ export interface TreeViewProps {
   readonly defaultExpandedIds?: readonly string[];
   /** Accessible name for the tree. */
   readonly ariaLabel?: string;
-  /**
-   * Longest string label shown before it is truncated with an ellipsis
-   * ("..."). Only applies to string labels; ReactNode labels are left as-is.
-   * Defaults to 64.
-   */
-  readonly maxLabelChars?: number;
   readonly className?: string;
-}
-
-/** Hard character cap: cut past `max` and append an ellipsis. */
-function truncate(value: string, max: number): string {
-  return value.length > max ? `${value.slice(0, max)}...` : value;
 }
 
 interface FlatItem {
@@ -90,7 +79,6 @@ export function TreeView({
   onSelect,
   defaultExpandedIds,
   ariaLabel,
-  maxLabelChars = 64,
   className,
 }: TreeViewProps) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(
@@ -191,10 +179,9 @@ export function TreeView({
     const isOpen = expanded.has(node.id);
     const selectable = node.selectable !== false;
     const isSelected = selectable && selectedId === node.id;
-    // Character cap applies to plain-string labels; the full text stays in the
-    // tooltip so a truncated label is still discoverable.
+    // The label truncates to the available width (CSS ellipsis); keep the full
+    // string in the tooltip so a clipped label is still discoverable.
     const labelText = typeof node.label === 'string' ? node.label : undefined;
-    const overflows = labelText !== undefined && labelText.length > maxLabelChars;
 
     return (
       <li
@@ -250,8 +237,8 @@ export function TreeView({
             <span className="sk-tree__chevron sk-tree__chevron--spacer" aria-hidden="true" />
           )}
           {node.icon !== undefined && <span className="sk-tree__icon">{node.icon}</span>}
-          <span className="sk-tree__label" title={overflows ? labelText : undefined}>
-            {labelText !== undefined ? truncate(labelText, maxLabelChars) : node.label}
+          <span className="sk-tree__label" title={labelText}>
+            {node.label}
           </span>
           {node.detail !== undefined && <span className="sk-tree__detail">{node.detail}</span>}
         </div>
