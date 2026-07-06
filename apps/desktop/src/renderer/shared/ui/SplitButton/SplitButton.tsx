@@ -51,7 +51,13 @@ export function SplitButton({ icon, tooltip, onPrimary, items, menuLabel, disabl
   }));
 
   return (
-    <div className={cx('sk-split-button', size === 'compact' && 'sk-split-button--compact')}>
+    <div
+      className={cx(
+        'sk-split-button',
+        size === 'compact' && 'sk-split-button--compact',
+        open && 'sk-split-button--open',
+      )}
+    >
       <Tooltip content={tooltip} disabled={open}>
         <button
           type="button"

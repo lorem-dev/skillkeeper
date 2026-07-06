@@ -6,7 +6,10 @@
   transition: background var(--sk-duration-fast) var(--sk-ease-standard);
 }
 
-.sk-project-card:hover {
+// Keep the card highlighted while its open-project dropdown is open, even though
+// the menu is a portal and the pointer has left the card.
+.sk-project-card:hover,
+.sk-project-card:has(.sk-split-button--open) {
   background: var(--sk-color-fill-3);
 }
 
@@ -85,7 +88,8 @@
 }
 
 .sk-project-card:hover .sk-project-card__actions,
-.sk-project-card:has(:focus-visible) .sk-project-card__actions {
+.sk-project-card:has(:focus-visible) .sk-project-card__actions,
+.sk-project-card:has(.sk-split-button--open) .sk-project-card__actions {
   opacity: 1;
 }
 
