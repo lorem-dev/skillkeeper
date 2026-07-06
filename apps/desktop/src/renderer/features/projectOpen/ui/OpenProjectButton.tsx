@@ -39,15 +39,15 @@ function openerIcon(option: EditorOption | undefined): ReactNode {
 
 /**
  * Primary-button icons. For the file-manager default, a single folder icon.
- * For a chosen editor, its app icon followed by a project glyph ("open <project>
- * in <app>").
+ * For a chosen editor, its app icon followed by a folder glyph ("open the
+ * project folder in <app>").
  */
 function primaryIcon(option: EditorOption | undefined): ReactNode {
   if (option === undefined || option.id === DEFAULT_ID) return <Icon name="folder" />;
   return (
     <>
       {openerIcon(option)}
-      <Icon name="projects" size={16} />
+      <Icon name="folder" size={16} />
     </>
   );
 }
