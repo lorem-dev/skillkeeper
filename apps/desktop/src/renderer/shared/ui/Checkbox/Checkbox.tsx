@@ -24,10 +24,11 @@ export function Checkbox({
   className,
   disabled,
   indeterminate = false,
+  checked,
   ...rest
 }: CheckboxProps) {
   // `indeterminate` is a DOM property, not an attribute, so it must be set on
-  // the element directly; the `:indeterminate` pseudo-class then styles the box.
+  // the element directly (also kept in sync for assistive tech).
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (ref.current !== null) ref.current.indeterminate = indeterminate;
@@ -39,10 +40,21 @@ export function Checkbox({
         'sk-checkbox',
         disabled && 'sk-checkbox--disabled',
         indeterminate && 'sk-checkbox--indeterminate',
+        // Class-drive the checked visual for controlled use so it never desyncs
+        // from the native `:checked` state (e.g. after leaving indeterminate);
+        // uncontrolled checkboxes fall back to `:checked` below.
+        checked === true && !indeterminate && 'sk-checkbox--checked',
         className,
       )}
     >
-      <input ref={ref} type="checkbox" className="sk-checkbox__input" disabled={disabled} {...rest} />
+      <input
+        ref={ref}
+        type="checkbox"
+        className="sk-checkbox__input"
+        disabled={disabled}
+        checked={checked}
+        {...rest}
+      />
       <span className="sk-checkbox__box" aria-hidden="true">
         <svg viewBox="0 0 12 12" className="sk-checkbox__check">
           <path

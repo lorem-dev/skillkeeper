@@ -50,12 +50,14 @@
   transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
 }
 
-.sk-checkbox__input:checked + .sk-checkbox__box {
+.sk-checkbox__input:checked + .sk-checkbox__box,
+.sk-checkbox--checked .sk-checkbox__box {
   background: var(--sk-color-accent);
   border-color: transparent;
 }
 
-.sk-checkbox__input:checked + .sk-checkbox__box .sk-checkbox__check {
+.sk-checkbox__input:checked + .sk-checkbox__box .sk-checkbox__check,
+.sk-checkbox--checked .sk-checkbox__check {
   opacity: 1;
 }
 
