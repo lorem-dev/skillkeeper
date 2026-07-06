@@ -97,6 +97,33 @@ const projectInstalled: TreeNode[] = [
   },
 ];
 
+// A skill whose name exceeds the 64-character cap; the label truncates with an
+// ellipsis (the full text stays available in the row's tooltip).
+const longLabels: TreeNode[] = [
+  {
+    id: 'repo-long',
+    label: 'anthropic/an-intentionally-very-long-repository-name-for-testing-truncation',
+    icon: repo,
+    selectable: false,
+    children: [
+      {
+        id: 'grp-long',
+        label: 'A skill group with an unusually long descriptive name that keeps going',
+        icon: folder,
+        children: [
+          {
+            id: 'sk-long',
+            label:
+              'extremely-detailed-skill-name-that-runs-well-past-sixty-four-characters-and-then-some',
+            icon: skill,
+          },
+          { id: 'sk-short', label: 'short-skill', icon: skill },
+        ],
+      },
+    ],
+  },
+];
+
 function Interactive({ nodes, expanded }: { readonly nodes: TreeNode[]; readonly expanded: string[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   return (
@@ -126,6 +153,12 @@ export const ProjectInstalled: Story = {
 
 export const Collapsed: Story = {
   render: () => <Interactive nodes={repoWithGroups} expanded={[]} />,
+};
+
+// Labels past 64 characters are truncated with an ellipsis; the wider container
+// shows the character cap rather than the CSS width ellipsis.
+export const LongLabels: Story = {
+  render: () => <Interactive nodes={longLabels} expanded={['repo-long', 'grp-long']} />,
 };
 
 // A branch ("folder") selected as a whole -- the unit for group operations.
