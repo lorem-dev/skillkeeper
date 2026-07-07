@@ -64,3 +64,48 @@
   color: var(--sk-color-label-3);
   font-size: 14px;
 }
+
+// Scroll viewport: holds the scrolling body plus the edge fades (which do not
+// scroll with it).
+.sk-table__viewport {
+  position: relative;
+  min-height: 0;
+}
+
+// Small blurred fades at the top/bottom of the scroll area, shown only when
+// there is more content to scroll toward (mirrors the Page fades).
+.sk-table__fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 32px;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  background: color-mix(in srgb, var(--sk-color-bg) 14%, transparent);
+}
+
+.sk-table__fade--top {
+  top: 0;
+  mask-image: linear-gradient(to bottom, #000 45%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent);
+}
+
+.sk-table__fade--bottom {
+  bottom: 0;
+  mask-image: linear-gradient(to top, #000 45%, transparent);
+  -webkit-mask-image: linear-gradient(to top, #000 45%, transparent);
+}
+
+.sk-table__fade--visible {
+  opacity: 0.9;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sk-table__fade {
+    display: none;
+  }
+}

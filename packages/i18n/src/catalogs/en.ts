@@ -185,7 +185,7 @@ export const en = {
   'skills.col.repository': 'Repository',
   'skills.col.skill': 'Skill',
   'skills.col.action': 'Action',
-  'skills.col.agents': 'Agents',
+  'skills.col.agents': 'Agent',
   'skills.change.install': 'Install',
   'skills.change.remove': 'Remove',
   'skills.agentsLabel': 'Agents',
