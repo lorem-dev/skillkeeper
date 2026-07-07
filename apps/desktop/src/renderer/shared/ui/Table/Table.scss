@@ -72,36 +72,42 @@
   min-height: 0;
 }
 
-// Small blurred fades at the top/bottom of the scroll area, shown only when
-// there is more content to scroll toward (mirrors the Page fades).
+// Small edge fades shown only when there is more content to scroll toward.
 .sk-table__fade {
   position: absolute;
   left: 0;
   right: 0;
-  height: 32px;
   z-index: 1;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+// Top: a short strip flush under the header, opaque at the top and fading down,
+// so scrolled rows appear to slide under the header.
+.sk-table__fade--top {
+  top: 0;
+  height: 18px;
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  background: color-mix(in srgb, var(--sk-color-bg) 20%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+
+// Bottom: a blurred, lightly-tinted fade (the original treatment).
+.sk-table__fade--bottom {
+  bottom: 0;
+  height: 32px;
   backdrop-filter: blur(12px) saturate(160%);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   background: color-mix(in srgb, var(--sk-color-bg) 14%, transparent);
-}
-
-.sk-table__fade--top {
-  top: 0;
-  mask-image: linear-gradient(to bottom, #000 45%, transparent);
-  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent);
-}
-
-.sk-table__fade--bottom {
-  bottom: 0;
   mask-image: linear-gradient(to top, #000 45%, transparent);
   -webkit-mask-image: linear-gradient(to top, #000 45%, transparent);
 }
 
 .sk-table__fade--visible {
-  opacity: 0.9;
+  opacity: 1;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
