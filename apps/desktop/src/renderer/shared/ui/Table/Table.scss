@@ -97,6 +97,16 @@
   transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
 }
 
+// Top fade: a small blur just below the sticky header (positioned via inline
+// `top` = header height), softening rows as they emerge from under it.
+.sk-table__fade--top {
+  height: 18px;
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  mask-image: linear-gradient(to bottom, #000 40%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent);
+}
+
 .sk-table__fade--bottom {
   bottom: 0;
   height: 22px;
