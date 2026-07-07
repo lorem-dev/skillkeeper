@@ -109,6 +109,11 @@ export function ProjectsPage() {
                         ? t('projects.fromRepos', { count: String(info.fromReposCount) })
                         : undefined
                     }
+                    agentsLabel={
+                      info !== undefined && info.agentCount > 0
+                        ? t.plural('projects.agentCount', info.agentCount)
+                        : undefined
+                    }
                     missing={projectMissing[p.id] === true}
                     missingLabel={t('projects.missing')}
                     pathCopyLabel={t('projects.copyPath')}

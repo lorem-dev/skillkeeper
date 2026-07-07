@@ -139,7 +139,7 @@ export function SkillsPage() {
       const chosen = projectAgents[pid] ?? [];
       const changed = !sameAgents(chosen, installedAgents[pid] ?? []);
       const trailing = (
-        <span className="sk-skills-agentctl">
+        <span className="sk-skills-agentctl" onClick={(e) => e.stopPropagation()}>
           {changed && (
             <span className="sk-skills-agentctl__changed" aria-label={t('skills.agentsChanged')}>
               <Icon name="sync" size={14} />

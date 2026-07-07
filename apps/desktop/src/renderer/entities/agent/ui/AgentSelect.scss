@@ -31,6 +31,37 @@
   }
 }
 
+// Full variant: a wider select-like trigger listing the chosen agents.
+.sk-agent-select--full {
+  height: var(--sk-control-height);
+  width: 100%;
+  gap: var(--sk-space-2);
+  padding: 0 var(--sk-space-3);
+  border-radius: var(--sk-radius-sm);
+  justify-content: flex-start;
+}
+
+.sk-agent-select__value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  font-size: 14px;
+}
+
+.sk-agent-select--full .sk-agent-select__value:empty::before,
+.sk-agent-select__value {
+  color: var(--sk-color-label);
+}
+
+.sk-agent-select__chevron {
+  flex: none;
+  color: var(--sk-color-label-2);
+  transform: rotate(90deg);
+}
+
 .sk-agent-select__count {
   display: inline-flex;
   align-items: center;

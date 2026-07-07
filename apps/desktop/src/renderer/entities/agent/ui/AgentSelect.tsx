@@ -14,11 +14,27 @@ export interface AgentSelectProps {
   readonly value: readonly AgentKind[];
   readonly onChange: (next: AgentKind[]) => void;
   readonly ariaLabel: string;
+  /**
+   * `compact` (default): a robot glyph + a count circle -- for tight spots like
+   * a TreeView row. `full`: a wider trigger listing the selected agent labels,
+   * like a multi-select.
+   */
+  readonly variant?: 'compact' | 'full';
+  /** Placeholder for the `full` variant when nothing is selected. */
+  readonly placeholder?: string;
   readonly disabled?: boolean;
   readonly className?: string;
 }
 
-export function AgentSelect({ value, onChange, ariaLabel, disabled, className }: AgentSelectProps) {
+export function AgentSelect({
+  value,
+  onChange,
+  ariaLabel,
+  variant = 'compact',
+  placeholder,
+  disabled,
+  className,
+}: AgentSelectProps) {
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -32,12 +48,17 @@ export function AgentSelect({ value, onChange, ariaLabel, disabled, className }:
     onSelect: () => toggle(agent),
   }));
 
+  const joined = value.map((a) => AGENT_LABELS[a]).join(', ');
+
   return (
-    <span className={className}>
+    // Stop click propagation: the Menu renders in a portal, but React events
+    // bubble up the component tree, so a menu-item click would otherwise reach a
+    // surrounding TreeView row and toggle it.
+    <span className={className} onClick={(e) => e.stopPropagation()}>
       <button
         ref={anchorRef}
         type="button"
-        className="sk-agent-select"
+        className={variant === 'full' ? 'sk-agent-select sk-agent-select--full' : 'sk-agent-select'}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
@@ -49,9 +70,16 @@ export function AgentSelect({ value, onChange, ariaLabel, disabled, className }:
         }}
       >
         <Icon name="agent" size={18} />
-        <span className="sk-agent-select__count" aria-hidden="true">
-          {value.length}
-        </span>
+        {variant === 'full' ? (
+          <>
+            <span className="sk-agent-select__value">{value.length > 0 ? joined : placeholder}</span>
+            <Icon name="chevron-right" className="sk-agent-select__chevron" size={16} />
+          </>
+        ) : (
+          <span className="sk-agent-select__count" aria-hidden="true">
+            {value.length}
+          </span>
+        )}
       </button>
       <Menu
         open={open}

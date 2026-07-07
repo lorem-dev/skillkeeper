@@ -1,18 +1,18 @@
 /**
- * Projects-mode "Save" flow. Shows the pending diff (skills to install/remove
- * per project) in a table -- Project | Repository | Skill | Action | Agents --
- * with a per-project "agents changed" marker. Confirm (double-confirm) applies
- * every project's changes in turn with a progress bar.
+ * Projects-mode "Save" flow. Shows the pending changes -- at (skill, agent)
+ * granularity, so changing a project's agents re-syncs even already-installed
+ * skills -- in a table (Project | Repository | Skill | Action | Agents).
+ * Confirm (double-confirm) applies every project's plan in turn with a
+ * progress bar.
  */
 import { useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
-import type { AgentKind, SkillRef } from '@/services/bridge';
+import type { AgentKind } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
-import { Modal, Button, ProgressBar, Table, Icon } from '@/shared/ui';
+import { Modal, Button, ProgressBar, Table } from '@/shared/ui';
 import type { TableColumn, TableRow } from '@/shared/ui';
 import { AGENT_LABELS } from '@/domain';
-import { installedLeafIds, parseProjectSkillKey } from '@/entities/skill';
+import { buildProjectPlan } from '@/entities/skill';
 import './SkillSaveModal.scss';
 
 export interface SkillSaveModalProps {
@@ -21,19 +21,6 @@ export interface SkillSaveModalProps {
   /** Project-mode checked keys (projectId::repoId::group::name). */
   readonly checkedIds: readonly string[];
   readonly projectAgents: Record<string, readonly AgentKind[]>;
-}
-
-interface Change {
-  readonly key: string;
-  readonly projectId: string;
-  readonly ref: SkillRef;
-  readonly action: 'install' | 'remove';
-}
-
-function sameAgents(a: readonly string[], b: readonly string[]): boolean {
-  if (a.length !== b.length) return false;
-  const set = new Set(a);
-  return b.every((x) => set.has(x));
 }
 
 export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: SkillSaveModalProps) {
@@ -46,37 +33,16 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
 
   const [confirming, setConfirming] = useState(false);
 
-  const projectName = useMemo(() => new Map(projects.map((p) => [p.id, p.name] as const)), [projects]);
   const repoName = useMemo(() => new Map(repositories.map((r) => [r.id, r.name] as const)), [repositories]);
-  const installedAgents = useMemo(() => {
-    const map: Record<string, AgentKind[]> = {};
-    for (const m of installs) {
-      const pid = m.target.projectId;
-      if (m.target.scope !== 'project' || pid === undefined) continue;
-      const list = (map[pid] ??= []);
-      if (!list.includes(m.target.agent)) list.push(m.target.agent);
-    }
-    return map;
-  }, [installs]);
 
-  const changes = useMemo<Change[]>(() => {
-    const installedSet = new Set(installedLeafIds(installs));
-    const checkedSet = new Set(checkedIds);
-    const out: Change[] = [];
-    for (const key of checkedIds) {
-      if (!installedSet.has(key)) {
-        const p = parseProjectSkillKey(key);
-        out.push({ key, projectId: p.projectId, ref: { repoId: p.repoId, group: p.group, name: p.name }, action: 'install' });
-      }
-    }
-    for (const key of installedSet) {
-      if (!checkedSet.has(key)) {
-        const p = parseProjectSkillKey(key);
-        out.push({ key, projectId: p.projectId, ref: { repoId: p.repoId, group: p.group, name: p.name }, action: 'remove' });
-      }
-    }
-    return out;
-  }, [checkedIds, installs]);
+  // A non-empty plan per project (skill+agent diff vs the installed state).
+  const plans = useMemo(
+    () =>
+      projects
+        .map((p) => ({ project: p, plan: buildProjectPlan(p.id, checkedIds, installs, projectAgents[p.id] ?? []) }))
+        .filter(({ plan }) => plan.ops.length > 0),
+    [projects, checkedIds, installs, projectAgents],
+  );
 
   const columns: TableColumn[] = [
     { key: 'project', header: t('skills.col.project'), width: '1fr' },
@@ -86,33 +52,23 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
     { key: 'agents', header: t('skills.col.agents'), width: '1fr' },
   ];
 
-  const rows: TableRow[] = changes.map((c) => {
-    const agents = projectAgents[c.projectId] ?? [];
-    const changed = !sameAgents(agents, installedAgents[c.projectId] ?? []);
-    const skillLabel = c.ref.group !== undefined ? `${c.ref.group} / ${c.ref.name}` : c.ref.name;
-    const agentsCell: ReactNode = (
-      <span className="sk-save-modal__agents">
-        {agents.map((a) => AGENT_LABELS[a]).join(', ')}
-        {changed && (
-          <span className="sk-save-modal__agents-changed" aria-label={t('skills.agentsChanged')}>
-            <Icon name="sync" size={13} />
-          </span>
-        )}
-      </span>
-    );
-    return {
-      id: c.key,
-      cells: [
-        projectName.get(c.projectId) ?? c.projectId,
-        repoName.get(c.ref.repoId) ?? c.ref.repoId,
-        skillLabel,
-        <span key="a" className={`sk-save-modal__action sk-save-modal__action--${c.action}`}>
-          {c.action === 'install' ? t('skills.change.install') : t('skills.change.remove')}
-        </span>,
-        agentsCell,
-      ],
-    };
-  });
+  const rows: TableRow[] = plans.flatMap(({ project, plan }) =>
+    plan.rows.map((r) => {
+      const skillLabel = r.ref.group !== undefined ? `${r.ref.group} / ${r.ref.name}` : r.ref.name;
+      return {
+        id: `${project.id}:${r.action}:${r.skillKey}`,
+        cells: [
+          project.name,
+          repoName.get(r.ref.repoId) ?? r.ref.repoId,
+          skillLabel,
+          <span key="a" className={`sk-save-modal__action sk-save-modal__action--${r.action}`}>
+            {r.action === 'install' ? t('skills.change.install') : t('skills.change.remove')}
+          </span>,
+          r.agents.map((a) => AGENT_LABELS[a]).join(', '),
+        ],
+      };
+    }),
+  );
 
   const busy = progress !== null;
 
@@ -122,25 +78,18 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
       return;
     }
     setConfirming(false);
-    // Group changes by project and apply each project's diff in turn.
-    const byProject = new Map<string, { install: SkillRef[]; remove: SkillRef[] }>();
-    for (const c of changes) {
-      const entry = byProject.get(c.projectId) ?? { install: [], remove: [] };
-      if (c.action === 'install') entry.install.push(c.ref);
-      else entry.remove.push(c.ref);
-      byProject.set(c.projectId, entry);
-    }
-    for (const [pid, diff] of byProject) {
-      const proj = projects.find((p) => p.id === pid);
-      if (proj === undefined) continue;
-      const result = await applySkills({
-        projectId: pid,
-        projectPath: proj.path,
-        agents: projectAgents[pid] ?? [],
-        install: diff.install,
-        remove: diff.remove,
-      });
-      if (!result.ok) return;
+    // Apply each project's plan; one applySkills call per agent op.
+    for (const { project, plan } of plans) {
+      for (const op of plan.ops) {
+        const result = await applySkills({
+          projectId: project.id,
+          projectPath: project.path,
+          agents: [op.agent],
+          install: op.install,
+          remove: op.remove,
+        });
+        if (!result.ok) return;
+      }
     }
     onClose();
   }
@@ -174,7 +123,7 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
           <Button variant="secondary" disabled={busy} onClick={onClose}>
             {t('common.close')}
           </Button>
-          <Button variant="primary" disabled={changes.length === 0 || busy} onClick={() => void confirm()}>
+          <Button variant="primary" disabled={rows.length === 0 || busy} onClick={() => void confirm()}>
             {confirming ? t('skills.save.confirm') : t('skills.action.save')}
           </Button>
         </div>

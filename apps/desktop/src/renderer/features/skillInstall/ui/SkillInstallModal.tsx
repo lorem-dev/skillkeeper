@@ -10,13 +10,14 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { bridgeClient } from '@/services/bridge';
-import type { AgentKind, SkillRef } from '@/services/bridge';
+import type { AgentKind } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { Modal, Button, Select, ProgressBar, TreeView, ChangeBadge } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { AgentSelect } from '@/entities/agent';
 import {
   buildProjectTree,
+  buildProjectPlan,
   installedLeafIds,
   projectSkillKey,
   parseRepoSkillKey,
@@ -33,13 +34,6 @@ export interface SkillInstallModalProps {
 }
 
 const agentsStorageKey = (projectId: string): string => `sk-install-agents-${projectId}`;
-
-function toRefs(keys: readonly string[]): SkillRef[] {
-  return keys.map((k) => {
-    const p = parseProjectSkillKey(k);
-    return { repoId: p.repoId, group: p.group, name: p.name };
-  });
-}
 
 export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModalProps) {
   const projects = useSkillkeeperStore((s) => s.projects);
@@ -112,12 +106,19 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
   }
 
   const checkedSet = useMemo(() => new Set(checked), [checked]);
-  const toAdd = useMemo(() => checked.filter((k) => !installedSet.has(k)), [checked, installedSet]);
-  const toRemove = useMemo(
-    () => [...installedSet].filter((k) => !checkedSet.has(k)),
-    [installedSet, checkedSet],
+
+  // The apply plan diffs the desired state (checked skills x chosen agents)
+  // against what is installed, at (skill, agent) granularity.
+  const plan = useMemo(
+    () => buildProjectPlan(projectId, checked, installs, agents),
+    [projectId, checked, installs, agents],
   );
-  const changed = useMemo(() => new Set([...toAdd, ...toRemove]), [toAdd, toRemove]);
+  const installCount = plan.rows.filter((r) => r.action === 'install').length;
+  const removeCount = plan.rows.filter((r) => r.action === 'remove').length;
+  const changed = useMemo(
+    () => new Set(plan.rows.map((r) => projectSkillKey(projectId, r.ref.repoId, r.ref.group, r.ref.name))),
+    [plan, projectId],
+  );
 
   const tree = useMemo(
     () => (project !== undefined ? buildProjectTree(availableSkills, repositories, [project]) : []),
@@ -145,7 +146,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
   const expandedIds = useMemo(() => branchesContaining(tree, changed), [tree, changed]);
 
   const busy = progress !== null;
-  const canSave = agents.length > 0 && changed.size > 0 && !busy;
+  const canSave = agents.length > 0 && plan.ops.length > 0 && !busy;
 
   async function save(): Promise<void> {
     if (!confirming) {
@@ -153,14 +154,18 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
       return;
     }
     setConfirming(false);
-    const result = await applySkills({
-      projectId,
-      projectPath,
-      agents,
-      install: toRefs(toAdd),
-      remove: toRefs(toRemove),
-    });
-    if (result.ok) onClose();
+    // One call per agent (each op carries that agent's install/remove lists).
+    for (const op of plan.ops) {
+      const result = await applySkills({
+        projectId,
+        projectPath,
+        agents: [op.agent],
+        install: op.install,
+        remove: op.remove,
+      });
+      if (!result.ok) return;
+    }
+    onClose();
   }
 
   const projectOptions = projects.map((p) => ({ value: p.id, label: p.name }));
@@ -186,7 +191,13 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
           </label>
           <label className="sk-skill-modal__field">
             <span className="sk-skill-modal__label">{t('skills.install.agents')}</span>
-            <AgentSelect value={agents} onChange={changeAgents} ariaLabel={t('skills.install.agents')} />
+            <AgentSelect
+              variant="full"
+              value={agents}
+              onChange={changeAgents}
+              ariaLabel={t('skills.install.agents')}
+              placeholder={t('skills.install.agentsPlaceholder')}
+            />
           </label>
           <div className="sk-skill-modal__actions">
             <Button variant="secondary" onClick={onClose}>
@@ -221,7 +232,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
           )}
           <div className="sk-skill-modal__actions">
             <span className="sk-skill-modal__summary">
-              {t('skills.install.summary', { add: String(toAdd.length), remove: String(toRemove.length) })}
+              {t('skills.install.summary', { add: String(installCount), remove: String(removeCount) })}
             </span>
             <Button variant="secondary" disabled={busy} onClick={() => setStep('project')}>
               {t('skills.install.back')}

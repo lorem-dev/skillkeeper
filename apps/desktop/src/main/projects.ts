@@ -10,6 +10,7 @@ import { randomUUID } from 'node:crypto';
 import type { FsPort, Project } from '@skillkeeper/core';
 import { loadState, saveState } from '@skillkeeper/core';
 import { withStateLock } from './stateLock.js';
+import { detectProjectAgents } from './skills.js';
 
 export interface ProjectDeps {
   readonly fs: FsPort;
@@ -25,6 +26,8 @@ export interface ProjectInfo {
   readonly skillCount: number;
   /** Of those, how many were installed from a tracked repository. */
   readonly fromReposCount: number;
+  /** Number of agents detected in the project folder (by markers). */
+  readonly agentCount: number;
 }
 
 const message = (err: unknown): string => (err instanceof Error ? err.message : String(err));
@@ -108,16 +111,19 @@ export async function projectExists(deps: ProjectDeps, args: { id: string }): Pr
   }
 }
 
-/** Skill counts for a project, derived from the install manifests in state. */
+/** Skill counts + detected-agent count for a project (for the card badges). */
 export async function describeProject(deps: ProjectDeps, args: { id: string }): Promise<ProjectInfo> {
   try {
     const state = await loadState(deps.fs, deps.statePath);
     const installs = state.installs.filter((m) => m.target.projectId === args.id);
+    const project = state.projects.find((p) => p.id === args.id);
+    const agentCount = project !== undefined ? (await detectProjectAgents(deps.fs, project.path)).length : 0;
     return {
       skillCount: installs.length,
       fromReposCount: installs.filter((m) => m.sourceRepoId !== undefined).length,
+      agentCount,
     };
   } catch {
-    return { skillCount: 0, fromReposCount: 0 };
+    return { skillCount: 0, fromReposCount: 0, agentCount: 0 };
   }
 }

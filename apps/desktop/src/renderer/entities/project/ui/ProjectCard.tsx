@@ -26,6 +26,8 @@ export interface ProjectCardProps {
   readonly skillCountLabel?: string;
   /** Of those, how many are installed from repositories (pre-formatted). */
   readonly fromReposLabel?: string;
+  /** Number of agents detected in the project folder (pre-formatted, pluralized). */
+  readonly agentsLabel?: string;
   /** Skill counts not fetched yet: show skeleton badges (reserves height). */
   readonly infoPending?: boolean;
   /** The folder no longer exists (deleted or moved). */
@@ -50,6 +52,7 @@ export function ProjectCard({
   project,
   skillCountLabel,
   fromReposLabel,
+  agentsLabel,
   infoPending,
   missing,
   missingLabel,
@@ -109,6 +112,7 @@ export function ProjectCard({
             <>
               {skillCountLabel !== undefined && <Badge tone="accent">{skillCountLabel}</Badge>}
               {fromReposLabel !== undefined && <Badge tone="neutral">{fromReposLabel}</Badge>}
+              {agentsLabel !== undefined && <Badge tone="neutral">{agentsLabel}</Badge>}
             </>
           )}
         </span>
