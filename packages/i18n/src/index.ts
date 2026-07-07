@@ -63,6 +63,9 @@ const catalogs: Record<Lang, Partial<Catalog>> = {
 /** All selectable locale codes (the catalog keys), for runtime validation. */
 export const SUPPORTED_LANGS = Object.keys(catalogs) as Lang[];
 
+// Native language names (the picker's primary label; non-ASCII i18n data).
+export { LANGUAGE_NATIVE_NAMES } from './nativeNames.js';
+
 /**
  * Interpolation variables bag: keys are placeholder names (without braces),
  * values are string representations.

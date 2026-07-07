@@ -98,8 +98,10 @@ single final check before a change is considered done or a pull request opened.
 - All source code and documentation are ASCII-only. No Unicode punctuation
   (curly quotes, em dashes, ellipsis characters) outside of i18n catalogs and
   UI strings.
-- Exception: `packages/i18n/` catalogs (all non-English locales) may contain
-  non-ASCII characters because their text requires them.
+- Exception: `packages/i18n/` (the non-English catalogs, plus the native
+  language-name table in `src/nativeNames.ts`) may contain non-ASCII characters
+  because their text requires them. Non-ASCII UI text must live in this package,
+  never inline in app/renderer source.
 
 ### Internationalization
 
@@ -118,6 +120,14 @@ single final check before a change is considered done or a pull request opened.
   `packages/config/src/schema.ts`, and `LANGS` in
   `apps/desktop/src/renderer/domain/languages.ts`. Store Chinese Simplified as
   `zh-cn`.
+- Language picker labels: do NOT rely on `Intl.DisplayNames` for the native
+  name. The Electron/Chromium runtime ships a reduced ICU data set on some
+  platforms, so `Intl.DisplayNames(['be']).of('be')` can return the bare code
+  `be` (Belarusian then looks untranslated), and it renders our script codes as
+  regions ("zh-cn" -> "Chinese (China)"). The native name comes from the pinned
+  `NATIVE_NAMES` table in `apps/desktop/src/renderer/domain/languages.ts`; keep
+  it in sync when adding a locale. `Intl.DisplayNames` is used only for the
+  cross-locale qualifier, with a fallback to `NATIVE_NAMES`.
 
 ### Commit Rules
 
