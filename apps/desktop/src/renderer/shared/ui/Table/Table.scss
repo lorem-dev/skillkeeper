@@ -24,6 +24,16 @@
   font-size: 12px;
 }
 
+// Sticky header: stays at the top of the scroll area while rows slide under it
+// (blurred, no darkening tint).
+.sk-table--sticky .sk-table__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+}
+
 .sk-table__th {
   font-weight: 500;
 }
@@ -65,14 +75,18 @@
   font-size: 14px;
 }
 
-// Scroll viewport: holds the scrolling body plus the edge fades (which do not
-// scroll with it).
-.sk-table__viewport {
+// Scroll area: the header sticks inside it; the bottom fade overlays its edge.
+.sk-table__scroll-outer {
   position: relative;
   min-height: 0;
 }
 
-// Small edge fades shown only when there is more content to scroll toward.
+.sk-table__viewport {
+  min-height: 0;
+}
+
+// Bottom fade: a small blurred strip (no darkening tint) marking more content
+// below; shown only when there is more to scroll.
 .sk-table__fade {
   position: absolute;
   left: 0;
@@ -83,27 +97,13 @@
   transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
 }
 
-// Top: a short strip flush under the header, opaque at the top and fading down,
-// so scrolled rows appear to slide under the header.
-.sk-table__fade--top {
-  top: 0;
-  height: 18px;
-  backdrop-filter: blur(10px) saturate(160%);
-  -webkit-backdrop-filter: blur(10px) saturate(160%);
-  background: color-mix(in srgb, var(--sk-color-bg) 20%, transparent);
-  mask-image: linear-gradient(to bottom, #000 55%, transparent);
-  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
-}
-
-// Bottom: a blurred, lightly-tinted fade (the original treatment).
 .sk-table__fade--bottom {
   bottom: 0;
-  height: 32px;
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
-  background: color-mix(in srgb, var(--sk-color-bg) 14%, transparent);
-  mask-image: linear-gradient(to top, #000 45%, transparent);
-  -webkit-mask-image: linear-gradient(to top, #000 45%, transparent);
+  height: 22px;
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  mask-image: linear-gradient(to top, #000 40%, transparent);
+  -webkit-mask-image: linear-gradient(to top, #000 40%, transparent);
 }
 
 .sk-table__fade--visible {

@@ -1,10 +1,10 @@
 /**
  * Table: a borderless, macOS-list-style data table matching the TreeView look
  * (no cell borders, muted header, hover rows). Columns share a CSS grid track
- * template so the header and every row align. With `stickyHeader` + a
- * `maxBodyHeight`, the header stays put while the body scrolls, and small
- * blurred fades appear at the top/bottom edges when there is more to scroll
- * (mirroring the Page component). Generic -- no product knowledge.
+ * template so the header and every row align. With `stickyHeader` +
+ * `maxBodyHeight`, the header sticks to the top of the scroll area (rows slide
+ * under it, blurred) and a small blurred fade marks more content below.
+ * Generic -- no product knowledge.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
@@ -30,7 +30,7 @@ export interface TableProps {
   readonly rows: readonly TableRow[];
   /** Fix the header and scroll the body (needs `maxBodyHeight`). */
   readonly stickyHeader?: boolean;
-  /** Max body height (CSS length) past which the body scrolls. */
+  /** Max height (CSS length) past which the content scrolls. */
   readonly maxBodyHeight?: string;
   readonly ariaLabel?: string;
   readonly emptyText?: ReactNode;
@@ -49,33 +49,42 @@ export function Table({
   const template = columns.map((c) => c.width ?? '1fr').join(' ');
   const style = { '--sk-table-cols': template } as CSSProperties;
   const scrolls = stickyHeader && maxBodyHeight !== undefined;
-  const bodyStyle: CSSProperties | undefined = scrolls
-    ? { maxHeight: maxBodyHeight, overflowY: 'auto' }
-    : undefined;
 
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const [canUp, setCanUp] = useState(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const [canDown, setCanDown] = useState(false);
 
   const update = useCallback(() => {
-    const el = bodyRef.current;
+    const el = viewportRef.current;
     if (el === null) return;
-    setCanUp(el.scrollTop > 1);
     setCanDown(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
   }, []);
 
   useEffect(() => {
     if (!scrolls) return undefined;
     update();
-    const el = bodyRef.current;
+    const el = viewportRef.current;
     if (el === null) return undefined;
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
   }, [scrolls, update, rows]);
 
+  const head = (
+    <div className="sk-table__head" role="row">
+      {columns.map((col) => (
+        <div
+          key={col.key}
+          role="columnheader"
+          className={cx('sk-table__cell', 'sk-table__th', col.align === 'end' && 'sk-table__cell--end')}
+        >
+          {col.header}
+        </div>
+      ))}
+    </div>
+  );
+
   const body = (
-    <div className="sk-table__body" ref={bodyRef} style={bodyStyle} onScroll={scrolls ? update : undefined}>
+    <div className="sk-table__body">
       {rows.length === 0 && emptyText !== undefined ? (
         <div className="sk-table__empty">{emptyText}</div>
       ) : (
@@ -103,25 +112,27 @@ export function Table({
       aria-label={ariaLabel}
       style={style}
     >
-      <div className="sk-table__head" role="row">
-        {columns.map((col) => (
-          <div
-            key={col.key}
-            role="columnheader"
-            className={cx('sk-table__cell', 'sk-table__th', col.align === 'end' && 'sk-table__cell--end')}
-          >
-            {col.header}
-          </div>
-        ))}
-      </div>
       {scrolls ? (
-        <div className="sk-table__viewport">
-          {body}
-          <div className={cx('sk-table__fade', 'sk-table__fade--top', canUp && 'sk-table__fade--visible')} aria-hidden="true" />
-          <div className={cx('sk-table__fade', 'sk-table__fade--bottom', canDown && 'sk-table__fade--visible')} aria-hidden="true" />
+        <div className="sk-table__scroll-outer">
+          <div
+            className="sk-table__viewport"
+            ref={viewportRef}
+            style={{ maxHeight: maxBodyHeight, overflowY: 'auto' }}
+            onScroll={update}
+          >
+            {head}
+            {body}
+          </div>
+          <div
+            className={cx('sk-table__fade', 'sk-table__fade--bottom', canDown && 'sk-table__fade--visible')}
+            aria-hidden="true"
+          />
         </div>
       ) : (
-        body
+        <>
+          {head}
+          {body}
+        </>
       )}
     </div>
   );
