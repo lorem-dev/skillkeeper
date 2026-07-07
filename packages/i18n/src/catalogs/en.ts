@@ -189,7 +189,7 @@ export const en = {
   'skills.change.install': 'Install',
   'skills.change.remove': 'Remove',
   'skills.agentsLabel': 'Agents',
-  'skills.agentsTooltip': 'Agents to install for',
+  'skills.agentsTooltip': 'Used agents',
   'skills.agentsChanged': 'Agents changed',
   'skills.searchFound.one': 'Found {count} skill',
   'skills.searchFound.few': 'Found {count} skills',

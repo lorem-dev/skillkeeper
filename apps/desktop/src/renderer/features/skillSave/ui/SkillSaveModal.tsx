@@ -52,21 +52,27 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
     { key: 'agents', header: t('skills.col.agents'), width: '1fr' },
   ];
 
+  // One row per (skill, agent, action): a skill may be installed for one agent
+  // and removed for another when the agent set changes.
   const rows: TableRow[] = plans.flatMap(({ project, plan }) =>
-    plan.rows.map((r) => {
-      const skillLabel = r.ref.group !== undefined ? `${r.ref.group} / ${r.ref.name}` : r.ref.name;
-      return {
-        id: `${project.id}:${r.action}:${r.skillKey}`,
-        cells: [
-          project.name,
-          repoName.get(r.ref.repoId) ?? r.ref.repoId,
-          skillLabel,
-          <span key="a" className={`sk-save-modal__action sk-save-modal__action--${r.action}`}>
-            {r.action === 'install' ? t('skills.change.install') : t('skills.change.remove')}
-          </span>,
-          r.agents.map((a) => AGENT_LABELS[a]).join(', '),
-        ],
+    plan.ops.flatMap((op) => {
+      const make = (ref: (typeof op.install)[number], action: 'install' | 'remove'): TableRow => {
+        const skillLabel = ref.group !== undefined ? `${ref.group} / ${ref.name}` : ref.name;
+        const skillKey = `${ref.repoId}::${ref.group ?? ''}::${ref.name}`;
+        return {
+          id: `${project.id}:${op.agent}:${action}:${skillKey}`,
+          cells: [
+            project.name,
+            repoName.get(ref.repoId) ?? ref.repoId,
+            skillLabel,
+            <span key="a" className={`sk-save-modal__action sk-save-modal__action--${action}`}>
+              {action === 'install' ? t('skills.change.install') : t('skills.change.remove')}
+            </span>,
+            AGENT_LABELS[op.agent],
+          ],
+        };
       };
+      return [...op.install.map((r) => make(r, 'install')), ...op.remove.map((r) => make(r, 'remove'))];
     }),
   );
 

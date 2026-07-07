@@ -140,6 +140,7 @@ export const ru: Partial<Catalog> = {
   'skills.details.destination': 'Назначение',
   'skills.verify': 'Проверить',
   'skills.update': 'Обновить',
+  'skills.agentsTooltip': 'Используемые агенты',
   'skills.source': 'Способ отображения',
   'skills.source.repositories': 'Репозитории',
   'skills.source.projects': 'Проекты',

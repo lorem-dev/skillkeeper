@@ -171,6 +171,12 @@ export function SkillsPage() {
     const checkedSet = new Set(projectChecked);
     return [...installedSet].filter((id) => !checkedSet.has(id)).length;
   }, [projectChecked, installedSet]);
+  // Agents changing (even with no skill change) is a saveable diff too.
+  const agentsChangedAny = useMemo(
+    () => projects.some((p) => !sameAgents(projectAgents[p.id] ?? [], installedAgents[p.id] ?? [])),
+    [projects, projectAgents, installedAgents],
+  );
+  const hasProjectChanges = pendingAdd > 0 || pendingRemove > 0 || agentsChangedAny;
 
   function changeMode(next: Mode): void {
     setMode(next);
@@ -209,7 +215,7 @@ export function SkillsPage() {
           {t('skills.action.add')}
         </Button>
       ) : (
-        <Button variant="primary" disabled={pendingAdd === 0 && pendingRemove === 0} onClick={onSave}>
+        <Button variant="primary" disabled={!hasProjectChanges} onClick={onSave}>
           {t('skills.action.save')}
         </Button>
       )}
