@@ -51,17 +51,14 @@ export function Table({
   const scrolls = stickyHeader && maxBodyHeight !== undefined;
 
   const viewportRef = useRef<HTMLDivElement>(null);
-  const headRef = useRef<HTMLDivElement>(null);
   const [canUp, setCanUp] = useState(false);
   const [canDown, setCanDown] = useState(false);
-  const [headH, setHeadH] = useState(0);
 
   const update = useCallback(() => {
     const el = viewportRef.current;
     if (el === null) return;
     setCanUp(el.scrollTop > 1);
     setCanDown(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
-    setHeadH(headRef.current?.offsetHeight ?? 0);
   }, []);
 
   useEffect(() => {
@@ -75,7 +72,10 @@ export function Table({
   }, [scrolls, update, rows]);
 
   const head = (
-    <div className="sk-table__head" role="row" ref={headRef}>
+    <div
+      className={cx('sk-table__head', scrolls && canUp && 'sk-table__head--scrolled')}
+      role="row"
+    >
       {columns.map((col) => (
         <div
           key={col.key}
@@ -128,11 +128,6 @@ export function Table({
             {head}
             {body}
           </div>
-          <div
-            className={cx('sk-table__fade', 'sk-table__fade--top', canUp && 'sk-table__fade--visible')}
-            style={{ top: headH }}
-            aria-hidden="true"
-          />
           <div
             className={cx('sk-table__fade', 'sk-table__fade--bottom', canDown && 'sk-table__fade--visible')}
             aria-hidden="true"

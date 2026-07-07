@@ -34,6 +34,28 @@
   -webkit-backdrop-filter: blur(10px) saturate(160%);
 }
 
+// When scrolled, the header extends its own blur just below itself (a masked
+// `::after`) so the fade is continuous with the header -- no seam or gap.
+.sk-table--sticky .sk-table__head::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  mask-image: linear-gradient(to bottom, #000 35%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent);
+}
+
+.sk-table__head--scrolled::after {
+  opacity: 1;
+}
+
 .sk-table__th {
   font-weight: 500;
 }
@@ -97,23 +119,13 @@
   transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
 }
 
-// Top fade: a small blur just below the sticky header (positioned via inline
-// `top` = header height), softening rows as they emerge from under it.
-.sk-table__fade--top {
-  height: 18px;
-  backdrop-filter: blur(8px) saturate(160%);
-  -webkit-backdrop-filter: blur(8px) saturate(160%);
-  mask-image: linear-gradient(to bottom, #000 40%, transparent);
-  -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent);
-}
-
 .sk-table__fade--bottom {
   bottom: 0;
-  height: 22px;
+  height: 44px;
   backdrop-filter: blur(8px) saturate(160%);
   -webkit-backdrop-filter: blur(8px) saturate(160%);
-  mask-image: linear-gradient(to top, #000 40%, transparent);
-  -webkit-mask-image: linear-gradient(to top, #000 40%, transparent);
+  mask-image: linear-gradient(to top, #000 35%, transparent);
+  -webkit-mask-image: linear-gradient(to top, #000 35%, transparent);
 }
 
 .sk-table__fade--visible {
