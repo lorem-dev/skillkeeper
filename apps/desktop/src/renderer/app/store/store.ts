@@ -19,6 +19,9 @@ import type {
   Project,
   InstallManifest,
   AvailableSkill,
+  ApplyArgs,
+  ApplyResult,
+  ApplyProgress,
   RepoInfo,
   ProjectInfo,
 } from '@/services/bridge';
@@ -120,6 +123,8 @@ export interface SkillkeeperState {
   skills: InstallManifest[];
   /** Every skill available across all cloned repositories (for the Skills page). */
   availableSkills: AvailableSkill[];
+  /** Progress of an in-flight skill apply (install/remove), or null when idle. */
+  skillApply: ApplyProgress | null;
   /** Tracked projects. */
   projects: Project[];
   /** Per-project skill counts for the card badges (not persisted). */
@@ -144,6 +149,8 @@ export interface SkillkeeperActions {
   setProjects(projects: Project[]): void;
   /** Refetch the available-skills catalog from all repos. */
   refreshAvailableSkills(): Promise<void>;
+  /** Apply skill installs/removals for a project; tracks progress in `skillApply`. */
+  applySkills(args: ApplyArgs): Promise<ApplyResult>;
   setLoading(loading: boolean): void;
   setError(error: string | null): void;
   /** Load all data from the main process via the bridge client. */
@@ -241,6 +248,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   tasksOpen: false,
   skills: [],
   availableSkills: [],
+  skillApply: null,
   projects: [],
   loading: false,
   error: null,
@@ -612,6 +620,26 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     return (async () => {
       const available = await bridgeClient.listAvailableSkills();
       set({ availableSkills: available });
+    })();
+  },
+
+  applySkills(args) {
+    return (async () => {
+      const perSkill = Math.max(1, args.agents.length);
+      const total = (args.install.length + args.remove.length) * perSkill;
+      set({ skillApply: { done: 0, total, label: '' } });
+      const off = bridgeClient.onSkillsProgress((p) => set({ skillApply: p }));
+      try {
+        const result = await bridgeClient.applySkillChanges(args);
+        if (!result.ok) get().notify(result.error, 'error');
+        // Refresh the installed set so the tree/badges reflect the new state.
+        const skills = await bridgeClient.listSkills();
+        get().setSkills(skills);
+        return result;
+      } finally {
+        off();
+        set({ skillApply: null });
+      }
     })();
   },
 

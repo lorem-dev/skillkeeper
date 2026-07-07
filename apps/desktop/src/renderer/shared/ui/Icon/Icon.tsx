@@ -15,6 +15,7 @@ import { stripSvgRoot } from './stripSvgRoot';
 import repositories from './assets/repositories.svg?raw';
 import skills from './assets/skills.svg?raw';
 import skillGroup from './assets/skill-group.svg?raw';
+import agent from './assets/agent.svg?raw';
 import projects from './assets/projects.svg?raw';
 import settings from './assets/settings.svg?raw';
 import search from './assets/search.svg?raw';
@@ -35,6 +36,7 @@ export type IconName =
   | 'repositories'
   | 'skills'
   | 'skill-group'
+  | 'agent'
   | 'projects'
   | 'settings'
   | 'search'
@@ -55,6 +57,7 @@ const ICONS: Record<IconName, string> = {
   repositories: stripSvgRoot(repositories),
   skills: stripSvgRoot(skills),
   'skill-group': stripSvgRoot(skillGroup),
+  agent: stripSvgRoot(agent),
   projects: stripSvgRoot(projects),
   settings: stripSvgRoot(settings),
   search: stripSvgRoot(search),
