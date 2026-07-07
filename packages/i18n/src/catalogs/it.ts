@@ -152,6 +152,7 @@ export const it: Partial<Catalog> = {
   'skills.filterProjectsEmpty': 'Nessun progetto corrispondente',
   'skills.action.add': 'Installa',
   'skills.action.save': 'Salva',
+  'skills.action.reset': 'Reimposta',
   'skills.showAll': 'Mostra tutte le competenze',
   'skills.emptyRepositories': 'Nessuna competenza trovata nei tuoi repository.',
   'skills.emptyProjects': 'Nessun progetto ancora monitorato.',

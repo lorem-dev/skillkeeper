@@ -145,6 +145,7 @@ export const srLatn: Partial<Catalog> = {
   'skills.filterProjectsEmpty': 'Nema odgovarajućeg projekta',
   'skills.action.add': 'Instaliraj',
   'skills.action.save': 'Sačuvaj',
+  'skills.action.reset': 'Poništi',
   'skills.showAll': 'Prikaži sve veštine',
   'skills.emptyRepositories': 'Nema pronađenih veština u vašim repozitorijumima.',
   'skills.emptyProjects': 'Još nema praćenih projekata.',

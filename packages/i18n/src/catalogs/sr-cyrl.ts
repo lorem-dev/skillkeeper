@@ -145,6 +145,7 @@ export const srCyrl: Partial<Catalog> = {
   'skills.filterProjectsEmpty': 'Нема одговарајућег пројекта',
   'skills.action.add': 'Инсталирај',
   'skills.action.save': 'Сачувај',
+  'skills.action.reset': 'Поништи',
   'skills.showAll': 'Прикажи све вештине',
   'skills.emptyRepositories': 'Нема пронађених вештина у вашим репозиторијумима.',
   'skills.emptyProjects': 'Још нема праћених пројеката.',

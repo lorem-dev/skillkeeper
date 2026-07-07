@@ -7,9 +7,10 @@
  * A search box fuzzy-filters the whole tree (matches keep their ancestors as
  * context); a footer summarizes the result and clears the search.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
+import type { SkillsMode } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import {
   Page,
@@ -24,12 +25,12 @@ import {
   Icon,
 } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
-import type { AgentKind } from '@/services/bridge';
 import { AgentSelect } from '@/entities/agent';
 import {
   buildRepoTree,
   buildProjectTree,
   installedLeafIds,
+  installedAgentsByProject,
   filterTree,
   collectBranchIds,
   rootIds,
@@ -39,7 +40,7 @@ import { SkillInstallModal } from '@/features/skillInstall';
 import { SkillSaveModal } from '@/features/skillSave';
 import './SkillsPage.scss';
 
-type Mode = 'repositories' | 'projects';
+type Mode = SkillsMode;
 
 /** Whether two agent lists hold the same set. */
 function sameAgents(a: readonly string[], b: readonly string[]): boolean {
@@ -55,53 +56,42 @@ export function SkillsPage() {
   const installs = useSkillkeeperStore((s) => s.skills);
   const t = useTranslator();
 
-  const [mode, setMode] = useState<Mode>('projects');
-  const [query, setQuery] = useState('');
-  // Repo/project ids to include in the tree (empty = all).
-  const [repoFilter, setRepoFilter] = useState<string[]>([]);
-  const [projectFilter, setProjectFilter] = useState<string[]>([]);
-  const [repoChecked, setRepoChecked] = useState<string[]>([]);
-  const [projectChecked, setProjectChecked] = useState<string[]>(() => installedLeafIds(installs));
+  // Selection + view state lives in the store so it survives navigating away and
+  // back (until the app reloads). The store reseeds the selection to the
+  // installed baseline on load and after a successful apply (see `setSkills`).
+  const skillsUi = useSkillkeeperStore((s) => s.skillsUi);
+  const setSkillsUi = useSkillkeeperStore((s) => s.setSkillsUi);
+  const resetSkillsSelection = useSkillkeeperStore((s) => s.resetSkillsSelection);
+  const { mode, query, repoFilter, projectFilter, repoChecked, projectChecked, projectAgents } =
+    skillsUi;
+
+  // Modal open flags are ephemeral -- they should not persist across navigation.
   const [installOpen, setInstallOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
-  // Chosen agents per project (project id -> agents); seeded from the installed set.
-  const [projectAgents, setProjectAgents] = useState<Record<string, AgentKind[]>>({});
 
-  // The installed skills are the project-mode baseline (pre-checked). Re-seed the
-  // project selection whenever that baseline changes (initial load, save, reload).
+  // Thin setters that merge one selection field into the store at a time.
+  const setQuery = (value: string): void => setSkillsUi({ query: value });
+  const setRepoFilter = (value: string[]): void => setSkillsUi({ repoFilter: value });
+  const setProjectFilter = (value: string[]): void => setSkillsUi({ projectFilter: value });
+  const setRepoChecked = (ids: string[]): void => setSkillsUi({ repoChecked: ids });
+  const setProjectChecked = (ids: string[]): void => setSkillsUi({ projectChecked: ids });
+
+  // The installed skills are the baseline the project-mode selection diffs
+  // against (pre-checked leaves + each project's installed agents).
   const installedSet = useMemo(() => new Set(installedLeafIds(installs)), [installs]);
-  useEffect(() => {
-    setProjectChecked([...installedSet]);
-  }, [installedSet]);
-
-  // Agents each project currently has skills installed for (the baseline for the
-  // "agents changed" indicator).
-  const installedAgents = useMemo(() => {
-    const map: Record<string, AgentKind[]> = {};
-    for (const m of installs) {
-      const pid = m.target.projectId;
-      if (m.target.scope !== 'project' || pid === undefined) continue;
-      const list = (map[pid] ??= []);
-      if (!list.includes(m.target.agent)) list.push(m.target.agent);
-    }
-    return map;
-  }, [installs]);
-
-  useEffect(() => {
-    setProjectAgents((prev) => {
-      const next = { ...prev };
-      for (const p of projects) if (next[p.id] === undefined) next[p.id] = installedAgents[p.id] ?? [];
-      return next;
-    });
-  }, [projects, installedAgents]);
+  const installedAgents = useMemo(() => installedAgentsByProject(installs), [installs]);
 
   // The filters narrow which repos/projects appear (empty = all).
   const shownRepos = useMemo(
-    () => (repoFilter.length === 0 ? repositories : repositories.filter((r) => repoFilter.includes(r.id))),
+    () =>
+      repoFilter.length === 0
+        ? repositories
+        : repositories.filter((r) => repoFilter.includes(r.id)),
     [repositories, repoFilter],
   );
   const shownProjects = useMemo(
-    () => (projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id))),
+    () =>
+      projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id)),
     [projects, projectFilter],
   );
 
@@ -128,9 +118,12 @@ export function SkillsPage() {
         const wasInstalled = installedSet.has(node.id);
         const isChecked = checkedSet.has(node.id);
         let detail: ReactNode;
-        if (wasInstalled && isChecked) detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
-        else if (wasInstalled && !isChecked) detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
-        else if (!wasInstalled && isChecked) detail = <ChangeBadge kind="add" label={t('skills.status.add')} />;
+        if (wasInstalled && isChecked)
+          detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
+        else if (wasInstalled && !isChecked)
+          detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
+        else if (!wasInstalled && isChecked)
+          detail = <ChangeBadge kind="add" label={t('skills.status.add')} />;
         else detail = undefined;
         return { ...node, detail };
       });
@@ -147,7 +140,7 @@ export function SkillsPage() {
           )}
           <AgentSelect
             value={chosen}
-            onChange={(next) => setProjectAgents((prev) => ({ ...prev, [pid]: next }))}
+            onChange={(next) => setSkillsUi({ projectAgents: { ...projectAgents, [pid]: next } })}
             ariaLabel={t('skills.agentsLabel')}
             tooltip={t('skills.agentsTooltip')}
           />
@@ -155,7 +148,16 @@ export function SkillsPage() {
       );
       return { ...root, trailing, children: decorateLeaves(root.children ?? []) };
     });
-  }, [mode, shownTree, projectChecked, installedSet, projectAgents, installedAgents, t]);
+  }, [
+    mode,
+    shownTree,
+    projectChecked,
+    installedSet,
+    projectAgents,
+    installedAgents,
+    setSkillsUi,
+    t,
+  ]);
 
   const searching = query.trim() !== '';
   const totalSkills = useMemo(() => countLeaves(baseTree), [baseTree]);
@@ -178,9 +180,11 @@ export function SkillsPage() {
   );
   const hasProjectChanges = pendingAdd > 0 || pendingRemove > 0 || agentsChangedAny;
 
+  // Whether the current mode has pending changes to discard (enables Reset).
+  const canReset = mode === 'repositories' ? repoChecked.length > 0 : hasProjectChanges;
+
   function changeMode(next: Mode): void {
-    setMode(next);
-    setQuery('');
+    setSkillsUi({ mode: next, query: '' });
   }
 
   function onAdd(): void {
@@ -219,6 +223,9 @@ export function SkillsPage() {
           {t('skills.action.save')}
         </Button>
       )}
+      <Button variant="secondary" disabled={!canReset} onClick={() => resetSkillsSelection(mode)}>
+        {t('skills.action.reset')}
+      </Button>
     </>
   );
 

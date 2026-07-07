@@ -161,6 +161,7 @@ export const en = {
   'skills.filterProjectsEmpty': 'No matching project',
   'skills.action.add': 'Install',
   'skills.action.save': 'Save',
+  'skills.action.reset': 'Reset',
   'skills.showAll': 'Show all skills',
   'skills.emptyRepositories': 'No skills found in your repositories.',
   'skills.emptyProjects': 'No projects tracked yet.',

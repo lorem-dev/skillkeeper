@@ -11,7 +11,7 @@
 import { Icon } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { fuzzyMatches } from '@/shared/lib';
-import type { AvailableSkill, InstallManifest, Repository, Project } from '@/services/bridge';
+import type { AgentKind, AvailableSkill, InstallManifest, Repository, Project } from '@/services/bridge';
 
 const SEP = '::';
 
@@ -156,6 +156,21 @@ export function installedLeafIds(installs: readonly InstallManifest[]): string[]
     out.push(projectSkillKey(m.target.projectId, m.sourceRepoId, m.skillId.group, m.skillId.name));
   }
   return out;
+}
+
+/**
+ * Agents each project currently has skills installed for (project id -> agents).
+ * The baseline for the project-mode agent picker and the "agents changed" mark.
+ */
+export function installedAgentsByProject(installs: readonly InstallManifest[]): Record<string, AgentKind[]> {
+  const map: Record<string, AgentKind[]> = {};
+  for (const m of installs) {
+    const pid = m.target.projectId;
+    if (m.target.scope !== 'project' || pid === undefined) continue;
+    const list = (map[pid] ??= []);
+    if (!list.includes(m.target.agent)) list.push(m.target.agent);
+  }
+  return map;
 }
 
 /** Ids of every branch node (for expand-all while searching). */

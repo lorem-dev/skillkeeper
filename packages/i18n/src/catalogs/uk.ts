@@ -152,6 +152,7 @@ export const uk: Partial<Catalog> = {
   'skills.filterProjectsEmpty': 'Немає відповідного проєкту',
   'skills.action.add': 'Встановити',
   'skills.action.save': 'Зберегти',
+  'skills.action.reset': 'Скинути',
   'skills.showAll': 'Показати всі навички',
   'skills.emptyRepositories': 'У ваших репозиторіях навичок не знайдено.',
   'skills.emptyProjects': 'Проєкти ще не відстежуються.',

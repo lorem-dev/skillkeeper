@@ -156,6 +156,7 @@ export const ru: Partial<Catalog> = {
   'skills.filterProjectsEmpty': 'Нет подходящего проекта',
   'skills.action.add': 'Установить',
   'skills.action.save': 'Сохранить',
+  'skills.action.reset': 'Сбросить',
   'skills.showAll': 'Показать все скиллы',
   'skills.emptyRepositories': 'В ваших репозиториях не найдено скиллов.',
   'skills.emptyProjects': 'Проекты ещё не отслеживаются.',

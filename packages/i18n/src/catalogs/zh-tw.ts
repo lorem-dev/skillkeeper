@@ -131,6 +131,7 @@ export const zhTw: Partial<Catalog> = {
   'skills.filterProjectsEmpty': '沒有相符的專案',
   'skills.action.add': '安裝',
   'skills.action.save': '儲存',
+  'skills.action.reset': '重設',
   'skills.showAll': '顯示所有技能',
   'skills.emptyRepositories': '在您的儲存庫中找不到技能。',
   'skills.emptyProjects': '尚未追蹤任何專案。',

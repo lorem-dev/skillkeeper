@@ -131,6 +131,7 @@ export const ja: Partial<Catalog> = {
   'skills.filterProjectsEmpty': '一致するプロジェクトがありません',
   'skills.action.add': 'インストール',
   'skills.action.save': '保存',
+  'skills.action.reset': 'リセット',
   'skills.showAll': 'すべてのスキルを表示',
   'skills.emptyRepositories': 'リポジトリ内にスキルが見つかりませんでした。',
   'skills.emptyProjects': 'まだプロジェクトが登録されていません。',

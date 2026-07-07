@@ -5,6 +5,8 @@ export type {
   SkillkeeperState,
   SkillkeeperActions,
   SkillkeeperStore,
+  SkillsMode,
+  SkillsUiState,
   SectionValidity,
   SkillKeeperConfig,
   Repository,

@@ -19,6 +19,7 @@ import type {
   Project,
   InstallManifest,
   AvailableSkill,
+  AgentKind,
   ApplyArgs,
   ApplyResult,
   ApplyProgress,
@@ -26,6 +27,7 @@ import type {
   ProjectInfo,
 } from '@/services/bridge';
 import { bridgeClient } from '@/services/bridge';
+import { installedLeafIds, installedAgentsByProject } from '@/entities/skill';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
@@ -86,9 +88,31 @@ export interface RepoTask {
   readonly at: string;
 }
 
-// ---------------------------------------------------------------------------
-// State shape
-// ---------------------------------------------------------------------------
+/** Skills-page display mode: browse by repository or by tracked project. */
+export type SkillsMode = 'repositories' | 'projects';
+
+/**
+ * Skills-page selection + view state. Lives in the store (not component state)
+ * so the user's picks survive navigating away and back; it is reset only on app
+ * reload (the store is recreated) or when the installed baseline changes (a new
+ * load or a successful apply reseeds the selection). See `setSkills`.
+ */
+export interface SkillsUiState {
+  /** Browse-by mode. */
+  mode: SkillsMode;
+  /** Tree search query. */
+  query: string;
+  /** Repo ids the tree is narrowed to (empty = all). */
+  repoFilter: string[];
+  /** Project ids the tree is narrowed to (empty = all). */
+  projectFilter: string[];
+  /** Repo-mode checked skill leaf ids (baseline: none). */
+  repoChecked: string[];
+  /** Project-mode checked skill leaf ids (baseline: the installed set). */
+  projectChecked: string[];
+  /** Chosen agents per project (baseline: the installed agents). */
+  projectAgents: Record<string, AgentKind[]>;
+}
 
 export interface SkillkeeperState {
   /** The loaded config, or null before the first load. */
@@ -125,6 +149,8 @@ export interface SkillkeeperState {
   availableSkills: AvailableSkill[];
   /** Progress of an in-flight skill apply (install/remove), or null when idle. */
   skillApply: ApplyProgress | null;
+  /** Skills-page selection + view state (persists across navigation until reload). */
+  skillsUi: SkillsUiState;
   /** Tracked projects. */
   projects: Project[];
   /** Per-project skill counts for the card badges (not persisted). */
@@ -146,6 +172,14 @@ export interface SkillkeeperActions {
   setConfigValidity(validity: SectionValidity): void;
   setRepositories(repositories: Repository[]): void;
   setSkills(skills: InstallManifest[]): void;
+  /** Merge a partial update into the skills-page selection/view state. */
+  setSkillsUi(patch: Partial<SkillsUiState>): void;
+  /**
+   * Discard the current mode's pending selection changes, restoring it to the
+   * installed baseline (repo mode: clear checks; project mode: reseed checks and
+   * agents from the installed set). View state (mode/query/filters) is kept.
+   */
+  resetSkillsSelection(mode: SkillsMode): void;
   setProjects(projects: Project[]): void;
   /** Refetch the available-skills catalog from all repos. */
   refreshAvailableSkills(): Promise<void>;
@@ -230,6 +264,13 @@ function enqueue(run: () => Promise<void>): Promise<void> {
   return next;
 }
 
+/** The project-mode selection (checks + agents) that matches what is installed. */
+function installedBaseline(
+  installs: readonly InstallManifest[],
+): Pick<SkillsUiState, 'projectChecked' | 'projectAgents'> {
+  return { projectChecked: installedLeafIds(installs), projectAgents: installedAgentsByProject(installs) };
+}
+
 export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   // Initial state
   config: null,
@@ -249,6 +290,15 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   skills: [],
   availableSkills: [],
   skillApply: null,
+  skillsUi: {
+    mode: 'projects',
+    query: '',
+    repoFilter: [],
+    projectFilter: [],
+    repoChecked: [],
+    projectChecked: [],
+    projectAgents: {},
+  },
   projects: [],
   loading: false,
   error: null,
@@ -267,7 +317,24 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   },
 
   setSkills(skills) {
-    set({ skills });
+    // A new installed baseline (initial load or a successful apply) reseeds the
+    // selection: repo checks clear and project checks/agents match what is now
+    // installed, so pending changes never linger against a stale baseline. Plain
+    // navigation never calls this, so in-progress picks survive it.
+    set((s) => ({ skills, skillsUi: { ...s.skillsUi, repoChecked: [], ...installedBaseline(skills) } }));
+  },
+
+  setSkillsUi(patch) {
+    set((s) => ({ skillsUi: { ...s.skillsUi, ...patch } }));
+  },
+
+  resetSkillsSelection(mode) {
+    set((s) => ({
+      skillsUi:
+        mode === 'repositories'
+          ? { ...s.skillsUi, repoChecked: [] }
+          : { ...s.skillsUi, ...installedBaseline(get().skills) },
+    }));
   },
 
   setProjects(projects) {

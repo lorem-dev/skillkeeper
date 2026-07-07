@@ -131,6 +131,7 @@ export const zhCn: Partial<Catalog> = {
   'skills.filterProjectsEmpty': '无匹配的项目',
   'skills.action.add': '安装',
   'skills.action.save': '保存',
+  'skills.action.reset': '重置',
   'skills.showAll': '显示所有技能',
   'skills.emptyRepositories': '在你的仓库中未找到任何技能。',
   'skills.emptyProjects': '尚未跟踪任何项目。',

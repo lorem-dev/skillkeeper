@@ -4,6 +4,7 @@ export {
   buildRepoTree,
   buildProjectTree,
   installedLeafIds,
+  installedAgentsByProject,
   filterTree,
   collectBranchIds,
   branchesContaining,

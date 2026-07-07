@@ -149,6 +149,7 @@ export const ko: Partial<Catalog> = {
   'skills.filterProjectsEmpty': '일치하는 프로젝트 없음',
   'skills.action.add': '설치',
   'skills.action.save': '저장',
+  'skills.action.reset': '초기화',
   'skills.showAll': '모든 스킬 표시',
   'skills.emptyRepositories': '저장소에서 스킬을 찾을 수 없습니다.',
   'skills.emptyProjects': '추적 중인 프로젝트가 없습니다.',

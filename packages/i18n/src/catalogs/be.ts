@@ -152,6 +152,7 @@ export const be: Partial<Catalog> = {
   'skills.filterProjectsEmpty': 'Няма адпаведнага праекта',
   'skills.action.add': 'Усталяваць',
   'skills.action.save': 'Захаваць',
+  'skills.action.reset': 'Скінуць',
   'skills.showAll': 'Паказаць усе навыкі',
   'skills.emptyRepositories': 'У вашых рэпазіторыях навыкаў не знойдзена.',
   'skills.emptyProjects': 'Праекты яшчэ не адсочваюцца.',

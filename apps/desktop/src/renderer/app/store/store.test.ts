@@ -25,6 +25,15 @@ function reset(): void {
     projects: [],
     loading: false,
     error: null,
+    skillsUi: {
+      mode: 'projects',
+      query: '',
+      repoFilter: [],
+      projectFilter: [],
+      repoChecked: [],
+      projectChecked: [],
+      projectAgents: {},
+    },
   });
 }
 
@@ -82,6 +91,17 @@ const mockInstall: InstallManifest = {
   skillId: { name: 'test-skill' },
   target: { agent: 'claude', scope: 'global' },
   destinationRoot: '/tmp/dest',
+  installedAt: '2026-01-01T00:00:00.000Z',
+  files: [],
+  hookEdits: [],
+};
+
+/** A project-scoped install (so it seeds the project-mode selection baseline). */
+const projectInstall: InstallManifest = {
+  skillId: { name: 'fmt' },
+  target: { agent: 'claude', scope: 'project', projectId: 'proj-1' },
+  destinationRoot: '/tmp/dest',
+  sourceRepoId: 'repo-1',
   installedAt: '2026-01-01T00:00:00.000Z',
   files: [],
   hookEdits: [],
@@ -147,6 +167,66 @@ describe('useSkillkeeperStore', () => {
       useSkillkeeperStore.getState().setSkills([mockInstall]);
 
       expect(useSkillkeeperStore.getState().skills).toHaveLength(1);
+    });
+
+    it('reseeds the project selection from the new installed baseline', () => {
+      const store = useSkillkeeperStore.getState();
+      // Dirty the selection, then set a new baseline.
+      store.setSkillsUi({ repoChecked: ['stale'], projectChecked: [], projectAgents: {} });
+      store.setSkills([projectInstall]);
+
+      const ui = useSkillkeeperStore.getState().skillsUi;
+      expect(ui.repoChecked).toEqual([]);
+      expect(ui.projectChecked).toHaveLength(1);
+      expect(ui.projectAgents).toEqual({ 'proj-1': ['claude'] });
+    });
+
+    it('preserves view state (mode/query/filters) when reseeding', () => {
+      const store = useSkillkeeperStore.getState();
+      store.setSkillsUi({ mode: 'repositories', query: 'fmt', repoFilter: ['repo-1'] });
+      store.setSkills([projectInstall]);
+
+      const ui = useSkillkeeperStore.getState().skillsUi;
+      expect(ui.mode).toBe('repositories');
+      expect(ui.query).toBe('fmt');
+      expect(ui.repoFilter).toEqual(['repo-1']);
+    });
+  });
+
+  describe('setSkillsUi', () => {
+    it('merges a partial patch into the selection state', () => {
+      useSkillkeeperStore.getState().setSkillsUi({ mode: 'repositories', query: 'x' });
+
+      const ui = useSkillkeeperStore.getState().skillsUi;
+      expect(ui.mode).toBe('repositories');
+      expect(ui.query).toBe('x');
+      // Untouched fields keep their prior values.
+      expect(ui.repoChecked).toEqual([]);
+    });
+  });
+
+  describe('resetSkillsSelection', () => {
+    it('repositories mode clears repo checks and leaves project checks', () => {
+      const store = useSkillkeeperStore.getState();
+      store.setSkills([projectInstall]);
+      store.setSkillsUi({ repoChecked: ['a', 'b'], projectChecked: [] });
+      store.resetSkillsSelection('repositories');
+
+      const ui = useSkillkeeperStore.getState().skillsUi;
+      expect(ui.repoChecked).toEqual([]);
+      expect(ui.projectChecked).toEqual([]);
+    });
+
+    it('projects mode restores the installed baseline (checks + agents)', () => {
+      const store = useSkillkeeperStore.getState();
+      store.setSkills([projectInstall]);
+      // User unchecks everything and drops the agent.
+      store.setSkillsUi({ projectChecked: [], projectAgents: { 'proj-1': [] } });
+      store.resetSkillsSelection('projects');
+
+      const ui = useSkillkeeperStore.getState().skillsUi;
+      expect(ui.projectChecked).toHaveLength(1);
+      expect(ui.projectAgents).toEqual({ 'proj-1': ['claude'] });
     });
   });
 

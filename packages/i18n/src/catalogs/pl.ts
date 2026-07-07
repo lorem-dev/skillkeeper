@@ -152,6 +152,7 @@ export const pl: Partial<Catalog> = {
   'skills.filterProjectsEmpty': 'Brak pasujacego projektu',
   'skills.action.add': 'Zainstaluj',
   'skills.action.save': 'Zapisz',
+  'skills.action.reset': 'Resetuj',
   'skills.showAll': 'Pokaz wszystkie umiejetnosci',
   'skills.emptyRepositories': 'Nie znaleziono umiejetnosci w Twoich repozytoriach.',
   'skills.emptyProjects': 'Nie sledzisz jeszcze zadnych projektow.',
