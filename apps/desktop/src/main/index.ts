@@ -32,6 +32,8 @@ import {
 import type { RepoDeps } from './repositories.js';
 import { addProject, updateProject, removeProject, describeProject, projectExists } from './projects.js';
 import type { ProjectDeps } from './projects.js';
+import { detectProjectAgents, applySkillChanges, createAdapterRegistry } from './skills.js';
+import type { SkillsDeps, ApplyArgs } from './skills.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
 // from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
@@ -200,6 +202,14 @@ function registerHandlers(): void {
     }),
   };
 
+  const skillsDeps: SkillsDeps = {
+    fs,
+    statePath,
+    configPath,
+    registry: createAdapterRegistry(),
+    adapterEnv: { ...hostEnv, fs },
+  };
+
   /**
    * config:get -- load the config file and return it together with per-section
    * validity and any warnings. Never throws; errors are surfaced as warnings.
@@ -347,6 +357,14 @@ function registerHandlers(): void {
   ipcMain.handle('repositories:describe', (_e, args: { id: string }) => describeRepository(repoDeps, args));
   // skills:available -- every skill resolved across all cloned repositories.
   ipcMain.handle('skills:available', () => listAvailableSkills(repoDeps));
+  // projects:detectAgents -- which agents were used in a project folder.
+  ipcMain.handle('projects:detectAgents', (_e, args: { path: string }) =>
+    detectProjectAgents(fs, args.path),
+  );
+  // skills:apply -- install/remove skills for a project, streaming progress.
+  ipcMain.handle('skills:apply', (event, args: ApplyArgs) =>
+    applySkillChanges(skillsDeps, args, (p) => event.sender.send('skills:progress', p)),
+  );
 
   const terminal = getTerminal();
   terminal.on('data', (chunk: string) => {

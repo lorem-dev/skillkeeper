@@ -21,3 +21,4 @@ export type { Lang } from '@skillkeeper/i18n';
 export type { EditorOption, OpenResult } from '../../../main/editors.js';
 export type { RepoResult, RemoveResult, RepoInfo, AvailableSkill } from '../../../main/repositories.js';
 export type { ProjectResult, ProjectInfo } from '../../../main/projects.js';
+export type { SkillRef, ApplyArgs, ApplyProgress, ApplyResult } from '../../../main/skills.js';

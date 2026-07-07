@@ -24,4 +24,8 @@ export type {
   AvailableSkill,
   ProjectResult,
   ProjectInfo,
+  SkillRef,
+  ApplyArgs,
+  ApplyProgress,
+  ApplyResult,
 } from './types';

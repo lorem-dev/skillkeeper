@@ -55,6 +55,8 @@ export { SearchField } from './SearchField';
 export type { SearchFieldProps } from './SearchField';
 export { SearchSummary } from './SearchSummary';
 export type { SearchSummaryProps } from './SearchSummary';
+export { Table } from './Table';
+export type { TableProps, TableColumn, TableRow } from './Table';
 export { TreeView } from './TreeView';
 export type { TreeViewProps, TreeNode } from './TreeView';
 export { Slider } from './Slider';

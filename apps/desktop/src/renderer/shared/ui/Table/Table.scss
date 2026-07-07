@@ -1,0 +1,66 @@
+// Table styles. Co-located; tokens only. Borderless macOS-list look, matching
+// TreeView: muted header, hover rows, no cell borders. Columns share the grid
+// track template (--sk-table-cols) so header and rows line up.
+
+.sk-table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+.sk-table__head,
+.sk-table__row {
+  display: grid;
+  grid-template-columns: var(--sk-table-cols);
+  align-items: center;
+  gap: var(--sk-space-3);
+  padding: var(--sk-space-2) var(--sk-space-3);
+}
+
+.sk-table__head {
+  flex: none;
+  color: var(--sk-color-label-2);
+  font-size: 12px;
+}
+
+.sk-table__th {
+  font-weight: 500;
+}
+
+.sk-table__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 1px;
+}
+
+.sk-table__row {
+  min-height: 32px;
+  border-radius: var(--sk-radius-sm);
+  color: var(--sk-color-label);
+  font-size: 14px;
+  transition: background var(--sk-duration-fast) var(--sk-ease-standard);
+
+  &:hover {
+    background: var(--sk-color-fill-3);
+  }
+}
+
+.sk-table__cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-table__cell--end {
+  justify-self: end;
+  text-align: right;
+}
+
+.sk-table__empty {
+  padding: var(--sk-space-4) var(--sk-space-3);
+  color: var(--sk-color-label-3);
+  font-size: 14px;
+}

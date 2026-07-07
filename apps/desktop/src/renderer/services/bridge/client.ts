@@ -12,6 +12,10 @@ import type {
   AvailableSkill,
   ProjectResult,
   ProjectInfo,
+  ApplyArgs,
+  ApplyProgress,
+  ApplyResult,
+  AgentKind,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the main process. */
@@ -21,6 +25,9 @@ export interface BridgeClient {
   listRepositories(): Promise<Repository[]>;
   listSkills(): Promise<InstallManifest[]>;
   listAvailableSkills(): Promise<AvailableSkill[]>;
+  detectProjectAgents(path: string): Promise<AgentKind[]>;
+  applySkillChanges(args: ApplyArgs): Promise<ApplyResult>;
+  onSkillsProgress(callback: (progress: ApplyProgress) => void): () => void;
   listProjects(): Promise<Project[]>;
   listEditors(): Promise<EditorOption[]>;
   openConfigInEditor(editorId: string): Promise<OpenResult>;
@@ -57,6 +64,9 @@ export const bridgeClient: BridgeClient = {
   listRepositories: () => window.skillkeeper.listRepositories(),
   listSkills: () => window.skillkeeper.listSkills() as Promise<InstallManifest[]>,
   listAvailableSkills: () => window.skillkeeper.listAvailableSkills() as Promise<AvailableSkill[]>,
+  detectProjectAgents: (path) => window.skillkeeper.detectProjectAgents(path) as Promise<AgentKind[]>,
+  applySkillChanges: (args) => window.skillkeeper.applySkillChanges(args),
+  onSkillsProgress: (callback) => window.skillkeeper.onSkillsProgress(callback),
   listProjects: () => window.skillkeeper.listProjects(),
   listEditors: () => window.skillkeeper.listEditors(),
   openConfigInEditor: (editorId) => window.skillkeeper.openConfigInEditor(editorId),

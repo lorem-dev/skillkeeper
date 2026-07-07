@@ -9,10 +9,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { IpcRendererEvent } from 'electron';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
-import type { Repository, Project, InstallManifest } from '@skillkeeper/core';
+import type { Repository, Project, InstallManifest, AgentKind } from '@skillkeeper/core';
 import type { EditorOption, OpenResult } from '../main/editors.js';
 import type { RepoResult, RemoveResult, RepoInfo, AvailableSkill } from '../main/repositories.js';
 import type { ProjectResult, ProjectInfo } from '../main/projects.js';
+import type { ApplyArgs, ApplyProgress, ApplyResult } from '../main/skills.js';
 
 // ---------------------------------------------------------------------------
 // Bridge type (exported so the renderer window.d.ts can import it)
@@ -30,6 +31,12 @@ export interface SkillkeeperBridge {
   listSkills(): Promise<InstallManifest[]>;
   /** List every skill available across all cloned repositories. */
   listAvailableSkills(): Promise<AvailableSkill[]>;
+  /** Detect which agents were used in a project folder (by markers). */
+  detectProjectAgents(path: string): Promise<AgentKind[]>;
+  /** Install/remove skills for a project across agents; streams progress. */
+  applySkillChanges(args: ApplyArgs): Promise<ApplyResult>;
+  /** Subscribe to skill-apply progress. Returns an unsubscribe fn. */
+  onSkillsProgress(callback: (progress: ApplyProgress) => void): () => void;
   /** List all tracked projects. */
   listProjects(): Promise<Project[]>;
   /** List text editors available on this machine, plus the default-app entry. */
@@ -94,6 +101,19 @@ const bridge: SkillkeeperBridge = {
   },
   listAvailableSkills(): Promise<AvailableSkill[]> {
     return ipcRenderer.invoke('skills:available') as Promise<AvailableSkill[]>;
+  },
+  detectProjectAgents(path: string): Promise<AgentKind[]> {
+    return ipcRenderer.invoke('projects:detectAgents', { path }) as Promise<AgentKind[]>;
+  },
+  applySkillChanges(args: ApplyArgs): Promise<ApplyResult> {
+    return ipcRenderer.invoke('skills:apply', args) as Promise<ApplyResult>;
+  },
+  onSkillsProgress(callback: (progress: ApplyProgress) => void): () => void {
+    const listener = (_event: IpcRendererEvent, progress: ApplyProgress): void => callback(progress);
+    ipcRenderer.on('skills:progress', listener);
+    return () => {
+      ipcRenderer.removeListener('skills:progress', listener);
+    };
   },
   listProjects(): Promise<Project[]> {
     return ipcRenderer.invoke('projects:list') as Promise<Project[]>;
