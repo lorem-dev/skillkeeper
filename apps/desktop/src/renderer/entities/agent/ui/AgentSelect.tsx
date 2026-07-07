@@ -4,7 +4,7 @@
  * selected agents; clicking opens a multi-select dropdown of all agents.
  */
 import { useRef, useState } from 'react';
-import { Menu, Icon } from '@/shared/ui';
+import { Menu, Icon, Tooltip } from '@/shared/ui';
 import type { MenuItem } from '@/shared/ui';
 import { ALL_AGENTS, AGENT_LABELS } from '@/domain';
 import type { AgentKind } from '@/services/bridge';
@@ -22,6 +22,8 @@ export interface AgentSelectProps {
   readonly variant?: 'compact' | 'full';
   /** Placeholder for the `full` variant when nothing is selected. */
   readonly placeholder?: string;
+  /** When set, a tooltip is shown on the trigger (hidden while the menu is open). */
+  readonly tooltip?: string;
   readonly disabled?: boolean;
   readonly className?: string;
 }
@@ -32,6 +34,7 @@ export function AgentSelect({
   ariaLabel,
   variant = 'compact',
   placeholder,
+  tooltip,
   disabled,
   className,
 }: AgentSelectProps) {
@@ -50,37 +53,48 @@ export function AgentSelect({
 
   const joined = value.map((a) => AGENT_LABELS[a]).join(', ');
 
+  const trigger = (
+    <button
+      ref={anchorRef}
+      type="button"
+      className={variant === 'full' ? 'sk-agent-select sk-agent-select--full' : 'sk-agent-select'}
+      aria-haspopup="listbox"
+      aria-expanded={open}
+      aria-label={ariaLabel}
+      disabled={disabled}
+      // Stop the click so a surrounding row (e.g. a TreeView row) does not also react.
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen((v) => !v);
+      }}
+    >
+      <Icon name="agent" size={18} />
+      {variant === 'full' ? (
+        <>
+          <span className="sk-agent-select__value">{value.length > 0 ? joined : placeholder}</span>
+          <Icon name="chevron-right" className="sk-agent-select__chevron" size={16} />
+        </>
+      ) : (
+        <span className="sk-agent-select__count" aria-hidden="true">
+          {value.length}
+        </span>
+      )}
+    </button>
+  );
+
   return (
     // Stop click propagation: the Menu renders in a portal, but React events
     // bubble up the component tree, so a menu-item click would otherwise reach a
     // surrounding TreeView row and toggle it.
     <span className={className} onClick={(e) => e.stopPropagation()}>
-      <button
-        ref={anchorRef}
-        type="button"
-        className={variant === 'full' ? 'sk-agent-select sk-agent-select--full' : 'sk-agent-select'}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={ariaLabel}
-        disabled={disabled}
-        // Stop the click so a surrounding row (e.g. a TreeView row) does not also react.
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
-      >
-        <Icon name="agent" size={18} />
-        {variant === 'full' ? (
-          <>
-            <span className="sk-agent-select__value">{value.length > 0 ? joined : placeholder}</span>
-            <Icon name="chevron-right" className="sk-agent-select__chevron" size={16} />
-          </>
-        ) : (
-          <span className="sk-agent-select__count" aria-hidden="true">
-            {value.length}
-          </span>
-        )}
-      </button>
+      {tooltip !== undefined ? (
+        // Hidden while the menu is open so the bubble never covers the dropdown.
+        <Tooltip content={tooltip} disabled={open}>
+          {trigger}
+        </Tooltip>
+      ) : (
+        trigger
+      )}
       <Menu
         open={open}
         onClose={() => setOpen(false)}

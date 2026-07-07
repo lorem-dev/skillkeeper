@@ -149,6 +149,7 @@ export function SkillsPage() {
             value={chosen}
             onChange={(next) => setProjectAgents((prev) => ({ ...prev, [pid]: next }))}
             ariaLabel={t('skills.agentsLabel')}
+            tooltip={t('skills.agentsTooltip')}
           />
         </span>
       );
