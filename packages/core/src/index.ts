@@ -29,7 +29,21 @@ export type { FileStat, FsPort, GitRef, CloneOptions, GitPort, HostEnv, Clock } 
 export { createNodeFs } from './node/nodeFs.js';
 
 // Hashing.
-export { sha256, hashTree } from './hashing.js';
+export {
+  sha256,
+  hashTree,
+  contentHash,
+  resolvedContentHash,
+  manifestContentHash,
+  SKID_FILE,
+} from './hashing.js';
+
+// Skill identity file (.skid.yml).
+export { serializeSkid, parseSkid, SKID_SCHEMA } from './skid.js';
+export type { SkidFile } from './skid.js';
+
+// Remote URL normalization (matching installs to repositories).
+export { normalizeRemote } from './repoRemote.js';
 
 // Frontmatter and manifests.
 export { splitFrontmatter, FrontmatterError } from './frontmatter.js';

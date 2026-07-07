@@ -22,13 +22,15 @@ import {
   SearchSummary,
   TreeView,
   ChangeBadge,
+  Badge,
+  Tooltip,
   Icon,
 } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { AgentSelect } from '@/entities/agent';
 import {
   buildRepoTree,
-  buildProjectTree,
+  buildProjectModel,
   installedLeafIds,
   installedAgentsByProject,
   filterTree,
@@ -62,6 +64,9 @@ export function SkillsPage() {
   const skillsUi = useSkillkeeperStore((s) => s.skillsUi);
   const setSkillsUi = useSkillkeeperStore((s) => s.setSkillsUi);
   const resetSkillsSelection = useSkillkeeperStore((s) => s.resetSkillsSelection);
+  const updateProjectSkills = useSkillkeeperStore((s) => s.updateProjectSkills);
+  const requestAddRepository = useSkillkeeperStore((s) => s.requestAddRepository);
+  const tasks = useSkillkeeperStore((s) => s.tasks);
   const { mode, query, repoFilter, projectFilter, repoChecked, projectChecked, projectAgents } =
     skillsUi;
 
@@ -95,38 +100,129 @@ export function SkillsPage() {
     [projects, projectFilter],
   );
 
+  // Project mode: merge available skills with what is installed, so orphaned
+  // installs appear (grey, remove-only) and update dots can be attached.
+  const projectModel = useMemo(
+    () =>
+      mode === 'projects'
+        ? buildProjectModel(availableSkills, shownRepos, repositories, shownProjects, installs)
+        : null,
+    [mode, availableSkills, shownRepos, repositories, shownProjects, installs],
+  );
+
   const baseTree = useMemo(
     () =>
       mode === 'repositories'
         ? buildRepoTree(availableSkills, shownRepos)
-        : buildProjectTree(availableSkills, shownRepos, shownProjects),
-    [mode, availableSkills, shownRepos, shownProjects],
+        : (projectModel?.nodes ?? []),
+    [mode, availableSkills, shownRepos, projectModel],
   );
 
   const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
 
-  // Project mode: tag each visible skill leaf with its install-status badge, and
-  // give each project root an agent picker (with an "agents changed" marker).
+  // An update-skill task in flight makes every dot pulse and non-clickable.
+  const updatesBusy = useMemo(
+    () => tasks.some((t) => t.kind === 'update-skill' && (t.status === 'queued' || t.status === 'running')),
+    [tasks],
+  );
+
+  // Project mode: tag each visible skill leaf with its install-status badge,
+  // attach update dots (leaf/group/repo) from the model, and give each project
+  // root an agent picker (with an "agents changed" marker).
   const decorated = useMemo(() => {
-    if (mode !== 'projects') return shownTree;
+    if (mode !== 'projects' || projectModel === null) return shownTree;
     const checkedSet = new Set(projectChecked);
-    const decorateLeaves = (nodes: readonly TreeNode[]): TreeNode[] =>
-      nodes.map((node) => {
-        if (node.children !== undefined && node.children.length > 0) {
-          return { ...node, children: decorateLeaves(node.children) };
-        }
-        const wasInstalled = installedSet.has(node.id);
-        const isChecked = checkedSet.has(node.id);
-        let detail: ReactNode;
-        if (wasInstalled && isChecked)
-          detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
-        else if (wasInstalled && !isChecked)
-          detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
-        else if (!wasInstalled && isChecked)
-          detail = <ChangeBadge kind="add" label={t('skills.status.add')} />;
-        else detail = undefined;
-        return { ...node, detail };
-      });
+    const { updatesByNode, orphanLeaves } = projectModel;
+    // A node's label: name, then a non-interactive update dot when an update is
+    // available, then a single action/status badge. The update action badge shows
+    // only while the row is hovered; the unlinked/local status badges are always
+    // visible. `updateTooltip` names the update scope (skill / group / repository).
+    const buildLabel = (node: TreeNode, updateTooltip: string): ReactNode => {
+      const ups = updatesByNode.get(node.id);
+      const orphan = orphanLeaves.get(node.id);
+      let badge: ReactNode = null;
+      // `hoverOnly`: the action badge (update) shows only on row hover; status
+      // badges (unlinked / local) are always visible.
+      let hoverOnly = false;
+      if (ups !== undefined) {
+        hoverOnly = true;
+        badge = (
+          <Tooltip content={updateTooltip}>
+            <button
+              type="button"
+              className="sk-skills-badge-btn"
+              disabled={updatesBusy}
+              onClick={() => {
+                if (!updatesBusy) updateProjectSkills(ups);
+              }}
+            >
+              <Badge tone="accent">{t('skills.updateBadge')}</Badge>
+            </button>
+          </Tooltip>
+        );
+      } else if (orphan?.kind === 'unlinked') {
+        badge = (
+          <Tooltip content={t('skills.addRepo')}>
+            <button
+              type="button"
+              className="sk-skills-badge-btn"
+              onClick={() => requestAddRepository(orphan.remote)}
+            >
+              <Badge tone="warning">{t('skills.unlinked')}</Badge>
+            </button>
+          </Tooltip>
+        );
+      } else if (orphan?.kind === 'local') {
+        badge = (
+          <Tooltip content={t('skills.localHint')}>
+            <Badge tone="neutral">{t('skills.local')}</Badge>
+          </Tooltip>
+        );
+      }
+      if (ups === undefined && badge === null) return node.label;
+      return (
+        <span className="sk-skills-nodelabel">
+          <span className="sk-skills-name">{node.label}</span>
+          {ups !== undefined && (
+            <span
+              className={`sk-skills-dot${updatesBusy ? ' sk-skills-dot--pulse' : ''}`}
+              aria-hidden="true"
+            />
+          )}
+          {badge !== null && (
+            // Badges own their commands; swallow the click so it never reaches the
+            // TreeView row (no accidental select/checkbox toggle).
+            <span
+              className={`sk-skills-badgewrap${hoverOnly ? ' sk-skills-badge--hover' : ''}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {badge}
+            </span>
+          )}
+        </span>
+      );
+    };
+    // Below a repo node: group branches vs skill leaves.
+    const decorate = (node: TreeNode): TreeNode => {
+      if (node.children !== undefined && node.children.length > 0) {
+        return {
+          ...node,
+          label: buildLabel(node, t('skills.updateGroup')),
+          children: node.children.map(decorate),
+        };
+      }
+      const wasInstalled = installedSet.has(node.id);
+      const isChecked = checkedSet.has(node.id);
+      let detail: ReactNode;
+      if (wasInstalled && isChecked)
+        detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
+      else if (wasInstalled && !isChecked)
+        detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
+      else if (!wasInstalled && isChecked)
+        detail = <ChangeBadge kind="add" label={t('skills.status.add')} />;
+      else detail = undefined;
+      return { ...node, label: buildLabel(node, t('skills.updateSkill')), detail };
+    };
     return shownTree.map((root) => {
       const pid = root.id.replace(/^proj::/, '');
       const chosen = projectAgents[pid] ?? [];
@@ -146,15 +242,30 @@ export function SkillsPage() {
           />
         </span>
       );
-      return { ...root, trailing, children: decorateLeaves(root.children ?? []) };
+      // Root's direct children are repository nodes (branches) and unmanaged
+      // skills (leaves, present in the project but not from a tracked repo).
+      const children = (root.children ?? []).map((child) =>
+        child.children !== undefined && child.children.length > 0
+          ? {
+              ...child,
+              label: buildLabel(child, t('skills.updateRepo')),
+              children: child.children.map(decorate),
+            }
+          : decorate(child),
+      );
+      return { ...root, trailing, children };
     });
   }, [
     mode,
+    projectModel,
     shownTree,
     projectChecked,
     installedSet,
     projectAgents,
     installedAgents,
+    updatesBusy,
+    updateProjectSkills,
+    requestAddRepository,
     setSkillsUi,
     t,
   ]);

@@ -154,8 +154,15 @@ export interface InstallManifest {
   readonly destinationRoot: string;
   /** Source repository id, when installed from a repository. */
   readonly sourceRepoId?: string;
+  /** Source repository remote URL, mirrored into the skill's `.skid.yml`. The
+   *  stable identity used to match an install to a repository (across re-adds)
+   *  and to decide whether an update is available. */
+  readonly sourceRemote?: string;
   /** Source local path, when installed from a working tree. */
   readonly sourcePath?: string;
+  /** Content hash of the installed skill body (skill-relative paths, excluding
+   *  `.skid.yml`). Compared against a repository skill's hash to detect updates. */
+  readonly contentHash?: string;
   readonly version?: string;
   /** ISO-8601 install timestamp. */
   readonly installedAt: string;

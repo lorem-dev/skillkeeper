@@ -1,4 +1,4 @@
-import { sha256 } from './hashing.js';
+import { manifestContentHash, resolvedContentHash } from './hashing.js';
 import type { GitPort } from './ports.js';
 import type { FsPort } from './ports.js';
 import type { InstallManifest, Repository, ResolvedSkill } from './model.js';
@@ -45,13 +45,7 @@ export async function skillHasUpdate(
   resolved: ResolvedSkill,
   manifest: InstallManifest,
 ): Promise<boolean> {
-  const sourceHashes: string[] = [];
-  for (const rel of resolved.files) {
-    sourceHashes.push(sha256(await fs.readFile(`${sourceRoot}/${rel}`)));
-  }
-  sourceHashes.sort();
-  const installedHashes = manifest.files.map((f) => f.sha256).sort();
-
-  if (sourceHashes.length !== installedHashes.length) return true;
-  return sourceHashes.some((h, i) => h !== installedHashes[i]);
+  const source = await resolvedContentHash(fs, sourceRoot, resolved);
+  const installed = manifest.contentHash ?? manifestContentHash(manifest);
+  return source !== installed;
 }

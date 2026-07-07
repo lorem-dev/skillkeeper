@@ -9,8 +9,20 @@
  * project's real path from PROJECT_DIR_ENV.
  */
 import path from 'node:path';
-import type { AgentKind, AgentTarget, FsPort } from '@skillkeeper/core';
-import { AdapterRegistry, loadState, saveState, resolveSkills, installSkill, uninstallSkill } from '@skillkeeper/core';
+import type { AgentKind, AgentTarget, FsPort, InstallManifest, Project } from '@skillkeeper/core';
+import {
+  AdapterRegistry,
+  loadState,
+  saveState,
+  resolveSkills,
+  installSkill,
+  uninstallSkill,
+  hashTree,
+  contentHash,
+  normalizeRemote,
+  parseSkid,
+  SKID_FILE,
+} from '@skillkeeper/core';
 import { registerBuiltinAgents, PROJECT_DIR_ENV } from '@skillkeeper/agents';
 import type { AdapterHostEnv } from '@skillkeeper/agents';
 import { loadConfig } from '@skillkeeper/config';
@@ -155,6 +167,7 @@ export async function applySkillChanges(
                 allowHooks: false,
                 executableGlobs: globs,
                 sourceRepoId: repo.id,
+                sourceRemote: repo.url,
                 sourcePath: resolved.rootPath,
               });
               installs.push(manifest);
@@ -169,5 +182,138 @@ export async function applySkillChanges(
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) };
     }
+  });
+}
+
+/** List file paths (relative to `base`) recursively under `base/rel`. */
+async function listFilesRec(fs: FsPort, base: string, rel: string): Promise<string[]> {
+  const out: string[] = [];
+  let entries: string[];
+  try {
+    entries = await fs.list(`${base}/${rel}`);
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    const childRel = `${rel}/${entry}`;
+    const stat = await fs.stat(`${base}/${childRel}`);
+    if (stat?.isDirectory === true) out.push(...(await listFilesRec(fs, base, childRel)));
+    else if (stat?.isFile === true) out.push(childRel);
+  }
+  return out;
+}
+
+/** Adopt/refresh the manifest for one on-disk skill dir found during a scan. */
+async function adoptSkill(
+  fs: FsPort,
+  destRoot: string,
+  dirName: string,
+  target: AgentTarget,
+  rehome: (remote: string | undefined) => string | undefined,
+  existing: InstallManifest | undefined,
+): Promise<InstallManifest | undefined> {
+  const skidPath = `${destRoot}/${dirName}/${SKID_FILE}`;
+  const skid = (await fs.exists(skidPath)) ? parseSkid(await fs.readFile(skidPath)) : undefined;
+  // A skill directory is identified by its SKILL.md; managed ones also carry a
+  // `.skid.yml`. Directories without SKILL.md are not skills -- skip them.
+  const isSkill = skid !== undefined || (await fs.exists(`${destRoot}/${dirName}/SKILL.md`));
+  if (!isSkill) return undefined;
+
+  const name = skid?.name ?? dirName;
+  const group = skid?.group;
+  const files = await hashTree(fs, destRoot, await listFilesRec(fs, destRoot, dirName));
+  const prefix = `${name}/`;
+  const hash = contentHash(
+    files.map((f) => ({
+      relPath: f.relPath.startsWith(prefix) ? f.relPath.slice(prefix.length) : f.relPath,
+      sha256: f.sha256,
+    })),
+  );
+  const remote = skid?.remote ?? existing?.sourceRemote;
+  // With a known remote: re-home to a tracked repo sharing it (re-adoption after
+  // a re-add) or keep the last-known id (a removed repo). Otherwise the skill is
+  // "unmanaged" -- present in the project but not installed from a tracked repo;
+  // the `''` sentinel places it at the repository level, grey and remove-only.
+  const sourceRepoId = rehome(remote) ?? existing?.sourceRepoId ?? '';
+  return {
+    skillId: { name, group },
+    target,
+    destinationRoot: destRoot,
+    sourceRepoId,
+    sourceRemote: remote,
+    sourcePath: existing?.sourcePath,
+    contentHash: hash,
+    version: existing?.version,
+    installedAt: existing?.installedAt ?? new Date().toISOString(),
+    files,
+    hookEdits: existing?.hookEdits ?? [],
+  };
+}
+
+/**
+ * Reconcile project-scoped installs with what is actually on disk: scan each
+ * tracked project's agent skill roots for `.skid.yml` skills, adopt untracked
+ * ones into manifests, refresh `sourceRemote`/`contentHash`, re-home
+ * `sourceRepoId` by remote, and prune manifests whose skill dir is gone.
+ * Projects whose folder does not exist are left untouched (never pruned).
+ * Returns the updated install list (also persisted when it changed).
+ */
+export async function reconcileProjectSkills(deps: SkillsDeps): Promise<InstallManifest[]> {
+  return withStateLock(async () => {
+    const state = await loadState(deps.fs, deps.statePath);
+    const agents = Object.keys(AGENT_MARKERS) as AgentKind[];
+    const trackedIds = new Set(state.projects.map((p) => p.id));
+    const rehome = (remote: string | undefined): string | undefined => {
+      if (remote === undefined) return undefined;
+      const norm = normalizeRemote(remote);
+      return state.repositories.find((r) => normalizeRemote(r.url) === norm)?.id;
+    };
+
+    const isProjectScoped = (m: InstallManifest): boolean =>
+      m.target.scope === 'project' && m.target.projectId !== undefined && trackedIds.has(m.target.projectId);
+    // Global installs and installs of untracked projects are preserved as-is.
+    const kept: InstallManifest[] = state.installs.filter((m) => !isProjectScoped(m));
+
+    for (const project of state.projects as Project[]) {
+      const projInstalls = state.installs.filter(
+        (m) => m.target.scope === 'project' && m.target.projectId === project.id,
+      );
+      if (!(await deps.fs.exists(project.path))) {
+        kept.push(...projInstalls); // cannot scan -> keep every manifest
+        continue;
+      }
+      for (const agent of agents) {
+        const target: AgentTarget = { agent, scope: 'project', projectId: project.id };
+        const env: AdapterHostEnv = {
+          ...deps.adapterEnv,
+          env: { ...deps.adapterEnv.env, [PROJECT_DIR_ENV]: project.path },
+        };
+        let destRoot: string;
+        try {
+          destRoot = await deps.registry.get(agent).destinationRoot(target, env);
+        } catch {
+          continue;
+        }
+        if (!(await deps.fs.exists(destRoot))) continue;
+        let dirNames: string[];
+        try {
+          dirNames = await deps.fs.list(destRoot);
+        } catch {
+          continue;
+        }
+        for (const dirName of dirNames) {
+          const existing = projInstalls.find(
+            (m) => m.target.agent === agent && m.skillId.name === dirName,
+          );
+          const manifest = await adoptSkill(deps.fs, destRoot, dirName, target, rehome, existing);
+          if (manifest !== undefined) kept.push(manifest);
+        }
+      }
+    }
+
+    if (JSON.stringify(kept) !== JSON.stringify(state.installs)) {
+      await saveState(deps.fs, deps.statePath, { ...state, installs: kept });
+    }
+    return kept;
   });
 }

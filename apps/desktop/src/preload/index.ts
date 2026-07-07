@@ -31,6 +31,8 @@ export interface SkillkeeperBridge {
   listSkills(): Promise<InstallManifest[]>;
   /** List every skill available across all cloned repositories. */
   listAvailableSkills(): Promise<AvailableSkill[]>;
+  /** Scan project folders to adopt/prune installs; returns reconciled manifests. */
+  reconcileSkills(): Promise<InstallManifest[]>;
   /** Detect which agents were used in a project folder (by markers). */
   detectProjectAgents(path: string): Promise<AgentKind[]>;
   /** Install/remove skills for a project across agents; streams progress. */
@@ -101,6 +103,9 @@ const bridge: SkillkeeperBridge = {
   },
   listAvailableSkills(): Promise<AvailableSkill[]> {
     return ipcRenderer.invoke('skills:available') as Promise<AvailableSkill[]>;
+  },
+  reconcileSkills(): Promise<InstallManifest[]> {
+    return ipcRenderer.invoke('skills:reconcile') as Promise<InstallManifest[]>;
   },
   detectProjectAgents(path: string): Promise<AgentKind[]> {
     return ipcRenderer.invoke('projects:detectAgents', { path }) as Promise<AgentKind[]>;

@@ -53,6 +53,23 @@
   background: var(--sk-color-fill-2);
 }
 
+// Muted row: an orphaned skill (source gone) -- dimmed name + icon, still
+// interactive (it can be removed). The label is dimmed via colour (not opacity)
+// so any inline badges keep their own colours; the icon dims via opacity.
+.sk-tree__row--muted .sk-tree__label {
+  color: var(--sk-color-label-3);
+}
+
+.sk-tree__row--muted .sk-tree__icon {
+  opacity: 0.45;
+}
+
+// The install-status badge (check / minus / plus) on a muted row (a local or
+// unlinked skill) reads as secondary -- dim it to 50%.
+.sk-tree__row--muted .sk-tree__detail {
+  opacity: 0.5;
+}
+
 .sk-tree__chevron {
   display: inline-flex;
   flex: none;

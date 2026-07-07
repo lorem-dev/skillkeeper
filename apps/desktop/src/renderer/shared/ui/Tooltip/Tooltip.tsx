@@ -150,7 +150,9 @@ export function Tooltip({
       onFocus={() => setOpen(true)}
       onBlur={() => setOpen(false)}
     >
-      <span aria-describedby={show ? id : undefined}>{children}</span>
+      <span className="sk-tooltip__trigger" aria-describedby={show ? id : undefined}>
+        {children}
+      </span>
       {createPortal(
         <AnimatePresence>
           {show && (

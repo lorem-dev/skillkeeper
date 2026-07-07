@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { deriveRepoName, MAX_REPO_NAME_LENGTH } from '@/entities/repository';
@@ -18,6 +18,8 @@ function isValidRemote(url: string): boolean {
 export function RepoAddButton() {
   const t = useTranslator();
   const addRepository = useSkillkeeperStore((s) => s.addRepository);
+  const addRepoRequest = useSkillkeeperStore((s) => s.addRepoRequest);
+  const clearAddRepoRequest = useSkillkeeperStore((s) => s.clearAddRepoRequest);
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
   const [name, setName] = useState('');
@@ -28,6 +30,17 @@ export function RepoAddButton() {
     setName('');
     setNameEdited(false);
   };
+
+  // Open prefilled when another page requests adding a repo (e.g. an unlinked
+  // skill supplying its remote), then consume the request.
+  useEffect(() => {
+    if (addRepoRequest === null) return;
+    setUrl(addRepoRequest);
+    setName(deriveRepoName(addRepoRequest));
+    setNameEdited(false);
+    setOpen(true);
+    clearAddRepoRequest();
+  }, [addRepoRequest, clearAddRepoRequest]);
 
   const cancel = (): void => {
     setOpen(false);

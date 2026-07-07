@@ -5,6 +5,9 @@ import { TreeView } from './TreeView';
 import type { TreeNode } from './TreeView';
 import { Icon } from '../Icon';
 import { ChangeBadge } from '../ChangeBadge';
+import { Badge } from '../Badge';
+// The Skills page owns the node-label decoration styles (dot + hover badges).
+import '@/pages/Skills/SkillsPage.scss';
 
 const meta = {
   title: 'shared/ui/TreeView',
@@ -101,24 +104,26 @@ const projectInstalled: TreeNode[] = [
 
 // Labels wider than the container are truncated with a CSS ellipsis; the full
 // text stays available in the row's tooltip.
+const LONG_REPO = 'anthropic/an-intentionally-very-long-repository-name-for-testing-truncation';
+const LONG_GROUP = 'A skill group with an unusually long descriptive name that keeps going';
+const LONG_SKILL =
+  'extremely-detailed-skill-name-that-runs-well-past-sixty-four-characters-and-then-some';
+const LONG_SKILL_2 =
+  'another-very-long-locally-authored-skill-name-that-should-also-truncate-nicely';
+
 const longLabels: TreeNode[] = [
   {
     id: 'repo-long',
-    label: 'anthropic/an-intentionally-very-long-repository-name-for-testing-truncation',
+    label: LONG_REPO,
     icon: repo,
     selectable: false,
     children: [
       {
         id: 'grp-long',
-        label: 'A skill group with an unusually long descriptive name that keeps going',
+        label: LONG_GROUP,
         icon: group,
         children: [
-          {
-            id: 'sk-long',
-            label:
-              'extremely-detailed-skill-name-that-runs-well-past-sixty-four-characters-and-then-some',
-            icon: skill,
-          },
+          { id: 'sk-long', label: LONG_SKILL, icon: skill },
           { id: 'sk-short', label: 'short-skill', icon: skill },
         ],
       },
@@ -239,12 +244,39 @@ export const CheckboxesLeavesOnly: Story = {
   ),
 };
 
-// Long labels with checkboxes: the title ellipsizes before the count and the
-// checkbox column (one skill checked, so the group is "1/2" and mixed).
+// Long labels with checkboxes AND badges: the name ellipsizes while the update
+// dot + badge stay pinned after it. Hover a row to reveal its "update" badge;
+// the "local" status badge on the short skill is always visible.
 export const CheckboxesLongLabels: Story = {
-  render: () => (
-    <Checkable nodes={longLabels} expanded={['repo-long', 'grp-long']} levels={[1, 2]} initial={['sk-long']} />
-  ),
+  render: () => {
+    const nodes: TreeNode[] = [
+      {
+        id: 'repo-long',
+        label: decorate(LONG_REPO, false, { update: true }),
+        icon: repo,
+        selectable: false,
+        children: [
+          {
+            id: 'grp-long',
+            label: decorate(LONG_GROUP, false, { update: true }),
+            icon: group,
+            children: [
+              { id: 'sk-long', label: decorate(LONG_SKILL, false, { update: true }), icon: skill },
+              {
+                id: 'sk-short',
+                label: decorate(LONG_SKILL_2, false, { badge: 'local' }),
+                icon: skill,
+                muted: true,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    return (
+      <Checkable nodes={nodes} expanded={['repo-long', 'grp-long']} levels={[1, 2]} initial={['sk-long']} />
+    );
+  },
 };
 
 // Install-diff column (built with the separate ChangeBadge component, not
@@ -355,4 +387,140 @@ export const LeafSelected: Story = {
       </div>
     );
   },
+};
+
+// Project mode with update indicators and orphaned (muted) skills. This mirrors
+// how the Skills page decorates a node label: the name, a non-interactive update
+// dot when an update is available, then a single badge. The "update" action
+// badge shows ONLY while the row is hovered; the "unlinked"/"local" status
+// badges are always visible:
+//  - "update"    (accent)  -- update the skill / group / repository (hover)
+//  - "unlinked"  (warning) -- source repo not tracked; offer to add it. Shown on
+//    the removed repository node AND each of its skills.
+//  - "local"     (neutral) -- a hand-written local skill
+// Orphaned skills (source gone / local) are greyed and remove-only. Toggle
+// "updating" to see the dot pulse and the update badge go disabled.
+type Deco = { update?: boolean; badge?: 'unlinked' | 'local' };
+
+function decorate(name: string, busy: boolean, deco: Deco = {}): ReactNode {
+  let badge: ReactNode = null;
+  let hoverOnly = false;
+  if (deco.update === true) {
+    hoverOnly = true; // action badge -- visible only on row hover
+    badge = (
+      <button type="button" className="sk-skills-badge-btn" disabled={busy}>
+        <Badge tone="accent">update</Badge>
+      </button>
+    );
+  } else if (deco.badge === 'unlinked') {
+    badge = (
+      <button type="button" className="sk-skills-badge-btn">
+        <Badge tone="warning">unlinked</Badge>
+      </button>
+    );
+  } else if (deco.badge === 'local') {
+    badge = <Badge tone="neutral">local</Badge>;
+  }
+  return (
+    <span className="sk-skills-nodelabel">
+      <span className="sk-skills-name">{name}</span>
+      {deco.update === true && (
+        <span className={`sk-skills-dot${busy ? ' sk-skills-dot--pulse' : ''}`} aria-hidden="true" />
+      )}
+      {badge !== null && (
+        <span
+          className={`sk-skills-badgewrap${hoverOnly ? ' sk-skills-badge--hover' : ''}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {badge}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function projectWithUpdates(busy: boolean): TreeNode[] {
+  return [
+    {
+      id: 'proj-1',
+      label: 'my-app',
+      icon: project,
+      selectable: false,
+      children: [
+        {
+          id: 'proj-1::repo::r1',
+          // The repo has an updatable skill inside -> repo-level update indicator.
+          label: decorate('anthropic/skills', busy, { update: true }),
+          icon: repo,
+          children: [
+            {
+              id: 'proj-1::r1::writing',
+              label: decorate('writing', busy, { update: true }),
+              icon: group,
+              children: [
+                { id: 'sk-a', label: 'condense', icon: skill },
+                { id: 'sk-b', label: decorate('brainstorm', busy, { update: true }), icon: skill },
+              ],
+            },
+          ],
+        },
+        {
+          // A dangling repo (removed): the repo node itself is "unlinked" (add it
+          // back to re-link all its skills), and every skill is orphaned -> muted.
+          id: 'proj-1::repo::gone',
+          label: decorate('acme/legacy', busy, { badge: 'unlinked' }),
+          icon: repo,
+          muted: true,
+          children: [
+            {
+              id: 'sk-orphan-1',
+              label: decorate('old-helper', busy, { badge: 'unlinked' }),
+              icon: skill,
+              muted: true,
+            },
+            {
+              id: 'sk-orphan-2',
+              label: decorate('retired', busy, { badge: 'unlinked' }),
+              icon: skill,
+              muted: true,
+            },
+          ],
+        },
+        // An unmanaged skill: present in the project but not from a repository.
+        // Sits at the repository level, grey and remove-only, with a "local" badge.
+        { id: 'sk-unmanaged', label: decorate('hand-installed', busy, { badge: 'local' }), icon: skill, muted: true },
+      ],
+    },
+  ];
+}
+
+function ProjectUpdates() {
+  const [busy, setBusy] = useState(false);
+  const [checkedIds, setCheckedIds] = useState<string[]>([
+    'sk-a',
+    'sk-b',
+    'sk-orphan-1',
+    'sk-orphan-2',
+    'sk-unmanaged',
+  ]);
+  return (
+    <div style={{ width: 380 }}>
+      <button type="button" onClick={() => setBusy((b) => !b)} style={{ marginBottom: 12 }}>
+        {busy ? 'Stop updating' : 'Start updating'}
+      </button>
+      <TreeView
+        nodes={projectWithUpdates(busy)}
+        checkable
+        checkboxLevels={[1, 2, 3]}
+        checkedIds={checkedIds}
+        onCheckedChange={setCheckedIds}
+        defaultExpandedIds={['proj-1', 'proj-1::repo::r1', 'proj-1::r1::writing', 'proj-1::repo::gone']}
+        ariaLabel="Project updates"
+      />
+    </div>
+  );
+}
+
+export const ProjectIndicators: Story = {
+  render: () => <ProjectUpdates />,
 };

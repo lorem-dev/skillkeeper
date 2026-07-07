@@ -57,7 +57,9 @@ describe('installSkill - body', () => {
     expect(await fs.exists('/dest/s/hooks/HOOK.md')).toBe(false);
 
     const paths = manifest.files.map((f) => f.relPath).sort();
-    expect(paths).toEqual(['s/SKILL.md', 's/run.sh']);
+    // A generated .skid.yml identity file is recorded alongside the body.
+    expect(paths).toEqual(['s/.skid.yml', 's/SKILL.md', 's/run.sh']);
+    expect(await fs.exists('/dest/s/.skid.yml')).toBe(true);
     const sh = manifest.files.find((f) => f.relPath === 's/run.sh');
     expect(sh?.sha256).toBe(sha256('#!/bin/sh\necho hi\n'));
     expect(manifest.hookEdits).toEqual([]);

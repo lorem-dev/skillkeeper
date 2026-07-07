@@ -8,6 +8,14 @@
   display: inline-flex;
 }
 
+// The trigger wrapper hugs its content (inline-flex) instead of carrying a text
+// line-height strut, so small triggers like an 8px dot stay their true size and
+// center cleanly against neighboring text.
+.sk-tooltip__trigger {
+  display: inline-flex;
+  align-items: center;
+}
+
 // Portaled to <body> and positioned `fixed` via inline top/left (see Tooltip.tsx)
 // so no ancestor overflow can clip it. Above every overlay (Menu 400) so a
 // tooltip is always on top. Only the transform-origin varies per side, to give

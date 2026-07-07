@@ -32,7 +32,12 @@ import {
 import type { RepoDeps } from './repositories.js';
 import { addProject, updateProject, removeProject, describeProject, projectExists } from './projects.js';
 import type { ProjectDeps } from './projects.js';
-import { detectProjectAgents, applySkillChanges, createAdapterRegistry } from './skills.js';
+import {
+  detectProjectAgents,
+  applySkillChanges,
+  reconcileProjectSkills,
+  createAdapterRegistry,
+} from './skills.js';
 import type { SkillsDeps, ApplyArgs } from './skills.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
@@ -365,6 +370,9 @@ function registerHandlers(): void {
   ipcMain.handle('skills:apply', (event, args: ApplyArgs) =>
     applySkillChanges(skillsDeps, args, (p) => event.sender.send('skills:progress', p)),
   );
+  // skills:reconcile -- scan project folders, adopt/prune installs; returns the
+  // reconciled manifest list.
+  ipcMain.handle('skills:reconcile', () => reconcileProjectSkills(skillsDeps));
 
   const terminal = getTerminal();
   terminal.on('data', (chunk: string) => {

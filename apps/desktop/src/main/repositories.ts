@@ -7,7 +7,14 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { rm } from 'node:fs/promises';
 import type { FsPort, GitPort, Repository } from '@skillkeeper/core';
-import { loadState, saveState, parseRemote, repoHasUpdate, resolveSkills } from '@skillkeeper/core';
+import {
+  loadState,
+  saveState,
+  parseRemote,
+  repoHasUpdate,
+  resolveSkills,
+  resolvedContentHash,
+} from '@skillkeeper/core';
 import { withStateLock } from './stateLock.js';
 
 export interface RepoDeps {
@@ -230,11 +237,15 @@ export async function describeRepository(deps: RepoDeps, args: { id: string }): 
 export interface AvailableSkill {
   readonly repoId: string;
   readonly repoName: string;
+  /** Source repository remote URL; the stable identity for matching installs. */
+  readonly remote: string;
   /** Optional one-level group (SkillId.group). */
   readonly group?: string;
   readonly name: string;
   readonly version?: string;
   readonly description?: string;
+  /** Content hash of the skill body (excludes `.skid.yml`), for update detection. */
+  readonly contentHash: string;
 }
 
 /**
@@ -257,10 +268,12 @@ export async function listAvailableSkills(deps: RepoDeps): Promise<AvailableSkil
         out.push({
           repoId: repo.id,
           repoName: repo.name,
+          remote: repo.url,
           group: skill.id.group,
           name: skill.id.name,
           version: skill.manifest.version,
           description: skill.manifest.description,
+          contentHash: await resolvedContentHash(deps.fs, repo.localPath, skill),
         });
       }
     } catch {

@@ -42,11 +42,18 @@ export function App() {
   const loadAll = useSkillkeeperStore((s) => s.loadAll);
   const loading = useSkillkeeperStore((s) => s.loading);
   const error = useSkillkeeperStore((s) => s.error);
+  const addRepoRequest = useSkillkeeperStore((s) => s.addRepoRequest);
   const t = useTranslator();
 
   useEffect(() => {
     void loadAll(bridgeClient);
   }, [loadAll]);
+
+  // An add-repository request (e.g. from an unlinked skill) switches to the
+  // Repositories view; RepoAddButton then opens the prefilled form and clears it.
+  useEffect(() => {
+    if (addRepoRequest !== null) setActiveView('repositories');
+  }, [addRepoRequest]);
 
   // A background ssh auth failure requests the terminal (for the passphrase
   // prompt); subscribed once for the app's lifetime.

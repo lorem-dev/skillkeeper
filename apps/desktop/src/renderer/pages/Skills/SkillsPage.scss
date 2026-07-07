@@ -38,6 +38,97 @@
   color: var(--sk-color-accent);
 }
 
+// A node label: name, then a non-interactive update dot, then hover-only action
+// badges -- all vertically centered in an inline-flex box. No `vertical-align`
+// override, so the box keeps the text baseline and the row's leading icon stays
+// aligned exactly as on rows without indicators.
+.sk-skills-nodelabel {
+  // Block-level flex so it fills the label's width (a definite width); the name
+  // then ellipsizes while the fixed-size dot/badge stay visible. inline-flex
+  // would instead shrink-to-fit and overflow, clipping the trailing badge.
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  min-width: 0;
+}
+
+.sk-skills-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// The dot and badge keep their size while the name ellipsizes.
+.sk-skills-dot,
+.sk-skills-badgewrap {
+  flex: none;
+}
+
+// A non-interactive "update available" indicator dot; pulses while updates run.
+.sk-skills-dot {
+  position: relative;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-color-accent);
+}
+
+.sk-skills-dot--pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--sk-color-accent);
+  animation: sk-skills-dot-pulse 1.2s var(--sk-ease-standard) infinite;
+}
+
+@keyframes sk-skills-dot-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+// Badge wrapper: swallows clicks (its badge owns the command) and lays out the
+// badge inline.
+.sk-skills-badgewrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+// A wrapper with the `--hover` modifier appears only while its row is hovered;
+// wrappers without it (status: unlinked / local) are always visible. Higher
+// specificity than `.sk-skills-badgewrap` so it wins regardless of order.
+.sk-skills-nodelabel .sk-skills-badge--hover {
+  display: none;
+}
+
+.sk-tree__row:hover .sk-skills-nodelabel .sk-skills-badge--hover {
+  display: inline-flex;
+}
+
+// A badge that is also a button (Update / Unlinked). Transparent shell; the
+// Badge inside carries the look.
+.sk-skills-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.sk-skills-badge-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 // Search footer (stats + reset). Pinned to the bottom of the viewport-filling
 // page body when the tree is short; a long tree pushes it down to scroll.
 .sk-list-footer {

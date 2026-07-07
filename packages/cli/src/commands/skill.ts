@@ -144,6 +144,7 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
       let foundSkill: ResolvedSkill | undefined;
       let sourceRoot: string | undefined;
       let sourceRepoId: string | undefined;
+      let sourceRemote: string | undefined;
 
       for (const repo of state.repositories) {
         const result = await resolveSkills(fs, repo.localPath);
@@ -155,6 +156,7 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
             foundSkill = resolved;
             sourceRoot = repo.localPath;
             sourceRepoId = repo.id;
+            sourceRemote = repo.url;
             break;
           }
         }
@@ -180,6 +182,7 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
         allowHooks: opts.allowHooks,
         executableGlobs,
         sourceRepoId,
+        sourceRemote,
         sourcePath: foundSkill.rootPath,
       });
 
@@ -286,6 +289,7 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
           allowHooks: opts.allowHooks,
           executableGlobs,
           sourceRepoId: repo.id,
+          sourceRemote: repo.url,
           sourcePath: resolved.rootPath,
         });
         updatedInstalls = updatedInstalls.filter((i) => i !== m);

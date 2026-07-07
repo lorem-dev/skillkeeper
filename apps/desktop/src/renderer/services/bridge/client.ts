@@ -25,6 +25,7 @@ export interface BridgeClient {
   listRepositories(): Promise<Repository[]>;
   listSkills(): Promise<InstallManifest[]>;
   listAvailableSkills(): Promise<AvailableSkill[]>;
+  reconcileSkills(): Promise<InstallManifest[]>;
   detectProjectAgents(path: string): Promise<AgentKind[]>;
   applySkillChanges(args: ApplyArgs): Promise<ApplyResult>;
   onSkillsProgress(callback: (progress: ApplyProgress) => void): () => void;
@@ -64,6 +65,7 @@ export const bridgeClient: BridgeClient = {
   listRepositories: () => window.skillkeeper.listRepositories(),
   listSkills: () => window.skillkeeper.listSkills() as Promise<InstallManifest[]>,
   listAvailableSkills: () => window.skillkeeper.listAvailableSkills() as Promise<AvailableSkill[]>,
+  reconcileSkills: () => window.skillkeeper.reconcileSkills() as Promise<InstallManifest[]>,
   detectProjectAgents: (path) => window.skillkeeper.detectProjectAgents(path) as Promise<AgentKind[]>,
   applySkillChanges: (args) => window.skillkeeper.applySkillChanges(args),
   onSkillsProgress: (callback) => window.skillkeeper.onSkillsProgress(callback),

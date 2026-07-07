@@ -28,6 +28,7 @@ import type {
 } from '@/services/bridge';
 import { bridgeClient } from '@/services/bridge';
 import { installedLeafIds, installedAgentsByProject } from '@/entities/skill';
+import type { ProjectSkillUpdate } from '@/entities/skill';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
@@ -81,8 +82,9 @@ export interface RepoTask {
   readonly id: string;
   readonly repoId: string;
   readonly repoName: string;
-  /** 'sync' force-pulls; 'check' fetches to refresh the update indicator. */
-  readonly kind: 'sync' | 'check';
+  /** 'sync' force-pulls; 'check' fetches to refresh the update indicator;
+   *  'update-skill' re-installs one project skill from its repository. */
+  readonly kind: 'sync' | 'check' | 'update-skill';
   readonly status: RepoTaskStatus;
   /** ISO timestamp of when it was queued. */
   readonly at: string;
@@ -151,6 +153,12 @@ export interface SkillkeeperState {
   skillApply: ApplyProgress | null;
   /** Skills-page selection + view state (persists across navigation until reload). */
   skillsUi: SkillsUiState;
+  /**
+   * A pending "add repository" request from another page (e.g. an unlinked skill
+   * on the Skills page): the remote URL to prefill. Setting it navigates to the
+   * Repositories page (App) and opens the add form prefilled (RepoAddButton).
+   */
+  addRepoRequest: string | null;
   /** Tracked projects. */
   projects: Project[];
   /** Per-project skill counts for the card badges (not persisted). */
@@ -185,6 +193,14 @@ export interface SkillkeeperActions {
   refreshAvailableSkills(): Promise<void>;
   /** Apply skill installs/removals for a project; tracks progress in `skillApply`. */
   applySkills(args: ApplyArgs): Promise<ApplyResult>;
+  /** Scan project folders to adopt/prune installs, refreshing `skills`. */
+  reconcileSkills(): Promise<void>;
+  /** Queue one update-skill task per request (re-install from the repository). */
+  updateProjectSkills(requests: readonly ProjectSkillUpdate[]): void;
+  /** Request navigating to Repositories and opening the add form for `remote`. */
+  requestAddRepository(remote: string): void;
+  /** Clear a consumed add-repository request. */
+  clearAddRepoRequest(): void;
   setLoading(loading: boolean): void;
   setError(error: string | null): void;
   /** Load all data from the main process via the bridge client. */
@@ -299,6 +315,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     projectChecked: [],
     projectAgents: {},
   },
+  addRepoRequest: null,
   projects: [],
   loading: false,
   error: null,
@@ -431,10 +448,12 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     setLoading(true);
     setError(null);
     try {
+      // reconcileSkills returns the full install list AND syncs state with disk
+      // (adopts skills pulled in via git, prunes gone ones, re-homes by remote).
       const [configResult, repos, skills, available, projects] = await Promise.all([
         client.getConfig(),
         client.listRepositories(),
-        client.listSkills(),
+        client.reconcileSkills(),
         client.listAvailableSkills(),
         client.listProjects(),
       ]);
@@ -607,6 +626,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
             repoInfo: { ...s.repoInfo, [id]: info },
             ...idle(s, { hasUpdate: false, error: undefined }),
           }));
+          // A synced repo may add/remove/change skills: refresh the catalog and
+          // reconcile installs so project-mode update dots recompute.
+          await get().refreshAvailableSkills();
+          await get().reconcileSkills();
           setTaskStatus('done');
         } else {
           get().notify(res.error, 'error', id);
@@ -710,6 +733,55 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     })();
   },
 
+  reconcileSkills() {
+    return (async () => {
+      const installs = await bridgeClient.reconcileSkills();
+      get().setSkills(installs);
+    })();
+  },
+
+  updateProjectSkills(requests) {
+    // One task per skill, run through the shared queue (one at a time). Each task
+    // re-installs the skill (remove + install) from its current repository.
+    for (const req of requests) {
+      const taskId = crypto.randomUUID();
+      const setTaskStatus = (status: RepoTask['status']): void =>
+        set((s) => ({ tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)) }));
+      set((s) => ({
+        tasks: [
+          ...s.tasks,
+          {
+            id: taskId,
+            repoId: req.repoId,
+            repoName: req.repoName,
+            kind: 'update-skill' as const,
+            status: 'queued' as const,
+            at: new Date().toISOString(),
+          },
+        ],
+      }));
+      void enqueue(async () => {
+        setTaskStatus('running');
+        const result = await get().applySkills({
+          projectId: req.projectId,
+          projectPath: req.projectPath,
+          agents: req.agents,
+          install: [req.ref],
+          remove: [req.ref],
+        });
+        setTaskStatus(result.ok ? 'done' : 'error');
+      });
+    }
+  },
+
+  requestAddRepository(remote) {
+    set({ addRepoRequest: remote });
+  },
+
+  clearAddRepoRequest() {
+    set({ addRepoRequest: null });
+  },
+
   addProject(path, name) {
     return (async () => {
       const res = await bridgeClient.addProject(path, name);
@@ -722,6 +794,9 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         projects: [...s.projects, res.project],
         projectInfo: { ...s.projectInfo, [res.project.id]: info },
       }));
+      // The added folder may already contain skills (e.g. pulled in via git);
+      // reconcile adopts them into the install list.
+      await get().reconcileSkills();
     })();
   },
 

@@ -1,5 +1,6 @@
 import { matchesAny } from './glob.js';
-import { hashTree, sha256 } from './hashing.js';
+import { contentHash, hashTree, sha256, SKID_FILE } from './hashing.js';
+import { serializeSkid } from './skid.js';
 import {
   encapsulateForeignDelimiters,
   insertRegion,
@@ -39,6 +40,8 @@ export interface InstallOptions {
   /** Globs (relative to the skill root) marked executable after install. */
   readonly executableGlobs?: readonly string[];
   readonly sourceRepoId?: string;
+  /** Source repository remote URL, recorded in the skill's `.skid.yml` and manifest. */
+  readonly sourceRemote?: string;
   readonly sourcePath?: string;
   /** Injectable clock for the install timestamp (defaults to Date.now). */
   readonly now?: () => number;
@@ -66,7 +69,11 @@ async function copyBody(opts: InstallOptions, destRoot: string): Promise<Managed
   const declared = new Set(skill.manifest.executables ?? []);
   const globs = opts.executableGlobs ?? [];
 
-  for (const rel of skill.files) {
+  // Any `.skid.yml` in the source is dropped from the body; installSkill writes
+  // its own authoritative identity file afterwards.
+  const body = skill.files.filter((rel) => rel.slice(skill.rootPath.length + 1) !== SKID_FILE);
+
+  for (const rel of body) {
     // rel is relative to repo root and starts with skill.rootPath.
     const within = rel.slice(skill.rootPath.length + 1); // path inside the skill
     const destRel = `${skillDirName}/${within}`;
@@ -78,9 +85,7 @@ async function copyBody(opts: InstallOptions, destRoot: string): Promise<Managed
     }
   }
 
-  const destRelPaths = skill.files.map(
-    (rel) => `${skillDirName}/${rel.slice(skill.rootPath.length + 1)}`,
-  );
+  const destRelPaths = body.map((rel) => `${skillDirName}/${rel.slice(skill.rootPath.length + 1)}`);
   return hashTree(fs, destRoot, destRelPaths);
 }
 
@@ -147,10 +152,33 @@ async function applyHook(
  * recording every managed file and hook edit.
  */
 export async function installSkill(opts: InstallOptions): Promise<InstallManifest> {
-  const { adapter, target, env, skill } = opts;
+  const { fs, adapter, target, env, skill } = opts;
   const destRoot = await adapter.destinationRoot(target, env);
 
-  const files = await copyBody(opts, destRoot);
+  const bodyFiles = await copyBody(opts, destRoot);
+
+  // Content hash over skill-relative body paths (dest prefix stripped), which is
+  // stable across install locations and comparable to a repository skill's hash.
+  const skillDirName = skill.id.name;
+  const hash = contentHash(
+    bodyFiles.map((f) => ({ relPath: f.relPath.slice(skillDirName.length + 1), sha256: f.sha256 })),
+  );
+
+  // Write our authoritative identity file, then record it as a managed file so
+  // uninstall removes it and verify checks it.
+  const skidRel = `${skillDirName}/${SKID_FILE}`;
+  const skidText = serializeSkid({
+    schema: 1,
+    remote: opts.sourceRemote,
+    name: skill.id.name,
+    group: skill.id.group,
+    version: hash,
+  });
+  await fs.writeFile(`${destRoot}/${skidRel}`, skidText);
+  const files: ManagedFile[] = [
+    ...bodyFiles,
+    { relPath: skidRel, sha256: sha256(skidText), executable: false },
+  ].sort((a, b) => (a.relPath < b.relPath ? -1 : a.relPath > b.relPath ? 1 : 0));
 
   const hookEdits: ManagedHookEdit[] = [];
   if (opts.allowHooks === true) {
@@ -166,7 +194,9 @@ export async function installSkill(opts: InstallOptions): Promise<InstallManifes
     target,
     destinationRoot: destRoot,
     sourceRepoId: opts.sourceRepoId,
+    sourceRemote: opts.sourceRemote,
     sourcePath: opts.sourcePath,
+    contentHash: hash,
     version: skill.manifest.version,
     installedAt: new Date(now).toISOString(),
     files,
