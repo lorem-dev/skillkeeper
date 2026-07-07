@@ -1,0 +1,50 @@
+// Skill-save (review changes) modal. Wide to fit the diff table.
+.sk-save-modal {
+  max-width: 760px;
+}
+
+.sk-save-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+}
+
+.sk-save-modal__action--install {
+  color: var(--sk-green);
+}
+
+.sk-save-modal__action--remove {
+  color: var(--sk-red);
+}
+
+.sk-save-modal__agents {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  min-width: 0;
+}
+
+.sk-save-modal__agents-changed {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  color: var(--sk-color-accent);
+}
+
+.sk-save-modal__progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+}
+
+.sk-save-modal__progress-label {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-save-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+}

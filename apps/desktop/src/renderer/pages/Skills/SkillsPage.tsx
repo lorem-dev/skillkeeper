@@ -21,8 +21,11 @@ import {
   SearchSummary,
   TreeView,
   ChangeBadge,
+  Icon,
 } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
+import type { AgentKind } from '@/services/bridge';
+import { AgentSelect } from '@/entities/agent';
 import {
   buildRepoTree,
   buildProjectTree,
@@ -33,16 +36,23 @@ import {
   countLeaves,
 } from '@/entities/skill';
 import { SkillInstallModal } from '@/features/skillInstall';
+import { SkillSaveModal } from '@/features/skillSave';
 import './SkillsPage.scss';
 
 type Mode = 'repositories' | 'projects';
+
+/** Whether two agent lists hold the same set. */
+function sameAgents(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  return b.every((x) => set.has(x));
+}
 
 export function SkillsPage() {
   const availableSkills = useSkillkeeperStore((s) => s.availableSkills);
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const projects = useSkillkeeperStore((s) => s.projects);
   const installs = useSkillkeeperStore((s) => s.skills);
-  const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
 
   const [mode, setMode] = useState<Mode>('projects');
@@ -53,6 +63,9 @@ export function SkillsPage() {
   const [repoChecked, setRepoChecked] = useState<string[]>([]);
   const [projectChecked, setProjectChecked] = useState<string[]>(() => installedLeafIds(installs));
   const [installOpen, setInstallOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
+  // Chosen agents per project (project id -> agents); seeded from the installed set.
+  const [projectAgents, setProjectAgents] = useState<Record<string, AgentKind[]>>({});
 
   // The installed skills are the project-mode baseline (pre-checked). Re-seed the
   // project selection whenever that baseline changes (initial load, save, reload).
@@ -60,6 +73,27 @@ export function SkillsPage() {
   useEffect(() => {
     setProjectChecked([...installedSet]);
   }, [installedSet]);
+
+  // Agents each project currently has skills installed for (the baseline for the
+  // "agents changed" indicator).
+  const installedAgents = useMemo(() => {
+    const map: Record<string, AgentKind[]> = {};
+    for (const m of installs) {
+      const pid = m.target.projectId;
+      if (m.target.scope !== 'project' || pid === undefined) continue;
+      const list = (map[pid] ??= []);
+      if (!list.includes(m.target.agent)) list.push(m.target.agent);
+    }
+    return map;
+  }, [installs]);
+
+  useEffect(() => {
+    setProjectAgents((prev) => {
+      const next = { ...prev };
+      for (const p of projects) if (next[p.id] === undefined) next[p.id] = installedAgents[p.id] ?? [];
+      return next;
+    });
+  }, [projects, installedAgents]);
 
   // The filters narrow which repos/projects appear (empty = all).
   const shownRepos = useMemo(
@@ -81,14 +115,15 @@ export function SkillsPage() {
 
   const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
 
-  // Project mode: tag each visible skill leaf with its install-status badge.
+  // Project mode: tag each visible skill leaf with its install-status badge, and
+  // give each project root an agent picker (with an "agents changed" marker).
   const decorated = useMemo(() => {
     if (mode !== 'projects') return shownTree;
     const checkedSet = new Set(projectChecked);
-    const decorate = (nodes: readonly TreeNode[]): TreeNode[] =>
+    const decorateLeaves = (nodes: readonly TreeNode[]): TreeNode[] =>
       nodes.map((node) => {
         if (node.children !== undefined && node.children.length > 0) {
-          return { ...node, children: decorate(node.children) };
+          return { ...node, children: decorateLeaves(node.children) };
         }
         const wasInstalled = installedSet.has(node.id);
         const isChecked = checkedSet.has(node.id);
@@ -99,8 +134,27 @@ export function SkillsPage() {
         else detail = undefined;
         return { ...node, detail };
       });
-    return decorate(shownTree);
-  }, [mode, shownTree, projectChecked, installedSet, t]);
+    return shownTree.map((root) => {
+      const pid = root.id.replace(/^proj::/, '');
+      const chosen = projectAgents[pid] ?? [];
+      const changed = !sameAgents(chosen, installedAgents[pid] ?? []);
+      const trailing = (
+        <span className="sk-skills-agentctl">
+          {changed && (
+            <span className="sk-skills-agentctl__changed" aria-label={t('skills.agentsChanged')}>
+              <Icon name="sync" size={14} />
+            </span>
+          )}
+          <AgentSelect
+            value={chosen}
+            onChange={(next) => setProjectAgents((prev) => ({ ...prev, [pid]: next }))}
+            ariaLabel={t('skills.agentsLabel')}
+          />
+        </span>
+      );
+      return { ...root, trailing, children: decorateLeaves(root.children ?? []) };
+    });
+  }, [mode, shownTree, projectChecked, installedSet, projectAgents, installedAgents, t]);
 
   const searching = query.trim() !== '';
   const totalSkills = useMemo(() => countLeaves(baseTree), [baseTree]);
@@ -127,10 +181,7 @@ export function SkillsPage() {
   }
 
   function onSave(): void {
-    notify(
-      t('skills.savePending', { add: String(pendingAdd), remove: String(pendingRemove) }),
-      'info',
-    );
+    setSaveOpen(true);
   }
 
   const sourceOptions = [
@@ -239,6 +290,12 @@ export function SkillsPage() {
         open={installOpen}
         onClose={() => setInstallOpen(false)}
         skillKeys={repoChecked}
+      />
+      <SkillSaveModal
+        open={saveOpen}
+        onClose={() => setSaveOpen(false)}
+        checkedIds={projectChecked}
+        projectAgents={projectAgents}
       />
     </Page>
   );

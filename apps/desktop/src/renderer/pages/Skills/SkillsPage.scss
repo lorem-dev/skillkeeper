@@ -25,6 +25,19 @@
   margin-top: var(--sk-space-4);
 }
 
+// Per-project agent control in the tree (with an "agents changed" marker).
+.sk-skills-agentctl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+}
+
+.sk-skills-agentctl__changed {
+  display: inline-flex;
+  align-items: center;
+  color: var(--sk-color-accent);
+}
+
 // Search footer (stats + reset). Pinned to the bottom of the viewport-filling
 // page body when the tree is short; a long tree pushes it down to scroll.
 .sk-list-footer {
