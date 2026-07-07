@@ -7,6 +7,9 @@
   flex-direction: column;
   width: 100%;
   min-height: 0;
+  // Surface the header gradient blends toward; override where the table sits on
+  // a different surface. Defaults to the elevated (modal) surface.
+  --sk-table-surface: var(--sk-color-bg-tertiary);
 }
 
 .sk-table__head,
@@ -32,6 +35,8 @@
   z-index: 2;
   backdrop-filter: blur(10px) saturate(160%);
   -webkit-backdrop-filter: blur(10px) saturate(160%);
+  // Solid at the top (blends into the surface, no sharp edge), fading down.
+  background: linear-gradient(to bottom, var(--sk-table-surface), transparent);
 }
 
 // When scrolled, the header extends its own blur just below itself (a masked
@@ -42,14 +47,16 @@
   top: 100%;
   left: 0;
   right: 0;
-  height: 16px;
+  height: 22px;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
   backdrop-filter: blur(8px) saturate(160%);
   -webkit-backdrop-filter: blur(8px) saturate(160%);
-  mask-image: linear-gradient(to bottom, #000 35%, transparent);
-  -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent);
+  // Blends into the surface just under the header, fading down -- no hard edge.
+  background: linear-gradient(to bottom, var(--sk-table-surface), transparent);
+  mask-image: linear-gradient(to bottom, #000, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
 }
 
 .sk-table__head--scrolled::after {
@@ -121,11 +128,13 @@
 
 .sk-table__fade--bottom {
   bottom: 0;
-  height: 44px;
+  height: 56px;
   backdrop-filter: blur(8px) saturate(160%);
   -webkit-backdrop-filter: blur(8px) saturate(160%);
-  mask-image: linear-gradient(to top, #000 35%, transparent);
-  -webkit-mask-image: linear-gradient(to top, #000 35%, transparent);
+  // Solid at the bottom (blends into the surface), fading up -- no hard edge.
+  background: linear-gradient(to top, var(--sk-table-surface), transparent);
+  mask-image: linear-gradient(to top, #000, transparent);
+  -webkit-mask-image: linear-gradient(to top, #000, transparent);
 }
 
 .sk-table__fade--visible {
