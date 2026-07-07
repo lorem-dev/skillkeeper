@@ -31,7 +31,8 @@ import {
   collectBranchIds,
   rootIds,
   countLeaves,
-} from './lib/skillTree';
+} from '@/entities/skill';
+import { SkillInstallModal } from '@/features/skillInstall';
 import './SkillsPage.scss';
 
 type Mode = 'repositories' | 'projects';
@@ -51,6 +52,7 @@ export function SkillsPage() {
   const [projectFilter, setProjectFilter] = useState<string[]>([]);
   const [repoChecked, setRepoChecked] = useState<string[]>([]);
   const [projectChecked, setProjectChecked] = useState<string[]>(() => installedLeafIds(installs));
+  const [installOpen, setInstallOpen] = useState(false);
 
   // The installed skills are the project-mode baseline (pre-checked). Re-seed the
   // project selection whenever that baseline changes (initial load, save, reload).
@@ -121,8 +123,7 @@ export function SkillsPage() {
   }
 
   function onAdd(): void {
-    // Execution (install into a chosen target) is a follow-up; surface the intent.
-    notify(t('skills.installPending', { count: String(repoChecked.length) }), 'info');
+    setInstallOpen(true);
   }
 
   function onSave(): void {
@@ -234,6 +235,11 @@ export function SkillsPage() {
           )}
         </>
       )}
+      <SkillInstallModal
+        open={installOpen}
+        onClose={() => setInstallOpen(false)}
+        skillKeys={repoChecked}
+      />
     </Page>
   );
 }

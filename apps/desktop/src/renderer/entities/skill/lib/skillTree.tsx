@@ -35,6 +35,25 @@ export function projectSkillKey(
   return [projectId, repoId, group ?? '', name].join(SEP);
 }
 
+/** A skill reference parsed from a checkbox key. */
+export interface ParsedSkillRef {
+  readonly repoId: string;
+  readonly group?: string;
+  readonly name: string;
+}
+
+/** Parse a repo-mode key `repoId::group::name`. */
+export function parseRepoSkillKey(key: string): ParsedSkillRef {
+  const [repoId = '', group = '', name = ''] = key.split(SEP);
+  return { repoId, group: group === '' ? undefined : group, name };
+}
+
+/** Parse a project-mode key `projectId::repoId::group::name`. */
+export function parseProjectSkillKey(key: string): ParsedSkillRef & { readonly projectId: string } {
+  const [projectId = '', repoId = '', group = '', name = ''] = key.split(SEP);
+  return { projectId, repoId, group: group === '' ? undefined : group, name };
+}
+
 function pushTo<K>(map: Map<K, AvailableSkill[]>, key: K, value: AvailableSkill): void {
   const arr = map.get(key);
   if (arr !== undefined) arr.push(value);
@@ -157,6 +176,22 @@ export function collectBranchIds(nodes: readonly TreeNode[]): string[] {
 /** Top-level node ids (repos/projects), so the first level opens by default. */
 export function rootIds(nodes: readonly TreeNode[]): string[] {
   return nodes.map((n) => n.id);
+}
+
+/** Branch ids that have a descendant leaf whose id is in `keys` (ancestors of
+ *  the changed leaves), so only those branches need to open. */
+export function branchesContaining(nodes: readonly TreeNode[], keys: ReadonlySet<string>): string[] {
+  const out: string[] = [];
+  const walk = (node: TreeNode): boolean => {
+    const kids = node.children;
+    if (kids === undefined || kids.length === 0) return keys.has(node.id);
+    let any = false;
+    for (const child of kids) if (walk(child)) any = true;
+    if (any) out.push(node.id);
+    return any;
+  };
+  for (const node of nodes) walk(node);
+  return out;
 }
 
 /** Number of leaf (skill) nodes in the tree. */

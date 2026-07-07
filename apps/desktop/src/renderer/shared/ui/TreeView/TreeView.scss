@@ -124,6 +124,14 @@
   color: var(--sk-color-accent);
 }
 
+// A node-supplied trailing control (e.g. an agent picker) in the detail column.
+.sk-tree__trailing {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  margin-inline-start: var(--sk-space-3);
+}
+
 // A tooltip trigger is an inline span by default; its baseline strut shifts an
 // icon detail (e.g. a ChangeBadge) off the row center. Flex it so the badge
 // centers cleanly (same pattern as SplitButton).

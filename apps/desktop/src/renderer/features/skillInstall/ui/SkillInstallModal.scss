@@ -1,0 +1,58 @@
+// Skill-install modal. Widens when it advances to the project tree.
+.sk-skill-modal {
+  max-width: 480px;
+  transition: max-width var(--sk-duration-medium) var(--sk-ease-standard);
+}
+
+.sk-skill-modal--wide {
+  max-width: 760px;
+}
+
+.sk-skill-modal__step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+}
+
+.sk-skill-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+}
+
+.sk-skill-modal__label {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+// The tree scrolls within the modal so long projects do not push it off-screen.
+.sk-skill-modal__tree {
+  max-height: 46vh;
+  overflow-y: auto;
+  margin: 0 calc(-1 * var(--sk-space-2));
+}
+
+.sk-skill-modal__progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+}
+
+.sk-skill-modal__progress-label {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-skill-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+}
+
+.sk-skill-modal__summary {
+  margin-inline-end: auto;
+  font-size: 13px;
+  color: var(--sk-color-label-2);
+  font-variant-numeric: tabular-nums;
+}

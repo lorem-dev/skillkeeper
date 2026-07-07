@@ -1,0 +1,46 @@
+// AgentSelect styles. Co-located; tokens only. A small pill trigger: robot
+// glyph + a grey count circle.
+
+.sk-agent-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-1);
+  height: 26px;
+  padding: 0 var(--sk-space-2);
+  border: 0;
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-color-fill-3);
+  color: var(--sk-color-label);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background var(--sk-duration-fast) var(--sk-ease-standard);
+
+  &:hover:not(:disabled) {
+    background: var(--sk-color-fill-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sk-color-accent);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    color: var(--sk-color-label-3);
+    cursor: default;
+  }
+}
+
+.sk-agent-select__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--sk-space-1);
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-color-fill-1);
+  color: var(--sk-color-label-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
