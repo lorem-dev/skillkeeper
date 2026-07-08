@@ -67,6 +67,10 @@ $themes: (
 
   --sk-color-accent: var(--sk-blue);
 
+  // Neutral hover fill shared by the cards (project / repository): lighter than
+  // the surface on light, the standard fill on dark (see the dark override).
+  --sk-card-hover-bg: var(--sk-color-bg-secondary);
+
   // type
   --sk-font-sans: "Inter", system-ui, sans-serif;
   --sk-font-display: "Cormorant Garamond", Georgia, serif;
@@ -94,12 +98,12 @@ $themes: (
   // search, segmented, stepper) so they align on one baseline in rows/toolbars.
   --sk-control-height: 32px;
 
-  // elevation. The light theme carries depth mainly through the drop shadow, so
-  // these are relatively strong; the dark theme softens them (see the override
-  // below) and leans on the hairline glass border for edge definition instead.
-  --sk-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.14);
-  --sk-shadow-2: 0 6px 20px rgba(0, 0, 0, 0.20);
-  --sk-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.30);
+  // elevation. The light theme carries depth mainly through the drop shadow; the
+  // dark theme softens these further (see the override below) and leans on the
+  // hairline glass border for edge definition instead.
+  --sk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.10);
+  --sk-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.14);
+  --sk-shadow-3: 0 12px 36px rgba(0, 0, 0, 0.22);
   // White control knobs (slider/toggle) need a crisp rim + drop shadow so they
   // stay visible on light backgrounds, not just a soft elevation shadow.
   --sk-shadow-knob: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.28),
@@ -136,4 +140,5 @@ $themes: (
   --sk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.08);
   --sk-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.12);
   --sk-shadow-3: 0 12px 40px rgba(0, 0, 0, 0.20);
+  --sk-card-hover-bg: var(--sk-color-fill-3);
 }

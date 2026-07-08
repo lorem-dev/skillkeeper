@@ -51,6 +51,20 @@
   }
 }
 
+// Leading icon (the selected option's), pinned inside the input's leading edge.
+.sk-combobox__leading {
+  position: absolute;
+  inset-inline-start: var(--sk-space-3);
+  display: inline-flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+// Make room for the leading icon: leading pad + the 18px icon + a small gap.
+.sk-combobox__input--with-icon {
+  padding-inline-start: calc(var(--sk-space-3) + 18px + var(--sk-space-2));
+}
+
 // Chevron sits at the trailing edge; it does not capture clicks (the input does).
 .sk-combobox__chevron {
   position: absolute;
@@ -122,6 +136,14 @@
   align-items: center;
   justify-content: center;
   color: var(--sk-color-accent);
+}
+
+// Per-option leading icon (e.g. a ProjectIcon), between the check and the label.
+.sk-combobox__option-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
 }
 
 .sk-combobox__option-label {

@@ -17,6 +17,9 @@ import './Combobox.scss';
 export interface ComboboxOption {
   readonly value: string;
   readonly label: string;
+  /** Optional leading icon, shown in the list row and (for the selected option)
+   * in the input. */
+  readonly icon?: ReactNode;
   readonly disabled?: boolean;
 }
 
@@ -31,6 +34,10 @@ export interface ComboboxProps {
   readonly disabled?: boolean;
   /** Message shown in the list when no option matches the query. */
   readonly emptyText?: string;
+  /** Leading icon shown while there is no committed selection or the user is
+   * typing (an "unknown" placeholder). Once a selection is idle, that option's
+   * own `icon` replaces it. */
+  readonly fallbackIcon?: ReactNode;
   /** Truncate the DISPLAYED label to this many chars (with an ellipsis). The
    * full label is still used for filtering, and the full value is committed. */
   readonly maxLabelLength?: number;
@@ -72,6 +79,7 @@ export function Combobox({
   ariaLabel,
   disabled,
   emptyText,
+  fallbackIcon,
   maxLabelLength,
   className,
 }: ComboboxProps) {
@@ -97,6 +105,10 @@ export function Combobox({
   // truncated display form; the full label is shown for editing on focus).
   useEffect(() => {
     if (open) return;
+    // Closing without committing reverts to the current selection: reset the
+    // edit flag too, so the leading icon returns to the selected option's (not
+    // the typing/unknown fallback).
+    setDirty(false);
     const label = selected?.label ?? '';
     setQuery(
       maxLabelLength !== undefined && label.length > maxLabelLength
@@ -221,8 +233,16 @@ export function Combobox({
     transformOrigin: pos?.side === 'top' ? 'bottom left' : 'top left',
   };
 
+  // Leading adornment: the selected option's icon once a choice is committed and
+  // idle; otherwise (no selection yet, or the user is typing) the fallback icon.
+  const leadingIcon = selected !== undefined && !dirty ? selected.icon : fallbackIcon;
   const control = (
     <div className="sk-combobox__wrap">
+      {leadingIcon !== undefined && (
+        <span className="sk-combobox__leading" aria-hidden="true">
+          {leadingIcon}
+        </span>
+      )}
       <input
         ref={inputRef}
         type="text"
@@ -233,7 +253,7 @@ export function Combobox({
         aria-activedescendant={open && activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
         aria-label={ariaLabel}
         aria-labelledby={label !== undefined ? labelId : undefined}
-        className="sk-combobox__input"
+        className={cx('sk-combobox__input', leadingIcon !== undefined && 'sk-combobox__input--with-icon')}
         value={query}
         placeholder={placeholder}
         disabled={disabled}
@@ -287,6 +307,11 @@ export function Combobox({
                       <span className="sk-combobox__check" aria-hidden="true">
                         {o.value === value ? <Icon name="check" size={16} /> : null}
                       </span>
+                      {o.icon !== undefined && (
+                        <span className="sk-combobox__option-icon" aria-hidden="true">
+                          {o.icon}
+                        </span>
+                      )}
                       <span className="sk-combobox__option-label">{display(o.label)}</span>
                     </div>
                   ))

@@ -61,10 +61,11 @@ Source: [shared/ui/Card/Card.tsx](../../apps/desktop/src/renderer/shared/ui/Card
 Source: [shared/ui/Divider/Divider.tsx](../../apps/desktop/src/renderer/shared/ui/Divider/Divider.tsx)
 
 ### GlassSurface
-`<GlassSurface depth? strength? blur? chromaticAberration?>children</GlassSurface>`
+`<GlassSurface depth? strength? blur? chromaticAberration? borderBrightness?>children</GlassSurface>`
 -- a translucent panel whose backdrop is refracted like glass, with the
 displacement concentrated at the rim so the edge reads as a rounded glass lens,
-plus a directional rim shine. The refraction is applied by the `useGlassRefraction`
+plus a directional rim shine. `borderBrightness` (default 1) scales the rim
+border's opacity -- lower (e.g. 0.5) dims it, higher intensifies it. The refraction is applied by the `useGlassRefraction`
 hook (`@/shared/lib`) via a per-element SVG displacement filter in
 `backdrop-filter` (re-measured on resize); the surface clips it to the rounded
 shape (`overflow: hidden`) for a clean edge and a thin gradient rim border (bright
@@ -242,10 +243,13 @@ Source: [shared/ui/IntervalStepper/IntervalStepper.tsx](../../apps/desktop/src/r
 ### Combobox
 `<Combobox options value onChange label? placeholder? emptyText? maxLabelLength?
 ariaLabel? disabled? />` -- a text input paired with a filterable dropdown list;
-typing filters `options: { value, label, disabled? }[]` and the selection commits
-a single `value`. The input matches the text field / select trigger; the list
-matches the Menu (glass, portal-positioned, window-aware). `maxLabelLength`
-truncates the displayed label only. Design-system.md 8.11.
+typing filters `options: { value, label, icon?, disabled? }[]` and the selection
+commits a single `value`. An option's `icon` shows in its list row and, for the
+selected option, as a leading adornment in the input; `fallbackIcon` fills that
+leading slot while nothing is committed or the user is typing. The input matches the text
+field / select trigger; the list matches the Menu (glass, portal-positioned,
+window-aware). `maxLabelLength` truncates the displayed label only.
+Design-system.md 8.11.
 Source: [shared/ui/Combobox/Combobox.tsx](../../apps/desktop/src/renderer/shared/ui/Combobox/Combobox.tsx)
 
 ### MultiCombobox

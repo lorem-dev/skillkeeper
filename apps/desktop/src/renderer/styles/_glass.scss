@@ -4,6 +4,10 @@
 // Thin gradient border (the --sk-glass-border ring), painted on an ::after and
 // masked to the padding ring so only the border shows. The including selector
 // must establish a positioning context (position: relative or isolate).
+//
+// Brightness: the rim's visibility scales with `--sk-glass-border-strength`
+// (default 1). Set it lower on an element (e.g. GlassSurface's `borderBrightness`
+// prop) to dim the rim.
 @mixin border {
   &::after {
     content: '';
@@ -12,6 +16,7 @@
     border-radius: inherit;
     padding: var(--sk-glass-border-width);
     background: var(--sk-glass-border);
+    opacity: var(--sk-glass-border-strength, 1);
     pointer-events: none;
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,

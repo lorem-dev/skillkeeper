@@ -301,15 +301,15 @@ Defaults: control inner padding `--sk-space-3`/`--sk-space-4`; row padding
 ### 5.3 Elevation
 
 Shadows are theme-varying. The light theme carries depth mostly through the drop
-shadow, so its values are relatively strong; the values below are the light
-theme. The dark theme softens them (shadows read faintly on dark surfaces) and
-leans on the hairline glass border for edge definition instead.
+shadow; the values below are the light theme. The dark theme softens them
+further (shadows read faintly on dark surfaces) and leans on the hairline glass
+border for edge definition instead.
 
 | Token            | Light                                  | Dark                          | Use               |
 | ---------------- | -------------------------------------- | ----------------------------- | ----------------- |
-| `--sk-shadow-1`  | `0 1px 3px rgba(0,0,0,0.14)`           | `0 1px 2px rgba(0,0,0,0.08)`  | raised cells/rows |
-| `--sk-shadow-2`  | `0 6px 20px rgba(0,0,0,0.20)`          | `0 4px 16px rgba(0,0,0,0.12)` | popovers, menus   |
-| `--sk-shadow-3`  | `0 16px 48px rgba(0,0,0,0.30)`         | `0 12px 40px rgba(0,0,0,0.20)`| sheets, alerts    |
+| `--sk-shadow-1`  | `0 1px 2px rgba(0,0,0,0.10)`           | `0 1px 2px rgba(0,0,0,0.08)`  | raised cells/rows |
+| `--sk-shadow-2`  | `0 4px 14px rgba(0,0,0,0.14)`          | `0 4px 16px rgba(0,0,0,0.12)` | popovers, menus   |
+| `--sk-shadow-3`  | `0 12px 36px rgba(0,0,0,0.22)`         | `0 12px 40px rgba(0,0,0,0.20)`| sheets, alerts    |
 
 ---
 
