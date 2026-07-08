@@ -1,53 +1,144 @@
 .sk-project-card {
+  // Own stacking context + clip so the decorative left wash sits behind the
+  // content (z-index -1) and is cropped to the card's rounded shape.
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   display: flex;
   align-items: center;
-  gap: var(--sk-space-4);
+  gap: var(--sk-space-3);
   padding: var(--sk-space-4) var(--sk-space-5);
   transition: background var(--sk-duration-fast) var(--sk-ease-standard);
+
+  // Wash tuning, per theme. Rest gradient opacity is shared; on hover the two
+  // themes differ: light (default) reverses the gradient direction and just
+  // brightens the diagonal gradient (no flat flood), while dark (the renderer's
+  // default) keeps the gradient as-is and floods the whole card instead.
+  --sk-project-wash-angle: 315deg;
+  --sk-project-diag-opacity: 0.13;
+  --sk-project-img-opacity: 0.16;
+  // Light hover: brighter gradient, no flood.
+  --sk-project-diag-hover: 0.3;
+  --sk-project-img-hover: 0.34;
+  --sk-project-flood-opacity: 0;
+  --sk-project-flood-img-opacity: 0;
+}
+
+[data-theme='dark'] .sk-project-card {
+  --sk-project-wash-angle: 135deg;
+  // Dark hover: gradient unchanged, flat flood fades in.
+  --sk-project-diag-hover: 0.13;
+  --sk-project-img-hover: 0.16;
+  --sk-project-flood-opacity: 0.14;
+  --sk-project-flood-img-opacity: 0.3;
+}
+
+// Decorative wash behind the content: a weak diagonal colour field stretched
+// across most of the card (a name-hash hue, or a blurred blow-up of the project
+// icon), plus a flat flood that fades in on hover to tint the whole card. All
+// non-interactive and clipped to the card's rounded shape.
+.sk-project-card__wash {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+// No-icon rest layer: a diagonal colour gradient (top-left -> transparent),
+// stretched almost the full length and kept faint.
+.sk-project-card__wash-diag {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(var(--sk-project-wash-angle), var(--sk-project-wash), transparent 90%);
+  opacity: var(--sk-project-diag-opacity);
+  transition: opacity var(--sk-duration-medium) var(--sk-ease-standard);
+}
+
+// Icon rest layer: the project icon blown up and blurred into a colour field,
+// faded diagonally to transparent -- a pseudo-gradient from the icon's colours.
+.sk-project-card__wash-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.8);
+  filter: blur(22px);
+  opacity: var(--sk-project-img-opacity);
+  transition: opacity var(--sk-duration-medium) var(--sk-ease-standard);
+  -webkit-mask-image: linear-gradient(var(--sk-project-wash-angle), #000, transparent 90%);
+  mask-image: linear-gradient(var(--sk-project-wash-angle), #000, transparent 90%);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
+// Flat flood: transparent at rest, fades in on hover to colour the whole card.
+.sk-project-card__wash-flood {
+  position: absolute;
+  inset: 0;
+  background: var(--sk-project-wash);
+  opacity: 0;
+  transition: opacity var(--sk-duration-medium) var(--sk-ease-standard);
+}
+
+// Icon cards: on hover the whole card fills with an enlarged, heavily blurred
+// blow-up of the project icon (a colour field pulled from the icon itself).
+// Transparent at rest; fades in on hover.
+.sk-project-card__wash-flood-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(2.2);
+  filter: blur(30px);
+  opacity: 0;
+  transition: opacity var(--sk-duration-medium) var(--sk-ease-standard);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
 }
 
 // Keep the card highlighted while its open-project dropdown is open, even though
 // the menu is a portal and the pointer has left the card.
 .sk-project-card:hover,
 .sk-project-card:has(.sk-split-button--open) {
-  background: var(--sk-color-fill-3);
+  background: var(--sk-card-hover-bg);
 }
 
-// Leading project glyph/icon, raised to sit level with the project name (the
-// title row) rather than centred against the whole name/path/badges column:
-// top-align it and give it the name's line height so its contents centre on that
-// first line.
-.sk-project-card__leading {
-  display: inline-flex;
-  flex: none;
+// Colour the whole card on hover (and while its dropdown is open): the flood
+// layer fades in over the base. Animated via its opacity transition.
+.sk-project-card:hover .sk-project-card__wash-flood,
+.sk-project-card:has(.sk-split-button--open) .sk-project-card__wash-flood {
+  opacity: var(--sk-project-flood-opacity);
+}
+
+.sk-project-card:hover .sk-project-card__wash-flood-img,
+.sk-project-card:has(.sk-split-button--open) .sk-project-card__wash-flood-img {
+  opacity: var(--sk-project-flood-img-opacity);
+}
+
+// Brighten the diagonal gradient on hover (the light theme leans on this; the
+// dark theme leaves it unchanged and uses the flood above instead).
+.sk-project-card:hover .sk-project-card__wash-diag,
+.sk-project-card:has(.sk-split-button--open) .sk-project-card__wash-diag {
+  opacity: var(--sk-project-diag-hover);
+}
+
+.sk-project-card:hover .sk-project-card__wash-img,
+.sk-project-card:has(.sk-split-button--open) .sk-project-card__wash-img {
+  opacity: var(--sk-project-img-hover);
+}
+
+// Position the leading ProjectIcon on the title line: top-aligned so the text
+// column beside it keeps a single left edge (empty space under the icon), nudged
+// down 1px to sit optically on the title. The icon's own look lives in
+// ProjectIcon.scss.
+.sk-project-card__leading-icon {
   align-self: flex-start;
-  align-items: center;
-  justify-content: center;
-  height: 1.3em; // matches .sk-project-card__name line-height (14px * 1.3)
-  // Nudge down a hair so the glyph optically sits on the title baseline.
-  margin-top: 3px;
-  color: var(--sk-color-label-2);
-}
-
-// The project's own icon (when the folder carries one). Same footprint as the
-// default 20x20 glyph so the card layout does not shift; rounded and cropped to
-// the box. Decorative (the name is the label) and not draggable.
-.sk-project-card__icon-img {
-  display: block;
-  // Locked 20x20: flex must not grow or shrink it, and the min/max clamps stop a
-  // large or oddly-shaped source image from resizing the box.
-  flex: none;
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  min-height: 20px;
-  max-width: 20px;
-  max-height: 20px;
-  border-radius: var(--sk-radius-xs);
-  object-fit: cover;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-user-drag: none;
+  margin-top: 1px;
 }
 
 .sk-project-card__main {
@@ -122,6 +213,10 @@
   align-items: center;
   gap: var(--sk-space-2);
   flex: none;
+  // Top-align with the leading icon tile (same nudge) instead of centring against
+  // the whole card, so the controls sit level with the icon block.
+  align-self: flex-start;
+  margin-top: 3px;
   opacity: 0;
   transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
 }

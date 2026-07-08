@@ -6,9 +6,10 @@
   transition: background var(--sk-duration-fast) var(--sk-ease-standard);
 }
 
-// Hover lifts the surface a touch lighter (matches the ListRow/Sidebar hover fill).
+// Hover lifts the surface with the shared card hover fill (lighter on light,
+// the standard fill on dark) -- same colour as the project card.
 .sk-repo-card:hover {
-  background: var(--sk-color-fill-3);
+  background: var(--sk-card-hover-bg);
 }
 
 .sk-repo-card__main {
@@ -101,6 +102,10 @@
   align-items: center;
   gap: var(--sk-space-2);
   flex: none;
+  // Top-align the controls (level with the title row / the project card's icon
+  // tile) rather than centring them against the whole card.
+  align-self: flex-start;
+  margin-top: 3px;
   opacity: 0;
   transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
 }

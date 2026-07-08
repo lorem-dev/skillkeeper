@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Project } from '@/services/bridge';
 import { Badge, Card, Button, Icon, Skeleton, Tooltip } from '@/shared/ui';
 import { transitionFast } from '@/shared/lib';
+import { ProjectIcon, hueFromName } from './ProjectIcon';
 import './ProjectCard.scss';
 
 /** Longest project name shown before it is truncated with a trailing "...". */
@@ -70,17 +71,41 @@ export function ProjectCard({
   onEdit,
   onRemove,
 }: ProjectCardProps) {
+  const washHue = hueFromName(project.name);
   return (
     <Card className="sk-project-card">
-      <span className="sk-project-card__leading" aria-hidden="true">
+      {/* Decorative left wash: a blurred, scaled copy of the project icon when
+          there is one, else a soft colour field keyed to the project name. It
+          fades to transparent toward the centre. */}
+      <span
+        className="sk-project-card__wash"
+        aria-hidden="true"
+        style={{ '--sk-project-wash': `hsl(${washHue} 55% 58%)` } as CSSProperties}
+      >
         {iconUrl !== undefined ? (
-          <img className="sk-project-card__icon-img" src={iconUrl} alt="" draggable={false} />
+          <>
+            <img className="sk-project-card__wash-img" src={iconUrl} alt="" draggable={false} />
+            {/* On hover, an enlarged, blurred blow-up of the icon fills the whole
+                card. */}
+            <img className="sk-project-card__wash-flood-img" src={iconUrl} alt="" draggable={false} />
+          </>
         ) : (
-          // Match the custom icon's 20x20 footprint so the layout is identical
-          // whether or not a project ships its own icon.
-          <Icon name="projects" size={20} />
+          <>
+            <span className="sk-project-card__wash-diag" />
+            {/* On hover, a flat colour flood tints the whole card. */}
+            <span className="sk-project-card__wash-flood" />
+          </>
         )}
       </span>
+      {/* Leading project icon, top-aligned to the title line; the text column
+          (name / path / badges) starts to its right, so the space under the icon
+          is empty. */}
+      <ProjectIcon
+        iconUrl={iconUrl}
+        name={project.name}
+        size={18}
+        className="sk-project-card__leading-icon"
+      />
       <div className="sk-project-card__main">
         <span className="sk-project-card__name-row">
           <span className="sk-project-card__name">{truncateEnd(project.name, NAME_MAX)}</span>
@@ -147,6 +172,7 @@ export function ProjectCard({
             <Tooltip content={editLabel}>
               <Button
                 variant="secondary"
+                glass
                 className="sk-project-card__icon-btn"
                 onClick={onEdit}
                 aria-label={editLabel}
