@@ -85,6 +85,15 @@ export {
 } from './hookJson.js';
 export type { OwnershipMarker, MergeOptions } from './hookJson.js';
 
+// Guidance block management.
+export {
+  guidanceKey,
+  skillGuidanceId,
+  upsertGuidanceBlock,
+  removeGuidanceBlock,
+  hasGuidanceBlock,
+} from './guidance.js';
+
 // Install / uninstall.
 export { installSkill, uninstallSkill } from './install.js';
 export type { InstallOptions } from './install.js';
