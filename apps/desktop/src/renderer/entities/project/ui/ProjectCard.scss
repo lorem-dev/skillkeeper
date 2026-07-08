@@ -13,13 +13,41 @@
   background: var(--sk-color-fill-3);
 }
 
-// Leading project glyph, vertically centred against the name/path column.
+// Leading project glyph/icon, raised to sit level with the project name (the
+// title row) rather than centred against the whole name/path/badges column:
+// top-align it and give it the name's line height so its contents centre on that
+// first line.
 .sk-project-card__leading {
   display: inline-flex;
   flex: none;
+  align-self: flex-start;
   align-items: center;
   justify-content: center;
+  height: 1.3em; // matches .sk-project-card__name line-height (14px * 1.3)
+  // Nudge down a hair so the glyph optically sits on the title baseline.
+  margin-top: 3px;
   color: var(--sk-color-label-2);
+}
+
+// The project's own icon (when the folder carries one). Same footprint as the
+// default 20x20 glyph so the card layout does not shift; rounded and cropped to
+// the box. Decorative (the name is the label) and not draggable.
+.sk-project-card__icon-img {
+  display: block;
+  // Locked 20x20: flex must not grow or shrink it, and the min/max clamps stop a
+  // large or oddly-shaped source image from resizing the box.
+  flex: none;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  max-width: 20px;
+  max-height: 20px;
+  border-radius: var(--sk-radius-xs);
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
 }
 
 .sk-project-card__main {
@@ -41,6 +69,8 @@
   min-width: 0;
   font-size: 14px;
   font-weight: 600;
+  // Explicit so the leading glyph's box (height: 1.3em) lines up with this row.
+  line-height: 1.3;
   color: var(--sk-color-label);
   overflow: hidden;
   text-overflow: ellipsis;

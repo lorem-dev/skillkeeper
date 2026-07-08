@@ -134,3 +134,16 @@
 .sk-list-footer {
   margin-top: auto;
 }
+
+// A project's own icon on its tree root, in place of the default glyph. Matches
+// the 18x18 footprint of the other tree icons; rounded, cropped, not draggable.
+.sk-skills-proj-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--sk-radius-xs);
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}

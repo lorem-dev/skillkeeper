@@ -101,6 +101,7 @@ export function ProjectsPage() {
                 >
                   <ProjectCard
                     project={p}
+                    iconUrl={info?.iconDataUrl}
                     infoPending={info === undefined}
                     skillCountLabel={
                       info !== undefined ? t.plural('projects.skillCount', info.skillCount) : undefined

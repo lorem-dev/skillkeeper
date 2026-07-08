@@ -11,6 +11,7 @@ import type { FsPort, Project } from '@skillkeeper/core';
 import { loadState, saveState } from '@skillkeeper/core';
 import { withStateLock } from './stateLock.js';
 import { detectProjectAgents } from './skills.js';
+import { resolveProjectIcon } from './projectIcon.js';
 
 export interface ProjectDeps {
   readonly fs: FsPort;
@@ -28,6 +29,12 @@ export interface ProjectInfo {
   readonly fromReposCount: number;
   /** Number of agents detected in the project folder (by markers). */
   readonly agentCount: number;
+  /**
+   * A data URL for the project's own icon when the folder carries one (see
+   * projectIcon.ts for the locations and the safety check); undefined otherwise,
+   * so the card falls back to the default project glyph.
+   */
+  readonly iconDataUrl?: string;
 }
 
 const message = (err: unknown): string => (err instanceof Error ? err.message : String(err));
@@ -118,10 +125,12 @@ export async function describeProject(deps: ProjectDeps, args: { id: string }): 
     const installs = state.installs.filter((m) => m.target.projectId === args.id);
     const project = state.projects.find((p) => p.id === args.id);
     const agentCount = project !== undefined ? (await detectProjectAgents(deps.fs, project.path)).length : 0;
+    const iconDataUrl = project !== undefined ? resolveProjectIcon(project.path) : undefined;
     return {
       skillCount: installs.length,
       fromReposCount: installs.filter((m) => m.sourceRepoId !== undefined).length,
       agentCount,
+      iconDataUrl,
     };
   } catch {
     return { skillCount: 0, fromReposCount: 0, agentCount: 0 };

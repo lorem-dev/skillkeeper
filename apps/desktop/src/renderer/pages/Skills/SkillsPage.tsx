@@ -7,7 +7,7 @@
  * A search box fuzzy-filters the whole tree (matches keep their ancestors as
  * context); a footer summarizes the result and clears the search.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { SkillsMode } from '@/app/store';
@@ -56,7 +56,16 @@ export function SkillsPage() {
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const projects = useSkillkeeperStore((s) => s.projects);
   const installs = useSkillkeeperStore((s) => s.skills);
+  const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
+  const refreshProjectInfo = useSkillkeeperStore((s) => s.refreshProjectInfo);
   const t = useTranslator();
+
+  // Project icons are resolved into projectInfo by the main process; refresh it on
+  // mount so the project nodes in the tree can show them (the Projects page does
+  // the same). Cheap and idempotent.
+  useEffect(() => {
+    void refreshProjectInfo();
+  }, [refreshProjectInfo]);
 
   // Selection + view state lives in the store so it survives navigating away and
   // back (until the app reloads). The store reseeds the selection to the
@@ -253,7 +262,16 @@ export function SkillsPage() {
             }
           : decorate(child),
       );
-      return { ...root, trailing, children };
+      // Show the project's own icon (resolved + safety-checked in main) when it
+      // has one; otherwise keep the default project glyph the model set.
+      const iconUrl = projectInfo[pid]?.iconDataUrl;
+      const icon =
+        iconUrl !== undefined ? (
+          <img className="sk-skills-proj-icon" src={iconUrl} alt="" draggable={false} />
+        ) : (
+          root.icon
+        );
+      return { ...root, icon, trailing, children };
     });
   }, [
     mode,
@@ -263,6 +281,7 @@ export function SkillsPage() {
     installedSet,
     projectAgents,
     installedAgents,
+    projectInfo,
     updatesBusy,
     updateProjectSkills,
     requestAddRepository,

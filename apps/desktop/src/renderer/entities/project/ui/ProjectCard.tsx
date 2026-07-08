@@ -22,6 +22,11 @@ function truncateStart(value: string, max: number): string {
 
 export interface ProjectCardProps {
   readonly project: Project;
+  /**
+   * Data URL for the project's own icon (resolved + safety-checked in main). When
+   * set it replaces the default project glyph; otherwise the glyph is shown.
+   */
+  readonly iconUrl?: string;
   /** Total skills installed in the project (pre-formatted, pluralized). */
   readonly skillCountLabel?: string;
   /** Of those, how many are installed from repositories (pre-formatted). */
@@ -50,6 +55,7 @@ export interface ProjectCardProps {
 
 export function ProjectCard({
   project,
+  iconUrl,
   skillCountLabel,
   fromReposLabel,
   agentsLabel,
@@ -67,7 +73,13 @@ export function ProjectCard({
   return (
     <Card className="sk-project-card">
       <span className="sk-project-card__leading" aria-hidden="true">
-        <Icon name="projects" />
+        {iconUrl !== undefined ? (
+          <img className="sk-project-card__icon-img" src={iconUrl} alt="" draggable={false} />
+        ) : (
+          // Match the custom icon's 20x20 footprint so the layout is identical
+          // whether or not a project ships its own icon.
+          <Icon name="projects" size={20} />
+        )}
       </span>
       <div className="sk-project-card__main">
         <span className="sk-project-card__name-row">
