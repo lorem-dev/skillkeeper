@@ -15,7 +15,7 @@
 
 import type { AgentTarget, HostEnv } from '@skillkeeper/core';
 import { makeAdapter } from './makeAdapter.js';
-import { joinPath, requireProjectDir } from './paths.js';
+import { baseDir, joinPath, requireProjectDir } from './paths.js';
 
 /** Copilot's base config directory differs between project and global scope. */
 function copilotDir(target: AgentTarget, env: HostEnv): string {
@@ -28,6 +28,8 @@ export const copilotAdapter = makeAdapter({
   kind: 'copilot',
   skillsRoot: (target, env) => joinPath(copilotDir(target, env), 'skills'),
   availabilityDir: (env) => joinPath(env.homeDir, '.config', 'github-copilot'),
+  guidanceFile: async (target, env) =>
+    joinPath(baseDir(target, env), '.github', 'copilot-instructions.md'),
   hook: {
     strategy: 'json-merge',
     async resolveTargetFile(target: AgentTarget, env: HostEnv): Promise<string> {

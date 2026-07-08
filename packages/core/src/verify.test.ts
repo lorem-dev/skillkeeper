@@ -18,6 +18,9 @@ function adapter(root: string, hookSupport?: HookCapability): AgentAdapter {
     async destinationRoot() {
       return root;
     },
+    async guidanceFile() {
+      return `${root}/guidance.md`;
+    },
     async discoverInstalled() {
       return [];
     },

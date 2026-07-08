@@ -40,6 +40,9 @@ export interface AgentAdapter {
   isAvailable(env: HostEnv): Promise<boolean>;
   /** Absolute destination root for skills at the given target. */
   destinationRoot(target: AgentTarget, env: HostEnv): Promise<string>;
+  /** Absolute path of the agent's guidance file (CLAUDE.md, AGENTS.md, ...) for
+   *  the target. Where GUIDE.md / RULES.md block content is written. */
+  guidanceFile(target: AgentTarget, env: HostEnv): Promise<string>;
   /** Skills already present in the agent's locations (external discovery). */
   discoverInstalled(target: AgentTarget, env: HostEnv): Promise<DiscoveredSkill[]>;
   /** Hook support, or undefined when the agent has no hooks. */

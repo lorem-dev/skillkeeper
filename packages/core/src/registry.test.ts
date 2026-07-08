@@ -12,6 +12,9 @@ function fakeAdapter(kind: AgentKind): AgentAdapter {
     async destinationRoot() {
       return `/root/${kind}`;
     },
+    async guidanceFile() {
+      return `/root/${kind}/guidance.md`;
+    },
     async discoverInstalled() {
       return [];
     },

@@ -23,6 +23,7 @@ export const codexAdapter = makeAdapter({
   kind: 'codex',
   skillsRoot: (target, env) => joinPath(codexDir(target, env), 'skills'),
   availabilityDir: (env) => joinPath(env.homeDir, '.codex'),
+  guidanceFile: async (target, env) => joinPath(baseDir(target, env), 'AGENTS.md'),
   hook: {
     strategy: 'json-merge',
     async resolveTargetFile(target: AgentTarget, env: HostEnv): Promise<string> {

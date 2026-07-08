@@ -33,6 +33,8 @@ export interface AdapterSpec {
    * nest skills one level under a group directory. Most agents leave this off.
    */
   readonly discoveryGroup?: string;
+  /** Absolute path of the agent's guidance file for a target. */
+  guidanceFile(target: AgentTarget, env: HostEnv): Promise<string>;
   /** The agent's hook capability. */
   readonly hook: HookCapability;
 }
@@ -48,6 +50,10 @@ export function makeAdapter(spec: AdapterSpec): AgentAdapter {
 
     async destinationRoot(target: AgentTarget, env: HostEnv): Promise<string> {
       return spec.skillsRoot(target, env);
+    },
+
+    async guidanceFile(target: AgentTarget, env: HostEnv): Promise<string> {
+      return spec.guidanceFile(target, env);
     },
 
     async discoverInstalled(target: AgentTarget, env: HostEnv): Promise<DiscoveredSkill[]> {

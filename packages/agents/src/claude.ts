@@ -41,6 +41,14 @@ export const claudeAdapter: AgentAdapter = {
     return skillsRoot(target, env);
   },
 
+  async guidanceFile(target: AgentTarget, env: HostEnv): Promise<string> {
+    // Prefer an existing top-level CLAUDE.md; otherwise the .claude/ one.
+    const base = baseDir(target, env);
+    const top = joinPath(base, 'CLAUDE.md');
+    if (await fsOf(env).exists(top)) return top;
+    return joinPath(base, '.claude', 'CLAUDE.md');
+  },
+
   async discoverInstalled(target: AgentTarget, env: HostEnv): Promise<DiscoveredSkill[]> {
     return discoverSkillDirs(fsOf(env), skillsRoot(target, env));
   },

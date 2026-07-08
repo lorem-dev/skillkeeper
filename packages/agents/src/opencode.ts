@@ -16,7 +16,7 @@
 
 import type { AgentTarget, HostEnv } from '@skillkeeper/core';
 import { makeAdapter } from './makeAdapter.js';
-import { joinPath, requireProjectDir } from './paths.js';
+import { baseDir, joinPath, requireProjectDir } from './paths.js';
 
 /** OpenCode's base config directory differs between project and global scope. */
 function opencodeDir(target: AgentTarget, env: HostEnv): string {
@@ -29,6 +29,7 @@ export const opencodeAdapter = makeAdapter({
   kind: 'opencode',
   skillsRoot: (target, env) => joinPath(opencodeDir(target, env), 'skills'),
   availabilityDir: (env) => joinPath(env.homeDir, '.config', 'opencode'),
+  guidanceFile: async (target, env) => joinPath(baseDir(target, env), 'AGENTS.md'),
   hook: {
     strategy: 'delimited-text',
     commentToken: '#',

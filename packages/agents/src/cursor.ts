@@ -13,7 +13,7 @@
 
 import type { AgentTarget, HostEnv } from '@skillkeeper/core';
 import { makeAdapter } from './makeAdapter.js';
-import { baseDir, joinPath } from './paths.js';
+import { baseDir, fsOf, joinPath } from './paths.js';
 
 function cursorDir(target: AgentTarget, env: HostEnv): string {
   return joinPath(baseDir(target, env), '.cursor');
@@ -23,6 +23,13 @@ export const cursorAdapter = makeAdapter({
   kind: 'cursor',
   skillsRoot: (target, env) => joinPath(cursorDir(target, env), 'skills'),
   availabilityDir: (env) => joinPath(env.homeDir, '.cursor'),
+  guidanceFile: async (target, env) => {
+    // Prefer an existing legacy .cursorrules; otherwise the modern rules file.
+    const base = baseDir(target, env);
+    const legacy = joinPath(base, '.cursorrules');
+    if (await fsOf(env).exists(legacy)) return legacy;
+    return joinPath(base, '.cursor', 'rules', 'skillkeeper.mdc');
+  },
   hook: {
     strategy: 'json-merge',
     async resolveTargetFile(target: AgentTarget, env: HostEnv): Promise<string> {
