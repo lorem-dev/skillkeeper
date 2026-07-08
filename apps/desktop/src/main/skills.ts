@@ -22,6 +22,10 @@ import {
   normalizeRemote,
   parseSkid,
   SKID_FILE,
+  guidanceKey,
+  skillGuidanceId,
+  upsertGuidanceBlock,
+  removeGuidanceBlock,
 } from '@skillkeeper/core';
 import { registerBuiltinAgents, PROJECT_DIR_ENV } from '@skillkeeper/agents';
 import type { AdapterHostEnv } from '@skillkeeper/agents';
@@ -99,6 +103,23 @@ const sameSkill = (
   m.skillId.name === ref.name &&
   (m.skillId.group ?? '') === (ref.group ?? '');
 
+/** Read a skill's guidance source (GUIDE.md wins over RULES.md), or undefined. */
+async function readGuideBody(
+  fs: FsPort,
+  skillRoot: string, // absolute path of the skill dir in the repo checkout
+): Promise<string | undefined> {
+  for (const file of ['GUIDE.md', 'RULES.md']) {
+    const p = `${skillRoot}/${file}`;
+    if (await fs.exists(p)) return (await fs.readFile(p)).replace(/\n+$/, '');
+  }
+  return undefined;
+}
+
+/** The guidance block key for a manifest / ref (remote + group/name). */
+function guideKeyFor(remote: string, group: string | undefined, name: string): string {
+  return guidanceKey(remote, skillGuidanceId(group, name));
+}
+
 /**
  * Apply a set of installs and removals for a project across the given agents,
  * reporting progress. Never throws across the IPC boundary; returns a result.
@@ -122,6 +143,15 @@ export async function applySkillChanges(
         onProgress({ done, total, label });
       };
 
+      const adapterEnvFor = (_agent: AgentKind): AdapterHostEnv => ({
+        ...deps.adapterEnv,
+        env: { ...deps.adapterEnv.env, [PROJECT_DIR_ENV]: args.projectPath },
+      });
+      // key = guidance file path; value = map of blockKey -> body to upsert.
+      const upserts = new Map<string, Map<string, string>>();
+      // list of { file, blockKey } to remove unless still needed.
+      const removals: { file: string; blockKey: string; agent: AgentKind }[] = [];
+
       // Removals first, so a re-install onto the same target starts clean.
       for (const ref of args.remove) {
         for (const agent of args.agents) {
@@ -131,6 +161,17 @@ export async function applySkillChanges(
           if (manifest !== undefined) {
             await uninstallSkill(deps.fs, manifest);
             installs = installs.filter((m) => m !== manifest);
+            const remote = manifest.sourceRemote;
+            if (remote !== undefined) {
+              const file = await deps.registry
+                .get(agent)
+                .guidanceFile({ agent, scope: 'project', projectId: args.projectId }, adapterEnvFor(agent));
+              removals.push({
+                file,
+                blockKey: guideKeyFor(remote, manifest.skillId.group, manifest.skillId.name),
+                agent,
+              });
+            }
           }
           tick(ref.name);
         }
@@ -152,10 +193,7 @@ export async function applySkillChanges(
             );
             if (!already) {
               const adapter = deps.registry.get(agent);
-              const env: AdapterHostEnv = {
-                ...deps.adapterEnv,
-                env: { ...deps.adapterEnv.env, [PROJECT_DIR_ENV]: args.projectPath },
-              };
+              const env = adapterEnvFor(agent);
               const target: AgentTarget = { agent, scope: 'project', projectId: args.projectId };
               const manifest = await installSkill({
                 fs: deps.fs,
@@ -171,10 +209,50 @@ export async function applySkillChanges(
                 sourcePath: resolved.rootPath,
               });
               installs.push(manifest);
+              const remote = repo.url;
+              const body = await readGuideBody(deps.fs, `${repo.localPath}/${resolved.rootPath}`);
+              if (body !== undefined) {
+                const file = await adapter.guidanceFile(target, env);
+                const blockKey = guideKeyFor(remote, resolved.id.group, resolved.id.name);
+                const perFile = upserts.get(file) ?? new Map<string, string>();
+                perFile.set(blockKey, body);
+                upserts.set(file, perFile);
+              }
             }
           }
           tick(ref.name);
         }
+      }
+
+      // Guidance blocks: apply upserts first, then removals that are not still
+      // needed by a surviving install sharing the same guidance file.
+      const finalKeysByFile = new Map<string, Set<string>>();
+      for (const m of installs) {
+        if (m.target.projectId !== args.projectId || m.sourceRemote === undefined) continue;
+        const f = await deps.registry
+          .get(m.target.agent)
+          .guidanceFile(
+            { agent: m.target.agent, scope: 'project', projectId: args.projectId },
+            adapterEnvFor(m.target.agent),
+          );
+        const key = guideKeyFor(m.sourceRemote, m.skillId.group, m.skillId.name);
+        const set = finalKeysByFile.get(f) ?? new Set<string>();
+        set.add(key);
+        finalKeysByFile.set(f, set);
+      }
+
+      for (const [file, blocks] of upserts) {
+        let text = (await deps.fs.exists(file)) ? await deps.fs.readFile(file) : '';
+        for (const [blockKey, body] of blocks) text = upsertGuidanceBlock(text, blockKey, body);
+        await deps.fs.writeFile(file, text);
+      }
+
+      for (const { file, blockKey } of removals) {
+        // Keep the block if a surviving install still needs it in this file.
+        if (finalKeysByFile.get(file)?.has(blockKey) === true) continue;
+        if (!(await deps.fs.exists(file))) continue;
+        const next = removeGuidanceBlock(await deps.fs.readFile(file), blockKey);
+        await deps.fs.writeFile(file, next);
       }
 
       await saveState(deps.fs, deps.statePath, { ...state, installs });
