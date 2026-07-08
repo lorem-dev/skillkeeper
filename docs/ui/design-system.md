@@ -396,6 +396,19 @@ Padding `--sk-space-3` vertical, `--sk-space-5` horizontal. Label weight 600,
 > (`<Button variant="primary|secondary|plain|destructive|glass">`), with styles in
 > the co-located `Button.scss`. Import it through the kit barrel: `@/shared/ui`.
 
+**Split button.** A primary action joined to a chevron toggle that opens a
+dropdown of related actions. The two segments share one rounded shell
+(`--sk-radius-sm`, or `--sk-radius-xl` in the compact size that lines up flush
+with round icon buttons), parted by a hairline `--sk-color-separator` divider.
+Both segments use the secondary fill (`--sk-color-fill-2`, hover
+`--sk-color-fill-1`) and the shared interaction states from 8.1; the chevron
+points toward the primary action.
+
+> Implemented as
+> [`shared/ui/SplitButton`](../../apps/desktop/src/renderer/shared/ui/SplitButton/SplitButton.tsx)
+> (`icon` / `tooltip` / `onPrimary` / `items` / `size`), opening the shared
+> `Menu` (8.8) for its dropdown.
+
 ### 8.3 Controls
 
 - Toggle: pill track (`--sk-radius-pill`), ~50x30px, knob is white circle with
@@ -408,6 +421,10 @@ Padding `--sk-space-3` vertical, `--sk-space-5` horizontal. Label weight 600,
   rest `--sk-color-fill-1`; knob is a 20px white circle with `--sk-shadow-2`.
 - Stepper: two-segment glass/fill control with a separator; +/- glyphs in
   `--sk-color-label`.
+- Interval stepper: a stepper paired with a minutes/hours segmented unit toggle
+  for entering a duration; the value is stored in minutes and hours snap to whole
+  hours. Implemented as `IntervalStepper` (composes `Stepper` +
+  `SegmentedControl`).
 
 ### 8.4 Text fields
 
@@ -427,6 +444,17 @@ icon in `--sk-color-label-2`.
 - Section title: `--sk-text-footnote`, uppercase, `--sk-color-label-2`.
 - Selected row (desktop): `--sk-color-accent` fill at full strength with white
   label, or `--sk-color-fill-2` for a quieter selection.
+- Tree (outline): hierarchical rows indented by depth, each with a rotating
+  chevron on branches, an optional leading glyph, a label, and a trailing
+  detail/count. Rows use `--sk-radius-md`, hover `--sk-color-fill-3`, selected
+  `--sk-color-fill-2`; branches expand with a jump-free height animation. Supports
+  single-select or per-depth checkbox selection (tri-state branch checkboxes) and
+  full arrow-key tree navigation.
+
+> The tree is implemented as
+> [`shared/ui/TreeView`](../../apps/desktop/src/renderer/shared/ui/TreeView/TreeView.tsx)
+> (`TreeNode[]`; single-select via `selectedId`/`onSelect`, or `checkable`
+> selection). Data tables use the companion `Table` primitive (8.12).
 
 ### 8.6 Sidebars
 
@@ -489,7 +517,69 @@ Controls are vertically centred regardless of height.
 > (`@/shared/ui`); the app shell uses it for the loading state. The animation is
 > disabled under `prefers-reduced-motion` by the base layer.
 
-### 8.11 Desktop adaptation rules
+### 8.11 Combobox
+
+A text field paired with a filterable dropdown list. The input matches the text
+field (8.4) -- `--sk-color-fill-3`, `--sk-radius-sm`, a focus hairline in
+`--sk-color-accent`, and a trailing chevron in `--sk-color-label-2` -- and the
+popup list matches the menu (8.8): a frosted glass surface, `--sk-radius-lg`,
+`--sk-shadow-2`, portal-positioned and window-aware. Typing filters the options;
+the active option takes `--sk-color-fill-3` and a selected option shows a leading
+checkmark in `--sk-color-accent`. A multi-select variant keeps the list open
+while several options are toggled.
+
+> Implemented as
+> [`shared/ui/Combobox`](../../apps/desktop/src/renderer/shared/ui/Combobox/Combobox.tsx)
+> (single value) and
+> [`MultiCombobox`](../../apps/desktop/src/renderer/shared/ui/MultiCombobox/MultiCombobox.tsx)
+> (multi). `MultiSelect` is the read-only-input sibling: a fixed-width trigger
+> over a multi-select `Menu` listbox.
+
+### 8.12 Table
+
+A borderless data table for structured rows. Columns share one CSS grid track
+template so the header and every row line up; there are no cell borders. The
+header row is muted (`--sk-color-label-2`, `--sk-text-subhead`); body rows are
+`--sk-radius-sm` with a `--sk-color-fill-3` hover and truncating cells. An
+optional sticky header stays pinned while the body scrolls: it blurs the rows
+sliding under it, and a small blurred fade at the bottom edge marks more content
+below (both blend into `--sk-table-surface`, which defaults to
+`--sk-color-bg-tertiary`). The fades degrade to nothing where `backdrop-filter`
+is unavailable.
+
+> Implemented as
+> [`shared/ui/Table`](../../apps/desktop/src/renderer/shared/ui/Table/Table.tsx)
+> (`columns` / `rows`, optional `stickyHeader` + `maxBodyHeight`). See also the
+> `TreeView` outline (8.5).
+
+### 8.13 Tooltip
+
+A small label revealed on hover/focus. The bubble inverts the surface --
+`--sk-color-label` fill with `--sk-color-bg` text -- so it reads on any
+background, at `--sk-radius-sm` with `--sk-shadow-2` and `--sk-text-subhead`. It
+is portaled and positioned `fixed` on one of four sides (top / bottom / left /
+right) with a cross-axis offset that keeps it inside the window near an edge, and
+it sits above every other overlay. The reveal fades and scales from the anchored
+edge.
+
+> Implemented as
+> [`shared/ui/Tooltip`](../../apps/desktop/src/renderer/shared/ui/Tooltip/Tooltip.tsx);
+> sets `role="tooltip"` and wires `aria-describedby`.
+
+### 8.14 Disclosure control
+
+A header row with a rotating chevron that expands and collapses the content below
+it. The trigger is a plain full-width button (`--sk-text-headline`, weight 600,
+`--sk-color-label`) with a leading `--sk-color-label-2` chevron that rotates on
+open; the content animates open with a jump-free height transition (a `0fr` to
+`1fr` grid row, so there is no measured snap) over `--sk-duration-medium`. Wires
+`aria-expanded` / `aria-controls`. Useful for advanced or secondary sections.
+
+> Implemented as
+> [`shared/ui/DisclosureGroup`](../../apps/desktop/src/renderer/shared/ui/DisclosureGroup/DisclosureGroup.tsx)
+> (`title` / `defaultOpen`).
+
+### 8.15 Desktop adaptation rules
 
 - Pointer first: every control has explicit hover and focus-visible states.
 - Keyboard: full tab order, visible focus ring, Enter/Escape on dialogs, arrow-key

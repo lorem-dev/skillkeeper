@@ -142,6 +142,35 @@ Source: [shared/ui/DisclosureGroup/DisclosureGroup.tsx](../../apps/desktop/src/r
 </List>
 ```
 
+### Row
+`<Row align? justify? gap? wrap?>children</Row>` -- a horizontal flex layout
+primitive. Arranges children in a row with a token-based `gap` (a `--sk-space-N`
+step, 1-8) and configurable `align` (`start` | `center` | `end` | `stretch` |
+`baseline`) / `justify` (`start` | `center` | `end` | `between`); `wrap` allows
+multiple lines.
+Source: [shared/ui/Row/Row.tsx](../../apps/desktop/src/renderer/shared/ui/Row/Row.tsx)
+
+### Table
+`<Table columns rows stickyHeader? maxBodyHeight? emptyText? ariaLabel? />` -- a
+borderless, grid-aligned data table. `columns: { key, header, width?, align? }[]`
+share one CSS grid track template so the header and every row line up;
+`rows: { id, cells }[]` with `cells` index-aligned to `columns`. With
+`stickyHeader` + `maxBodyHeight` the header stays pinned while the body scrolls
+(rows blur under it, a blurred fade marks more content below). Design-system.md
+8.12.
+Source: [shared/ui/Table/Table.tsx](../../apps/desktop/src/renderer/shared/ui/Table/Table.tsx)
+
+### TreeView
+`<TreeView nodes selectedId? onSelect? defaultExpandedIds? checkable?
+checkboxLevels? checkedIds? onCheckedChange? ariaLabel? />` -- a hierarchical
+outline of indented, collapsible rows. `nodes: TreeNode[]` where a node with
+`children` is an expandable branch (each node has `label`, optional `icon`,
+`detail`/`trailing`, `muted`, `selectable`). Single-select
+(`selectedId`/`onSelect`) or checkbox selection (`checkable`, scoped per depth
+via `checkboxLevels`, `checkedIds`/`onCheckedChange`, with tri-state branch
+checkboxes). Full arrow-key tree navigation. Design-system.md 8.5.
+Source: [shared/ui/TreeView/TreeView.tsx](../../apps/desktop/src/renderer/shared/ui/TreeView/TreeView.tsx)
+
 ---
 
 ## Controls
@@ -199,6 +228,46 @@ increment buttons. Button accessible names come from `decreaseLabel` /
 `increaseLabel` (pass translated strings). Design-system.md 8.3.
 Source: [shared/ui/Stepper/Stepper.tsx](../../apps/desktop/src/renderer/shared/ui/Stepper/Stepper.tsx)
 
+### IntervalStepper
+`<IntervalStepper minutes onChange minMinutes? maxMinutes? label? minutesUnitLabel?
+hoursUnitLabel? decreaseLabel? increaseLabel? disabled? />` -- pick a duration as
+a `Stepper` value plus a minutes/hours `SegmentedControl` unit. The stored value
+is always minutes (switching to hours snaps to whole hours), clamped to
+`[minMinutes, maxMinutes]`. Pass translated unit and button labels.
+Design-system.md 8.3.
+Source: [shared/ui/IntervalStepper/IntervalStepper.tsx](../../apps/desktop/src/renderer/shared/ui/IntervalStepper/IntervalStepper.tsx)
+
+### Combobox
+`<Combobox options value onChange label? placeholder? emptyText? maxLabelLength?
+ariaLabel? disabled? />` -- a text input paired with a filterable dropdown list;
+typing filters `options: { value, label, disabled? }[]` and the selection commits
+a single `value`. The input matches the text field / select trigger; the list
+matches the Menu (glass, portal-positioned, window-aware). `maxLabelLength`
+truncates the displayed label only. Design-system.md 8.11.
+Source: [shared/ui/Combobox/Combobox.tsx](../../apps/desktop/src/renderer/shared/ui/Combobox/Combobox.tsx)
+
+### MultiCombobox
+`<MultiCombobox options value onChange label? placeholder? emptyText? ariaLabel?
+disabled? />` -- like Combobox but multi-select: `value: string[]`; the list stays
+open while several options are toggled (a leading checkmark marks each selected).
+When idle the input shows the joined selected labels. Design-system.md 8.11.
+Source: [shared/ui/MultiCombobox/MultiCombobox.tsx](../../apps/desktop/src/renderer/shared/ui/MultiCombobox/MultiCombobox.tsx)
+
+### MultiSelect
+`<MultiSelect options value onChange placeholder? summary? ariaLabel? disabled? />`
+-- a fixed-width pop-up trigger showing the selected labels, opening a Menu as a
+multi-selectable listbox. When the joined labels overflow the trigger it falls
+back to a caller-supplied `summary(count)` string (e.g. `(n) => "Selected " + n`).
+Design-system.md 8.11.
+Source: [shared/ui/MultiSelect/MultiSelect.tsx](../../apps/desktop/src/renderer/shared/ui/MultiSelect/MultiSelect.tsx)
+
+### SplitButton
+`<SplitButton icon? tooltip onPrimary items menuLabel size? disabled? />` -- a
+primary action button joined to a chevron toggle that opens a dropdown Menu of
+related actions (`items: { id, label, icon?, onSelect }[]`). `size`: `default` |
+`compact` (matches the round icon buttons). Design-system.md 8.2.
+Source: [shared/ui/SplitButton/SplitButton.tsx](../../apps/desktop/src/renderer/shared/ui/SplitButton/SplitButton.tsx)
+
 ---
 
 ## Feedback and content
@@ -250,3 +319,26 @@ const [open, setOpen] = useState(false);
   ...
 </Modal>
 ```
+
+### Menu
+`<Menu open onClose anchorRef items closeOnSelect? placement? role? multiselectable?
+ariaLabel? />` -- a portaled, window-aware floating glass list that positions
+against `anchorRef` and backs the app's dropdowns. `items: { id, label, icon?,
+selected?, disabled?, onSelect }[]`; `role`: `menu` (actions / checkables,
+default) | `listbox` (selects). `placement` (`auto` default) flips to fit the
+window. Full keyboard navigation; selection state is owned by the consumer.
+Design-system.md 8.8.
+Source: [shared/ui/Menu/Menu.tsx](../../apps/desktop/src/renderer/shared/ui/Menu/Menu.tsx)
+
+### ChangeBadge
+`<ChangeBadge kind label />` -- a small filled circle with a knocked-out glyph
+previewing a pending change; `kind`: `add` (green, `+`) | `remove` (red, `-`) |
+`present` (gray, check). The glyph is a true SVG-mask knockout so it reads on any
+row background. Wrapped in a Tooltip with `label` (also the accessible name).
+Source: [shared/ui/ChangeBadge/ChangeBadge.tsx](../../apps/desktop/src/renderer/shared/ui/ChangeBadge/ChangeBadge.tsx)
+
+### SearchSummary
+`<SearchSummary foundLabel totalLabel showAllLabel onShowAll />` -- a footer shown
+below a filtered list: a "found N / M total" summary and a button that clears the
+active search. All strings are passed in already translated and plural-aware.
+Source: [shared/ui/SearchSummary/SearchSummary.tsx](../../apps/desktop/src/renderer/shared/ui/SearchSummary/SearchSummary.tsx)

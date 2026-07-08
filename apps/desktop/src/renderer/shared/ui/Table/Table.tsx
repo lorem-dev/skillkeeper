@@ -1,5 +1,5 @@
 /**
- * Table: a borderless, macOS-list-style data table matching the TreeView look
+ * Table: a borderless, list-style data table matching the TreeView look
  * (no cell borders, muted header, hover rows). Columns share a CSS grid track
  * template so the header and every row align. With `stickyHeader` +
  * `maxBodyHeight`, the header sticks to the top of the scroll area (rows slide
