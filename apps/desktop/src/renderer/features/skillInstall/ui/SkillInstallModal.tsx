@@ -12,9 +12,10 @@ import { useSkillkeeperStore } from '@/app/store';
 import { bridgeClient } from '@/services/bridge';
 import type { AgentKind } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
-import { Modal, Button, Select, ProgressBar, TreeView, ChangeBadge } from '@/shared/ui';
+import { Modal, Button, Combobox, ProgressBar, TreeView, ChangeBadge } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { AgentSelect } from '@/entities/agent';
+import { ProjectIcon } from '@/entities/project';
 import {
   buildProjectTree,
   buildProjectPlan,
@@ -33,13 +34,12 @@ export interface SkillInstallModalProps {
   readonly skillKeys: readonly string[];
 }
 
-const agentsStorageKey = (projectId: string): string => `sk-install-agents-${projectId}`;
-
 export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModalProps) {
   const projects = useSkillkeeperStore((s) => s.projects);
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const availableSkills = useSkillkeeperStore((s) => s.availableSkills);
   const installs = useSkillkeeperStore((s) => s.skills);
+  const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
   const applySkills = useSkillkeeperStore((s) => s.applySkills);
   const progress = useSkillkeeperStore((s) => s.skillApply);
   const t = useTranslator();
@@ -63,15 +63,11 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
   const project = projects.find((p) => p.id === projectId);
   const projectPath = project?.path ?? '';
 
-  // Pre-select agents when a project is chosen: the remembered set, else detect.
+  // Default the agent selection to those auto-detected in the project folder
+  // whenever a project is chosen; the user can still adjust it below.
   useEffect(() => {
     const proj = projects.find((p) => p.id === projectId);
     if (proj === undefined) return undefined;
-    const remembered = localStorage.getItem(agentsStorageKey(proj.id));
-    if (remembered !== null) {
-      setAgents(JSON.parse(remembered) as AgentKind[]);
-      return undefined;
-    }
     let alive = true;
     void bridgeClient.detectProjectAgents(proj.path).then((detected) => {
       if (alive) setAgents(detected);
@@ -80,11 +76,6 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
       alive = false;
     };
   }, [projectId, projects]);
-
-  function changeAgents(next: AgentKind[]): void {
-    setAgents(next);
-    if (project !== undefined) localStorage.setItem(agentsStorageKey(project.id), JSON.stringify(next));
-  }
 
   const installedSet = useMemo(
     () => new Set(installedLeafIds(installs).filter((k) => parseProjectSkillKey(k).projectId === projectId)),
@@ -140,8 +131,18 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
         else detail = undefined;
         return { ...node, detail };
       });
-    return decorate(tree);
-  }, [tree, installedSet, checkedSet, t]);
+    const withBadges = decorate(tree);
+    // The root is the chosen project: show its own icon (or a generated
+    // placeholder) instead of the default project glyph.
+    return withBadges.map((root) =>
+      project !== undefined
+        ? {
+            ...root,
+            icon: <ProjectIcon iconUrl={projectInfo[project.id]?.iconDataUrl} name={project.name} size={18} />,
+          }
+        : root,
+    );
+  }, [tree, installedSet, checkedSet, t, project, projectInfo]);
 
   const expandedIds = useMemo(() => branchesContaining(tree, changed), [tree, changed]);
 
@@ -168,7 +169,11 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
     onClose();
   }
 
-  const projectOptions = projects.map((p) => ({ value: p.id, label: p.name }));
+  const projectOptions = projects.map((p) => ({
+    value: p.id,
+    label: p.name,
+    icon: <ProjectIcon iconUrl={projectInfo[p.id]?.iconDataUrl} name={p.name} size={18} />,
+  }));
 
   return (
     <Modal
@@ -181,12 +186,14 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
         <div className="sk-skill-modal__step">
           <label className="sk-skill-modal__field">
             <span className="sk-skill-modal__label">{t('skills.install.chooseProject')}</span>
-            <Select
+            <Combobox
               options={projectOptions}
               value={projectId}
               onChange={setProjectId}
               placeholder={t('skills.install.chooseProject')}
               ariaLabel={t('skills.install.chooseProject')}
+              emptyText={t('skills.filterProjectsEmpty')}
+              fallbackIcon={<ProjectIcon name="" size={18} />}
             />
           </label>
           <label className="sk-skill-modal__field">
@@ -194,7 +201,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             <AgentSelect
               variant="full"
               value={agents}
-              onChange={changeAgents}
+              onChange={setAgents}
               ariaLabel={t('skills.install.agents')}
               placeholder={t('skills.install.agentsPlaceholder')}
             />
@@ -203,7 +210,11 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             <Button variant="secondary" onClick={onClose}>
               {t('common.close')}
             </Button>
-            <Button variant="primary" disabled={project === undefined} onClick={goToTree}>
+            <Button
+              variant="primary"
+              disabled={project === undefined || agents.length === 0}
+              onClick={goToTree}
+            >
               {t('skills.install.next')}
             </Button>
           </div>

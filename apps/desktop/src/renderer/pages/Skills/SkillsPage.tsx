@@ -28,6 +28,7 @@ import {
 } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { AgentSelect } from '@/entities/agent';
+import { ProjectIcon } from '@/entities/project';
 import {
   buildRepoTree,
   buildProjectModel,
@@ -262,15 +263,10 @@ export function SkillsPage() {
             }
           : decorate(child),
       );
-      // Show the project's own icon (resolved + safety-checked in main) when it
-      // has one; otherwise keep the default project glyph the model set.
-      const iconUrl = projectInfo[pid]?.iconDataUrl;
-      const icon =
-        iconUrl !== undefined ? (
-          <img className="sk-skills-proj-icon" src={iconUrl} alt="" draggable={false} />
-        ) : (
-          root.icon
-        );
+      // The project's own icon (resolved + safety-checked in main) when it has
+      // one; otherwise a generated placeholder -- via the shared ProjectIcon.
+      const projName = projects.find((p) => p.id === pid)?.name ?? pid;
+      const icon = <ProjectIcon iconUrl={projectInfo[pid]?.iconDataUrl} name={projName} size={18} />;
       return { ...root, icon, trailing, children };
     });
   }, [
@@ -282,6 +278,7 @@ export function SkillsPage() {
     projectAgents,
     installedAgents,
     projectInfo,
+    projects,
     updatesBusy,
     updateProjectSkills,
     requestAddRepository,
