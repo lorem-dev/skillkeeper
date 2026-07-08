@@ -7,14 +7,8 @@
  */
 import type { CSSProperties } from 'react';
 import { cx } from '@/shared/lib';
+import { hueFromName } from '../lib/hueFromName';
 import './ProjectIcon.scss';
-
-/** Stable hue (0-359) from a string -- the project's placeholder colour. */
-export function hueFromName(name: string): number {
-  let h = 0;
-  for (let i = 0; i < name.length; i += 1) h = (h * 31 + name.charCodeAt(i)) | 0;
-  return Math.abs(h) % 360;
-}
 
 export interface ProjectIconProps {
   /** The project's own icon as a data URL; when absent a placeholder is drawn. */

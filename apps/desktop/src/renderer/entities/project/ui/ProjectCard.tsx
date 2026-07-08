@@ -3,7 +3,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { Project } from '@/services/bridge';
 import { Badge, Card, Button, Icon, Skeleton, Tooltip } from '@/shared/ui';
 import { transitionFast } from '@/shared/lib';
-import { ProjectIcon, hueFromName } from './ProjectIcon';
+import { ProjectIcon } from './ProjectIcon';
+import { hueFromName } from '../lib/hueFromName';
 import './ProjectCard.scss';
 
 /** Longest project name shown before it is truncated with a trailing "...". */
