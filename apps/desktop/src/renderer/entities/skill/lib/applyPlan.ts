@@ -59,12 +59,19 @@ export function buildProjectPlan(
 
   const installedByAgent = new Map<AgentKind, Set<string>>();
   const installedAgents = new Set<AgentKind>();
+  // Keys that may only be removed, never (re)installed for another agent: local
+  // skills with no source remote / .skid.yml identity (installed from a working
+  // tree) have nowhere to re-install from. Skills that carry a source remote --
+  // a tracked repo, or an orphan whose .skid.yml keeps its identity -- can still
+  // be installed for other agents.
+  const removeOnly = new Set<string>();
   for (const m of installs) {
     if (m.target.scope !== 'project' || m.target.projectId !== projectId) continue;
     if (m.sourceRepoId === undefined) continue;
     const ref: SkillRef = { repoId: m.sourceRepoId, group: m.skillId.group, name: m.skillId.name };
     const k = refKey(ref);
     refByKey.set(k, ref);
+    if (m.sourceRemote === undefined) removeOnly.add(k);
     installedAgents.add(m.target.agent);
     const set = installedByAgent.get(m.target.agent) ?? new Set<string>();
     set.add(k);
@@ -84,7 +91,9 @@ export function buildProjectPlan(
     const install: SkillRef[] = [];
     const remove: SkillRef[] = [];
     for (const k of want) {
-      if (!have.has(k)) {
+      // Local (remove-only) skills are never installed for another agent, even
+      // when checked; only their removal is planned.
+      if (!have.has(k) && !removeOnly.has(k)) {
         install.push(refByKey.get(k)!);
         pushAgent(installAgentsByKey, k, agent);
       }
