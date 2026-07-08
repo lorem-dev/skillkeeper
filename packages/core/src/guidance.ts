@@ -49,7 +49,8 @@ export function upsertGuidanceBlock(file: string, key: string, body: string): st
     const lines = file.split('\n');
     const before = lines.slice(0, existing.start);
     const after = lines.slice(existing.end + 1);
-    return [...before, ...block.split('\n'), ...after].join('\n');
+    const out = [...before, ...block.split('\n'), ...after].join('\n');
+    return out.endsWith('\n') ? out : `${out}\n`;
   }
   if (file.trim() === '') return `${block}\n`;
   const base = file.endsWith('\n') ? file : `${file}\n`;
@@ -65,9 +66,11 @@ export function removeGuidanceBlock(file: string, key: string): string {
   if (region === null) return file;
   const lines = file.split('\n');
   let start = region.start;
+  let end = region.end;
   if (start > 0 && lines[start - 1] === '') start -= 1;
+  else if (lines[end + 1] === '') end += 1;
   const before = lines.slice(0, start);
-  const after = lines.slice(region.end + 1);
+  const after = lines.slice(end + 1);
   const joined = [...before, ...after].join('\n');
   return joined.trim() === '' ? '' : joined;
 }

@@ -17,6 +17,12 @@ describe('skillGuidanceId', () => {
   });
 });
 
+describe('guidanceKey', () => {
+  it('joins remote and id with "; "', () => {
+    expect(guidanceKey('git@x:acme/s.git', 'web/api')).toBe('git@x:acme/s.git; web/api');
+  });
+});
+
 describe('upsertGuidanceBlock', () => {
   it('appends a delimited block to empty content with a trailing newline', () => {
     const out = upsertGuidanceBlock('', KEY, 'Body line.');
@@ -49,6 +55,15 @@ describe('upsertGuidanceBlock', () => {
     expect(out).toContain(`SKILLKEEPER_START: ${otherKey}`);
     expect(out).toContain(`SKILLKEEPER_START: ${KEY}`);
   });
+
+  it('adds a trailing newline when replacing in a file that lacks one', () => {
+    const before = `top\n<!-- SKILLKEEPER_START: ${KEY} -->\nOLD\n<!-- SKILLKEEPER_END: ${KEY} -->`;
+    const out = upsertGuidanceBlock(before, KEY, 'NEW');
+    expect(out.endsWith('\n')).toBe(true);
+    expect(out).toBe(
+      `top\n<!-- SKILLKEEPER_START: ${KEY} -->\nNEW\n<!-- SKILLKEEPER_END: ${KEY} -->\n`,
+    );
+  });
 });
 
 describe('removeGuidanceBlock', () => {
@@ -65,6 +80,15 @@ describe('removeGuidanceBlock', () => {
   it('removes the only block, leaving empty content', () => {
     const only = `<!-- SKILLKEEPER_START: ${KEY} -->\nBody.\n<!-- SKILLKEEPER_END: ${KEY} -->\n`;
     expect(removeGuidanceBlock(only, KEY)).toBe('');
+  });
+
+  it('removes the first of two sequential blocks without leaving a leading blank line', () => {
+    const a = guidanceKey(REMOTE, 'a');
+    const b = guidanceKey(REMOTE, 'b');
+    let file = upsertGuidanceBlock('', a, 'A');
+    file = upsertGuidanceBlock(file, b, 'B');
+    const out = removeGuidanceBlock(file, a);
+    expect(out).toBe(`<!-- SKILLKEEPER_START: ${b} -->\nB\n<!-- SKILLKEEPER_END: ${b} -->\n`);
   });
 });
 
