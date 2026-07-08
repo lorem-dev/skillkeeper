@@ -138,6 +138,49 @@ hook-owned.
 
 ---
 
+## Skill guidance (GUIDE.md / RULES.md)
+
+A skill may optionally ship a `GUIDE.md` or `RULES.md` file containing guidance
+for the agent that installs it. `GUIDE.md` takes precedence when both files are
+present. If neither exists, no guidance is installed.
+
+On install, the guide body is written as a marked block into each target agent's
+guidance file. The block uses delimiters:
+
+```
+<!-- SKILLKEEPER_START: <remote>; <id> -->
+... guide body ...
+<!-- SKILLKEEPER_END: <remote>; <id> -->
+```
+
+Where `<remote>` is the skill's source repository remote URL and `<id>` is the
+skill identifier (`group/name` or just `name` for ungrouped skills).
+
+### Per-agent guidance files
+
+Each agent writes its guidance blocks to the appropriate file:
+
+- **Claude:** `CLAUDE.md` at the repository root, or `.claude/CLAUDE.md` if
+  no top-level file exists.
+- **Codex and OpenCode:** `AGENTS.md` at the repository root.
+- **Copilot:** `.github/copilot-instructions.md`.
+- **Cursor:** `.cursorrules` at the repository root, or `.cursor/rules/skillkeeper.mdc`
+  if no legacy `.cursorrules` file exists.
+
+### Update and uninstall behavior
+
+When a skill is updated, its guidance block is replaced in place, preserving
+its position in the guidance file.
+
+When a skill is uninstalled, its marked block is removed by its delimiters
+(identified by remote URL and skill ID), even if the source guide no longer
+exists in the skill.
+
+When multiple agents share a guidance file (e.g., `AGENTS.md` for Codex and
+OpenCode), a block is removed only when no remaining installed skill claims it.
+
+---
+
 ## Encapsulation
 
 Skill or hook content that itself contains SkillKeeper delimiter comments or a
