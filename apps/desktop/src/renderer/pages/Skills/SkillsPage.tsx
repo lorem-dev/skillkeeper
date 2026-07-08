@@ -326,15 +326,15 @@ export function SkillsPage() {
         clearLabel={t('common.clear')}
       />
       {mode === 'repositories' ? (
-        <Button variant="primary" disabled={repoChecked.length === 0} onClick={onAdd}>
+        <Button variant="primary" glass disabled={repoChecked.length === 0} onClick={onAdd}>
           {t('skills.action.add')}
         </Button>
       ) : (
-        <Button variant="primary" disabled={!hasProjectChanges} onClick={onSave}>
+        <Button variant="primary" glass disabled={!hasProjectChanges} onClick={onSave}>
           {t('skills.action.save')}
         </Button>
       )}
-      <Button variant="secondary" disabled={!canReset} onClick={() => resetSkillsSelection(mode)}>
+      <Button variant="secondary" glass disabled={!canReset} onClick={() => resetSkillsSelection(mode)}>
         {t('skills.action.reset')}
       </Button>
     </>

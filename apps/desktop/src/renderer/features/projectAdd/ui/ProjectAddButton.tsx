@@ -20,7 +20,7 @@ export function ProjectAddButton() {
   }
 
   return (
-    <Button variant="primary" onClick={() => void pick()}>
+    <Button variant="primary" glass onClick={() => void pick()}>
       {t('projects.add')}
     </Button>
   );

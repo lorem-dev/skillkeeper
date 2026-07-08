@@ -244,6 +244,9 @@ variant, and the Modal panel) clip the effect to their rounded shape
 thin gradient rim border (the `glass` SCSS mixin + `--sk-glass-border` token):
 bright at the top-left and bottom-right corners and transparent at the other two,
 so the rim catches light on one diagonal and blends into the backdrop elsewhere.
+Two soft radial highlights layer over that diagonal to lift the rim at the top
+and bottom centers as well, for a more even, lit-from-around edge (kept subtle so
+the diagonal shine still dominates).
 Displacement and aberration are kept low so the effect is a subtle refraction, not
 a noisy distortion. It **degrades safely**: where `backdrop-filter: url()` is
 unsupported it falls back to plain blur+saturate, and the surface keeps its tint +
@@ -297,16 +300,16 @@ Defaults: control inner padding `--sk-space-3`/`--sk-space-4`; row padding
 
 ### 5.3 Elevation
 
-Glass surfaces carry depth mostly through blur and border; shadows are subtle.
+Shadows are theme-varying. The light theme carries depth mostly through the drop
+shadow, so its values are relatively strong; the values below are the light
+theme. The dark theme softens them (shadows read faintly on dark surfaces) and
+leans on the hairline glass border for edge definition instead.
 
-| Token            | Value                                  | Use                  |
-| ---------------- | -------------------------------------- | -------------------- |
-| `--sk-shadow-1`  | `0 1px 2px rgba(0,0,0,0.08)`           | raised cells/rows    |
-| `--sk-shadow-2`  | `0 4px 16px rgba(0,0,0,0.12)`          | popovers, menus      |
-| `--sk-shadow-3`  | `0 12px 40px rgba(0,0,0,0.20)`         | sheets, alerts       |
-
-In dark theme, increase shadow alpha by ~0.5x and lean on the hairline border for
-edge definition.
+| Token            | Light                                  | Dark                          | Use               |
+| ---------------- | -------------------------------------- | ----------------------------- | ----------------- |
+| `--sk-shadow-1`  | `0 1px 3px rgba(0,0,0,0.14)`           | `0 1px 2px rgba(0,0,0,0.08)`  | raised cells/rows |
+| `--sk-shadow-2`  | `0 6px 20px rgba(0,0,0,0.20)`          | `0 4px 16px rgba(0,0,0,0.12)` | popovers, menus   |
+| `--sk-shadow-3`  | `0 16px 48px rgba(0,0,0,0.30)`         | `0 12px 40px rgba(0,0,0,0.20)`| sheets, alerts    |
 
 ---
 
@@ -396,6 +399,17 @@ Padding `--sk-space-3` vertical, `--sk-space-5` horizontal. Label weight 600,
 > (`<Button variant="primary|secondary|plain|destructive|glass">`), with styles in
 > the co-located `Button.scss`. Import it through the kit barrel: `@/shared/ui`.
 
+**Glass treatment.** Any variant can also render on a glass surface via the
+`glass` prop (`<Button variant="primary" glass>`): it overlays the translucent
+tint, backdrop refraction, and gradient rim from Section 4 while keeping the
+variant's role colour -- primary stays a frosted accent (theme-adaptive: a bright,
+saturated accent on light, a lighter frosted tint on dark), secondary a neutral
+frosted control. Disabled dims
+the whole frosted surface so the inactive state reads at a glance.
+`variant="glass"` remains the standalone accent-on-thin-glass look and already
+implies the treatment. The split button below takes the same `glass` prop on its
+shell.
+
 **Split button.** A primary action joined to a chevron toggle that opens a
 dropdown of related actions. The two segments share one rounded shell
 (`--sk-radius-sm`, or `--sk-radius-xl` in the compact size that lines up flush
@@ -406,8 +420,8 @@ points toward the primary action.
 
 > Implemented as
 > [`shared/ui/SplitButton`](../../apps/desktop/src/renderer/shared/ui/SplitButton/SplitButton.tsx)
-> (`icon` / `tooltip` / `onPrimary` / `items` / `size`), opening the shared
-> `Menu` (8.8) for its dropdown.
+> (`icon` / `tooltip` / `onPrimary` / `items` / `size`, plus `glass` for a
+> frosted shell), opening the shared `Menu` (8.8) for its dropdown.
 
 ### 8.3 Controls
 

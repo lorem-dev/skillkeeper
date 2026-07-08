@@ -106,7 +106,7 @@ export function OpenConfigButton() {
   if (editors.length === 0) {
     return (
       <Tooltip content={tooltip}>
-        <Button variant="secondary" aria-label={tooltip} onClick={() => void open(DEFAULT_ID)}>
+        <Button variant="secondary" glass aria-label={tooltip} onClick={() => void open(DEFAULT_ID)}>
           <Icon name="edit" />
         </Button>
       </Tooltip>
@@ -118,6 +118,7 @@ export function OpenConfigButton() {
   return (
     <SplitButton
       size="compact"
+      glass
       icon={primaryIcon(selectedOption)}
       tooltip={tooltip}
       menuLabel={tooltip}

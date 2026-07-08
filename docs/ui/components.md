@@ -176,9 +176,11 @@ Source: [shared/ui/TreeView/TreeView.tsx](../../apps/desktop/src/renderer/shared
 ## Controls
 
 ### Button
-`<Button variant>` -- `variant`: `primary` | `secondary` (default) | `tinted` |
-`plain` | `destructive` | `glass`. Forwards all native button attributes.
-Design-system.md 8.2.
+`<Button variant glass? loading?>` -- `variant`: `primary` | `secondary`
+(default) | `tinted` | `plain` | `destructive` | `glass`. `glass` overlays the
+refractive glass-surface treatment on top of any variant (a frosted primary,
+secondary, etc.); `loading` shows a shimmer and disables the button. Forwards all
+native button attributes. Design-system.md 8.2.
 Source: [shared/ui/Button/Button.tsx](../../apps/desktop/src/renderer/shared/ui/Button/Button.tsx)
 
 ### Checkbox
@@ -262,10 +264,11 @@ Design-system.md 8.11.
 Source: [shared/ui/MultiSelect/MultiSelect.tsx](../../apps/desktop/src/renderer/shared/ui/MultiSelect/MultiSelect.tsx)
 
 ### SplitButton
-`<SplitButton icon? tooltip onPrimary items menuLabel size? disabled? />` -- a
-primary action button joined to a chevron toggle that opens a dropdown Menu of
-related actions (`items: { id, label, icon?, onSelect }[]`). `size`: `default` |
-`compact` (matches the round icon buttons). Design-system.md 8.2.
+`<SplitButton icon? tooltip onPrimary items menuLabel size? glass? disabled? />`
+-- a primary action button joined to a chevron toggle that opens a dropdown Menu
+of related actions (`items: { id, label, icon?, onSelect }[]`). `size`: `default`
+| `compact` (matches the round icon buttons); `glass` frosts the shell.
+Design-system.md 8.2.
 Source: [shared/ui/SplitButton/SplitButton.tsx](../../apps/desktop/src/renderer/shared/ui/SplitButton/SplitButton.tsx)
 
 ---

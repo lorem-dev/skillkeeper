@@ -70,6 +70,7 @@ export function RepositoriesPage() {
       <RepoAddButton />
       <Button
         variant="secondary"
+        glass
         loading={refreshing}
         onClick={() => {
           // Loading (and non-clickable) until every queued update-check task

@@ -94,25 +94,33 @@ $themes: (
   // search, segmented, stepper) so they align on one baseline in rows/toolbars.
   --sk-control-height: 32px;
 
-  // elevation
-  --sk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.08);
-  --sk-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --sk-shadow-3: 0 12px 40px rgba(0, 0, 0, 0.20);
+  // elevation. The light theme carries depth mainly through the drop shadow, so
+  // these are relatively strong; the dark theme softens them (see the override
+  // below) and leans on the hairline glass border for edge definition instead.
+  --sk-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.14);
+  --sk-shadow-2: 0 6px 20px rgba(0, 0, 0, 0.20);
+  --sk-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.30);
   // White control knobs (slider/toggle) need a crisp rim + drop shadow so they
   // stay visible on light backgrounds, not just a soft elevation shadow.
   --sk-shadow-knob: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.28),
     0 3px 8px rgba(0, 0, 0, 0.12);
   // Glass edge: a thin gradient border, bright at the top-left and bottom-right
   // corners and fading to transparent at the other two, so the rim catches light
-  // on one diagonal and blends into the backdrop elsewhere.
+  // on one diagonal and blends into the backdrop elsewhere. Two soft radial
+  // highlights layer on top of the diagonal to lift the rim at the top and bottom
+  // centers as well, for a more even, lit-from-around edge (kept subtle so the
+  // diagonal shine still reads).
   --sk-glass-border-width: 1px;
-  --sk-glass-border: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.5),
-    rgba(255, 255, 255, 0) 45%,
-    rgba(255, 255, 255, 0) 55%,
-    rgba(255, 255, 255, 0.5)
-  );
+  --sk-glass-border:
+    radial-gradient(60% 60% at 50% 0%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(60% 60% at 50% 100%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 70%),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.5),
+      rgba(255, 255, 255, 0) 45%,
+      rgba(255, 255, 255, 0) 55%,
+      rgba(255, 255, 255, 0.5)
+    );
 
   // motion
   --sk-ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
@@ -123,4 +131,9 @@ $themes: (
 
 [data-theme='dark'] {
   @include emit-theme(dark);
+  // Shadows read faintly on dark surfaces, so keep them soft (the light theme
+  // above uses stronger drops) and lean on the hairline border for edges.
+  --sk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --sk-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --sk-shadow-3: 0 12px 40px rgba(0, 0, 0, 0.20);
 }

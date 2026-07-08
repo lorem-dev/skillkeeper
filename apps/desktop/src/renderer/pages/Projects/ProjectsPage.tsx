@@ -67,6 +67,7 @@ export function ProjectsPage() {
       <ProjectAddButton />
       <Button
         variant="secondary"
+        glass
         loading={refreshing}
         onClick={() => {
           // Run the folder check now (reschedules the loop) plus the info refresh.

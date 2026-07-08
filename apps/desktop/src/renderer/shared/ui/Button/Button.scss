@@ -141,6 +141,75 @@
       background: var(--sk-color-bg-tertiary);
     }
   }
+
+  // Glass surface layered on top of any variant (the `glass` prop). Same
+  // refraction + gradient rim as the other glass surfaces, but keeping the
+  // variant's role colour. useGlassRefraction sets the backdrop filter on the
+  // element; clip it to the pill and draw the rim. The base here is the neutral
+  // glass tint (used by secondary/plain/etc.); primary re-tints below.
+  &--glass-surface {
+    position: relative;
+    overflow: hidden;
+    background: var(--sk-glass-tint);
+    box-shadow: var(--sk-shadow-1);
+    transition:
+      background var(--sk-duration-medium) var(--sk-ease-standard),
+      filter var(--sk-duration-fast) var(--sk-ease-standard),
+      transform var(--sk-duration-fast) var(--sk-ease-standard);
+
+    @include glass.border;
+
+    &:hover:not(:disabled) {
+      // Gentle translucent tint of the label colour (as the glass variant).
+      background: color-mix(in srgb, var(--sk-color-label) 8%, var(--sk-glass-tint));
+      filter: none;
+    }
+
+    // Disabled: dim the whole frosted surface and fade its rim so the inactive
+    // state reads at a glance -- the translucent fill alone sat too close to the
+    // active look. Applies to every glass variant (primary re-tints below).
+    &:disabled {
+      opacity: 0.45;
+      box-shadow: none;
+    }
+
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      background: var(--sk-color-bg-tertiary);
+    }
+  }
+
+  // Primary keeps its accent identity as a frosted, translucent accent so the
+  // refracted backdrop still reads through it. Compound selector (0-2-0) wins
+  // over the neutral `--glass-surface` base. The fill is theme-adaptive: the
+  // light base below is a bright, saturated accent (fairly opaque so it reads
+  // vividly), and the dark override lightens it toward a frostier tint. Both
+  // stay translucent enough for the refraction to read.
+  &--primary#{&}--glass-surface {
+    background: color-mix(in srgb, var(--sk-color-accent) 92%, transparent);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--sk-color-accent);
+    }
+
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      background: var(--sk-color-accent);
+    }
+
+    // Lighter frost on the dark theme -- a touch brighter (denser fill) so it
+    // reads vividly against dark content while staying frostier than light.
+    [data-theme='dark'] & {
+      background: color-mix(in srgb, color-mix(in srgb, var(--sk-color-accent), #fff 20%) 78%, transparent);
+
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, color-mix(in srgb, var(--sk-color-accent), #fff 20%) 88%, transparent);
+      }
+
+      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        background: color-mix(in srgb, var(--sk-color-accent), #fff 20%);
+      }
+    }
+  }
 }
 
 @keyframes sk-button-shimmer {

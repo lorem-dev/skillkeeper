@@ -4,6 +4,8 @@
 // point down while its resting orientation (from the shared chevron-right asset)
 // points at the primary button.
 
+@use '../../../styles/glass';
+
 .sk-split-button {
   position: relative;
   display: inline-flex;
@@ -122,5 +124,42 @@
       width: 20px;
       height: 20px;
     }
+  }
+
+  // Glass shell: the same frosted treatment as the glass Button. The shell
+  // carries the rounded shape (so the backdrop refraction set by
+  // useGlassRefraction, and the gradient rim, follow the outline) and the
+  // segments turn translucent. No overflow:hidden -- backdrop-filter already
+  // clips to the radius, and clipping here would eat the segments' focus rings.
+  &--glass {
+    border-radius: var(--sk-radius-sm);
+    box-shadow: var(--sk-shadow-1);
+
+    @include glass.border;
+
+    .sk-split-button__primary,
+    .sk-split-button__toggle {
+      background: var(--sk-glass-tint);
+
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--sk-color-label) 8%, var(--sk-glass-tint));
+      }
+
+      &:active:not(:disabled) {
+        background: color-mix(in srgb, var(--sk-color-label) 12%, var(--sk-glass-tint));
+      }
+    }
+
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .sk-split-button__primary,
+      .sk-split-button__toggle {
+        background: var(--sk-color-bg-tertiary);
+      }
+    }
+  }
+
+  // Compact glass matches the round icon-button radius.
+  &--compact#{&}--glass {
+    border-radius: var(--sk-radius-xl);
   }
 }
