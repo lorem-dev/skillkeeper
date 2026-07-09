@@ -57,6 +57,9 @@ export type { SkmcpEntry, SkmcpFile } from './skmcp.js';
 // Remote URL normalization (matching installs to repositories).
 export { normalizeRemote } from './repoRemote.js';
 
+// .gitignore maintenance (MCP parameter value files).
+export { ensureGitignore } from './gitignoreEnsure.js';
+
 // Frontmatter and manifests.
 export { splitFrontmatter, FrontmatterError } from './frontmatter.js';
 export type { Frontmatter } from './frontmatter.js';
