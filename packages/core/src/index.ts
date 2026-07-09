@@ -59,6 +59,7 @@ export { mcpConfigSchema, parseMcpConfig, McpConfigError } from './mcpConfig.js'
 export type { McpTransport, McpServerDef, McpPresetOrigin } from './mcpModel.js';
 export { parseParams, validateParamSyntax, renderParams } from './mcpParams.js';
 export type { ParamSyntaxResult } from './mcpParams.js';
+export { canonicalMcpJson, hashMcpDef } from './mcpHashing.js';
 
 // Remote URL parsing.
 export { parseRemote } from './repoRemote.js';
