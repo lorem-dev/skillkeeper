@@ -50,6 +50,7 @@ export interface ConfigPatch {
   notifications?: Partial<NotificationsConfig>;
   repositories?: Partial<RepositoriesConfig>;
   projects?: Partial<ProjectsConfig>;
+  mcp?: Partial<SkillKeeperConfig['mcp']>;
 }
 
 /**
@@ -711,6 +712,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         ? { repositories: { ...current.repositories, ...patch.repositories } }
         : {}),
       ...(patch.projects !== undefined ? { projects: { ...current.projects, ...patch.projects } } : {}),
+      ...(patch.mcp !== undefined ? { mcp: { ...current.mcp, ...patch.mcp } } : {}),
     };
     const result = await bridgeClient.setConfig(merged);
     get().setConfig(result.config, result.validity, result.warnings);

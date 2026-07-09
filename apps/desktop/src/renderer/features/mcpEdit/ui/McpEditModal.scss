@@ -1,0 +1,91 @@
+// Manual MCP preset editor modal.
+.sk-mcp-edit {
+  max-width: 560px;
+}
+
+.sk-mcp-edit__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+}
+
+.sk-mcp-edit__help {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-mcp-edit__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+}
+
+// The transport select never needs the full modal width -- bounded so it
+// doesn't stretch past what a "stdio"/"http"/"sse" value needs.
+.sk-mcp-edit__field--bounded {
+  max-width: 200px;
+}
+
+.sk-mcp-edit__label {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-mcp-edit__error {
+  font-size: 12px;
+  color: var(--sk-red);
+}
+
+.sk-mcp-edit__textarea {
+  appearance: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--sk-color-label);
+  background: var(--sk-color-fill-3);
+  border: 1px solid transparent;
+  border-radius: var(--sk-radius-sm);
+  padding: var(--sk-space-3) var(--sk-space-4);
+  min-height: 6rem;
+  resize: vertical;
+
+  &::placeholder {
+    color: var(--sk-color-label-2);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--sk-color-accent);
+  }
+}
+
+.sk-mcp-edit__textarea--invalid {
+  border-color: var(--sk-red);
+}
+
+.sk-mcp-edit__kv-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+}
+
+.sk-mcp-edit__kv-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--sk-space-2);
+  align-items: center;
+}
+
+.sk-mcp-edit__arg-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--sk-space-2);
+  align-items: center;
+}
+
+.sk-mcp-edit__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+}
