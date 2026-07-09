@@ -93,10 +93,16 @@ export async function listAvailableMcp(deps: McpCatalogDeps): Promise<AvailableM
 
       push(undefined, await readMcpDefs(deps.fs, repo.localPath, warn));
 
+      // Group candidates come from the on-disk directory holding each resolved
+      // skill (`rootPath`'s first segment when nested one level), not from the
+      // skill's declared `id.group`: a repo using `skillkeeper.repo.yaml` may
+      // assign a custom group label decoupled from the directory layout, but an
+      // mcp.yml sits in the actual directory, not under that label.
       const { skills } = await resolveSkills(deps.fs, repo.localPath);
       const groups = new Set<string>();
       for (const skill of skills) {
-        if (skill.id.group !== undefined) groups.add(skill.id.group);
+        const parts = skill.rootPath.split('/');
+        if (parts.length >= 2) groups.add(parts[0]!);
       }
       for (const group of groups) {
         push(group, await readMcpDefs(deps.fs, `${repo.localPath}/${group}`, warn));

@@ -117,6 +117,21 @@ describe('listAvailableMcp', () => {
     expect(out[0]?.repoId).toBe('r1');
   });
 
+  it('finds the mcp.yml in the actual group directory even when skillkeeper.repo.yaml assigns a custom group label', async () => {
+    const deps = await makeDeps({
+      [`${REPO_PATH}/skillkeeper.repo.yaml`]:
+        'version: 1\nskills:\n  - path: features/onboarding\n    group: getting-started\n',
+      [`${REPO_PATH}/features/onboarding/SKILL.md`]: SKILL('onboarding'),
+      [`${REPO_PATH}/features/mcp.yml`]: MCP_YML('features-server'),
+    });
+
+    const out = await listAvailableMcp(deps);
+
+    expect(out).toHaveLength(1);
+    expect(out[0]?.group).toBe('features');
+    expect(out[0]?.def.name).toBe('features-server');
+  });
+
   it('returns an empty list when there is no state file', async () => {
     const fs = createMemFs();
     const deps: RepoDeps = { fs, git: createFakeGit(), statePath: STATE_PATH, reposDir: '/repos' };
