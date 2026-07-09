@@ -194,6 +194,8 @@ export const be: Partial<Catalog> = {
   'skills.addRepo': 'Дадаць рэпазіторый',
   'skills.local': 'лакальны',
   'skills.localHint': 'Лакальны навык, напісаны ўручную',
+  'skills.rulesBadge': 'правілы',
+  'skills.rulesHint': 'У навыка ёсць правілы',
   'skills.searchFound.one': 'Знойдзены {count} навык',
   'skills.searchFound.few': 'Знойдзена {count} навыкі',
   'skills.searchFound.many': 'Знойдзена {count} навыкаў',

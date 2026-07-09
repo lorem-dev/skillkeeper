@@ -194,6 +194,8 @@ export const uk: Partial<Catalog> = {
   'skills.addRepo': 'Додати репозиторій',
   'skills.local': 'локальний',
   'skills.localHint': 'Локальна навичка, написана вручну',
+  'skills.rulesBadge': 'правила',
+  'skills.rulesHint': 'Навичка має правила',
   'skills.searchFound.one': 'Знайдено {count} навичку',
   'skills.searchFound.few': 'Знайдено {count} навички',
   'skills.searchFound.many': 'Знайдено {count} навичок',

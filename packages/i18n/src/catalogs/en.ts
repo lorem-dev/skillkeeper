@@ -203,6 +203,8 @@ export const en = {
   'skills.addRepo': 'Add repository',
   'skills.local': 'local',
   'skills.localHint': 'Local, hand-written skill',
+  'skills.rulesBadge': 'rules',
+  'skills.rulesHint': 'The skill has rules',
   'skills.searchFound.one': 'Found {count} skill',
   'skills.searchFound.few': 'Found {count} skills',
   'skills.searchFound.many': 'Found {count} skills',

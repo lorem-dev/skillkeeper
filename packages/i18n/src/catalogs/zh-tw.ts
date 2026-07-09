@@ -173,6 +173,8 @@ export const zhTw: Partial<Catalog> = {
   'skills.addRepo': '新增儲存庫',
   'skills.local': '本機',
   'skills.localHint': '手動撰寫的本機技能',
+  'skills.rulesBadge': '規則',
+  'skills.rulesHint': '此技能包含規則',
   'skills.searchFound.other': '找到 {count} 個技能',
   'skills.searchTotal.other': '共 {count} 個技能',
 

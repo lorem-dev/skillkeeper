@@ -173,6 +173,8 @@ export const ja: Partial<Catalog> = {
   'skills.addRepo': 'リポジトリを追加',
   'skills.local': 'ローカル',
   'skills.localHint': '手書きのローカルスキル',
+  'skills.rulesBadge': 'ルール',
+  'skills.rulesHint': 'このスキルにはルールがあります',
   'skills.searchFound.other': '{count} 件のスキルが見つかりました',
   'skills.searchTotal.other': '合計 {count} 件のスキル',
 

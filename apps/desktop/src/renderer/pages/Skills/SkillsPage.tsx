@@ -38,6 +38,8 @@ import {
   collectBranchIds,
   rootIds,
   countLeaves,
+  repoSkillKey,
+  projectSkillKey,
 } from '@/entities/skill';
 import { SkillInstallModal } from '@/features/skillInstall';
 import { SkillSaveModal } from '@/features/skillSave';
@@ -96,6 +98,19 @@ export function SkillsPage() {
   const installedSet = useMemo(() => new Set(installedLeafIds(installs)), [installs]);
   const installedAgents = useMemo(() => installedAgentsByProject(installs), [installs]);
 
+  // Leaf ids whose skill ships a GUIDE.md/RULES.md guidance file -- they get a
+  // grey "rules" badge. Keyed to the active mode's id scheme; keys that map to
+  // no node are harmless (the membership test only ever hits real leaves).
+  const guidanceIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const s of availableSkills) {
+      if (!s.hasGuidance) continue;
+      if (mode === 'repositories') ids.add(repoSkillKey(s.repoId, s.group, s.name));
+      else for (const p of projects) ids.add(projectSkillKey(p.id, s.repoId, s.group, s.name));
+    }
+    return ids;
+  }, [availableSkills, projects, mode]);
+
   // The filters narrow which repos/projects appear (empty = all).
   const shownRepos = useMemo(
     () =>
@@ -140,7 +155,36 @@ export function SkillsPage() {
   // attach update dots (leaf/group/repo) from the model, and give each project
   // root an agent picker (with an "agents changed" marker).
   const decorated = useMemo(() => {
-    if (mode !== 'projects' || projectModel === null) return shownTree;
+    // Grey, always-visible "rules" badge for skills that ship guidance. Wrapped
+    // so a click lands on the badge, not the TreeView row (no checkbox toggle).
+    const rulesBadge = (
+      <span className="sk-skills-badgewrap" onClick={(e) => e.stopPropagation()}>
+        <Tooltip content={t('skills.rulesHint')}>
+          <Badge tone="neutral">{t('skills.rulesBadge')}</Badge>
+        </Tooltip>
+      </span>
+    );
+
+    if (mode !== 'projects' || projectModel === null) {
+      // Repo mode has no status/update decoration -- only the rules badge.
+      if (guidanceIds.size === 0) return shownTree;
+      const walk = (node: TreeNode): TreeNode => {
+        if (node.children !== undefined && node.children.length > 0) {
+          return { ...node, children: node.children.map(walk) };
+        }
+        if (!guidanceIds.has(node.id)) return node;
+        return {
+          ...node,
+          label: (
+            <span className="sk-skills-nodelabel">
+              <span className="sk-skills-name">{node.label}</span>
+              {rulesBadge}
+            </span>
+          ),
+        };
+      };
+      return shownTree.map(walk);
+    }
     const checkedSet = new Set(projectChecked);
     const { updatesByNode, orphanLeaves } = projectModel;
     // A node's label: name, then a non-interactive update dot when an update is
@@ -189,7 +233,8 @@ export function SkillsPage() {
           </Tooltip>
         );
       }
-      if (ups === undefined && badge === null) return node.label;
+      const hasRules = guidanceIds.has(node.id);
+      if (ups === undefined && badge === null && !hasRules) return node.label;
       return (
         <span className="sk-skills-nodelabel">
           <span className="sk-skills-name">{node.label}</span>
@@ -209,6 +254,7 @@ export function SkillsPage() {
               {badge}
             </span>
           )}
+          {hasRules && rulesBadge}
         </span>
       );
     };
@@ -273,6 +319,7 @@ export function SkillsPage() {
     mode,
     projectModel,
     shownTree,
+    guidanceIds,
     projectChecked,
     installedSet,
     projectAgents,

@@ -187,6 +187,8 @@ export const srLatn: Partial<Catalog> = {
   'skills.addRepo': 'Dodaj repozitorijum',
   'skills.local': 'lokalni',
   'skills.localHint': 'Lokalna, ručno pisana veština',
+  'skills.rulesBadge': 'pravila',
+  'skills.rulesHint': 'Veština ima pravila',
   'skills.searchFound.one': 'Pronađena {count} veština',
   'skills.searchFound.few': 'Pronađene {count} veštine',
   'skills.searchFound.other': 'Pronađeno {count} veština',

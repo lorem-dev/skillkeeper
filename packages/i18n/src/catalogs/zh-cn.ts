@@ -173,6 +173,8 @@ export const zhCn: Partial<Catalog> = {
   'skills.addRepo': '添加仓库',
   'skills.local': '本地',
   'skills.localHint': '手动编写的本地技能',
+  'skills.rulesBadge': '规则',
+  'skills.rulesHint': '该技能包含规则',
   'skills.searchFound.other': '找到 {count} 个技能',
   'skills.searchTotal.other': '共 {count} 个技能',
 

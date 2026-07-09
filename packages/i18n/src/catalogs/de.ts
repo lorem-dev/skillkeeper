@@ -184,6 +184,8 @@ export const de: Partial<Catalog> = {
   'skills.addRepo': 'Repository hinzufügen',
   'skills.local': 'lokal',
   'skills.localHint': 'Lokaler, handgeschriebener Skill',
+  'skills.rulesBadge': 'Regeln',
+  'skills.rulesHint': 'Der Skill hat Regeln',
   'skills.searchFound.one': '{count} Skill gefunden',
   'skills.searchFound.other': '{count} Skills gefunden',
   'skills.searchTotal.one': '{count} Skill insgesamt',

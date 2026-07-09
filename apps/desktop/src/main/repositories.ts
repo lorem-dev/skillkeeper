@@ -246,6 +246,8 @@ export interface AvailableSkill {
   readonly description?: string;
   /** Content hash of the skill body (excludes `.skid.yml`), for update detection. */
   readonly contentHash: string;
+  /** The skill ships a GUIDE.md/RULES.md guidance file (drives the "rules" badge). */
+  readonly hasGuidance: boolean;
 }
 
 /**
@@ -274,6 +276,9 @@ export async function listAvailableSkills(deps: RepoDeps): Promise<AvailableSkil
           version: skill.manifest.version,
           description: skill.manifest.description,
           contentHash: await resolvedContentHash(deps.fs, repo.localPath, skill),
+          hasGuidance:
+            skill.files.includes(`${skill.rootPath}/GUIDE.md`) ||
+            skill.files.includes(`${skill.rootPath}/RULES.md`),
         });
       }
     } catch {

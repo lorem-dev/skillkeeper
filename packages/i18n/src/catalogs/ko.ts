@@ -191,6 +191,8 @@ export const ko: Partial<Catalog> = {
   'skills.addRepo': '저장소 추가',
   'skills.local': '로컬',
   'skills.localHint': '직접 작성한 로컬 스킬',
+  'skills.rulesBadge': '규칙',
+  'skills.rulesHint': '이 스킬에 규칙이 있습니다',
   'skills.searchFound.one': '스킬 {count}개 찾음',
   'skills.searchFound.few': '스킬 {count}개 찾음',
   'skills.searchFound.many': '스킬 {count}개 찾음',

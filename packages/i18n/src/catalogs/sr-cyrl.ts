@@ -187,6 +187,8 @@ export const srCyrl: Partial<Catalog> = {
   'skills.addRepo': 'Додај репозиторијум',
   'skills.local': 'локални',
   'skills.localHint': 'Локална, ручно писана вештина',
+  'skills.rulesBadge': 'правила',
+  'skills.rulesHint': 'Вештина има правила',
   'skills.searchFound.one': 'Пронађена {count} вештина',
   'skills.searchFound.few': 'Пронађене {count} вештине',
   'skills.searchFound.other': 'Пронађено {count} вештина',
