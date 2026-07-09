@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest';
-import { parseParams, validateParamSyntax, renderParams } from './mcpParams.js';
+import { parseParams, validateParamSyntax, renderParams, missingParams } from './mcpParams.js';
 
 const def = { name: 'github', type: 'http', url: 'https://{host}/mcp',
   headers: { Authorization: 'Bearer {token}' }, rules: 'host={host}' } as const;
@@ -29,4 +29,12 @@ it('renders values into every field', () => {
 });
 it('throws listing missing params', () => {
   expect(() => renderParams(def, { host: 'h' })).toThrow(/token/);
+});
+it('missingParams returns the sorted param names absent from stored values', () => {
+  expect(missingParams(def, { host: 'h' })).toEqual(['token']);
+  expect(missingParams(def, { host: 'h', token: 't' })).toEqual([]);
+  // undefined stored values -> every param is missing.
+  expect(missingParams(def, undefined)).toEqual(['host', 'token']);
+  // A stored key present but empty still counts as "present" (not missing).
+  expect(missingParams(def, { host: 'h', token: '' })).toEqual([]);
 });

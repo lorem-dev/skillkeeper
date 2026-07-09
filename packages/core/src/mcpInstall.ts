@@ -56,6 +56,13 @@ export interface InstallMcpArgs {
   readonly def: McpServerDef;
   /** Parameter values to render into `def`. */
   readonly values: Record<string, string>;
+  /**
+   * When set, this exact instance name is used verbatim (the allocator is
+   * skipped), even if it collides with a name already in the native config.
+   * Used by update to reinstall under the SAME name. When absent, a fresh name
+   * is allocated as before.
+   */
+  readonly instanceName?: string;
   /** When set (project scope), `ensureGitignore` is run against this path. */
   readonly gitignoreProjectPath?: string;
 }
@@ -90,7 +97,8 @@ export async function installMcpInstance(
   const nativeText = (await fs.exists(args.nativePath)) ? await fs.readFile(args.nativePath) : '';
   const writer = writerFor(args.agent);
 
-  const instanceName = allocateInstanceName(args.identity.source, writer.existingNames(nativeText));
+  const instanceName =
+    args.instanceName ?? allocateInstanceName(args.identity.source, writer.existingNames(nativeText));
 
   await fs.writeFile(args.nativePath, writer.upsert(nativeText, instanceName, rendered));
 

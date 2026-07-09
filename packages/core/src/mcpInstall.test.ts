@@ -104,6 +104,21 @@ describe('installMcpInstance', () => {
     expect(ledger?.servers.map((s) => s.name)).toEqual(['github_1', 'github_2']);
   });
 
+  it('uses a forced instanceName verbatim, even when it collides with the allocator choice', async () => {
+    const fs = createMemFs();
+    const first = await installMcpInstance(fs, baseArgs());
+    expect(first.instanceName).toBe('github_1');
+
+    // The allocator would now pick github_2 (github_1 is taken), but a forced
+    // name is used as-is -- this is how update reinstalls under the same name.
+    const forced = await installMcpInstance(fs, baseArgs({ instanceName: 'github_1' }));
+    expect(forced.instanceName).toBe('github_1');
+
+    // The RAW-def hash is still recorded for the forced install.
+    const ledger = parseSkmcp(await fs.readFile(LEDGER_PATH));
+    expect(ledger?.servers.at(-1)).toMatchObject({ name: 'github_1', hash: hashMcpDef(STDIO_DEF) });
+  });
+
   it('ensures the project gitignore when gitignoreProjectPath is set', async () => {
     const fs = createMemFs();
     await installMcpInstance(fs, baseArgs({ gitignoreProjectPath: '/proj' }));

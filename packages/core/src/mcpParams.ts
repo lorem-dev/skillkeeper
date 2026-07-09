@@ -34,6 +34,22 @@ export function parseParams(def: McpServerDef): string[] {
   return [...names].sort();
 }
 
+/**
+ * The parameter names required by `def` that are absent from `storedValues`
+ * (an undefined map counts every parameter as missing). Result is sorted and
+ * de-duplicated, mirroring {@link parseParams}. A stored key with an empty
+ * string value still counts as present.
+ */
+export function missingParams(
+  def: McpServerDef,
+  storedValues: Record<string, string> | undefined,
+): string[] {
+  const stored = storedValues ?? {};
+  return parseParams(def).filter(
+    (name) => !Object.prototype.hasOwnProperty.call(stored, name),
+  );
+}
+
 export type ParamSyntaxResult = { ok: true } | { ok: false; index: number; reason: string };
 
 /**
