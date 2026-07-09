@@ -54,6 +54,10 @@ export { parseSkillManifest, parseHookManifest, ManifestError } from './manifest
 export { repoConfigSchema, parseRepoConfig, RepoConfigError } from './repoConfig.js';
 export type { RepoConfig } from './repoConfig.js';
 
+// MCP config and model.
+export { mcpConfigSchema, parseMcpConfig, McpConfigError } from './mcpConfig.js';
+export type { McpTransport, McpServerDef, McpPresetOrigin } from './mcpModel.js';
+
 // Remote URL parsing.
 export { parseRemote } from './repoRemote.js';
 export type { ParsedRemote } from './repoRemote.js';
