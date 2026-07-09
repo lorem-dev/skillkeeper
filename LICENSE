@@ -231,6 +231,7 @@ current and accurate.
 | commander | 15.0.0 | MIT | Copyright (c) TJ Holowaychuk <tj@vision-media.ca> |
 | react | 19.2.7 | MIT | Copyright (c) react contributors |
 | react-dom | 19.2.7 | MIT | Copyright (c) react-dom contributors |
+| smol-toml | 1.7.0 | BSD-3-Clause | Copyright (c) Squirrel Chat et al. |
 | yaml | 2.9.0 | ISC | Copyright (c) Eemeli Aro <eemeli@gmail.com> |
 | zod | 4.4.3 | MIT | Copyright (c) Colin McDonnell <zod@colinhacks.com> |
 | zustand | 5.0.14 | MIT | Copyright (c) Paul Henschel |

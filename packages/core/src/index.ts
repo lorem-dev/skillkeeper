@@ -77,6 +77,10 @@ export type { ParamSyntaxResult } from './mcpParams.js';
 export { canonicalMcpJson, hashMcpDef } from './mcpHashing.js';
 export { toSnakeCase, allocateInstanceName } from './mcpNaming.js';
 
+// Native MCP config writers (claude/cursor/copilot/opencode JSON, codex TOML).
+export { writerFor, supportsTransport, mcpDestination } from './mcpWriters/index.js';
+export type { McpConfigWriter, McpDestination, McpDestinationTarget } from './mcpWriters/index.js';
+
 // Remote URL parsing.
 export { parseRemote } from './repoRemote.js';
 export type { ParsedRemote } from './repoRemote.js';
