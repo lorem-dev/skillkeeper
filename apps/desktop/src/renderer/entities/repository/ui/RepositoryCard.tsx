@@ -177,6 +177,7 @@ export function RepositoryCard({
         <Tooltip content={busy ? syncingLabel : syncLabel}>
           <Button
             variant="secondary"
+            glass
             className="sk-repo-card__icon-btn"
             onClick={() => {
               if (!busy) onSync();
@@ -191,6 +192,7 @@ export function RepositoryCard({
           <Tooltip content={skillsLabel}>
             <Button
               variant="secondary"
+              glass
               className="sk-repo-card__icon-btn"
               onClick={onGoToSkills}
               aria-label={skillsLabel}
@@ -202,6 +204,7 @@ export function RepositoryCard({
         <Tooltip content={editLabel}>
           <Button
             variant="secondary"
+            glass
             className="sk-repo-card__icon-btn"
             onClick={onEdit}
             aria-label={editLabel}
