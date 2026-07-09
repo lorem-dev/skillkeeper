@@ -42,6 +42,18 @@ export {
 export { serializeSkid, parseSkid, SKID_SCHEMA } from './skid.js';
 export type { SkidFile } from './skid.js';
 
+// MCP install ledger (.skmcp.yml + .skmcp.params.yml).
+export {
+  serializeSkmcp,
+  parseSkmcp,
+  serializeSkmcpParams,
+  parseSkmcpParams,
+  SKMCP_FILE,
+  SKMCP_PARAMS_FILE,
+  SKMCP_SCHEMA,
+} from './skmcp.js';
+export type { SkmcpEntry, SkmcpFile } from './skmcp.js';
+
 // Remote URL normalization (matching installs to repositories).
 export { normalizeRemote } from './repoRemote.js';
 
