@@ -46,6 +46,7 @@ const validValidity: SectionValidity = {
   notifications: 'valid',
   repositories: 'valid',
   projects: 'valid',
+  mcp: 'valid',
 };
 
 const partiallyInvalidValidity: SectionValidity = {
@@ -57,6 +58,7 @@ const partiallyInvalidValidity: SectionValidity = {
   notifications: 'valid',
   repositories: 'valid',
   projects: 'valid',
+  mcp: 'valid',
 };
 
 const mockConfig: SkillKeeperConfig = {
@@ -68,6 +70,7 @@ const mockConfig: SkillKeeperConfig = {
   notifications: { enabled: true },
   repositories: { gitPath: 'git' },
   projects: { checkIntervalMinutes: 1 },
+  mcp: { servers: [] },
 };
 
 const mockRepo: Repository = {

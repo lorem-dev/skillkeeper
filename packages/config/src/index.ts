@@ -13,6 +13,8 @@ export type {
   NotificationsConfig,
   RepositoriesConfig,
   ProjectsConfig,
+  McpConfig,
+  McpPreset,
   SkillKeeperConfig,
   Section,
 } from './schema.js';

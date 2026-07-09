@@ -34,6 +34,16 @@ notifications:
 
 repositories:
   gitPath: /usr/bin/git
+
+mcp:
+  servers:
+    - id: abc123
+      name: github
+      type: stdio
+      command: npx
+      args:
+        - "-y"
+        - "@modelcontextprotocol/server-github"
 `.trim();
 
 const CONFIG_PATH = '/home/user/.config/skillkeeper/config.yaml';
@@ -50,6 +60,15 @@ describe('loadConfig', () => {
     expect(result.config.security.hookConsentPolicy).toBe('always-ask');
     expect(result.config.notifications.enabled).toBe(true);
     expect(result.config.repositories.gitPath).toBe('/usr/bin/git');
+    expect(result.config.mcp.servers).toEqual([
+      {
+        id: 'abc123',
+        name: 'github',
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-github'],
+      },
+    ]);
 
     expect(result.validity.general).toBe('valid');
     expect(result.validity.updates).toBe('valid');
@@ -58,6 +77,7 @@ describe('loadConfig', () => {
     expect(result.validity.security).toBe('valid');
     expect(result.validity.notifications).toBe('valid');
     expect(result.validity.repositories).toBe('valid');
+    expect(result.validity.mcp).toBe('valid');
 
     expect(result.warnings).toHaveLength(0);
   });
@@ -232,6 +252,71 @@ notifications:
     expect(result.validity.general).toBe('invalid');
     expect(result.config.general).toEqual(defaultConfig.general);
     expect(result.warnings.some((w) => w.includes('general'))).toBe(true);
+  });
+
+  it('defaults the mcp section to an empty servers list', async () => {
+    const fs = createMemFs({});
+    const { config, validity } = await loadConfig(fs, '/does/not/exist.yaml');
+    expect(config.mcp.servers).toEqual([]);
+    expect(validity.mcp).toBe('valid');
+  });
+
+  it('loads a valid mcp section with a manual preset', async () => {
+    const yaml = `
+mcp:
+  servers:
+    - id: preset-1
+      name: weather
+      type: http
+      url: "https://example.com/mcp"
+      headers:
+        Authorization: "Bearer {token}"
+`.trim();
+    const fs = createMemFs({ [CONFIG_PATH]: yaml });
+    const result = await loadConfig(fs, CONFIG_PATH);
+
+    expect(result.validity.mcp).toBe('valid');
+    expect(result.config.mcp.servers).toEqual([
+      {
+        id: 'preset-1',
+        name: 'weather',
+        type: 'http',
+        url: 'https://example.com/mcp',
+        headers: { Authorization: 'Bearer {token}' },
+      },
+    ]);
+  });
+
+  it('marks mcp section invalid when a preset is missing an id', async () => {
+    const yaml = `
+mcp:
+  servers:
+    - name: weather
+      type: http
+      url: "https://example.com/mcp"
+`.trim();
+    const fs = createMemFs({ [CONFIG_PATH]: yaml });
+    const result = await loadConfig(fs, CONFIG_PATH);
+
+    expect(result.validity.mcp).toBe('invalid');
+    expect(result.config.mcp).toEqual(defaultConfig.mcp);
+    expect(result.warnings.some((w) => w.includes('mcp'))).toBe(true);
+  });
+
+  it('marks mcp section invalid when a preset has an unknown transport type', async () => {
+    const yaml = `
+mcp:
+  servers:
+    - id: preset-1
+      name: weather
+      type: websocket
+`.trim();
+    const fs = createMemFs({ [CONFIG_PATH]: yaml });
+    const result = await loadConfig(fs, CONFIG_PATH);
+
+    expect(result.validity.mcp).toBe('invalid');
+    expect(result.config.mcp).toEqual(defaultConfig.mcp);
+    expect(result.warnings.some((w) => w.includes('mcp'))).toBe(true);
   });
 });
 

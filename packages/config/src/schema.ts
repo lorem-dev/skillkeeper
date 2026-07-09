@@ -147,6 +147,38 @@ export const repositoriesSchema = z.object({
 export type RepositoriesConfig = z.infer<typeof repositoriesSchema>;
 
 // ---------------------------------------------------------------------------
+// Section: mcp
+// ---------------------------------------------------------------------------
+
+/**
+ * A manually-defined MCP server preset: mirrors `McpServerDef` (core) plus a
+ * stable, generated `id` used as the preset's identity across edits/installs.
+ *
+ * Defined locally rather than importing core's `mcpConfigSchema`, which
+ * describes the repo `mcp.yml` shape (no `id`).
+ */
+export const mcpPresetSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  type: z.enum(['stdio', 'http', 'sse']),
+  url: z.string().optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  command: z.string().optional(),
+  args: z.array(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
+  rules: z.string().optional(),
+});
+
+export type McpPreset = z.infer<typeof mcpPresetSchema>;
+
+export const mcpSchema = z.object({
+  /** Manually-defined MCP server presets. */
+  servers: z.array(mcpPresetSchema).default([]),
+});
+
+export type McpConfig = z.infer<typeof mcpSchema>;
+
+// ---------------------------------------------------------------------------
 // Aggregate
 // ---------------------------------------------------------------------------
 
@@ -160,6 +192,7 @@ export interface SkillKeeperConfig {
   notifications: NotificationsConfig;
   repositories: RepositoriesConfig;
   projects: ProjectsConfig;
+  mcp: McpConfig;
 }
 
 /** The config section names as a union type. */
@@ -175,4 +208,5 @@ export const SECTIONS: readonly Section[] = [
   'notifications',
   'repositories',
   'projects',
+  'mcp',
 ] as const;

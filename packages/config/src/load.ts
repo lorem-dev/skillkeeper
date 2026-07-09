@@ -9,6 +9,7 @@ import {
   notificationsSchema,
   repositoriesSchema,
   projectsSchema,
+  mcpSchema,
   SECTIONS,
 } from './schema.js';
 import type { SkillKeeperConfig, Section } from './schema.js';
@@ -27,6 +28,7 @@ export const defaultConfig: SkillKeeperConfig = {
   notifications: notificationsSchema.parse({}),
   repositories: repositoriesSchema.parse({}),
   projects: projectsSchema.parse({}),
+  mcp: mcpSchema.parse({}),
 };
 
 // ---------------------------------------------------------------------------
@@ -168,6 +170,14 @@ export async function loadConfig(fs: FsPort, path: string): Promise<LoadConfigRe
   } else {
     validity['projects'] = 'invalid';
     warnings.push(`Config section "projects" is invalid; using defaults.`);
+  }
+
+  const mcp = validateSection(mcpSchema, rawObj['mcp']);
+  if (mcp !== undefined) {
+    config.mcp = mcp;
+  } else {
+    validity['mcp'] = 'invalid';
+    warnings.push(`Config section "mcp" is invalid; using defaults.`);
   }
 
   return { config, validity, warnings };

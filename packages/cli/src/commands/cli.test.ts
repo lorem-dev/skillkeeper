@@ -51,6 +51,7 @@ describe('printConfigWarning', () => {
         notifications: 'valid',
         repositories: 'valid',
         projects: 'valid',
+        mcp: 'valid',
       },
       warnings: ['Config section "updates" is invalid; using defaults.'],
     };
@@ -79,6 +80,7 @@ describe('printConfigWarning', () => {
         notifications: 'valid',
         repositories: 'valid',
         projects: 'valid',
+        mcp: 'valid',
       },
       warnings: [],
     };
