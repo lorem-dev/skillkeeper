@@ -26,6 +26,7 @@ import {
   skillGuidanceId,
   upsertGuidanceBlock,
   removeGuidanceBlock,
+  stripGuidanceMarkers,
 } from '@skillkeeper/core';
 import { registerBuiltinAgents, PROJECT_DIR_ENV } from '@skillkeeper/agents';
 import type { AdapterHostEnv } from '@skillkeeper/agents';
@@ -110,7 +111,7 @@ async function readGuideBody(
 ): Promise<string | undefined> {
   for (const file of ['GUIDE.md', 'RULES.md']) {
     const p = `${skillRoot}/${file}`;
-    if (await fs.exists(p)) return (await fs.readFile(p)).replace(/\n+$/, '');
+    if (await fs.exists(p)) return stripGuidanceMarkers(await fs.readFile(p)).replace(/\n+$/, '');
   }
   return undefined;
 }

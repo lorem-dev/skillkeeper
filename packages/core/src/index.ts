@@ -92,6 +92,7 @@ export {
   upsertGuidanceBlock,
   removeGuidanceBlock,
   hasGuidanceBlock,
+  stripGuidanceMarkers,
 } from './guidance.js';
 
 // Install / uninstall.

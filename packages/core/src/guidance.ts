@@ -74,3 +74,15 @@ export function removeGuidanceBlock(file: string, key: string): string {
   const joined = [...before, ...after].join('\n');
   return joined.trim() === '' ? '' : joined;
 }
+
+/**
+ * Drop any SkillKeeper guidance marker lines from a guide body, so a marker that
+ * appears literally inside a GUIDE.md / RULES.md cannot be mistaken for a block
+ * boundary. Call this on a guide body before wrapping it in a block.
+ */
+export function stripGuidanceMarkers(body: string): string {
+  return body
+    .split('\n')
+    .filter((line) => !/<!--\s*SKILLKEEPER_(?:START|END):/i.test(line))
+    .join('\n');
+}

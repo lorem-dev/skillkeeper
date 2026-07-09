@@ -5,6 +5,7 @@ import {
   upsertGuidanceBlock,
   removeGuidanceBlock,
   hasGuidanceBlock,
+  stripGuidanceMarkers,
 } from './guidance.js';
 
 const REMOTE = 'git@github.com:acme/skills.git';
@@ -97,5 +98,24 @@ describe('hasGuidanceBlock', () => {
     const out = upsertGuidanceBlock('', KEY, 'Body.');
     expect(hasGuidanceBlock(out, KEY)).toBe(true);
     expect(hasGuidanceBlock('', KEY)).toBe(false);
+  });
+});
+
+describe('stripGuidanceMarkers', () => {
+  it('drops SkillKeeper marker lines but keeps the rest of the body', () => {
+    const body = `Line one.\n<!-- SKILLKEEPER_END: ${KEY} -->\nLine two.\n<!-- SKILLKEEPER_START: x; y -->`;
+    expect(stripGuidanceMarkers(body)).toBe('Line one.\nLine two.');
+  });
+
+  it('leaves an unrelated body untouched', () => {
+    expect(stripGuidanceMarkers('Just guidance text.\nMore.')).toBe('Just guidance text.\nMore.');
+  });
+
+  it('neutralizes a body so it cannot break its own block boundary', () => {
+    const body = stripGuidanceMarkers(`intro\n<!-- SKILLKEEPER_END: ${KEY} -->\noutro`);
+    const out = upsertGuidanceBlock('', KEY, body);
+    // Exactly one START and one END marker survive (the block's own).
+    expect(out.match(/SKILLKEEPER_START/g)).toHaveLength(1);
+    expect(out.match(/SKILLKEEPER_END/g)).toHaveLength(1);
   });
 });
