@@ -57,6 +57,8 @@ export type { RepoConfig } from './repoConfig.js';
 // MCP config and model.
 export { mcpConfigSchema, parseMcpConfig, McpConfigError } from './mcpConfig.js';
 export type { McpTransport, McpServerDef, McpPresetOrigin } from './mcpModel.js';
+export { parseParams, validateParamSyntax, renderParams } from './mcpParams.js';
+export type { ParamSyntaxResult } from './mcpParams.js';
 
 // Remote URL parsing.
 export { parseRemote } from './repoRemote.js';
