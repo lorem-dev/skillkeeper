@@ -95,6 +95,14 @@ export {
   stripGuidanceMarkers,
 } from './guidance.js';
 
+// Guidance apply (IO): write/remove a skill's guide block via FsPort + adapter.
+export {
+  skillGuidanceBlockKey,
+  readSkillGuide,
+  writeSkillGuidance,
+  clearSkillGuidance,
+} from './guidanceApply.js';
+
 // Install / uninstall.
 export { installSkill, uninstallSkill } from './install.js';
 export type { InstallOptions } from './install.js';
