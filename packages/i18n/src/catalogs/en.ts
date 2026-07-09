@@ -26,6 +26,8 @@ export const en = {
   'common.comingSoon': 'Coming soon',
   'common.close': 'Close',
   'common.clear': 'Clear',
+  'common.goToSkills': 'Go to skills',
+  'skills.resetFilters': 'Reset filters',
   'common.search': 'Search',
   'common.decrease': 'Decrease',
   'common.increase': 'Increase',

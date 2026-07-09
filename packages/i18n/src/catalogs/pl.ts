@@ -21,6 +21,8 @@ export const pl: Partial<Catalog> = {
   'common.comingSoon': 'Wkrotce',
   'common.close': 'Zamknij',
   'common.clear': 'Wyczysc',
+  'common.goToSkills': 'Przejdz do umiejetnosci',
+  'skills.resetFilters': 'Zresetuj filtry',
   'common.search': 'Szukaj',
   'common.decrease': 'Zmniejsz',
   'common.increase': 'Zwieksz',

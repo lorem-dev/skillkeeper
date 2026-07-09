@@ -21,6 +21,8 @@ export const ko: Partial<Catalog> = {
   'common.comingSoon': '곧 제공 예정',
   'common.close': '닫기',
   'common.clear': '지우기',
+  'common.goToSkills': '스킬로 이동',
+  'skills.resetFilters': '필터 초기화',
   'common.search': '검색',
   'common.decrease': '감소',
   'common.increase': '증가',

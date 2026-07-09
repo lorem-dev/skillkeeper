@@ -21,6 +21,8 @@ export const srLatn: Partial<Catalog> = {
   'common.comingSoon': 'Uskoro',
   'common.close': 'Zatvori',
   'common.clear': 'Očisti',
+  'common.goToSkills': 'Idi na vestine',
+  'skills.resetFilters': 'Resetuj filtere',
   'common.search': 'Pretraga',
   'common.decrease': 'Smanji',
   'common.increase': 'Povećaj',

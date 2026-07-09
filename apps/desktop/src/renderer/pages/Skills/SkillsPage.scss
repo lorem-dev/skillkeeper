@@ -134,3 +134,11 @@
 .sk-list-footer {
   margin-top: auto;
 }
+
+// Filter-reset button (mode/repo/project filters), centered under the tree.
+// Sits below the search summary when both are active.
+.sk-skills-filter-reset {
+  display: flex;
+  justify-content: center;
+  padding: var(--sk-space-3) 0 var(--sk-space-2);
+}

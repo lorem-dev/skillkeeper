@@ -21,6 +21,8 @@ export const srCyrl: Partial<Catalog> = {
   'common.comingSoon': 'Ускоро',
   'common.close': 'Затвори',
   'common.clear': 'Очисти',
+  'common.goToSkills': 'Иди на вештине',
+  'skills.resetFilters': 'Ресетуј филтере',
   'common.search': 'Претрага',
   'common.decrease': 'Смањи',
   'common.increase': 'Повећај',

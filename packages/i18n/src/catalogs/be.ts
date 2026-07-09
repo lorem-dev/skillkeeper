@@ -21,6 +21,8 @@ export const be: Partial<Catalog> = {
   'common.comingSoon': 'Хутка з’явіцца',
   'common.close': 'Закрыць',
   'common.clear': 'Ачысціць',
+  'common.goToSkills': 'Перайсці да навыкаў',
+  'skills.resetFilters': 'Скінуць фільтры',
   'common.search': 'Пошук',
   'common.decrease': 'Паменшыць',
   'common.increase': 'Павялічыць',

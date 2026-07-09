@@ -33,8 +33,12 @@ export interface RepositoryCardProps {
   /** Branch/skill info not fetched yet (e.g. right after add): show skeletons in
    * the badges row so its height is reserved and never jumps. */
   readonly infoPending?: boolean;
+  /** Tooltip/label for the "go to skills" button (shown when onGoToSkills is set). */
+  readonly skillsLabel?: string;
   readonly onSync: () => void;
   readonly onEdit: () => void;
+  /** Navigate to the Skills page filtered to this repository. */
+  readonly onGoToSkills?: () => void;
   readonly onErrorClick: () => void;
 }
 
@@ -64,8 +68,10 @@ export function RepositoryCard({
   onBranchClick,
   skillCountLabel,
   infoPending,
+  skillsLabel,
   onSync,
   onEdit,
+  onGoToSkills,
   onErrorClick,
 }: RepositoryCardProps) {
   const busy = phase !== 'idle';
@@ -181,6 +187,18 @@ export function RepositoryCard({
             {busy ? <Spinner labelHidden /> : <Icon name="sync" />}
           </Button>
         </Tooltip>
+        {onGoToSkills !== undefined && (
+          <Tooltip content={skillsLabel}>
+            <Button
+              variant="secondary"
+              className="sk-repo-card__icon-btn"
+              onClick={onGoToSkills}
+              aria-label={skillsLabel}
+            >
+              <Icon name="skills" />
+            </Button>
+          </Tooltip>
+        )}
         <Tooltip content={editLabel}>
           <Button
             variant="secondary"

@@ -24,6 +24,8 @@ export const ru: Partial<Catalog> = {
   'common.comingSoon': 'Скоро будет',
   'common.close': 'Закрыть',
   'common.clear': 'Очистить',
+  'common.goToSkills': 'Перейти к навыкам',
+  'skills.resetFilters': 'Сбросить фильтры',
   'common.search': 'Поиск',
   'common.decrease': 'Уменьшить',
   'common.increase': 'Увеличить',

@@ -21,6 +21,8 @@ export const zhCn: Partial<Catalog> = {
   'common.comingSoon': '即将推出',
   'common.close': '关闭',
   'common.clear': '清除',
+  'common.goToSkills': '前往技能',
+  'skills.resetFilters': '重置筛选条件',
   'common.search': '搜索',
   'common.decrease': '减少',
   'common.increase': '增加',

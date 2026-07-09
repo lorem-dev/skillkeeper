@@ -287,6 +287,7 @@ export function SkillsPage() {
   ]);
 
   const searching = query.trim() !== '';
+  const filtering = repoFilter.length > 0 || projectFilter.length > 0;
   const totalSkills = useMemo(() => countLeaves(baseTree), [baseTree]);
   const shownSkills = useMemo(() => countLeaves(decorated), [decorated]);
   const expandedIds = searching ? collectBranchIds(decorated) : rootIds(baseTree);
@@ -415,14 +416,29 @@ export function SkillsPage() {
             defaultExpandedIds={expandedIds}
             ariaLabel={t('nav.skills')}
           />
-          {searching && (
+          {(searching || filtering) && (
             <div className="sk-list-footer">
-              <SearchSummary
-                foundLabel={t.plural('skills.searchFound', shownSkills)}
-                totalLabel={t.plural('skills.searchTotal', totalSkills)}
-                showAllLabel={t('skills.showAll')}
-                onShowAll={() => setQuery('')}
-              />
+              {searching && (
+                <SearchSummary
+                  foundLabel={t.plural('skills.searchFound', shownSkills)}
+                  totalLabel={t.plural('skills.searchTotal', totalSkills)}
+                  showAllLabel={t('skills.showAll')}
+                  onShowAll={() => setQuery('')}
+                />
+              )}
+              {filtering && (
+                <div className="sk-skills-filter-reset">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setRepoFilter([]);
+                      setProjectFilter([]);
+                    }}
+                  >
+                    {t('skills.resetFilters')}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </>

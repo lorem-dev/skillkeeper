@@ -51,6 +51,10 @@ export interface ProjectCardProps {
   /** Trailing "open folder" control, composed by the page (OpenProjectButton). */
   readonly openControl?: ReactNode;
   readonly onEdit: () => void;
+  /** Tooltip/label for the "go to skills" button (shown when onGoToSkills is set). */
+  readonly skillsLabel?: string;
+  /** Navigate to the Skills page filtered to this project. */
+  readonly onGoToSkills?: () => void;
   /** Drop a missing-folder project (no confirmation). */
   readonly onRemove: () => void;
 }
@@ -70,6 +74,8 @@ export function ProjectCard({
   removeLabel,
   openControl,
   onEdit,
+  skillsLabel,
+  onGoToSkills,
   onRemove,
 }: ProjectCardProps) {
   const washHue = hueFromName(project.name);
@@ -170,6 +176,19 @@ export function ProjectCard({
         ) : (
           <>
             {openControl}
+            {onGoToSkills !== undefined && (
+              <Tooltip content={skillsLabel}>
+                <Button
+                  variant="secondary"
+                  glass
+                  className="sk-project-card__icon-btn"
+                  onClick={onGoToSkills}
+                  aria-label={skillsLabel}
+                >
+                  <Icon name="skills" />
+                </Button>
+              </Tooltip>
+            )}
             <Tooltip content={editLabel}>
               <Button
                 variant="secondary"

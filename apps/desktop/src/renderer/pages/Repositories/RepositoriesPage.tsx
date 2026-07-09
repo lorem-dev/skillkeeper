@@ -22,6 +22,7 @@ export function RepositoriesPage() {
   const refreshRepoUpdates = useSkillkeeperStore((s) => s.refreshRepoUpdates);
   const refreshRepoInfo = useSkillkeeperStore((s) => s.refreshRepoInfo);
   const showRepoError = useSkillkeeperStore((s) => s.showRepoError);
+  const goToSkills = useSkillkeeperStore((s) => s.goToSkills);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
   const [editing, setEditing] = useState<Repository | null>(null);
@@ -127,8 +128,12 @@ export function RepositoriesPage() {
                   : undefined
               }
               infoPending={repoInfo[r.id] === undefined}
+              skillsLabel={t('common.goToSkills')}
               onSync={() => void syncRepository(r.id)}
               onEdit={() => setEditing(r)}
+              onGoToSkills={() =>
+                goToSkills({ mode: 'repositories', repoFilter: [r.id], projectFilter: [], query: '' })
+              }
               onErrorClick={() => showRepoError(r.id)}
             />
             </motion.div>

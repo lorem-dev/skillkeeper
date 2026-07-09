@@ -43,6 +43,7 @@ export function App() {
   const loading = useSkillkeeperStore((s) => s.loading);
   const error = useSkillkeeperStore((s) => s.error);
   const addRepoRequest = useSkillkeeperStore((s) => s.addRepoRequest);
+  const skillsNav = useSkillkeeperStore((s) => s.skillsNav);
   const t = useTranslator();
 
   useEffect(() => {
@@ -54,6 +55,13 @@ export function App() {
   useEffect(() => {
     if (addRepoRequest !== null) setActiveView('repositories');
   }, [addRepoRequest]);
+
+  // A "go to skills" request (from a project/repository card) switches to the
+  // Skills view; the store already set the mode/filters. Nonce-driven so a repeat
+  // request re-fires even when already on the page.
+  useEffect(() => {
+    if (skillsNav > 0) setActiveView('skills');
+  }, [skillsNav]);
 
   // A background ssh auth failure requests the terminal (for the passphrase
   // prompt); subscribed once for the app's lifetime.

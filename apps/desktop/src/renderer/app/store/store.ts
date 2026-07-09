@@ -153,6 +153,9 @@ export interface SkillkeeperState {
   skillApply: ApplyProgress | null;
   /** Skills-page selection + view state (persists across navigation until reload). */
   skillsUi: SkillsUiState;
+  /** Nonce bumped by `goToSkills` to request navigating to the Skills page (App
+   *  watches it and switches the active view). */
+  skillsNav: number;
   /**
    * A pending "add repository" request from another page (e.g. an unlinked skill
    * on the Skills page): the remote URL to prefill. Setting it navigates to the
@@ -188,6 +191,12 @@ export interface SkillkeeperActions {
    * agents from the installed set). View state (mode/query/filters) is kept.
    */
   resetSkillsSelection(mode: SkillsMode): void;
+  /**
+   * Navigate to the Skills page with a fresh view: merge `patch` into the
+   * skills-page state (mode/filters/query), reset the target mode's selection to
+   * the installed baseline, and bump `skillsNav` so the shell switches view.
+   */
+  goToSkills(patch: Partial<SkillsUiState>): void;
   setProjects(projects: Project[]): void;
   /** Refetch the available-skills catalog from all repos. */
   refreshAvailableSkills(): Promise<void>;
@@ -315,6 +324,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     projectChecked: [],
     projectAgents: {},
   },
+  skillsNav: 0,
   addRepoRequest: null,
   projects: [],
   loading: false,
@@ -352,6 +362,20 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           ? { ...s.skillsUi, repoChecked: [] }
           : { ...s.skillsUi, ...installedBaseline(get().skills) },
     }));
+  },
+
+  goToSkills(patch) {
+    set((s) => {
+      const merged = { ...s.skillsUi, ...patch };
+      // Reset the target mode's selection to the installed baseline (repo mode:
+      // no checks; project mode: reseed from installed), so no stale pending
+      // changes carry over into the fresh view.
+      const selection =
+        merged.mode === 'repositories'
+          ? { repoChecked: [] }
+          : installedBaseline(get().skills);
+      return { skillsUi: { ...merged, ...selection }, skillsNav: s.skillsNav + 1 };
+    });
   },
 
   setProjects(projects) {

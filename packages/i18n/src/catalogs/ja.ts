@@ -21,6 +21,8 @@ export const ja: Partial<Catalog> = {
   'common.comingSoon': '近日公開',
   'common.close': '閉じる',
   'common.clear': 'クリア',
+  'common.goToSkills': 'スキルへ移動',
+  'skills.resetFilters': 'フィルターをリセット',
   'common.search': '検索',
   'common.decrease': '減らす',
   'common.increase': '増やす',

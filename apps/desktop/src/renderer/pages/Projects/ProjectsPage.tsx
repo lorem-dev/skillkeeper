@@ -23,6 +23,7 @@ export function ProjectsPage() {
   const sweepProjects = useSkillkeeperStore((s) => s.sweepProjects);
   const ensureProjectAvailable = useSkillkeeperStore((s) => s.ensureProjectAvailable);
   const removeProject = useSkillkeeperStore((s) => s.removeProject);
+  const goToSkills = useSkillkeeperStore((s) => s.goToSkills);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
   const [editing, setEditing] = useState<Project | null>(null);
@@ -121,6 +122,10 @@ export function ProjectsPage() {
                     pathCopyLabel={t('projects.copyPath')}
                     onPathClick={() => copyPath(p.path)}
                     editLabel={t('projects.edit')}
+                    skillsLabel={t('common.goToSkills')}
+                    onGoToSkills={() =>
+                      goToSkills({ mode: 'projects', projectFilter: [p.id], repoFilter: [], query: '' })
+                    }
                     removeLabel={t('projects.remove')}
                     openControl={
                       <OpenProjectButton path={p.path} beforeOpen={() => ensureProjectAvailable(p.id)} />
