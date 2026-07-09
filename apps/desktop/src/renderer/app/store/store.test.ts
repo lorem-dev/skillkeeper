@@ -5,10 +5,10 @@
  * pure state-mutation logic of each action so we can verify the store behaves
  * correctly without spinning up a browser or Electron environment.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useSkillkeeperStore } from './store';
-import type { SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest } from './store';
-import type { RepoResult, RemoveResult, ProjectResult } from '@/services/bridge';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { useSkillkeeperStore, mcpInstallHasUpdate } from './store';
+import type { SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest, McpPreset } from './store';
+import type { RepoResult, RemoveResult, ProjectResult, AvailableMcp, McpInstall } from '@/services/bridge';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -500,6 +500,162 @@ describe('useSkillkeeperStore', () => {
       });
       useSkillkeeperStore.getState().clearFinishedTasks();
       expect(useSkillkeeperStore.getState().tasks.map((t) => t.id)).toEqual(['c', 'd']);
+    });
+  });
+
+  describe('refreshMcpPresets', () => {
+    // Not annotated as `McpServerDef`: that interface's `args` is `readonly
+    // string[]`, while the config preset shape (spread into `mockConfig.mcp.servers`
+    // below) needs a plain mutable `string[]` -- let the literal infer its own type.
+    const manualDef = {
+      name: 'github',
+      type: 'stdio' as const,
+      command: 'github-mcp',
+      args: ['--token', '{token}'],
+      rules: 'Use {token} carefully.',
+    };
+
+    const repoAvailable: AvailableMcp = {
+      repoId: 'repo-1',
+      remote: 'https://github.com/example/skills',
+      group: 'devtools',
+      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}' },
+      hash: 'sha256:repo-hash',
+    };
+
+    beforeEach(() => {
+      useSkillkeeperStore.getState().setConfig(
+        { ...mockConfig, mcp: { servers: [{ id: 'manual-1', ...manualDef }] } },
+        validValidity,
+        [],
+      );
+      (globalThis as unknown as { window: { skillkeeper: unknown } }).window = {
+        skillkeeper: { listAvailableMcp: async () => [repoAvailable] },
+      };
+    });
+
+    afterEach(() => {
+      delete (globalThis as unknown as { window?: unknown }).window;
+    });
+
+    it('unions manual config presets and repo-discovered presets with correct origin/params/hasRules', async () => {
+      await useSkillkeeperStore.getState().refreshMcpPresets();
+      const presets = useSkillkeeperStore.getState().mcpPresets;
+      expect(presets).toHaveLength(2);
+
+      const manual = presets.find((p) => p.origin === 'manual');
+      expect(manual?.id).toBe('manual-1');
+      expect(manual?.name).toBe('github');
+      expect(manual?.params).toEqual(['token']);
+      expect(manual?.hasRules).toBe(true);
+      expect(manual?.repoId).toBeUndefined();
+      expect(manual?.hash).toBeTruthy();
+
+      const repo = presets.find((p) => p.origin === 'repo');
+      expect(repo?.name).toBe('linear');
+      expect(repo?.repoId).toBe('repo-1');
+      expect(repo?.remote).toBe('https://github.com/example/skills');
+      expect(repo?.group).toBe('devtools');
+      expect(repo?.hash).toBe('sha256:repo-hash');
+      expect(repo?.params).toEqual(['workspace']);
+      expect(repo?.hasRules).toBe(false);
+    });
+
+    it('computes a deterministic manual preset hash across repeated refreshes', async () => {
+      await useSkillkeeperStore.getState().refreshMcpPresets();
+      const first = useSkillkeeperStore.getState().mcpPresets.find((p) => p.origin === 'manual')?.hash;
+      await useSkillkeeperStore.getState().refreshMcpPresets();
+      const second = useSkillkeeperStore.getState().mcpPresets.find((p) => p.origin === 'manual')?.hash;
+      expect(first).toBeDefined();
+      expect(first).toBe(second);
+    });
+  });
+
+  describe('focusRepository', () => {
+    it('sets repoFocus and bumps the nonce on repeated calls', () => {
+      useSkillkeeperStore.setState({ repoFocus: null });
+
+      useSkillkeeperStore.getState().focusRepository('repo-1');
+      expect(useSkillkeeperStore.getState().repoFocus).toEqual({ repoId: 'repo-1', nonce: 1 });
+
+      useSkillkeeperStore.getState().focusRepository('repo-1');
+      expect(useSkillkeeperStore.getState().repoFocus).toEqual({ repoId: 'repo-1', nonce: 2 });
+
+      useSkillkeeperStore.getState().focusRepository('repo-2');
+      expect(useSkillkeeperStore.getState().repoFocus).toEqual({ repoId: 'repo-2', nonce: 3 });
+    });
+  });
+
+  describe('mcpInstallHasUpdate', () => {
+    const preset: McpPreset = {
+      id: 'repo:repo-1:devtools:linear',
+      origin: 'repo',
+      name: 'linear',
+      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}' },
+      hash: 'sha256:current',
+      params: ['workspace'],
+      hasRules: false,
+      repoId: 'repo-1',
+      remote: 'https://github.com/example/skills',
+      group: 'devtools',
+    };
+
+    const manualPreset: McpPreset = {
+      id: 'manual-1',
+      origin: 'manual',
+      name: 'github',
+      def: { name: 'github', type: 'stdio', command: 'github-mcp' },
+      hash: 'sha256:manual-current',
+      params: [],
+      hasRules: false,
+    };
+
+    it('is true when the install hash differs from the matched repo preset', () => {
+      const install: McpInstall = {
+        projectId: 'proj-1',
+        agent: 'claude',
+        instanceName: 'linear_1',
+        identity: { remote: 'https://github.com/example/skills', group: 'devtools', source: 'linear' },
+        hash: 'sha256:stale',
+        hasParams: true,
+      };
+      expect(mcpInstallHasUpdate(install, [preset])).toBe(true);
+    });
+
+    it('is false when the install hash matches the matched preset', () => {
+      const install: McpInstall = {
+        projectId: 'proj-1',
+        agent: 'claude',
+        instanceName: 'linear_1',
+        identity: { remote: 'https://github.com/example/skills', group: 'devtools', source: 'linear' },
+        hash: 'sha256:current',
+        hasParams: true,
+      };
+      expect(mcpInstallHasUpdate(install, [preset])).toBe(false);
+    });
+
+    it('matches manual installs by local preset id', () => {
+      const install: McpInstall = {
+        projectId: 'proj-1',
+        agent: 'claude',
+        instanceName: 'github_1',
+        identity: { local: 'manual-1', source: 'github' },
+        hash: 'sha256:stale',
+        hasParams: false,
+      };
+      expect(mcpInstallHasUpdate(install, [manualPreset])).toBe(true);
+    });
+
+    it('is false when no preset matches the install identity', () => {
+      const install: McpInstall = {
+        projectId: 'proj-1',
+        agent: 'claude',
+        instanceName: 'gone_1',
+        identity: { local: 'missing-preset', source: 'gone' },
+        hash: 'sha256:whatever',
+        hasParams: false,
+      };
+      expect(mcpInstallHasUpdate(install, [preset, manualPreset])).toBe(false);
     });
   });
 });

@@ -25,6 +25,13 @@ import type {
   ApplyProgress,
   RepoInfo,
   ProjectInfo,
+  McpServerDef,
+  McpPresetOrigin,
+  McpInstall,
+  ApplyMcpArgs,
+  ApplyMcpResult,
+  UpdateMcpArgs,
+  UpdateMcpResult,
 } from '@/services/bridge';
 import { bridgeClient } from '@/services/bridge';
 import { installedLeafIds, installedAgentsByProject } from '@/entities/skill';
@@ -43,6 +50,157 @@ export interface ConfigPatch {
   notifications?: Partial<NotificationsConfig>;
   repositories?: Partial<RepositoriesConfig>;
   projects?: Partial<ProjectsConfig>;
+}
+
+/**
+ * One MCP server preset available to install: the union of manually-defined
+ * presets (`config.mcp.servers`, editable) and presets discovered from cloned
+ * repositories (`AvailableMcp`, read-only, refreshed on repo sync).
+ */
+export interface McpPreset {
+  /** Manual: the config entry's stable `id`. Repo: a synthesized, stable id
+   *  from `repoId` + `group` + `name` (see {@link repoMcpPresetId}). */
+  readonly id: string;
+  readonly origin: McpPresetOrigin;
+  readonly name: string;
+  readonly def: McpServerDef;
+  /** Content hash of the raw def (excludes `name`), for update detection. */
+  readonly hash: string;
+  /** `{param}` placeholders found across the def's fields, sorted + deduped. */
+  readonly params: string[];
+  readonly hasRules: boolean;
+  readonly repoId?: string;
+  readonly remote?: string;
+  readonly group?: string;
+}
+
+/** Synthesizes a stable id for a repo-discovered preset from its source. */
+function repoMcpPresetId(repoId: string, group: string | undefined, name: string): string {
+  return `repo:${repoId}:${group ?? ''}:${name}`;
+}
+
+// The renderer must not call `@skillkeeper/core`'s runtime exports directly --
+// only its types cross the layer boundary (see architecture.md: "In the
+// renderer, import only TYPES ... cross the IPC bridge instead"). Concretely,
+// `@skillkeeper/core` is one barrel module: importing any single runtime
+// export from it pulls the whole module graph into the renderer bundle,
+// including files that reach for Node's `fs`/`crypto`/`child_process`
+// (`nodeFs.ts`, `mcpHashing.ts`, `systemGit.ts`), which the sandboxed renderer
+// (`nodeIntegration: false`) cannot run. `parseParams` and `normalizeRemote`
+// happen to be pure and dependency-free in isolation, but importing them still
+// drags that graph in (verified: doing so adds "externalized for browser
+// compatibility" warnings to the renderer build that are otherwise absent).
+// The three helpers below duplicate those small, stable algorithms locally
+// instead, byte-for-byte, so the store never reaches into core's runtime.
+
+/** Mirrors core's `parseParams` (`mcpParams.ts`): scans every string field of
+ *  an MCP def for `{param}` placeholders and returns the sorted, deduped set. */
+function scanMcpParams(def: McpServerDef): string[] {
+  const names = new Set<string>();
+  const scan = (text: string): void => {
+    for (const match of text.matchAll(/\{([A-Za-z0-9_]+)\}/g)) {
+      const name = match[1];
+      if (name !== undefined) names.add(name);
+    }
+  };
+  if (def.url !== undefined) scan(def.url);
+  if (def.headers !== undefined) for (const v of Object.values(def.headers)) scan(v);
+  if (def.command !== undefined) scan(def.command);
+  if (def.args !== undefined) for (const a of def.args) scan(a);
+  if (def.env !== undefined) for (const v of Object.values(def.env)) scan(v);
+  if (def.rules !== undefined) scan(def.rules);
+  return [...names].sort();
+}
+
+/** Mirrors core's `normalizeRemote` (`repoRemote.ts`): canonicalizes a git
+ *  remote URL to `host/path`, lowercased, without transport/user/port/`.git`,
+ *  so ssh/https/scp forms of the same remote compare equal. */
+function normalizeMcpRemote(url: string): string {
+  let s = url.trim();
+  const scp = /^[^/@]+@([^:/]+):(.+)$/.exec(s);
+  if (scp !== null) {
+    s = `${scp[1]}/${scp[2]}`;
+  } else {
+    const withScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/(.+)$/.exec(s);
+    if (withScheme !== null) {
+      let rest = withScheme[1]!;
+      const at = rest.lastIndexOf('@');
+      if (at !== -1) rest = rest.slice(at + 1);
+      rest = rest.replace(/^([^/]+):\d+\//, '$1/');
+      s = rest;
+    }
+  }
+  return s
+    .replace(/\/+$/, '')
+    .replace(/\.git$/, '')
+    .toLowerCase();
+}
+
+/**
+ * Recursively sorts object keys for stable JSON, mirroring core's
+ * `canonicalMcpJson` (in `mcpHashing.ts`). Duplicated for the same reason as
+ * `scanMcpParams`/`normalizeMcpRemote` above: `hashMcpDef` itself calls Node's
+ * `crypto.createHash`, unreachable from the sandboxed renderer.
+ * `hashMcpDefInRenderer` below reproduces the same canonical-JSON + SHA-256
+ * algorithm using the standard Web Crypto API (`crypto.subtle`), available in
+ * every renderer/browser context, so its output matches the main process's
+ * `hashMcpDef` byte-for-byte.
+ */
+function sortMcpKeysForHash(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortMcpKeysForHash);
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      const child = (value as Record<string, unknown>)[key];
+      if (child !== undefined) out[key] = sortMcpKeysForHash(child);
+    }
+    return out;
+  }
+  return value;
+}
+
+/** Content hash of an MCP server def, excluding `name` -- see the note on
+ *  {@link sortMcpKeysForHash} for why this is not simply `core`'s `hashMcpDef`. */
+async function hashMcpDefInRenderer(def: McpServerDef): Promise<string> {
+  const { name: _name, ...rest } = def;
+  const canonical = JSON.stringify(sortMcpKeysForHash(rest));
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
+  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `sha256:${hex}`;
+}
+
+/**
+ * Finds the preset a ledger install refers to: manual installs match by their
+ * local preset id; repo installs match by (normalized remote, group, source
+ * name). Returns undefined when no preset in the current catalog matches
+ * (e.g. the repo preset or manual entry was removed).
+ */
+function matchMcpPreset(install: McpInstall, presets: readonly McpPreset[]): McpPreset | undefined {
+  const { identity } = install;
+  if (identity.local !== undefined) {
+    return presets.find((p) => p.origin === 'manual' && p.id === identity.local);
+  }
+  return presets.find(
+    (p) =>
+      p.origin === 'repo' &&
+      p.remote !== undefined &&
+      identity.remote !== undefined &&
+      normalizeMcpRemote(p.remote) === normalizeMcpRemote(identity.remote) &&
+      p.group === identity.group &&
+      p.name === identity.source,
+  );
+}
+
+/**
+ * Whether an installed MCP instance is out of date relative to its current
+ * preset -- i.e. a repo sync or a manual-preset edit changed the source def
+ * since this instance was installed/last updated. An install whose preset can
+ * no longer be found (removed repo/manual entry) is never "updatable" here;
+ * that is a removal case, not an update one.
+ */
+export function mcpInstallHasUpdate(install: McpInstall, presets: readonly McpPreset[]): boolean {
+  const preset = matchMcpPreset(install, presets);
+  return preset !== undefined && install.hash !== preset.hash;
 }
 
 /** Severity of a notification entry. */
@@ -168,6 +326,17 @@ export interface SkillkeeperState {
   projectInfo: Record<string, ProjectInfo>;
   /** Projects whose folder no longer exists (deleted/moved); not persisted. */
   projectMissing: Record<string, boolean>;
+  /** Union of manual (config) + repo-discovered MCP server presets. */
+  mcpPresets: McpPreset[];
+  /** Installed MCP server instances, read from every agent's ledger. */
+  mcpInstalls: McpInstall[];
+  /**
+   * A pending "focus this repository" request, bumped by `focusRepository` so
+   * a consuming page (e.g. an MCP card's "source repository" badge) can react
+   * even to repeated requests for the same repo. Mirrors the `skillsNav`/
+   * `addRepoRequest` nonce pattern.
+   */
+  repoFocus: { repoId: string; nonce: number } | null;
   /** Whether a background load is in progress. */
   loading: boolean;
   /** Last error message, if any. */
@@ -206,14 +375,25 @@ export interface SkillkeeperActions {
   applySkills(args: ApplyArgs): Promise<ApplyResult>;
   /** Scan project folders to adopt/prune installs, refreshing `skills`. */
   reconcileSkills(): Promise<void>;
-  /** Prune MCP ledger/params entries whose native server is gone (disk reconcile). */
+  /** Prune MCP ledger/params entries whose native server is gone; refreshes `mcpInstalls`. */
   reconcileMcp(): Promise<void>;
+  /** Rebuild `mcpPresets`: manual (config `mcp.servers`) union repo-discovered presets. */
+  refreshMcpPresets(): Promise<void>;
+  /** Refetch installed MCP server instances from every agent's ledger into `mcpInstalls`. */
+  refreshMcpInstalls(): Promise<void>;
+  /** Install/remove MCP server instances for a project; refreshes `mcpInstalls` afterward. */
+  applyMcp(args: ApplyMcpArgs): Promise<ApplyMcpResult>;
+  /** Update installed MCP instances to their preset's current def; refreshes `mcpInstalls` afterward. */
+  updateMcp(args: UpdateMcpArgs): Promise<UpdateMcpResult>;
   /** Queue one update-skill task per request (re-install from the repository). */
   updateProjectSkills(requests: readonly ProjectSkillUpdate[]): void;
   /** Request navigating to Repositories and opening the add form for `remote`. */
   requestAddRepository(remote: string): void;
   /** Clear a consumed add-repository request. */
   clearAddRepoRequest(): void;
+  /** Request focusing one repository (e.g. from an MCP preset's source badge);
+   *  bumps `repoFocus.nonce` so a consuming page reacts even to repeat requests. */
+  focusRepository(repoId: string): void;
   setLoading(loading: boolean): void;
   setError(error: string | null): void;
   /** Load all data from the main process via the bridge client. */
@@ -331,6 +511,9 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   skillsNav: 0,
   addRepoRequest: null,
   projects: [],
+  mcpPresets: [],
+  mcpInstalls: [],
+  repoFocus: null,
   loading: false,
   error: null,
 
@@ -483,20 +666,20 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     try {
       // reconcileSkills returns the full install list AND syncs state with disk
       // (adopts skills pulled in via git, prunes gone ones, re-homes by remote).
-      const [configResult, repos, skills, available, projects] = await Promise.all([
+      const [configResult, repos, skills, available, projects, mcpInstalls] = await Promise.all([
         client.getConfig(),
         client.listRepositories(),
         client.reconcileSkills(),
         client.listAvailableSkills(),
         client.listProjects(),
-        // Reconcile MCP ledgers with disk alongside the skill reconcile; the
-        // result is not consumed yet (no MCP renderer state), so it is unnamed.
+        // Reconcile MCP ledgers with disk alongside the skill reconcile, and
+        // seed `mcpInstalls` from the surviving list (mirrors reconcileSkills).
         client.reconcileMcp(),
       ]);
       setConfig(configResult.config, configResult.validity, configResult.warnings);
       setRepositories(repos);
       setSkills(skills);
-      set({ availableSkills: available });
+      set({ availableSkills: available, mcpInstalls });
       setProjects(projects);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -779,10 +962,72 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   reconcileMcp() {
     return (async () => {
-      // Prune stale MCP ledger/params on disk. The renderer does not yet hold
-      // MCP install state, so the reconciled list is not stored here.
-      await bridgeClient.reconcileMcp();
+      // Prune stale MCP ledger/params entries on disk; store the surviving
+      // installed-instance list (mirrors reconcileSkills -> setSkills).
+      const mcpInstalls = await bridgeClient.reconcileMcp();
+      set({ mcpInstalls });
     })();
+  },
+
+  refreshMcpPresets() {
+    return (async () => {
+      const manualDefs = get().config?.mcp.servers ?? [];
+      const manual = await Promise.all(
+        manualDefs.map(async (preset): Promise<McpPreset> => {
+          const { id, ...def } = preset;
+          return {
+            id,
+            origin: 'manual',
+            name: def.name,
+            def,
+            hash: await hashMcpDefInRenderer(def),
+            params: scanMcpParams(def),
+            hasRules: def.rules !== undefined,
+          };
+        }),
+      );
+      const available = await bridgeClient.listAvailableMcp();
+      const repo: McpPreset[] = available.map((a) => ({
+        id: repoMcpPresetId(a.repoId, a.group, a.def.name),
+        origin: 'repo',
+        name: a.def.name,
+        def: a.def,
+        hash: a.hash,
+        params: scanMcpParams(a.def),
+        hasRules: a.def.rules !== undefined,
+        repoId: a.repoId,
+        remote: a.remote,
+        group: a.group,
+      }));
+      set({ mcpPresets: [...manual, ...repo] });
+    })();
+  },
+
+  refreshMcpInstalls() {
+    return (async () => {
+      const mcpInstalls = await bridgeClient.listMcpInstalls();
+      set({ mcpInstalls });
+    })();
+  },
+
+  applyMcp(args) {
+    return (async () => {
+      const result = await bridgeClient.applyMcp(args);
+      await get().refreshMcpInstalls();
+      return result;
+    })();
+  },
+
+  updateMcp(args) {
+    return (async () => {
+      const result = await bridgeClient.updateMcp(args);
+      await get().refreshMcpInstalls();
+      return result;
+    })();
+  },
+
+  focusRepository(repoId) {
+    set((s) => ({ repoFocus: { repoId, nonce: (s.repoFocus?.nonce ?? 0) + 1 } }));
   },
 
   updateProjectSkills(requests) {
