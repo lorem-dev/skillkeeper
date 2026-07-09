@@ -16,6 +16,10 @@ import type {
   ApplyProgress,
   ApplyResult,
   AgentKind,
+  AvailableMcp,
+  ApplyMcpArgs,
+  ApplyMcpResult,
+  McpInstall,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the main process. */
@@ -26,6 +30,9 @@ export interface BridgeClient {
   listSkills(): Promise<InstallManifest[]>;
   listAvailableSkills(): Promise<AvailableSkill[]>;
   reconcileSkills(): Promise<InstallManifest[]>;
+  listAvailableMcp(): Promise<AvailableMcp[]>;
+  applyMcp(args: ApplyMcpArgs): Promise<ApplyMcpResult>;
+  listMcpInstalls(): Promise<McpInstall[]>;
   detectProjectAgents(path: string): Promise<AgentKind[]>;
   applySkillChanges(args: ApplyArgs): Promise<ApplyResult>;
   onSkillsProgress(callback: (progress: ApplyProgress) => void): () => void;
@@ -66,6 +73,9 @@ export const bridgeClient: BridgeClient = {
   listSkills: () => window.skillkeeper.listSkills() as Promise<InstallManifest[]>,
   listAvailableSkills: () => window.skillkeeper.listAvailableSkills() as Promise<AvailableSkill[]>,
   reconcileSkills: () => window.skillkeeper.reconcileSkills() as Promise<InstallManifest[]>,
+  listAvailableMcp: () => window.skillkeeper.listAvailableMcp() as Promise<AvailableMcp[]>,
+  applyMcp: (args) => window.skillkeeper.applyMcp(args),
+  listMcpInstalls: () => window.skillkeeper.listMcpInstalls() as Promise<McpInstall[]>,
   detectProjectAgents: (path) => window.skillkeeper.detectProjectAgents(path) as Promise<AgentKind[]>,
   applySkillChanges: (args) => window.skillkeeper.applySkillChanges(args),
   onSkillsProgress: (callback) => window.skillkeeper.onSkillsProgress(callback),

@@ -39,6 +39,8 @@ import {
   createAdapterRegistry,
 } from './skills.js';
 import type { SkillsDeps, ApplyArgs } from './skills.js';
+import { listAvailableMcp, applyMcp, listMcpInstalls } from './mcp.js';
+import type { ApplyMcpArgs } from './mcp.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
 // from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
@@ -373,6 +375,13 @@ function registerHandlers(): void {
   // skills:reconcile -- scan project folders, adopt/prune installs; returns the
   // reconciled manifest list.
   ipcMain.handle('skills:reconcile', () => reconcileProjectSkills(skillsDeps));
+
+  // mcp:list-available -- every MCP server preset resolved across all repos.
+  ipcMain.handle('mcp:list-available', () => listAvailableMcp(repoDeps));
+  // mcp:apply -- install/remove MCP server instances for a project across agents.
+  ipcMain.handle('mcp:apply', (_e, args: ApplyMcpArgs) => applyMcp(skillsDeps, args));
+  // mcp:installs -- read every agent ledger; no pruning (that is task B2b).
+  ipcMain.handle('mcp:installs', () => listMcpInstalls(skillsDeps));
 
   const terminal = getTerminal();
   terminal.on('data', (chunk: string) => {

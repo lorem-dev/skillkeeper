@@ -14,6 +14,7 @@ import type { EditorOption, OpenResult } from '../main/editors.js';
 import type { RepoResult, RemoveResult, RepoInfo, AvailableSkill } from '../main/repositories.js';
 import type { ProjectResult, ProjectInfo } from '../main/projects.js';
 import type { ApplyArgs, ApplyProgress, ApplyResult } from '../main/skills.js';
+import type { AvailableMcp, ApplyMcpArgs, ApplyMcpResult, McpInstall } from '../main/mcp.js';
 
 // ---------------------------------------------------------------------------
 // Bridge type (exported so the renderer window.d.ts can import it)
@@ -33,6 +34,12 @@ export interface SkillkeeperBridge {
   listAvailableSkills(): Promise<AvailableSkill[]>;
   /** Scan project folders to adopt/prune installs; returns reconciled manifests. */
   reconcileSkills(): Promise<InstallManifest[]>;
+  /** List every MCP server preset available across all cloned repositories. */
+  listAvailableMcp(): Promise<AvailableMcp[]>;
+  /** Install/remove MCP server instances for a project across agents. */
+  applyMcp(args: ApplyMcpArgs): Promise<ApplyMcpResult>;
+  /** List installed MCP instances read from every agent ledger. */
+  listMcpInstalls(): Promise<McpInstall[]>;
   /** Detect which agents were used in a project folder (by markers). */
   detectProjectAgents(path: string): Promise<AgentKind[]>;
   /** Install/remove skills for a project across agents; streams progress. */
@@ -106,6 +113,15 @@ const bridge: SkillkeeperBridge = {
   },
   reconcileSkills(): Promise<InstallManifest[]> {
     return ipcRenderer.invoke('skills:reconcile') as Promise<InstallManifest[]>;
+  },
+  listAvailableMcp(): Promise<AvailableMcp[]> {
+    return ipcRenderer.invoke('mcp:list-available') as Promise<AvailableMcp[]>;
+  },
+  applyMcp(args: ApplyMcpArgs): Promise<ApplyMcpResult> {
+    return ipcRenderer.invoke('mcp:apply', args) as Promise<ApplyMcpResult>;
+  },
+  listMcpInstalls(): Promise<McpInstall[]> {
+    return ipcRenderer.invoke('mcp:installs') as Promise<McpInstall[]>;
   },
   detectProjectAgents(path: string): Promise<AgentKind[]> {
     return ipcRenderer.invoke('projects:detectAgents', { path }) as Promise<AgentKind[]>;

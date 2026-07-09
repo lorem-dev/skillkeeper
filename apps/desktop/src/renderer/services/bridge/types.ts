@@ -22,3 +22,13 @@ export type { EditorOption, OpenResult } from '../../../main/editors.js';
 export type { RepoResult, RemoveResult, RepoInfo, AvailableSkill } from '../../../main/repositories.js';
 export type { ProjectResult, ProjectInfo } from '../../../main/projects.js';
 export type { SkillRef, ApplyArgs, ApplyProgress, ApplyResult } from '../../../main/skills.js';
+export type { AvailableMcp } from '../../../main/mcp.js';
+export type {
+  McpInstallReq,
+  McpBatch,
+  ApplyMcpArgs,
+  McpSkipped,
+  ApplyMcpResult,
+  McpInstall,
+} from '../../../main/mcp.js';
+export type { McpServerDef, McpTransport, McpIdentity } from '@skillkeeper/core';
