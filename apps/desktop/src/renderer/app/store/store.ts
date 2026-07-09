@@ -192,11 +192,13 @@ export interface SkillkeeperActions {
    */
   resetSkillsSelection(mode: SkillsMode): void;
   /**
-   * Navigate to the Skills page with a fresh view: merge `patch` into the
-   * skills-page state (mode/filters/query), reset the target mode's selection to
-   * the installed baseline, and bump `skillsNav` so the shell switches view.
+   * Navigate to the Skills page: merge `patch` into the skills-page state
+   * (mode/filters/query) and bump `skillsNav` so the shell switches view. When
+   * `resetSelection` is true (the default) the target mode's checkbox selection
+   * is reset to the installed baseline; pass `false` to keep the current
+   * selection and only apply the patch (e.g. just narrowing a filter).
    */
-  goToSkills(patch: Partial<SkillsUiState>): void;
+  goToSkills(patch: Partial<SkillsUiState>, resetSelection?: boolean): void;
   setProjects(projects: Project[]): void;
   /** Refetch the available-skills catalog from all repos. */
   refreshAvailableSkills(): Promise<void>;
@@ -364,9 +366,14 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     }));
   },
 
-  goToSkills(patch) {
+  goToSkills(patch, resetSelection = true) {
     set((s) => {
       const merged = { ...s.skillsUi, ...patch };
+      if (!resetSelection) {
+        // Keep the current view/selection untouched and only apply the patch
+        // (e.g. narrowing to one repository from its card).
+        return { skillsUi: merged, skillsNav: s.skillsNav + 1 };
+      }
       // Reset the target mode's selection to the installed baseline (repo mode:
       // no checks; project mode: reseed from installed), so no stale pending
       // changes carry over into the fresh view.

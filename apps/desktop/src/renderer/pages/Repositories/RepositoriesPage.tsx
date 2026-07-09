@@ -131,9 +131,7 @@ export function RepositoriesPage() {
               skillsLabel={t('common.goToSkills')}
               onSync={() => void syncRepository(r.id)}
               onEdit={() => setEditing(r)}
-              onGoToSkills={() =>
-                goToSkills({ mode: 'repositories', repoFilter: [r.id], projectFilter: [], query: '' })
-              }
+              onGoToSkills={() => goToSkills({ repoFilter: [r.id] }, false)}
               onErrorClick={() => showRepoError(r.id)}
             />
             </motion.div>
