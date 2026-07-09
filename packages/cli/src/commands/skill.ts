@@ -7,7 +7,7 @@
  */
 
 import type { Command } from 'commander';
-import type { FsPort, GitPort, AgentKind, AgentTarget, ResolvedSkill } from '@skillkeeper/core';
+import type { FsPort, GitPort, AgentKind, AgentTarget, ResolvedSkill, InstallManifest } from '@skillkeeper/core';
 import {
   loadState,
   saveState,
@@ -288,6 +288,8 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
         process.exit(1);
       }
       let updatedInstalls = [...state.installs];
+      const newManifests = new Set<InstallManifest>();
+      const updatedRefs: { manifest: InstallManifest; hasGuide: boolean }[] = [];
       for (const m of matches) {
         const repo = state.repositories.find((r) => r.id === m.sourceRepoId);
         if (repo === undefined) {
@@ -325,14 +327,43 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
         });
         updatedInstalls = updatedInstalls.filter((i) => i !== m);
         updatedInstalls.push(newManifest);
+        newManifests.add(newManifest);
         const guideBody = await readSkillGuide(fs, `${repo.localPath}/${resolved.rootPath}`);
         if (guideBody !== undefined) {
           await writeSkillGuidance(fs, adapter, target, env, repo.url, resolved.id, guideBody);
         }
+        updatedRefs.push({ manifest: newManifest, hasGuide: guideBody !== undefined });
         if (!opts.allowHooks && resolved.hooks.length > 0) {
           console.log(t('hooks.requireConsent'));
         }
         console.log(`Updated: ${m.skillId.name} (${m.target.agent})`);
+      }
+      // An updated skill that no longer ships a guide has its stale block removed,
+      // unless a surviving install still needs it in the same guidance file.
+      const keptByFile = new Map<string, Set<string>>();
+      const keep = (f: string, k: string): void => {
+        const set = keptByFile.get(f) ?? new Set<string>();
+        set.add(k);
+        keptByFile.set(f, set);
+      };
+      for (const u of updatedRefs) {
+        if (!u.hasGuide || u.manifest.sourceRemote === undefined) continue;
+        const { env, target } = resolveTarget(deps, u.manifest.target.agent, u.manifest.target.scope === 'global', u.manifest.target.projectId);
+        keep(await registry.get(u.manifest.target.agent).guidanceFile(target, env), skillGuidanceBlockKey(u.manifest.sourceRemote, u.manifest.skillId));
+      }
+      for (const s of updatedInstalls) {
+        if (s.sourceRemote === undefined || newManifests.has(s)) continue;
+        const { env, target } = resolveTarget(deps, s.target.agent, s.target.scope === 'global', s.target.projectId);
+        keep(await registry.get(s.target.agent).guidanceFile(target, env), skillGuidanceBlockKey(s.sourceRemote, s.skillId));
+      }
+      for (const u of updatedRefs) {
+        if (u.hasGuide || u.manifest.sourceRemote === undefined) continue;
+        const { env, target } = resolveTarget(deps, u.manifest.target.agent, u.manifest.target.scope === 'global', u.manifest.target.projectId);
+        const adapter = registry.get(u.manifest.target.agent);
+        const file = await adapter.guidanceFile(target, env);
+        const key = skillGuidanceBlockKey(u.manifest.sourceRemote, u.manifest.skillId);
+        if (keptByFile.get(file)?.has(key) === true) continue;
+        await clearSkillGuidance(fs, adapter, target, env, u.manifest.sourceRemote, u.manifest.skillId);
       }
       await saveState(fs, statePath, { ...state, installs: updatedInstalls });
     });

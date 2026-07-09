@@ -132,8 +132,12 @@ export async function applySkillChanges(
       });
       // key = guidance file path; value = map of blockKey -> body to upsert.
       const upserts = new Map<string, Map<string, string>>();
-      // list of { file, blockKey } to remove unless still needed.
-      const removals: { file: string; blockKey: string; agent: AgentKind }[] = [];
+      // { file, blockKey } to remove unless still needed.
+      const removals: { file: string; blockKey: string }[] = [];
+      // Manifests (re)installed this run. A block for one of these is kept only
+      // when it was upserted (the skill still ships a guide); a reinstall that
+      // dropped its GUIDE.md/RULES.md therefore has its stale block removed.
+      const newThisRun = new Set<InstallManifest>();
 
       // Removals first, so a re-install onto the same target starts clean.
       for (const ref of args.remove) {
@@ -149,11 +153,7 @@ export async function applySkillChanges(
               const file = await deps.registry
                 .get(agent)
                 .guidanceFile({ agent, scope: 'project', projectId: args.projectId }, adapterEnvFor(agent));
-              removals.push({
-                file,
-                blockKey: skillGuidanceBlockKey(remote, manifest.skillId),
-                agent,
-              });
+              removals.push({ file, blockKey: skillGuidanceBlockKey(remote, manifest.skillId) });
             }
           }
           tick(ref.name);
@@ -192,6 +192,7 @@ export async function applySkillChanges(
                 sourcePath: resolved.rootPath,
               });
               installs.push(manifest);
+              newThisRun.add(manifest);
               const remote = repo.url;
               const body = await readSkillGuide(deps.fs, `${repo.localPath}/${resolved.rootPath}`);
               if (body !== undefined) {
@@ -210,18 +211,25 @@ export async function applySkillChanges(
       // Guidance blocks: apply upserts first, then removals that are not still
       // needed by a surviving install sharing the same guidance file.
       const finalKeysByFile = new Map<string, Set<string>>();
+      const keepBlock = (f: string, key: string): void => {
+        const set = finalKeysByFile.get(f) ?? new Set<string>();
+        set.add(key);
+        finalKeysByFile.set(f, set);
+      };
+      // (a) Blocks (re)written this run -- the touched skills that still ship a guide.
+      for (const [file, blocks] of upserts) for (const key of blocks.keys()) keepBlock(file, key);
+      // (b) Untouched surviving installs keep their block. A skill reinstalled this
+      //     run without a guide is in neither set, so its now-stale block is removed.
       for (const m of installs) {
         if (m.target.projectId !== args.projectId || m.sourceRemote === undefined) continue;
+        if (newThisRun.has(m)) continue;
         const f = await deps.registry
           .get(m.target.agent)
           .guidanceFile(
             { agent: m.target.agent, scope: 'project', projectId: args.projectId },
             adapterEnvFor(m.target.agent),
           );
-        const key = skillGuidanceBlockKey(m.sourceRemote, m.skillId);
-        const set = finalKeysByFile.get(f) ?? new Set<string>();
-        set.add(key);
-        finalKeysByFile.set(f, set);
+        keepBlock(f, skillGuidanceBlockKey(m.sourceRemote, m.skillId));
       }
 
       for (const [file, blocks] of upserts) {
