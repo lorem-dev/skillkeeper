@@ -23,6 +23,7 @@ const ALL: IconName[] = [
   'plus',
   'check',
   'chevron-right',
+  'mcp',
 ];
 
 export const Gallery: Story = {

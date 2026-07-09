@@ -31,6 +31,7 @@ import close from './assets/close.svg?raw';
 import terminal from './assets/terminal.svg?raw';
 import deleteIcon from './assets/delete.svg?raw';
 import folder from './assets/folder.svg?raw';
+import mcp from './assets/mcp.svg?raw';
 
 export type IconName =
   | 'repositories'
@@ -51,7 +52,8 @@ export type IconName =
   | 'close'
   | 'terminal'
   | 'delete'
-  | 'folder';
+  | 'folder'
+  | 'mcp';
 
 const ICONS: Record<IconName, string> = {
   repositories: stripSvgRoot(repositories),
@@ -73,6 +75,7 @@ const ICONS: Record<IconName, string> = {
   terminal: stripSvgRoot(terminal),
   delete: stripSvgRoot(deleteIcon),
   folder: stripSvgRoot(folder),
+  mcp: stripSvgRoot(mcp),
 };
 
 export interface IconProps {
