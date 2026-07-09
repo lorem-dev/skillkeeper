@@ -252,7 +252,10 @@ export async function applySkillChanges(
         if (finalKeysByFile.get(file)?.has(blockKey) === true) continue;
         if (!(await deps.fs.exists(file))) continue;
         const next = removeGuidanceBlock(await deps.fs.readFile(file), blockKey);
-        await deps.fs.writeFile(file, next);
+        // Removing our only block empties a guidance file SkillKeeper created;
+        // delete it rather than leaving a 0-byte file behind.
+        if (next === '') await deps.fs.remove(file);
+        else await deps.fs.writeFile(file, next);
       }
 
       await saveState(deps.fs, deps.statePath, { ...state, installs });
