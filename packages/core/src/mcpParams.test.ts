@@ -15,6 +15,11 @@ it('validates syntax', () => {
   expect(validateParamSyntax('ok {a}')).toEqual({ ok: true });
   expect(validateParamSyntax('bad {}').ok).toBe(false);
   expect(validateParamSyntax('bad {a').ok).toBe(false);
+  expect(validateParamSyntax('bad {a-b}').ok).toBe(false);
+});
+it('renders values into stdio args', () => {
+  const out = renderParams({ name: 'x', type: 'stdio', command: 'run', args: ['{a}'] }, { a: 'A' });
+  expect(out.args).toEqual(['A']);
 });
 it('renders values into every field', () => {
   const out = renderParams(def, { host: 'h', token: 't' });
