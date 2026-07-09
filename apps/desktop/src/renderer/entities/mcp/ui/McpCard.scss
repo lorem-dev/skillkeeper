@@ -1,0 +1,124 @@
+.sk-mcp-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-4);
+  padding: var(--sk-space-4) var(--sk-space-5);
+  transition: background var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+// Same hover fill as the repository/project cards.
+.sk-mcp-card:hover {
+  background: var(--sk-card-hover-bg);
+}
+
+.sk-mcp-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sk-mcp-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  min-width: 0;
+}
+
+.sk-mcp-card__name {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sk-color-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-mcp-card__url {
+  display: block;
+  max-width: 100%;
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Clickable url (copies it). Button reset so it reads as the url text.
+.sk-mcp-card__url--button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.sk-mcp-card__command-pre {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  font-family: var(--sk-font-mono, monospace);
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
+// Clickable command line (copies it). Button reset so it reads as the pre text.
+.sk-mcp-card__command--button {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+  min-width: 0;
+}
+
+// Tooltip wrapper around the connection line: shrink to the (truncated) text
+// width, capped at the card width -- the hover/tooltip trigger covers only the
+// text, not the empty space beside a short url/command.
+.sk-mcp-card__conn-tip {
+  align-self: flex-start;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.sk-mcp-card__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  margin-top: var(--sk-space-1);
+  min-width: 0;
+  min-height: 20px;
+}
+
+// Clickable repo badge (navigates to the repository). Button reset so only the
+// Badge shows.
+.sk-mcp-card__repo-badge {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.sk-mcp-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  flex: none;
+  align-self: flex-start;
+  margin-top: 3px;
+}
+
+.sk-mcp-card__icon-btn {
+  width: var(--sk-control-height);
+  padding: 0;
+}
