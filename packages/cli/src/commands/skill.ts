@@ -16,6 +16,10 @@ import {
   uninstallSkill,
   verifyInstall,
   repairInstall,
+  readSkillGuide,
+  writeSkillGuidance,
+  clearSkillGuidance,
+  skillGuidanceBlockKey,
 } from '@skillkeeper/core';
 import type { AdapterRegistry } from '@skillkeeper/core';
 import type { Translator } from '@skillkeeper/i18n';
@@ -192,6 +196,11 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
       };
       await saveState(fs, statePath, next);
 
+      const guideBody = await readSkillGuide(fs, `${sourceRoot}/${foundSkill.rootPath}`);
+      if (guideBody !== undefined && sourceRemote !== undefined) {
+        await writeSkillGuidance(fs, adapter, target, env, sourceRemote, foundSkill.id, guideBody);
+      }
+
       const skillLabel = foundSkill.id.group !== undefined
         ? `${foundSkill.id.group}/${foundSkill.id.name}`
         : foundSkill.id.name;
@@ -208,7 +217,7 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
     .description('Uninstall a skill')
     .option('--agent <agent>', 'Limit to a specific agent')
     .action(async (id: string, opts: { agent?: string }) => {
-      const { fs, statePath } = deps;
+      const { fs, statePath, registry } = deps;
       const state = await loadState(fs, statePath);
       const matches = state.installs.filter((m) => {
         const fullId = m.skillId.group !== undefined
@@ -232,6 +241,28 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
         installs: state.installs.filter((m) => !matchSet.has(m)),
       };
       await saveState(fs, statePath, next);
+
+      // Remove each uninstalled skill's guidance block, but keep a block that a
+      // surviving install still needs in the same (possibly shared) file.
+      const keptByFile = new Map<string, Set<string>>();
+      for (const s of next.installs) {
+        if (s.sourceRemote === undefined) continue;
+        const { env, target } = resolveTarget(deps, s.target.agent, s.target.scope === 'global', s.target.projectId);
+        const file = await registry.get(s.target.agent).guidanceFile(target, env);
+        const key = skillGuidanceBlockKey(s.sourceRemote, s.skillId);
+        const set = keptByFile.get(file) ?? new Set<string>();
+        set.add(key);
+        keptByFile.set(file, set);
+      }
+      for (const m of matches) {
+        if (m.sourceRemote === undefined) continue;
+        const { env, target } = resolveTarget(deps, m.target.agent, m.target.scope === 'global', m.target.projectId);
+        const adapter = registry.get(m.target.agent);
+        const file = await adapter.guidanceFile(target, env);
+        const key = skillGuidanceBlockKey(m.sourceRemote, m.skillId);
+        if (keptByFile.get(file)?.has(key) === true) continue;
+        await clearSkillGuidance(fs, adapter, target, env, m.sourceRemote, m.skillId);
+      }
     });
 
   // --- skill update <id> ---
@@ -294,6 +325,10 @@ export function registerSkillCommands(parent: Command, deps: SkillDeps): void {
         });
         updatedInstalls = updatedInstalls.filter((i) => i !== m);
         updatedInstalls.push(newManifest);
+        const guideBody = await readSkillGuide(fs, `${repo.localPath}/${resolved.rootPath}`);
+        if (guideBody !== undefined) {
+          await writeSkillGuidance(fs, adapter, target, env, repo.url, resolved.id, guideBody);
+        }
         if (!opts.allowHooks && resolved.hooks.length > 0) {
           console.log(t('hooks.requireConsent'));
         }
