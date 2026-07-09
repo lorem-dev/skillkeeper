@@ -156,6 +156,44 @@ describe('validatePreset', () => {
     expect(errors.find((e) => e.field === 'env.0.value')).toBeDefined();
   });
 
+  it('does not scan a stale url when the transport is stdio', () => {
+    // Values persist across a transport switch: an invalid url typed under
+    // http must not keep Save disabled once the user switches to stdio and
+    // supplies a valid command -- the url field is not rendered in stdio mode.
+    const errors = validatePreset({
+      ...emptyDraft,
+      name: 'x',
+      type: 'stdio',
+      command: 'run',
+      url: 'https://example.com/{bad-name}',
+      headers: [{ key: 'X', value: 'also {bad}' }],
+    });
+    expect(errors).toEqual([]);
+  });
+
+  it('scans the url when the transport is http', () => {
+    const errors = validatePreset({
+      ...emptyDraft,
+      name: 'x',
+      type: 'http',
+      url: 'https://example.com/{bad-name}',
+    });
+    expect(errors.find((e) => e.field === 'url')).toBeDefined();
+  });
+
+  it('does not scan stale command/args/env when the transport is http', () => {
+    const errors = validatePreset({
+      ...emptyDraft,
+      name: 'x',
+      type: 'http',
+      url: 'https://example.com',
+      command: 'run {bad',
+      args: ['{bad-arg}'],
+      env: [{ key: 'TOKEN', value: '{bad' }],
+    });
+    expect(errors).toEqual([]);
+  });
+
   it('flags a param-syntax error in rules', () => {
     const errors = validatePreset({
       ...emptyDraft,

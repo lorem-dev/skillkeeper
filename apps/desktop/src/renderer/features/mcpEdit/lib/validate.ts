@@ -98,16 +98,25 @@ export function validatePreset(draft: McpPresetDraft): FieldError[] {
     errors.push({ field: 'url', message: 'URL is required for http/sse servers.' });
   }
 
+  // Scope the param-syntax scan to fields the active transport actually
+  // renders, exactly like the structural checks above. Field values persist
+  // across a transport-type switch, so scanning stale values (e.g. a `url`
+  // typed under http, then switched to stdio) would dead-end the user: Save
+  // stays disabled on a `field:'url'` error for a field that isn't shown.
   const paramFields: { field: string; text: string }[] = [];
-  if (draft.url !== '') paramFields.push({ field: 'url', text: draft.url });
-  draft.headers.forEach((row, i) => {
-    if (row.key.trim() !== '') paramFields.push({ field: `headers.${i}.value`, text: row.value });
-  });
-  if (draft.command !== '') paramFields.push({ field: 'command', text: draft.command });
-  draft.args.forEach((arg, i) => paramFields.push({ field: `args.${i}`, text: arg }));
-  draft.env.forEach((row, i) => {
-    if (row.key.trim() !== '') paramFields.push({ field: `env.${i}.value`, text: row.value });
-  });
+  if (draft.type === 'http' || draft.type === 'sse') {
+    if (draft.url !== '') paramFields.push({ field: 'url', text: draft.url });
+    draft.headers.forEach((row, i) => {
+      if (row.key.trim() !== '') paramFields.push({ field: `headers.${i}.value`, text: row.value });
+    });
+  }
+  if (draft.type === 'stdio') {
+    if (draft.command !== '') paramFields.push({ field: 'command', text: draft.command });
+    draft.args.forEach((arg, i) => paramFields.push({ field: `args.${i}`, text: arg }));
+    draft.env.forEach((row, i) => {
+      if (row.key.trim() !== '') paramFields.push({ field: `env.${i}.value`, text: row.value });
+    });
+  }
   if (draft.rules !== '') paramFields.push({ field: 'rules', text: draft.rules });
 
   for (const { field, text } of paramFields) {
