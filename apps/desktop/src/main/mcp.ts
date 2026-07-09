@@ -28,6 +28,9 @@ import {
   mcpDestination,
   parseSkmcp,
   parseSkmcpParams,
+  serializeSkmcp,
+  serializeSkmcpParams,
+  writerFor,
   SKMCP_FILE,
   SKMCP_PARAMS_FILE,
 } from '@skillkeeper/core';
@@ -383,4 +386,206 @@ export async function listMcpInstalls(deps: McpDeps): Promise<McpInstall[]> {
   }
 
   return out;
+}
+
+/** Map one ledger entry to an {@link McpInstall} for the given scope/agent. */
+function entryToInstall(
+  scopeId: string | 'global',
+  agent: AgentKind,
+  entry: {
+    readonly remote?: string;
+    readonly group?: string;
+    readonly local?: string;
+    readonly source: string;
+    readonly name: string;
+    readonly hash: string;
+  },
+  hasParams: boolean,
+): McpInstall {
+  return {
+    projectId: scopeId,
+    agent,
+    instanceName: entry.name,
+    identity: {
+      ...(entry.remote !== undefined ? { remote: entry.remote } : {}),
+      ...(entry.group !== undefined ? { group: entry.group } : {}),
+      ...(entry.local !== undefined ? { local: entry.local } : {}),
+      source: entry.source,
+    },
+    hash: entry.hash,
+    hasParams,
+  };
+}
+
+/**
+ * Reconcile every agent's `.skmcp.yml` with its native MCP config: PRUNE-ONLY.
+ * For each ledger entry, read the native config via the agent's writer and drop
+ * the ledger + params entry when the native server named by that entry no
+ * longer exists. Unknown native servers are never adopted and recorded hashes
+ * are never rewritten. An all-present ledger is left byte-for-byte untouched; a
+ * ledger with everything pruned is left in place with an empty `servers` list.
+ * Returns the surviving install list (mirrors {@link listMcpInstalls}).
+ *
+ * Called at the same lifecycle points as the skills reconcile (after loadAll,
+ * syncRepository, addProject).
+ */
+export async function reconcileMcp(deps: McpDeps): Promise<McpInstall[]> {
+  return withStateLock(async () => {
+    const out: McpInstall[] = [];
+
+    let projects: readonly { readonly id: string; readonly path: string }[];
+    try {
+      projects = (await loadState(deps.fs, deps.statePath)).projects;
+    } catch {
+      projects = [];
+    }
+
+    const reconcileLedger = async (
+      scopeId: string | 'global',
+      agent: AgentKind,
+      target: McpTarget,
+    ): Promise<void> => {
+      if (!(await deps.fs.exists(target.ledgerPath))) return;
+      const ledger = parseSkmcp(await deps.fs.readFile(target.ledgerPath));
+      if (ledger === undefined) return;
+
+      const nativeText = (await deps.fs.exists(target.nativePath))
+        ? await deps.fs.readFile(target.nativePath)
+        : '';
+      const present = new Set(writerFor(agent).existingNames(nativeText));
+
+      const kept = ledger.servers.filter((s) => present.has(s.name));
+      const pruned = kept.length !== ledger.servers.length;
+
+      if (pruned) {
+        await deps.fs.writeFile(
+          target.ledgerPath,
+          serializeSkmcp({ schema: ledger.schema, servers: kept }),
+        );
+        // Drop param entries for the pruned names; only rewrite when a key was
+        // actually removed (never create an empty params file needlessly).
+        if (await deps.fs.exists(target.paramsPath)) {
+          const params = parseSkmcpParams(await deps.fs.readFile(target.paramsPath));
+          const keptNames = new Set(kept.map((s) => s.name));
+          let paramsChanged = false;
+          for (const name of Object.keys(params)) {
+            if (!keptNames.has(name)) {
+              delete params[name];
+              paramsChanged = true;
+            }
+          }
+          if (paramsChanged) {
+            await deps.fs.writeFile(target.paramsPath, serializeSkmcpParams(params));
+          }
+        }
+      }
+
+      const params = (await deps.fs.exists(target.paramsPath))
+        ? parseSkmcpParams(await deps.fs.readFile(target.paramsPath))
+        : {};
+      for (const entry of kept) {
+        out.push(
+          entryToInstall(
+            scopeId,
+            agent,
+            entry,
+            Object.prototype.hasOwnProperty.call(params, entry.name),
+          ),
+        );
+      }
+    };
+
+    for (const project of projects) {
+      for (const agent of PROJECT_MCP_AGENTS) {
+        try {
+          const target = await resolveMcpTarget(deps, agent, {
+            projectPath: project.path,
+            projectId: project.id,
+          });
+          await reconcileLedger(project.id, agent, target);
+        } catch {
+          // A project whose target cannot be resolved is skipped; others still reconcile.
+        }
+      }
+    }
+
+    try {
+      const codexTarget = await resolveMcpTarget(deps, 'codex', { projectPath: '', projectId: '' });
+      await reconcileLedger('global', 'codex', codexTarget);
+    } catch {
+      // No codex global ledger resolvable; leave it out.
+    }
+
+    return out;
+  });
+}
+
+/** One MCP instance to update: the new raw def + merged param values, same name. */
+export interface McpUpdateReq {
+  readonly projectId: string;
+  readonly projectPath: string;
+  readonly agent: AgentKind;
+  /** The existing instance name; the reinstall reuses it verbatim. */
+  readonly instanceName: string;
+  readonly identity: McpIdentity;
+  /** The NEW raw def from the current source (placeholders intact). */
+  readonly def: McpServerDef;
+  /** Merged param values (the caller has already collected any newly-required params). */
+  readonly values: Record<string, string>;
+}
+
+/** Arguments for {@link updateMcp}. */
+export interface UpdateMcpArgs {
+  readonly updates: readonly McpUpdateReq[];
+}
+
+/** Result of {@link updateMcp}. Never thrown across the IPC boundary. */
+export type UpdateMcpResult =
+  | { readonly ok: true; readonly updated: number }
+  | { readonly ok: false; readonly error: string };
+
+/**
+ * Update installed MCP instances in place: for each, remove the old instance
+ * and reinstall under the SAME instance name with the NEW def + merged param
+ * values. The reinstall refreshes the ledger hash to the new def's hash
+ * automatically. Callers collect any newly-required params first; updateMcp
+ * does not prompt.
+ */
+export async function updateMcp(deps: McpDeps, args: UpdateMcpArgs): Promise<UpdateMcpResult> {
+  return withStateLock(async () => {
+    try {
+      let updated = 0;
+      for (const u of args.updates) {
+        const isCodex = u.agent === 'codex';
+        const target = await resolveMcpTarget(deps, u.agent, {
+          projectPath: u.projectPath,
+          projectId: u.projectId,
+        });
+        await removeMcpInstance(deps.fs, {
+          agent: u.agent,
+          nativePath: target.nativePath,
+          ledgerPath: target.ledgerPath,
+          paramsPath: target.paramsPath,
+          guidanceFiles: target.guidanceFiles,
+          instanceName: u.instanceName,
+        });
+        await installMcpInstance(deps.fs, {
+          agent: u.agent,
+          nativePath: target.nativePath,
+          ledgerPath: target.ledgerPath,
+          paramsPath: target.paramsPath,
+          guidanceFiles: target.guidanceFiles,
+          identity: u.identity,
+          def: u.def,
+          values: u.values,
+          instanceName: u.instanceName,
+          ...(isCodex ? {} : { gitignoreProjectPath: u.projectPath }),
+        });
+        updated += 1;
+      }
+      return { ok: true, updated };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
 }

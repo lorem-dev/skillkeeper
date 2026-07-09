@@ -14,7 +14,14 @@ import type { EditorOption, OpenResult } from '../main/editors.js';
 import type { RepoResult, RemoveResult, RepoInfo, AvailableSkill } from '../main/repositories.js';
 import type { ProjectResult, ProjectInfo } from '../main/projects.js';
 import type { ApplyArgs, ApplyProgress, ApplyResult } from '../main/skills.js';
-import type { AvailableMcp, ApplyMcpArgs, ApplyMcpResult, McpInstall } from '../main/mcp.js';
+import type {
+  AvailableMcp,
+  ApplyMcpArgs,
+  ApplyMcpResult,
+  McpInstall,
+  UpdateMcpArgs,
+  UpdateMcpResult,
+} from '../main/mcp.js';
 
 // ---------------------------------------------------------------------------
 // Bridge type (exported so the renderer window.d.ts can import it)
@@ -40,6 +47,10 @@ export interface SkillkeeperBridge {
   applyMcp(args: ApplyMcpArgs): Promise<ApplyMcpResult>;
   /** List installed MCP instances read from every agent ledger. */
   listMcpInstalls(): Promise<McpInstall[]>;
+  /** Prune ledger/params entries whose native server is gone; returns survivors. */
+  reconcileMcp(): Promise<McpInstall[]>;
+  /** Update MCP instances in place (remove + reinstall under the same name). */
+  updateMcp(args: UpdateMcpArgs): Promise<UpdateMcpResult>;
   /** Detect which agents were used in a project folder (by markers). */
   detectProjectAgents(path: string): Promise<AgentKind[]>;
   /** Install/remove skills for a project across agents; streams progress. */
@@ -122,6 +133,12 @@ const bridge: SkillkeeperBridge = {
   },
   listMcpInstalls(): Promise<McpInstall[]> {
     return ipcRenderer.invoke('mcp:installs') as Promise<McpInstall[]>;
+  },
+  reconcileMcp(): Promise<McpInstall[]> {
+    return ipcRenderer.invoke('mcp:reconcile') as Promise<McpInstall[]>;
+  },
+  updateMcp(args: UpdateMcpArgs): Promise<UpdateMcpResult> {
+    return ipcRenderer.invoke('mcp:update', args) as Promise<UpdateMcpResult>;
   },
   detectProjectAgents(path: string): Promise<AgentKind[]> {
     return ipcRenderer.invoke('projects:detectAgents', { path }) as Promise<AgentKind[]>;

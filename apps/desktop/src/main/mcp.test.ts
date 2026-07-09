@@ -9,7 +9,7 @@ import {
   parseSkmcpParams,
 } from '@skillkeeper/core';
 import type { FsPort, McpServerDef, Project, Repository } from '@skillkeeper/core';
-import { listAvailableMcp, applyMcp, listMcpInstalls, resolveMcpTarget } from './mcp.js';
+import { listAvailableMcp, applyMcp, listMcpInstalls, resolveMcpTarget, reconcileMcp, updateMcp } from './mcp.js';
 import type { McpDeps } from './mcp.js';
 import { createAdapterRegistry } from './skills.js';
 import type { RepoDeps } from './repositories.js';
@@ -367,5 +367,137 @@ describe('listMcpInstalls', () => {
       hash: 'sha256:ccc',
       hasParams: false,
     });
+  });
+});
+
+/** Save a state file carrying one tracked project so reconcile can scan it. */
+async function withProject(fs: FsPort): Promise<void> {
+  const project: Project = {
+    id: PROJECT_ID,
+    name: 'proj',
+    path: PROJECT_PATH,
+    addedAt: new Date().toISOString(),
+  };
+  await saveState(fs, STATE_PATH, { version: 1, repositories: [], projects: [project], installs: [] });
+}
+
+describe('reconcileMcp', () => {
+  it('prunes a ledger entry whose native server is gone and keeps one that still exists', async () => {
+    const fs = createMemFs();
+    await withProject(fs);
+    const deps = mcpDeps(fs);
+
+    // Install a real instance: writes github_1 to the native config, ledger, params.
+    await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'claude',
+          install: [{ identity: { remote: 'r', source: 'github' }, def: STDIO_DEF, values: {} }],
+          remove: [],
+        },
+      ],
+    });
+
+    const ledgerPath = `${PROJECT_PATH}/.claude/skills/.skmcp.yml`;
+    const paramsPath = `${PROJECT_PATH}/.claude/skills/.skmcp.params.yml`;
+
+    // Inject a stale ledger + params entry with no matching native server.
+    const ledger = parseSkmcp(await fs.readFile(ledgerPath));
+    await fs.writeFile(
+      ledgerPath,
+      serializeSkmcp({
+        schema: ledger?.schema ?? 1,
+        servers: [
+          ...(ledger?.servers ?? []),
+          { remote: 'r', source: 'ghost', name: 'ghost_1', hash: 'sha256:zzz' },
+        ],
+      }),
+    );
+    const params = parseSkmcpParams(await fs.readFile(paramsPath));
+    params['ghost_1'] = { k: 'v' };
+    await fs.writeFile(paramsPath, serializeSkmcpParams(params));
+
+    const out = await reconcileMcp(deps);
+
+    // The gone server is pruned from both files; the surviving one is kept.
+    const ledgerAfter = parseSkmcp(await fs.readFile(ledgerPath));
+    expect(ledgerAfter?.servers.map((s) => s.name)).toEqual(['github_1']);
+    const paramsAfter = parseSkmcpParams(await fs.readFile(paramsPath));
+    expect(Object.prototype.hasOwnProperty.call(paramsAfter, 'github_1')).toBe(true);
+    expect(paramsAfter['ghost_1']).toBeUndefined();
+
+    // Returns the surviving install list (no adoption of unknown servers).
+    expect(out.map((m) => m.instanceName)).toEqual(['github_1']);
+  });
+
+  it('leaves an unchanged ledger and its recorded hash untouched', async () => {
+    const fs = createMemFs();
+    await withProject(fs);
+    const deps = mcpDeps(fs);
+    await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'claude',
+          install: [{ identity: { remote: 'r', source: 'github' }, def: STDIO_DEF, values: {} }],
+          remove: [],
+        },
+      ],
+    });
+    const ledgerPath = `${PROJECT_PATH}/.claude/skills/.skmcp.yml`;
+    const before = await fs.readFile(ledgerPath);
+
+    await reconcileMcp(deps);
+
+    // Prune-only: an all-present ledger is not rewritten and the hash stays.
+    expect(await fs.readFile(ledgerPath)).toBe(before);
+    expect(parseSkmcp(before)?.servers[0]?.hash).toBe(hashMcpDef(STDIO_DEF));
+  });
+});
+
+describe('updateMcp', () => {
+  it('removes then reinstalls under the same name, refreshing the ledger hash to the new def', async () => {
+    const fs = createMemFs();
+    const deps = mcpDeps(fs);
+    await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'claude',
+          install: [{ identity: { remote: 'r', source: 'github' }, def: STDIO_DEF, values: {} }],
+          remove: [],
+        },
+      ],
+    });
+    const ledgerPath = `${PROJECT_PATH}/.claude/skills/.skmcp.yml`;
+    expect(parseSkmcp(await fs.readFile(ledgerPath))?.servers[0]?.hash).toBe(hashMcpDef(STDIO_DEF));
+
+    const NEW_DEF: McpServerDef = { ...STDIO_DEF, args: ['-y', 'gh-mcp', '--updated'] };
+    const res = await updateMcp(deps, {
+      updates: [
+        {
+          projectId: PROJECT_ID,
+          projectPath: PROJECT_PATH,
+          agent: 'claude',
+          instanceName: 'github_1',
+          identity: { remote: 'r', source: 'github' },
+          def: NEW_DEF,
+          values: {},
+        },
+      ],
+    });
+    expect(res).toEqual({ ok: true, updated: 1 });
+
+    const after = parseSkmcp(await fs.readFile(ledgerPath));
+    // Same single instance name, but the hash now tracks the NEW def.
+    expect(after?.servers.map((s) => s.name)).toEqual(['github_1']);
+    expect(after?.servers[0]?.hash).toBe(hashMcpDef(NEW_DEF));
+
+    const native = await fs.readFile(`${PROJECT_PATH}/.mcp.json`);
+    expect(native).toContain('--updated');
   });
 });

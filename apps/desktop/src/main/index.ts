@@ -39,8 +39,8 @@ import {
   createAdapterRegistry,
 } from './skills.js';
 import type { SkillsDeps, ApplyArgs } from './skills.js';
-import { listAvailableMcp, applyMcp, listMcpInstalls } from './mcp.js';
-import type { ApplyMcpArgs } from './mcp.js';
+import { listAvailableMcp, applyMcp, listMcpInstalls, reconcileMcp, updateMcp } from './mcp.js';
+import type { ApplyMcpArgs, UpdateMcpArgs } from './mcp.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
 // from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
@@ -380,8 +380,13 @@ function registerHandlers(): void {
   ipcMain.handle('mcp:list-available', () => listAvailableMcp(repoDeps));
   // mcp:apply -- install/remove MCP server instances for a project across agents.
   ipcMain.handle('mcp:apply', (_e, args: ApplyMcpArgs) => applyMcp(skillsDeps, args));
-  // mcp:installs -- read every agent ledger; no pruning (that is task B2b).
+  // mcp:installs -- read every agent ledger; no pruning.
   ipcMain.handle('mcp:installs', () => listMcpInstalls(skillsDeps));
+  // mcp:reconcile -- prune ledger/params entries whose native server is gone;
+  // returns the surviving install list.
+  ipcMain.handle('mcp:reconcile', () => reconcileMcp(skillsDeps));
+  // mcp:update -- remove + reinstall instances under the same name with a new def.
+  ipcMain.handle('mcp:update', (_e, args: UpdateMcpArgs) => updateMcp(skillsDeps, args));
 
   const terminal = getTerminal();
   terminal.on('data', (chunk: string) => {

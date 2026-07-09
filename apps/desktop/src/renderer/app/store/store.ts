@@ -206,6 +206,8 @@ export interface SkillkeeperActions {
   applySkills(args: ApplyArgs): Promise<ApplyResult>;
   /** Scan project folders to adopt/prune installs, refreshing `skills`. */
   reconcileSkills(): Promise<void>;
+  /** Prune MCP ledger/params entries whose native server is gone (disk reconcile). */
+  reconcileMcp(): Promise<void>;
   /** Queue one update-skill task per request (re-install from the repository). */
   updateProjectSkills(requests: readonly ProjectSkillUpdate[]): void;
   /** Request navigating to Repositories and opening the add form for `remote`. */
@@ -487,6 +489,9 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         client.reconcileSkills(),
         client.listAvailableSkills(),
         client.listProjects(),
+        // Reconcile MCP ledgers with disk alongside the skill reconcile; the
+        // result is not consumed yet (no MCP renderer state), so it is unnamed.
+        client.reconcileMcp(),
       ]);
       setConfig(configResult.config, configResult.validity, configResult.warnings);
       setRepositories(repos);
@@ -661,6 +666,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           // reconcile installs so project-mode update dots recompute.
           await get().refreshAvailableSkills();
           await get().reconcileSkills();
+          await get().reconcileMcp();
           setTaskStatus('done');
         } else {
           get().notify(res.error, 'error', id);
@@ -771,6 +777,14 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     })();
   },
 
+  reconcileMcp() {
+    return (async () => {
+      // Prune stale MCP ledger/params on disk. The renderer does not yet hold
+      // MCP install state, so the reconciled list is not stored here.
+      await bridgeClient.reconcileMcp();
+    })();
+  },
+
   updateProjectSkills(requests) {
     // One task per skill, run through the shared queue (one at a time). Each task
     // re-installs the skill (remove + install) from its current repository.
@@ -828,6 +842,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       // The added folder may already contain skills (e.g. pulled in via git);
       // reconcile adopts them into the install list.
       await get().reconcileSkills();
+      // Likewise reconcile any MCP ledgers the added folder already carries.
+      await get().reconcileMcp();
     })();
   },
 

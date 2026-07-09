@@ -30,5 +30,8 @@ export type {
   McpSkipped,
   ApplyMcpResult,
   McpInstall,
+  McpUpdateReq,
+  UpdateMcpArgs,
+  UpdateMcpResult,
 } from '../../../main/mcp.js';
 export type { McpServerDef, McpTransport, McpIdentity } from '@skillkeeper/core';
