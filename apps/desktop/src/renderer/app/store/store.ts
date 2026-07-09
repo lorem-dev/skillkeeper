@@ -94,8 +94,9 @@ function repoMcpPresetId(repoId: string, group: string | undefined, name: string
 // instead, byte-for-byte, so the store never reaches into core's runtime.
 
 /** Mirrors core's `parseParams` (`mcpParams.ts`): scans every string field of
- *  an MCP def for `{param}` placeholders and returns the sorted, deduped set. */
-function scanMcpParams(def: McpServerDef): string[] {
+ *  an MCP def for `{param}` placeholders and returns the sorted, deduped set.
+ *  Exported so a guard test can pin it to core's `parseParams`. */
+export function scanMcpParams(def: McpServerDef): string[] {
   const names = new Set<string>();
   const scan = (text: string): void => {
     for (const match of text.matchAll(/\{([A-Za-z0-9_]+)\}/g)) {
@@ -114,8 +115,9 @@ function scanMcpParams(def: McpServerDef): string[] {
 
 /** Mirrors core's `normalizeRemote` (`repoRemote.ts`): canonicalizes a git
  *  remote URL to `host/path`, lowercased, without transport/user/port/`.git`,
- *  so ssh/https/scp forms of the same remote compare equal. */
-function normalizeMcpRemote(url: string): string {
+ *  so ssh/https/scp forms of the same remote compare equal. Exported so a
+ *  guard test can pin it to core's `normalizeRemote`. */
+export function normalizeMcpRemote(url: string): string {
   let s = url.trim();
   const scp = /^[^/@]+@([^:/]+):(.+)$/.exec(s);
   if (scp !== null) {
@@ -160,8 +162,9 @@ function sortMcpKeysForHash(value: unknown): unknown {
 }
 
 /** Content hash of an MCP server def, excluding `name` -- see the note on
- *  {@link sortMcpKeysForHash} for why this is not simply `core`'s `hashMcpDef`. */
-async function hashMcpDefInRenderer(def: McpServerDef): Promise<string> {
+ *  {@link sortMcpKeysForHash} for why this is not simply `core`'s `hashMcpDef`.
+ *  Exported so a guard test can pin it to core's `hashMcpDef`. */
+export async function hashMcpDefInRenderer(def: McpServerDef): Promise<string> {
   const { name: _name, ...rest } = def;
   const canonical = JSON.stringify(sortMcpKeysForHash(rest));
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));

@@ -6,7 +6,18 @@
  * correctly without spinning up a browser or Electron environment.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { useSkillkeeperStore, mcpInstallHasUpdate } from './store';
+// Core IS importable in the Node/vitest env (unlike the sandboxed renderer),
+// so the guard test below can pin the store's local reimplementations against
+// core's originals. These runtime imports must stay confined to the test.
+import { parseParams, hashMcpDef, normalizeRemote } from '@skillkeeper/core';
+import type { McpServerDef } from '@skillkeeper/core';
+import {
+  useSkillkeeperStore,
+  mcpInstallHasUpdate,
+  scanMcpParams,
+  normalizeMcpRemote,
+  hashMcpDefInRenderer,
+} from './store';
 import type { SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest, McpPreset } from './store';
 import type { RepoResult, RemoveResult, ProjectResult, AvailableMcp, McpInstall } from '@/services/bridge';
 
@@ -656,6 +667,62 @@ describe('useSkillkeeperStore', () => {
         hasParams: false,
       };
       expect(mcpInstallHasUpdate(install, [preset, manualPreset])).toBe(false);
+    });
+  });
+
+  // The renderer cannot call `@skillkeeper/core`'s runtime exports (they pull
+  // Node-only modules into the sandboxed bundle), so `store.ts` reimplements
+  // `parseParams`, `normalizeRemote`, and `hashMcpDef` locally. These guards
+  // pin those copies to core's originals -- a drift in either side fails here
+  // rather than silently breaking manual-preset update detection at runtime.
+  describe('renderer helpers match core (drift guard)', () => {
+    const fixtures: McpServerDef[] = [
+      {
+        // http with headers + rules + params (tricky: `{param}` in url + header)
+        name: 'linear',
+        type: 'http',
+        url: 'https://api.linear.app/{workspace}/mcp',
+        headers: { Authorization: 'Bearer {token}', 'X-Env': 'prod' },
+        rules: 'Use {token} only for the {workspace} workspace.',
+      },
+      {
+        // stdio with args + env placeholders
+        name: 'github',
+        type: 'stdio',
+        command: 'github-mcp',
+        args: ['--token', '{gh_token}', '--repo', '{repo}'],
+        env: { GH_HOST: 'github.com', GH_TOKEN: '{gh_token}' },
+      },
+      {
+        // no placeholders at all (params must be empty)
+        name: 'plain',
+        type: 'sse',
+        url: 'https://example.com/sse',
+      },
+    ];
+
+    it('scanMcpParams matches core parseParams for every fixture', () => {
+      for (const def of fixtures) {
+        expect(scanMcpParams(def)).toEqual(parseParams(def));
+      }
+    });
+
+    it('hashMcpDefInRenderer matches core hashMcpDef for every fixture', async () => {
+      for (const def of fixtures) {
+        expect(await hashMcpDefInRenderer(def)).toBe(hashMcpDef(def));
+      }
+    });
+
+    it('normalizeMcpRemote matches core normalizeRemote, incl. scp + https forms', () => {
+      const remotes = [
+        'git@github.com:acme/x.git',
+        'https://github.com/Acme/X.git',
+        'ssh://git@example.com:2222/org/repo/',
+        'https://user:pass@host.example.com/a/b',
+      ];
+      for (const remote of remotes) {
+        expect(normalizeMcpRemote(remote)).toBe(normalizeRemote(remote));
+      }
     });
   });
 });
