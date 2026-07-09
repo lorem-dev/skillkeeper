@@ -81,6 +81,10 @@ export { toSnakeCase, allocateInstanceName } from './mcpNaming.js';
 export { writerFor, supportsTransport, mcpDestination } from './mcpWriters/index.js';
 export type { McpConfigWriter, McpDestination, McpDestinationTarget } from './mcpWriters/index.js';
 
+// MCP install / remove composition.
+export { installMcpInstance, removeMcpInstance } from './mcpInstall.js';
+export type { McpIdentity, InstallMcpArgs, RemoveMcpArgs } from './mcpInstall.js';
+
 // Remote URL parsing.
 export { parseRemote } from './repoRemote.js';
 export type { ParsedRemote } from './repoRemote.js';
