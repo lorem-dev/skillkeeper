@@ -11,6 +11,7 @@ export type {
   SkillKeeperConfig,
   Repository,
   Project,
+  McpPreset,
   NotificationEntry,
   NotificationLevel,
   NotificationMessage,

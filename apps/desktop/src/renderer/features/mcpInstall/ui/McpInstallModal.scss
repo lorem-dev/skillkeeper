@@ -1,0 +1,57 @@
+// MCP install modal.
+.sk-mcp-install {
+  max-width: 480px;
+}
+
+.sk-mcp-install__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+}
+
+.sk-mcp-install__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+}
+
+// The project select never needs the full modal width -- bounded so it
+// doesn't stretch past what a project name needs (mirrors the transport
+// select in McpEditModal).
+.sk-mcp-install__field--bounded {
+  max-width: 280px;
+}
+
+.sk-mcp-install__label {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-mcp-install__param-label {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+  font-family: monospace;
+}
+
+.sk-mcp-install__agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sk-space-4);
+}
+
+.sk-mcp-install__agent {
+  display: inline-flex;
+}
+
+.sk-mcp-install__params {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-3);
+}
+
+.sk-mcp-install__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+}
