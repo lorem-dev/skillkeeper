@@ -161,7 +161,7 @@ hook-owned. Removed by path on uninstall, like any other managed file.
 | codex    | `<project>/.codex/skills/`              | `~/.codex/skills/`                  | json-merge -> `.codex/settings.json`                                              | `AGENTS.md` at the base |
 | copilot  | `<project>/.github/copilot/skills/`     | `~/.config/github-copilot/skills/`  | json-merge -> `.github/copilot/hooks.json` (project) / `~/.config/github-copilot/hooks.json` (global) | `.github/copilot-instructions.md` at the base |
 | cursor   | `<project>/.cursor/skills/`             | `~/.cursor/skills/`                 | json-merge -> `.cursor/settings.json`                                             | `.cursorrules` at the base, or `.cursor/rules/skillkeeper.mdc` if no legacy file exists |
-| opencode | `<project>/.opencode/skills/`           | `~/.config/opencode/skills/`        | delimited-text (`#`) -> `opencode.json`                                          | `AGENTS.md` at the base |
+| opencode | `<project>/.opencode/skills/`           | `~/.config/opencode/skills/`        | delimited-text (`#`) -> `<project>/.opencode/opencode.json` (project) / `~/.config/opencode/opencode.json` (global) | `AGENTS.md` at the base |
 
 "Base" is the project directory for project scope, or the user's home
 directory for global scope. Claude is the reference adapter (its path and

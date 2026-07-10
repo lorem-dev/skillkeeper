@@ -59,9 +59,11 @@ repository's clone and sync run inside the app's own embedded terminal
 session rather than silently in the background - so if the ssh-agent needs a
 passphrase, the prompt surfaces there, and the app can open the terminal
 automatically when input is needed. A "run ssh-add" action is available from
-the same terminal to load a key into the agent. Read-only update checks
-(fetch + comparison) always run through a separate, silent Git invocation
-that never needs interactive input.
+the same terminal to load a key into the agent. Update checks are partly
+interactive: the background "check for updates" runs its **fetch** through
+the same terminal-backed Git as a pull (visible, ssh-capable, and it can
+prompt for an SSH passphrase); only the two `rev-parse` comparisons that
+follow the fetch run through the silent Git invocation.
 
 Example SSH URL:
 
