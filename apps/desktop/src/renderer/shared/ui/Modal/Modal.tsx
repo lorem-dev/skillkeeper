@@ -8,8 +8,9 @@
  * than the viewport is not clipped or capped, it simply flows to its full
  * content height and the whole block scrolls within the scrim (see
  * Modal.scss for the centering technique). Whichever edge still has hidden
- * content gets a soft mask fade, computed from the scrim's own scroll
- * position in the effect below.
+ * content gets a dark gradient scrim bar (the leaving content darkens into
+ * the dark surroundings), sized from the scrim's own scroll position in the
+ * effect below.
  */
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
@@ -26,26 +27,26 @@ export interface ModalProps {
   readonly className?: string;
 }
 
-// Width of the top/bottom edge-fade band. A fixed pixel size reads
+// Height of the top/bottom dark scrim band. A fixed pixel size reads
 // consistently regardless of how tall the dialog gets.
-const EDGE_FADE_PX = 48;
+const EDGE_SCRIM_PX = 48;
 // Sub-pixel scroll positions are common (fractional zoom, high-DPI); treat
 // anything under this as "at the edge" rather than "still scrollable".
 const EDGE_EPSILON_PX = 1;
 
 /**
- * Reads the scrim's scroll position and toggles its edge-fade custom
- * properties so the fade appears only on the edge that has hidden content:
- * no top fade at the very top, no bottom fade at the very bottom, and no
- * fade at all when the dialog fits without scrolling.
+ * Reads the scrim's scroll position and sizes its edge-scrim custom
+ * properties so a dark bar appears only on the edge that has hidden content:
+ * none at the very top, none at the very bottom, and none at all when the
+ * dialog fits without scrolling.
  */
-function updateEdgeFade(scrim: HTMLDivElement): void {
+function updateEdgeScrim(scrim: HTMLDivElement): void {
   const { scrollTop, scrollHeight, clientHeight } = scrim;
   const overflows = scrollHeight - clientHeight > EDGE_EPSILON_PX;
   const hasHiddenTop = overflows && scrollTop > EDGE_EPSILON_PX;
   const hasHiddenBottom = overflows && scrollTop < scrollHeight - clientHeight - EDGE_EPSILON_PX;
-  scrim.style.setProperty('--sk-modal-fade-top', hasHiddenTop ? `${EDGE_FADE_PX}px` : '0px');
-  scrim.style.setProperty('--sk-modal-fade-bottom', hasHiddenBottom ? `${EDGE_FADE_PX}px` : '0px');
+  scrim.style.setProperty('--sk-modal-scrim-top', hasHiddenTop ? `${EDGE_SCRIM_PX}px` : '0px');
+  scrim.style.setProperty('--sk-modal-scrim-bottom', hasHiddenBottom ? `${EDGE_SCRIM_PX}px` : '0px');
 }
 
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
@@ -61,7 +62,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // Recompute the edge fade on scroll, on viewport resize, and whenever the
+  // Recompute the edge scrim on scroll, on viewport resize, and whenever the
   // dialog's own size changes (a field growing, a validation message
   // appearing) -- all of which can change whether content is hidden above or
   // below the visible band.
@@ -70,7 +71,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
     const scrim = scrimRef.current;
     if (scrim === null) return undefined;
 
-    const recompute = (): void => updateEdgeFade(scrim);
+    const recompute = (): void => updateEdgeScrim(scrim);
     recompute();
 
     scrim.addEventListener('scroll', recompute, { passive: true });

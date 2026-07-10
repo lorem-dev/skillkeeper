@@ -4,6 +4,16 @@
 // animation never flickers.
 
 .sk-modal__scrim {
+  // The dimmed-backdrop color, factored into a custom property so the edge
+  // scrim bars below darken toward the exact same dark as the surroundings
+  // (no second hardcoded literal). No design token exists for this color.
+  --sk-modal-scrim-color: rgba(0, 0, 0, 0.4);
+  // Heights of the top/bottom edge scrim bars. `Modal.tsx` sets these from
+  // the scrim's own scroll position, so a bar only has height on the edge
+  // that actually has hidden content; both default to 0 (no bar).
+  --sk-modal-scrim-top: 0px;
+  --sk-modal-scrim-bottom: 0px;
+
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -19,32 +29,43 @@
   // behind the fixed overlay.
   overscroll-behavior: contain;
   padding: var(--sk-space-7);
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--sk-modal-scrim-color);
   // A subtle blur on the dimmed backdrop. Declared statically (not applied after
   // mount) and the scrim only fades opacity, so it does not flicker on open.
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
+}
 
-  // Edge fade for a dialog taller than the viewport. `Modal.tsx` sets these
-  // from the scrim's own scroll position, so the fade only shows on the edge
-  // that actually has hidden content; both default to 0, which collapses
-  // the gradient stops into a no-op (fully opaque) mask.
-  --sk-modal-fade-top: 0px;
-  --sk-modal-fade-bottom: 0px;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    black var(--sk-modal-fade-top),
-    black calc(100% - var(--sk-modal-fade-bottom)),
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    black var(--sk-modal-fade-top),
-    black calc(100% - var(--sk-modal-fade-bottom)),
-    transparent 100%
-  );
+// Dark gradient scrim over the top/bottom edge of the scroll viewport, for a
+// dialog taller than the viewport. NOT a mask and NOT opacity -- both of
+// those fade the content itself to transparent (washed-out, dimmed content).
+// These are real dark overlays layered ON TOP of the content: the part of
+// the modal leaving the viewport keeps full opacity and instead darkens into
+// the dark surroundings, going from the backdrop color hard against the
+// cut-off edge to transparent toward the center. Fixed to the scrim's edges
+// (pointer-events: none so clicks still fall through to close-on-scrim), and
+// out of the flex flow so they never affect the dialog's centering. Height 0
+// means no bar, so each edge only darkens when there is more to scroll.
+.sk-modal__scrim::before,
+.sk-modal__scrim::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sk-modal__scrim::before {
+  top: 0;
+  height: var(--sk-modal-scrim-top);
+  background: linear-gradient(to bottom, var(--sk-modal-scrim-color), transparent);
+}
+
+.sk-modal__scrim::after {
+  bottom: 0;
+  height: var(--sk-modal-scrim-bottom);
+  background: linear-gradient(to top, var(--sk-modal-scrim-color), transparent);
 }
 
 .sk-modal {
