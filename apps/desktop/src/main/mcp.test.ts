@@ -296,6 +296,79 @@ describe('applyMcp', () => {
     const ledger = parseSkmcp(await fs.readFile(`${PROJECT_PATH}/.claude/skills/.skmcp.yml`));
     expect(ledger?.servers).toHaveLength(0);
   });
+
+  it('copies stored param values from another agent instance via copyParamsFrom, ignoring blank values', async () => {
+    const fs = createMemFs();
+    const deps = mcpDeps(fs);
+    const identity = { remote: 'r', source: 'github' };
+    await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'claude',
+          install: [{ identity, def: STDIO_DEF, values: { token: 'secret-1' } }],
+          remove: [],
+        },
+      ],
+    });
+
+    const result = await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'cursor',
+          install: [
+            {
+              identity,
+              def: STDIO_DEF,
+              values: {},
+              copyParamsFrom: { agent: 'claude', instanceName: 'github_1' },
+            },
+          ],
+          remove: [],
+        },
+      ],
+    });
+
+    expect(result).toMatchObject({ ok: true, installed: 1 });
+    const params = parseSkmcpParams(
+      await fs.readFile(`${PROJECT_PATH}/.cursor/skills/.skmcp.params.yml`),
+    );
+    expect(params['github_1']).toEqual({ token: 'secret-1' });
+  });
+
+  it('falls back to the explicit values when copyParamsFrom names a source with no stored params', async () => {
+    const fs = createMemFs();
+    const deps = mcpDeps(fs);
+    const identity = { remote: 'r', source: 'github' };
+
+    const result = await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'cursor',
+          install: [
+            {
+              identity,
+              def: STDIO_DEF,
+              values: { token: 'fallback' },
+              copyParamsFrom: { agent: 'claude', instanceName: 'github_1' },
+            },
+          ],
+          remove: [],
+        },
+      ],
+    });
+
+    expect(result).toMatchObject({ ok: true, installed: 1 });
+    const params = parseSkmcpParams(
+      await fs.readFile(`${PROJECT_PATH}/.cursor/skills/.skmcp.params.yml`),
+    );
+    expect(params['github_1']).toEqual({ token: 'fallback' });
+  });
 });
 
 describe('listMcpInstalls', () => {

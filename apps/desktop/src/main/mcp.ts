@@ -216,6 +216,18 @@ export interface McpInstallReq {
   readonly identity: McpIdentity;
   readonly def: McpServerDef;
   readonly values: Record<string, string>;
+  /**
+   * When set, `values` is ignored and the actual values are read from another
+   * agent's already-installed instance of the SAME identity instead (its
+   * `.skmcp.params.yml` entry for `instanceName`). Used by the skills-change
+   * modal (design spec "MCP support" section 8) to add an agent to an
+   * already-installed MCP instance without ever sending stored parameter
+   * values (which may hold secrets) back out to the renderer: the renderer
+   * only ever knows an instance HAS params (`McpInstall.hasParams`), never
+   * their content, so the copy has to happen here, main-process side. Falls
+   * back to `values` if the source cannot be read (e.g. removed concurrently).
+   */
+  readonly copyParamsFrom?: { readonly agent: AgentKind; readonly instanceName: string };
 }
 
 /** Install/remove work for one agent within an {@link applyMcp} call. */
@@ -243,6 +255,33 @@ export interface McpSkipped {
 export type ApplyMcpResult =
   | { readonly ok: true; readonly installed: number; readonly removed: number; readonly skipped: McpSkipped[] }
   | { readonly ok: false; readonly error: string };
+
+/**
+ * Resolve the values to render for one install request: `ins.values` as given,
+ * unless `ins.copyParamsFrom` names another agent's already-installed instance
+ * of the same identity, in which case its stored `.skmcp.params.yml` entry is
+ * read and used instead (falling back to `ins.values` if that agent's params
+ * file or entry cannot be found, e.g. removed concurrently).
+ */
+async function resolveInstallValues(
+  deps: McpDeps,
+  args: ApplyMcpArgs,
+  ins: McpInstallReq,
+): Promise<Record<string, string>> {
+  if (ins.copyParamsFrom === undefined) return ins.values;
+  try {
+    const sourceTarget = await resolveMcpTarget(deps, ins.copyParamsFrom.agent, {
+      projectPath: args.projectPath,
+      projectId: args.projectId,
+    });
+    if (!(await deps.fs.exists(sourceTarget.paramsPath))) return ins.values;
+    const sourceParams = parseSkmcpParams(await deps.fs.readFile(sourceTarget.paramsPath));
+    const copied = sourceParams[ins.copyParamsFrom.instanceName];
+    return copied ?? ins.values;
+  } catch {
+    return ins.values;
+  }
+}
 
 /**
  * Apply install/remove batches for a project. Removes run before installs (so a
@@ -282,6 +321,7 @@ export async function applyMcp(deps: McpDeps, args: ApplyMcpArgs): Promise<Apply
             skipped.push({ agent: batch.agent, source: ins.identity.source, transport: ins.def.type });
             continue;
           }
+          const values = await resolveInstallValues(deps, args, ins);
           await installMcpInstance(deps.fs, {
             agent: batch.agent,
             nativePath: target.nativePath,
@@ -290,7 +330,7 @@ export async function applyMcp(deps: McpDeps, args: ApplyMcpArgs): Promise<Apply
             guidanceFiles: target.guidanceFiles,
             identity: ins.identity,
             def: ins.def,
-            values: ins.values,
+            values,
             ...(isCodex ? {} : { gitignoreProjectPath: args.projectPath }),
           });
           installed += 1;

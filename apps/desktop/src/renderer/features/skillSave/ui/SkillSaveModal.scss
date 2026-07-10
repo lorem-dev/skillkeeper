@@ -48,3 +48,41 @@
   justify-content: flex-end;
   gap: var(--sk-space-3);
 }
+
+.sk-save-modal__mcplabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+}
+
+.sk-save-modal__mcpprompt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-3);
+  padding: var(--sk-space-3);
+  border: 1px solid var(--sk-color-border);
+  border-radius: var(--sk-radius-2);
+}
+
+.sk-save-modal__mcpprompt-title {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-save-modal__mcpprompt-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sk-space-3);
+}
+
+.sk-save-modal__mcpprompt-label {
+  font-weight: 600;
+}
+
+.sk-save-modal__mcpprompt-field {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  min-width: 0;
+}
