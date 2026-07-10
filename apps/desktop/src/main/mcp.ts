@@ -26,6 +26,7 @@ import {
   removeMcpInstance,
   supportsTransport,
   mcpDestination,
+  missingParams,
   parseSkmcp,
   parseSkmcpParams,
   serializeSkmcp,
@@ -585,11 +586,69 @@ export type UpdateMcpResult =
   | { readonly ok: false; readonly error: string };
 
 /**
+ * Read an instance's stored param values from its own `.skmcp.params.yml`
+ * entry (empty when the file or the entry is absent). Used by both
+ * {@link updateMcp} and {@link mcpUpdatePreflight} so an update never needs the
+ * renderer to resend values it already has stored -- only newly-required ones.
+ */
+async function readStoredParams(
+  deps: McpDeps,
+  target: McpTarget,
+  instanceName: string,
+): Promise<Record<string, string> | undefined> {
+  if (!(await deps.fs.exists(target.paramsPath))) return undefined;
+  const params = parseSkmcpParams(await deps.fs.readFile(target.paramsPath));
+  return params[instanceName];
+}
+
+/** Arguments for {@link mcpUpdatePreflight}. */
+export interface McpUpdatePreflightArgs {
+  readonly projectId: string;
+  readonly projectPath: string;
+  readonly agent: AgentKind;
+  /** The existing instance name to check stored params against. */
+  readonly instanceName: string;
+  /** The NEW/current source def (placeholders intact) to check params for. */
+  readonly def: McpServerDef;
+}
+
+/** Result of {@link mcpUpdatePreflight}. Never thrown across the IPC boundary. */
+export type McpUpdatePreflightResult =
+  | { readonly ok: true; readonly missingParams: string[] }
+  | { readonly ok: false; readonly error: string };
+
+/**
+ * Ahead of an update, compute which of the new def's `{param}` placeholders
+ * are absent from the instance's OWN stored `.skmcp.params.yml` entry -- the
+ * only params the renderer needs to prompt for. The renderer never receives
+ * the stored values themselves, only these missing names (see `McpInstall`'s
+ * `hasParams` for the same non-disclosure rule on the install/list side).
+ */
+export async function mcpUpdatePreflight(
+  deps: McpDeps,
+  args: McpUpdatePreflightArgs,
+): Promise<McpUpdatePreflightResult> {
+  try {
+    const target = await resolveMcpTarget(deps, args.agent, {
+      projectPath: args.projectPath,
+      projectId: args.projectId,
+    });
+    const stored = await readStoredParams(deps, target, args.instanceName);
+    return { ok: true, missingParams: missingParams(args.def, stored) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
  * Update installed MCP instances in place: for each, remove the old instance
- * and reinstall under the SAME instance name with the NEW def + merged param
- * values. The reinstall refreshes the ledger hash to the new def's hash
- * automatically. Callers collect any newly-required params first; updateMcp
- * does not prompt.
+ * and reinstall under the SAME instance name with the NEW def. Param values
+ * are resolved server-side: the instance's OWN stored `.skmcp.params.yml`
+ * values are read first, then any renderer-supplied `values` are merged on
+ * top -- the renderer only ever supplies newly-required params it just
+ * collected via {@link mcpUpdatePreflight} (or nothing when there were none),
+ * never the instance's existing values. The reinstall refreshes the ledger
+ * hash to the new def's hash automatically.
  */
 export async function updateMcp(deps: McpDeps, args: UpdateMcpArgs): Promise<UpdateMcpResult> {
   return withStateLock(async () => {
@@ -601,6 +660,8 @@ export async function updateMcp(deps: McpDeps, args: UpdateMcpArgs): Promise<Upd
           projectPath: u.projectPath,
           projectId: u.projectId,
         });
+        const stored = await readStoredParams(deps, target, u.instanceName);
+        const values = { ...stored, ...u.values };
         await removeMcpInstance(deps.fs, {
           agent: u.agent,
           nativePath: target.nativePath,
@@ -617,7 +678,7 @@ export async function updateMcp(deps: McpDeps, args: UpdateMcpArgs): Promise<Upd
           guidanceFiles: target.guidanceFiles,
           identity: u.identity,
           def: u.def,
-          values: u.values,
+          values,
           instanceName: u.instanceName,
           ...(isCodex ? {} : { gitignoreProjectPath: u.projectPath }),
         });

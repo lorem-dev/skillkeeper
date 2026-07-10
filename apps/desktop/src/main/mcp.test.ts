@@ -9,7 +9,15 @@ import {
   parseSkmcpParams,
 } from '@skillkeeper/core';
 import type { FsPort, McpServerDef, Project, Repository } from '@skillkeeper/core';
-import { listAvailableMcp, applyMcp, listMcpInstalls, resolveMcpTarget, reconcileMcp, updateMcp } from './mcp.js';
+import {
+  listAvailableMcp,
+  applyMcp,
+  listMcpInstalls,
+  resolveMcpTarget,
+  reconcileMcp,
+  updateMcp,
+  mcpUpdatePreflight,
+} from './mcp.js';
 import type { McpDeps } from './mcp.js';
 import { createAdapterRegistry } from './skills.js';
 import type { RepoDeps } from './repositories.js';
@@ -572,5 +580,145 @@ describe('updateMcp', () => {
 
     const native = await fs.readFile(`${PROJECT_PATH}/.mcp.json`);
     expect(native).toContain('--updated');
+  });
+
+  it('self-resolves the instance\'s own stored param values and merges renderer-supplied values on top', async () => {
+    const fs = createMemFs();
+    const deps = mcpDeps(fs);
+    const PARAM_DEF: McpServerDef = {
+      name: 'github',
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', 'gh-mcp', '--token', '{token}'],
+    };
+    await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'claude',
+          install: [
+            { identity: { remote: 'r', source: 'github' }, def: PARAM_DEF, values: { token: 'secret-1' } },
+          ],
+          remove: [],
+        },
+      ],
+    });
+
+    // The new def adds a SECOND param; the caller (renderer) only supplies the
+    // newly-required one -- `token` is never sent back, yet the reinstall must
+    // still render it correctly from the instance's own stored params.
+    const NEW_DEF: McpServerDef = {
+      ...PARAM_DEF,
+      args: ['-y', 'gh-mcp', '--token', '{token}', '--org', '{org}'],
+    };
+    const res = await updateMcp(deps, {
+      updates: [
+        {
+          projectId: PROJECT_ID,
+          projectPath: PROJECT_PATH,
+          agent: 'claude',
+          instanceName: 'github_1',
+          identity: { remote: 'r', source: 'github' },
+          def: NEW_DEF,
+          values: { org: 'acme' },
+        },
+      ],
+    });
+    expect(res).toEqual({ ok: true, updated: 1 });
+
+    const native = await fs.readFile(`${PROJECT_PATH}/.mcp.json`);
+    expect(native).toContain('secret-1');
+    expect(native).toContain('acme');
+
+    const params = parseSkmcpParams(
+      await fs.readFile(`${PROJECT_PATH}/.claude/skills/.skmcp.params.yml`),
+    );
+    expect(params['github_1']).toEqual({ token: 'secret-1', org: 'acme' });
+  });
+});
+
+describe('mcpUpdatePreflight', () => {
+  it('reports no missing params when the new def needs nothing beyond what is stored', async () => {
+    const fs = createMemFs();
+    const deps = mcpDeps(fs);
+    const PARAM_DEF: McpServerDef = { ...STDIO_DEF, args: ['-y', 'gh-mcp', '{token}'] };
+    await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'claude',
+          install: [
+            { identity: { remote: 'r', source: 'github' }, def: PARAM_DEF, values: { token: 'x' } },
+          ],
+          remove: [],
+        },
+      ],
+    });
+
+    const res = await mcpUpdatePreflight(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      agent: 'claude',
+      instanceName: 'github_1',
+      def: PARAM_DEF,
+    });
+    expect(res).toEqual({ ok: true, missingParams: [] });
+  });
+
+  it('reports a new param introduced by the updated def that is absent from stored values', async () => {
+    const fs = createMemFs();
+    const deps = mcpDeps(fs);
+    const PARAM_DEF: McpServerDef = { ...STDIO_DEF, args: ['-y', 'gh-mcp', '{token}'] };
+    await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'claude',
+          install: [
+            { identity: { remote: 'r', source: 'github' }, def: PARAM_DEF, values: { token: 'x' } },
+          ],
+          remove: [],
+        },
+      ],
+    });
+
+    const NEW_DEF: McpServerDef = { ...PARAM_DEF, args: [...PARAM_DEF.args!, '{org}'] };
+    const res = await mcpUpdatePreflight(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      agent: 'claude',
+      instanceName: 'github_1',
+      def: NEW_DEF,
+    });
+    expect(res).toEqual({ ok: true, missingParams: ['org'] });
+  });
+
+  it('treats every param as missing when the instance has no stored params at all', async () => {
+    const fs = createMemFs();
+    const deps = mcpDeps(fs);
+    await applyMcp(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      batches: [
+        {
+          agent: 'claude',
+          install: [{ identity: { remote: 'r', source: 'github' }, def: STDIO_DEF, values: {} }],
+          remove: [],
+        },
+      ],
+    });
+
+    const NEW_DEF: McpServerDef = { ...STDIO_DEF, args: ['-y', 'gh-mcp', '{token}'] };
+    const res = await mcpUpdatePreflight(deps, {
+      projectId: PROJECT_ID,
+      projectPath: PROJECT_PATH,
+      agent: 'claude',
+      instanceName: 'github_1',
+      def: NEW_DEF,
+    });
+    expect(res).toEqual({ ok: true, missingParams: ['token'] });
   });
 });

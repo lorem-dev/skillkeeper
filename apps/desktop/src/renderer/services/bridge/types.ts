@@ -33,5 +33,7 @@ export type {
   McpUpdateReq,
   UpdateMcpArgs,
   UpdateMcpResult,
+  McpUpdatePreflightArgs,
+  McpUpdatePreflightResult,
 } from '../../../main/mcp.js';
 export type { McpServerDef, McpTransport, McpIdentity, McpPresetOrigin } from '@skillkeeper/core';

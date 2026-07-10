@@ -108,6 +108,16 @@
   align-items: center;
 }
 
+// Groups an installed MCP instance's trailing badges (Update, Remove) with a
+// small gap; each badge is its own `.sk-skills-badgewrap` (already swallows
+// its own click), so this wrapper needs no click handling of its own.
+.sk-skills-badge-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  flex: none;
+}
+
 // A wrapper with the `--hover` modifier appears only while its row is hovered;
 // wrappers without it (status: unlinked / local) are always visible. Higher
 // specificity than `.sk-skills-badgewrap` so it wins regardless of order.

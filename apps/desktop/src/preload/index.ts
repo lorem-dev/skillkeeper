@@ -21,6 +21,8 @@ import type {
   McpInstall,
   UpdateMcpArgs,
   UpdateMcpResult,
+  McpUpdatePreflightArgs,
+  McpUpdatePreflightResult,
 } from '../main/mcp.js';
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,8 @@ export interface SkillkeeperBridge {
   reconcileMcp(): Promise<McpInstall[]>;
   /** Update MCP instances in place (remove + reinstall under the same name). */
   updateMcp(args: UpdateMcpArgs): Promise<UpdateMcpResult>;
+  /** Params the new def needs that an instance's own stored params are missing, ahead of an update. */
+  mcpUpdatePreflight(args: McpUpdatePreflightArgs): Promise<McpUpdatePreflightResult>;
   /** Detect which agents were used in a project folder (by markers). */
   detectProjectAgents(path: string): Promise<AgentKind[]>;
   /** Install/remove skills for a project across agents; streams progress. */
@@ -139,6 +143,9 @@ const bridge: SkillkeeperBridge = {
   },
   updateMcp(args: UpdateMcpArgs): Promise<UpdateMcpResult> {
     return ipcRenderer.invoke('mcp:update', args) as Promise<UpdateMcpResult>;
+  },
+  mcpUpdatePreflight(args: McpUpdatePreflightArgs): Promise<McpUpdatePreflightResult> {
+    return ipcRenderer.invoke('mcp:update-preflight', args) as Promise<McpUpdatePreflightResult>;
   },
   detectProjectAgents(path: string): Promise<AgentKind[]> {
     return ipcRenderer.invoke('projects:detectAgents', { path }) as Promise<AgentKind[]>;

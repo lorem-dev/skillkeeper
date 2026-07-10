@@ -39,8 +39,15 @@ import {
   createAdapterRegistry,
 } from './skills.js';
 import type { SkillsDeps, ApplyArgs } from './skills.js';
-import { listAvailableMcp, applyMcp, listMcpInstalls, reconcileMcp, updateMcp } from './mcp.js';
-import type { ApplyMcpArgs, UpdateMcpArgs } from './mcp.js';
+import {
+  listAvailableMcp,
+  applyMcp,
+  listMcpInstalls,
+  reconcileMcp,
+  updateMcp,
+  mcpUpdatePreflight,
+} from './mcp.js';
+import type { ApplyMcpArgs, UpdateMcpArgs, McpUpdatePreflightArgs } from './mcp.js';
 
 // ESM main process: `__dirname` is not a global, so derive the module directory
 // from `import.meta.dirname` (Node 20.11+). Using a distinct name avoids any
@@ -387,6 +394,11 @@ function registerHandlers(): void {
   ipcMain.handle('mcp:reconcile', () => reconcileMcp(skillsDeps));
   // mcp:update -- remove + reinstall instances under the same name with a new def.
   ipcMain.handle('mcp:update', (_e, args: UpdateMcpArgs) => updateMcp(skillsDeps, args));
+  // mcp:update-preflight -- which params the new def needs that the instance's
+  // own stored params are missing, ahead of an update.
+  ipcMain.handle('mcp:update-preflight', (_e, args: McpUpdatePreflightArgs) =>
+    mcpUpdatePreflight(skillsDeps, args),
+  );
 
   const terminal = getTerminal();
   terminal.on('data', (chunk: string) => {

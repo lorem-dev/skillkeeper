@@ -177,9 +177,11 @@ export async function hashMcpDefInRenderer(def: McpServerDef): Promise<string> {
  * Finds the preset a ledger install refers to: manual installs match by their
  * local preset id; repo installs match by (normalized remote, group, source
  * name). Returns undefined when no preset in the current catalog matches
- * (e.g. the repo preset or manual entry was removed).
+ * (e.g. the repo preset or manual entry was removed). Exported so a caller
+ * driving the update flow (e.g. the Skills page's per-instance Update badge)
+ * can read the matched preset's current `def` to build an `McpUpdateReq`.
  */
-function matchMcpPreset(install: McpInstall, presets: readonly McpPreset[]): McpPreset | undefined {
+export function matchMcpPreset(install: McpInstall, presets: readonly McpPreset[]): McpPreset | undefined {
   const { identity } = install;
   if (identity.local !== undefined) {
     return presets.find((p) => p.origin === 'manual' && p.id === identity.local);
