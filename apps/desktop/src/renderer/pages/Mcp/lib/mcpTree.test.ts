@@ -359,3 +359,34 @@ describe('buildMcpProjectTree', () => {
     }
   });
 });
+
+// Branch (container) nodes must be selectable:false so a row click toggles
+// expansion (TreeView only expands non-selectable branches on row click; a
+// selectable branch would fire onSelect instead and never open its children).
+describe('branch nodes are not selectable', () => {
+  const grouped = preset({
+    id: 'p1',
+    name: 'linear',
+    origin: 'repo',
+    repoId: 'r1',
+    group: 'devtools',
+  });
+
+  it('repo mode: repo root and group nodes expand on click', () => {
+    const { nodes } = buildMcpRepoTree([grouped], [repo({ id: 'r1', name: 'Repo One' })]);
+    expect(findNode(nodes, mcpRepoRootId('r1'))?.selectable).toBe(false);
+    expect(findNode(nodes, mcpRepoGroupId('r1', 'devtools'))?.selectable).toBe(false);
+  });
+
+  it('project mode: project, repo, and group nodes expand on click', () => {
+    const { nodes } = buildMcpProjectTree(
+      [grouped],
+      [],
+      [project({ id: 'pr1', name: 'Proj' })],
+      [repo({ id: 'r1', name: 'Repo One' })],
+    );
+    expect(findNode(nodes, mcpProjectRootId('pr1'))?.selectable).toBe(false);
+    expect(findNode(nodes, mcpProjectRepoNodeId('pr1', 'r1'))?.selectable).toBe(false);
+    expect(findNode(nodes, mcpProjectGroupNodeId('pr1', 'r1', 'devtools'))?.selectable).toBe(false);
+  });
+});

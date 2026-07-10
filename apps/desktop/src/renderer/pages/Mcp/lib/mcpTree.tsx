@@ -56,10 +56,9 @@ import type { McpInstall, Repository, Project } from '@/services/bridge';
 const SEP = '::';
 
 const mcpIcon = <Icon name="mcp" size={18} />;
-// Installable PRESET leaves (manual or repo-origin) show the mcp glyph in the
-// accent color; already-installed and unlinked instances use the default
-// (gray) glyph.
-const mcpIconPreset = <Icon name="mcp" size={18} className="sk-mcp-icon--preset" />;
+// Already-INSTALLED instances show the mcp glyph in the accent color; presets
+// (manual or repo-origin) and unlinked instances use the default (gray) glyph.
+const mcpIconInstalled = <Icon name="mcp" size={18} className="sk-mcp-icon--installed" />;
 const repoIcon = <Icon name="repositories" size={18} />;
 const groupIcon = <Icon name="skill-group" size={18} />;
 const projectIcon = <Icon name="projects" size={18} />;
@@ -219,7 +218,7 @@ export function buildMcpRepoTree(presets: readonly McpPreset[], repos: readonly 
     .map((p) => {
       const id = mcpManualLeafId(p.id);
       items.set(id, { kind: 'manual-preset', preset: p });
-      return { id, label: p.name, icon: mcpIconPreset };
+      return { id, label: p.name, icon: mcpIcon };
     });
 
   const byRepo = new Map<string, RepoPreset[]>();
@@ -248,7 +247,7 @@ export function buildMcpRepoTree(presets: readonly McpPreset[], repos: readonly 
     const makeLeaf = (p: RepoPreset): TreeNode => {
       const id = mcpRepoPresetLeafId(p.id);
       items.set(id, { kind: 'repo-preset', preset: p });
-      return { id, label: p.name, icon: mcpIconPreset };
+      return { id, label: p.name, icon: mcpIcon };
     };
 
     const children: TreeNode[] = [];
@@ -257,6 +256,7 @@ export function buildMcpRepoTree(presets: readonly McpPreset[], repos: readonly 
         id: mcpRepoGroupId(repo.id, group),
         label: group,
         icon: groupIcon,
+        selectable: false,
         children: [...gs].sort(byName).map(makeLeaf),
       });
     }
@@ -300,7 +300,7 @@ export function buildMcpProjectTree(
     .map((p) => {
       const id = mcpManualLeafId(p.id);
       items.set(id, { kind: 'manual-preset', preset: p });
-      return { id, label: p.name, icon: mcpIconPreset };
+      return { id, label: p.name, icon: mcpIcon };
     });
 
   const byRepo = new Map<string, RepoPreset[]>();
@@ -321,7 +321,7 @@ export function buildMcpProjectTree(
     const rowsFor = (p: RepoPreset): TreeNode[] => {
       const presetLeafId = mcpProjectPresetLeafId(project.id, p.id);
       items.set(presetLeafId, { kind: 'repo-preset', preset: p });
-      const presetLeaf: TreeNode = { id: presetLeafId, label: p.name, icon: mcpIconPreset };
+      const presetLeaf: TreeNode = { id: presetLeafId, label: p.name, icon: mcpIcon };
 
       const matches = projectInstalls.filter((inst) => identityMatchesRepoPreset(inst.identity, p));
       const byInstance = new Map<string, McpInstall[]>();
@@ -341,7 +341,7 @@ export function buildMcpProjectTree(
         const id = mcpInstalledLeafId(project.id, key);
         const updatable = mcpInstallHasUpdate(first, presets);
         items.set(id, { kind: 'installed', installs: group, updatable });
-        return { id, label: instanceDisplayName(first.identity.source, first.instanceName), icon: mcpIcon };
+        return { id, label: instanceDisplayName(first.identity.source, first.instanceName), icon: mcpIconInstalled };
       });
 
       return [presetLeaf, ...instanceLeaves];
@@ -368,6 +368,7 @@ export function buildMcpProjectTree(
           id: mcpProjectGroupNodeId(project.id, repo.id, group),
           label: group,
           icon: groupIcon,
+          selectable: false,
           children: [...gs].sort(byName).flatMap(rowsFor),
         });
       }
@@ -375,7 +376,7 @@ export function buildMcpProjectTree(
         children.push(...rowsFor(p));
       }
 
-      repoChildren.push({ id: mcpProjectRepoNodeId(project.id, repo.id), label: repo.name, icon: repoIcon, children });
+      repoChildren.push({ id: mcpProjectRepoNodeId(project.id, repo.id), label: repo.name, icon: repoIcon, selectable: false, children });
     }
 
     // Installed instances of a manual preset (identity.local === preset id):
@@ -402,7 +403,7 @@ export function buildMcpProjectTree(
         const id = mcpInstalledLeafId(project.id, key);
         const updatable = mcpInstallHasUpdate(first, presets);
         items.set(id, { kind: 'installed', installs: group, updatable });
-        return { id, label: instanceDisplayName(first.identity.source, first.instanceName), icon: mcpIcon };
+        return { id, label: instanceDisplayName(first.identity.source, first.instanceName), icon: mcpIconInstalled };
       });
 
     // Unlinked: installs matching no current preset, bucketed by source/remote.
@@ -440,6 +441,7 @@ export function buildMcpProjectTree(
         label: g.label,
         icon: repoIcon,
         muted: true,
+        selectable: false,
         children: [...g.rows].sort((a, b) => a.sortLabel.localeCompare(b.sortLabel)).map((r) => r.leaf),
       }));
 

@@ -27,11 +27,11 @@
   margin-top: var(--sk-space-4);
 }
 
-// Installable PRESET leaves (manual or repo-origin) render their glyph in the
-// accent color (blue) to distinguish them from already-installed instances
-// and unlinked leaves (default gray glyph). Owned here (not SkillsPage.scss)
-// now that MCP has its own page -- see `pages/Mcp/lib/mcpTree.tsx`.
-.sk-mcp-icon--preset {
+// Already-INSTALLED instance leaves render their glyph in the accent color
+// (blue) to distinguish them from presets (manual or repo-origin) and unlinked
+// leaves (default gray glyph). Owned here (not SkillsPage.scss) now that MCP
+// has its own page -- see `pages/Mcp/lib/mcpTree.tsx`.
+.sk-mcp-icon--installed {
   color: var(--sk-color-accent);
 }
 
