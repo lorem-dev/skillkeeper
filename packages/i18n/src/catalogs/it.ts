@@ -268,6 +268,10 @@ export const it: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} non puo esprimere il trasporto {transport} nella sua configurazione nativa.',
   'mcp.skippedAgents': '{count} agente/i saltato/i: il trasporto del preset non e supportato.',
   'mcp.needsParamsNotice': 'Queste installazioni MCP necessitano di parametri prima di poter essere aggiunte:',
+  'mcp.delete': 'Elimina',
+  'mcp.deleteConfirmTitle': 'Eliminare {name}?',
+  'mcp.deleteConfirmBody': 'Questa azione non puo essere annullata.',
+  'mcp.detailsTitle': 'Dettagli del server MCP',
 
   'settings.comingSoon': 'La schermata delle impostazioni arrivera a breve.',
   'settings.section.general': 'Generale',

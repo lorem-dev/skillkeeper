@@ -235,6 +235,10 @@ export const ja: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} はネイティブ設定で {transport} トランスポートを表現できません。',
   'mcp.skippedAgents': '{count} 件のエージェントがスキップされました: プリセットのトランスポートがサポートされていません。',
   'mcp.needsParamsNotice': '次のMCPインストールを追加する前にパラメーターが必要です:',
+  'mcp.delete': '削除',
+  'mcp.deleteConfirmTitle': '{name} を削除しますか?',
+  'mcp.deleteConfirmBody': 'この操作は元に戻せません。',
+  'mcp.detailsTitle': 'MCPサーバーの詳細',
 
   'settings.comingSoon': '設定画面は近日公開予定です。',
   'settings.section.general': '一般',

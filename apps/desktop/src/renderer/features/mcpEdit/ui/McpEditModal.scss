@@ -89,3 +89,8 @@
   justify-content: flex-end;
   gap: var(--sk-space-3);
 }
+
+// Delete sits apart from the safe Cancel/Save pair, on the far side of the row.
+.sk-mcp-edit__delete {
+  margin-right: auto;
+}

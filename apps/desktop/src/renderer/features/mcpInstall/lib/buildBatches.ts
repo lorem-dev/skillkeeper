@@ -8,7 +8,7 @@
  * ("Ledger files"): repo presets key on `(remote, group, source)`, manual
  * presets key on `(local, source)`.
  */
-import type { AgentKind, McpBatch, McpIdentity } from '@/services/bridge';
+import type { AgentKind, McpBatch, McpIdentity, McpInstall } from '@/services/bridge';
 import type { McpPreset } from '@/app/store';
 
 function identityFor(preset: McpPreset): McpIdentity {
@@ -38,4 +38,15 @@ export function buildInstallBatches(
     install: [{ identity, def: preset.def, values }],
     remove: [],
   }));
+}
+
+/**
+ * Builds one remove batch per installed instance -- each `McpBatch` carries a
+ * single remove request (by `instanceName`) and no installs. Used by the MCP
+ * tree page's Delete action on an installed/unlinked leaf, mirroring the
+ * per-instance remove batch the store's `deleteMcpPreset` builds inline for
+ * its own manual-preset cascade.
+ */
+export function buildRemoveBatches(installs: readonly McpInstall[]): McpBatch[] {
+  return installs.map((inst) => ({ agent: inst.agent, install: [], remove: [{ instanceName: inst.instanceName }] }));
 }

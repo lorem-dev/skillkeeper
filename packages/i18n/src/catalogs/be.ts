@@ -268,6 +268,10 @@ export const be: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} не можа выразіць транспарт {transport} у сваёй роднай канфігурацыі.',
   'mcp.skippedAgents': 'Прапушчана агентаў: {count} — транспарт набору не падтрымліваецца.',
   'mcp.needsParamsNotice': 'Гэтым усталёўкам MCP патрэбны параметры, перш чым іх можна дадаць:',
+  'mcp.delete': 'Выдаліць',
+  'mcp.deleteConfirmTitle': 'Выдаліць {name}?',
+  'mcp.deleteConfirmBody': 'Гэта дзеянне незваротнае.',
+  'mcp.detailsTitle': 'Звесткі пра сервер MCP',
 
   'settings.comingSoon': 'Экран налад хутка з’явіцца.',
   'settings.section.general': 'Агульныя',

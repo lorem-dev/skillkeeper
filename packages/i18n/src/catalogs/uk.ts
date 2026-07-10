@@ -268,6 +268,10 @@ export const uk: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} не може виразити транспорт {transport} у своїй рідній конфігурації.',
   'mcp.skippedAgents': 'Пропущено агентів: {count} — транспорт набору не підтримується.',
   'mcp.needsParamsNotice': 'Для цих встановлень MCP потрібні параметри, перш ніж їх можна додати:',
+  'mcp.delete': 'Видалити',
+  'mcp.deleteConfirmTitle': 'Видалити {name}?',
+  'mcp.deleteConfirmBody': 'Цю дiю не можна скасувати.',
+  'mcp.detailsTitle': 'Відомості про сервер MCP',
 
   'settings.comingSoon': 'Екран налаштувань з’явиться незабаром.',
   'settings.section.general': 'Загальні',

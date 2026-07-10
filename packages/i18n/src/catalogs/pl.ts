@@ -268,6 +268,10 @@ export const pl: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} nie moze wyrazic transportu {transport} w swojej natywnej konfiguracji.',
   'mcp.skippedAgents': 'Pominieto agentow: {count} - transport presetu nie jest wspierany.',
   'mcp.needsParamsNotice': 'Te instalacje MCP wymagaja parametrow, zanim beda mogly zostac dodane:',
+  'mcp.delete': 'Usun',
+  'mcp.deleteConfirmTitle': 'Usunac {name}?',
+  'mcp.deleteConfirmBody': 'Tej operacji nie mozna cofnac.',
+  'mcp.detailsTitle': 'Szczegoly serwera MCP',
 
   'settings.comingSoon': 'Ekran ustawien bedzie dostepny wkrotce.',
   'settings.section.general': 'Ogolne',

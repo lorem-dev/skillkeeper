@@ -27,6 +27,9 @@ export const EditHttpWithParamsAndRules: Story = {
       headers: { Authorization: 'Bearer {github_token}' },
       rules: 'When using the github MCP server, prefer the {workspace} workspace by default.',
     },
+    // Editing an existing preset shows the Delete action; the page owns
+    // confirming it (see the McpPage stories for the full flow).
+    onDelete: () => {},
   },
 };
 

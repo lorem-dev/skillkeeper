@@ -251,6 +251,10 @@ export const de: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} kann den Transport {transport} in seiner nativen Konfiguration nicht abbilden.',
   'mcp.skippedAgents': '{count} Agent(en) wurden übersprungen: Der Transport des Presets wird nicht unterstützt.',
   'mcp.needsParamsNotice': 'Diese MCP-Installationen benötigen Parameter, bevor sie hinzugefügt werden können:',
+  'mcp.delete': 'Löschen',
+  'mcp.deleteConfirmTitle': '{name} löschen?',
+  'mcp.deleteConfirmBody': 'Dies kann nicht rückgängig gemacht werden.',
+  'mcp.detailsTitle': 'MCP-Server-Details',
 
   'settings.comingSoon': 'Einstellungen folgen in Kürze.',
   'settings.section.general': 'Allgemein',

@@ -257,6 +257,10 @@ export const srCyrl: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} не може изразити транспорт {transport} у својој изворној конфигурацији.',
   'mcp.skippedAgents': 'Прескочено је {count} агената: транспорт presetа није подржан.',
   'mcp.needsParamsNotice': 'Ове MCP инсталације захтевају параметре пре него што могу бити додате:',
+  'mcp.delete': 'Обриши',
+  'mcp.deleteConfirmTitle': 'Обрисати {name}?',
+  'mcp.deleteConfirmBody': 'Ова радња се не може опозвати.',
+  'mcp.detailsTitle': 'Детаљи MCP сервера',
 
   'settings.comingSoon': 'Екран подешавања ускоро стиже.',
   'settings.section.general': 'Опште',

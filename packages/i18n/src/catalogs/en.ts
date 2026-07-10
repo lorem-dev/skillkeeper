@@ -290,6 +290,10 @@ export const en = {
   /** Interpolation: {count} = number of skipped agents. */
   'mcp.skippedAgents': "{count} agent(s) were skipped: the preset's transport is not supported.",
   'mcp.needsParamsNotice': 'These MCP installs need parameters before they can be added:',
+  'mcp.delete': 'Delete',
+  'mcp.deleteConfirmTitle': 'Delete {name}?',
+  'mcp.deleteConfirmBody': 'This cannot be undone.',
+  'mcp.detailsTitle': 'MCP server details',
 
   'settings.comingSoon': 'Settings screen coming soon.',
   'settings.section.general': 'General',

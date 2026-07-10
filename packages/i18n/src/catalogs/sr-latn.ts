@@ -257,6 +257,10 @@ export const srLatn: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} ne moze izraziti transport {transport} u svojoj izvornoj konfiguraciji.',
   'mcp.skippedAgents': 'Preskoceno je {count} agenata: transport preseta nije podrzan.',
   'mcp.needsParamsNotice': 'Ove MCP instalacije zahtevaju parametre pre nego sto mogu biti dodate:',
+  'mcp.delete': 'Obriši',
+  'mcp.deleteConfirmTitle': 'Obrisati {name}?',
+  'mcp.deleteConfirmBody': 'Ova radnja se ne moze opozvati.',
+  'mcp.detailsTitle': 'Detalji MCP servera',
 
   'settings.comingSoon': 'Ekran podešavanja uskoro stiže.',
   'settings.section.general': 'Opšte',

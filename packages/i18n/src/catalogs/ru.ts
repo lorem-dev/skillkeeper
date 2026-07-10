@@ -272,6 +272,10 @@ export const ru: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} не может выразить транспорт {transport} в своей нативной конфигурации.',
   'mcp.skippedAgents': 'Пропущено агентов: {count} — транспорт набора не поддерживается.',
   'mcp.needsParamsNotice': 'Этим установкам MCP нужны параметры, прежде чем их можно будет добавить:',
+  'mcp.delete': 'Удалить',
+  'mcp.deleteConfirmTitle': 'Удалить {name}?',
+  'mcp.deleteConfirmBody': 'Это действие нельзя отменить.',
+  'mcp.detailsTitle': 'Сведения о сервере MCP',
 
   'settings.comingSoon': 'Экран настроек скоро появится.',
   'settings.section.general': 'Общие',

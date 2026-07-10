@@ -36,6 +36,14 @@ export interface McpEditModalProps {
   readonly open: boolean;
   /** Omit to create a new preset; pass an existing one to edit it in place. */
   readonly preset?: ManualMcpPreset;
+  /**
+   * Requests deleting the preset being edited; the Delete button only renders
+   * when both this and `preset` are set (nothing to delete when creating).
+   * The caller owns confirmation (e.g. the page's shared delete-confirm
+   * modal) -- this modal closes immediately once the request is made, it
+   * never deletes anything itself.
+   */
+  readonly onDelete?: (preset: ManualMcpPreset) => void;
   readonly onClose: () => void;
 }
 
@@ -187,7 +195,7 @@ function ArgsEditor({
   );
 }
 
-export function McpEditModal({ open, preset, onClose }: McpEditModalProps) {
+export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalProps) {
   const config = useSkillkeeperStore((s) => s.config);
   const updateConfig = useSkillkeeperStore((s) => s.updateConfig);
   const t = useTranslator();
@@ -337,6 +345,18 @@ export function McpEditModal({ open, preset, onClose }: McpEditModalProps) {
         </label>
 
         <div className="sk-mcp-edit__actions">
+          {preset !== undefined && onDelete !== undefined && (
+            <Button
+              variant="destructive"
+              className="sk-mcp-edit__delete"
+              onClick={() => {
+                onDelete(preset);
+                onClose();
+              }}
+            >
+              {t('mcp.delete')}
+            </Button>
+          )}
           <Button variant="secondary" onClick={onClose}>
             {t('mcp.cancel')}
           </Button>

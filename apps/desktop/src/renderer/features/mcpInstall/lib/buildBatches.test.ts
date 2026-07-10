@@ -6,7 +6,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { McpPreset } from '@/app/store';
-import { buildInstallBatches } from './buildBatches';
+import type { McpInstall } from '@/services/bridge';
+import { buildInstallBatches, buildRemoveBatches } from './buildBatches';
 
 const manualPreset: McpPreset = {
   id: 'manual-1',
@@ -95,5 +96,34 @@ describe('buildInstallBatches', () => {
     for (const batch of batches) {
       expect(batch.install[0]?.values).toEqual(values);
     }
+  });
+});
+
+function install(over: Partial<McpInstall> & { instanceName: string; agent: McpInstall['agent'] }): McpInstall {
+  return {
+    projectId: 'p1',
+    hash: 'sha256:x',
+    hasParams: false,
+    identity: { source: 'unknown' },
+    ...over,
+  };
+}
+
+describe('buildRemoveBatches', () => {
+  it('builds one remove-only batch per installed instance', () => {
+    const installs = [
+      install({ agent: 'claude', instanceName: 'github_1' }),
+      install({ agent: 'cursor', instanceName: 'github_1' }),
+    ];
+    const batches = buildRemoveBatches(installs);
+
+    expect(batches).toEqual([
+      { agent: 'claude', install: [], remove: [{ instanceName: 'github_1' }] },
+      { agent: 'cursor', install: [], remove: [{ instanceName: 'github_1' }] },
+    ]);
+  });
+
+  it('returns an empty array for no installs', () => {
+    expect(buildRemoveBatches([])).toEqual([]);
   });
 });

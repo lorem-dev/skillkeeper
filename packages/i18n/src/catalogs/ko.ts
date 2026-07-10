@@ -265,6 +265,10 @@ export const ko: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent}는 기본 설정에서 {transport} 전송 방식을 표현할 수 없습니다.',
   'mcp.skippedAgents': '{count}개의 에이전트가 건너뛰어졌습니다: 프리셋의 전송 방식이 지원되지 않습니다.',
   'mcp.needsParamsNotice': '다음 MCP 설치에는 추가하기 전에 매개변수가 필요합니다:',
+  'mcp.delete': '삭제',
+  'mcp.deleteConfirmTitle': '{name}을 삭제하시겠습니까?',
+  'mcp.deleteConfirmBody': '이 작업은 되돌릴 수 없습니다.',
+  'mcp.detailsTitle': 'MCP 서버 세부정보',
 
   'settings.comingSoon': '설정 화면은 곧 제공됩니다.',
   'settings.section.general': '일반',

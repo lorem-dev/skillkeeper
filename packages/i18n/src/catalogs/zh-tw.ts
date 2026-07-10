@@ -235,6 +235,10 @@ export const zhTw: Partial<Catalog> = {
   'mcp.transportUnsupported': '{agent} 無法在其原生設定中表達 {transport} 傳輸方式。',
   'mcp.skippedAgents': '已略過 {count} 個代理:此預設集的傳輸方式不受支援。',
   'mcp.needsParamsNotice': '以下 MCP 安裝需要參數才能新增:',
+  'mcp.delete': '刪除',
+  'mcp.deleteConfirmTitle': '刪除 {name}?',
+  'mcp.deleteConfirmBody': '此操作無法復原。',
+  'mcp.detailsTitle': 'MCP 伺服器詳情',
 
   'settings.comingSoon': '設定畫面即將推出。',
   'settings.section.general': '一般',
