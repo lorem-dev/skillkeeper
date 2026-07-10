@@ -31,10 +31,10 @@ const NAV_ITEMS: {
   id: View;
   key: 'nav.repositories' | 'nav.skills' | 'nav.projects' | 'nav.mcp' | 'nav.settings';
 }[] = [
-  { id: 'repositories', key: 'nav.repositories' },
   { id: 'projects', key: 'nav.projects' },
-  { id: 'mcp', key: 'nav.mcp' },
+  { id: 'repositories', key: 'nav.repositories' },
   { id: 'skills', key: 'nav.skills' },
+  { id: 'mcp', key: 'nav.mcp' },
   { id: 'settings', key: 'nav.settings' },
 ];
 
