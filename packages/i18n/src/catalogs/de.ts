@@ -201,7 +201,6 @@ export const de: Partial<Catalog> = {
   'mcp.installMcp': 'MCP installieren',
   'mcp.installTitle': '{name} installieren',
   'mcp.remove': 'Entfernen',
-  'mcp.unlinkedGroup': 'Nicht verknüpfte MCP',
   'mcp.update': 'Aktualisieren',
   'mcp.cancel': 'Abbrechen',
   'mcp.save': 'Speichern',

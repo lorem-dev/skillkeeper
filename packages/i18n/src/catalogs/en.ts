@@ -228,7 +228,6 @@ export const en = {
   'mcp.remove': 'Remove',
   /** Label for the synthetic tree node grouping installed MCP instances whose
    *  source preset (repo or manual) no longer matches anything. */
-  'mcp.unlinkedGroup': 'Unlinked MCP',
   'mcp.update': 'Update',
   'mcp.cancel': 'Cancel',
   'mcp.save': 'Save',

@@ -218,7 +218,6 @@ export const ru: Partial<Catalog> = {
   'mcp.installMcp': 'Установить MCP',
   'mcp.installTitle': 'Установить {name}',
   'mcp.remove': 'Удалить',
-  'mcp.unlinkedGroup': 'Отвязанные MCP',
   'mcp.update': 'Обновить',
   'mcp.cancel': 'Отмена',
   'mcp.save': 'Сохранить',
