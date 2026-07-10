@@ -51,13 +51,14 @@ export const ShortContentStaysCentered: Story = {
 };
 
 // Content much taller than the viewport: the dialog cannot fit, so it flows
-// to its full height and the SCRIM (not an inner body scroll) becomes the
-// scroll container -- the whole modal block, title through actions, scrolls
-// as one unit. The off-screen-going edge gets a DARK gradient scrim bar
-// (content keeps full opacity and darkens into the dark surroundings, it is
-// not faded to transparent). Scroll the story canvas to see the top bar
-// appear once scrolled past the start, and the bottom bar disappear once
-// scrolled to the end.
+// to its full height and the whole modal block -- title through actions --
+// scrolls as one unit within the overlay. The off-screen-going edge gets a
+// dark, blurred scrim bar that stays PINNED to the visible edge while the
+// content slides under it: the leaving content keeps full opacity and is
+// darkened AND blurred into the dark surroundings (it is not faded to
+// transparent). Scroll the story canvas to see the top bar appear once
+// scrolled past the start and the bottom bar disappear at the end, while
+// both bars hold their position.
 export const VeryTallContentScrollsWithDarkeningScrim: Story = {
   render: () => {
     const [open, setOpen] = useState(false);
@@ -69,15 +70,15 @@ export const VeryTallContentScrollsWithDarkeningScrim: Story = {
         <Modal open={open} onClose={() => setOpen(false)} title="Very tall content">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <p>
-              This dialog is much taller than the viewport. The scrim scrolls
+              This dialog is much taller than the viewport. The overlay scrolls
               the whole block -- title, body, and actions together -- rather
               than growing off-screen or scrolling only an inner region.
             </p>
             {Array.from({ length: 24 }, (_, i) => (
               <p key={i}>
                 Section {i + 1} of a long form. Keep scrolling to watch the
-                top edge darken into a scrim bar and the bottom bar dim away
-                near the end.
+                pinned top bar darken and blur the content sliding under it,
+                and the bottom bar dim away near the end.
               </p>
             ))}
             <Button variant="primary" onClick={() => setOpen(false)}>

@@ -3,13 +3,17 @@
 // shadow, generous padding). Solid (no backdrop refraction) so the entrance
 // animation never flickers.
 
+// The scrim is the stationary overlay: a dimmed, blurred backdrop that fills
+// the viewport and hosts the pinned edge bars. It does NOT scroll -- the
+// inner `.sk-modal__viewport` does -- so the edge bars anchored to it stay
+// put while the dialog slides underneath.
 .sk-modal__scrim {
   // The dimmed-backdrop color, factored into a custom property so the edge
   // scrim bars below darken toward the exact same dark as the surroundings
   // (no second hardcoded literal). No design token exists for this color.
   --sk-modal-scrim-color: rgba(0, 0, 0, 0.4);
   // Heights of the top/bottom edge scrim bars. `Modal.tsx` sets these from
-  // the scrim's own scroll position, so a bar only has height on the edge
+  // the viewport's scroll position, so a bar only has height on the edge
   // that actually has hidden content; both default to 0 (no bar).
   --sk-modal-scrim-top: 0px;
   --sk-modal-scrim-bottom: 0px;
@@ -17,18 +21,6 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  display: flex;
-  // The scrim is the scroll container: a dialog that fits centers via the
-  // dialog's own `margin: auto` below (a flex item's auto margins absorb
-  // free space in both axes). That is deliberate -- centering here instead,
-  // with `align-items`/`justify-content: center`, clips the top of an
-  // overflowing item in Chromium (no reliable "safe center" support yet),
-  // whereas item-level auto margins fall back to 0 and stay scrollable.
-  overflow-y: auto;
-  // Scrolling to the end of a tall dialog should not chain into the page
-  // behind the fixed overlay.
-  overscroll-behavior: contain;
-  padding: var(--sk-space-7);
   background: var(--sk-modal-scrim-color);
   // A subtle blur on the dimmed backdrop. Declared statically (not applied after
   // mount) and the scrim only fades opacity, so it does not flicker on open.
@@ -36,45 +28,80 @@
   -webkit-backdrop-filter: blur(1px);
 }
 
-// Dark gradient scrim over the top/bottom edge of the scroll viewport, for a
-// dialog taller than the viewport. NOT a mask and NOT opacity -- both of
-// those fade the content itself to transparent (washed-out, dimmed content).
-// These are real dark overlays layered ON TOP of the content: the part of
-// the modal leaving the viewport keeps full opacity and instead darkens into
-// the dark surroundings, going from the backdrop color hard against the
-// cut-off edge to transparent toward the center. Fixed to the scrim's edges
-// (pointer-events: none so clicks still fall through to close-on-scrim), and
-// out of the flex flow so they never affect the dialog's centering. Height 0
-// means no bar, so each edge only darkens when there is more to scroll.
+// The scroll container. Fills the scrim and scrolls the whole dialog block as
+// one unit. A dialog that fits centers via its own `margin: auto` below (a
+// flex item's auto margins absorb free space in both axes). That is
+// deliberate -- centering here with `align-items`/`justify-content: center`
+// clips the top of an overflowing item in Chromium (no reliable "safe center"
+// support yet), whereas item-level auto margins fall back to 0 and stay
+// scrollable. Kept separate from the scrim so the edge bars pin to the
+// scrim's stationary edges while this element's content scrolls beneath them.
+.sk-modal__viewport {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow-y: auto;
+  // Scrolling to the end of a tall dialog should not chain into the page
+  // behind the fixed overlay.
+  overscroll-behavior: contain;
+  padding: var(--sk-space-7);
+}
+
+// Dark, blurred scrim over the top/bottom edge of the scroll viewport, for a
+// dialog taller than the viewport. The modal CONTENT is never masked or made
+// transparent (that would look washed-out); the mask below is applied to the
+// scrim OVERLAY itself so the overlay -- its blur and its dark gradient
+// together -- dissolves smoothly to fully transparent at its inner edge,
+// leaving no hard blur line. These are real overlays anchored to the
+// STATIONARY scrim (position: absolute, not on the scrolling viewport), so
+// they stay pinned to the visible top/bottom edges while the dialog scrolls
+// under them. Each layers ON TOP of the content (higher z-index than the
+// viewport): its backdrop-filter blurs the content passing under it, and its
+// dark gradient -- the backdrop color hard against the cut-off edge, fading
+// toward the center -- darkens that content into the dark surroundings while
+// the content keeps full opacity. pointer-events: none so clicks still fall
+// through to close-on-scrim. Height 0 means no bar, so each edge only shows
+// when there is more to scroll.
 .sk-modal__scrim::before,
 .sk-modal__scrim::after {
   content: '';
-  position: fixed;
+  position: absolute;
   left: 0;
   right: 0;
   z-index: 1;
   pointer-events: none;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
+// The gradient mask fades the whole bar (blur + dark tint) to fully
+// transparent at the inner edge -- toward the content -- so it eases in
+// instead of ending on a hard blur line. Direction mirrors each bar's dark
+// gradient: the top bar tapers downward, the bottom bar upward.
 .sk-modal__scrim::before {
   top: 0;
   height: var(--sk-modal-scrim-top);
   background: linear-gradient(to bottom, var(--sk-modal-scrim-color), transparent);
+  mask-image: linear-gradient(to bottom, black, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent);
 }
 
 .sk-modal__scrim::after {
   bottom: 0;
   height: var(--sk-modal-scrim-bottom);
   background: linear-gradient(to top, var(--sk-modal-scrim-color), transparent);
+  mask-image: linear-gradient(to top, black, transparent);
+  -webkit-mask-image: linear-gradient(to top, black, transparent);
 }
 
 .sk-modal {
   position: relative;
   width: 100%;
   max-width: 440px;
-  // Centers the dialog when it fits within the scrim; when it is taller (or
-  // wider) than the scrim, auto margins resolve to 0 instead of clipping, so
-  // the dialog stays flush at the top and fully reachable by scrolling.
+  // Centers the dialog when it fits within the viewport; when it is taller
+  // (or wider) than the viewport, auto margins resolve to 0 instead of
+  // clipping, so the dialog stays flush at the top and fully reachable by
+  // scrolling.
   margin: auto;
   overflow: hidden;
   border-radius: var(--sk-radius-2xl);
