@@ -13,12 +13,6 @@
   gap: var(--sk-space-5);
 }
 
-// Installable MCP preset leaves render their glyph in the accent color (blue)
-// to distinguish them from already-installed instances (default gray glyph).
-.sk-mcp-icon--preset {
-  color: var(--sk-color-accent);
-}
-
 // Toolbar search (row 1): compact, yields space before the action button.
 .sk-skills-search {
   flex: 0 1 12rem;

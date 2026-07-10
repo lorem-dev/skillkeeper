@@ -1,26 +1,96 @@
-// Responsive grid of McpCards: as many columns as fit at >=340px each, falling
-// back to a single column on narrow widths. Mirrors the card gap used by the
-// repository/project list pages.
-.sk-mcp-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: var(--sk-space-3);
-  align-items: start;
+// Two-row page header: the title + actions row, then a mode-select row, with
+// a spacer between the two rows. Mirrors SkillsPage.scss's own header.
+.sk-mcp-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-6);
 }
 
-// Toolbar search: a compact field that yields space before the action buttons.
-// Mirrors ProjectsPage.scss/RepositoriesPage.scss.
+.sk-mcp-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sk-space-5);
+}
+
+// Toolbar search: a compact field that yields space before the action
+// button. Mirrors ProjectsPage.scss/RepositoriesPage.scss/SkillsPage.scss.
 .sk-list-search {
   flex: 0 1 9rem;
   width: auto;
-  // Without this the flex item's min-content floor (which grows when the clear
-  // button appears) would push the field wider than its 9rem basis as you type.
+  // Without this the flex item's min-content floor (which grows when the
+  // clear button appears) would push the field wider than its 9rem basis.
   min-width: 0;
 }
 
+// Spacer between the (sticky) header and the tree.
+.sk-mcp-tree {
+  margin-top: var(--sk-space-4);
+}
+
+// Installable PRESET leaves (manual or repo-origin) render their glyph in the
+// accent color (blue) to distinguish them from already-installed instances
+// and unlinked leaves (default gray glyph). Owned here (not SkillsPage.scss)
+// now that MCP has its own page -- see `pages/Mcp/lib/mcpTree.tsx`.
+.sk-mcp-icon--preset {
+  color: var(--sk-color-accent);
+}
+
+// A badge wrapper swallows its own click (the badge owns the command) so it
+// never also selects/expands the tree row underneath it.
+.sk-mcp-badgewrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+// Groups a leaf's trailing badges (Edit + Install, or Update + Delete) with a
+// small gap.
+.sk-mcp-badge-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  flex: none;
+}
+
+// A badge that is also a button. Transparent shell; the Badge inside carries
+// the look.
+.sk-mcp-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
 // Search footer (stats + reset). `margin-top: auto` pins it to the bottom of
-// the (viewport-filling) page body when the grid is short; a long grid pushes
+// the (viewport-filling) page body when the tree is short; a long tree pushes
 // it down naturally so it scrolls into view at the end.
 .sk-list-footer {
   margin-top: auto;
+}
+
+// Details modal: reuses `McpCard`, which normally lives in a grid cell --
+// bound its width so a single card reads well centered in a dialog.
+.sk-mcp-details {
+  max-width: 420px;
+}
+
+// Delete-confirmation modal, shared between a tree leaf's own Delete badge
+// (installed/unlinked instances) and `McpEditModal`'s Delete button (manual
+// presets).
+.sk-mcp-confirm {
+  max-width: 380px;
+}
+
+.sk-mcp-confirm__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4);
+}
+
+.sk-mcp-confirm__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
 }

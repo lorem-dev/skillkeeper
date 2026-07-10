@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { SkillKeeperConfig } from '@/app/store';
-import type { AvailableMcp, Repository } from '@/services/bridge';
+import type { AvailableMcp, McpInstall, Project, Repository } from '@/services/bridge';
 import { McpPage } from './McpPage';
 
 const meta: Meta<typeof McpPage> = { title: 'pages/McpPage', component: McpPage };
@@ -19,6 +19,8 @@ const REPOSITORIES: Repository[] = [
     localPath: '/tmp/team-skills',
   },
 ];
+
+const PROJECTS: Project[] = [{ id: 'project-1', name: 'Acme App', path: '/tmp/acme-app', addedAt: '2026-01-01T00:00:00.000Z' }];
 
 const BASE_CONFIG: SkillKeeperConfig = {
   general: { language: 'en', theme: 'system' },
@@ -75,11 +77,45 @@ const AVAILABLE: AvailableMcp[] = [
   },
 ];
 
+// One installed instance per case the projects-mode tree distinguishes:
+//  - `local-filesystem_1` matches the manual preset by `identity.local`, with
+//    a deliberately stale `hash` so it renders with the Update badge.
+//  - `linear_1` matches the repo preset by (remote, group, source), with the
+//    SAME hash as `AVAILABLE[0]` so it renders with no Update badge.
+//  - `legacy-server_1` matches nothing current -- unlinked, muted, Delete only.
+const INSTALLS: McpInstall[] = [
+  {
+    projectId: 'project-1',
+    agent: 'claude',
+    instanceName: 'local-filesystem_1',
+    identity: { local: 'manual-1', source: 'local-filesystem' },
+    hash: 'sha256:stale',
+    hasParams: false,
+  },
+  {
+    projectId: 'project-1',
+    agent: 'claude',
+    instanceName: 'linear_1',
+    identity: { remote: 'git@github.com:acme/team-skills.git', group: 'devtools', source: 'linear' },
+    hash: 'sha256:repo-linear',
+    hasParams: true,
+  },
+  {
+    projectId: 'project-1',
+    agent: 'cursor',
+    instanceName: 'legacy-server_1',
+    identity: { source: 'legacy-server' },
+    hash: 'sha256:legacy',
+    hasParams: false,
+  },
+];
+
 /**
- * Seeds `config`/`repositories` and stubs the two bridge calls the page's
- * mount effect makes (`listAvailableMcp`, `listMcpInstalls`, via
- * `refreshMcpPresets`/`refreshMcpInstalls`) so the real store actions compute
- * `mcpPresets` from these fixtures instead of throwing on the missing
+ * Seeds `config`/`repositories`/`projects` and stubs the bridge calls the
+ * page's mount effect makes (`listAvailableMcp`, `listMcpInstalls`,
+ * `describeProject`, via `refreshMcpPresets`/`refreshMcpInstalls`/
+ * `refreshProjectInfo`) so the real store actions compute `mcpPresets`/
+ * `mcpInstalls` from these fixtures instead of throwing on the missing
  * `window.skillkeeper` -- Storybook has no Electron preload bridge. Mirrors
  * the stub in `store.test.ts`'s `refreshMcpPresets` tests.
  *
@@ -89,24 +125,42 @@ const AVAILABLE: AvailableMcp[] = [
  * *parent* effect would lose that race and run against a not-yet-seeded
  * store.
  */
-function seedMcp(config: SkillKeeperConfig, available: readonly AvailableMcp[]): void {
+function seedMcp(
+  config: SkillKeeperConfig,
+  available: readonly AvailableMcp[],
+  installs: readonly McpInstall[] = [],
+  projects: readonly Project[] = [],
+): void {
   (window as unknown as { skillkeeper: unknown }).skillkeeper = {
     listAvailableMcp: async () => available,
-    listMcpInstalls: async () => [],
+    listMcpInstalls: async () => installs,
+    describeProject: async () => ({ skillCount: 0, fromReposCount: 0, agentCount: 0 }),
   };
-  useSkillkeeperStore.setState({ repositories: REPOSITORIES, config });
+  useSkillkeeperStore.setState({ repositories: REPOSITORIES, projects: [...projects], config });
 }
 
-// Manual (stdio + http-with-rules) and repo-discovered (http + sse) presets
-// together, showing the responsive grid.
-export const Grid: Story = {
+// Repositories mode (the default): manual (stdio + http-with-rules) and
+// repo-discovered (http + sse) presets, nested under their repository.
+export const RepositoriesMode: Story = {
   render: () => {
     seedMcp(CONFIG_WITH_MANUAL, AVAILABLE);
     return <McpPage />;
   },
 };
 
-// No presets at all: the empty-state message instead of a grid.
+// Projects mode: the same presets, but with one installed instance per case
+// the tree distinguishes -- a matched manual instance with an Update badge, a
+// matched repo instance with none, and an unlinked instance shown muted.
+// Switch to "Projects" in the page's own mode Select to see this tree (the
+// story seeds the data; it does not force the mode).
+export const ProjectsModeData: Story = {
+  render: () => {
+    seedMcp(CONFIG_WITH_MANUAL, AVAILABLE, INSTALLS, PROJECTS);
+    return <McpPage />;
+  },
+};
+
+// No presets at all: the empty-state message instead of a tree.
 export const Empty: Story = {
   render: () => {
     seedMcp(BASE_CONFIG, []);
