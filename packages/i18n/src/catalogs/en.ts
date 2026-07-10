@@ -217,6 +217,15 @@ export const en = {
 
   /** MCP tab: presets grid, editor, install modal, and Skills-page rows. */
   'mcp.empty': 'No MCP servers yet.',
+  'mcp.searchFound.one': 'Found {count} MCP server',
+  'mcp.searchFound.few': 'Found {count} MCP servers',
+  'mcp.searchFound.many': 'Found {count} MCP servers',
+  'mcp.searchFound.other': 'Found {count} MCP servers',
+  'mcp.searchTotal.one': '{count} MCP server total',
+  'mcp.searchTotal.few': '{count} MCP servers total',
+  'mcp.searchTotal.many': '{count} MCP servers total',
+  'mcp.searchTotal.other': '{count} MCP servers total',
+  'mcp.showAll': 'Show all MCP servers',
   'mcp.add': 'Add MCP',
   'mcp.addTitle': 'Add MCP server',
   'mcp.editTitle': 'Edit MCP server',

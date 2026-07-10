@@ -180,6 +180,9 @@ export const zhTw: Partial<Catalog> = {
   'skills.searchTotal.other': '共 {count} 個技能',
 
   'mcp.empty': '尚無 MCP 伺服器。',
+  'mcp.searchFound.other': '找到 {count} 個 MCP 伺服器',
+  'mcp.searchTotal.other': '共 {count} 個 MCP 伺服器',
+  'mcp.showAll': '顯示所有 MCP 伺服器',
   'mcp.add': '新增 MCP',
   'mcp.addTitle': '新增 MCP 伺服器',
   'mcp.editTitle': '編輯 MCP 伺服器',

@@ -193,6 +193,11 @@ export const de: Partial<Catalog> = {
   'skills.searchTotal.other': '{count} Skills insgesamt',
 
   'mcp.empty': 'Noch keine MCP-Server vorhanden.',
+  'mcp.searchFound.one': '{count} MCP-Server gefunden',
+  'mcp.searchFound.other': '{count} MCP-Server gefunden',
+  'mcp.searchTotal.one': '{count} MCP-Server insgesamt',
+  'mcp.searchTotal.other': '{count} MCP-Server insgesamt',
+  'mcp.showAll': 'Alle MCP-Server anzeigen',
   'mcp.add': 'MCP hinzufügen',
   'mcp.addTitle': 'MCP-Server hinzufügen',
   'mcp.editTitle': 'MCP-Server bearbeiten',

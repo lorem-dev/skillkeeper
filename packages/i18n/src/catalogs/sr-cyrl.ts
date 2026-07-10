@@ -198,6 +198,13 @@ export const srCyrl: Partial<Catalog> = {
   'skills.searchTotal.other': 'Укупно {count} вештина',
 
   'mcp.empty': 'Још нема MCP сервера.',
+  'mcp.searchFound.one': 'Пронађен {count} MCP сервер',
+  'mcp.searchFound.few': 'Пронађена {count} MCP сервера',
+  'mcp.searchFound.other': 'Пронађено {count} MCP сервера',
+  'mcp.searchTotal.one': 'Укупно {count} MCP сервер',
+  'mcp.searchTotal.few': 'Укупно {count} MCP сервера',
+  'mcp.searchTotal.other': 'Укупно {count} MCP сервера',
+  'mcp.showAll': 'Прикажи све MCP сервере',
   'mcp.add': 'Додај MCP',
   'mcp.addTitle': 'Додај MCP сервер',
   'mcp.editTitle': 'Измени MCP сервер',

@@ -1,7 +1,8 @@
 /**
  * Pure mapping helpers for the MCP page: deriving an `McpCard`'s connection
- * line from a preset's def, and converting a full `McpPreset` into the
- * `ManualMcpPreset` shape `McpEditModal` edits (manual presets only).
+ * line from a preset's def, converting a full `McpPreset` into the
+ * `ManualMcpPreset` shape `McpEditModal` edits (manual presets only), and the
+ * text fields the page's search box matches against.
  */
 import type { McpServerDef } from '@/services/bridge';
 import type { McpPreset } from '@/app/store';
@@ -42,4 +43,16 @@ export function toManualPreset(preset: McpPreset): ManualMcpPreset {
     env: def.env !== undefined ? { ...def.env } : undefined,
     rules: def.rules,
   };
+}
+
+/**
+ * The text fields an `McpPreset` is matched against by the MCP page's search
+ * box: its name, transport type, source repository name (repo-discovered
+ * presets only -- empty for manual ones), and its connection endpoint (the
+ * URL or command line `mcpConnectionFromDef` derives for the card). Mirrors
+ * the field set ProjectsPage/RepositoriesPage search their own cards on.
+ */
+export function mcpSearchFields(preset: McpPreset, repoName: string | undefined): readonly string[] {
+  const connection = mcpConnectionFromDef(preset.def);
+  return [preset.name, preset.def.type, repoName ?? '', connection.url ?? '', connection.command ?? ''];
 }

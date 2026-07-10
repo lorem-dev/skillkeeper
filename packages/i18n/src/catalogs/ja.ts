@@ -180,6 +180,9 @@ export const ja: Partial<Catalog> = {
   'skills.searchTotal.other': '合計 {count} 件のスキル',
 
   'mcp.empty': 'MCPサーバーはまだありません。',
+  'mcp.searchFound.other': '{count} 件のMCPサーバーが見つかりました',
+  'mcp.searchTotal.other': '合計 {count} 件のMCPサーバー',
+  'mcp.showAll': 'すべてのMCPサーバーを表示',
   'mcp.add': 'MCPを追加',
   'mcp.addTitle': 'MCPサーバーを追加',
   'mcp.editTitle': 'MCPサーバーを編集',

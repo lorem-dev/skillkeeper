@@ -180,6 +180,9 @@ export const zhCn: Partial<Catalog> = {
   'skills.searchTotal.other': '共 {count} 个技能',
 
   'mcp.empty': '还没有 MCP 服务器。',
+  'mcp.searchFound.other': '找到 {count} 个 MCP 服务器',
+  'mcp.searchTotal.other': '共 {count} 个 MCP 服务器',
+  'mcp.showAll': '显示所有 MCP 服务器',
   'mcp.add': '添加 MCP',
   'mcp.addTitle': '添加 MCP 服务器',
   'mcp.editTitle': '编辑 MCP 服务器',

@@ -198,6 +198,13 @@ export const srLatn: Partial<Catalog> = {
   'skills.searchTotal.other': 'Ukupno {count} veština',
 
   'mcp.empty': 'Jos nema MCP servera.',
+  'mcp.searchFound.one': 'Pronađen {count} MCP server',
+  'mcp.searchFound.few': 'Pronađena {count} MCP servera',
+  'mcp.searchFound.other': 'Pronađeno {count} MCP servera',
+  'mcp.searchTotal.one': 'Ukupno {count} MCP server',
+  'mcp.searchTotal.few': 'Ukupno {count} MCP servera',
+  'mcp.searchTotal.other': 'Ukupno {count} MCP servera',
+  'mcp.showAll': 'Prikaži sve MCP servere',
   'mcp.add': 'Dodaj MCP',
   'mcp.addTitle': 'Dodaj MCP server',
   'mcp.editTitle': 'Izmeni MCP server',

@@ -1,9 +1,11 @@
 /**
  * MCP page: a responsive grid of MCP server presets (manual + repo-discovered)
- * with an "Add MCP" action, mirroring RepositoriesPage/ProjectsPage's
- * mount-refresh + card-grid structure. See design spec "MCP support" section 7.
+ * with an "Add MCP" action and a search box, mirroring RepositoriesPage/
+ * ProjectsPage's mount-refresh + card-grid + toolbar-search structure. See
+ * design spec "MCP support" section 7.
  */
 import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
@@ -11,8 +13,9 @@ import { McpCard } from '@/entities/mcp';
 import { McpEditModal } from '@/features/mcpEdit';
 import type { ManualMcpPreset } from '@/features/mcpEdit';
 import { McpInstallModal } from '@/features/mcpInstall';
-import { Page, Toolbar, Button } from '@/shared/ui';
-import { mcpConnectionFromDef, toManualPreset } from './lib/mcpPresetMapping';
+import { Page, Toolbar, Button, SearchField, SearchSummary } from '@/shared/ui';
+import { fuzzyFilter, fade } from '@/shared/lib';
+import { mcpConnectionFromDef, mcpSearchFields, toManualPreset } from './lib/mcpPresetMapping';
 import './McpPage.scss';
 
 /**
@@ -42,6 +45,7 @@ export function McpPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editingPreset, setEditingPreset] = useState<ManualMcpPreset | undefined>(undefined);
   const [installingPreset, setInstallingPreset] = useState<McpPreset | null>(null);
+  const [query, setQuery] = useState('');
 
   // Presets and installed instances are local/cheap -- refresh both on mount,
   // mirroring RepositoriesPage/ProjectsPage's mount-refresh pattern.
@@ -65,10 +69,32 @@ export function McpPage() {
     setEditOpen(true);
   }
 
+  function repoNameFor(preset: McpPreset): string | undefined {
+    return preset.repoId !== undefined ? repositories.find((r) => r.id === preset.repoId)?.name : undefined;
+  }
+
+  // Fuzzy search by name, transport, source repository, and connection
+  // endpoint (URL or command). The field only appears once there are at
+  // least two cards to sift through, mirroring ProjectsPage/RepositoriesPage.
+  const searching = query.trim() !== '';
+  const filtered = fuzzyFilter(mcpPresets, query, (p) => mcpSearchFields(p, repoNameFor(p)));
+
   const trailing = (
-    <Button variant="primary" glass onClick={openCreate}>
-      {t('mcp.add')}
-    </Button>
+    <>
+      {mcpPresets.length >= 2 && (
+        <SearchField
+          className="sk-list-search"
+          placeholder={t('common.search')}
+          aria-label={t('common.search')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onClear={() => setQuery('')}
+        />
+      )}
+      <Button variant="primary" glass onClick={openCreate}>
+        {t('mcp.add')}
+      </Button>
+    </>
   );
 
   return (
@@ -76,11 +102,11 @@ export function McpPage() {
       {mcpPresets.length === 0 ? (
         <p className="sk-empty">{t('mcp.empty')}</p>
       ) : (
+        <>
         <div className="sk-mcp-grid">
-          {mcpPresets.map((preset) => {
+          {filtered.map((preset) => {
             const connection = mcpConnectionFromDef(preset.def);
-            const repoName =
-              preset.repoId !== undefined ? repositories.find((r) => r.id === preset.repoId)?.name : undefined;
+            const repoName = repoNameFor(preset);
             return (
               <McpCard
                 key={preset.id}
@@ -105,6 +131,26 @@ export function McpPage() {
             );
           })}
         </div>
+        <AnimatePresence>
+          {searching && (
+            <motion.div
+              key="footer"
+              className="sk-list-footer"
+              variants={fade}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <SearchSummary
+                foundLabel={t.plural('mcp.searchFound', filtered.length)}
+                totalLabel={t.plural('mcp.searchTotal', mcpPresets.length)}
+                showAllLabel={t('mcp.showAll')}
+                onShowAll={() => setQuery('')}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        </>
       )}
       <McpEditModal open={editOpen} preset={editingPreset} onClose={() => setEditOpen(false)} />
       <McpInstallModal
