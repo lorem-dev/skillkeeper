@@ -68,6 +68,10 @@ import {
 const SEP = '::';
 
 const mcpIcon = <Icon name="mcp" size={18} />;
+// Installable PRESET leaves show the mcp glyph in the accent color to set them
+// apart from already-installed (concrete) instances, which use the default
+// (gray) glyph.
+const mcpIconPreset = <Icon name="mcp" size={18} className="sk-mcp-icon--preset" />;
 const repoIcon = <Icon name="repositories" size={18} />;
 const groupIcon = <Icon name="skill-group" size={18} />;
 const projectIcon = <Icon name="projects" size={18} />;
@@ -276,7 +280,7 @@ export function attachRepoMcpLeaves(
   const items: PlacedLeaf[] = repoPresets.map((p) => ({
     repoId: p.repoId,
     group: p.group,
-    leaf: { id: mcpRepoLeafId(p.id), label: p.name, icon: mcpIcon, trailing: renderTrailing(p) },
+    leaf: { id: mcpRepoLeafId(p.id), label: p.name, icon: mcpIconPreset, trailing: renderTrailing(p) },
   }));
 
   return mergeIntoRepoGroups(nodes, items, repos, repoNodeId, repoGroupNodeId, true);
@@ -418,7 +422,12 @@ export function attachProjectMcpLeaves(
     const items: PlacedLeaf[] = nested.map((r) => ({
       repoId: r.repoId,
       group: r.group,
-      leaf: { id: r.leafId, label: r.label, icon: mcpIcon, trailing: renderTrailing(r.action) },
+      leaf: {
+        id: r.leafId,
+        label: r.label,
+        icon: r.action.kind === 'install' ? mcpIconPreset : mcpIcon,
+        trailing: renderTrailing(r.action),
+      },
     }));
     let children = mergeIntoRepoGroups(
       base.children ?? [],
