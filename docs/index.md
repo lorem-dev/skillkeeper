@@ -34,6 +34,8 @@ SkillKeeper ships two front ends over one shared, framework-agnostic core:
   your first skill.
 - [Skills and Hooks](skills-and-hooks.md) - skill format, hook strategies,
   resolution schemes.
+- [MCP Servers](mcp.md) - MCP presets, the `mcp.yml` format, install/update/
+  remove, and per-agent native config.
 - [CLI Reference](cli.md) - every command and option.
 - [Configuration](configuration.md) - `config.yaml` sections and defaults.
 - [Architecture](architecture.md) - package graph, process boundaries, domain

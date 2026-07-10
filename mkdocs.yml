@@ -8,6 +8,7 @@ nav:
   - Skills and Hooks: skills-and-hooks.md
   - Repositories: repositories.md
   - Agents: agents.md
+  - MCP Servers: mcp.md
   - Configuration: configuration.md
   - CLI Reference: cli.md
   - Security: security.md
