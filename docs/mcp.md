@@ -251,7 +251,14 @@ Codex differs from the other four agents in two ways:
 - **Global scope**: an MCP install for Codex always writes to
   `~/.codex/config.toml`, `~/.codex/skills/.skmcp.yml`, and
   `~/.codex/skills/.skmcp.params.yml` - never into the project - regardless
-  of which project the install was started from.
+  of which project the install was started from. This is intentional and
+  applies to the guidance target too (`~/AGENTS.md`): Codex has only a single
+  global MCP config, so a Codex MCP server is shared across every project.
+  Keeping its ledger, parameter values, instance-name allocation, and rules
+  global is what keeps that one config coherent (for example, it lets
+  instance names stay unique in the single `config.toml`). Note this differs
+  from Codex *skill* guidance, which is project-scoped (`<project>/AGENTS.md`)
+  because skills are per-project files - MCP servers are not.
 - **stdio only**: Codex's native config cannot express `http` or `sse`
   servers. Installing a non-stdio preset for Codex is skipped rather than
   attempted, and is reported back as a skipped install.
