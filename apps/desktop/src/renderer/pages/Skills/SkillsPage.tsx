@@ -7,12 +7,11 @@
  * A search box fuzzy-filters the whole tree (matches keep their ancestors as
  * context); a footer summarizes the result and clears the search.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useSkillkeeperStore, mcpInstallHasUpdate, matchMcpPreset } from '@/app/store';
-import type { SkillsMode, McpPreset } from '@/app/store';
+import { useSkillkeeperStore } from '@/app/store';
+import type { SkillsMode } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { bridgeClient } from '@/services/bridge';
 import {
   Page,
   Toolbar,
@@ -44,28 +43,9 @@ import {
 } from '@/entities/skill';
 import { SkillInstallModal } from '@/features/skillInstall';
 import { SkillSaveModal } from '@/features/skillSave';
-import { McpInstallModal, McpUpdateParamsModal } from '@/features/mcpInstall';
-import type { McpInstall, McpBatch, McpUpdateReq, Project } from '@/services/bridge';
-import { attachRepoMcpLeaves, attachProjectMcpLeaves } from './lib/mcpTree';
 import './SkillsPage.scss';
 
 type Mode = SkillsMode;
-
-/**
- * Placeholder passed to `McpInstallModal` while it is closed -- its `preset`
- * prop is required, but the modal's own `open` gate keeps the body (which is
- * the only place `preset` is read) out of the DOM, so this is never shown.
- * Mirrors the same placeholder in `McpPage`.
- */
-const EMPTY_MCP_PRESET: McpPreset = {
-  id: '',
-  origin: 'manual',
-  name: '',
-  def: { name: '', type: 'stdio' },
-  hash: '',
-  params: [],
-  hasRules: false,
-};
 
 /** Whether two agent lists hold the same set. */
 function sameAgents(a: readonly string[], b: readonly string[]): boolean {
@@ -81,13 +61,6 @@ export function SkillsPage() {
   const installs = useSkillkeeperStore((s) => s.skills);
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
   const refreshProjectInfo = useSkillkeeperStore((s) => s.refreshProjectInfo);
-  const mcpPresets = useSkillkeeperStore((s) => s.mcpPresets);
-  const mcpInstalls = useSkillkeeperStore((s) => s.mcpInstalls);
-  const refreshMcpPresets = useSkillkeeperStore((s) => s.refreshMcpPresets);
-  const refreshMcpInstalls = useSkillkeeperStore((s) => s.refreshMcpInstalls);
-  const applyMcp = useSkillkeeperStore((s) => s.applyMcp);
-  const updateMcp = useSkillkeeperStore((s) => s.updateMcp);
-  const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
 
   // Project icons are resolved into projectInfo by the main process; refresh it on
@@ -96,13 +69,6 @@ export function SkillsPage() {
   useEffect(() => {
     void refreshProjectInfo();
   }, [refreshProjectInfo]);
-
-  // MCP presets/installs back the tree's MCP leaves (both modes); refresh both
-  // on mount, mirroring McpPage's own mount-refresh pattern.
-  useEffect(() => {
-    void refreshMcpPresets();
-    void refreshMcpInstalls();
-  }, [refreshMcpPresets, refreshMcpInstalls]);
 
   // Selection + view state lives in the store so it survives navigating away and
   // back (until the app reloads). The store reseeds the selection to the
@@ -119,21 +85,6 @@ export function SkillsPage() {
   // Modal open flags are ephemeral -- they should not persist across navigation.
   const [installOpen, setInstallOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
-  // The MCP install modal's target (preset + optional preselected project);
-  // null means closed. Ephemeral for the same reason as the flags above.
-  const [mcpInstallTarget, setMcpInstallTarget] = useState<{
-    preset: McpPreset;
-    projectId?: string;
-  } | null>(null);
-  // The pending update's target, once the preflight has determined which
-  // params are missing (prompt open); null means closed. Closing WITHOUT
-  // confirming aborts the update -- no `McpUpdateParamsModal` `onConfirm` call
-  // means `runMcpUpdate` never runs.
-  const [mcpUpdateTarget, setMcpUpdateTarget] = useState<{
-    project: Project;
-    installs: readonly McpInstall[];
-    missingParams: string[];
-  } | null>(null);
 
   // Thin setters that merge one selection field into the store at a time.
   const setQuery = (value: string): void => setSkillsUi({ query: value });
@@ -192,158 +143,7 @@ export function SkillsPage() {
     [mode, availableSkills, shownRepos, projectModel],
   );
 
-  // Runs an already-preflighted update: `values` carries only the params the
-  // preflight (or the follow-up modal) determined were missing -- `updateMcp`
-  // merges them with each instance's OWN stored values server-side, so a
-  // partial `values` here is always safe. Defined at component scope (not
-  // inside `treeWithMcp`) so the `McpUpdateParamsModal`'s `onConfirm` -- which
-  // fires well after that memo's snapshot -- can call it directly too.
-  const runMcpUpdate = useCallback(
-    async (toUpdate: readonly McpInstall[], values: Record<string, string>): Promise<void> => {
-      const first = toUpdate[0];
-      if (first === undefined) return;
-      const project = projects.find((p) => p.id === first.projectId);
-      if (project === undefined) return;
-      const preset = matchMcpPreset(first, mcpPresets);
-      if (preset === undefined) return;
-      const updates: McpUpdateReq[] = toUpdate.map((inst) => ({
-        projectId: project.id,
-        projectPath: project.path,
-        agent: inst.agent,
-        instanceName: inst.instanceName,
-        identity: inst.identity,
-        def: preset.def,
-        values,
-      }));
-      const result = await updateMcp({ updates });
-      if (!result.ok) notify(result.error, 'error');
-    },
-    [projects, mcpPresets, updateMcp, notify],
-  );
-
-  // Update entry point: preflight every affected agent's instance (one per
-  // `toUpdate` entry) against the preset's current def, then either update
-  // directly (nothing missing) or open the params modal for the UNION of
-  // missing names across all of them. Closing that modal without confirming
-  // aborts -- `mcpUpdateTarget` is simply cleared, `runMcpUpdate` never runs.
-  const startMcpUpdate = useCallback(
-    async (toUpdate: readonly McpInstall[]): Promise<void> => {
-      const first = toUpdate[0];
-      if (first === undefined) return;
-      const project = projects.find((p) => p.id === first.projectId);
-      if (project === undefined) return;
-      const preset = matchMcpPreset(first, mcpPresets);
-      if (preset === undefined) return;
-      const results = await Promise.all(
-        toUpdate.map((inst) =>
-          bridgeClient.mcpUpdatePreflight({
-            projectId: project.id,
-            projectPath: project.path,
-            agent: inst.agent,
-            instanceName: inst.instanceName,
-            def: preset.def,
-          }),
-        ),
-      );
-      const missing = new Set<string>();
-      for (const r of results) {
-        if (!r.ok) {
-          notify(r.error, 'error');
-          return;
-        }
-        for (const p of r.missingParams) missing.add(p);
-      }
-      if (missing.size === 0) {
-        await runMcpUpdate(toUpdate, {});
-        return;
-      }
-      setMcpUpdateTarget({ project, installs: toUpdate, missingParams: [...missing].sort() });
-    },
-    [projects, mcpPresets, notify, runMcpUpdate],
-  );
-
-  // MCP leaves (design spec "MCP support" section 8, option B): repo presets
-  // (repositories mode) or installed instances / not-yet-installed repo
-  // presets (projects mode), inline with the skill leaves. Built from -- but
-  // kept separate from -- `baseTree`, so the skill-only counts below stay
-  // accurate; the badges wired here never touch the checkbox selection or the
-  // apply-plan math.
-  const treeWithMcp = useMemo(() => {
-    function openInstall(preset: McpPreset, projectId?: string): void {
-      setMcpInstallTarget({ preset, projectId });
-    }
-
-    async function removeMcp(toRemove: readonly McpInstall[]): Promise<void> {
-      const first = toRemove[0];
-      if (first === undefined) return;
-      const project = projects.find((p) => p.id === first.projectId);
-      if (project === undefined) return;
-      const batches: McpBatch[] = toRemove.map((inst) => ({
-        agent: inst.agent,
-        install: [],
-        remove: [{ instanceName: inst.instanceName }],
-      }));
-      const result = await applyMcp({ projectId: project.id, projectPath: project.path, batches });
-      if (!result.ok) notify(result.error, 'error');
-    }
-
-    function renderBadge(label: string, tone: 'accent' | 'neutral', onClick: () => void): ReactNode {
-      return (
-        <span className="sk-skills-badgewrap" onClick={(e) => e.stopPropagation()}>
-          <Tooltip content={label}>
-            <button type="button" className="sk-skills-badge-btn" onClick={onClick}>
-              <Badge tone={tone}>{label}</Badge>
-            </button>
-          </Tooltip>
-        </span>
-      );
-    }
-
-    // A remove-kind row's trailing control: Remove always, plus an Update badge
-    // ahead of it when the installed instance's hash is behind its matched
-    // preset's current hash (never shown for a preset-install row or an
-    // unlinked instance -- `mcpInstallHasUpdate` is false for both, since
-    // neither has a matched, changed preset).
-    function renderInstalledBadges(installs: readonly McpInstall[]): ReactNode {
-      const first = installs[0];
-      const updatable = first !== undefined && mcpInstallHasUpdate(first, mcpPresets);
-      return (
-        <span className="sk-skills-badge-group">
-          {updatable &&
-            renderBadge(t('mcp.update'), 'accent', () => void startMcpUpdate(installs))}
-          {renderBadge(t('mcp.remove'), 'neutral', () => void removeMcp(installs))}
-        </span>
-      );
-    }
-
-    if (mode === 'repositories') {
-      return attachRepoMcpLeaves(baseTree, mcpPresets, shownRepos, (preset) =>
-        renderBadge(t('mcp.installMcp'), 'accent', () => openInstall(preset)),
-      );
-    }
-    return attachProjectMcpLeaves(baseTree, mcpPresets, mcpInstalls, shownProjects, shownRepos, (action) =>
-      action.kind === 'install'
-        ? renderBadge(t('mcp.installMcp'), 'accent', () => openInstall(action.preset, action.projectId))
-        : renderInstalledBadges(action.installs),
-    );
-  }, [
-    mode,
-    baseTree,
-    mcpPresets,
-    mcpInstalls,
-    shownRepos,
-    shownProjects,
-    projects,
-    applyMcp,
-    notify,
-    startMcpUpdate,
-    t,
-  ]);
-
-  const shownTree = useMemo(() => filterTree(treeWithMcp, query), [treeWithMcp, query]);
-  // Skill-only filtered tree, purely for the "N of M skills" search summary --
-  // MCP leaves are not skills and must not inflate that count.
-  const shownSkillsOnly = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
+  const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
 
   // An update-skill task in flight makes every dot pulse and non-clickable.
   const updatesBusy = useMemo(
@@ -535,12 +335,9 @@ export function SkillsPage() {
 
   const searching = query.trim() !== '';
   const filtering = repoFilter.length > 0 || projectFilter.length > 0;
-  // Skill-only counts (MCP leaves are not skills and must not inflate "N of M").
   const totalSkills = useMemo(() => countLeaves(baseTree), [baseTree]);
-  const shownSkills = useMemo(() => countLeaves(shownSkillsOnly), [shownSkillsOnly]);
-  // `treeWithMcp` is a superset of `baseTree` (it may add MCP-only repo/project
-  // roots), so expanding its top level also opens those by default.
-  const expandedIds = searching ? collectBranchIds(decorated) : rootIds(treeWithMcp);
+  const shownSkills = useMemo(() => countLeaves(decorated), [decorated]);
+  const expandedIds = searching ? collectBranchIds(decorated) : rootIds(baseTree);
 
   const checkedIds = mode === 'repositories' ? repoChecked : projectChecked;
   const onCheckedChange = mode === 'repositories' ? setRepoChecked : setProjectChecked;
@@ -703,22 +500,6 @@ export function SkillsPage() {
         onClose={() => setSaveOpen(false)}
         checkedIds={projectChecked}
         projectAgents={projectAgents}
-      />
-      <McpInstallModal
-        open={mcpInstallTarget !== null}
-        preset={mcpInstallTarget?.preset ?? EMPTY_MCP_PRESET}
-        preselectedProjectId={mcpInstallTarget?.projectId}
-        onClose={() => setMcpInstallTarget(null)}
-      />
-      <McpUpdateParamsModal
-        open={mcpUpdateTarget !== null}
-        missingParams={mcpUpdateTarget?.missingParams ?? []}
-        onConfirm={(values) => {
-          const target = mcpUpdateTarget;
-          setMcpUpdateTarget(null);
-          if (target !== null) void runMcpUpdate(target.installs, values);
-        }}
-        onClose={() => setMcpUpdateTarget(null)}
       />
     </Page>
   );
