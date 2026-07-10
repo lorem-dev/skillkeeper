@@ -33,10 +33,11 @@ import {
 import type { TreeNode } from '@/shared/ui';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
 import { McpCard } from '@/entities/mcp';
+import { ProjectIcon } from '@/entities/project';
 import { McpEditModal } from '@/features/mcpEdit';
 import type { ManualMcpPreset } from '@/features/mcpEdit';
 import { McpInstallModal, McpUpdateParamsModal, buildRemoveBatches } from '@/features/mcpInstall';
-import { buildMcpRepoTree, buildMcpProjectTree } from './lib/mcpTree';
+import { buildMcpRepoTree, buildMcpProjectTree, mcpProjectRootId } from './lib/mcpTree';
 import type { McpTreeItem } from './lib/mcpTree';
 import { resolveDetailsPreset } from './lib/mcpItemPreset';
 import { mcpConnectionFromDef, toManualPreset } from './lib/mcpPresetMapping';
@@ -70,6 +71,7 @@ export function McpPage() {
   const mcpInstalls = useSkillkeeperStore((s) => s.mcpInstalls);
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const projects = useSkillkeeperStore((s) => s.projects);
+  const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
   const applyMcp = useSkillkeeperStore((s) => s.applyMcp);
   const updateMcp = useSkillkeeperStore((s) => s.updateMcp);
   const deleteMcpPreset = useSkillkeeperStore((s) => s.deleteMcpPreset);
@@ -258,6 +260,14 @@ export function McpPage() {
 
   const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
 
+  // Project-mode root node id -> its project, so the tree can swap the
+  // generic projects glyph for the project's own icon (mirrors SkillsPage).
+  const projectByRootId = useMemo(() => {
+    const map = new Map<string, Project>();
+    for (const p of projects) map.set(mcpProjectRootId(p.id), p);
+    return map;
+  }, [projects]);
+
   const decorated = useMemo(() => {
     function renderBadge(label: string, tone: 'accent' | 'neutral', onClick: () => void): ReactNode {
       return (
@@ -308,14 +318,32 @@ export function McpPage() {
         const name = typeof node.label === 'string' ? node.label : '';
         return { ...node, trailing: badgesFor(item, name) };
       }
-      if (node.children !== undefined && node.children.length > 0) {
-        return { ...node, children: node.children.map(decorate) };
+      const children =
+        node.children !== undefined && node.children.length > 0 ? node.children.map(decorate) : node.children;
+      // A project-root node: show the project's own icon (resolved + safety-
+      // checked in main) when it has one, otherwise a generated placeholder --
+      // via the shared ProjectIcon, mirroring SkillsPage's project nodes.
+      const project = projectByRootId.get(node.id);
+      if (project !== undefined) {
+        const icon = <ProjectIcon iconUrl={projectInfo[project.id]?.iconDataUrl} name={project.name} size={18} />;
+        return { ...node, icon, children };
       }
+      if (children !== node.children) return { ...node, children };
       return node;
     }
 
     return shownTree.map(decorate);
-  }, [shownTree, items, t, openEdit, openInstall, startMcpUpdate, requestDeleteInstalls]);
+  }, [
+    shownTree,
+    items,
+    projectByRootId,
+    projectInfo,
+    t,
+    openEdit,
+    openInstall,
+    startMcpUpdate,
+    requestDeleteInstalls,
+  ]);
 
   function handleSelect(node: TreeNode): void {
     const item = items.get(node.id);
