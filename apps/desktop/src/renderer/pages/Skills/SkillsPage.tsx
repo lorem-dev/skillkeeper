@@ -186,9 +186,7 @@ export function SkillsPage() {
   // presets (projects mode), inline with the skill leaves. Built from -- but
   // kept separate from -- `baseTree`, so the skill-only counts below stay
   // accurate; the badges wired here never touch the checkbox selection or the
-  // apply-plan math (they carry no i18n text yet, matching McpPage/
-  // McpInstallModal's "hardcode now, retrofit i18n later" approach for the
-  // still-unwrapped MCP feature).
+  // apply-plan math.
   const treeWithMcp = useMemo(() => {
     function openInstall(preset: McpPreset, projectId?: string): void {
       setMcpInstallTarget({ preset, projectId });
@@ -222,15 +220,15 @@ export function SkillsPage() {
 
     if (mode === 'repositories') {
       return attachRepoMcpLeaves(baseTree, mcpPresets, shownRepos, (preset) =>
-        renderBadge('Install MCP', 'accent', () => openInstall(preset)),
+        renderBadge(t('mcp.installMcp'), 'accent', () => openInstall(preset)),
       );
     }
     return attachProjectMcpLeaves(baseTree, mcpPresets, mcpInstalls, shownProjects, shownRepos, (action) =>
       action.kind === 'install'
-        ? renderBadge('Install MCP', 'accent', () => openInstall(action.preset, action.projectId))
-        : renderBadge('Remove', 'neutral', () => void removeMcp(action.installs)),
+        ? renderBadge(t('mcp.installMcp'), 'accent', () => openInstall(action.preset, action.projectId))
+        : renderBadge(t('mcp.remove'), 'neutral', () => void removeMcp(action.installs)),
     );
-  }, [mode, baseTree, mcpPresets, mcpInstalls, shownRepos, shownProjects, projects, applyMcp, notify]);
+  }, [mode, baseTree, mcpPresets, mcpInstalls, shownRepos, shownProjects, projects, applyMcp, notify, t]);
 
   const shownTree = useMemo(() => filterTree(treeWithMcp, query), [treeWithMcp, query]);
   // Skill-only filtered tree, purely for the "N of M skills" search summary --

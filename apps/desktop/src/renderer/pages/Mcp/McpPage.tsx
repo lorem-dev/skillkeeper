@@ -2,11 +2,6 @@
  * MCP page: a responsive grid of MCP server presets (manual + repo-discovered)
  * with an "Add MCP" action, mirroring RepositoriesPage/ProjectsPage's
  * mount-refresh + card-grid structure. See design spec "MCP support" section 7.
- *
- * Text is hardcoded ASCII for now (no i18n keys exist yet for the MCP feature
- * -- task C9 wraps every string below in `t('mcp....')`), matching the
- * "hardcode now, retrofit i18n later" approach already taken by McpCard,
- * McpEditModal, and McpInstallModal (tasks C1-C5).
  */
 import { useEffect, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
@@ -57,7 +52,7 @@ export function McpPage() {
 
   function copy(text: string): void {
     void navigator.clipboard.writeText(text);
-    notify('Copied to clipboard', 'info');
+    notify(t('mcp.copiedToClipboard'), 'info');
   }
 
   function openCreate(): void {
@@ -72,14 +67,14 @@ export function McpPage() {
 
   const trailing = (
     <Button variant="primary" glass onClick={openCreate}>
-      Add MCP
+      {t('mcp.add')}
     </Button>
   );
 
   return (
     <Page toolbar={<Toolbar title={t('nav.mcp')} trailing={trailing} />}>
       {mcpPresets.length === 0 ? (
-        <p className="sk-empty">No MCP servers yet.</p>
+        <p className="sk-empty">{t('mcp.empty')}</p>
       ) : (
         <div className="sk-mcp-grid">
           {mcpPresets.map((preset) => {
@@ -91,21 +86,21 @@ export function McpPage() {
                 key={preset.id}
                 name={preset.name}
                 repoName={repoName}
-                goToRepoLabel="Go to repository"
+                goToRepoLabel={t('mcp.goToRepository')}
                 onGoToRepo={preset.repoId !== undefined ? () => focusRepository(preset.repoId!) : undefined}
                 protocol={preset.def.type}
-                protocolLabel={preset.def.type}
+                protocolLabel={t(`mcp.protocol.${preset.def.type}`)}
                 hasRules={preset.hasRules}
-                rulesLabel="rules"
+                rulesLabel={t('mcp.rulesBadge')}
                 url={connection.url}
                 command={connection.command}
-                copyLabel="Copy"
+                copyLabel={t('mcp.copy')}
                 onCopyUrl={connection.url !== undefined ? () => copy(connection.url!) : undefined}
                 onCopyCommand={connection.command !== undefined ? () => copy(connection.command!) : undefined}
                 onEdit={preset.origin === 'manual' ? () => openEdit(preset) : undefined}
-                editLabel="Edit"
+                editLabel={t('mcp.edit')}
                 onInstall={() => setInstallingPreset(preset)}
-                installLabel="Install"
+                installLabel={t('mcp.install')}
               />
             );
           })}

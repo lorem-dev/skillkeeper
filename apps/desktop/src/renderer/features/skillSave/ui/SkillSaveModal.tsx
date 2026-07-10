@@ -126,7 +126,7 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
         <span key="s" className="sk-save-modal__mcplabel">
           <Icon name="mcp" size={14} />
           {row.label}
-          <Badge tone="neutral">MCP</Badge>
+          <Badge tone="neutral">{t('nav.mcp')}</Badge>
         </span>,
         <span key="a" className={`sk-save-modal__action sk-save-modal__action--${row.action}`}>
           {row.action === 'install' ? t('skills.change.install') : t('skills.change.remove')}
@@ -209,9 +209,7 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
         />
         {promptRows.length > 0 && (
           <div className="sk-save-modal__mcpprompt">
-            <span className="sk-save-modal__mcpprompt-title">
-              These MCP installs need parameters before they can be added:
-            </span>
+            <span className="sk-save-modal__mcpprompt-title">{t('mcp.needsParamsNotice')}</span>
             {promptRows.map(({ project, row, preset }) => (
               <div key={`${project.id}::${row.key}`} className="sk-save-modal__mcpprompt-row">
                 <span className="sk-save-modal__mcpprompt-label">

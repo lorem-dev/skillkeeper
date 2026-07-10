@@ -4,11 +4,6 @@
  * `McpEditModal` for structure -- see design spec "MCP support" section 8
  * ("Install modal") and section 5 ("Install (per selected agent target)").
  *
- * Text is hardcoded ASCII for now: no i18n keys exist yet for the MCP feature
- * (task C9 wraps every string below in `t('mcp....')`), matching the
- * "hardcode now, retrofit i18n later" approach already taken by McpCard and
- * McpEditModal (tasks C1-C4).
- *
  * The update flow (design spec section 5 "Update (per instance)": seed known
  * params, prompt only missing ones, abort on close without all values) reuses
  * this modal via the optional `initialValues` prop -- known params are
@@ -24,6 +19,7 @@ import { useEffect, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import type { AgentKind } from '@/services/bridge';
+import { useTranslator } from '@/systems/i18n';
 import { Modal, Button, Select, TextField, Checkbox, Tooltip, Alert } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui';
 import { ALL_AGENTS, AGENT_LABELS } from '@/domain';
@@ -55,6 +51,7 @@ export function McpInstallModal({
   const projects = useSkillkeeperStore((s) => s.projects);
   const applyMcp = useSkillkeeperStore((s) => s.applyMcp);
   const notify = useSkillkeeperStore((s) => s.notify);
+  const t = useTranslator();
 
   const [projectId, setProjectId] = useState('');
   const [agents, setAgents] = useState<AgentKind[]>([]);
@@ -85,7 +82,10 @@ export function McpInstallModal({
   /** Reason text for a disabled agent checkbox, or undefined when selectable. */
   function disabledReason(agent: AgentKind): string | undefined {
     if (supportsTransport(agent, preset.def.type)) return undefined;
-    return `${AGENT_LABELS[agent]} cannot express the ${preset.def.type} transport in its native config.`;
+    return t('mcp.transportUnsupported', {
+      agent: AGENT_LABELS[agent],
+      transport: t(`mcp.protocol.${preset.def.type}`),
+    });
   }
 
   function toggleAgent(agent: AgentKind): void {
@@ -107,10 +107,7 @@ export function McpInstallModal({
       return;
     }
     if (result.skipped.length > 0) {
-      notify(
-        `${String(result.skipped.length)} agent(s) were skipped: the preset's transport is not supported.`,
-        'info',
-      );
+      notify(t('mcp.skippedAgents', { count: String(result.skipped.length) }), 'info');
     }
     onClose();
   }
@@ -119,24 +116,24 @@ export function McpInstallModal({
     <Modal
       open={open}
       onClose={busy ? () => {} : onClose}
-      title={`Install ${preset.name}`}
+      title={t('mcp.installTitle', { name: preset.name })}
       className="sk-mcp-install"
     >
       <div className="sk-mcp-install__form">
         <label className="sk-mcp-install__field sk-mcp-install__field--bounded">
-          <span className="sk-mcp-install__label">Project</span>
+          <span className="sk-mcp-install__label">{t('mcp.field.project')}</span>
           <Select
             options={projectOptions}
             value={projectId}
             onChange={setProjectId}
-            placeholder="Choose a project"
-            ariaLabel="Project"
+            placeholder={t('mcp.chooseProject')}
+            ariaLabel={t('mcp.field.project')}
             disabled={busy}
           />
         </label>
 
         <div className="sk-mcp-install__field">
-          <span className="sk-mcp-install__label">Agents</span>
+          <span className="sk-mcp-install__label">{t('mcp.field.agents')}</span>
           <div className="sk-mcp-install__agents">
             {ALL_AGENTS.map((agent) => {
               const reason = disabledReason(agent);
@@ -157,13 +154,11 @@ export function McpInstallModal({
           </div>
         </div>
 
-        {agents.includes('codex') && (
-          <Alert tone="info">Codex installs globally (not scoped to this project).</Alert>
-        )}
+        {agents.includes('codex') && <Alert tone="info">{t('mcp.codexGlobalNote')}</Alert>}
 
         {preset.params.length > 0 && (
           <div className="sk-mcp-install__params">
-            <span className="sk-mcp-install__label">Parameters</span>
+            <span className="sk-mcp-install__label">{t('mcp.field.parameters')}</span>
             {preset.params.map((param) => (
               <label className="sk-mcp-install__field" key={param}>
                 <span className="sk-mcp-install__param-label">{param}</span>
@@ -182,10 +177,10 @@ export function McpInstallModal({
 
         <div className="sk-mcp-install__actions">
           <Button variant="secondary" disabled={busy} onClick={onClose}>
-            Cancel
+            {t('mcp.cancel')}
           </Button>
           <Button variant="primary" disabled={!canConfirm} onClick={() => void confirm()}>
-            Install
+            {t('mcp.install')}
           </Button>
         </div>
       </div>

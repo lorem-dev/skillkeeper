@@ -72,7 +72,11 @@ export interface FieldError {
    *  `headers.0.value`, `args.2`. The modal uses this to place the message
    *  next to the right control. */
   readonly field: string;
-  readonly message: string;
+  /** i18n key (`mcp.validation.*`) for the message; resolve with `t()`. */
+  readonly messageKey: string;
+  /** Interpolation vars for keys that need them (e.g. `invalidParam`'s
+   *  `{reason}`/`{index}`). */
+  readonly vars?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -86,16 +90,16 @@ export function validatePreset(draft: McpPresetDraft): FieldError[] {
   const errors: FieldError[] = [];
 
   if (draft.name.trim() === '') {
-    errors.push({ field: 'name', message: 'Name is required.' });
+    errors.push({ field: 'name', messageKey: 'mcp.validation.nameRequired' });
   }
   if (draft.type !== 'stdio' && draft.type !== 'http' && draft.type !== 'sse') {
-    errors.push({ field: 'type', message: 'Select a transport type.' });
+    errors.push({ field: 'type', messageKey: 'mcp.validation.selectType' });
   }
   if (draft.type === 'stdio' && draft.command.trim() === '') {
-    errors.push({ field: 'command', message: 'Command is required for stdio servers.' });
+    errors.push({ field: 'command', messageKey: 'mcp.validation.commandRequired' });
   }
   if ((draft.type === 'http' || draft.type === 'sse') && draft.url.trim() === '') {
-    errors.push({ field: 'url', message: 'URL is required for http/sse servers.' });
+    errors.push({ field: 'url', messageKey: 'mcp.validation.urlRequired' });
   }
 
   // Scope the param-syntax scan to fields the active transport actually
@@ -122,7 +126,11 @@ export function validatePreset(draft: McpPresetDraft): FieldError[] {
   for (const { field, text } of paramFields) {
     const result = validateParamSyntax(text);
     if (!result.ok) {
-      errors.push({ field, message: `Invalid parameter (${result.reason}) at position ${result.index}.` });
+      errors.push({
+        field,
+        messageKey: 'mcp.validation.invalidParam',
+        vars: { reason: result.reason, index: String(result.index) },
+      });
       break;
     }
   }

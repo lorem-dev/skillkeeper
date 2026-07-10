@@ -1,15 +1,12 @@
 /**
  * Manual MCP preset editor: create or edit one entry of `config.mcp.servers`.
- *
- * Text is hardcoded ASCII for now (no i18n keys exist for the MCP feature
- * yet -- task C9 adds them across all locale catalogs and is expected to
- * wrap every string below in `t('mcp....')`; see the design spec section 9).
- * This mirrors the rest of the MCP UI phase (McpCard etc., tasks C1-C3),
- * which took the same "hardcode now, retrofit i18n later" approach.
+ * See the design spec "MCP support" section 7 ("Manual-preset editor modal").
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { McpTransport } from '@/services/bridge';
+import { useTranslator } from '@/systems/i18n';
+import type { Translator } from '@/systems/i18n';
 import { Button, Icon, Modal, TextField, Select } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui';
 import { validatePreset } from '../lib/validate';
@@ -42,11 +39,15 @@ export interface McpEditModalProps {
   readonly onClose: () => void;
 }
 
-const TRANSPORT_OPTIONS: SelectOption[] = [
-  { value: 'stdio', label: 'stdio' },
-  { value: 'http', label: 'http' },
-  { value: 'sse', label: 'sse' },
-];
+/** Transport labels come from `mcp.protocol.*` -- kept identical across
+ *  locales (like `nav.mcp`), but still routed through `t()`. */
+function transportOptions(t: Translator): SelectOption[] {
+  return [
+    { value: 'stdio', label: t('mcp.protocol.stdio') },
+    { value: 'http', label: t('mcp.protocol.http') },
+    { value: 'sse', label: t('mcp.protocol.sse') },
+  ];
+}
 
 const EMPTY_DRAFT: McpPresetDraft = {
   name: '',
@@ -93,10 +94,19 @@ interface KeyValueEditorProps {
   readonly keyPlaceholder: string;
   readonly valuePlaceholder: string;
   readonly addLabel: string;
+  readonly removeLabel: string;
   readonly invalidIndex?: number;
 }
 
-function KeyValueEditor({ rows, onChange, keyPlaceholder, valuePlaceholder, addLabel, invalidIndex }: KeyValueEditorProps) {
+function KeyValueEditor({
+  rows,
+  onChange,
+  keyPlaceholder,
+  valuePlaceholder,
+  addLabel,
+  removeLabel,
+  invalidIndex,
+}: KeyValueEditorProps) {
   const update = (index: number, patch: Partial<KeyValueRow>): void => {
     onChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
@@ -118,7 +128,7 @@ function KeyValueEditor({ rows, onChange, keyPlaceholder, valuePlaceholder, addL
             invalid={invalidIndex === i}
             onChange={(e) => update(i, { value: e.target.value })}
           />
-          <Button variant="plain" aria-label="Remove" onClick={() => remove(i)}>
+          <Button variant="plain" aria-label={removeLabel} onClick={() => remove(i)}>
             <Icon name="close" />
           </Button>
         </div>
@@ -134,10 +144,20 @@ function KeyValueEditor({ rows, onChange, keyPlaceholder, valuePlaceholder, addL
 interface ArgsEditorProps {
   readonly args: readonly string[];
   readonly onChange: (args: string[]) => void;
+  readonly argumentPlaceholder: string;
+  readonly addArgumentLabel: string;
+  readonly removeLabel: string;
   readonly invalidIndex?: number;
 }
 
-function ArgsEditor({ args, onChange, invalidIndex }: ArgsEditorProps) {
+function ArgsEditor({
+  args,
+  onChange,
+  argumentPlaceholder,
+  addArgumentLabel,
+  removeLabel,
+  invalidIndex,
+}: ArgsEditorProps) {
   const update = (index: number, value: string): void => {
     onChange(args.map((a, i) => (i === index ? value : a)));
   };
@@ -150,18 +170,18 @@ function ArgsEditor({ args, onChange, invalidIndex }: ArgsEditorProps) {
         <div className="sk-mcp-edit__arg-row" key={i}>
           <TextField
             value={arg}
-            placeholder="Argument"
+            placeholder={argumentPlaceholder}
             invalid={invalidIndex === i}
             onChange={(e) => update(i, e.target.value)}
           />
-          <Button variant="plain" aria-label="Remove" onClick={() => remove(i)}>
+          <Button variant="plain" aria-label={removeLabel} onClick={() => remove(i)}>
             <Icon name="close" />
           </Button>
         </div>
       ))}
       <Button variant="secondary" onClick={() => onChange([...args, ''])}>
         <Icon name="plus" />
-        Add argument
+        {addArgumentLabel}
       </Button>
     </div>
   );
@@ -170,6 +190,7 @@ function ArgsEditor({ args, onChange, invalidIndex }: ArgsEditorProps) {
 export function McpEditModal({ open, preset, onClose }: McpEditModalProps) {
   const config = useSkillkeeperStore((s) => s.config);
   const updateConfig = useSkillkeeperStore((s) => s.updateConfig);
+  const t = useTranslator();
   const [draft, setDraft] = useState<McpPresetDraft>(EMPTY_DRAFT);
 
   useEffect(() => {
@@ -179,7 +200,7 @@ export function McpEditModal({ open, preset, onClose }: McpEditModalProps) {
   const errors = useMemo(() => validatePreset(draft), [draft]);
   const firstError = errors[0];
   const errorFor = (field: string): string | undefined =>
-    firstError?.field === field ? firstError.message : undefined;
+    firstError?.field === field ? t(firstError.messageKey, firstError.vars) : undefined;
   const rowIndexFor = (prefix: string): number | undefined => {
     if (firstError === undefined) return undefined;
     const match = /^(\w+)\.(\d+)(\.value)?$/.exec(firstError.field);
@@ -214,48 +235,52 @@ export function McpEditModal({ open, preset, onClose }: McpEditModalProps) {
   const isStdio = draft.type === 'stdio';
 
   return (
-    <Modal open={open} onClose={onClose} title={preset !== undefined ? 'Edit MCP server' : 'Add MCP server'} className="sk-mcp-edit">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={preset !== undefined ? t('mcp.editTitle') : t('mcp.addTitle')}
+      className="sk-mcp-edit"
+    >
       <div className="sk-mcp-edit__form">
-        <p className="sk-mcp-edit__help">
-          Parameters {'{name}'} are supported in the URL, headers, command, args, env, and rules.
-        </p>
+        <p className="sk-mcp-edit__help">{t('mcp.paramsHelp')}</p>
 
         <label className="sk-mcp-edit__field">
-          <span className="sk-mcp-edit__label">Name</span>
+          <span className="sk-mcp-edit__label">{t('mcp.field.name')}</span>
           <TextField
             value={draft.name}
             invalid={errorFor('name') !== undefined}
-            placeholder="e.g. GitHub MCP"
+            placeholder={t('mcp.namePlaceholder')}
             onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
           />
           {errorFor('name') !== undefined && <span className="sk-mcp-edit__error">{errorFor('name')}</span>}
         </label>
 
         <label className="sk-mcp-edit__field sk-mcp-edit__field--bounded">
-          <span className="sk-mcp-edit__label">Type</span>
-          <Select options={TRANSPORT_OPTIONS} value={draft.type} onChange={setType} ariaLabel="Type" />
+          <span className="sk-mcp-edit__label">{t('mcp.field.type')}</span>
+          <Select options={transportOptions(t)} value={draft.type} onChange={setType} ariaLabel={t('mcp.field.type')} />
         </label>
 
         {isHttpLike && (
           <>
             <label className="sk-mcp-edit__field">
-              <span className="sk-mcp-edit__label">URL</span>
+              <span className="sk-mcp-edit__label">{t('mcp.field.url')}</span>
               <TextField
                 value={draft.url}
                 invalid={errorFor('url') !== undefined}
-                placeholder="https://example.com/{token}"
+                placeholder={t('mcp.urlPlaceholder')}
                 onChange={(e) => setDraft((d) => ({ ...d, url: e.target.value }))}
               />
               {errorFor('url') !== undefined && <span className="sk-mcp-edit__error">{errorFor('url')}</span>}
             </label>
             <div className="sk-mcp-edit__field">
-              <span className="sk-mcp-edit__label">Headers</span>
+              <span className="sk-mcp-edit__label">{t('mcp.field.headers')}</span>
               <KeyValueEditor
                 rows={draft.headers}
                 onChange={(headers) => setDraft((d) => ({ ...d, headers }))}
-                keyPlaceholder="Header name"
-                valuePlaceholder="Header value"
-                addLabel="Add header"
+                keyPlaceholder={t('mcp.headerNamePlaceholder')}
+                valuePlaceholder={t('mcp.headerValuePlaceholder')}
+                addLabel={t('mcp.addHeader')}
+                removeLabel={t('mcp.remove')}
                 invalidIndex={rowIndexFor('headers')}
               />
             </div>
@@ -265,31 +290,35 @@ export function McpEditModal({ open, preset, onClose }: McpEditModalProps) {
         {isStdio && (
           <>
             <label className="sk-mcp-edit__field">
-              <span className="sk-mcp-edit__label">Command</span>
+              <span className="sk-mcp-edit__label">{t('mcp.field.command')}</span>
               <TextField
                 value={draft.command}
                 invalid={errorFor('command') !== undefined}
-                placeholder="npx some-mcp-server"
+                placeholder={t('mcp.commandPlaceholder')}
                 onChange={(e) => setDraft((d) => ({ ...d, command: e.target.value }))}
               />
               {errorFor('command') !== undefined && <span className="sk-mcp-edit__error">{errorFor('command')}</span>}
             </label>
             <div className="sk-mcp-edit__field">
-              <span className="sk-mcp-edit__label">Arguments</span>
+              <span className="sk-mcp-edit__label">{t('mcp.field.arguments')}</span>
               <ArgsEditor
                 args={draft.args}
                 onChange={(args) => setDraft((d) => ({ ...d, args }))}
+                argumentPlaceholder={t('mcp.argumentPlaceholder')}
+                addArgumentLabel={t('mcp.addArgument')}
+                removeLabel={t('mcp.remove')}
                 invalidIndex={rowIndexFor('args')}
               />
             </div>
             <div className="sk-mcp-edit__field">
-              <span className="sk-mcp-edit__label">Environment variables</span>
+              <span className="sk-mcp-edit__label">{t('mcp.field.env')}</span>
               <KeyValueEditor
                 rows={draft.env}
                 onChange={(env) => setDraft((d) => ({ ...d, env }))}
-                keyPlaceholder="Variable name"
-                valuePlaceholder="Variable value"
-                addLabel="Add variable"
+                keyPlaceholder={t('mcp.varNamePlaceholder')}
+                valuePlaceholder={t('mcp.varValuePlaceholder')}
+                addLabel={t('mcp.addVariable')}
+                removeLabel={t('mcp.remove')}
                 invalidIndex={rowIndexFor('env')}
               />
             </div>
@@ -297,11 +326,11 @@ export function McpEditModal({ open, preset, onClose }: McpEditModalProps) {
         )}
 
         <label className="sk-mcp-edit__field">
-          <span className="sk-mcp-edit__label">Rules</span>
+          <span className="sk-mcp-edit__label">{t('mcp.field.rules')}</span>
           <textarea
             className={`sk-mcp-edit__textarea${errorFor('rules') !== undefined ? ' sk-mcp-edit__textarea--invalid' : ''}`}
             value={draft.rules}
-            placeholder="Guidance injected into the agent's rules/guidance file when this server is installed."
+            placeholder={t('mcp.rulesPlaceholder')}
             onChange={(e) => setDraft((d) => ({ ...d, rules: e.target.value }))}
           />
           {errorFor('rules') !== undefined && <span className="sk-mcp-edit__error">{errorFor('rules')}</span>}
@@ -309,10 +338,10 @@ export function McpEditModal({ open, preset, onClose }: McpEditModalProps) {
 
         <div className="sk-mcp-edit__actions">
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            {t('mcp.cancel')}
           </Button>
           <Button variant="primary" disabled={errors.length > 0} onClick={handleSave}>
-            Save
+            {t('mcp.save')}
           </Button>
         </div>
       </div>
