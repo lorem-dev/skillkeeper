@@ -44,6 +44,11 @@ function reset(): void {
       repoChecked: [],
       projectChecked: [],
       projectAgents: {},
+      expandedIds: null,
+    },
+    mcpUi: {
+      mode: 'repositories',
+      expandedIds: null,
     },
   });
 }
@@ -205,6 +210,14 @@ describe('useSkillkeeperStore', () => {
       expect(ui.query).toBe('fmt');
       expect(ui.repoFilter).toEqual(['repo-1']);
     });
+
+    it('does not clear a persisted tree expansion when reseeding', () => {
+      const store = useSkillkeeperStore.getState();
+      store.setSkillsUi({ expandedIds: ['root-1', 'group-1'] });
+      store.setSkills([projectInstall]);
+
+      expect(useSkillkeeperStore.getState().skillsUi.expandedIds).toEqual(['root-1', 'group-1']);
+    });
   });
 
   describe('setSkillsUi', () => {
@@ -216,6 +229,16 @@ describe('useSkillkeeperStore', () => {
       expect(ui.query).toBe('x');
       // Untouched fields keep their prior values.
       expect(ui.repoChecked).toEqual([]);
+    });
+
+    it('defaults expandedIds to null and merges a patch without disturbing other fields', () => {
+      expect(useSkillkeeperStore.getState().skillsUi.expandedIds).toBeNull();
+
+      useSkillkeeperStore.getState().setSkillsUi({ expandedIds: ['a', 'b'] });
+
+      const ui = useSkillkeeperStore.getState().skillsUi;
+      expect(ui.expandedIds).toEqual(['a', 'b']);
+      expect(ui.mode).toBe('projects');
     });
   });
 
@@ -241,6 +264,41 @@ describe('useSkillkeeperStore', () => {
       const ui = useSkillkeeperStore.getState().skillsUi;
       expect(ui.projectChecked).toHaveLength(1);
       expect(ui.projectAgents).toEqual({ 'proj-1': ['claude'] });
+    });
+
+    it('does not clear a persisted tree expansion in either mode', () => {
+      const store = useSkillkeeperStore.getState();
+      store.setSkills([projectInstall]);
+      store.setSkillsUi({ expandedIds: ['root-1'] });
+
+      store.resetSkillsSelection('repositories');
+      expect(useSkillkeeperStore.getState().skillsUi.expandedIds).toEqual(['root-1']);
+
+      store.resetSkillsSelection('projects');
+      expect(useSkillkeeperStore.getState().skillsUi.expandedIds).toEqual(['root-1']);
+    });
+  });
+
+  describe('setMcpUi', () => {
+    it('defaults to repositories mode with no persisted expansion', () => {
+      const ui = useSkillkeeperStore.getState().mcpUi;
+      expect(ui.mode).toBe('repositories');
+      expect(ui.expandedIds).toBeNull();
+    });
+
+    it('merges a partial patch without disturbing untouched fields', () => {
+      useSkillkeeperStore.getState().setMcpUi({ expandedIds: ['preset-1'] });
+
+      let ui = useSkillkeeperStore.getState().mcpUi;
+      expect(ui.expandedIds).toEqual(['preset-1']);
+      expect(ui.mode).toBe('repositories');
+
+      useSkillkeeperStore.getState().setMcpUi({ mode: 'projects' });
+
+      ui = useSkillkeeperStore.getState().mcpUi;
+      expect(ui.mode).toBe('projects');
+      // The expansion set from the earlier patch survives an unrelated merge.
+      expect(ui.expandedIds).toEqual(['preset-1']);
     });
   });
 

@@ -279,6 +279,27 @@ export interface SkillsUiState {
   projectChecked: string[];
   /** Chosen agents per project (baseline: the installed agents). */
   projectAgents: Record<string, AgentKind[]>;
+  /**
+   * Tree expansion, in-memory only (survives navigation, resets on app
+   * reload). `null` means "not yet customized by the user" -- the page then
+   * falls back to its own default (the root ids).
+   */
+  expandedIds: string[] | null;
+}
+
+/** MCP-page display mode: browse by repository or by tracked project. */
+export type McpMode = 'repositories' | 'projects';
+
+/**
+ * MCP-page view state: display mode + tree expansion. Lives in the store (not
+ * component state) so it survives navigating away and back, in memory only
+ * (resets on app reload). Mirrors the view-state half of `SkillsUiState`.
+ */
+export interface McpUiState {
+  /** Browse-by mode. */
+  mode: McpMode;
+  /** Tree expansion, in-memory only; `null` = not yet customized. */
+  expandedIds: string[] | null;
 }
 
 export interface SkillkeeperState {
@@ -318,6 +339,8 @@ export interface SkillkeeperState {
   skillApply: ApplyProgress | null;
   /** Skills-page selection + view state (persists across navigation until reload). */
   skillsUi: SkillsUiState;
+  /** MCP-page view state (persists across navigation until reload). */
+  mcpUi: McpUiState;
   /** Nonce bumped by `goToSkills` to request navigating to the Skills page (App
    *  watches it and switches the active view). */
   skillsNav: number;
@@ -361,6 +384,8 @@ export interface SkillkeeperActions {
   setSkills(skills: InstallManifest[]): void;
   /** Merge a partial update into the skills-page selection/view state. */
   setSkillsUi(patch: Partial<SkillsUiState>): void;
+  /** Merge a partial update into the MCP-page view state. */
+  setMcpUi(patch: Partial<McpUiState>): void;
   /**
    * Discard the current mode's pending selection changes, restoring it to the
    * installed baseline (repo mode: clear checks; project mode: reseed checks and
@@ -522,6 +547,11 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     repoChecked: [],
     projectChecked: [],
     projectAgents: {},
+    expandedIds: null,
+  },
+  mcpUi: {
+    mode: 'repositories',
+    expandedIds: null,
   },
   skillsNav: 0,
   addRepoRequest: null,
@@ -555,6 +585,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   setSkillsUi(patch) {
     set((s) => ({ skillsUi: { ...s.skillsUi, ...patch } }));
+  },
+
+  setMcpUi(patch) {
+    set((s) => ({ mcpUi: { ...s.mcpUi, ...patch } }));
   },
 
   resetSkillsSelection(mode) {

@@ -60,6 +60,12 @@ export interface TreeViewProps {
   readonly onSelect?: (node: TreeNode) => void;
   /** Ids expanded on first render. */
   readonly defaultExpandedIds?: readonly string[];
+  /**
+   * Called with the full current expanded-id array whenever the USER changes
+   * expansion (row/chevron click, or a keyboard toggle). Not fired for the
+   * programmatic `defaultExpandedIds` merge (e.g. search auto-expand).
+   */
+  readonly onExpandedChange?: (expandedIds: string[]) => void;
   /** Accessible name for the tree. */
   readonly ariaLabel?: string;
   /** Turn on checkbox selection. */
@@ -107,6 +113,7 @@ export function TreeView({
   selectedId = null,
   onSelect,
   defaultExpandedIds,
+  onExpandedChange,
   ariaLabel,
   checkable = false,
   checkboxLevels,
@@ -217,13 +224,21 @@ export function TreeView({
     ? focusedId
     : (visible[0]?.node.id ?? null);
 
+  // Single funnel for every USER-driven expansion change (row/chevron click,
+  // keyboard toggles) -- notifies `onExpandedChange` with the full next set.
+  // The programmatic `defaultExpandedIds` merge effect above does NOT go
+  // through this (it calls `setExpanded` directly), since that is a
+  // search-driven auto-expand, not a user action.
+  function commitExpanded(next: ReadonlySet<string>): void {
+    setExpanded(next);
+    onExpandedChange?.([...next]);
+  }
+
   function setBranch(id: string, open: boolean): void {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (open) next.add(id);
-      else next.delete(id);
-      return next;
-    });
+    const next = new Set(expanded);
+    if (open) next.add(id);
+    else next.delete(id);
+    commitExpanded(next);
   }
 
   function toggle(id: string): void {

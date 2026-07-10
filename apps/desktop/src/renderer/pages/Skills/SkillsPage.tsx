@@ -79,8 +79,16 @@ export function SkillsPage() {
   const updateProjectSkills = useSkillkeeperStore((s) => s.updateProjectSkills);
   const requestAddRepository = useSkillkeeperStore((s) => s.requestAddRepository);
   const tasks = useSkillkeeperStore((s) => s.tasks);
-  const { mode, query, repoFilter, projectFilter, repoChecked, projectChecked, projectAgents } =
-    skillsUi;
+  const {
+    mode,
+    query,
+    repoFilter,
+    projectFilter,
+    repoChecked,
+    projectChecked,
+    projectAgents,
+    expandedIds: persistedExpandedIds,
+  } = skillsUi;
 
   // Modal open flags are ephemeral -- they should not persist across navigation.
   const [installOpen, setInstallOpen] = useState(false);
@@ -337,7 +345,14 @@ export function SkillsPage() {
   const filtering = repoFilter.length > 0 || projectFilter.length > 0;
   const totalSkills = useMemo(() => countLeaves(baseTree), [baseTree]);
   const shownSkills = useMemo(() => countLeaves(decorated), [decorated]);
-  const expandedIds = searching ? collectBranchIds(decorated) : rootIds(baseTree);
+  // Seed from the persisted expansion (falling back to the roots the first
+  // time), so navigating away and back keeps whatever the user opened. While
+  // searching, union in the match branches too -- so matches still auto-open
+  // without collapsing anything the user had open.
+  const baseExpandedIds = persistedExpandedIds ?? rootIds(baseTree);
+  const expandedIds = searching
+    ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])]
+    : baseExpandedIds;
 
   const checkedIds = mode === 'repositories' ? repoChecked : projectChecked;
   const onCheckedChange = mode === 'repositories' ? setRepoChecked : setProjectChecked;
@@ -461,6 +476,7 @@ export function SkillsPage() {
             checkedIds={checkedIds}
             onCheckedChange={onCheckedChange}
             defaultExpandedIds={expandedIds}
+            onExpandedChange={(ids) => setSkillsUi({ expandedIds: ids })}
             ariaLabel={t('nav.skills')}
           />
           {(searching || filtering) && (

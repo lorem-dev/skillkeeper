@@ -88,9 +88,13 @@ export function McpPage() {
     void refreshProjectInfo();
   }, [refreshMcpPresets, refreshMcpInstalls, refreshProjectInfo]);
 
-  // Local UI state (deliberately NOT the Skills page's `skillsUi` store slice
-  // -- this page owns its own mode/query, ephemeral across navigation).
-  const [mode, setMode] = useState<Mode>('repositories');
+  // Display mode + tree expansion live in the store's `mcpUi` slice so they
+  // survive navigating away and back (in memory only -- reset on app
+  // reload), mirroring the Skills page's `skillsUi`. The search query stays
+  // local/ephemeral -- it is not requested to persist.
+  const mcpUi = useSkillkeeperStore((s) => s.mcpUi);
+  const setMcpUi = useSkillkeeperStore((s) => s.setMcpUi);
+  const { mode, expandedIds: persistedExpandedIds } = mcpUi;
   const [query, setQuery] = useState('');
 
   const [editOpen, setEditOpen] = useState(false);
@@ -321,7 +325,13 @@ export function McpPage() {
   const searching = query.trim() !== '';
   const totalMcp = useMemo(() => countLeaves(baseTree), [baseTree]);
   const shownMcp = useMemo(() => countLeaves(shownTree), [shownTree]);
-  const expandedIds = searching ? collectBranchIds(decorated) : rootIds(baseTree);
+  // Seed from the persisted expansion (falling back to the roots the first
+  // time), mirroring SkillsPage: union in the search-match branches while
+  // searching, without collapsing anything the user had open.
+  const baseExpandedIds = persistedExpandedIds ?? rootIds(baseTree);
+  const expandedIds = searching
+    ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])]
+    : baseExpandedIds;
 
   const sourceOptions = [
     { value: 'repositories', label: t('skills.source.repositories') },
@@ -402,7 +412,7 @@ export function McpPage() {
               options={sourceOptions}
               value={mode}
               onChange={(v) => {
-                setMode(v as Mode);
+                setMcpUi({ mode: v as Mode });
                 setQuery('');
               }}
             />
@@ -420,6 +430,7 @@ export function McpPage() {
             nodes={decorated}
             onSelect={handleSelect}
             defaultExpandedIds={expandedIds}
+            onExpandedChange={(ids) => setMcpUi({ expandedIds: ids })}
             ariaLabel={t('nav.mcp')}
           />
           {searching && (
