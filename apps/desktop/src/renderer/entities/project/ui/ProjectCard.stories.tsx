@@ -18,13 +18,18 @@ const sampleProject = {
   addedAt: '2026-06-20T10:00:00.000Z',
 };
 
-// A stand-in for the real OpenProjectButton (which needs the bridge).
+// A stand-in for the real OpenProjectButton (which needs the bridge). The real
+// control always renders `glass` (either a plain glass Button with no
+// detected editors, or a glass SplitButton) -- matched here so the action row
+// reads the same as it does wired up in ProjectsPage.
 const openControl = (
-  <Button variant="secondary" aria-label="Open">
+  <Button variant="secondary" glass aria-label="Open">
     <Icon name="folder" />
   </Button>
 );
 
+// Mirrors exactly what ProjectsPage passes per card, so the story's action
+// row (open / go-to-skills / edit, all glass) matches the real one.
 const base = {
   project: sampleProject,
   missingLabel: 'The folder was deleted or moved',
@@ -34,6 +39,8 @@ const base = {
   removeLabel: 'Remove project',
   openControl,
   onEdit: () => {},
+  skillsLabel: 'Go to skills',
+  onGoToSkills: () => {},
   onRemove: () => {},
 };
 

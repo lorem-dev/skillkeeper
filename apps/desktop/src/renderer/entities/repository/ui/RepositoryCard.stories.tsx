@@ -4,6 +4,10 @@ import { RepositoryCard } from './RepositoryCard';
 const meta = {
   title: 'entities/RepositoryCard',
   component: RepositoryCard,
+  // RepositoriesPage always wires up the "go to skills" action -- shared here
+  // so every story's action row (sync / go-to-skills / edit, all glass)
+  // matches the real card instead of only showing two of its three buttons.
+  args: { skillsLabel: 'Go to skills', onGoToSkills: () => {} },
 } satisfies Meta<typeof RepositoryCard>;
 
 export default meta;

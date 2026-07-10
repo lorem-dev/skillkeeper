@@ -166,6 +166,7 @@ export function ProjectCard({
           <Tooltip content={removeLabel}>
             <Button
               variant="secondary"
+              glass
               className="sk-project-card__icon-btn sk-project-card__icon-btn--danger"
               onClick={onRemove}
               aria-label={removeLabel}
