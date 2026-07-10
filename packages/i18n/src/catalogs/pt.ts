@@ -270,7 +270,7 @@ export const pt: Partial<Catalog> = {
   'mcp.needsParamsNotice': 'Estas instalações de MCP precisam de parâmetros antes de poderem ser adicionadas:',
   'mcp.delete': 'Eliminar',
   'mcp.deleteConfirmTitle': 'Eliminar {name}?',
-  'mcp.deleteConfirmBody': 'Esta acao nao pode ser desfeita.',
+  'mcp.deleteConfirmBody': 'Esta ação não pode ser desfeita.',
   'mcp.detailsTitle': 'Detalhes do servidor MCP',
 
   'settings.comingSoon': 'O ecrã de definições chega em breve.',

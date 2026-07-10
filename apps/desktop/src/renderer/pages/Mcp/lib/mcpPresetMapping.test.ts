@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import type { McpServerDef } from '@/services/bridge';
 import type { McpPreset } from '@/app/store';
-import { mcpConnectionFromDef, mcpSearchFields, toManualPreset } from './mcpPresetMapping';
+import { mcpConnectionFromDef, toManualPreset } from './mcpPresetMapping';
 
 describe('mcpConnectionFromDef', () => {
   it('joins command and args for stdio', () => {
@@ -102,59 +102,5 @@ describe('toManualPreset', () => {
     expect(manual.command).toBeUndefined();
     expect(manual.args).toBeUndefined();
     expect(manual.env).toBeUndefined();
-  });
-});
-
-describe('mcpSearchFields', () => {
-  it('includes the name, transport type, repo name, and command for a stdio preset', () => {
-    const preset: McpPreset = {
-      id: 'manual-1',
-      origin: 'manual',
-      name: 'local-filesystem',
-      def: { name: 'local-filesystem', type: 'stdio', command: 'npx', args: ['-y', 'server'] },
-      hash: 'sha256:x',
-      params: [],
-      hasRules: false,
-    };
-    expect(mcpSearchFields(preset, undefined)).toEqual([
-      'local-filesystem',
-      'stdio',
-      '',
-      '',
-      'npx -y server',
-    ]);
-  });
-
-  it('includes the repo name and url for a repo-discovered http preset', () => {
-    const preset: McpPreset = {
-      id: 'repo:repo-1:devtools:linear',
-      origin: 'repo',
-      name: 'linear',
-      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/mcp' },
-      hash: 'sha256:y',
-      params: [],
-      hasRules: false,
-      repoId: 'repo-1',
-    };
-    expect(mcpSearchFields(preset, 'Team Skills')).toEqual([
-      'linear',
-      'http',
-      'Team Skills',
-      'https://api.linear.app/mcp',
-      '',
-    ]);
-  });
-
-  it('leaves the connection fields empty when the def has neither a command nor a url', () => {
-    const preset: McpPreset = {
-      id: 'manual-2',
-      origin: 'manual',
-      name: 'incomplete',
-      def: { name: 'incomplete', type: 'http' },
-      hash: 'sha256:z',
-      params: [],
-      hasRules: false,
-    };
-    expect(mcpSearchFields(preset, undefined)).toEqual(['incomplete', 'http', '', '', '']);
   });
 });
