@@ -22,6 +22,7 @@ import { registerSkillCommands } from './commands/skill.js';
 import { registerProjectCommands } from './commands/project.js';
 import { registerConfigCommands } from './commands/config.js';
 import { registerCheckCommands } from './commands/check.js';
+import { registerMcpCommands } from './commands/mcp.js';
 
 async function main(): Promise<void> {
   const dataDir = appDataDir();
@@ -79,6 +80,16 @@ async function main(): Promise<void> {
     git: wiring.git,
     statePath: stPath,
     t: wiring.t,
+  });
+
+  registerMcpCommands(program, {
+    fs: wiring.fs,
+    statePath: stPath,
+    registry: wiring.registry,
+    adapterEnv: wiring.adapterEnv,
+    t: wiring.t,
+    manualPresets: configResult.config.mcp.servers,
+    cwd: () => process.cwd(),
   });
 
   await program.parseAsync(process.argv);
