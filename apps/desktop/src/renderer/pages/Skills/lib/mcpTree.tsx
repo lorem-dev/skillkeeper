@@ -17,14 +17,39 @@
  * import from `app` (see architecture.md's import boundaries) while `pages`
  * may reach the typed store surface at `@/app/store`.
  *
- * Node id scheme (an `mcp::` prefix keeps this id space disjoint from
+ * Project-mode model (revised -- a repo preset never disappears just because
+ * an instance of it is installed, so the same preset can be installed more
+ * than once):
+ *   - every repo preset always renders an install-only leaf, nested under its
+ *     repo/group node, regardless of how many instances of it exist;
+ *   - each currently-installed instance of that preset (its identity matches
+ *     the preset's remote/group/source) additionally renders a named
+ *     "<source> <n>" remove-only leaf right beside the preset -- one leaf per
+ *     distinct instance-config name, so installing the same preset twice
+ *     (`github_1`, `github_2`) shows two separate rows; installing once for
+ *     several agents (which share one instance-config name) still collapses
+ *     to a single row;
+ *   - an installed instance whose identity matches NO current preset (its
+ *     source repo was untracked, or a manual preset was deleted) is
+ *     "unlinked": it renders muted and remove-only under a synthetic node
+ *     keyed off its identity's remote (or `local` id, or bare source when
+ *     neither is present) -- mirroring `entities/skill/lib/skillTree.tsx`'s
+ *     orphan-skill handling (muted row, synthetic node for a since-untracked
+ *     source) -- rather than disappearing or floating unParented at the
+ *     project root.
+ *
+ * Node id scheme (an `mcp::`-family prefix keeps this id space disjoint from
  * skillTree's skill-leaf keys, so an MCP leaf id can never collide with, or be
  * mistaken for, a skill leaf id -- and so it never enters the checkbox
  * selection or the apply-plan math, which only ever look up skill-shaped
- * keys):
- *   - repo mode leaf:            `mcp::<presetId>`
- *   - project mode, not installed: `mcp::<projectId>::<presetId>`
- *   - project mode, installed:   `mcp::<projectId>::install::<identityKey>`
+ * keys; `parseProjectSkillKey` splits any key on `::` and matches its first
+ * segment against a real project id, so none of these ever pass that check
+ * regardless of which `mcp*` prefix is used):
+ *   - repo mode leaf:                 `mcp::<presetId>`
+ *   - project mode, preset (install): `mcp-preset::<projectId>::<presetId>`
+ *   - project mode, instance (remove): `mcp-inst::<projectId>::<instanceKey>`
+ *   - project mode, unlinked node:    `mcp-unlinked::<projectId>::<groupKey>`
+ *   - project mode, unlinked leaf:    `mcp-inst::<projectId>::unlinked::<instanceKey>`
  */
 import type { ReactNode } from 'react';
 import { Icon } from '@/shared/ui';
@@ -59,14 +84,19 @@ export function mcpRepoLeafId(presetId: string): string {
   return ['mcp', presetId].join(SEP);
 }
 
-/** Stable id for a project-mode "not yet installed" MCP leaf. */
+/** Stable id for a project-mode preset (install-only) leaf. */
 export function mcpProjectPresetLeafId(projectId: string, presetId: string): string {
-  return ['mcp', projectId, presetId].join(SEP);
+  return ['mcp-preset', projectId, presetId].join(SEP);
 }
 
-/** Stable id for a project-mode "installed instance" MCP leaf. */
-export function mcpProjectInstallLeafId(projectId: string, identityKey: string): string {
-  return ['mcp', projectId, 'install', identityKey].join(SEP);
+/** Stable id for a project-mode named-instance (remove-only) leaf. */
+export function mcpProjectInstanceLeafId(projectId: string, instanceKey: string): string {
+  return ['mcp-inst', projectId, instanceKey].join(SEP);
+}
+
+/** Stable id for the synthetic node an unlinked instance nests under. */
+export function mcpUnlinkedNodeId(projectId: string, groupKey: string): string {
+  return ['mcp-unlinked', projectId, groupKey].join(SEP);
 }
 
 /** Whether an installed instance's identity matches a repo-origin preset. */
@@ -80,12 +110,62 @@ function identityMatchesRepoPreset(identity: McpInstall['identity'], preset: Rep
   );
 }
 
-/** A stable grouping key for installs whose identity matches no current
- *  preset (e.g. a manual install, or one whose source repo was untracked) --
- *  installs sharing the same identity (across agents) collapse into one row. */
+/** A stable grouping key for an install's identity (ignoring which specific
+ *  instance-config name it landed under). */
 function identityKey(identity: McpInstall['identity']): string {
   if (identity.local !== undefined) return `local:${identity.local}`;
   return `remote:${normalizeMcpRemote(identity.remote ?? '')}|${identity.group ?? ''}|${identity.source}`;
+}
+
+/** A stable grouping key for one logical installed instance: the same
+ *  (identity, instance-config name) pair across every agent it is installed
+ *  for collapses into one row, so installing the same preset for several
+ *  agents at once (which share one instance-config name) still yields a
+ *  single row, while installing it a second time (a fresh, differently-
+ *  numbered instance name) yields a second, separate row. */
+function instanceKey(identity: McpInstall['identity'], instanceName: string): string {
+  return `${identityKey(identity)}|${instanceName}`;
+}
+
+/** Display label for an installed instance: its source name plus the numeric
+ *  suffix parsed off its instance-config name (`github_1` -> `github 1`), per
+ *  the `<snake>_<n>` naming convention in `packages/core/src/mcpNaming.ts`.
+ *  Falls back to the bare source when the instance name does not follow that
+ *  convention (should not happen for a SkillKeeper-managed instance). */
+function instanceDisplayName(source: string, instanceName: string): string {
+  const m = /_(\d+)$/.exec(instanceName);
+  return m !== null ? `${source} ${m[1]}` : source;
+}
+
+/** Human-friendly label from a remote URL, e.g. `git@github.com:acme/x.git` ->
+ *  `acme/x`. Mirrors `entities/skill/lib/skillTree.tsx`'s private
+ *  `repoLabelFromRemote` (not exported across the entity boundary); duplicated
+ *  here for the same reason `app/store/store.ts` duplicates core's small pure
+ *  algorithms rather than importing them into the renderer. */
+function repoLabelFromRemote(remote: string): string {
+  let s = remote.trim().replace(/\.git$/, '');
+  const scp = /^[^/@]+@([^:/]+):(.+)$/.exec(s);
+  if (scp !== null) s = `${scp[1]}/${scp[2]}`;
+  else s = s.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
+  const parts = s.split('/').filter(Boolean);
+  return parts.length >= 2 ? parts.slice(-2).join('/') : (parts[0] ?? remote);
+}
+
+/** Grouping key for the synthetic node an unlinked instance nests under --
+ *  keyed off its identity's remote (normalized) when present, else its local
+ *  preset id, else its raw source name. Installs sharing one of these collapse
+ *  under one node, mirroring how `skillTree` groups an untracked repo's
+ *  orphan skills under one synthetic repo node. */
+function unlinkedGroupKey(identity: McpInstall['identity']): string {
+  if (identity.remote !== undefined) return `remote:${normalizeMcpRemote(identity.remote)}`;
+  if (identity.local !== undefined) return `local:${identity.local}`;
+  return `source:${identity.source}`;
+}
+
+/** Label for the synthetic unlinked-group node: a friendly repo name when the
+ *  identity carries a remote, else its bare source name. */
+function unlinkedGroupLabel(identity: McpInstall['identity']): string {
+  return identity.remote !== undefined ? repoLabelFromRemote(identity.remote) : identity.source;
 }
 
 /** The action a row's trailing badge performs: install a preset (optionally
@@ -210,69 +290,107 @@ interface ProjectMcpRow {
   readonly action: McpRowAction;
 }
 
-/** Compute one project's MCP rows: a "remove" row per repo preset that has a
- *  matching install (grouping every agent's instance into one row), an
- *  "install" row per repo preset with none, and a "remove" row for any install
- *  matching no current preset (manual origin, or its source repo untracked). */
+/** One synthetic node's worth of unlinked (no-preset-match) rows. */
+interface UnlinkedGroup {
+  readonly groupKey: string;
+  readonly label: string;
+  readonly rows: ProjectMcpRow[];
+}
+
+/**
+ * Compute one project's MCP rows for the current model (see the file header):
+ * every repo preset gets a persistent install row (`nested`, so the same
+ * preset can be installed more than once), plus one named remove row per
+ * distinct installed instance that matches it (also `nested`, alongside its
+ * preset); installs matching no current preset are returned separately
+ * (`unlinkedGroups`), bucketed by source, for the caller to nest under a
+ * synthetic muted node instead of a repo/group.
+ */
 function projectMcpRows(
   projectId: string,
   repoPresets: readonly RepoPreset[],
   installs: readonly McpInstall[],
-): ProjectMcpRow[] {
+): { readonly nested: ProjectMcpRow[]; readonly unlinkedGroups: UnlinkedGroup[] } {
   const projectInstalls = installs.filter((i) => i.projectId === projectId);
   const consumed = new Set<McpInstall>();
-  const rows: ProjectMcpRow[] = [];
+  const nested: ProjectMcpRow[] = [];
 
-  for (const preset of repoPresets) {
+  const sortedPresets = [...repoPresets].sort((a, b) => a.name.localeCompare(b.name));
+  for (const preset of sortedPresets) {
+    nested.push({
+      repoId: preset.repoId,
+      group: preset.group,
+      label: preset.name,
+      leafId: mcpProjectPresetLeafId(projectId, preset.id),
+      action: { kind: 'install', preset, projectId },
+    });
+
     const matches = projectInstalls.filter((inst) => identityMatchesRepoPreset(inst.identity, preset));
-    if (matches.length > 0) {
-      for (const m of matches) consumed.add(m);
-      rows.push({
+    const byInstance = new Map<string, McpInstall[]>();
+    for (const m of matches) {
+      consumed.add(m);
+      const key = instanceKey(m.identity, m.instanceName);
+      const list = byInstance.get(key);
+      if (list !== undefined) list.push(m);
+      else byInstance.set(key, [m]);
+    }
+    const groups = [...byInstance.values()].sort((a, b) =>
+      a[0]!.instanceName.localeCompare(b[0]!.instanceName),
+    );
+    for (const group of groups) {
+      const first = group[0]!;
+      nested.push({
         repoId: preset.repoId,
         group: preset.group,
-        label: preset.name,
-        leafId: mcpProjectInstallLeafId(projectId, preset.id),
-        action: { kind: 'remove', installs: matches },
-      });
-    } else {
-      rows.push({
-        repoId: preset.repoId,
-        group: preset.group,
-        label: preset.name,
-        leafId: mcpProjectPresetLeafId(projectId, preset.id),
-        action: { kind: 'install', preset, projectId },
+        label: instanceDisplayName(first.identity.source, first.instanceName),
+        leafId: mcpProjectInstanceLeafId(projectId, instanceKey(first.identity, first.instanceName)),
+        action: { kind: 'remove', installs: group },
       });
     }
   }
 
-  const byIdentity = new Map<string, McpInstall[]>();
+  const byInstanceUnmatched = new Map<string, McpInstall[]>();
   for (const inst of projectInstalls) {
     if (consumed.has(inst)) continue;
-    const key = identityKey(inst.identity);
-    const list = byIdentity.get(key);
+    const key = instanceKey(inst.identity, inst.instanceName);
+    const list = byInstanceUnmatched.get(key);
     if (list !== undefined) list.push(inst);
-    else byIdentity.set(key, [inst]);
-  }
-  for (const [key, group] of byIdentity) {
-    const first = group[0]!;
-    rows.push({
-      label: first.identity.source,
-      leafId: mcpProjectInstallLeafId(projectId, key),
-      action: { kind: 'remove', installs: group },
-    });
+    else byInstanceUnmatched.set(key, [inst]);
   }
 
-  return rows.sort((a, b) => a.label.localeCompare(b.label));
+  const byGroupKey = new Map<string, UnlinkedGroup>();
+  for (const group of byInstanceUnmatched.values()) {
+    const first = group[0]!;
+    const groupKey = unlinkedGroupKey(first.identity);
+    const row: ProjectMcpRow = {
+      label: instanceDisplayName(first.identity.source, first.instanceName),
+      leafId: mcpProjectInstanceLeafId(
+        projectId,
+        `unlinked${SEP}${instanceKey(first.identity, first.instanceName)}`,
+      ),
+      action: { kind: 'remove', installs: group },
+    };
+    const bucket = byGroupKey.get(groupKey);
+    if (bucket !== undefined) bucket.rows.push(row);
+    else byGroupKey.set(groupKey, { groupKey, label: unlinkedGroupLabel(first.identity), rows: [row] });
+  }
+  const unlinkedGroups = [...byGroupKey.values()]
+    .map((g) => ({ ...g, rows: [...g.rows].sort((a, b) => a.label.localeCompare(b.label)) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  return { nested, unlinkedGroups };
 }
 
 /**
  * Attach MCP leaves under `buildProjectModel`'s output (projects mode), per
- * project: installed instances (grouped across agents) as "Remove" leaves,
- * repo presets not yet installed as "Install MCP" leaves (project
- * preselected), both nested under the matching repo/group node; installs
- * whose identity matches no current repo preset render directly under the
- * project root (unmanaged-style), same as the skill tree's own orphan
- * skills.
+ * project: every repo preset gets a persistent install leaf nested under its
+ * repo/group node (see the file header -- it never disappears just because an
+ * instance exists); each matching installed instance gets a named remove leaf
+ * right beside it; any installed instance matching no current preset
+ * ("unlinked") renders muted and remove-only under a synthetic node, one per
+ * distinct source, appended as a direct child of the project root (alongside
+ * the repo nodes) -- same placement skillTree uses for an untracked repo's
+ * orphan skills.
  */
 export function attachProjectMcpLeaves(
   nodes: readonly TreeNode[],
@@ -287,8 +405,8 @@ export function attachProjectMcpLeaves(
 
   let out = [...nodes];
   for (const project of projects) {
-    const rows = projectMcpRows(project.id, repoPresets, installs);
-    if (rows.length === 0) continue;
+    const { nested, unlinkedGroups } = projectMcpRows(project.id, repoPresets, installs);
+    if (nested.length === 0 && unlinkedGroups.length === 0) continue;
 
     const pid = projectNodeId(project.id);
     const idx = out.findIndex((n) => n.id === pid);
@@ -296,9 +414,6 @@ export function attachProjectMcpLeaves(
       idx === -1
         ? { id: pid, label: project.name, icon: projectIcon, selectable: false, children: [] }
         : out[idx]!;
-
-    const nested = rows.filter((r) => r.repoId !== undefined);
-    const rootLevel = rows.filter((r) => r.repoId === undefined);
 
     const items: PlacedLeaf[] = nested.map((r) => ({
       repoId: r.repoId,
@@ -313,13 +428,21 @@ export function attachProjectMcpLeaves(
       (repoId, group) => projectGroupNodeId(project.id, repoId, group),
       false,
     );
-    const rootLeaves: TreeNode[] = rootLevel.map((r) => ({
-      id: r.leafId,
-      label: r.label,
-      icon: mcpIcon,
-      trailing: renderTrailing(r.action),
+
+    const unlinkedNodes: TreeNode[] = unlinkedGroups.map((g) => ({
+      id: mcpUnlinkedNodeId(project.id, g.groupKey),
+      label: g.label,
+      icon: repoIcon,
+      muted: true,
+      children: g.rows.map((r) => ({
+        id: r.leafId,
+        label: r.label,
+        icon: mcpIcon,
+        trailing: renderTrailing(r.action),
+        muted: true,
+      })),
     }));
-    children = [...children, ...rootLeaves];
+    children = [...children, ...unlinkedNodes];
 
     const updated = { ...base, children };
     if (idx === -1) out = [...out, updated];

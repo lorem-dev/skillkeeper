@@ -226,6 +226,9 @@ export const en = {
   /** Install modal title. Interpolation: {name} = the preset name. */
   'mcp.installTitle': 'Install {name}',
   'mcp.remove': 'Remove',
+  /** Label for the synthetic tree node grouping installed MCP instances whose
+   *  source preset (repo or manual) no longer matches anything. */
+  'mcp.unlinkedGroup': 'Unlinked MCP',
   'mcp.update': 'Update',
   'mcp.cancel': 'Cancel',
   'mcp.save': 'Save',

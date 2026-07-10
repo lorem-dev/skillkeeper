@@ -87,6 +87,16 @@ function allIds(nodes: readonly TreeNode[]): string[] {
   return out;
 }
 
+/** A `renderTrailing` that records every action it is called with (in call
+ *  order) and returns its `kind` as the trailing value, so a test can find a
+ *  rendered leaf by `trailing === 'install' | 'remove'`. */
+function recordingRenderer(seen: McpRowAction[]): (action: McpRowAction) => string {
+  return (action) => {
+    seen.push(action);
+    return action.kind;
+  };
+}
+
 describe('attachRepoMcpLeaves', () => {
   const repoA = repo({ id: 'r1', name: 'Repo A' });
   const repoB = repo({ id: 'r2', name: 'Repo B' });
@@ -168,9 +178,30 @@ describe('attachProjectMcpLeaves', () => {
   const p1 = project({ id: 'p1', name: 'Project One' });
   const projects = [p1];
 
-  it('groups multi-agent installs of the same preset into a single "remove" row nested under project/repo/group', () => {
+  it('keeps a repo preset\'s "install" row even after an instance of it is installed', () => {
     const base = buildProjectModel([], repos, repos, projects, []);
-    const grouped = preset({ id: 'repo:r1:g:tool', name: 'tool', repoId: 'r1', group: 'g' });
+    const grouped = preset({ id: 'repo:r1:g:tool', name: 'tool', repoId: 'r1', group: 'g', remote: repoA.url });
+    const installs: McpInstall[] = [
+      install({
+        instanceName: 'tool_1',
+        agent: 'claude',
+        identity: { remote: repoA.url, group: 'g', source: 'tool' },
+      }),
+    ];
+
+    const seen: McpRowAction[] = [];
+    const out = attachProjectMcpLeaves(base.nodes, [grouped], installs, projects, repos, recordingRenderer(seen));
+
+    const groupNode = findNode(out, projectGroupNodeId('p1', 'r1', 'g'));
+    expect(seen).toContainEqual({ kind: 'install', preset: grouped, projectId: 'p1' });
+    expect((groupNode!.children ?? []).some((c) => c.trailing === 'install')).toBe(true);
+    // ...and the matched instance also shows up beside it, as a named remove row.
+    expect((groupNode!.children ?? []).some((c) => c.trailing === 'remove')).toBe(true);
+  });
+
+  it('groups multi-agent installs of the same preset+instance into one named "remove" row nested with its preset', () => {
+    const base = buildProjectModel([], repos, repos, projects, []);
+    const grouped = preset({ id: 'repo:r1:g:tool', name: 'tool', repoId: 'r1', group: 'g', remote: repoA.url });
     const installs: McpInstall[] = [
       install({
         instanceName: 'tool_1',
@@ -184,33 +215,56 @@ describe('attachProjectMcpLeaves', () => {
       }),
     ];
 
-    let seen: McpRowAction | undefined;
-    const out = attachProjectMcpLeaves(base.nodes, [grouped], installs, projects, repos, (action) => {
-      seen = action;
-      return 'x';
-    });
+    const seen: McpRowAction[] = [];
+    const out = attachProjectMcpLeaves(base.nodes, [grouped], installs, projects, repos, recordingRenderer(seen));
 
     const groupNode = findNode(out, projectGroupNodeId('p1', 'r1', 'g'));
-    expect(groupNode!.children).toHaveLength(1);
-    expect(seen).toEqual({ kind: 'remove', installs });
+    // The preset's install row plus one grouped instance-remove row.
+    expect(groupNode!.children).toHaveLength(2);
+    expect(seen).toContainEqual({ kind: 'remove', installs });
+    const instanceLeaf = (groupNode!.children ?? []).find((c) => c.trailing === 'remove');
+    expect(instanceLeaf!.label).toBe('tool 1');
+    expect(instanceLeaf!.id).not.toMatch(/^mcp-preset::/);
+  });
+
+  it('shows two distinct named instance rows when the same preset is installed twice', () => {
+    const base = buildProjectModel([], repos, repos, projects, []);
+    const grouped = preset({ id: 'repo:r1:g:tool', name: 'tool', repoId: 'r1', group: 'g', remote: repoA.url });
+    const installs: McpInstall[] = [
+      install({
+        instanceName: 'tool_1',
+        agent: 'claude',
+        identity: { remote: repoA.url, group: 'g', source: 'tool' },
+      }),
+      install({
+        instanceName: 'tool_2',
+        agent: 'claude',
+        identity: { remote: repoA.url, group: 'g', source: 'tool' },
+      }),
+    ];
+
+    const out = attachProjectMcpLeaves(base.nodes, [grouped], installs, projects, repos, () => 'x');
+
+    const groupNode = findNode(out, projectGroupNodeId('p1', 'r1', 'g'));
+    // Install row for the preset, plus one remove row per distinct instance.
+    expect(groupNode!.children).toHaveLength(3);
+    const labels = (groupNode!.children ?? []).map((c) => c.label);
+    expect(labels).toEqual(expect.arrayContaining(['tool', 'tool 1', 'tool 2']));
   });
 
   it('shows an uninstalled repo preset as an "install" row with the project preselected', () => {
     const base = buildProjectModel([], repos, repos, projects, []);
     const p = preset({ id: 'repo:r1::tool', name: 'tool', repoId: 'r1' });
 
-    let seen: McpRowAction | undefined;
-    const out = attachProjectMcpLeaves(base.nodes, [p], [], projects, repos, (action) => {
-      seen = action;
-      return 'x';
-    });
+    const seen: McpRowAction[] = [];
+    const out = attachProjectMcpLeaves(base.nodes, [p], [], projects, repos, recordingRenderer(seen));
 
     const repoNode = findNode(out, projectRepoNodeId('p1', 'r1'));
     expect(repoNode!.children).toHaveLength(1);
-    expect(seen).toEqual({ kind: 'install', preset: p, projectId: 'p1' });
+    expect(seen).toEqual([{ kind: 'install', preset: p, projectId: 'p1' }]);
   });
 
-  it('places an installed instance with no matching preset directly under the project root (unmanaged-style)', () => {
+  it('renders an installed instance with no matching preset as a muted, remove-only leaf under a synthetic unlinked node', () => {
     const base = buildProjectModel([], repos, repos, projects, []);
     const orphanInstall = install({
       instanceName: 'ghost_1',
@@ -218,12 +272,34 @@ describe('attachProjectMcpLeaves', () => {
       identity: { source: 'ghost' },
     });
 
-    const out = attachProjectMcpLeaves(base.nodes, [], [orphanInstall], projects, repos, () => 'x');
+    const seen: McpRowAction[] = [];
+    const out = attachProjectMcpLeaves(base.nodes, [], [orphanInstall], projects, repos, recordingRenderer(seen));
 
     const projNode = findNode(out, projectNodeId('p1'));
-    const rootLeaf = (projNode!.children ?? []).find((c) => c.label === 'ghost');
-    expect(rootLeaf).toBeDefined();
-    expect(rootLeaf!.trailing).toBe('x');
+    const unlinkedNode = (projNode!.children ?? []).find((c) => c.muted === true);
+    expect(unlinkedNode).toBeDefined();
+    expect(unlinkedNode!.children).toHaveLength(1);
+    const leaf = unlinkedNode!.children![0]!;
+    expect(leaf.label).toBe('ghost 1');
+    expect(leaf.muted).toBe(true);
+    expect(seen).toEqual([{ kind: 'remove', installs: [orphanInstall] }]);
+  });
+
+  it('groups unlinked instances from the same source under one synthetic node', () => {
+    const base = buildProjectModel([], repos, repos, projects, []);
+    const orphans: McpInstall[] = [
+      install({ instanceName: 'ghost_1', agent: 'claude', identity: { source: 'ghost' } }),
+      install({ instanceName: 'ghost_1', agent: 'cursor', identity: { source: 'ghost' } }),
+      install({ instanceName: 'ghost_2', agent: 'claude', identity: { source: 'ghost' } }),
+    ];
+
+    const out = attachProjectMcpLeaves(base.nodes, [], orphans, projects, repos, () => 'x');
+
+    const projNode = findNode(out, projectNodeId('p1'));
+    const unlinkedNodes = (projNode!.children ?? []).filter((c) => c.muted === true);
+    expect(unlinkedNodes).toHaveLength(1);
+    // Two agents sharing instanceName 'ghost_1' collapse into one row; 'ghost_2' is separate.
+    expect(unlinkedNodes[0]!.children).toHaveLength(2);
   });
 
   it('adds MCP children to a project node that buildProjectModel already created empty', () => {
@@ -252,7 +328,7 @@ describe('attachProjectMcpLeaves', () => {
     expect(out[0]!.children).toHaveLength(1);
   });
 
-  it('never produces an id that collides with a skill leaf id', () => {
+  it('never produces an id that collides with a skill leaf id, across presets/instances/unlinked', () => {
     const base = buildProjectModel(
       [skill({ repoId: 'r1', group: 'g', name: 'tool' })],
       repos,
@@ -260,9 +336,15 @@ describe('attachProjectMcpLeaves', () => {
       projects,
       [],
     );
-    const p = preset({ id: 'repo:r1:g:tool', name: 'tool', repoId: 'r1', group: 'g' });
+    const p = preset({ id: 'repo:r1:g:tool', name: 'tool', repoId: 'r1', group: 'g', remote: repoA.url });
+    const matched = install({
+      instanceName: 'tool_1',
+      agent: 'claude',
+      identity: { remote: repoA.url, group: 'g', source: 'tool' },
+    });
+    const orphan = install({ instanceName: 'ghost_1', agent: 'claude', identity: { source: 'ghost' } });
 
-    const out = attachProjectMcpLeaves(base.nodes, [p], [], projects, repos, () => 'x');
+    const out = attachProjectMcpLeaves(base.nodes, [p], [matched, orphan], projects, repos, () => 'x');
     const ids = allIds(out);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -273,7 +355,12 @@ describe('MCP leaf ids never enter the checkbox / apply-plan math', () => {
     const withoutMcp = buildProjectPlan('p1', ['p1::r1::g::tool'], [], ['claude']);
     const withMcp = buildProjectPlan(
       'p1',
-      ['p1::r1::g::tool', 'mcp::p1::repo:r1:g:tool'],
+      [
+        'p1::r1::g::tool',
+        'mcp::p1::repo:r1:g:tool',
+        'mcp-preset::p1::repo:r1:g:tool',
+        'mcp-inst::p1::remote:x|g|tool|tool_1',
+      ],
       [],
       ['claude'],
     );

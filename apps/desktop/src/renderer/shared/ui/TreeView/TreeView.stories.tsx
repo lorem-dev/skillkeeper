@@ -572,9 +572,15 @@ export const McpLeavesRepoMode: Story = {
   render: () => <Checkable nodes={repoWithMcp} expanded={['repo-mcp', 'grp-mcp']} levels={[1, 2]} />,
 };
 
-// Projects mode: an already-installed MCP instance shows a "Remove" badge; a
-// not-yet-installed repo preset shows "Install MCP". Both are leaves, neither
-// has a checkbox.
+// Projects mode: a repo preset always keeps its "Install MCP" leaf -- even
+// once an instance of it is installed, so the same preset can be installed
+// again -- and each installed instance additionally shows beside it as a
+// named "<source> <n>" leaf (the "_<n>" suffix off its instance-config name)
+// with a "Remove" badge. An installed instance whose identity matches no
+// current preset (its source repo was untracked, or a manual preset was
+// deleted) is "unlinked": muted, remove-only, nested under a synthetic node
+// instead of a repo/group -- mirroring the muted/synthetic-node treatment
+// orphaned skills get above. None of these rows have a checkbox.
 const projectWithMcp: TreeNode[] = [
   {
     id: 'proj-mcp',
@@ -588,12 +594,35 @@ const projectWithMcp: TreeNode[] = [
         icon: repo,
         children: [
           { id: 'p-sk-a', label: 'condense', icon: skill },
-          { id: 'mcp::proj-mcp::install::docs', label: 'docs-server', icon: mcp, trailing: mcpBadge('Remove') },
           {
-            id: 'mcp::proj-mcp::repo:r1::search',
+            id: 'mcp-preset::proj-mcp::docs',
+            label: 'docs-server',
+            icon: mcp,
+            trailing: mcpBadge('Install MCP'),
+          },
+          { id: 'mcp-inst::proj-mcp::docs_1', label: 'docs-server 1', icon: mcp, trailing: mcpBadge('Remove') },
+          {
+            id: 'mcp-preset::proj-mcp::search',
             label: 'search-server',
             icon: mcp,
             trailing: mcpBadge('Install MCP'),
+          },
+        ],
+      },
+      // An installed instance whose source repo is no longer tracked: muted,
+      // nested under a synthetic node instead of a repo/group.
+      {
+        id: 'mcp-unlinked::proj-mcp::ghost',
+        label: 'ghost',
+        icon: repo,
+        muted: true,
+        children: [
+          {
+            id: 'mcp-inst::proj-mcp::unlinked::ghost_1',
+            label: 'ghost 1',
+            icon: mcp,
+            muted: true,
+            trailing: mcpBadge('Remove'),
           },
         ],
       },
@@ -603,6 +632,11 @@ const projectWithMcp: TreeNode[] = [
 
 export const McpLeavesProjectMode: Story = {
   render: () => (
-    <Checkable nodes={projectWithMcp} expanded={['proj-mcp', 'proj-mcp::repo::r1']} levels={[1, 2, 3]} initial={['p-sk-a']} />
+    <Checkable
+      nodes={projectWithMcp}
+      expanded={['proj-mcp', 'proj-mcp::repo::r1', 'mcp-unlinked::proj-mcp::ghost']}
+      levels={[1, 2, 3]}
+      initial={['p-sk-a']}
+    />
   ),
 };
