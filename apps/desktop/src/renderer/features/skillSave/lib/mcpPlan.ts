@@ -35,7 +35,7 @@ import { supportsTransport } from '@/features/mcpInstall';
 
 /** The four project-scoped MCP agents; codex is global-only and never appears
  *  in a project's `McpInstall` list (mirrors main's `PROJECT_MCP_AGENTS` and
- *  the same exclusion `pages/Skills/lib/mcpTree.tsx` documents for task C7). */
+ *  the same exclusion `pages/Mcp/lib/mcpTree.tsx` documents for task C7). */
 const PROJECT_MCP_AGENTS: readonly AgentKind[] = ['claude', 'cursor', 'copilot', 'opencode'];
 
 export interface McpChangeRow {
@@ -65,7 +65,7 @@ export interface McpProjectPlan {
 }
 
 /** Groups installs sharing the same source across agents (mirrors
- *  `pages/Skills/lib/mcpTree.tsx`'s private `identityKey`). */
+ *  `pages/Mcp/lib/mcpTree.tsx`'s private `identityKey`). */
 function identityKey(identity: McpInstall['identity']): string {
   if (identity.local !== undefined) return `local:${identity.local}`;
   return `remote:${normalizeMcpRemote(identity.remote ?? '')}|${identity.group ?? ''}|${identity.source}`;
