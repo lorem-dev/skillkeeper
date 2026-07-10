@@ -20,8 +20,8 @@ import { useSkillkeeperStore } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import type { AgentKind } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
-import { Modal, Button, Select, TextField, Checkbox, Tooltip, Alert } from '@/shared/ui';
-import type { SelectOption } from '@/shared/ui';
+import { Modal, Button, TextField, Checkbox, Tooltip, Alert } from '@/shared/ui';
+import { ProjectSelect } from '@/entities/project';
 import { ALL_AGENTS, AGENT_LABELS } from '@/domain';
 import { supportsTransport } from '../lib/supportsTransport';
 import { buildInstallBatches } from '../lib/buildBatches';
@@ -33,7 +33,7 @@ export interface McpInstallModalProps {
   readonly preset: McpPreset;
   /** Pre-selects the project when opened from that project's own context
    *  (e.g. its skills tree); left unset opens with no project chosen so the
-   *  user picks one from the `Select`. */
+   *  user picks one from the `ProjectSelect`. */
   readonly preselectedProjectId?: string;
   /** Seeds already-known parameter values (update flow); a fresh install
    *  passes nothing and every param starts empty. */
@@ -49,6 +49,7 @@ export function McpInstallModal({
   onClose,
 }: McpInstallModalProps) {
   const projects = useSkillkeeperStore((s) => s.projects);
+  const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
   const applyMcp = useSkillkeeperStore((s) => s.applyMcp);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
@@ -76,8 +77,6 @@ export function McpInstallModal({
 
   const project = projects.find((p) => p.id === projectId);
   const projectPath = project?.path ?? '';
-
-  const projectOptions: SelectOption[] = projects.map((p) => ({ value: p.id, label: p.name }));
 
   /** Reason text for a disabled agent checkbox, or undefined when selectable. */
   function disabledReason(agent: AgentKind): string | undefined {
@@ -120,14 +119,16 @@ export function McpInstallModal({
       className="sk-mcp-install"
     >
       <div className="sk-mcp-install__form">
-        <label className="sk-mcp-install__field sk-mcp-install__field--bounded">
+        <label className="sk-mcp-install__field">
           <span className="sk-mcp-install__label">{t('mcp.field.project')}</span>
-          <Select
-            options={projectOptions}
+          <ProjectSelect
+            projects={projects}
+            projectInfo={projectInfo}
             value={projectId}
             onChange={setProjectId}
             placeholder={t('mcp.chooseProject')}
             ariaLabel={t('mcp.field.project')}
+            emptyText={t('mcp.filterProjectsEmpty')}
             disabled={busy}
           />
         </label>

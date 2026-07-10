@@ -12,10 +12,10 @@ import { useSkillkeeperStore } from '@/app/store';
 import { bridgeClient } from '@/services/bridge';
 import type { AgentKind } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
-import { Modal, Button, Combobox, ProgressBar, TreeView, ChangeBadge } from '@/shared/ui';
+import { Modal, Button, ProgressBar, TreeView, ChangeBadge } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { AgentSelect } from '@/entities/agent';
-import { ProjectIcon } from '@/entities/project';
+import { ProjectIcon, ProjectSelect } from '@/entities/project';
 import {
   buildProjectTree,
   buildProjectPlan,
@@ -169,12 +169,6 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
     onClose();
   }
 
-  const projectOptions = projects.map((p) => ({
-    value: p.id,
-    label: p.name,
-    icon: <ProjectIcon iconUrl={projectInfo[p.id]?.iconDataUrl} name={p.name} size={18} />,
-  }));
-
   return (
     <Modal
       open={open}
@@ -186,14 +180,14 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
         <div className="sk-skill-modal__step">
           <label className="sk-skill-modal__field">
             <span className="sk-skill-modal__label">{t('skills.install.chooseProject')}</span>
-            <Combobox
-              options={projectOptions}
+            <ProjectSelect
+              projects={projects}
+              projectInfo={projectInfo}
               value={projectId}
               onChange={setProjectId}
               placeholder={t('skills.install.chooseProject')}
               ariaLabel={t('skills.install.chooseProject')}
               emptyText={t('skills.filterProjectsEmpty')}
-              fallbackIcon={<ProjectIcon name="" size={18} />}
             />
           </label>
           <label className="sk-skill-modal__field">

@@ -239,6 +239,7 @@ export const de: Partial<Catalog> = {
   'mcp.validation.invalidParam': 'Ungültiger Parameter ({reason}) an Position {index}.',
   'mcp.field.project': 'Projekt',
   'mcp.chooseProject': 'Projekt wählen',
+  'mcp.filterProjectsEmpty': 'Kein passendes Projekt',
   'mcp.field.agents': 'Agenten',
   'mcp.field.parameters': 'Parameter',
   'mcp.codexGlobalNote': 'Codex installiert global (nicht auf dieses Projekt beschränkt).',

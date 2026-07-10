@@ -270,6 +270,7 @@ export const en = {
   'mcp.validation.invalidParam': 'Invalid parameter ({reason}) at position {index}.',
   'mcp.field.project': 'Project',
   'mcp.chooseProject': 'Choose a project',
+  'mcp.filterProjectsEmpty': 'No matching project',
   'mcp.field.agents': 'Agents',
   'mcp.field.parameters': 'Parameters',
   'mcp.codexGlobalNote': 'Codex installs globally (not scoped to this project).',

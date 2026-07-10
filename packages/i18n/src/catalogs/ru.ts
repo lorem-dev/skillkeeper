@@ -256,6 +256,7 @@ export const ru: Partial<Catalog> = {
   'mcp.validation.invalidParam': 'Недопустимый параметр ({reason}) в позиции {index}.',
   'mcp.field.project': 'Проект',
   'mcp.chooseProject': 'Выберите проект',
+  'mcp.filterProjectsEmpty': 'Нет подходящего проекта',
   'mcp.field.agents': 'Агенты',
   'mcp.field.parameters': 'Параметры',
   'mcp.codexGlobalNote': 'Codex устанавливается глобально (не привязан к этому проекту).',
