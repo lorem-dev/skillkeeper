@@ -1,5 +1,10 @@
 # MCP Servers
 
+See also: [Skills and Hooks](skills-and-hooks.md) (the guidance mechanism
+MCP `rules` reuses), [Repositories](repositories.md) (a repository can
+declare MCP presets alongside skills), and [Projects](projects.md) (MCP
+installs use the same per-project targets as skills).
+
 ## Overview
 
 An MCP (Model Context Protocol) server is an external tool/context provider

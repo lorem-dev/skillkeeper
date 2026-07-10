@@ -34,6 +34,10 @@ SkillKeeper ships two front ends over one shared, framework-agnostic core:
   your first skill.
 - [Skills and Hooks](skills-and-hooks.md) - skill format, hook strategies,
   resolution schemes.
+- [Repositories](repositories.md) - adding repositories, branch tracking,
+  update detection, and how Git is invoked.
+- [Projects](projects.md) - tracked project folders, per-project agent
+  selection, and reconciliation.
 - [MCP Servers](mcp.md) - MCP presets, the `mcp.yml` format, install/update/
   remove, and per-agent native config.
 - [CLI Reference](cli.md) - every command and option.
