@@ -8,20 +8,53 @@
   inset: 0;
   z-index: 100;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  // The scrim is the scroll container: a dialog that fits centers via the
+  // dialog's own `margin: auto` below (a flex item's auto margins absorb
+  // free space in both axes). That is deliberate -- centering here instead,
+  // with `align-items`/`justify-content: center`, clips the top of an
+  // overflowing item in Chromium (no reliable "safe center" support yet),
+  // whereas item-level auto margins fall back to 0 and stay scrollable.
+  overflow-y: auto;
+  // Scrolling to the end of a tall dialog should not chain into the page
+  // behind the fixed overlay.
+  overscroll-behavior: contain;
   padding: var(--sk-space-7);
   background: rgba(0, 0, 0, 0.4);
   // A subtle blur on the dimmed backdrop. Declared statically (not applied after
   // mount) and the scrim only fades opacity, so it does not flicker on open.
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
+
+  // Edge fade for a dialog taller than the viewport. `Modal.tsx` sets these
+  // from the scrim's own scroll position, so the fade only shows on the edge
+  // that actually has hidden content; both default to 0, which collapses
+  // the gradient stops into a no-op (fully opaque) mask.
+  --sk-modal-fade-top: 0px;
+  --sk-modal-fade-bottom: 0px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--sk-modal-fade-top),
+    black calc(100% - var(--sk-modal-fade-bottom)),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--sk-modal-fade-top),
+    black calc(100% - var(--sk-modal-fade-bottom)),
+    transparent 100%
+  );
 }
 
 .sk-modal {
   position: relative;
   width: 100%;
   max-width: 440px;
+  // Centers the dialog when it fits within the scrim; when it is taller (or
+  // wider) than the scrim, auto margins resolve to 0 instead of clipping, so
+  // the dialog stays flush at the top and fully reachable by scrolling.
+  margin: auto;
   overflow: hidden;
   border-radius: var(--sk-radius-2xl);
   border: 0.5px solid var(--sk-color-separator);

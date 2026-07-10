@@ -30,3 +30,59 @@ export const Default: Story = {
     );
   },
 };
+
+// Content well under the viewport height: the dialog centers in the scrim
+// with no scrolling and no edge fade in either direction.
+export const ShortContentStaysCentered: Story = {
+  render: () => {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <Button variant="primary" onClick={() => setOpen(true)}>
+          Open short dialog
+        </Button>
+        <Modal open={open} onClose={() => setOpen(false)} title="Short content">
+          This dialog is short enough to stay centered in the scrim -- no
+          scrolling, no edge fade.
+        </Modal>
+      </>
+    );
+  },
+};
+
+// Content much taller than the viewport: the dialog cannot fit, so it flows
+// to its full height and the SCRIM (not an inner body scroll) becomes the
+// scroll container -- the whole modal block, title through actions, scrolls
+// as one unit. Scroll the story canvas to see the top fade appear once
+// scrolled past the start, and the bottom fade disappear once scrolled to
+// the end.
+export const VeryTallContentScrollsWithEdgeFade: Story = {
+  render: () => {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <Button variant="primary" onClick={() => setOpen(true)}>
+          Open very tall dialog
+        </Button>
+        <Modal open={open} onClose={() => setOpen(false)} title="Very tall content">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <p>
+              This dialog is much taller than the viewport. The scrim scrolls
+              the whole block -- title, body, and actions together -- rather
+              than growing off-screen or scrolling only an inner region.
+            </p>
+            {Array.from({ length: 24 }, (_, i) => (
+              <p key={i}>
+                Section {i + 1} of a long form. Keep scrolling to see the top
+                fade appear and the bottom fade fade out near the end.
+              </p>
+            ))}
+            <Button variant="primary" onClick={() => setOpen(false)}>
+              Save (reachable by scrolling to the end)
+            </Button>
+          </div>
+        </Modal>
+      </>
+    );
+  },
+};
