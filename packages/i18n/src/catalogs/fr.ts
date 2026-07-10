@@ -12,6 +12,7 @@ export const fr: Partial<Catalog> = {
   'nav.repositories': 'Depots',
   'nav.skills': 'Competences',
   'nav.projects': 'Projets',
+  'nav.mcp': 'MCP',
   'nav.settings': 'Parametres',
 
   'common.loading': 'Chargement',

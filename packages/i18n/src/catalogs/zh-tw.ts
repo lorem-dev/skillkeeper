@@ -12,6 +12,7 @@ export const zhTw: Partial<Catalog> = {
   'nav.repositories': '儲存庫',
   'nav.skills': '技能',
   'nav.projects': '專案',
+  'nav.mcp': 'MCP',
   'nav.settings': '設定',
 
   'common.loading': '載入中',

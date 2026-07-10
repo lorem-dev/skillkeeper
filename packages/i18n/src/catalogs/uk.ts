@@ -12,6 +12,7 @@ export const uk: Partial<Catalog> = {
   'nav.repositories': 'Репозиторії',
   'nav.skills': 'Навички',
   'nav.projects': 'Проєкти',
+  'nav.mcp': 'MCP',
   'nav.settings': 'Налаштування',
 
   'common.loading': 'Завантаження',

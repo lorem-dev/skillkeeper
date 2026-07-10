@@ -12,6 +12,7 @@ export const ja: Partial<Catalog> = {
   'nav.repositories': 'リポジトリ',
   'nav.skills': 'スキル',
   'nav.projects': 'プロジェクト',
+  'nav.mcp': 'MCP',
   'nav.settings': '設定',
 
   'common.loading': '読み込み中',

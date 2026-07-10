@@ -12,6 +12,7 @@ export const en = {
   'nav.repositories': 'Repositories',
   'nav.skills': 'Skills',
   'nav.projects': 'Projects',
+  'nav.mcp': 'MCP',
   'nav.settings': 'Settings',
 
   /** Generic activity/loading label. */

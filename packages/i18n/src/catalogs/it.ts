@@ -12,6 +12,7 @@ export const it: Partial<Catalog> = {
   'nav.repositories': 'Repository',
   'nav.skills': 'Competenze',
   'nav.projects': 'Progetti',
+  'nav.mcp': 'MCP',
   'nav.settings': 'Impostazioni',
 
   'common.loading': 'Caricamento',

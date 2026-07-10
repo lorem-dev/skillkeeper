@@ -1,0 +1,9 @@
+// Responsive grid of McpCards: as many columns as fit at >=340px each, falling
+// back to a single column on narrow widths. Mirrors the card gap used by the
+// repository/project list pages.
+.sk-mcp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--sk-space-3);
+  align-items: start;
+}

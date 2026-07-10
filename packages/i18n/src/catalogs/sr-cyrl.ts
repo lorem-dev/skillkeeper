@@ -12,6 +12,7 @@ export const srCyrl: Partial<Catalog> = {
   'nav.repositories': 'Репозиторијуми',
   'nav.skills': 'Вештине',
   'nav.projects': 'Пројекти',
+  'nav.mcp': 'MCP',
   'nav.settings': 'Подешавања',
 
   'common.loading': 'Учитавање',

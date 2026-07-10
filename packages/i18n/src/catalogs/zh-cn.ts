@@ -12,6 +12,7 @@ export const zhCn: Partial<Catalog> = {
   'nav.repositories': '仓库',
   'nav.skills': '技能',
   'nav.projects': '项目',
+  'nav.mcp': 'MCP',
   'nav.settings': '设置',
 
   'common.loading': '加载中',

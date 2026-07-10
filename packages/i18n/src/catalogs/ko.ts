@@ -12,6 +12,7 @@ export const ko: Partial<Catalog> = {
   'nav.repositories': '저장소',
   'nav.skills': '스킬',
   'nav.projects': '프로젝트',
+  'nav.mcp': 'MCP',
   'nav.settings': '설정',
 
   'common.loading': '불러오는 중',

@@ -12,6 +12,7 @@ export const be: Partial<Catalog> = {
   'nav.repositories': 'Рэпазіторыі',
   'nav.skills': 'Навыкі',
   'nav.projects': 'Праекты',
+  'nav.mcp': 'MCP',
   'nav.settings': 'Налады',
 
   'common.loading': 'Загрузка',

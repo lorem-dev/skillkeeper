@@ -15,6 +15,7 @@ export const ru: Partial<Catalog> = {
   'nav.repositories': 'Репозитории',
   'nav.skills': 'Навыки',
   'nav.projects': 'Проекты',
+  'nav.mcp': 'MCP',
   'nav.settings': 'Настройки',
 
   'common.loading': 'Загрузка',

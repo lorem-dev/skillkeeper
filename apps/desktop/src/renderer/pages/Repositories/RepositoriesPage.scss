@@ -19,3 +19,20 @@
 .sk-list-footer {
   margin-top: auto;
 }
+
+// Anchor wrapper around each RepositoryCard: always present so the ring's
+// transition (defined here, not on the transient modifier below) animates
+// smoothly in and back out. `border-radius` matches the Card's own so the
+// ring traces its rounded corners.
+.sk-repo-card-anchor {
+  border-radius: var(--sk-radius-xl);
+  box-shadow: 0 0 0 0 transparent;
+  transition: box-shadow var(--sk-duration-medium) var(--sk-ease-standard);
+}
+
+// Transient focus ring for a card scrolled into view via `repoFocus` (e.g. an
+// MCP preset's "go to repository" badge). RepositoriesPage clears this class
+// after a short delay.
+.sk-repo-card-anchor--highlight {
+  box-shadow: 0 0 0 2px var(--sk-color-accent);
+}

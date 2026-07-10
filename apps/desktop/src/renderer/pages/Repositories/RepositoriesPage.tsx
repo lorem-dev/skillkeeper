@@ -11,8 +11,12 @@ import { RepoAddButton } from '@/features/repoAdd';
 import { RepoEditModal } from '@/features/repoEdit';
 import type { Repository } from '@/services/bridge';
 import { Page, Toolbar, Button, SearchField, SearchSummary } from '@/shared/ui';
-import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
+import { fuzzyFilter, fadeRise, fade, cx } from '@/shared/lib';
 import './RepositoriesPage.scss';
+
+/** How long the transient focus ring stays on a card scrolled into view by
+ *  `repoFocus` (e.g. from an MCP preset's source-repo badge). */
+const FOCUS_HIGHLIGHT_MS = 1600;
 
 export function RepositoriesPage() {
   const repositories = useSkillkeeperStore((s) => s.repositories);
@@ -24,10 +28,12 @@ export function RepositoriesPage() {
   const showRepoError = useSkillkeeperStore((s) => s.showRepoError);
   const goToSkills = useSkillkeeperStore((s) => s.goToSkills);
   const notify = useSkillkeeperStore((s) => s.notify);
+  const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
   const t = useTranslator();
   const [editing, setEditing] = useState<Repository | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
+  const [highlightRepoId, setHighlightRepoId] = useState<string | null>(null);
 
   function copyBranch(branch: string): void {
     void navigator.clipboard.writeText(branch);
@@ -46,6 +52,28 @@ export function RepositoriesPage() {
   useEffect(() => {
     void refreshRepoInfo();
   }, [refreshRepoInfo]);
+
+  // A "focus this repository" request (App switched here for it): clear any
+  // active search first so the target card is guaranteed to be in the
+  // rendered (filtered) list -- a no-op re-render when the query is already
+  // empty, since React bails out on an unchanged string.
+  useEffect(() => {
+    if (repoFocus !== null) setQuery('');
+  }, [repoFocus]);
+
+  // Scroll the focused card into view and apply a transient highlight ring.
+  // Keyed on `query` (not the `filtered` array, which is a fresh reference on
+  // every render) so this only re-runs once the search-clearing effect above
+  // has actually committed the empty query, guaranteeing the card is present.
+  useEffect(() => {
+    if (repoFocus === null) return undefined;
+    const el = document.querySelector<HTMLElement>(`[data-repo-id="${CSS.escape(repoFocus.repoId)}"]`);
+    if (el === null) return undefined;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    setHighlightRepoId(repoFocus.repoId);
+    const timer = setTimeout(() => setHighlightRepoId(null), FOCUS_HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [repoFocus, query]);
 
   // Fuzzy search by name, remote URL, and tracked branch. The field only
   // appears once there are at least two cards to sift through.
@@ -103,6 +131,8 @@ export function RepositoriesPage() {
               initial="initial"
               animate="animate"
               exit="exit"
+              data-repo-id={r.id}
+              className={cx('sk-repo-card-anchor', highlightRepoId === r.id && 'sk-repo-card-anchor--highlight')}
             >
             <RepositoryCard
               repository={r}

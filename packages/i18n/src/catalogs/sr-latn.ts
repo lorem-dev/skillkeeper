@@ -12,6 +12,7 @@ export const srLatn: Partial<Catalog> = {
   'nav.repositories': 'Repozitorijumi',
   'nav.skills': 'Veštine',
   'nav.projects': 'Projekti',
+  'nav.mcp': 'MCP',
   'nav.settings': 'Podešavanja',
 
   'common.loading': 'Učitavanje',

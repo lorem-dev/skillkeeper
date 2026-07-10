@@ -17,6 +17,7 @@ import { ConfigBanner } from '@/features/configBanner';
 import { RepositoriesPage } from '@/pages/Repositories';
 import { SkillsPage } from '@/pages/Skills';
 import { ProjectsPage } from '@/pages/Projects';
+import { McpPage } from '@/pages/Mcp';
 import { SettingsPage } from '@/pages/Settings';
 import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
 import { Toasts, StatusBar, LogsPage } from '@/systems/notifications';
@@ -24,11 +25,15 @@ import { TerminalPage } from '@/systems/terminal';
 import { TasksPage } from '@/systems/tasks';
 import './App.scss';
 
-type View = 'repositories' | 'skills' | 'projects' | 'settings';
+type View = 'repositories' | 'skills' | 'projects' | 'mcp' | 'settings';
 
-const NAV_ITEMS: { id: View; key: 'nav.repositories' | 'nav.skills' | 'nav.projects' | 'nav.settings' }[] = [
+const NAV_ITEMS: {
+  id: View;
+  key: 'nav.repositories' | 'nav.skills' | 'nav.projects' | 'nav.mcp' | 'nav.settings';
+}[] = [
   { id: 'repositories', key: 'nav.repositories' },
   { id: 'projects', key: 'nav.projects' },
+  { id: 'mcp', key: 'nav.mcp' },
   { id: 'skills', key: 'nav.skills' },
   { id: 'settings', key: 'nav.settings' },
 ];
@@ -44,6 +49,7 @@ export function App() {
   const error = useSkillkeeperStore((s) => s.error);
   const addRepoRequest = useSkillkeeperStore((s) => s.addRepoRequest);
   const skillsNav = useSkillkeeperStore((s) => s.skillsNav);
+  const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
   const t = useTranslator();
 
   useEffect(() => {
@@ -63,6 +69,14 @@ export function App() {
     if (skillsNav > 0) setActiveView('skills');
   }, [skillsNav]);
 
+  // A "focus this repository" request (e.g. from an MCP preset's source-repo
+  // badge) switches to the Repositories view; RepositoriesPage scrolls the
+  // matching card into view and applies a transient highlight. Bumped by a
+  // nonce so a repeat request for the same repo re-fires, mirroring skillsNav.
+  useEffect(() => {
+    if (repoFocus !== null) setActiveView('repositories');
+  }, [repoFocus]);
+
   // A background ssh auth failure requests the terminal (for the passphrase
   // prompt); subscribed once for the app's lifetime.
   useEffect(() => {
@@ -80,6 +94,8 @@ export function App() {
         return <SkillsPage />;
       case 'projects':
         return <ProjectsPage />;
+      case 'mcp':
+        return <McpPage />;
       case 'settings':
         return <SettingsPage />;
     }
