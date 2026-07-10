@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
-import type { SkillsMode } from '@/app/store';
+import type { SkillsMode, McpPreset } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import {
   Page,
@@ -43,9 +43,28 @@ import {
 } from '@/entities/skill';
 import { SkillInstallModal } from '@/features/skillInstall';
 import { SkillSaveModal } from '@/features/skillSave';
+import { McpInstallModal } from '@/features/mcpInstall';
+import type { McpInstall, McpBatch } from '@/services/bridge';
+import { attachRepoMcpLeaves, attachProjectMcpLeaves } from './lib/mcpTree';
 import './SkillsPage.scss';
 
 type Mode = SkillsMode;
+
+/**
+ * Placeholder passed to `McpInstallModal` while it is closed -- its `preset`
+ * prop is required, but the modal's own `open` gate keeps the body (which is
+ * the only place `preset` is read) out of the DOM, so this is never shown.
+ * Mirrors the same placeholder in `McpPage`.
+ */
+const EMPTY_MCP_PRESET: McpPreset = {
+  id: '',
+  origin: 'manual',
+  name: '',
+  def: { name: '', type: 'stdio' },
+  hash: '',
+  params: [],
+  hasRules: false,
+};
 
 /** Whether two agent lists hold the same set. */
 function sameAgents(a: readonly string[], b: readonly string[]): boolean {
@@ -61,6 +80,12 @@ export function SkillsPage() {
   const installs = useSkillkeeperStore((s) => s.skills);
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
   const refreshProjectInfo = useSkillkeeperStore((s) => s.refreshProjectInfo);
+  const mcpPresets = useSkillkeeperStore((s) => s.mcpPresets);
+  const mcpInstalls = useSkillkeeperStore((s) => s.mcpInstalls);
+  const refreshMcpPresets = useSkillkeeperStore((s) => s.refreshMcpPresets);
+  const refreshMcpInstalls = useSkillkeeperStore((s) => s.refreshMcpInstalls);
+  const applyMcp = useSkillkeeperStore((s) => s.applyMcp);
+  const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
 
   // Project icons are resolved into projectInfo by the main process; refresh it on
@@ -69,6 +94,13 @@ export function SkillsPage() {
   useEffect(() => {
     void refreshProjectInfo();
   }, [refreshProjectInfo]);
+
+  // MCP presets/installs back the tree's MCP leaves (both modes); refresh both
+  // on mount, mirroring McpPage's own mount-refresh pattern.
+  useEffect(() => {
+    void refreshMcpPresets();
+    void refreshMcpInstalls();
+  }, [refreshMcpPresets, refreshMcpInstalls]);
 
   // Selection + view state lives in the store so it survives navigating away and
   // back (until the app reloads). The store reseeds the selection to the
@@ -85,6 +117,12 @@ export function SkillsPage() {
   // Modal open flags are ephemeral -- they should not persist across navigation.
   const [installOpen, setInstallOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+  // The MCP install modal's target (preset + optional preselected project);
+  // null means closed. Ephemeral for the same reason as the flags above.
+  const [mcpInstallTarget, setMcpInstallTarget] = useState<{
+    preset: McpPreset;
+    projectId?: string;
+  } | null>(null);
 
   // Thin setters that merge one selection field into the store at a time.
   const setQuery = (value: string): void => setSkillsUi({ query: value });
@@ -143,7 +181,61 @@ export function SkillsPage() {
     [mode, availableSkills, shownRepos, projectModel],
   );
 
-  const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
+  // MCP leaves (design spec "MCP support" section 8, option B): repo presets
+  // (repositories mode) or installed instances / not-yet-installed repo
+  // presets (projects mode), inline with the skill leaves. Built from -- but
+  // kept separate from -- `baseTree`, so the skill-only counts below stay
+  // accurate; the badges wired here never touch the checkbox selection or the
+  // apply-plan math (they carry no i18n text yet, matching McpPage/
+  // McpInstallModal's "hardcode now, retrofit i18n later" approach for the
+  // still-unwrapped MCP feature).
+  const treeWithMcp = useMemo(() => {
+    function openInstall(preset: McpPreset, projectId?: string): void {
+      setMcpInstallTarget({ preset, projectId });
+    }
+
+    async function removeMcp(toRemove: readonly McpInstall[]): Promise<void> {
+      const first = toRemove[0];
+      if (first === undefined) return;
+      const project = projects.find((p) => p.id === first.projectId);
+      if (project === undefined) return;
+      const batches: McpBatch[] = toRemove.map((inst) => ({
+        agent: inst.agent,
+        install: [],
+        remove: [{ instanceName: inst.instanceName }],
+      }));
+      const result = await applyMcp({ projectId: project.id, projectPath: project.path, batches });
+      if (!result.ok) notify(result.error, 'error');
+    }
+
+    function renderBadge(label: string, tone: 'accent' | 'neutral', onClick: () => void): ReactNode {
+      return (
+        <span className="sk-skills-badgewrap" onClick={(e) => e.stopPropagation()}>
+          <Tooltip content={label}>
+            <button type="button" className="sk-skills-badge-btn" onClick={onClick}>
+              <Badge tone={tone}>{label}</Badge>
+            </button>
+          </Tooltip>
+        </span>
+      );
+    }
+
+    if (mode === 'repositories') {
+      return attachRepoMcpLeaves(baseTree, mcpPresets, shownRepos, (preset) =>
+        renderBadge('Install MCP', 'accent', () => openInstall(preset)),
+      );
+    }
+    return attachProjectMcpLeaves(baseTree, mcpPresets, mcpInstalls, shownProjects, shownRepos, (action) =>
+      action.kind === 'install'
+        ? renderBadge('Install MCP', 'accent', () => openInstall(action.preset, action.projectId))
+        : renderBadge('Remove', 'neutral', () => void removeMcp(action.installs)),
+    );
+  }, [mode, baseTree, mcpPresets, mcpInstalls, shownRepos, shownProjects, projects, applyMcp, notify]);
+
+  const shownTree = useMemo(() => filterTree(treeWithMcp, query), [treeWithMcp, query]);
+  // Skill-only filtered tree, purely for the "N of M skills" search summary --
+  // MCP leaves are not skills and must not inflate that count.
+  const shownSkillsOnly = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
 
   // An update-skill task in flight makes every dot pulse and non-clickable.
   const updatesBusy = useMemo(
@@ -335,9 +427,12 @@ export function SkillsPage() {
 
   const searching = query.trim() !== '';
   const filtering = repoFilter.length > 0 || projectFilter.length > 0;
+  // Skill-only counts (MCP leaves are not skills and must not inflate "N of M").
   const totalSkills = useMemo(() => countLeaves(baseTree), [baseTree]);
-  const shownSkills = useMemo(() => countLeaves(decorated), [decorated]);
-  const expandedIds = searching ? collectBranchIds(decorated) : rootIds(baseTree);
+  const shownSkills = useMemo(() => countLeaves(shownSkillsOnly), [shownSkillsOnly]);
+  // `treeWithMcp` is a superset of `baseTree` (it may add MCP-only repo/project
+  // roots), so expanding its top level also opens those by default.
+  const expandedIds = searching ? collectBranchIds(decorated) : rootIds(treeWithMcp);
 
   const checkedIds = mode === 'repositories' ? repoChecked : projectChecked;
   const onCheckedChange = mode === 'repositories' ? setRepoChecked : setProjectChecked;
@@ -500,6 +595,12 @@ export function SkillsPage() {
         onClose={() => setSaveOpen(false)}
         checkedIds={projectChecked}
         projectAgents={projectAgents}
+      />
+      <McpInstallModal
+        open={mcpInstallTarget !== null}
+        preset={mcpInstallTarget?.preset ?? EMPTY_MCP_PRESET}
+        preselectedProjectId={mcpInstallTarget?.projectId}
+        onClose={() => setMcpInstallTarget(null)}
       />
     </Page>
   );

@@ -15,6 +15,11 @@ export {
   projectSkillKey,
   parseRepoSkillKey,
   parseProjectSkillKey,
+  repoNodeId,
+  repoGroupNodeId,
+  projectNodeId,
+  projectRepoNodeId,
+  projectGroupNodeId,
 } from './lib/skillTree';
 export type {
   ParsedSkillRef,

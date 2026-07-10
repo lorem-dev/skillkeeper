@@ -32,6 +32,31 @@ export function repoSkillKey(repoId: string, group: string | undefined, name: st
   return [repoId, group ?? '', name].join(SEP);
 }
 
+/** Stable id for a repo-mode repository root node. */
+export function repoNodeId(repoId: string): string {
+  return `repo${SEP}${repoId}`;
+}
+
+/** Stable id for a repo-mode skill-group node. */
+export function repoGroupNodeId(repoId: string, group: string): string {
+  return `${repoId}${SEP}${group}`;
+}
+
+/** Stable id for a project-mode project root node. */
+export function projectNodeId(projectId: string): string {
+  return `proj${SEP}${projectId}`;
+}
+
+/** Stable id for a project-mode repository node (nested under a project). */
+export function projectRepoNodeId(projectId: string, repoId: string): string {
+  return `${projectId}${SEP}repo${SEP}${repoId}`;
+}
+
+/** Stable id for a project-mode skill-group node (nested under a project/repo). */
+export function projectGroupNodeId(projectId: string, repoId: string, group: string): string {
+  return `${projectId}${SEP}${repoId}${SEP}${group}`;
+}
+
 /** Stable checkbox key for a project-mode skill leaf. */
 export function projectSkillKey(
   projectId: string,
@@ -89,7 +114,7 @@ export function buildRepoTree(available: readonly AvailableSkill[], repos: reado
     const children: TreeNode[] = [];
     for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
       children.push({
-        id: `${repo.id}${SEP}${group}`,
+        id: repoGroupNodeId(repo.id, group),
         label: group,
         icon: groupIcon,
         children: [...gs].sort(byName).map((s) => ({
@@ -103,7 +128,7 @@ export function buildRepoTree(available: readonly AvailableSkill[], repos: reado
       children.push({ id: repoSkillKey(repo.id, undefined, s.name), label: s.name, icon: skillIcon });
     }
 
-    nodes.push({ id: `repo${SEP}${repo.id}`, label: repo.name, icon: repoIcon, selectable: false, children });
+    nodes.push({ id: repoNodeId(repo.id), label: repo.name, icon: repoIcon, selectable: false, children });
   }
   return nodes;
 }
@@ -134,7 +159,7 @@ export function buildProjectTree(
       const children: TreeNode[] = [];
       for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
         children.push({
-          id: `${project.id}${SEP}${repo.id}${SEP}${group}`,
+          id: projectGroupNodeId(project.id, repo.id, group),
           label: group,
           icon: groupIcon,
           children: [...gs].sort(byName).map((s) => ({
@@ -148,9 +173,9 @@ export function buildProjectTree(
         children.push({ id: projectSkillKey(project.id, repo.id, undefined, s.name), label: s.name, icon: skillIcon });
       }
 
-      repoNodes.push({ id: `${project.id}${SEP}repo${SEP}${repo.id}`, label: repo.name, icon: repoIcon, children });
+      repoNodes.push({ id: projectRepoNodeId(project.id, repo.id), label: repo.name, icon: repoIcon, children });
     }
-    nodes.push({ id: `proj${SEP}${project.id}`, label: project.name, icon: projectIcon, selectable: false, children: repoNodes });
+    nodes.push({ id: projectNodeId(project.id), label: project.name, icon: projectIcon, selectable: false, children: repoNodes });
   }
   return nodes;
 }
@@ -325,11 +350,11 @@ export function buildProjectModel(
       const items = byRepo.get(repoId)!;
       const remote = items.find((i) => i.entry.remote !== undefined)?.entry.remote;
       const repoName = repoNameById.get(repoId) ?? repoLabelFromRemote(remote, repoId);
-      const repoNodeId = `${project.id}${SEP}repo${SEP}${repoId}`;
+      const repoBranchId = projectRepoNodeId(project.id, repoId);
       // A repo node that is not tracked (removed) is itself "unlinked" -- offer to
       // re-add it (one action re-links all of its skills).
       if (!trackedIds.has(repoId) && remote !== undefined) {
-        orphanLeaves.set(repoNodeId, { kind: 'unlinked', remote });
+        orphanLeaves.set(repoBranchId, { kind: 'unlinked', remote });
       }
 
       const makeLeaf = ({ leafId, entry }: { leafId: string; entry: LeafEntry }): TreeNode => {
@@ -345,7 +370,7 @@ export function buildProjectModel(
             repoId,
             repoName,
           };
-          for (const nid of [leafId, `${project.id}${SEP}${repoId}${SEP}${entry.group ?? ''}`, repoNodeId]) {
+          for (const nid of [leafId, projectGroupNodeId(project.id, repoId, entry.group ?? ''), repoBranchId]) {
             addUpdate(nid, upd);
           }
         }
@@ -371,7 +396,7 @@ export function buildProjectModel(
       for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
         const leaves = [...gs].sort((a, b) => a.entry.name.localeCompare(b.entry.name)).map(makeLeaf);
         children.push({
-          id: `${project.id}${SEP}${repoId}${SEP}${group}`,
+          id: projectGroupNodeId(project.id, repoId, group),
           label: group,
           icon: groupIcon,
           muted: leaves.every((l) => l.muted === true),
@@ -383,7 +408,7 @@ export function buildProjectModel(
       }
 
       repoNodes.push({
-        id: repoNodeId,
+        id: repoBranchId,
         label: repoName,
         icon: repoIcon,
         muted: children.every((c) => c.muted === true),
@@ -404,7 +429,7 @@ export function buildProjectModel(
 
     const projectChildren = [...repoNodes, ...unmanagedLeaves];
     nodes.push({
-      id: `proj${SEP}${project.id}`,
+      id: projectNodeId(project.id),
       label: project.name,
       icon: projectIcon,
       selectable: false,

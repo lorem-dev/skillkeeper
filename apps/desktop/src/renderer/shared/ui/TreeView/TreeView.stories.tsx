@@ -524,3 +524,85 @@ function ProjectUpdates() {
 export const ProjectIndicators: Story = {
   render: () => <ProjectUpdates />,
 };
+
+// MCP rows (Skills page, design spec "MCP support" section 8, option B): an
+// MCP server preset/instance renders inline with skill leaves using the `mcp`
+// icon and a trailing Install/Remove badge INSTEAD of a checkbox -- the
+// checkbox column is left empty for these rows, and they never count toward a
+// group/repo's checkbox total (2/2 below reflects only the two skills; the two
+// MCP rows opt out entirely).
+const mcp = <Icon name="mcp" size={18} />;
+
+function mcpBadge(label: 'Install MCP' | 'Remove'): ReactNode {
+  return (
+    <span className="sk-skills-badgewrap" onClick={(e) => e.stopPropagation()}>
+      <button type="button" className="sk-skills-badge-btn">
+        <Badge tone={label === 'Remove' ? 'neutral' : 'accent'}>{label}</Badge>
+      </button>
+    </span>
+  );
+}
+
+const repoWithMcp: TreeNode[] = [
+  {
+    id: 'repo-mcp',
+    label: 'anthropic/skills',
+    icon: repo,
+    selectable: false,
+    children: [
+      {
+        id: 'grp-mcp',
+        label: 'Writing',
+        icon: group,
+        children: [
+          { id: 'sk-mcp-1', label: 'Brainstorming', icon: skill },
+          { id: 'sk-mcp-2', label: 'Writing plans', icon: skill },
+          // A repo-origin MCP preset nested in the same group, after the
+          // skills: mcp icon, no checkbox, an "Install MCP" trailing badge.
+          { id: 'mcp::repo:r1:writing:docs', label: 'docs-server', icon: mcp, trailing: mcpBadge('Install MCP') },
+        ],
+      },
+      // An ungrouped MCP preset directly under the repo root.
+      { id: 'mcp::repo:r1::search', label: 'search-server', icon: mcp, trailing: mcpBadge('Install MCP') },
+    ],
+  },
+];
+
+export const McpLeavesRepoMode: Story = {
+  render: () => <Checkable nodes={repoWithMcp} expanded={['repo-mcp', 'grp-mcp']} levels={[1, 2]} />,
+};
+
+// Projects mode: an already-installed MCP instance shows a "Remove" badge; a
+// not-yet-installed repo preset shows "Install MCP". Both are leaves, neither
+// has a checkbox.
+const projectWithMcp: TreeNode[] = [
+  {
+    id: 'proj-mcp',
+    label: 'my-app',
+    icon: project,
+    selectable: false,
+    children: [
+      {
+        id: 'proj-mcp::repo::r1',
+        label: 'anthropic/skills',
+        icon: repo,
+        children: [
+          { id: 'p-sk-a', label: 'condense', icon: skill },
+          { id: 'mcp::proj-mcp::install::docs', label: 'docs-server', icon: mcp, trailing: mcpBadge('Remove') },
+          {
+            id: 'mcp::proj-mcp::repo:r1::search',
+            label: 'search-server',
+            icon: mcp,
+            trailing: mcpBadge('Install MCP'),
+          },
+        ],
+      },
+    ],
+  },
+];
+
+export const McpLeavesProjectMode: Story = {
+  render: () => (
+    <Checkable nodes={projectWithMcp} expanded={['proj-mcp', 'proj-mcp::repo::r1']} levels={[1, 2, 3]} initial={['p-sk-a']} />
+  ),
+};
