@@ -28,6 +28,7 @@ import type {
   McpServerDef,
   McpPresetOrigin,
   McpInstall,
+  McpBatch,
   ApplyMcpArgs,
   ApplyMcpResult,
   UpdateMcpArgs,
@@ -391,6 +392,14 @@ export interface SkillkeeperActions {
   applyMcp(args: ApplyMcpArgs): Promise<ApplyMcpResult>;
   /** Update installed MCP instances to their preset's current def; refreshes `mcpInstalls` afterward. */
   updateMcp(args: UpdateMcpArgs): Promise<UpdateMcpResult>;
+  /**
+   * Deletes a MANUAL preset: uninstalls every one of its currently-installed
+   * instances (across every tracked project and the global codex scope) via
+   * `applyMcp`, then removes it from `config.mcp.servers`. Uninstall always
+   * runs before the config write -- if any `applyMcp` call fails, the error is
+   * `notify`-ed and the preset is left in config so the delete can be retried.
+   */
+  deleteMcpPreset(presetId: string): Promise<void>;
   /** Queue one update-skill task per request (re-install from the repository). */
   updateProjectSkills(requests: readonly ProjectSkillUpdate[]): void;
   /** Request navigating to Repositories and opening the add form for `remote`. */
@@ -1030,6 +1039,63 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const result = await bridgeClient.updateMcp(args);
       await get().refreshMcpInstalls();
       return result;
+    })();
+  },
+
+  deleteMcpPreset(presetId) {
+    return (async () => {
+      const { mcpInstalls, projects, notify, applyMcp, updateConfig, refreshMcpPresets, refreshMcpInstalls } = get();
+      const matching = mcpInstalls.filter((i) => i.identity.local === presetId);
+
+      // Group by real project (resolving its path for `applyMcp`) and the
+      // 'global' (codex) bucket separately; an install whose projectId no
+      // longer resolves to a tracked project is left alone (nothing to
+      // resolve a path from -- reconcile will clean it up separately).
+      const byProject = new Map<string, McpInstall[]>();
+      const globalInstalls: McpInstall[] = [];
+      for (const inst of matching) {
+        if (inst.projectId === 'global') {
+          globalInstalls.push(inst);
+          continue;
+        }
+        const list = byProject.get(inst.projectId);
+        if (list !== undefined) list.push(inst);
+        else byProject.set(inst.projectId, [inst]);
+      }
+
+      // One remove batch per (agent, instanceName) -- each installed instance
+      // record is already unique on that pair within a scope.
+      const removeBatches = (installs: readonly McpInstall[]): McpBatch[] =>
+        installs.map((inst) => ({ agent: inst.agent, install: [], remove: [{ instanceName: inst.instanceName }] }));
+
+      for (const [projectId, installs] of byProject) {
+        const project = projects.find((p) => p.id === projectId);
+        if (project === undefined) continue;
+        const result = await applyMcp({ projectId, projectPath: project.path, batches: removeBatches(installs) });
+        if (!result.ok) {
+          notify(result.error, 'error');
+          return;
+        }
+      }
+
+      if (globalInstalls.length > 0) {
+        // Codex resolves globally regardless of projectId/projectPath (see
+        // `resolveMcpTarget` in main/mcp.ts), so an empty path is safe here.
+        const result = await applyMcp({
+          projectId: 'global',
+          projectPath: '',
+          batches: removeBatches(globalInstalls),
+        });
+        if (!result.ok) {
+          notify(result.error, 'error');
+          return;
+        }
+      }
+
+      const servers = get().config?.mcp.servers ?? [];
+      await updateConfig({ mcp: { servers: servers.filter((s) => s.id !== presetId) } });
+      await refreshMcpPresets();
+      await refreshMcpInstalls();
     })();
   },
 

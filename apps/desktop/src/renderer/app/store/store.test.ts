@@ -584,6 +584,120 @@ describe('useSkillkeeperStore', () => {
     });
   });
 
+  describe('deleteMcpPreset', () => {
+    const manualDef = { id: 'm1', name: 'github', type: 'stdio' as const, command: 'github-mcp' };
+    const otherManualDef = { id: 'm2', name: 'other', type: 'stdio' as const, command: 'other-mcp' };
+
+    const manualProjectInstall: McpInstall = {
+      projectId: 'proj-1',
+      agent: 'claude',
+      instanceName: 'github_1',
+      identity: { local: 'm1', source: 'github' },
+      hash: 'sha256:x',
+      hasParams: false,
+    };
+    const globalInstall: McpInstall = {
+      projectId: 'global',
+      agent: 'codex',
+      instanceName: 'github_1',
+      identity: { local: 'm1', source: 'github' },
+      hash: 'sha256:x',
+      hasParams: false,
+    };
+    const unrelatedInstall: McpInstall = {
+      projectId: 'proj-1',
+      agent: 'claude',
+      instanceName: 'other_1',
+      identity: { local: 'm2', source: 'other' },
+      hash: 'sha256:y',
+      hasParams: false,
+    };
+
+    let applyMcpCalls: unknown[];
+    let setConfigCalls: SkillKeeperConfig[];
+    let applyMcpImpl: (args: unknown) => Promise<{ ok: boolean; installed?: number; removed?: number; skipped?: never[]; error?: string }>;
+
+    beforeEach(() => {
+      applyMcpCalls = [];
+      setConfigCalls = [];
+      applyMcpImpl = async (args) => {
+        applyMcpCalls.push(args);
+        return { ok: true, installed: 0, removed: 1, skipped: [] };
+      };
+      useSkillkeeperStore.getState().setConfig(
+        { ...mockConfig, mcp: { servers: [manualDef, otherManualDef] } },
+        validValidity,
+        [],
+      );
+      useSkillkeeperStore.setState({
+        projects: [mockProject],
+        mcpInstalls: [manualProjectInstall, globalInstall, unrelatedInstall],
+        notifications: [],
+        toasts: [],
+      });
+      (globalThis as unknown as { window: { skillkeeper: unknown } }).window = {
+        skillkeeper: {
+          applyMcp: (args: unknown) => applyMcpImpl(args),
+          listMcpInstalls: async () => [unrelatedInstall],
+          listAvailableMcp: async () => [],
+          setConfig: async (config: SkillKeeperConfig) => {
+            setConfigCalls.push(config);
+            return { config, validity: validValidity, warnings: [] };
+          },
+        },
+      };
+    });
+
+    afterEach(() => {
+      delete (globalThis as unknown as { window?: unknown }).window;
+    });
+
+    it('uninstalls every instance of the manual preset across projects and global, then drops it from config', async () => {
+      await useSkillkeeperStore.getState().deleteMcpPreset('m1');
+
+      expect(applyMcpCalls).toEqual(
+        expect.arrayContaining([
+          {
+            projectId: 'proj-1',
+            projectPath: mockProject.path,
+            batches: [{ agent: 'claude', install: [], remove: [{ instanceName: 'github_1' }] }],
+          },
+          {
+            projectId: 'global',
+            projectPath: '',
+            batches: [{ agent: 'codex', install: [], remove: [{ instanceName: 'github_1' }] }],
+          },
+        ]),
+      );
+      expect(applyMcpCalls).toHaveLength(2);
+
+      expect(setConfigCalls).toHaveLength(1);
+      expect(setConfigCalls[0]!.mcp.servers.map((s) => s.id)).toEqual(['m2']);
+
+      expect(useSkillkeeperStore.getState().mcpInstalls).toEqual([unrelatedInstall]);
+    });
+
+    it('notifies and leaves the preset in config when an applyMcp call fails', async () => {
+      applyMcpImpl = async () => ({ ok: false, error: 'boom' });
+
+      await useSkillkeeperStore.getState().deleteMcpPreset('m1');
+
+      expect(setConfigCalls).toHaveLength(0);
+      expect(useSkillkeeperStore.getState().config?.mcp.servers.map((s) => s.id)).toEqual(['m1', 'm2']);
+      expect(useSkillkeeperStore.getState().notifications.some((n) => n.text === 'boom')).toBe(true);
+    });
+
+    it('is a no-op on config/uninstalls when the preset has no installed instances', async () => {
+      useSkillkeeperStore.setState({ mcpInstalls: [unrelatedInstall] });
+
+      await useSkillkeeperStore.getState().deleteMcpPreset('m1');
+
+      expect(applyMcpCalls).toHaveLength(0);
+      expect(setConfigCalls).toHaveLength(1);
+      expect(setConfigCalls[0]!.mcp.servers.map((s) => s.id)).toEqual(['m2']);
+    });
+  });
+
   describe('focusRepository', () => {
     it('sets repoFocus and bumps the nonce on repeated calls', () => {
       useSkillkeeperStore.setState({ repoFocus: null });
