@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { stripSvgRoot } from './stripSvgRoot';
+import { ICON_NAMES } from './Icon';
 import repositories from './assets/repositories.svg?raw';
 import skills from './assets/skills.svg?raw';
+import skillGroup from './assets/skill-group.svg?raw';
+import agent from './assets/agent.svg?raw';
 import projects from './assets/projects.svg?raw';
 import settings from './assets/settings.svg?raw';
 import search from './assets/search.svg?raw';
@@ -22,6 +25,8 @@ import mcp from './assets/mcp.svg?raw';
 const assets: Record<string, string> = {
   repositories,
   skills,
+  'skill-group': skillGroup,
+  agent,
   projects,
   settings,
   search,
@@ -53,4 +58,11 @@ describe('Icon assets', () => {
       expect(inner).toMatch(/<(path|rect|circle)\b/);
     },
   );
+
+  // Guards against this suite silently drifting behind a newly added
+  // `IconName` (as happened for `agent`/`skill-group`): every name in the
+  // `IconName` union (via `ICON_NAMES`) must have a raw-svg fixture above.
+  it('covers every IconName', () => {
+    expect(Object.keys(assets).sort()).toEqual([...ICON_NAMES].sort());
+  });
 });

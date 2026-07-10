@@ -78,6 +78,15 @@ const ICONS: Record<IconName, string> = {
   mcp: stripSvgRoot(mcp),
 };
 
+/**
+ * Every icon name, derived from `ICONS`'s keys (which `Record<IconName, string>`
+ * forces to be exactly the `IconName` union) -- the single source of truth for
+ * anything that needs to enumerate all icons (the Storybook gallery, the asset
+ * completeness test), so neither can silently drift behind a newly added name.
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- a derived constant (not a component); see the doc comment above.
+export const ICON_NAMES = Object.keys(ICONS) as IconName[];
+
 export interface IconProps {
   readonly name: IconName;
   /** Pixel size (width and height). Defaults to 20. */

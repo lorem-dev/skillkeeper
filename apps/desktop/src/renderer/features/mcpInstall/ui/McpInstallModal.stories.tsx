@@ -87,3 +87,19 @@ export const PreselectedProject: Story = {
   },
   args: { preset: repoHttpPreset, preselectedProjectId: 'proj-2' },
 };
+
+// Update flow (design spec section 5 "Update"): reuses this modal with
+// `initialValues` -- the known parameter is pre-filled (still editable) while
+// the still-missing one starts empty, and the project is preselected,
+// mirroring how an update instance is opened.
+export const UpdateFlowKnownParams: Story = {
+  render: (args) => {
+    useSeedProjects();
+    return <McpInstallModal {...args} />;
+  },
+  args: {
+    preset: repoHttpPreset,
+    preselectedProjectId: 'proj-2',
+    initialValues: { workspace: 'acme-workspace' },
+  },
+};
