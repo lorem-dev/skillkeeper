@@ -268,6 +268,40 @@ describe('buildMcpProjectTree', () => {
     expect(items.get(leaf.id)).toEqual({ kind: 'unlinked', installs: [orphan] });
   });
 
+  it('renders an installed instance of an existing manual preset as installed, not unlinked', () => {
+    const manual = preset({ id: 'm1', name: 'github', origin: 'manual' });
+    const matched = install({
+      instanceName: 'github_1',
+      agent: 'claude',
+      identity: { local: 'm1', source: 'github' },
+      hash: manual.hash,
+    });
+
+    const { nodes, items } = buildMcpProjectTree([manual], [matched], projects, repos);
+
+    const projNode = findNode(nodes, mcpProjectRootId('p1'));
+    const unlinkedNode = projNode!.children!.find((c) => c.muted === true);
+    expect(unlinkedNode).toBeUndefined();
+    const leaf = projNode!.children!.find((c) => c.label === 'github 1');
+    expect(leaf).toBeDefined();
+    expect(leaf!.muted).toBeUndefined();
+    expect(items.get(leaf!.id)).toEqual({ kind: 'installed', installs: [matched], updatable: false });
+  });
+
+  it('still renders a truly sourceless instance as unlinked when a differently-id-ed manual preset exists', () => {
+    const manual = preset({ id: 'm1', name: 'github', origin: 'manual' });
+    const orphan = install({ instanceName: 'ghost_1', agent: 'claude', identity: { source: 'ghost' } });
+
+    const { nodes, items } = buildMcpProjectTree([manual], [orphan], projects, repos);
+
+    const projNode = findNode(nodes, mcpProjectRootId('p1'));
+    const unlinkedNode = projNode!.children!.find((c) => c.muted === true);
+    expect(unlinkedNode).toBeDefined();
+    const leaf = unlinkedNode!.children!.find((c) => c.label === 'ghost 1');
+    expect(leaf).toBeDefined();
+    expect(items.get(leaf!.id)).toEqual({ kind: 'unlinked', installs: [orphan] });
+  });
+
   it('groups unlinked instances from the same source under one synthetic node', () => {
     const orphans: McpInstall[] = [
       install({ instanceName: 'ghost_1', agent: 'claude', identity: { source: 'ghost' } }),

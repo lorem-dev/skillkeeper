@@ -16,11 +16,15 @@
  *    project. Under each project: every repo preset always renders an
  *    install row (so the same preset can be installed more than once), each
  *    currently-installed instance whose identity matches that preset renders
- *    a named "<source> <n>" row right beside it, and any installed instance
- *    matching no current preset ("unlinked") renders muted under a synthetic
- *    node keyed off its identity -- mirrors the project-mode model the old
- *    `attachProjectMcpLeaves` implemented, just built from scratch instead of
- *    merged into an existing tree.
+ *    a named "<source> <n>" row right beside it; an installed instance whose
+ *    identity's `local` matches a manual preset's id renders the same named
+ *    row directly under the project (manual presets have no per-project
+ *    "install row" -- their single top-level leaf covers every project); any
+ *    installed instance matching NEITHER a repo NOR a manual preset
+ *    ("unlinked") renders muted under a synthetic node keyed off its identity
+ *    -- mirrors the project-mode model the old `attachProjectMcpLeaves`
+ *    implemented, just built from scratch instead of merged into an existing
+ *    tree.
  *
  * Both builders are pure (no store/bridge access, no side effects, React-free
  * apart from the existing `<Icon>` constants) and never set `trailing` -- the
@@ -277,7 +281,10 @@ export function buildMcpRepoTree(presets: readonly McpPreset[], repos: readonly 
  * for several agents (which share one instance-config name) collapses to a
  * single row; any installed instance matching no current preset ("unlinked")
  * renders muted under a synthetic node, one per distinct source/remote,
- * appended as a direct child of the project root.
+ * appended as a direct child of the project root. An installed instance whose
+ * identity's `local` matches a manual preset's id is never "unlinked" -- it
+ * renders as an installed row directly under the project root instead (see
+ * `manualInstanceLeaves` below).
  */
 export function buildMcpProjectTree(
   presets: readonly McpPreset[],
@@ -303,6 +310,8 @@ export function buildMcpProjectTree(
     if (list !== undefined) list.push(p);
     else byRepo.set(p.repoId, [p]);
   }
+
+  const manualPresetIds = new Set(presets.filter((p) => p.origin === 'manual').map((p) => p.id));
 
   const projectNodes: TreeNode[] = [];
   for (const project of projects) {
@@ -369,6 +378,33 @@ export function buildMcpProjectTree(
       repoChildren.push({ id: mcpProjectRepoNodeId(project.id, repo.id), label: repo.name, icon: repoIcon, children });
     }
 
+    // Installed instances of a manual preset (identity.local === preset id):
+    // render as named installed rows directly under the project root, keyed
+    // by (identity, instance name) the same way a matched repo instance is --
+    // just without a preset-leaf duplicate, since the manual preset already
+    // has its one top-level leaf shared across every project.
+    const matchedManual = projectInstalls.filter(
+      (inst) => inst.identity.local !== undefined && manualPresetIds.has(inst.identity.local),
+    );
+    const byManualInstance = new Map<string, McpInstall[]>();
+    for (const m of matchedManual) {
+      consumed.add(m);
+      const key = instanceKey(m.identity, m.instanceName);
+      const list = byManualInstance.get(key);
+      if (list !== undefined) list.push(m);
+      else byManualInstance.set(key, [m]);
+    }
+    const manualInstanceLeaves: TreeNode[] = [...byManualInstance.values()]
+      .sort((a, b) => a[0]!.instanceName.localeCompare(b[0]!.instanceName))
+      .map((group) => {
+        const first = group[0]!;
+        const key = instanceKey(first.identity, first.instanceName);
+        const id = mcpInstalledLeafId(project.id, key);
+        const updatable = mcpInstallHasUpdate(first, presets);
+        items.set(id, { kind: 'installed', installs: group, updatable });
+        return { id, label: instanceDisplayName(first.identity.source, first.instanceName), icon: mcpIcon };
+      });
+
     // Unlinked: installs matching no current preset, bucketed by source/remote.
     const byInstanceUnmatched = new Map<string, McpInstall[]>();
     for (const inst of projectInstalls) {
@@ -412,7 +448,7 @@ export function buildMcpProjectTree(
       label: project.name,
       icon: projectIcon,
       selectable: false,
-      children: [...repoChildren, ...unlinkedNodes],
+      children: [...repoChildren, ...manualInstanceLeaves, ...unlinkedNodes],
     });
   }
 
