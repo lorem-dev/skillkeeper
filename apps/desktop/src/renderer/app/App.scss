@@ -76,10 +76,14 @@
 }
 
 // Animated disclosure container for the sub-items: stacks them with the same
-// gap the sidebar uses, and clips during the height expand/collapse.
+// gap the sidebar uses, and clips during the height expand/collapse. `overflow:
+// clip` with an `overflow-clip-margin` still hides the collapsing content but
+// lets a focused sub-item's focus ring (a 2px outline at a 2px offset) paint
+// past the clip edge instead of being cut off -- `overflow: hidden` clipped it.
 .sk-nav-subgroup {
   display: flex;
   flex-direction: column;
   gap: var(--sk-space-1);
-  overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 4px;
 }

@@ -109,6 +109,12 @@
   cursor: pointer;
 }
 
+// Actions (Edit / Install) stay hidden until the card is hovered (or a control
+// is focused via the keyboard, so keyboard users can still reach them), like
+// the repository/project cards. `opacity` (not display) reserves their space so
+// the card never resizes on hover; `:has(:focus-visible)` -- not
+// `:focus-within` -- so a mouse click does not keep them revealed after the
+// pointer leaves.
 .sk-mcp-card__actions {
   display: flex;
   align-items: center;
@@ -116,6 +122,13 @@
   flex: none;
   align-self: flex-start;
   margin-top: 3px;
+  opacity: 0;
+  transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+.sk-mcp-card:hover .sk-mcp-card__actions,
+.sk-mcp-card:has(:focus-visible) .sk-mcp-card__actions {
+  opacity: 1;
 }
 
 .sk-mcp-card__icon-btn {

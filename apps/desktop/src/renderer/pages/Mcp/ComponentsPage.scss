@@ -25,7 +25,19 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: var(--sk-space-3);
-  align-items: start;
+  // Stretch so every card in a row shares a height (equal-size blocks) instead
+  // of each taking its own natural height.
+  align-items: stretch;
+}
+
+// The motion wrapper + the card fill the (stretched) grid cell, so the cards in
+// a row are all the same height.
+.sk-mcp-grid > * {
+  display: flex;
+}
+
+.sk-mcp-grid > * > .sk-mcp-card {
+  flex: 1;
 }
 
 // Spacer between the (sticky) header and the tree.
