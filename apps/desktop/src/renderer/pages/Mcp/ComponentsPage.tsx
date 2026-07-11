@@ -23,7 +23,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { Page, Toolbar, Button, SearchField, SearchSummary, TreeView, Badge, Tooltip } from '@/shared/ui';
+import { Page, Toolbar, Button, SearchField, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
@@ -61,6 +61,27 @@ export function ComponentsPage() {
   const { componentsView, expandedIds: persistedExpandedIds } = mcpUi;
   const [query, setQuery] = useState('');
 
+  // Repo filter is ephemeral (not persisted), mirroring the toolbar search and
+  // the Management page. Empty filter = show all (mirrors SkillsPage).
+  const [repoFilter, setRepoFilter] = useState<string[]>([]);
+
+  // Manual presets belong to no repository, so they always survive the repo
+  // filter -- matching how `buildMcpRepoTree` always keeps manual presets as
+  // top-level leaves regardless of the `repos` it nests under.
+  const shownRepos = useMemo(
+    () => (repoFilter.length === 0 ? repositories : repositories.filter((r) => repoFilter.includes(r.id))),
+    [repositories, repoFilter],
+  );
+  const repoFilteredPresets = useMemo(
+    () =>
+      repoFilter.length === 0
+        ? mcpPresets
+        : mcpPresets.filter(
+            (p) => p.origin === 'manual' || (p.repoId !== undefined && repoFilter.includes(p.repoId)),
+          ),
+    [mcpPresets, repoFilter],
+  );
+
   function copy(text: string): void {
     void navigator.clipboard.writeText(text);
     notify(t('mcp.copiedToClipboard'), 'info');
@@ -70,14 +91,15 @@ export function ComponentsPage() {
     return preset.repoId !== undefined ? repositories.find((r) => r.id === preset.repoId)?.name : undefined;
   }
 
-  // Tiles view: every preset, fuzzy-filtered by name/type/repo/connection.
+  // Tiles view: the repo-filtered presets, fuzzy-filtered by name/type/repo/connection.
   const filteredPresets = useMemo(
-    () => fuzzyFilter(mcpPresets, query, (p) => mcpTileSearchText(p, repositories)),
-    [mcpPresets, query, repositories],
+    () => fuzzyFilter(repoFilteredPresets, query, (p) => mcpTileSearchText(p, repositories)),
+    [repoFilteredPresets, query, repositories],
   );
 
-  // Tree view: the same repositories-mode tree McpPage builds.
-  const treeResult = useMemo(() => buildMcpRepoTree(mcpPresets, repositories), [mcpPresets, repositories]);
+  // Tree view: the same repositories-mode tree McpPage builds, narrowed to the
+  // selected repositories (manual presets always survive as top-level leaves).
+  const treeResult = useMemo(() => buildMcpRepoTree(mcpPresets, shownRepos), [mcpPresets, shownRepos]);
   const { nodes: baseTree, items } = treeResult;
   const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
 
@@ -133,7 +155,7 @@ export function ComponentsPage() {
   }
 
   const searching = query.trim() !== '';
-  const totalCount = componentsView === 'tree' ? countLeaves(baseTree) : mcpPresets.length;
+  const totalCount = componentsView === 'tree' ? countLeaves(baseTree) : repoFilteredPresets.length;
   const shownCount = componentsView === 'tree' ? countLeaves(shownTree) : filteredPresets.length;
 
   // Seed from the persisted expansion (falling back to the roots the first
@@ -160,6 +182,10 @@ export function ComponentsPage() {
     </>
   );
 
+  // Second toolbar row: the repository multi-select filter that narrows which
+  // presets/tree nodes show. Mirrors SkillsPage's/ManagementPage's own filter.
+  const repoOptions = repositories.map((r) => ({ value: r.id, label: r.name }));
+
   return (
     <Page
       toolbar={
@@ -172,10 +198,21 @@ export function ComponentsPage() {
                 {t('mcp.componentsTitle')}
               </>
             }
+            titleAdornment={
+              <McpViewToggle value={componentsView} onChange={(v) => setMcpUi({ componentsView: v })} />
+            }
             trailing={actions}
           />
           <div className="sk-mcp-components-filters">
-            <McpViewToggle value={componentsView} onChange={(v) => setMcpUi({ componentsView: v })} />
+            <MultiCombobox
+              label={t('skills.filterRepositories')}
+              options={repoOptions}
+              value={repoFilter}
+              onChange={setRepoFilter}
+              placeholder={t('skills.filterRepositoriesPlaceholder')}
+              emptyText={t('skills.filterRepositoriesEmpty')}
+              ariaLabel={t('skills.filterRepositories')}
+            />
           </div>
         </div>
       }
