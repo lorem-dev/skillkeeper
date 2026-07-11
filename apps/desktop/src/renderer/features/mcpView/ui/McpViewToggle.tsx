@@ -1,49 +1,49 @@
 /**
- * Components-page view switcher: tile grid vs. tree. A compact glass
- * `SplitButton` mirroring the config-editor control (`OpenConfigButton`): the
- * primary button shows the current view's glyph and toggles to the other view;
- * the dropdown lists both options explicitly. Presentational -- the page owns
- * the value (persisted in the `mcpUi` store slice) and the change handler.
+ * Components-page view switcher: tile grid vs. tree. A compact, non-glass
+ * SEGMENTED control (two icon buttons, the active one highlighted) with a field
+ * label above it -- no dropdown/popup. Sits in the page's filters row, laid out
+ * like the neighbouring `Select` fields (label + control). Presentational: the
+ * page owns the value (persisted in the `mcpUi` store slice) and the handler.
  */
+import type { ReactNode } from 'react';
 import { useTranslator } from '@/systems/i18n';
-import { SplitButton, Icon } from '@/shared/ui';
+import { cx } from '@/shared/lib';
+import { Icon, Tooltip } from '@/shared/ui';
 import type { McpComponentsView } from '@/app/store';
+import './McpViewToggle.scss';
 
 export interface McpViewToggleProps {
   readonly value: McpComponentsView;
   readonly onChange: (value: McpComponentsView) => void;
 }
 
-const GLYPH: Record<McpComponentsView, 'view-tiles' | 'view-tree'> = {
-  tiles: 'view-tiles',
-  tree: 'view-tree',
-};
-
 export function McpViewToggle({ value, onChange }: McpViewToggleProps) {
   const t = useTranslator();
   const label = t('mcp.view.label');
+
+  function segment(view: McpComponentsView, glyph: 'view-tiles' | 'view-tree', name: string): ReactNode {
+    return (
+      <Tooltip content={name}>
+        <button
+          type="button"
+          className={cx('sk-mcp-view__btn', value === view && 'sk-mcp-view__btn--active')}
+          aria-pressed={value === view}
+          aria-label={name}
+          onClick={() => onChange(view)}
+        >
+          <Icon name={glyph} size={18} />
+        </button>
+      </Tooltip>
+    );
+  }
+
   return (
-    <SplitButton
-      size="compact"
-      glass
-      icon={<Icon name={GLYPH[value]} />}
-      tooltip={label}
-      menuLabel={label}
-      onPrimary={() => onChange(value === 'tiles' ? 'tree' : 'tiles')}
-      items={[
-        {
-          id: 'tiles',
-          label: t('mcp.view.tiles'),
-          icon: <Icon name="view-tiles" />,
-          onSelect: () => onChange('tiles'),
-        },
-        {
-          id: 'tree',
-          label: t('mcp.view.tree'),
-          icon: <Icon name="view-tree" />,
-          onSelect: () => onChange('tree'),
-        },
-      ]}
-    />
+    <span className="sk-mcp-view">
+      <span className="sk-mcp-view__label">{label}</span>
+      <div className="sk-mcp-view__control" role="group" aria-label={label}>
+        {segment('tiles', 'view-tiles', t('mcp.view.tiles'))}
+        {segment('tree', 'view-tree', t('mcp.view.tree'))}
+      </div>
+    </span>
   );
 }
