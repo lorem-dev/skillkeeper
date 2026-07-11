@@ -27,7 +27,7 @@
 
 // Installed-from-a-tracked-repo skill leaves (project mode: present/update)
 // render their glyph in the accent color, matching how installed MCP
-// instances render blue on the MCP tree -- see `pages/Mcp/McpPage.scss`'s
+// instances render blue on the MCP tree -- see `pages/Mcp/ManagementPage.scss`'s
 // `.sk-mcp-icon--installed`.
 .sk-skills-icon--installed {
   color: var(--sk-color-accent);

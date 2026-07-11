@@ -32,3 +32,14 @@
 .sk-state--error {
   color: var(--sk-red);
 }
+
+// MCP sub-nav items (Components / Management), composed here from the
+// shared `SidebarItem` via its `className` prop -- the shared Sidebar stays
+// generic and unaware of the MCP group nesting. Indented under the "MCP"
+// group header and slightly smaller/secondary, mirroring a typical nested
+// nav-group item.
+.sk-sidebar-item--sub {
+  padding-left: var(--sk-space-6);
+  font-size: 13px;
+  color: var(--sk-color-label-3);
+}

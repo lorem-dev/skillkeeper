@@ -1,7 +1,8 @@
 /**
- * Pure helper for the MCP page's branch counters: how many currently-
+ * Pure helper for the MCP pages' branch counters: how many currently-
  * INSTALLED instances (as opposed to presets or unlinked instances) sit
- * under a given tree node. Used by `McpPage`'s `decorate` walk to set
+ * under a given tree node. Used by `ManagementPage`'s (and, for the
+ * repositories-mode tree, `ComponentsPage`'s) `decorate` walk to set
  * `node.detail` on every branch (project root, repo node, group node) to the
  * count of installed leaves in its subtree, mirroring the skills tree's
  * branch counts (`TreeView`'s `renderCount`).

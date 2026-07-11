@@ -28,7 +28,7 @@ export const EditHttpWithParamsAndRules: Story = {
       rules: 'When using the github MCP server, prefer the {workspace} workspace by default.',
     },
     // Editing an existing preset shows the Delete action; the page owns
-    // confirming it (see the McpPage stories for the full flow).
+    // confirming it (see the ComponentsPage stories for the full flow).
     onDelete: () => {},
   },
 };

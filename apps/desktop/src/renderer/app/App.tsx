@@ -17,7 +17,7 @@ import { ConfigBanner } from '@/features/configBanner';
 import { RepositoriesPage } from '@/pages/Repositories';
 import { SkillsPage } from '@/pages/Skills';
 import { ProjectsPage } from '@/pages/Projects';
-import { McpPage } from '@/pages/Mcp';
+import { ComponentsPage, ManagementPage } from '@/pages/Mcp';
 import { SettingsPage } from '@/pages/Settings';
 import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
 import { Toasts, StatusBar, LogsPage } from '@/systems/notifications';
@@ -25,17 +25,18 @@ import { TerminalPage } from '@/systems/terminal';
 import { TasksPage } from '@/systems/tasks';
 import './App.scss';
 
-type View = 'repositories' | 'skills' | 'projects' | 'mcp' | 'settings';
+type View = 'repositories' | 'skills' | 'projects' | 'mcp-components' | 'mcp-management' | 'settings';
 
+// The MCP nav item is rendered separately (as a two-level group) since it
+// does not map 1:1 to a single `View` -- see the MCP group block in the
+// Sidebar JSX below.
 const NAV_ITEMS: {
-  id: View;
-  key: 'nav.repositories' | 'nav.skills' | 'nav.projects' | 'nav.mcp' | 'nav.settings';
+  id: 'projects' | 'repositories' | 'skills';
+  key: 'nav.projects' | 'nav.repositories' | 'nav.skills';
 }[] = [
   { id: 'projects', key: 'nav.projects' },
   { id: 'repositories', key: 'nav.repositories' },
   { id: 'skills', key: 'nav.skills' },
-  { id: 'mcp', key: 'nav.mcp' },
-  { id: 'settings', key: 'nav.settings' },
 ];
 
 export function App() {
@@ -50,6 +51,8 @@ export function App() {
   const addRepoRequest = useSkillkeeperStore((s) => s.addRepoRequest);
   const skillsNav = useSkillkeeperStore((s) => s.skillsNav);
   const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
+  const mcpUi = useSkillkeeperStore((s) => s.mcpUi);
+  const setMcpUi = useSkillkeeperStore((s) => s.setMcpUi);
   const t = useTranslator();
 
   useEffect(() => {
@@ -94,12 +97,16 @@ export function App() {
         return <SkillsPage />;
       case 'projects':
         return <ProjectsPage />;
-      case 'mcp':
-        return <McpPage />;
+      case 'mcp-components':
+        return <ComponentsPage />;
+      case 'mcp-management':
+        return <ManagementPage />;
       case 'settings':
         return <SettingsPage />;
     }
   }
+
+  const mcpActive = activeView === 'mcp-components' || activeView === 'mcp-management';
 
   return (
     <div className="sk-app">
@@ -116,6 +123,52 @@ export function App() {
               {t(key)}
             </SidebarItem>
           ))}
+
+          {/* MCP: a group header + two sub-pages, built here (not inside the
+              shared Sidebar/SidebarItem, which stay generic). The header
+              navigates to whichever sub-page was last visited (default:
+              Components) and is "active" while either sub-view is showing;
+              its sub-items only appear while the group is active, mirroring
+              a typical collapsed/expanded nav group. */}
+          <SidebarItem
+            icon={<Icon name="mcp" />}
+            active={mcpActive}
+            onClick={() => setActiveView(mcpUi.lastSubPage === 'management' ? 'mcp-management' : 'mcp-components')}
+          >
+            {t('nav.mcp')}
+          </SidebarItem>
+          {mcpActive && (
+            <>
+              <SidebarItem
+                className="sk-sidebar-item--sub"
+                active={activeView === 'mcp-components'}
+                onClick={() => {
+                  setActiveView('mcp-components');
+                  setMcpUi({ lastSubPage: 'components' });
+                }}
+              >
+                {t('mcp.componentsTitle')}
+              </SidebarItem>
+              <SidebarItem
+                className="sk-sidebar-item--sub"
+                active={activeView === 'mcp-management'}
+                onClick={() => {
+                  setActiveView('mcp-management');
+                  setMcpUi({ lastSubPage: 'management' });
+                }}
+              >
+                {t('mcp.managementTitle')}
+              </SidebarItem>
+            </>
+          )}
+
+          <SidebarItem
+            icon={<Icon name="settings" />}
+            active={activeView === 'settings'}
+            onClick={() => setActiveView('settings')}
+          >
+            {t('nav.settings')}
+          </SidebarItem>
         </Sidebar>
 
         <div className="sk-content">

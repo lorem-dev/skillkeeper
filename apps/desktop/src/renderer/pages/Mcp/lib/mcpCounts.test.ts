@@ -1,7 +1,7 @@
 /**
  * Tests for `countInstalledLeaves`: the pure helper that counts
  * 'installed'-kind leaves in a tree node's subtree, used to show the
- * installed-MCP counter on branch nodes (project mode) in `McpPage`.
+ * installed-MCP counter on branch nodes (project mode) in `ManagementPage`.
  */
 import { describe, it, expect } from 'vitest';
 import type { TreeNode } from '@/shared/ui';

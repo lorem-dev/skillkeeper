@@ -73,3 +73,29 @@
   background: none;
   cursor: pointer;
 }
+
+// Details modal (from `useMcpActions`, shared with ManagementPage): reuses
+// `McpCard`, which normally lives in a grid cell -- bound its width so a
+// single card reads well centered in a dialog.
+.sk-mcp-details {
+  max-width: 420px;
+}
+
+// Delete-confirmation modal (from `useMcpActions`, shared with
+// ManagementPage and `McpEditModal`'s own Delete button).
+.sk-mcp-confirm {
+  max-width: 380px;
+}
+
+.sk-mcp-confirm__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4);
+}
+
+.sk-mcp-confirm__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+}

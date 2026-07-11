@@ -1,8 +1,8 @@
 /**
- * Tests for the McpPage's pure preset-mapping helpers: deriving a card's
+ * Tests for the MCP pages' pure preset-mapping helpers: deriving a card's
  * connection line from a preset's def, converting a full `McpPreset` into the
  * `ManualMcpPreset` shape the editor modal edits, and the search-field
- * extractor the page's search box filters presets by.
+ * extractor `ComponentsPage`'s search box filters presets by.
  */
 import { describe, it, expect } from 'vitest';
 import type { McpServerDef } from '@/services/bridge';
