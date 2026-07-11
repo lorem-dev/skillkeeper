@@ -40,6 +40,7 @@ import { McpInstallModal, McpUpdateParamsModal, buildRemoveBatches } from '@/fea
 import { buildMcpRepoTree, buildMcpProjectTree, mcpProjectRootId } from './lib/mcpTree';
 import type { McpTreeItem } from './lib/mcpTree';
 import { resolveDetailsPreset } from './lib/mcpItemPreset';
+import { countInstalledLeaves } from './lib/mcpCounts';
 import { mcpConnectionFromDef, toManualPreset } from './lib/mcpPresetMapping';
 import './McpPage.scss';
 
@@ -320,15 +321,21 @@ export function McpPage() {
       }
       const children =
         node.children !== undefined && node.children.length > 0 ? node.children.map(decorate) : node.children;
+      // Every branch (project root, repo node, group node) shows a count of
+      // installed MCP instances in its subtree -- computed off the ORIGINAL
+      // node (same ids/structure as the decorated one), only when > 0, and
+      // only when nothing else already claimed the trailing slot.
+      const installedCount = countInstalledLeaves(node, items);
+      const detail = node.trailing === undefined && installedCount > 0 ? installedCount : node.detail;
       // A project-root node: show the project's own icon (resolved + safety-
       // checked in main) when it has one, otherwise a generated placeholder --
       // via the shared ProjectIcon, mirroring SkillsPage's project nodes.
       const project = projectByRootId.get(node.id);
       if (project !== undefined) {
         const icon = <ProjectIcon iconUrl={projectInfo[project.id]?.iconDataUrl} name={project.name} size={18} />;
-        return { ...node, icon, children };
+        return { ...node, icon, children, detail };
       }
-      if (children !== node.children) return { ...node, children };
+      if (children !== node.children || detail !== node.detail) return { ...node, children, detail };
       return node;
     }
 
