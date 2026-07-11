@@ -25,6 +25,14 @@
   margin-top: var(--sk-space-4);
 }
 
+// Installed-from-a-tracked-repo skill leaves (project mode: present/update)
+// render their glyph in the accent color, matching how installed MCP
+// instances render blue on the MCP tree -- see `pages/Mcp/McpPage.scss`'s
+// `.sk-mcp-icon--installed`.
+.sk-skills-icon--installed {
+  color: var(--sk-color-accent);
+}
+
 // Per-project agent control in the tree (with an "agents changed" marker).
 .sk-skills-agentctl {
   display: inline-flex;

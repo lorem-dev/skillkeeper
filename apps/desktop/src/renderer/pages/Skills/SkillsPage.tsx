@@ -194,7 +194,7 @@ export function SkillsPage() {
       return shownTree.map(walk);
     }
     const checkedSet = new Set(projectChecked);
-    const { updatesByNode, orphanLeaves } = projectModel;
+    const { updatesByNode, orphanLeaves, statusByLeaf } = projectModel;
     // A node's label: name, then a non-interactive update dot when an update is
     // available, then a single action/status badge. The update action badge shows
     // only while the row is hovered; the unlinked/local status badges are always
@@ -285,7 +285,17 @@ export function SkillsPage() {
       else if (!wasInstalled && isChecked)
         detail = <ChangeBadge kind="add" label={t('skills.status.add')} />;
       else detail = undefined;
-      return { ...node, label: buildLabel(node, t('skills.updateSkill')), detail };
+      // Installed-from-a-tracked-repo leaves (present/update) render their
+      // glyph in the accent color, matching how installed MCP instances render
+      // blue on the MCP tree -- available/orphan leaves keep the default gray.
+      const status = statusByLeaf.get(node.id);
+      const icon =
+        status === 'present' || status === 'update' ? (
+          <Icon name="skills" size={18} className="sk-skills-icon--installed" />
+        ) : (
+          node.icon
+        );
+      return { ...node, label: buildLabel(node, t('skills.updateSkill')), detail, icon };
     };
     return shownTree.map((root) => {
       const pid = root.id.replace(/^proj::/, '');
