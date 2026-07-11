@@ -60,7 +60,7 @@ const mcpIcon = <Icon name="mcp" size={18} />;
 // (manual or repo-origin) and unlinked instances use the default (gray) glyph.
 const mcpIconInstalled = <Icon name="mcp" size={18} className="sk-mcp-icon--installed" />;
 const repoIcon = <Icon name="repositories" size={18} />;
-const groupIcon = <Icon name="skill-group" size={18} />;
+const groupIcon = <Icon name="mcp-group" size={18} />;
 const projectIcon = <Icon name="projects" size={18} />;
 
 /** What a leaf id resolves to, for the page's trailing-badge and click logic. */
