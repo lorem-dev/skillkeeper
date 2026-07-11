@@ -28,6 +28,13 @@
   gap: var(--sk-space-3);
 }
 
+// A control that sits with the title (the toolbar's own gap provides the small
+// space after the heading).
+.sk-toolbar__title-adornment {
+  display: flex;
+  align-items: center;
+}
+
 .sk-toolbar__spacer {
   flex: 1;
 }

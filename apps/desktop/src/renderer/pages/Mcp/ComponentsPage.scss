@@ -1,18 +1,9 @@
-// Two-row page header: the title + actions row, then the view-toggle row,
-// with a spacer between the two rows. Mirrors SkillsPage.scss/McpPage.scss's
-// own header.
-.sk-mcp-components-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sk-space-6);
-}
-
-// Left-aligned filters row (today: just the tiles/tree view toggle).
-// Mirrors SkillsPage.scss's `.sk-skills-filters`.
-.sk-mcp-components-filters {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--sk-space-5);
+// The "/" separator in the "MCP / <page>" heading -- muted + smaller so it
+// reads as a quiet divider rather than part of the emphasised title text.
+.sk-mcp-title-sep {
+  color: var(--sk-color-label-3);
+  font-size: 0.7em;
+  font-weight: 400;
 }
 
 // Toolbar search: a compact field that yields space before the action

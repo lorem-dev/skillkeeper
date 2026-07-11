@@ -1,3 +1,11 @@
+// The "/" separator in the "MCP / <page>" heading -- muted + smaller so it
+// reads as a quiet divider rather than part of the emphasised title text.
+.sk-mcp-title-sep {
+  color: var(--sk-color-label-3);
+  font-size: 0.7em;
+  font-weight: 400;
+}
+
 // Spacer between the (sticky) toolbar and the tree. Mirrors McpPage.scss's/
 // ComponentsPage.scss's own tree spacer.
 .sk-mcp-management-tree {

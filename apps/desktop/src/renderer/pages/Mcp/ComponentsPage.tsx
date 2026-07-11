@@ -163,12 +163,17 @@ export function ComponentsPage() {
   return (
     <Page
       toolbar={
-        <div className="sk-mcp-components-header">
-          <Toolbar title={`${t('nav.mcp')} / ${t('mcp.componentsTitle')}`} trailing={actions} />
-          <div className="sk-mcp-components-filters">
+        <Toolbar
+          title={
+            <>
+              {t('nav.mcp')} <span className="sk-mcp-title-sep">/</span> {t('mcp.componentsTitle')}
+            </>
+          }
+          titleAdornment={
             <McpViewToggle value={componentsView} onChange={(v) => setMcpUi({ componentsView: v })} />
-          </div>
-        </div>
+          }
+          trailing={actions}
+        />
       }
     >
       {mcpPresets.length === 0 ? (
