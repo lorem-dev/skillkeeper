@@ -123,6 +123,15 @@
   color: var(--sk-color-accent);
 }
 
+// Per-option leading icon (e.g. a ProjectIcon), between the check and the
+// label. Mirrors Combobox's `.sk-combobox__option-icon`.
+.sk-multicombobox__option-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
 .sk-multicombobox__option-label {
   flex: 1;
   min-width: 0;

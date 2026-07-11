@@ -16,6 +16,9 @@ import './MultiCombobox.scss';
 export interface MultiComboboxOption {
   readonly value: string;
   readonly label: string;
+  /** Optional leading icon, shown in the list row before the label (e.g. a
+   * `ProjectIcon`). Options without one render exactly as before. */
+  readonly icon?: ReactNode;
   readonly disabled?: boolean;
 }
 
@@ -77,6 +80,9 @@ export function MultiCombobox({
   const listId = useId();
 
   const valueSet = useMemo(() => new Set(value), [value]);
+  // The idle summary is the joined selected labels, shown as the plain-text
+  // `value` of a native <input> -- there is no chip/pill UI to attach an
+  // option's icon to, so `icon` only renders in the dropdown row below.
   const summary = useMemo(
     () => options.filter((o) => valueSet.has(o.value)).map((o) => o.label).join(', '),
     [options, valueSet],
@@ -271,6 +277,11 @@ export function MultiCombobox({
                       <span className="sk-multicombobox__check" aria-hidden="true">
                         {valueSet.has(o.value) ? <Icon name="check" size={16} /> : null}
                       </span>
+                      {o.icon !== undefined && (
+                        <span className="sk-multicombobox__option-icon" aria-hidden="true">
+                          {o.icon}
+                        </span>
+                      )}
                       <span className="sk-multicombobox__option-label">{o.label}</span>
                     </div>
                   ))
