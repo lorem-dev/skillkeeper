@@ -22,7 +22,7 @@ import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import type { Project } from '@/services/bridge';
-import { Page, Toolbar, SearchField, SearchSummary, TreeView, Badge, Tooltip } from '@/shared/ui';
+import { Page, Toolbar, SearchField, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
 import { ProjectIcon } from '@/entities/project';
@@ -62,9 +62,26 @@ export function ManagementPage() {
   const { expandedIds: persistedExpandedIds } = mcpUi;
   const [query, setQuery] = useState('');
 
+  // The repo/project filters are ephemeral (not persisted in the store),
+  // mirroring the toolbar search above -- only the tree expansion survives
+  // navigating away and back. Empty filter = show all (mirrors SkillsPage).
+  const [repoFilter, setRepoFilter] = useState<string[]>([]);
+  const [projectFilter, setProjectFilter] = useState<string[]>([]);
+
+  const shownRepos = useMemo(
+    () =>
+      repoFilter.length === 0 ? repositories : repositories.filter((r) => repoFilter.includes(r.id)),
+    [repositories, repoFilter],
+  );
+  const shownProjects = useMemo(
+    () =>
+      projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id)),
+    [projects, projectFilter],
+  );
+
   const treeResult = useMemo(
-    () => buildMcpProjectTree(mcpPresets, mcpInstalls, projects, repositories),
-    [mcpPresets, mcpInstalls, projects, repositories],
+    () => buildMcpProjectTree(mcpPresets, mcpInstalls, shownProjects, shownRepos),
+    [mcpPresets, mcpInstalls, shownProjects, shownRepos],
   );
   const { nodes: baseTree, items } = treeResult;
 
@@ -183,19 +200,55 @@ export function ManagementPage() {
     />
   );
 
+  // Second toolbar row: the repo/project multi-select filters that narrow
+  // which nodes the tree shows. Mirrors SkillsPage's `filters` block; the
+  // project options carry a leading `ProjectIcon` (the repo options do not).
+  const repoOptions = repositories.map((r) => ({ value: r.id, label: r.name }));
+  const projectOptions = projects.map((p) => ({
+    value: p.id,
+    label: p.name,
+    icon: <ProjectIcon iconUrl={projectInfo[p.id]?.iconDataUrl} name={p.name} size={18} />,
+  }));
+
+  const filters = (
+    <div className="sk-mcp-management-filters">
+      <MultiCombobox
+        label={t('skills.filterRepositories')}
+        options={repoOptions}
+        value={repoFilter}
+        onChange={setRepoFilter}
+        placeholder={t('skills.filterRepositoriesPlaceholder')}
+        emptyText={t('skills.filterRepositoriesEmpty')}
+        ariaLabel={t('skills.filterRepositories')}
+      />
+      <MultiCombobox
+        label={t('skills.filterProjects')}
+        options={projectOptions}
+        value={projectFilter}
+        onChange={setProjectFilter}
+        placeholder={t('skills.filterProjectsPlaceholder')}
+        emptyText={t('skills.filterProjectsEmpty')}
+        ariaLabel={t('skills.filterProjects')}
+      />
+    </div>
+  );
+
   return (
     <Page
       toolbar={
-        <Toolbar
-          title={
-            <>
-              {t('nav.mcp')}
-              <span className="sk-mcp-title-sep">/</span>
-              {t('mcp.managementTitle')}
-            </>
-          }
-          trailing={actions}
-        />
+        <div className="sk-mcp-management-header">
+          <Toolbar
+            title={
+              <>
+                {t('nav.mcp')}
+                <span className="sk-mcp-title-sep">/</span>
+                {t('mcp.managementTitle')}
+              </>
+            }
+            trailing={actions}
+          />
+          {filters}
+        </div>
       }
     >
       {baseTree.length === 0 ? (

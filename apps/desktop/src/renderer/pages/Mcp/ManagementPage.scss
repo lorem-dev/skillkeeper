@@ -1,3 +1,19 @@
+// Two-row page header: the title + actions row, then the repo/project
+// filters row. Mirrors SkillsPage.scss's/ComponentsPage.scss's own header.
+.sk-mcp-management-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-6);
+}
+
+// Filters row: labeled controls aligned along their bottom edge. Mirrors
+// SkillsPage.scss's `.sk-skills-filters`.
+.sk-mcp-management-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sk-space-5);
+}
+
 // The "/" separator in the "MCP / <page>" heading -- muted + smaller so it
 // reads as a quiet divider rather than part of the emphasised title text.
 .sk-mcp-title-sep {
