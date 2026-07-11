@@ -1,5 +1,5 @@
 /**
- * Components-page view switcher: tile grid vs. tree. A compact, NON-glass
+ * Components-page view switcher: tile grid vs. tree. A compact, glass
  * `SplitButton` that sits beside the page title (via the Toolbar's
  * `titleAdornment` slot): the primary button shows the current view's glyph and
  * toggles to the other; the dropdown lists both options. Presentational -- the
@@ -24,6 +24,7 @@ export function McpViewToggle({ value, onChange }: McpViewToggleProps) {
   const label = t('mcp.view.label');
   return (
     <SplitButton
+      glass
       size="compact"
       icon={<Icon name={GLYPH[value]} />}
       tooltip={label}
