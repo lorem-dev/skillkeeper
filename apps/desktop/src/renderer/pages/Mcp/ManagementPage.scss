@@ -1,0 +1,63 @@
+// Spacer between the (sticky) toolbar and the tree. Mirrors McpPage.scss's/
+// ComponentsPage.scss's own tree spacer.
+.sk-mcp-management-tree {
+  margin-top: var(--sk-space-4);
+}
+
+// Toolbar search: a compact field that yields space before the trailing
+// slot. Mirrors the other list pages' `.sk-list-search`.
+.sk-list-search {
+  flex: 0 1 9rem;
+  width: auto;
+  // Without this the flex item's min-content floor (which grows when the
+  // clear button appears) would push the field wider than its 9rem basis.
+  min-width: 0;
+}
+
+// Already-INSTALLED instance leaves render their glyph in the accent color
+// (blue) to distinguish them from presets and unlinked leaves (default gray
+// glyph). Duplicated from McpPage.scss -- the tree builder applies this
+// className regardless of which page renders the resulting nodes.
+.sk-mcp-icon--installed {
+  color: var(--sk-color-accent);
+}
+
+// The installed-MCP count shown on branch nodes, in the accent color --
+// matches McpPage's/the Skills page's accent-colored branch counts.
+.sk-mcp-count {
+  color: var(--sk-color-accent);
+}
+
+// Search footer (stats + reset). `margin-top: auto` pins it to the bottom of
+// the (viewport-filling) page body when the tree is short; a long tree
+// pushes it down naturally so it scrolls into view at the end.
+.sk-list-footer {
+  margin-top: auto;
+}
+
+// A badge wrapper swallows its own click (the badge owns the command) so it
+// never also selects/expands the tree row underneath it.
+.sk-mcp-badgewrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+// Groups a leaf's trailing badges (Update + Delete, or just Install/Delete)
+// with a small gap.
+.sk-mcp-badge-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  flex: none;
+}
+
+// A badge that is also a button. Transparent shell; the Badge inside carries
+// the look.
+.sk-mcp-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}

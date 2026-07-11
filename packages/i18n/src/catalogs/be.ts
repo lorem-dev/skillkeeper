@@ -276,6 +276,7 @@ export const be: Partial<Catalog> = {
   'mcp.view.tiles': 'Пліткі',
   'mcp.view.tree': 'Дрэва',
   'mcp.componentsTitle': 'Кампаненты',
+  'mcp.managementTitle': 'Менеджмент',
 
   'settings.comingSoon': 'Экран налад хутка з’явіцца.',
   'settings.section.general': 'Агульныя',

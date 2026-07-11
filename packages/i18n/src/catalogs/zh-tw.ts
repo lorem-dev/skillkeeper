@@ -243,6 +243,7 @@ export const zhTw: Partial<Catalog> = {
   'mcp.view.tiles': '平鋪',
   'mcp.view.tree': '樹狀',
   'mcp.componentsTitle': '元件',
+  'mcp.managementTitle': '管理',
 
   'settings.comingSoon': '設定畫面即將推出。',
   'settings.section.general': '一般',

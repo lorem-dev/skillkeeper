@@ -301,6 +301,8 @@ export const en = {
   'mcp.view.tree': 'Tree',
   /** Title of the MCP Components page (presets browser: tiles/tree view). */
   'mcp.componentsTitle': 'Components',
+  /** Title of the MCP Management page (installed/unlinked instances tree). */
+  'mcp.managementTitle': 'Management',
 
   'settings.comingSoon': 'Settings screen coming soon.',
   'settings.section.general': 'General',

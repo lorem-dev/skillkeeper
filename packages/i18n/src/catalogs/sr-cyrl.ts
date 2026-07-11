@@ -265,6 +265,7 @@ export const srCyrl: Partial<Catalog> = {
   'mcp.view.tiles': 'Плочице',
   'mcp.view.tree': 'Стабло',
   'mcp.componentsTitle': 'Компоненте',
+  'mcp.managementTitle': 'Управљање',
 
   'settings.comingSoon': 'Екран подешавања ускоро стиже.',
   'settings.section.general': 'Опште',

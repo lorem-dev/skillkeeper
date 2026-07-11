@@ -273,6 +273,7 @@ export const ko: Partial<Catalog> = {
   'mcp.view.tiles': '타일',
   'mcp.view.tree': '트리',
   'mcp.componentsTitle': '컴포넌트',
+  'mcp.managementTitle': '관리',
 
   'settings.comingSoon': '설정 화면은 곧 제공됩니다.',
   'settings.section.general': '일반',

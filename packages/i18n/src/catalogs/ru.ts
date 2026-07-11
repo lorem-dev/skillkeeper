@@ -280,6 +280,7 @@ export const ru: Partial<Catalog> = {
   'mcp.view.tiles': 'Плитки',
   'mcp.view.tree': 'Дерево',
   'mcp.componentsTitle': 'Компоненты',
+  'mcp.managementTitle': 'Менеджмент',
 
   'settings.comingSoon': 'Экран настроек скоро появится.',
   'settings.section.general': 'Общие',

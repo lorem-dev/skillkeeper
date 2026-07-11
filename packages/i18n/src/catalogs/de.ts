@@ -259,6 +259,8 @@ export const de: Partial<Catalog> = {
   'mcp.view.tiles': 'Kacheln',
   'mcp.view.tree': 'Baum',
   'mcp.componentsTitle': 'Komponenten',
+  /** Title of the MCP Management page (installed/unlinked instances tree). */
+  'mcp.managementTitle': 'Verwaltung',
 
   'settings.comingSoon': 'Einstellungen folgen in Kürze.',
   'settings.section.general': 'Allgemein',
