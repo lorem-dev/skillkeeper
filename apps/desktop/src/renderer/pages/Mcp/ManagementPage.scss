@@ -2,8 +2,10 @@
 // reads as a quiet divider rather than part of the emphasised title text.
 .sk-mcp-title-sep {
   color: var(--sk-color-label-3);
-  font-size: 0.7em;
-  font-weight: 400;
+  // Full font height (no size reduction), thin weight, and equal explicit gaps
+  // on both sides -- the surrounding title text carries no whitespace of its own.
+  font-weight: 300;
+  margin: 0 var(--sk-space-3);
 }
 
 // Spacer between the (sticky) toolbar and the tree. Mirrors McpPage.scss's/

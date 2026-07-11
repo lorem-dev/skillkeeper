@@ -96,7 +96,6 @@ export function RepositoriesPage() {
           onClear={() => setQuery('')}
         />
       )}
-      <RepoAddButton />
       <Button
         variant="secondary"
         glass
@@ -112,6 +111,7 @@ export function RepositoriesPage() {
       >
         {t('common.refresh')}
       </Button>
+      <RepoAddButton />
     </>
   );
 

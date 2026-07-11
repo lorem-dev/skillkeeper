@@ -65,7 +65,6 @@ export function ProjectsPage() {
           onClear={() => setQuery('')}
         />
       )}
-      <ProjectAddButton />
       <Button
         variant="secondary"
         glass
@@ -78,6 +77,7 @@ export function ProjectsPage() {
       >
         {t('common.refresh')}
       </Button>
+      <ProjectAddButton />
     </>
   );
 

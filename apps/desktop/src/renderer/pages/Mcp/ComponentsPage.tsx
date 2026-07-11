@@ -166,7 +166,9 @@ export function ComponentsPage() {
         <Toolbar
           title={
             <>
-              {t('nav.mcp')} <span className="sk-mcp-title-sep">/</span> {t('mcp.componentsTitle')}
+              {t('nav.mcp')}
+              <span className="sk-mcp-title-sep">/</span>
+              {t('mcp.componentsTitle')}
             </>
           }
           titleAdornment={

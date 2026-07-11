@@ -414,6 +414,9 @@ export function SkillsPage() {
         onClear={() => setQuery('')}
         clearLabel={t('common.clear')}
       />
+      <Button variant="secondary" glass disabled={!canReset} onClick={() => resetSkillsSelection(mode)}>
+        {t('skills.action.reset')}
+      </Button>
       {mode === 'repositories' ? (
         <Button variant="primary" glass disabled={repoChecked.length === 0} onClick={onAdd}>
           {t('skills.action.add')}
@@ -423,9 +426,6 @@ export function SkillsPage() {
           {t('skills.action.save')}
         </Button>
       )}
-      <Button variant="secondary" glass disabled={!canReset} onClick={() => resetSkillsSelection(mode)}>
-        {t('skills.action.reset')}
-      </Button>
     </>
   );
 

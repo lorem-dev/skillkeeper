@@ -189,7 +189,9 @@ export function ManagementPage() {
         <Toolbar
           title={
             <>
-              {t('nav.mcp')} <span className="sk-mcp-title-sep">/</span> {t('mcp.managementTitle')}
+              {t('nav.mcp')}
+              <span className="sk-mcp-title-sep">/</span>
+              {t('mcp.managementTitle')}
             </>
           }
           trailing={actions}
