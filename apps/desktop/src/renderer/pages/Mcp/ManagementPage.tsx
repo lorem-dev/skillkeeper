@@ -213,15 +213,6 @@ export function ManagementPage() {
   const filters = (
     <div className="sk-mcp-management-filters">
       <MultiCombobox
-        label={t('skills.filterRepositories')}
-        options={repoOptions}
-        value={repoFilter}
-        onChange={setRepoFilter}
-        placeholder={t('skills.filterRepositoriesPlaceholder')}
-        emptyText={t('skills.filterRepositoriesEmpty')}
-        ariaLabel={t('skills.filterRepositories')}
-      />
-      <MultiCombobox
         label={t('skills.filterProjects')}
         options={projectOptions}
         value={projectFilter}
@@ -229,6 +220,15 @@ export function ManagementPage() {
         placeholder={t('skills.filterProjectsPlaceholder')}
         emptyText={t('skills.filterProjectsEmpty')}
         ariaLabel={t('skills.filterProjects')}
+      />
+      <MultiCombobox
+        label={t('skills.filterRepositories')}
+        options={repoOptions}
+        value={repoFilter}
+        onChange={setRepoFilter}
+        placeholder={t('skills.filterRepositoriesPlaceholder')}
+        emptyText={t('skills.filterRepositoriesEmpty')}
+        ariaLabel={t('skills.filterRepositories')}
       />
     </div>
   );

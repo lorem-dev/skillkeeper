@@ -439,15 +439,6 @@ export function SkillsPage() {
         value={mode}
         onChange={(v) => changeMode(v as Mode)}
       />
-      <MultiCombobox
-        label={t('skills.filterRepositories')}
-        options={repoOptions}
-        value={repoFilter}
-        onChange={setRepoFilter}
-        placeholder={t('skills.filterRepositoriesPlaceholder')}
-        emptyText={t('skills.filterRepositoriesEmpty')}
-        ariaLabel={t('skills.filterRepositories')}
-      />
       {mode === 'projects' && (
         <MultiCombobox
           label={t('skills.filterProjects')}
@@ -459,6 +450,15 @@ export function SkillsPage() {
           ariaLabel={t('skills.filterProjects')}
         />
       )}
+      <MultiCombobox
+        label={t('skills.filterRepositories')}
+        options={repoOptions}
+        value={repoFilter}
+        onChange={setRepoFilter}
+        placeholder={t('skills.filterRepositoriesPlaceholder')}
+        emptyText={t('skills.filterRepositoriesEmpty')}
+        ariaLabel={t('skills.filterRepositories')}
+      />
     </div>
   );
 
