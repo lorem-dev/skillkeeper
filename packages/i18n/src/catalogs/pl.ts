@@ -275,6 +275,7 @@ export const pl: Partial<Catalog> = {
   'mcp.view.label': 'Wyswietlaj jako',
   'mcp.view.tiles': 'Kafelki',
   'mcp.view.tree': 'Drzewo',
+  'mcp.componentsTitle': 'Komponenty',
 
   'settings.comingSoon': 'Ekran ustawien bedzie dostepny wkrotce.',
   'settings.section.general': 'Ogolne',

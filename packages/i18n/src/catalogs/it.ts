@@ -275,6 +275,7 @@ export const it: Partial<Catalog> = {
   'mcp.view.label': 'Visualizza come',
   'mcp.view.tiles': 'Riquadri',
   'mcp.view.tree': 'Albero',
+  'mcp.componentsTitle': 'Componenti',
 
   'settings.comingSoon': 'La schermata delle impostazioni arrivera a breve.',
   'settings.section.general': 'Generale',

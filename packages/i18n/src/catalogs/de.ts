@@ -258,6 +258,7 @@ export const de: Partial<Catalog> = {
   'mcp.view.label': 'Anzeigen als',
   'mcp.view.tiles': 'Kacheln',
   'mcp.view.tree': 'Baum',
+  'mcp.componentsTitle': 'Komponenten',
 
   'settings.comingSoon': 'Einstellungen folgen in Kürze.',
   'settings.section.general': 'Allgemein',

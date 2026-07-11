@@ -242,6 +242,7 @@ export const zhCn: Partial<Catalog> = {
   'mcp.view.label': '显示为',
   'mcp.view.tiles': '平铺',
   'mcp.view.tree': '树状',
+  'mcp.componentsTitle': '组件',
 
   'settings.comingSoon': '设置界面即将推出。',
   'settings.section.general': '常规',

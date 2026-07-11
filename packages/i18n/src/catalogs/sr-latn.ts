@@ -264,6 +264,7 @@ export const srLatn: Partial<Catalog> = {
   'mcp.view.label': 'Prikaži kao',
   'mcp.view.tiles': 'Pločice',
   'mcp.view.tree': 'Stablo',
+  'mcp.componentsTitle': 'Komponente',
 
   'settings.comingSoon': 'Ekran podešavanja uskoro stiže.',
   'settings.section.general': 'Opšte',

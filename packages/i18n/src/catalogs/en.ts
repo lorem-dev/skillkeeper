@@ -299,6 +299,8 @@ export const en = {
   'mcp.view.label': 'Display as',
   'mcp.view.tiles': 'Tiles',
   'mcp.view.tree': 'Tree',
+  /** Title of the MCP Components page (presets browser: tiles/tree view). */
+  'mcp.componentsTitle': 'Components',
 
   'settings.comingSoon': 'Settings screen coming soon.',
   'settings.section.general': 'General',

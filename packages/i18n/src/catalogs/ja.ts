@@ -242,6 +242,7 @@ export const ja: Partial<Catalog> = {
   'mcp.view.label': '表示形式',
   'mcp.view.tiles': 'タイル',
   'mcp.view.tree': 'ツリー',
+  'mcp.componentsTitle': 'コンポーネント',
 
   'settings.comingSoon': '設定画面は近日公開予定です。',
   'settings.section.general': '一般',

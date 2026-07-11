@@ -1,0 +1,75 @@
+// Two-row page header: the title + actions row, then the view-toggle row,
+// with a spacer between the two rows. Mirrors SkillsPage.scss/McpPage.scss's
+// own header.
+.sk-mcp-components-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-6);
+}
+
+// Left-aligned filters row (today: just the tiles/tree view toggle).
+// Mirrors SkillsPage.scss's `.sk-skills-filters`.
+.sk-mcp-components-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sk-space-5);
+}
+
+// Toolbar search: a compact field that yields space before the action
+// button. Mirrors the other list pages' `.sk-list-search`.
+.sk-list-search {
+  flex: 0 1 9rem;
+  width: auto;
+  // Without this the flex item's min-content floor (which grows when the
+  // clear button appears) would push the field wider than its 9rem basis.
+  min-width: 0;
+}
+
+// Responsive grid of McpCards: as many columns as fit at >=340px each,
+// falling back to a single column on narrow widths. Mirrors the card gap
+// used by the repository/project list pages.
+.sk-mcp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--sk-space-3);
+  align-items: start;
+}
+
+// Spacer between the (sticky) header and the tree.
+.sk-mcp-components-tree {
+  margin-top: var(--sk-space-4);
+}
+
+// Search footer (stats + reset). `margin-top: auto` pins it to the bottom of
+// the (viewport-filling) page body when the content is short; a long list/
+// tree pushes it down naturally so it scrolls into view at the end.
+.sk-list-footer {
+  margin-top: auto;
+}
+
+// A badge wrapper swallows its own click (the badge owns the command) so it
+// never also selects/expands the tree row underneath it.
+.sk-mcp-badgewrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+// Groups a leaf's trailing badges (Edit + Install, or just Install) with a
+// small gap.
+.sk-mcp-badge-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  flex: none;
+}
+
+// A badge that is also a button. Transparent shell; the Badge inside carries
+// the look.
+.sk-mcp-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
