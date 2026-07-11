@@ -326,7 +326,14 @@ export function McpPage() {
       // node (same ids/structure as the decorated one), only when > 0, and
       // only when nothing else already claimed the trailing slot.
       const installedCount = countInstalledLeaves(node, items);
-      const detail = node.trailing === undefined && installedCount > 0 ? installedCount : node.detail;
+      // The installed-count number is shown in the accent color, mirroring the
+      // Skills page's accent-colored branch counts for installed skills.
+      const detail =
+        node.trailing === undefined && installedCount > 0 ? (
+          <span className="sk-mcp-count">{installedCount}</span>
+        ) : (
+          node.detail
+        );
       // A project-root node: show the project's own icon (resolved + safety-
       // checked in main) when it has one, otherwise a generated placeholder --
       // via the shared ProjectIcon, mirroring SkillsPage's project nodes.

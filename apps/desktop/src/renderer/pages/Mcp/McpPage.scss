@@ -35,6 +35,12 @@
   color: var(--sk-color-accent);
 }
 
+// The installed-MCP count shown on branch nodes, in the accent color -- matches
+// the Skills page's accent-colored branch counts for installed skills.
+.sk-mcp-count {
+  color: var(--sk-color-accent);
+}
+
 // A badge wrapper swallows its own click (the badge owns the command) so it
 // never also selects/expands the tree row underneath it.
 .sk-mcp-badgewrap {
