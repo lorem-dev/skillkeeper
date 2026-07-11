@@ -272,6 +272,9 @@ export const pt: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': 'Eliminar {name}?',
   'mcp.deleteConfirmBody': 'Esta ação não pode ser desfeita.',
   'mcp.detailsTitle': 'Detalhes do servidor MCP',
+  'mcp.view.label': 'Exibir como',
+  'mcp.view.tiles': 'Blocos',
+  'mcp.view.tree': 'Árvore',
 
   'settings.comingSoon': 'O ecrã de definições chega em breve.',
   'settings.section.general': 'Geral',

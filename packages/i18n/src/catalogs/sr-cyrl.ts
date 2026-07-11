@@ -261,6 +261,9 @@ export const srCyrl: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': 'Обрисати {name}?',
   'mcp.deleteConfirmBody': 'Ова радња се не може опозвати.',
   'mcp.detailsTitle': 'Детаљи MCP сервера',
+  'mcp.view.label': 'Прикажи као',
+  'mcp.view.tiles': 'Плочице',
+  'mcp.view.tree': 'Стабло',
 
   'settings.comingSoon': 'Екран подешавања ускоро стиже.',
   'settings.section.general': 'Опште',

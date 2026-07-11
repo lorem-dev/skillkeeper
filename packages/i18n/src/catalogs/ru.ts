@@ -276,6 +276,9 @@ export const ru: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': 'Удалить {name}?',
   'mcp.deleteConfirmBody': 'Это действие нельзя отменить.',
   'mcp.detailsTitle': 'Сведения о сервере MCP',
+  'mcp.view.label': 'Отображать как',
+  'mcp.view.tiles': 'Плитки',
+  'mcp.view.tree': 'Дерево',
 
   'settings.comingSoon': 'Экран настроек скоро появится.',
   'settings.section.general': 'Общие',

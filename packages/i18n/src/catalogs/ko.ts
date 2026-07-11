@@ -269,6 +269,9 @@ export const ko: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': '{name}을 삭제하시겠습니까?',
   'mcp.deleteConfirmBody': '이 작업은 되돌릴 수 없습니다.',
   'mcp.detailsTitle': 'MCP 서버 세부정보',
+  'mcp.view.label': '보기 방식',
+  'mcp.view.tiles': '타일',
+  'mcp.view.tree': '트리',
 
   'settings.comingSoon': '설정 화면은 곧 제공됩니다.',
   'settings.section.general': '일반',

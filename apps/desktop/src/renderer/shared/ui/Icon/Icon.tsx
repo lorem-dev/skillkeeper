@@ -33,6 +33,8 @@ import deleteIcon from './assets/delete.svg?raw';
 import folder from './assets/folder.svg?raw';
 import mcp from './assets/mcp.svg?raw';
 import mcpGroup from './assets/mcp-group.svg?raw';
+import viewTiles from './assets/view-tiles.svg?raw';
+import viewTree from './assets/view-tree.svg?raw';
 
 export type IconName =
   | 'repositories'
@@ -55,7 +57,9 @@ export type IconName =
   | 'delete'
   | 'folder'
   | 'mcp'
-  | 'mcp-group';
+  | 'mcp-group'
+  | 'view-tiles'
+  | 'view-tree';
 
 const ICONS: Record<IconName, string> = {
   repositories: stripSvgRoot(repositories),
@@ -79,6 +83,8 @@ const ICONS: Record<IconName, string> = {
   folder: stripSvgRoot(folder),
   mcp: stripSvgRoot(mcp),
   'mcp-group': stripSvgRoot(mcpGroup),
+  'view-tiles': stripSvgRoot(viewTiles),
+  'view-tree': stripSvgRoot(viewTree),
 };
 
 /**

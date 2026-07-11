@@ -22,6 +22,8 @@ import deleteIcon from './assets/delete.svg?raw';
 import folder from './assets/folder.svg?raw';
 import mcp from './assets/mcp.svg?raw';
 import mcpGroup from './assets/mcp-group.svg?raw';
+import viewTiles from './assets/view-tiles.svg?raw';
+import viewTree from './assets/view-tree.svg?raw';
 
 const assets: Record<string, string> = {
   repositories,
@@ -45,6 +47,8 @@ const assets: Record<string, string> = {
   folder,
   mcp,
   'mcp-group': mcpGroup,
+  'view-tiles': viewTiles,
+  'view-tree': viewTree,
 };
 
 describe('Icon assets', () => {

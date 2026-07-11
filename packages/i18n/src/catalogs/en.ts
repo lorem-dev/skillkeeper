@@ -294,6 +294,11 @@ export const en = {
   'mcp.deleteConfirmTitle': 'Delete {name}?',
   'mcp.deleteConfirmBody': 'This cannot be undone.',
   'mcp.detailsTitle': 'MCP server details',
+  /** View-mode toggle: components browser tile grid vs. tree. `mcp.view.label`
+   *  is the control's tooltip. */
+  'mcp.view.label': 'Display as',
+  'mcp.view.tiles': 'Tiles',
+  'mcp.view.tree': 'Tree',
 
   'settings.comingSoon': 'Settings screen coming soon.',
   'settings.section.general': 'General',

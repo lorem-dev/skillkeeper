@@ -272,6 +272,9 @@ export const uk: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': 'Видалити {name}?',
   'mcp.deleteConfirmBody': 'Цю дiю не можна скасувати.',
   'mcp.detailsTitle': 'Відомості про сервер MCP',
+  'mcp.view.label': 'Показувати як',
+  'mcp.view.tiles': 'Плитки',
+  'mcp.view.tree': 'Дерево',
 
   'settings.comingSoon': 'Екран налаштувань з’явиться незабаром.',
   'settings.section.general': 'Загальні',

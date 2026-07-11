@@ -239,6 +239,9 @@ export const zhCn: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': '删除 {name}?',
   'mcp.deleteConfirmBody': '此操作无法撤销。',
   'mcp.detailsTitle': 'MCP 服务器详情',
+  'mcp.view.label': '显示为',
+  'mcp.view.tiles': '平铺',
+  'mcp.view.tree': '树状',
 
   'settings.comingSoon': '设置界面即将推出。',
   'settings.section.general': '常规',

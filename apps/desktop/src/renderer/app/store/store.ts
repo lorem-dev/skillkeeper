@@ -290,6 +290,12 @@ export interface SkillsUiState {
 /** MCP-page display mode: browse by repository or by tracked project. */
 export type McpMode = 'repositories' | 'projects';
 
+/** MCP components view: tile grid vs. hierarchical tree. */
+export type McpComponentsView = 'tiles' | 'tree';
+
+/** MCP-page sub-page: the components browser vs. the management (presets) list. */
+export type McpSubPage = 'components' | 'management';
+
 /**
  * MCP-page view state: display mode + tree expansion. Lives in the store (not
  * component state) so it survives navigating away and back, in memory only
@@ -300,6 +306,10 @@ export interface McpUiState {
   mode: McpMode;
   /** Tree expansion, in-memory only; `null` = not yet customized. */
   expandedIds: string[] | null;
+  /** Components-page display: tile grid or tree. */
+  componentsView: McpComponentsView;
+  /** Last sub-page visited, so returning to the MCP page resumes it. */
+  lastSubPage: McpSubPage;
 }
 
 export interface SkillkeeperState {
@@ -552,6 +562,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   mcpUi: {
     mode: 'repositories',
     expandedIds: null,
+    componentsView: 'tiles',
+    lastSubPage: 'components',
   },
   skillsNav: 0,
   addRepoRequest: null,

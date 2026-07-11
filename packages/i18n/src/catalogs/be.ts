@@ -272,6 +272,9 @@ export const be: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': 'Выдаліць {name}?',
   'mcp.deleteConfirmBody': 'Гэта дзеянне незваротнае.',
   'mcp.detailsTitle': 'Звесткі пра сервер MCP',
+  'mcp.view.label': 'Паказваць як',
+  'mcp.view.tiles': 'Пліткі',
+  'mcp.view.tree': 'Дрэва',
 
   'settings.comingSoon': 'Экран налад хутка з’явіцца.',
   'settings.section.general': 'Агульныя',

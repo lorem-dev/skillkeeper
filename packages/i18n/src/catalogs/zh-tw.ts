@@ -239,6 +239,9 @@ export const zhTw: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': '刪除 {name}?',
   'mcp.deleteConfirmBody': '此操作無法復原。',
   'mcp.detailsTitle': 'MCP 伺服器詳情',
+  'mcp.view.label': '顯示為',
+  'mcp.view.tiles': '平鋪',
+  'mcp.view.tree': '樹狀',
 
   'settings.comingSoon': '設定畫面即將推出。',
   'settings.section.general': '一般',

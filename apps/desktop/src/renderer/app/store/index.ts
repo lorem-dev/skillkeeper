@@ -8,6 +8,8 @@ export type {
   SkillsMode,
   SkillsUiState,
   McpMode,
+  McpComponentsView,
+  McpSubPage,
   McpUiState,
   SectionValidity,
   SkillKeeperConfig,

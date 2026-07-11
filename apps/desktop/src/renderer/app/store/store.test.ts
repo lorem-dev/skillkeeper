@@ -49,6 +49,8 @@ function reset(): void {
     mcpUi: {
       mode: 'repositories',
       expandedIds: null,
+      componentsView: 'tiles',
+      lastSubPage: 'components',
     },
   });
 }
@@ -286,6 +288,12 @@ describe('useSkillkeeperStore', () => {
       expect(ui.expandedIds).toBeNull();
     });
 
+    it('defaults to tiles view and the components sub-page', () => {
+      const ui = useSkillkeeperStore.getState().mcpUi;
+      expect(ui.componentsView).toBe('tiles');
+      expect(ui.lastSubPage).toBe('components');
+    });
+
     it('merges a partial patch without disturbing untouched fields', () => {
       useSkillkeeperStore.getState().setMcpUi({ expandedIds: ['preset-1'] });
 
@@ -299,6 +307,22 @@ describe('useSkillkeeperStore', () => {
       expect(ui.mode).toBe('projects');
       // The expansion set from the earlier patch survives an unrelated merge.
       expect(ui.expandedIds).toEqual(['preset-1']);
+    });
+
+    it('updates componentsView and lastSubPage independently of the rest', () => {
+      useSkillkeeperStore.getState().setMcpUi({ componentsView: 'tree' });
+
+      let ui = useSkillkeeperStore.getState().mcpUi;
+      expect(ui.componentsView).toBe('tree');
+      expect(ui.lastSubPage).toBe('components');
+      expect(ui.mode).toBe('repositories');
+
+      useSkillkeeperStore.getState().setMcpUi({ lastSubPage: 'management' });
+
+      ui = useSkillkeeperStore.getState().mcpUi;
+      expect(ui.lastSubPage).toBe('management');
+      // The view mode set earlier survives this unrelated merge.
+      expect(ui.componentsView).toBe('tree');
     });
   });
 

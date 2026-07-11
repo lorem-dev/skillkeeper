@@ -272,6 +272,9 @@ export const pl: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': 'Usunac {name}?',
   'mcp.deleteConfirmBody': 'Tej operacji nie mozna cofnac.',
   'mcp.detailsTitle': 'Szczegoly serwera MCP',
+  'mcp.view.label': 'Wyswietlaj jako',
+  'mcp.view.tiles': 'Kafelki',
+  'mcp.view.tree': 'Drzewo',
 
   'settings.comingSoon': 'Ekran ustawien bedzie dostepny wkrotce.',
   'settings.section.general': 'Ogolne',

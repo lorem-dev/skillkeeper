@@ -261,6 +261,9 @@ export const srLatn: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': 'Obrisati {name}?',
   'mcp.deleteConfirmBody': 'Ova radnja se ne moze opozvati.',
   'mcp.detailsTitle': 'Detalji MCP servera',
+  'mcp.view.label': 'Prikaži kao',
+  'mcp.view.tiles': 'Pločice',
+  'mcp.view.tree': 'Stablo',
 
   'settings.comingSoon': 'Ekran podešavanja uskoro stiže.',
   'settings.section.general': 'Opšte',

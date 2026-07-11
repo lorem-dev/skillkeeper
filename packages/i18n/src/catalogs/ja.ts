@@ -239,6 +239,9 @@ export const ja: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': '{name} を削除しますか?',
   'mcp.deleteConfirmBody': 'この操作は元に戻せません。',
   'mcp.detailsTitle': 'MCPサーバーの詳細',
+  'mcp.view.label': '表示形式',
+  'mcp.view.tiles': 'タイル',
+  'mcp.view.tree': 'ツリー',
 
   'settings.comingSoon': '設定画面は近日公開予定です。',
   'settings.section.general': '一般',

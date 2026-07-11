@@ -255,6 +255,9 @@ export const de: Partial<Catalog> = {
   'mcp.deleteConfirmTitle': '{name} löschen?',
   'mcp.deleteConfirmBody': 'Dies kann nicht rückgängig gemacht werden.',
   'mcp.detailsTitle': 'MCP-Server-Details',
+  'mcp.view.label': 'Anzeigen als',
+  'mcp.view.tiles': 'Kacheln',
+  'mcp.view.tree': 'Baum',
 
   'settings.comingSoon': 'Einstellungen folgen in Kürze.',
   'settings.section.general': 'Allgemein',
