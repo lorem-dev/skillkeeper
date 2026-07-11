@@ -11,61 +11,22 @@
  * the tree builder's `items` lookup (`McpTreeItem`) -- see design spec "MCP
  * support" sections 5, 7, and 8.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useSkillkeeperStore, matchMcpPreset } from '@/app/store';
-import type { McpPreset } from '@/app/store';
+import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { bridgeClient } from '@/services/bridge';
-import type { McpInstall, McpUpdateReq, Project } from '@/services/bridge';
-import {
-  Page,
-  Toolbar,
-  Button,
-  SearchField,
-  Select,
-  SearchSummary,
-  TreeView,
-  Badge,
-  Tooltip,
-  Modal,
-} from '@/shared/ui';
+import type { Project } from '@/services/bridge';
+import { Page, Toolbar, Button, SearchField, Select, SearchSummary, TreeView, Badge, Tooltip } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
-import { McpCard } from '@/entities/mcp';
 import { ProjectIcon } from '@/entities/project';
-import { McpEditModal } from '@/features/mcpEdit';
-import type { ManualMcpPreset } from '@/features/mcpEdit';
-import { McpInstallModal, McpUpdateParamsModal, buildRemoveBatches } from '@/features/mcpInstall';
 import { buildMcpRepoTree, buildMcpProjectTree, mcpProjectRootId } from './lib/mcpTree';
 import type { McpTreeItem } from './lib/mcpTree';
-import { resolveDetailsPreset } from './lib/mcpItemPreset';
 import { countInstalledLeaves } from './lib/mcpCounts';
-import { mcpConnectionFromDef, toManualPreset } from './lib/mcpPresetMapping';
+import { useMcpActions } from './useMcpActions';
 import './McpPage.scss';
 
 type Mode = 'repositories' | 'projects';
-
-/**
- * Placeholder passed to `McpInstallModal` while it is closed -- its `preset`
- * prop is required, but the modal's own `open` gate keeps the body (which is
- * the only place `preset` is read) out of the DOM, so this is never shown.
- */
-const EMPTY_MCP_PRESET: McpPreset = {
-  id: '',
-  origin: 'manual',
-  name: '',
-  def: { name: '', type: 'stdio' },
-  hash: '',
-  params: [],
-  hasRules: false,
-};
-
-/** A pending destructive confirmation: what to show, and what to run on confirm. */
-interface DeleteTarget {
-  readonly name: string;
-  readonly onConfirm: () => void;
-}
 
 export function McpPage() {
   const mcpPresets = useSkillkeeperStore((s) => s.mcpPresets);
@@ -73,15 +34,13 @@ export function McpPage() {
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const projects = useSkillkeeperStore((s) => s.projects);
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
-  const applyMcp = useSkillkeeperStore((s) => s.applyMcp);
-  const updateMcp = useSkillkeeperStore((s) => s.updateMcp);
-  const deleteMcpPreset = useSkillkeeperStore((s) => s.deleteMcpPreset);
-  const focusRepository = useSkillkeeperStore((s) => s.focusRepository);
   const refreshMcpPresets = useSkillkeeperStore((s) => s.refreshMcpPresets);
   const refreshMcpInstalls = useSkillkeeperStore((s) => s.refreshMcpInstalls);
   const refreshProjectInfo = useSkillkeeperStore((s) => s.refreshProjectInfo);
-  const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
+
+  const { openCreate, openEdit, openInstall, startMcpUpdate, requestDeleteInstalls, openDetails, modals } =
+    useMcpActions();
 
   // Presets, installed instances, and project icons are local/cheap --
   // refresh all three on mount, mirroring SkillsPage's own mount effects.
@@ -99,156 +58,6 @@ export function McpPage() {
   const setMcpUi = useSkillkeeperStore((s) => s.setMcpUi);
   const { mode, expandedIds: persistedExpandedIds } = mcpUi;
   const [query, setQuery] = useState('');
-
-  const [editOpen, setEditOpen] = useState(false);
-  const [editingPreset, setEditingPreset] = useState<ManualMcpPreset | undefined>(undefined);
-  const [installTarget, setInstallTarget] = useState<{ preset: McpPreset; projectId?: string } | null>(null);
-  // The pending update's target, once the preflight has determined which
-  // params are missing (prompt open); null means closed. Closing WITHOUT
-  // confirming aborts the update -- no `McpUpdateParamsModal` `onConfirm` call
-  // means `runMcpUpdate` never runs.
-  const [updateTarget, setUpdateTarget] = useState<{
-    project: Project;
-    installs: readonly McpInstall[];
-    missingParams: string[];
-  } | null>(null);
-  const [detailsPreset, setDetailsPreset] = useState<McpPreset | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
-
-  function copy(text: string): void {
-    void navigator.clipboard.writeText(text);
-    notify(t('mcp.copiedToClipboard'), 'info');
-  }
-
-  function repoNameFor(preset: McpPreset): string | undefined {
-    return preset.repoId !== undefined ? repositories.find((r) => r.id === preset.repoId)?.name : undefined;
-  }
-
-  const openCreate = useCallback((): void => {
-    setEditingPreset(undefined);
-    setEditOpen(true);
-  }, []);
-
-  const openEdit = useCallback((preset: McpPreset): void => {
-    setEditingPreset(toManualPreset(preset));
-    setEditOpen(true);
-  }, []);
-
-  const openInstall = useCallback((preset: McpPreset, projectId?: string): void => {
-    setInstallTarget({ preset, projectId });
-  }, []);
-
-  // Runs an already-preflighted update: `values` carries only the params the
-  // preflight (or the follow-up modal) determined were missing -- `updateMcp`
-  // merges them with each instance's OWN stored values server-side, so a
-  // partial `values` here is always safe.
-  const runMcpUpdate = useCallback(
-    async (toUpdate: readonly McpInstall[], values: Record<string, string>): Promise<void> => {
-      const first = toUpdate[0];
-      if (first === undefined) return;
-      const project = projects.find((p) => p.id === first.projectId);
-      if (project === undefined) return;
-      const preset = matchMcpPreset(first, mcpPresets);
-      if (preset === undefined) return;
-      const updates: McpUpdateReq[] = toUpdate.map((inst) => ({
-        projectId: project.id,
-        projectPath: project.path,
-        agent: inst.agent,
-        instanceName: inst.instanceName,
-        identity: inst.identity,
-        def: preset.def,
-        values,
-      }));
-      const result = await updateMcp({ updates });
-      if (!result.ok) notify(result.error, 'error');
-    },
-    [projects, mcpPresets, updateMcp, notify],
-  );
-
-  // Update entry point: preflight every affected agent's instance (one per
-  // `toUpdate` entry) against the preset's current def, then either update
-  // directly (nothing missing) or open the params modal for the UNION of
-  // missing names across all of them. Closing that modal without confirming
-  // aborts -- `updateTarget` is simply cleared, `runMcpUpdate` never runs.
-  const startMcpUpdate = useCallback(
-    async (toUpdate: readonly McpInstall[]): Promise<void> => {
-      const first = toUpdate[0];
-      if (first === undefined) return;
-      const project = projects.find((p) => p.id === first.projectId);
-      if (project === undefined) return;
-      const preset = matchMcpPreset(first, mcpPresets);
-      if (preset === undefined) return;
-      const results = await Promise.all(
-        toUpdate.map((inst) =>
-          bridgeClient.mcpUpdatePreflight({
-            projectId: project.id,
-            projectPath: project.path,
-            agent: inst.agent,
-            instanceName: inst.instanceName,
-            def: preset.def,
-          }),
-        ),
-      );
-      const missing = new Set<string>();
-      for (const r of results) {
-        if (!r.ok) {
-          notify(r.error, 'error');
-          return;
-        }
-        for (const p of r.missingParams) missing.add(p);
-      }
-      if (missing.size === 0) {
-        await runMcpUpdate(toUpdate, {});
-        return;
-      }
-      setUpdateTarget({ project, installs: toUpdate, missingParams: [...missing].sort() });
-    },
-    [projects, mcpPresets, notify, runMcpUpdate],
-  );
-
-  // Removes one leaf's installed instances (installed or unlinked): all share
-  // the same project (the tree groups installs by project node), so the first
-  // instance's `projectId` resolves the batch's target.
-  const removeInstalls = useCallback(
-    async (toRemove: readonly McpInstall[]): Promise<void> => {
-      const first = toRemove[0];
-      if (first === undefined) return;
-      const project = projects.find((p) => p.id === first.projectId);
-      if (project === undefined) return;
-      const result = await applyMcp({
-        projectId: project.id,
-        projectPath: project.path,
-        batches: buildRemoveBatches(toRemove),
-      });
-      if (!result.ok) notify(result.error, 'error');
-    },
-    [projects, applyMcp, notify],
-  );
-
-  const requestDeleteInstalls = useCallback(
-    (name: string, installs: readonly McpInstall[]): void => {
-      setDeleteTarget({ name, onConfirm: () => void removeInstalls(installs) });
-    },
-    [removeInstalls],
-  );
-
-  // Routed from `McpEditModal`'s Delete button: the confirm modal is shared
-  // with the tree leaves' own Delete badges, so the cascade uninstall + the
-  // config-entry removal both go through the store's `deleteMcpPreset`.
-  const requestDeletePreset = useCallback(
-    (preset: ManualMcpPreset): void => {
-      setDeleteTarget({ name: preset.name, onConfirm: () => void deleteMcpPreset(preset.id) });
-    },
-    [deleteMcpPreset],
-  );
-
-  const openDetails = useCallback(
-    (item: McpTreeItem): void => {
-      const preset = resolveDetailsPreset(item, mcpPresets);
-      if (preset !== undefined) setDetailsPreset(preset);
-    },
-    [mcpPresets],
-  );
 
   const treeResult = useMemo(
     () =>
@@ -300,7 +109,7 @@ export function McpPage() {
         case 'installed':
           return (
             <span className="sk-mcp-badge-group">
-              {item.updatable && renderBadge(t('mcp.update'), 'accent', () => void startMcpUpdate(item.installs))}
+              {item.updatable && renderBadge(t('mcp.update'), 'accent', () => startMcpUpdate(item.installs))}
               {renderBadge(t('mcp.delete'), 'neutral', () => requestDeleteInstalls(name, item.installs))}
             </span>
           );
@@ -380,53 +189,6 @@ export function McpPage() {
     { value: 'projects', label: t('skills.source.projects') },
   ];
 
-  // The details modal's body: reuses `McpCard` as-is (same props the old
-  // card-grid page passed) -- Edit (manual only) and Install stay available
-  // here too, both closing the details modal first since they open their own
-  // modal on top of it.
-  function renderDetailsCard(preset: McpPreset): ReactNode {
-    const connection = mcpConnectionFromDef(preset.def);
-    const repoName = repoNameFor(preset);
-    return (
-      <McpCard
-        name={preset.name}
-        repoName={repoName}
-        goToRepoLabel={t('mcp.goToRepository')}
-        onGoToRepo={
-          preset.repoId !== undefined
-            ? () => {
-                focusRepository(preset.repoId!);
-                setDetailsPreset(null);
-              }
-            : undefined
-        }
-        protocol={preset.def.type}
-        protocolLabel={t(`mcp.protocol.${preset.def.type}`)}
-        hasRules={preset.hasRules}
-        rulesLabel={t('mcp.rulesBadge')}
-        url={connection.url}
-        command={connection.command}
-        copyLabel={t('mcp.copy')}
-        onCopyUrl={connection.url !== undefined ? () => copy(connection.url!) : undefined}
-        onCopyCommand={connection.command !== undefined ? () => copy(connection.command!) : undefined}
-        onEdit={
-          preset.origin === 'manual'
-            ? () => {
-                openEdit(preset);
-                setDetailsPreset(null);
-              }
-            : undefined
-        }
-        editLabel={t('mcp.edit')}
-        onInstall={() => {
-          setDetailsPreset(null);
-          openInstall(preset);
-        }}
-        installLabel={t('mcp.install')}
-      />
-    );
-  }
-
   const actions = (
     <>
       <SearchField
@@ -488,62 +250,7 @@ export function McpPage() {
         </>
       )}
 
-      <McpEditModal
-        open={editOpen}
-        preset={editingPreset}
-        onDelete={requestDeletePreset}
-        onClose={() => setEditOpen(false)}
-      />
-      <McpInstallModal
-        open={installTarget !== null}
-        preset={installTarget?.preset ?? EMPTY_MCP_PRESET}
-        preselectedProjectId={installTarget?.projectId}
-        onClose={() => setInstallTarget(null)}
-      />
-      <McpUpdateParamsModal
-        open={updateTarget !== null}
-        missingParams={updateTarget?.missingParams ?? []}
-        onConfirm={(values) => {
-          const target = updateTarget;
-          setUpdateTarget(null);
-          if (target !== null) void runMcpUpdate(target.installs, values);
-        }}
-        onClose={() => setUpdateTarget(null)}
-      />
-      <Modal
-        open={detailsPreset !== null}
-        onClose={() => setDetailsPreset(null)}
-        title={t('mcp.detailsTitle')}
-        className="sk-mcp-details"
-      >
-        {detailsPreset !== null && renderDetailsCard(detailsPreset)}
-      </Modal>
-      <Modal
-        open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        title={deleteTarget !== null ? t('mcp.deleteConfirmTitle', { name: deleteTarget.name }) : ''}
-        className="sk-mcp-confirm"
-      >
-        {deleteTarget !== null && (
-          <div className="sk-mcp-confirm__body">
-            <p>{t('mcp.deleteConfirmBody')}</p>
-            <div className="sk-mcp-confirm__actions">
-              <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-                {t('mcp.cancel')}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  deleteTarget.onConfirm();
-                  setDeleteTarget(null);
-                }}
-              >
-                {t('mcp.delete')}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      {modals}
     </Page>
   );
 }
