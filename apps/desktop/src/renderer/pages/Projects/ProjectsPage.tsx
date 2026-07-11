@@ -108,7 +108,7 @@ export function ProjectsPage() {
                       info !== undefined ? t.plural('projects.skillCount', info.skillCount) : undefined
                     }
                     fromReposLabel={
-                      info !== undefined
+                      info !== undefined && info.fromReposCount > 0
                         ? t('projects.fromRepos', { count: String(info.fromReposCount) })
                         : undefined
                     }

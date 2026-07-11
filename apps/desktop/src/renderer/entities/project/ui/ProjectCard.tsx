@@ -154,8 +154,8 @@ export function ProjectCard({
             </>
           ) : (
             <>
-              {skillCountLabel !== undefined && <Badge tone="accent">{skillCountLabel}</Badge>}
-              {fromReposLabel !== undefined && <Badge tone="neutral">{fromReposLabel}</Badge>}
+              {fromReposLabel !== undefined && <Badge tone="accent">{fromReposLabel}</Badge>}
+              {skillCountLabel !== undefined && <Badge tone="neutral">{skillCountLabel}</Badge>}
               {agentsLabel !== undefined && <Badge tone="neutral">{agentsLabel}</Badge>}
             </>
           )}
