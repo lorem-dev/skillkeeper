@@ -6,7 +6,9 @@
  * used for the v1 shell -- a simple useState drives view selection.
  */
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
+import { cx } from '@/shared/lib';
 import { bridgeClient } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { useTheme } from '@/systems/theme';
@@ -51,9 +53,12 @@ export function App() {
   const addRepoRequest = useSkillkeeperStore((s) => s.addRepoRequest);
   const skillsNav = useSkillkeeperStore((s) => s.skillsNav);
   const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
-  const mcpUi = useSkillkeeperStore((s) => s.mcpUi);
-  const setMcpUi = useSkillkeeperStore((s) => s.setMcpUi);
   const t = useTranslator();
+  // The MCP nav group is a pure expand/collapse toggle (local, ephemeral):
+  // clicking the header opens/closes its sub-items; navigation happens only
+  // through the sub-items. No "remember last sub-page" -- clicking the header
+  // never navigates.
+  const [mcpOpen, setMcpOpen] = useState(false);
 
   useEffect(() => {
     void loadAll(bridgeClient);
@@ -106,8 +111,6 @@ export function App() {
     }
   }
 
-  const mcpActive = activeView === 'mcp-components' || activeView === 'mcp-management';
-
   return (
     <div className="sk-app">
       <ConfigBanner />
@@ -124,43 +127,47 @@ export function App() {
             </SidebarItem>
           ))}
 
-          {/* MCP: a group header + two sub-pages, built here (not inside the
-              shared Sidebar/SidebarItem, which stay generic). The header
-              navigates to whichever sub-page was last visited (default:
-              Components) and is "active" while either sub-view is showing;
-              its sub-items only appear while the group is active, mirroring
-              a typical collapsed/expanded nav group. */}
+          {/* MCP: a group header + two sub-pages, composed here (the shared
+              Sidebar/SidebarItem stay generic). The header is a pure
+              expand/collapse TOGGLE -- clicking it opens/closes the sub-items
+              (never navigates and never carries the selected background); the
+              trailing chevron rotates and the sub-group animates its height.
+              Navigation lives on the sub-items. */}
           <SidebarItem
             icon={<Icon name="mcp" />}
-            active={mcpActive}
-            onClick={() => setActiveView(mcpUi.lastSubPage === 'management' ? 'mcp-management' : 'mcp-components')}
+            className={cx('sk-sidebar-item--group', mcpOpen && 'sk-sidebar-item--group--open')}
+            onClick={() => setMcpOpen((open) => !open)}
           >
             {t('nav.mcp')}
+            <Icon name="chevron-right" size={14} className="sk-nav-group__chevron" />
           </SidebarItem>
-          {mcpActive && (
-            <>
-              <SidebarItem
-                className="sk-sidebar-item--sub"
-                active={activeView === 'mcp-components'}
-                onClick={() => {
-                  setActiveView('mcp-components');
-                  setMcpUi({ lastSubPage: 'components' });
-                }}
+          <AnimatePresence initial={false}>
+            {mcpOpen && (
+              <motion.div
+                key="mcp-subgroup"
+                className="sk-nav-subgroup"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
               >
-                {t('mcp.componentsTitle')}
-              </SidebarItem>
-              <SidebarItem
-                className="sk-sidebar-item--sub"
-                active={activeView === 'mcp-management'}
-                onClick={() => {
-                  setActiveView('mcp-management');
-                  setMcpUi({ lastSubPage: 'management' });
-                }}
-              >
-                {t('mcp.managementTitle')}
-              </SidebarItem>
-            </>
-          )}
+                <SidebarItem
+                  className="sk-sidebar-item--sub"
+                  active={activeView === 'mcp-components'}
+                  onClick={() => setActiveView('mcp-components')}
+                >
+                  {t('mcp.componentsTitle')}
+                </SidebarItem>
+                <SidebarItem
+                  className="sk-sidebar-item--sub"
+                  active={activeView === 'mcp-management'}
+                  onClick={() => setActiveView('mcp-management')}
+                >
+                  {t('mcp.managementTitle')}
+                </SidebarItem>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <SidebarItem
             icon={<Icon name="settings" />}

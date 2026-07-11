@@ -184,7 +184,7 @@ export function ManagementPage() {
   );
 
   return (
-    <Page toolbar={<Toolbar title={t('mcp.managementTitle')} trailing={actions} />}>
+    <Page toolbar={<Toolbar title={`${t('nav.mcp')} / ${t('mcp.managementTitle')}`} trailing={actions} />}>
       {baseTree.length === 0 ? (
         <p className="sk-empty">{t('mcp.empty')}</p>
       ) : (

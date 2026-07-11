@@ -41,5 +41,45 @@
 .sk-sidebar-item--sub {
   padding-left: var(--sk-space-6);
   font-size: 13px;
+}
+
+// Secondary (muted) text only in the RESTING state (not selected, not hovered).
+// The shared `.sk-sidebar-item` hover/active rules are single-class (equal
+// specificity) and load before this file, so an unscoped `color` here would
+// win and mis-colour both the selected AND the hovered sub-item. Excluding
+// `:hover` + `--active` lets those base states light the text as intended.
+.sk-sidebar-item--sub:not(.sk-sidebar-item--active):not(:hover) {
   color: var(--sk-color-label-3);
+}
+
+// The "MCP" group header (a first-level item that owns sub-items). It never
+// carries the selected-background itself -- selection lives on the active
+// sub-item -- so it is composed WITHOUT the `--active` class; `--open` marks
+// it expanded (emphasised text + rotated chevron). Its label row makes space
+// for the trailing disclosure chevron.
+.sk-sidebar-item--group .sk-sidebar-item__label {
+  display: flex;
+  align-items: center;
+}
+
+.sk-sidebar-item--group--open {
+  color: var(--sk-color-label);
+}
+
+.sk-nav-group__chevron {
+  margin-left: auto;
+  transition: transform var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+.sk-sidebar-item--group--open .sk-nav-group__chevron {
+  transform: rotate(90deg);
+}
+
+// Animated disclosure container for the sub-items: stacks them with the same
+// gap the sidebar uses, and clips during the height expand/collapse.
+.sk-nav-subgroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-1);
+  overflow: hidden;
 }

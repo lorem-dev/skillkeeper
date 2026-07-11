@@ -164,7 +164,7 @@ export function ComponentsPage() {
     <Page
       toolbar={
         <div className="sk-mcp-components-header">
-          <Toolbar title={t('mcp.componentsTitle')} trailing={actions} />
+          <Toolbar title={`${t('nav.mcp')} / ${t('mcp.componentsTitle')}`} trailing={actions} />
           <div className="sk-mcp-components-filters">
             <McpViewToggle value={componentsView} onChange={(v) => setMcpUi({ componentsView: v })} />
           </div>
