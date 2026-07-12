@@ -134,6 +134,24 @@ export function TreeView({
   const [focusedId, setFocusedId] = useState<string | null>(nodes[0]?.id ?? null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  // Keep the whole tree unpainted (but laid out) until the first full
+  // layout+paint has happened, then reveal it. This avoids the rows visibly
+  // reflowing/jumping as a large tree renders -- the space is already reserved,
+  // so nothing on the page shifts when it appears. Two rAFs = past the first
+  // paint. The row mask-reveal only runs once `ready`.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setReady(true));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, []);
+  const reveal = revealed && ready;
+
   // When the caller changes which ids should be open (e.g. expand matches while
   // searching), merge them into the open set -- without collapsing anything the
   // user opened, and without re-running on every render (only on a real change).
@@ -363,7 +381,7 @@ export function TreeView({
           }}
           className={cx(
             'sk-tree__row',
-            revealed && 'sk-tree__row--reveal',
+            reveal && 'sk-tree__row--reveal',
             isSelected && 'sk-tree__row--selected',
             !selectable && 'sk-tree__row--plain',
             node.muted === true && 'sk-tree__row--muted',
@@ -453,6 +471,9 @@ export function TreeView({
       role="tree"
       aria-label={ariaLabel}
       aria-multiselectable={checkable ? true : undefined}
+      // Laid out but unpainted until the first frame, so the tree never shows a
+      // mid-render jump; it appears (and the rows reveal) once ready.
+      style={{ visibility: ready ? undefined : 'hidden' }}
     >
       <AnimatePresence initial={false} mode="popLayout">
         {nodes.map((node) => renderItem(node, 0))}
