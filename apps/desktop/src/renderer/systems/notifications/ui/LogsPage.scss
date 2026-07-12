@@ -1,7 +1,8 @@
 // Full-screen error-log overlay. Opaque background so it fully covers the app.
 .sk-logs {
   position: fixed;
-  inset: 0;
+  // Stop above the bottom status bar so it stays visible while open.
+  inset: 0 0 var(--sk-statusbar-h) 0;
   z-index: 300;
   display: flex;
   flex-direction: column;

@@ -4,11 +4,27 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: var(--sk-space-1);
   flex: none;
   height: var(--sk-control-height);
   padding: 0 var(--sk-space-3);
   border-top: 1px solid var(--sk-color-separator);
   background: var(--sk-glass-tint);
+  // Stay above the full-screen logs/terminal/tasks overlays (z 300-310), which
+  // stop short of this bar so it remains visible while they are open.
+  position: relative;
+  z-index: 320;
+}
+
+// Square icon buttons: drop the text-button height/padding to a small square
+// with a lightly rounded corner (distinct from the round action buttons), the
+// glyph centered. Colour + hover come from the plain Button variant.
+.sk-statusbar__btn {
+  width: 26px;
+  height: 26px;
+  min-width: 0;
+  padding: 0;
+  border-radius: var(--sk-radius-xs);
 }
 
 .sk-statusbar__tasks {

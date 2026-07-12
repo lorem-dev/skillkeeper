@@ -6,6 +6,10 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  // Height of the bottom status bar (control height + its 1px top hairline).
+  // The full-screen overlays stop short of it (bottom offset) so it stays
+  // visible while logs/terminal/tasks are open.
+  --sk-statusbar-h: calc(var(--sk-control-height) + 1px);
 }
 
 .sk-shell {

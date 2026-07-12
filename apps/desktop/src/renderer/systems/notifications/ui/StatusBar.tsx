@@ -9,6 +9,7 @@
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon } from '@/shared/ui';
+import { cx } from '@/shared/lib';
 import './StatusBar.scss';
 
 export function StatusBar() {
@@ -27,9 +28,11 @@ export function StatusBar() {
     <footer className="sk-statusbar">
       <Button
         variant="plain"
-        className={
-          activeTaskCount > 0 ? 'sk-statusbar__tasks' : 'sk-statusbar__tasks sk-statusbar__tasks--empty'
-        }
+        className={cx(
+          'sk-statusbar__btn',
+          'sk-statusbar__tasks',
+          activeTaskCount === 0 && 'sk-statusbar__tasks--empty',
+        )}
         onClick={openTasks}
         aria-label={t('statusbar.tasks')}
       >
@@ -38,12 +41,17 @@ export function StatusBar() {
           <span className="sk-statusbar__badge sk-statusbar__badge--accent">{activeTaskCount}</span>
         )}
       </Button>
-      <Button variant="plain" onClick={openTerminal} aria-label={t('statusbar.terminal')}>
+      <Button
+        variant="plain"
+        className="sk-statusbar__btn"
+        onClick={openTerminal}
+        aria-label={t('statusbar.terminal')}
+      >
         <Icon name="terminal" size={18} />
       </Button>
       <Button
         variant="plain"
-        className={count > 0 ? 'sk-statusbar__bell' : 'sk-statusbar__bell sk-statusbar__bell--empty'}
+        className={cx('sk-statusbar__btn', 'sk-statusbar__bell', count === 0 && 'sk-statusbar__bell--empty')}
         onClick={openLogs}
         aria-label={label}
       >
