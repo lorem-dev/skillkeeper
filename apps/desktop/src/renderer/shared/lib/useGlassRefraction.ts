@@ -56,6 +56,10 @@ export function useGlassRefraction<T extends HTMLElement>(
       el.style.setProperty('-webkit-backdrop-filter', value);
     };
 
+    let prevW = -1;
+    let prevH = -1;
+    let prevR = -1;
+
     const apply = (): void => {
       if (!supportsBackdropUrl()) {
         setFilter(FALLBACK);
@@ -67,10 +71,22 @@ export function useGlassRefraction<T extends HTMLElement>(
       if (width === 0 || height === 0) return;
       // Clamp the radius to half the shortest side so the refraction follows the
       // element's actual rounded outline (pill caps, circle, rounded corners)
-      // rather than a too-large literal border-radius.
-      const parsed = Number.parseFloat(getComputedStyle(el).borderRadius);
-      const rawRadius = radius ?? (Number.isNaN(parsed) ? 0 : parsed);
+      // rather than a too-large literal border-radius. Read the computed radius
+      // only when the caller did not pin one (getComputedStyle forces a recalc).
+      let rawRadius: number;
+      if (radius !== undefined) {
+        rawRadius = radius;
+      } else {
+        const parsed = Number.parseFloat(getComputedStyle(el).borderRadius);
+        rawRadius = Number.isNaN(parsed) ? 0 : parsed;
+      }
       const r = Math.min(rawRadius, width / 2, height / 2);
+      // Nothing that affects the filter changed -- skip regenerating the
+      // displacement map + reapplying the (repaint-heavy) backdrop-filter.
+      if (width === prevW && height === prevH && r === prevR) return;
+      prevW = width;
+      prevH = height;
+      prevR = r;
       const filter = getDisplacementFilter({
         width,
         height,
@@ -85,8 +101,21 @@ export function useGlassRefraction<T extends HTMLElement>(
     };
 
     apply();
-    const observer = new ResizeObserver(apply);
+    // Coalesce ResizeObserver ticks (which can fire repeatedly per frame during
+    // a window drag, once per glass element) into a single rebuild per frame.
+    let raf = 0;
+    const schedule = (): void => {
+      if (raf !== 0) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        apply();
+      });
+    };
+    const observer = new ResizeObserver(schedule);
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      if (raf !== 0) cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
   }, [ref, depth, strength, blur, chromaticAberration, brightness, saturate, radius, enabled]);
 }

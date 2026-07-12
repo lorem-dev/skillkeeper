@@ -131,11 +131,22 @@ export function Tooltip({
     }
     reposition();
     // Keep the bubble anchored if the page scrolls or the window resizes while
-    // it is open (capture phase catches scrolls in nested containers).
-    const onChange = (): void => reposition();
+    // it is open (capture phase catches scrolls in nested containers). Coalesce
+    // the burst of events into one reposition per frame -- each reposition reads
+    // layout (getBoundingClientRect/offsetWidth) and re-renders the portal, so
+    // running it per raw scroll event would thrash layout.
+    let raf = 0;
+    const onChange = (): void => {
+      if (raf !== 0) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        reposition();
+      });
+    };
     window.addEventListener('scroll', onChange, true);
     window.addEventListener('resize', onChange);
     return () => {
+      if (raf !== 0) cancelAnimationFrame(raf);
       window.removeEventListener('scroll', onChange, true);
       window.removeEventListener('resize', onChange);
     };

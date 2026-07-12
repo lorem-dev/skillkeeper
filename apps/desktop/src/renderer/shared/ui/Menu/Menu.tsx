@@ -113,11 +113,22 @@ export function Menu({
       setPos(computePosition(anchor.getBoundingClientRect(), menu.offsetWidth, list.scrollHeight, placement));
     };
     place();
-    window.addEventListener('resize', place);
-    window.addEventListener('scroll', place, true);
+    // Coalesce scroll/resize bursts into one reposition per frame (each reads
+    // layout and re-renders the portal).
+    let raf = 0;
+    const onChange = (): void => {
+      if (raf !== 0) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        place();
+      });
+    };
+    window.addEventListener('resize', onChange);
+    window.addEventListener('scroll', onChange, true);
     return () => {
-      window.removeEventListener('resize', place);
-      window.removeEventListener('scroll', place, true);
+      if (raf !== 0) cancelAnimationFrame(raf);
+      window.removeEventListener('resize', onChange);
+      window.removeEventListener('scroll', onChange, true);
     };
   }, [open, placement, anchorRef, items.length]);
 
