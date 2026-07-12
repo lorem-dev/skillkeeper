@@ -42,7 +42,7 @@
 .sk-segmented__pill {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: var(--sk-z-base);
   background: var(--sk-color-bg-tertiary);
   border-radius: var(--sk-radius-pill);
   box-shadow: var(--sk-shadow-1);
@@ -50,7 +50,7 @@
 
 .sk-segmented__text {
   position: relative;
-  z-index: 1;
+  z-index: var(--sk-z-raised);
 }
 
 // Disabled: dimmed and non-interactive (the buttons carry the disabled attr).

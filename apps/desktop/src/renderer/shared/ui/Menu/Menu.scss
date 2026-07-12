@@ -7,10 +7,10 @@
 
 .sk-menu {
   position: fixed;
-  // Above every overlay (Modal 100, Toasts 200, LogsPage 300) so a menu opened
-  // from within one -- e.g. the MultiSelect on the notifications log -- is not
-  // hidden behind it.
-  z-index: 400;
+  // --sk-z-popover is above every overlay (modal, toasts, the full-screen
+  // panels) so a menu opened from within one -- e.g. the MultiSelect on the
+  // notifications log -- is not hidden behind it.
+  z-index: var(--sk-z-popover);
   display: flex;
   flex-direction: column;
   min-width: 180px;

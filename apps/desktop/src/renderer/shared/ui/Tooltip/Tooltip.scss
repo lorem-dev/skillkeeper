@@ -17,12 +17,12 @@
 }
 
 // Portaled to <body> and positioned `fixed` via inline top/left (see Tooltip.tsx)
-// so no ancestor overflow can clip it. Above every overlay (Menu 400) so a
-// tooltip is always on top. Only the transform-origin varies per side, to give
-// the reveal a directional feel.
+// so no ancestor overflow can clip it. --sk-z-tooltip is above every overlay
+// (including the popovers) so a tooltip is always on top. Only the
+// transform-origin varies per side, to give the reveal a directional feel.
 .sk-tooltip__bubble {
   position: fixed;
-  z-index: 500;
+  z-index: var(--sk-z-tooltip);
   white-space: nowrap;
   pointer-events: none;
   font-size: 12px;

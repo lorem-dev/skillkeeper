@@ -10,10 +10,10 @@
   padding: 0 var(--sk-space-3);
   border-top: 1px solid var(--sk-color-separator);
   background: var(--sk-glass-tint);
-  // Stay above the full-screen logs/terminal/tasks overlays (z 300-310), which
-  // stop short of this bar so it remains visible while they are open.
+  // Stay above the full-screen logs/terminal/tasks overlays (--sk-z-overlay/
+  // -raised), which stop short of this bar so it remains visible while open.
   position: relative;
-  z-index: 320;
+  z-index: var(--sk-z-statusbar);
 }
 
 // Square icon buttons: drop the text-button height/padding to a small square

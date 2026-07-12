@@ -77,7 +77,7 @@
 
 // --- popup (mirrors Menu) ---
 .sk-combobox__popup {
-  z-index: 400;
+  z-index: var(--sk-z-popover);
   display: flex;
   flex-direction: column;
   overflow: hidden;

@@ -1,11 +1,12 @@
 // Full-screen embedded-terminal overlay. Opaque background so it fully
-// covers the app. z-index sits just above the logs overlay's 300 -- the two
-// are mutually exclusive in practice, so whichever opens last wins.
+// covers the app. z-index (--sk-z-overlay-raised) sits just above the logs
+// overlay -- the two are mutually exclusive in practice, so whichever opens
+// last wins.
 .sk-terminal-page {
   position: fixed;
   // Stop above the bottom status bar so it stays visible while open.
   inset: 0 0 var(--sk-statusbar-h) 0;
-  z-index: 310;
+  z-index: var(--sk-z-overlay-raised);
   display: flex;
   flex-direction: column;
   background: var(--sk-color-bg);

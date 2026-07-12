@@ -3,7 +3,7 @@
   position: fixed;
   // Stop above the bottom status bar so it stays visible while open.
   inset: 0 0 var(--sk-statusbar-h) 0;
-  z-index: 300;
+  z-index: var(--sk-z-overlay);
   display: flex;
   flex-direction: column;
   background: var(--sk-color-bg);

@@ -1,12 +1,12 @@
 // Full-screen sync task-list overlay. Opaque background so it fully covers
-// the app. z-index matches the terminal overlay's 310 -- tasks and the
-// terminal/logs overlays are mutually exclusive in practice, so whichever
-// opens last wins.
+// the app. z-index (--sk-z-overlay-raised) matches the terminal overlay --
+// tasks and the terminal/logs overlays are mutually exclusive in practice, so
+// whichever opens last wins.
 .sk-tasks {
   position: fixed;
   // Stop above the bottom status bar so it stays visible while open.
   inset: 0 0 var(--sk-statusbar-h) 0;
-  z-index: 310;
+  z-index: var(--sk-z-overlay-raised);
   display: flex;
   flex-direction: column;
   background: var(--sk-color-bg);

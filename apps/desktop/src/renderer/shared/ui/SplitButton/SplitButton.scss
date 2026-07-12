@@ -46,7 +46,7 @@
       // Lift the focused segment so its ring draws over the neighbour, keeping
       // the joined corner crisp.
       position: relative;
-      z-index: 1;
+      z-index: var(--sk-z-base);
     }
 
     &:disabled {

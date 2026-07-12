@@ -131,6 +131,25 @@ $themes: (
   --sk-duration-fast: 150ms;
   --sk-duration-medium: 250ms;
   --sk-duration-slow: 350ms;
+
+  // layering (z-index). One ordered ladder so stacking is set by name, not by
+  // magic numbers -- raise or reorder a layer here and every user follows. The
+  // low rungs order a component's OWN children/pseudo-elements within its local
+  // stacking context; the high rungs are the app-wide overlay stack (portals,
+  // full-screen panels, dialogs), each picking its place relative to the rest.
+  --sk-z-behind: -1; // behind a component's own content (wash / blur bg layers)
+  --sk-z-base: 1; // a raised child within a component
+  --sk-z-raised: 2; // above the base child (e.g. a sticky table head)
+  --sk-z-scroll-fade: 5; // a Page's scroll fade overlays
+  --sk-z-dock: 6; // a Page's bottom action dock
+  --sk-z-sticky: 10; // a Page's sticky header
+  --sk-z-toast: 200; // toast stack
+  --sk-z-overlay: 300; // full-screen panel (logs)
+  --sk-z-overlay-raised: 310; // full-screen panel over the base one (tasks / terminal)
+  --sk-z-statusbar: 320; // bottom status bar, above the full-screen panels
+  --sk-z-modal: 350; // modal dialog + its dimming scrim, above the status bar
+  --sk-z-popover: 400; // anchored popovers (menu / combobox), above a modal
+  --sk-z-tooltip: 500; // tooltip bubble, topmost
 }
 
 [data-theme='dark'] {
