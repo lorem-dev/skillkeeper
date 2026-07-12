@@ -1289,7 +1289,17 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       await Promise.all(
         projects.map(async (p) => {
           const info = await bridgeClient.describeProject(p.id);
-          set((s) => ({ projectInfo: { ...s.projectInfo, [p.id]: info } }));
+          set((s) => {
+            const prev = s.projectInfo[p.id];
+            // Keep the previously-resolved icon when a refresh does not return
+            // one, so the cached icon survives until an actual update replaces
+            // it (no flicker/re-decode from a transient miss).
+            const next =
+              info.iconDataUrl === undefined && prev?.iconDataUrl !== undefined
+                ? { ...info, iconDataUrl: prev.iconDataUrl }
+                : info;
+            return { projectInfo: { ...s.projectInfo, [p.id]: next } };
+          });
         }),
       );
     })();

@@ -112,10 +112,22 @@ export function ProjectCard({
       >
         {iconUrl !== undefined ? (
           <>
-            <img className="sk-project-card__wash-img" src={iconUrl} alt="" draggable={false} />
+            <img
+              className="sk-project-card__wash-img"
+              src={iconUrl}
+              alt=""
+              draggable={false}
+              decoding="async"
+            />
             {/* On hover, an enlarged, blurred blow-up of the icon fills the whole
                 card. */}
-            <img className="sk-project-card__wash-flood-img" src={iconUrl} alt="" draggable={false} />
+            <img
+              className="sk-project-card__wash-flood-img"
+              src={iconUrl}
+              alt=""
+              draggable={false}
+              decoding="async"
+            />
           </>
         ) : (
           <>

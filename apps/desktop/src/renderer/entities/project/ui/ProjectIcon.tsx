@@ -31,6 +31,9 @@ export function ProjectIcon({ iconUrl, name, size = 18, className }: ProjectIcon
         src={iconUrl}
         alt=""
         draggable={false}
+        // Decode off the main thread and let the browser cache the decoded
+        // bitmap by src, so re-renders/re-mounts don't re-decode and jank.
+        decoding="async"
       />
     );
   }
