@@ -25,7 +25,7 @@ import type { McpPreset } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Page, Toolbar, Button, ExpandingSearch, FilterButton, CollapsibleFilters, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
-import { fuzzyFilter, cardStagger, fade, useFilterToggle, useAnimationsEnabled } from '@/shared/lib';
+import { fuzzyFilter, fade, useFilterToggle, useAnimationsEnabled, useMotion } from '@/shared/lib';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
 import { McpCard } from '@/entities/mcp';
 import { McpViewToggle } from '@/features/mcpView';
@@ -38,6 +38,7 @@ import './ComponentsPage.scss';
 
 export function ComponentsPage() {
   const animate = useAnimationsEnabled();
+  const { cardStagger } = useMotion();
   const mcpPresets = useSkillkeeperStore((s) => s.mcpPresets);
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const refreshMcpPresets = useSkillkeeperStore((s) => s.refreshMcpPresets);

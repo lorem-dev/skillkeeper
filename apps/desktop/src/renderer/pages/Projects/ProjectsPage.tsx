@@ -12,7 +12,7 @@ import { ProjectEditModal } from '@/features/projectEdit';
 import { OpenProjectButton } from '@/features/projectOpen';
 import type { Project } from '@/services/bridge';
 import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, Tooltip, Icon } from '@/shared/ui';
-import { fuzzyFilter, cardStagger, fade, useAnimationsEnabled } from '@/shared/lib';
+import { fuzzyFilter, fade, useAnimationsEnabled, useMotion } from '@/shared/lib';
 import './ProjectsPage.scss';
 
 /** Minimum time the Refresh button stays in its loading state, so a refresh
@@ -21,6 +21,7 @@ const REFRESH_MIN_MS = 1000;
 
 export function ProjectsPage() {
   const animate = useAnimationsEnabled();
+  const { cardStagger } = useMotion();
   const projects = useSkillkeeperStore((s) => s.projects);
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
   const projectMissing = useSkillkeeperStore((s) => s.projectMissing);

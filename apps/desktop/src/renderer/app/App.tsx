@@ -53,7 +53,7 @@ export function App() {
   useUpdateSchedule();
   useProjectCheckSchedule();
   const [activeView, setActiveView] = useState<View>('repositories');
-  const animationsEnabled = useSkillkeeperStore((s) => s.config?.general.animations ?? true);
+  const animationMode = useSkillkeeperStore((s) => s.config?.general.animations ?? 'normal');
   const loadAll = useSkillkeeperStore((s) => s.loadAll);
   const loading = useSkillkeeperStore((s) => s.loading);
   const error = useSkillkeeperStore((s) => s.error);
@@ -140,8 +140,8 @@ export function App() {
   }
 
   return (
-    <AnimationProvider enabled={animationsEnabled}>
-    <div className="sk-app">
+    <AnimationProvider mode={animationMode}>
+    <div className="sk-app" data-anim={animationMode}>
       <ConfigBanner />
       <div className="sk-shell">
         <Sidebar title={t('app.title')}>

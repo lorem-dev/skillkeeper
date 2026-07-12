@@ -28,8 +28,9 @@ export const generalSchema = z.object({
     .default('en'),
   /** UI theme preference. */
   theme: z.enum(['system', 'light', 'dark']).default('system'),
-  /** Whether entrance/exit animations play across the UI. */
-  animations: z.boolean().default(true),
+  /** Entrance/exit animation speed across the UI: 'fast' plays at twice the
+   *  normal speed, 'off' disables them. */
+  animations: z.enum(['fast', 'normal', 'off']).default('normal'),
   /** Shell command used to open files in the user's editor. */
   defaultEditor: z.string().optional(),
 });

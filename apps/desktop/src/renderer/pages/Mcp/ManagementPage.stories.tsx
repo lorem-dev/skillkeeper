@@ -26,7 +26,7 @@ const PROJECTS: Project[] = [
 ];
 
 const BASE_CONFIG: SkillKeeperConfig = {
-  general: { language: 'en', theme: 'system', animations: true },
+  general: { language: 'en', theme: 'system', animations: 'normal' },
   updates: { mode: 'manual', intervalMinutes: 720, checkOnStartup: false },
   agents: { enabled: ['claude', 'codex', 'copilot', 'cursor', 'opencode'], overrides: {} },
   executables: { globs: [] },

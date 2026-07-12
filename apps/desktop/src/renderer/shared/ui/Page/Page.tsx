@@ -12,7 +12,7 @@ import { Children, isValidElement, useCallback, useEffect, useRef, useState } fr
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Row } from '../Row';
-import { cx, dockButton, dockContainer, useAnimationsEnabled } from '../../lib';
+import { cx, useAnimationsEnabled, useMotion } from '../../lib';
 import './Page.scss';
 
 export interface PageProps {
@@ -40,6 +40,7 @@ export interface PageProps {
 export function Page({ title, toolbar, dock, children }: PageProps) {
   const hasDock = Boolean(dock);
   const animate = useAnimationsEnabled();
+  const { dockButton, dockContainer } = useMotion();
   const header =
     toolbar ??
     (title !== undefined ? (

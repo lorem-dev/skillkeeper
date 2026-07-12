@@ -12,6 +12,15 @@
   --sk-statusbar-h: calc(var(--sk-control-height) + 1px);
 }
 
+// 'Fast' animation speed: halve the shared duration tokens so CSS-driven
+// animations/transitions run at twice the speed. The framer entrance variants
+// are scaled in JS (useMotion / useAnimationScale).
+.sk-app[data-anim='fast'] {
+  --sk-duration-fast: 75ms;
+  --sk-duration-medium: 125ms;
+  --sk-duration-slow: 175ms;
+}
+
 .sk-shell {
   display: flex;
   flex: 1;

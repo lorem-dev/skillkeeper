@@ -1,5 +1,6 @@
 export { cx } from './cx';
-export { AnimationProvider, useAnimationsEnabled } from './animation';
+export { AnimationProvider, useAnimationsEnabled, useAnimationScale, useMotion } from './animation';
+export type { AnimationMode } from './animation';
 export { levenshtein, fuzzyFilter, fuzzyMatches } from './fuzzyMatch';
 export {
   SK_EASE,
@@ -11,9 +12,9 @@ export {
   fade,
   fadeScale,
   fadeRise,
-  cardStagger,
-  dockButton,
-  dockContainer,
+  makeCardStagger,
+  makeDockButton,
+  makeDockContainer,
   collapse,
 } from './transitions';
 export { getDisplacementFilter, supportsBackdropUrl } from './glassRefraction';

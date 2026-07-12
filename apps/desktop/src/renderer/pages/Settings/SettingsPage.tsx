@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { useAnimationsEnabled, transitionMedium } from '@/shared/lib';
+import { useAnimationsEnabled, useAnimationScale, SK_DURATION, SK_EASE } from '@/shared/lib';
 import { useTheme, type ThemePref } from '@/systems/theme';
 import { buildLanguageOptions, AGENT_LABELS, ALL_AGENTS } from '@/domain';
 import type { Lang, AgentKind, UpdatesConfig } from '@/services/bridge';
@@ -49,6 +49,7 @@ export function SettingsPage() {
   const config = useSkillkeeperStore((s) => s.config);
   const updateConfig = useSkillkeeperStore((s) => s.updateConfig);
   const animate = useAnimationsEnabled();
+  const scale = useAnimationScale();
   const t = useTranslator();
   const { pref, setPref } = useTheme();
 
@@ -60,6 +61,11 @@ export function SettingsPage() {
     { value: 'system', label: t('settings.theme.system') },
     { value: 'light', label: t('settings.theme.light') },
     { value: 'dark', label: t('settings.theme.dark') },
+  ];
+  const animationOptions = [
+    { value: 'fast', label: t('settings.animations.fast') },
+    { value: 'normal', label: t('settings.animations.normal') },
+    { value: 'off', label: t('settings.animations.off') },
   ];
 
   return (
@@ -73,7 +79,7 @@ export function SettingsPage() {
         className="sk-settings"
         initial={animate ? { opacity: 0 } : false}
         animate={{ opacity: 1 }}
-        transition={transitionMedium}
+        transition={{ duration: SK_DURATION.medium * scale, ease: SK_EASE }}
       >
         <FormSection title={t('settings.section.general')}>
           <FormRow label={t('settings.language')}>
@@ -96,9 +102,13 @@ export function SettingsPage() {
             />
           </FormRow>
           <FormRow label={t('settings.animations')} description={t('settings.animationsHint')}>
-            <Toggle
-              checked={config.general.animations}
-              onChange={(e) => void updateConfig({ general: { animations: e.target.checked } })}
+            <SegmentedControl
+              label={t('settings.animations')}
+              options={animationOptions}
+              value={config.general.animations}
+              onChange={(v) =>
+                void updateConfig({ general: { animations: v as 'fast' | 'normal' | 'off' } })
+              }
             />
           </FormRow>
         </FormSection>

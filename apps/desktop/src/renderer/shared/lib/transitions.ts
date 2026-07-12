@@ -50,36 +50,51 @@ export const fadeRise: Variants = {
  * lists still finish quickly. Each card eases a touch slower than the page
  * title (see `titleEnter`) so the title leads and the cards follow.
  */
-export const cardStagger: Variants = {
-  initial: { opacity: 0, x: 24, filter: 'blur(2px)' },
-  animate: (i = 0) => ({
-    opacity: 1,
-    x: 0,
-    // A small motion blur while it slides, resolving to sharp as it settles.
-    filter: 'blur(0px)',
-    transition: { ...transitionSlow, delay: Math.min(i, 14) * 0.035 },
-  }),
-  exit: { opacity: 0, x: 24, filter: 'blur(2px)', transition: transitionFast },
-};
+export function makeCardStagger(scale = 1): Variants {
+  return {
+    initial: { opacity: 0, x: 24, filter: 'blur(2px)' },
+    animate: (i = 0) => ({
+      opacity: 1,
+      x: 0,
+      // A small motion blur while it slides, resolving to sharp as it settles.
+      filter: 'blur(0px)',
+      transition: {
+        duration: SK_DURATION.slow * scale,
+        ease: SK_EASE,
+        delay: Math.min(i, 14) * 0.035 * scale,
+      },
+    }),
+    exit: {
+      opacity: 0,
+      x: 24,
+      filter: 'blur(2px)',
+      transition: { duration: SK_DURATION.fast * scale, ease: SK_EASE },
+    },
+  };
+}
 
 /**
  * Bottom-dock buttons: fade + slide up from below, on a slow ease-out curve
  * (decelerates to the end). The container (`dockContainer`) staggers them so
  * they appear one after another.
  */
-export const dockButton: Variants = {
-  initial: { opacity: 0, y: 10, filter: 'blur(2px)' },
-  // A small motion blur while it moves, resolving to sharp as it settles.
-  animate: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: SK_EASE_OUT } },
-  exit: { opacity: 0, y: 10, filter: 'blur(2px)', transition: { duration: 0.4, ease: SK_EASE_OUT } },
-};
+export function makeDockButton(scale = 1): Variants {
+  return {
+    initial: { opacity: 0, y: 10, filter: 'blur(2px)' },
+    // A small motion blur while it moves, resolving to sharp as it settles.
+    animate: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5 * scale, ease: SK_EASE_OUT } },
+    exit: { opacity: 0, y: 10, filter: 'blur(2px)', transition: { duration: 0.4 * scale, ease: SK_EASE_OUT } },
+  };
+}
 
 /** Orchestrates the dock buttons' entrance/exit stagger (in order). */
-export const dockContainer: Variants = {
-  initial: {},
-  animate: { transition: { staggerChildren: 0.07 } },
-  exit: { transition: { staggerChildren: 0.07 } },
-};
+export function makeDockContainer(scale = 1): Variants {
+  return {
+    initial: {},
+    animate: { transition: { staggerChildren: 0.07 * scale } },
+    exit: { transition: { staggerChildren: 0.07 * scale } },
+  };
+}
 
 /** Collapse height + fade, for inline banners/alerts joining/leaving a column. */
 export const collapse: Variants = {
