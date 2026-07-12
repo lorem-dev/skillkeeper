@@ -242,7 +242,7 @@ export function ComponentsPage() {
       ) : componentsView === 'tiles' ? (
         <>
           <div className="sk-mcp-grid">
-            <AnimatePresence mode="popLayout" initial={false}>
+            <AnimatePresence mode="popLayout" initial>
               {filteredPresets.map((preset, i) => {
                 const connection = mcpConnectionFromDef(preset.def);
                 const repoName = repoNameFor(preset);

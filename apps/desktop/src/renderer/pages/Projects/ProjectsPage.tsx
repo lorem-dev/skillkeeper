@@ -101,7 +101,7 @@ export function ProjectsPage() {
       ) : (
         <>
         <div className="sk-project-list">
-          <AnimatePresence mode="popLayout" initial={false}>
+          <AnimatePresence mode="popLayout" initial>
             {filtered.map((p, i) => {
               const info = projectInfo[p.id];
               return (

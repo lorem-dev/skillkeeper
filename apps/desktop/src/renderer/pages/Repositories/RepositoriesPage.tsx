@@ -142,7 +142,7 @@ export function RepositoriesPage() {
       ) : (
         <>
         <div className="sk-repo-list">
-          <AnimatePresence mode="popLayout" initial={false}>
+          <AnimatePresence mode="popLayout" initial>
           {filtered.map((r, i) => (
             <motion.div
               key={r.id}
