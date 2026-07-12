@@ -2,7 +2,7 @@
  * Projects page. Lists tracked projects as cards with skill-count badges, an
  * add-via-folder-picker action, and a refresh that re-reads the skill counts.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
@@ -30,6 +30,7 @@ export function ProjectsPage() {
   const removeProject = useSkillkeeperStore((s) => s.removeProject);
   const goToSkills = useSkillkeeperStore((s) => s.goToSkills);
   const goToMcpProject = useSkillkeeperStore((s) => s.goToMcpProject);
+  const mcpInstalls = useSkillkeeperStore((s) => s.mcpInstalls);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
   const [editing, setEditing] = useState<Project | null>(null);
@@ -58,6 +59,21 @@ export function ProjectsPage() {
   // least two cards to sift through.
   const searching = query.trim() !== '';
   const filtered = fuzzyFilter(projects, query, (p) => [p.name, p.path]);
+
+  // Count of MCP servers installed from repositories, per project id. A
+  // repo-origin install carries a `remote` on its identity (manual installs
+  // carry `local` instead); distinct instances are keyed by (remote,
+  // instanceName) so the same instance across several agents counts once.
+  const mcpFromReposByProject = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const inst of mcpInstalls) {
+      if (inst.identity.remote === undefined) continue;
+      const set = map.get(inst.projectId) ?? new Set<string>();
+      set.add(`${inst.identity.remote}|${inst.instanceName}`);
+      map.set(inst.projectId, set);
+    }
+    return map;
+  }, [mcpInstalls]);
 
   const trailing = (
     <>
@@ -106,6 +122,7 @@ export function ProjectsPage() {
           <AnimatePresence mode="popLayout" initial={animate}>
             {filtered.map((p, i) => {
               const info = projectInfo[p.id];
+              const mcpCount = mcpFromReposByProject.get(p.id)?.size ?? 0;
               return (
                 <motion.div
                   key={p.id}
@@ -123,14 +140,31 @@ export function ProjectsPage() {
                     skillCountLabel={
                       info !== undefined ? t.plural('projects.skillCount', info.skillCount) : undefined
                     }
+                    skillCountHint={
+                      info !== undefined ? t.plural('projects.skillCountHint', info.skillCount) : undefined
+                    }
                     fromReposLabel={
                       info !== undefined && info.fromReposCount > 0
-                        ? t('projects.fromRepos', { count: String(info.fromReposCount) })
+                        ? t.plural('projects.skillCount', info.fromReposCount)
                         : undefined
                     }
+                    fromReposHint={
+                      info !== undefined && info.fromReposCount > 0
+                        ? t.plural('projects.fromReposHint', info.fromReposCount)
+                        : undefined
+                    }
+                    mcpCountLabel={
+                      mcpCount > 0 ? t('projects.mcpCount', { count: String(mcpCount) }) : undefined
+                    }
+                    mcpCountHint={mcpCount > 0 ? t.plural('projects.mcpHint', mcpCount) : undefined}
                     agentsLabel={
                       info !== undefined && info.agentCount > 0
                         ? t.plural('projects.agentCount', info.agentCount)
+                        : undefined
+                    }
+                    agentsHint={
+                      info !== undefined && info.agentCount > 0
+                        ? t.plural('projects.agentsHint', info.agentCount)
                         : undefined
                     }
                     missing={projectMissing[p.id] === true}

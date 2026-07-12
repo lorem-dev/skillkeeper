@@ -31,10 +31,20 @@ export interface ProjectCardProps {
   readonly iconUrl?: string;
   /** Total skills installed in the project (pre-formatted, pluralized). */
   readonly skillCountLabel?: string;
-  /** Of those, how many are installed from repositories (pre-formatted). */
+  /** Tooltip for the total-skills badge. */
+  readonly skillCountHint?: string;
+  /** Skills installed from repositories (pre-formatted, pluralized), accent badge. */
   readonly fromReposLabel?: string;
+  /** Tooltip for the from-repositories skills badge. */
+  readonly fromReposHint?: string;
+  /** MCP servers installed from repositories (pre-formatted), accent badge. */
+  readonly mcpCountLabel?: string;
+  /** Tooltip for the from-repositories MCP badge. */
+  readonly mcpCountHint?: string;
   /** Number of agents detected in the project folder (pre-formatted, pluralized). */
   readonly agentsLabel?: string;
+  /** Tooltip for the agents badge. */
+  readonly agentsHint?: string;
   /** Skill counts not fetched yet: show skeleton badges (reserves height). */
   readonly infoPending?: boolean;
   /** The folder no longer exists (deleted or moved). */
@@ -67,8 +77,13 @@ export function ProjectCard({
   project,
   iconUrl,
   skillCountLabel,
+  skillCountHint,
   fromReposLabel,
+  fromReposHint,
+  mcpCountLabel,
+  mcpCountHint,
   agentsLabel,
+  agentsHint,
   infoPending,
   missing,
   missingLabel,
@@ -160,9 +175,26 @@ export function ProjectCard({
             </>
           ) : (
             <>
-              {fromReposLabel !== undefined && <Badge tone="accent">{fromReposLabel}</Badge>}
-              {skillCountLabel !== undefined && <Badge tone="neutral">{skillCountLabel}</Badge>}
-              {agentsLabel !== undefined && <Badge tone="neutral">{agentsLabel}</Badge>}
+              {fromReposLabel !== undefined && (
+                <Tooltip content={fromReposHint ?? ''}>
+                  <Badge tone="accent">{fromReposLabel}</Badge>
+                </Tooltip>
+              )}
+              {mcpCountLabel !== undefined && (
+                <Tooltip content={mcpCountHint ?? ''}>
+                  <Badge tone="accent">{mcpCountLabel}</Badge>
+                </Tooltip>
+              )}
+              {skillCountLabel !== undefined && (
+                <Tooltip content={skillCountHint ?? ''}>
+                  <Badge tone="neutral">{skillCountLabel}</Badge>
+                </Tooltip>
+              )}
+              {agentsLabel !== undefined && (
+                <Tooltip content={agentsHint ?? ''}>
+                  <Badge tone="neutral">{agentsLabel}</Badge>
+                </Tooltip>
+              )}
             </>
           )}
         </span>
