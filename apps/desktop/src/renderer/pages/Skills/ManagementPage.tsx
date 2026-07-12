@@ -376,16 +376,16 @@ export function SkillsManagementPage() {
 
   // Reset + Save live in the bottom dock; the whole dock is hidden (rather than
   // the buttons disabled) when there are no pending changes.
-  const dock = hasProjectChanges ? (
-    <>
-      <Button variant="secondary" glass onClick={() => resetSkillsSelection('projects')}>
-        {t('skills.action.reset')}
-      </Button>
-      <Button variant="primary" glass onClick={() => setSaveOpen(true)}>
-        {t('skills.action.save')}
-      </Button>
-    </>
-  ) : undefined;
+  const dock = hasProjectChanges
+    ? [
+        <Button key="reset" variant="secondary" glass onClick={() => resetSkillsSelection('projects')}>
+          {t('skills.action.reset')}
+        </Button>,
+        <Button key="save" variant="primary" glass onClick={() => setSaveOpen(true)}>
+          {t('skills.action.save')}
+        </Button>,
+      ]
+    : undefined;
 
   // Second toolbar row: the project + repository multi-select filters (projects
   // first). The project options carry a leading `ProjectIcon`.

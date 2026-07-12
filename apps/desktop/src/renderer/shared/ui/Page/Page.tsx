@@ -8,11 +8,11 @@
  * blurs share the same radius so they read as one treatment. Neither overlaps
  * the scrollbar. Styling is token-based and co-located in Page.scss.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Children, isValidElement, useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Row } from '../Row';
-import { cx, transitionMedium } from '../../lib';
+import { cx, dockButton, dockContainer } from '../../lib';
 import './Page.scss';
 
 export interface PageProps {
@@ -84,21 +84,29 @@ export function Page({ title, toolbar, dock, children }: PageProps) {
         )}
         aria-hidden="true"
       />
-      {/* The dock's buttons rise/fade in when the dock appears and slide/fade
-          out when it leaves (e.g. the skills Reset/Save bar toggling with
-          pending changes). `initial={false}` skips the animation for a dock
-          present on first render (an always-shown Add bar). */}
-      <AnimatePresence initial={false}>
+      {/* The dock's buttons fade + slide in one after another, RIGHTMOST first
+          (staggerDirection -1), and out the same way -- e.g. the skills
+          Reset/Save bar toggling with pending changes, or any dock on page open.
+          Each `dock` child is wrapped so it can be staggered individually. */}
+      <AnimatePresence>
         {hasDock && (
           <motion.div
             key="dock"
             className="sk-page__dock"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={transitionMedium}
+            variants={dockContainer}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
-            {dock}
+            {Children.toArray(dock).map((item, i) => (
+              <motion.div
+                key={isValidElement(item) && item.key !== null ? item.key : i}
+                className="sk-page__dock-item"
+                variants={dockButton}
+              >
+                {item}
+              </motion.div>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>

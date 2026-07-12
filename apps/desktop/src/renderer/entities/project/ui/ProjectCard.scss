@@ -1,4 +1,6 @@
 .sk-project-card {
+  // Promote to its own compositor layer for the smooth entrance-slide animation.
+  will-change: transform;
   // Own stacking context + clip so the decorative left wash sits behind the
   // content (z-index -1) and is cropped to the card's rounded shape.
   position: relative;

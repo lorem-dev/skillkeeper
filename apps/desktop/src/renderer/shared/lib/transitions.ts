@@ -12,11 +12,15 @@ import type { Transition, Variants } from 'motion/react';
 /** Standard easing curve (matches --sk-ease-standard). */
 export const SK_EASE = [0.32, 0.72, 0, 1] as const;
 
+/** Pronounced ease-out (decelerates strongly toward the end). */
+export const SK_EASE_OUT = [0.16, 1, 0.3, 1] as const;
+
 /** Durations in seconds (match --sk-duration-*). */
 export const SK_DURATION = { fast: 0.15, medium: 0.25, slow: 0.35 } as const;
 
 export const transitionFast: Transition = { duration: SK_DURATION.fast, ease: SK_EASE };
 export const transitionMedium: Transition = { duration: SK_DURATION.medium, ease: SK_EASE };
+export const transitionSlow: Transition = { duration: SK_DURATION.slow, ease: SK_EASE };
 
 /** Fade in/out. */
 export const fade: Variants = {
@@ -43,16 +47,35 @@ export const fadeRise: Variants = {
  * Cards sliding in from the right, one after another -- a quick entrance
  * stagger for list/grid pages on open. `custom` is the item index (pass it via
  * `custom={i}` on each motion child); the per-item delay is capped so long
- * lists still finish quickly.
+ * lists still finish quickly. Each card eases a touch slower than the page
+ * title (see `titleEnter`) so the title leads and the cards follow.
  */
 export const cardStagger: Variants = {
   initial: { opacity: 0, x: 24 },
   animate: (i = 0) => ({
     opacity: 1,
     x: 0,
-    transition: { ...transitionMedium, delay: Math.min(i, 14) * 0.035 },
+    transition: { ...transitionSlow, delay: Math.min(i, 14) * 0.035 },
   }),
   exit: { opacity: 0, x: 24, transition: transitionFast },
+};
+
+/**
+ * Bottom-dock buttons: fade + slide up from below, on a slow ease-out curve
+ * (decelerates to the end). The container (`dockContainer`) staggers them so
+ * they appear one after another.
+ */
+export const dockButton: Variants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: SK_EASE_OUT } },
+  exit: { opacity: 0, y: 10, transition: { duration: 0.4, ease: SK_EASE_OUT } },
+};
+
+/** Orchestrates the dock buttons' entrance/exit stagger (in order). */
+export const dockContainer: Variants = {
+  initial: {},
+  animate: { transition: { staggerChildren: 0.07 } },
+  exit: { transition: { staggerChildren: 0.07 } },
 };
 
 /** Collapse height + fade, for inline banners/alerts joining/leaving a column. */

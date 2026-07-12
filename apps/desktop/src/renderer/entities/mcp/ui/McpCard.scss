@@ -1,4 +1,6 @@
 .sk-mcp-card {
+  // Promote to its own compositor layer for the smooth entrance-slide animation.
+  will-change: transform;
   display: flex;
   align-items: center;
   gap: var(--sk-space-4);
