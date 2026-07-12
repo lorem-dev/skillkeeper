@@ -86,10 +86,19 @@
   cursor: inherit;
 }
 
+// Rotating disclosure chevron: points right when collapsed, down when open. A
+// CSS transform transition (not framer) -- it inherits the jump-free duration
+// tokens, so it goes instant automatically when animations are off.
 .sk-tree__chevron-glyph {
   display: inline-flex;
   width: 12px;
   height: 12px;
+  transform: rotate(-90deg);
+  transition: transform var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+.sk-tree__chevron-glyph--open {
+  transform: rotate(0deg);
 }
 
 .sk-tree__icon {

@@ -30,9 +30,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import { Skeleton } from '../Skeleton';
-import { cx, fade, SK_DURATION, SK_EASE, useAnimationsEnabled, useSkeletonStage } from '../../lib';
+import { cx, useAnimationsEnabled, useSkeletonStage } from '../../lib';
 import { Checkbox } from '../Checkbox';
 import './TreeView.scss';
 
@@ -164,6 +163,12 @@ export function TreeView({
   );
   const [focusedId, setFocusedId] = useState<string | null>(nodes[0]?.id ?? null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  // Branches mount their children lazily: a collapsed branch renders only its
+  // (clipped) wrapper, not its whole subtree, so the initial render cost is
+  // O(visible rows) instead of O(every node). Once a branch has been opened its
+  // children stay mounted (so the grid collapse animation still plays on close
+  // and re-opening is instant). Idempotent set-add during render is StrictMode-safe.
+  const everOpened = useRef<Set<string>>(new Set());
 
   // Keep the whole tree unpainted (but laid out) until the first full
   // layout+paint has happened, then reveal it. This avoids the rows visibly
@@ -399,11 +404,12 @@ export function TreeView({
     // The label truncates to the available width (CSS ellipsis); keep the full
     // string in the tooltip so a clipped label is still discoverable.
     const labelText = typeof node.label === 'string' ? node.label : undefined;
+    if (isOpen) everOpened.current.add(node.id);
+    const mountChildren = isOpen || everOpened.current.has(node.id);
 
     return (
-      <motion.li
+      <li
         key={node.id}
-        {...(revealed ? { variants: fade, initial: 'initial', animate: 'animate', exit: 'exit' } : {})}
         role="treeitem"
         aria-expanded={hasChildren ? isOpen : undefined}
         aria-selected={!checkable && selectable ? isSelected : undefined}
@@ -439,10 +445,8 @@ export function TreeView({
                 toggle(node.id);
               }}
             >
-              <motion.span
-                className="sk-tree__chevron-glyph"
-                animate={{ rotate: isOpen ? 0 : -90 }}
-                transition={{ duration: SK_DURATION.fast, ease: SK_EASE }}
+              <span
+                className={cx('sk-tree__chevron-glyph', isOpen && 'sk-tree__chevron-glyph--open')}
               >
                 <svg viewBox="0 0 12 12">
                   <path
@@ -454,7 +458,7 @@ export function TreeView({
                     strokeLinejoin="round"
                   />
                 </svg>
-              </motion.span>
+              </span>
             </span>
           ) : (
             <span className="sk-tree__chevron sk-tree__chevron--spacer" aria-hidden="true" />
@@ -492,14 +496,12 @@ export function TreeView({
           <div className={cx('sk-tree__wrap', isOpen && 'sk-tree__wrap--open')} inert={!isOpen}>
             <div className="sk-tree__inner">
               <ul className="sk-tree__group" role="group">
-                <AnimatePresence initial={false} mode="popLayout">
-                  {node.children!.map((child) => renderItem(child, depth + 1))}
-                </AnimatePresence>
+                {mountChildren && node.children!.map((child) => renderItem(child, depth + 1))}
               </ul>
             </div>
           </div>
         )}
-      </motion.li>
+      </li>
     );
   }
 
@@ -517,9 +519,7 @@ export function TreeView({
         // mid-render jump; it appears (and the rows reveal) once ready/held.
         style={{ visibility: treeShown ? undefined : 'hidden' }}
       >
-        <AnimatePresence initial={false} mode="popLayout">
-          {nodes.map((node) => renderItem(node, 0))}
-        </AnimatePresence>
+        {nodes.map((node) => renderItem(node, 0))}
       </ul>
       {skeletonVisible && <TreeSkeleton />}
     </div>
