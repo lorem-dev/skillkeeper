@@ -6,19 +6,51 @@
  * opens the full-screen notifications log, the terminal button opens the
  * embedded terminal. Cross-cutting chrome -> systems/notifications.
  */
+import { useEffect, useRef, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon } from '@/shared/ui';
 import { cx } from '@/shared/lib';
 import './StatusBar.scss';
 
+/**
+ * A value that updates at most once per `ms`, on the trailing edge. A change
+ * opens a window; when it elapses the value settles to whatever it is THEN, so
+ * transient blips -- e.g. a task that starts and finishes within the window --
+ * collapse and never flash. Used to keep the active-task badge from flickering
+ * on very fast tasks.
+ */
+function useThrottledValue<T>(value: T, ms: number): T {
+  const [throttled, setThrottled] = useState(value);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (timerRef.current !== null) return;
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      setThrottled(valueRef.current);
+    }, ms);
+  }, [value, ms]);
+  useEffect(
+    () => () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+    },
+    [],
+  );
+  return throttled;
+}
+
 export function StatusBar() {
   const count = useSkillkeeperStore(
     (s) => s.notifications.filter((n) => n.level === 'error').length,
   );
-  const activeTaskCount = useSkillkeeperStore(
+  const rawActiveTaskCount = useSkillkeeperStore(
     (s) => s.tasks.filter((task) => task.status === 'queued' || task.status === 'running').length,
   );
+  // Throttle the displayed count so a task that runs faster than a second never
+  // flashes the badge; the number settles once per second.
+  const activeTaskCount = useThrottledValue(rawActiveTaskCount, 1000);
   const logsOpen = useSkillkeeperStore((s) => s.logsOpen);
   const terminalOpen = useSkillkeeperStore((s) => s.terminalOpen);
   const tasksOpen = useSkillkeeperStore((s) => s.tasksOpen);
