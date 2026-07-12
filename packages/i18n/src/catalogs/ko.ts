@@ -24,6 +24,8 @@ export const ko: Partial<Catalog> = {
   'common.clear': '지우기',
   'common.goToSkills': '스킬로 이동',
   'skills.resetFilters': '필터 초기화',
+  'skills.componentsTitle': '컴포넌트',
+  'skills.managementTitle': '관리',
   'common.search': '검색',
   'common.decrease': '감소',
   'common.increase': '증가',

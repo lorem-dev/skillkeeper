@@ -29,6 +29,8 @@ export const en = {
   'common.clear': 'Clear',
   'common.goToSkills': 'Go to skills',
   'skills.resetFilters': 'Reset filters',
+  'skills.componentsTitle': 'Components',
+  'skills.managementTitle': 'Management',
   'common.search': 'Search',
   'common.decrease': 'Decrease',
   'common.increase': 'Increase',

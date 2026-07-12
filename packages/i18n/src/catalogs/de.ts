@@ -28,6 +28,8 @@ export const de: Partial<Catalog> = {
   'common.clear': 'Löschen',
   'common.goToSkills': 'Zu den Skills',
   'skills.resetFilters': 'Filter zurücksetzen',
+  'skills.componentsTitle': 'Komponenten',
+  'skills.managementTitle': 'Verwaltung',
   'common.search': 'Suchen',
   'common.decrease': 'Verringern',
   'common.increase': 'Erhöhen',

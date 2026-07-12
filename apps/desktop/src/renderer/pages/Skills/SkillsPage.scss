@@ -13,6 +13,17 @@
   gap: var(--sk-space-5);
 }
 
+// The "/" separator in the "Skills / <sub-page>" heading -- muted so it reads
+// as a quiet divider rather than part of the emphasised title text. Mirrors
+// `pages/Mcp/*Page.scss`'s `.sk-mcp-title-sep`.
+.sk-skills-title-sep {
+  color: var(--sk-color-label-3);
+  // Full font height (no size reduction), thin weight, and equal explicit gaps
+  // on both sides -- the surrounding title text carries no whitespace of its own.
+  font-weight: 300;
+  margin: 0 var(--sk-space-3);
+}
+
 // Toolbar search (row 1): compact, yields space before the action button.
 .sk-skills-search {
   flex: 0 1 12rem;

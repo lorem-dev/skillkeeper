@@ -1,1 +1,2 @@
-export { SkillsPage } from './SkillsPage';
+export { SkillsComponentsPage } from './ComponentsPage';
+export { SkillsManagementPage } from './ManagementPage';

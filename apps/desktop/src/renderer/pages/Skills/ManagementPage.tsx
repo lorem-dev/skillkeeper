@@ -1,23 +1,33 @@
 /**
- * Skills page. Two modes chosen by a Select:
- *   - Repositories: a tree of repo -> (group ->) skills; check skills to add.
- *   - Projects: a tree of project -> ("repo / group" ->) skills, pre-checked
- *     where installed, with a per-skill install-status badge; save applies the
- *     diff.
- * A search box fuzzy-filters the whole tree (matches keep their ancestors as
- * context); a footer summarizes the result and clears the search.
+ * Skills Management page: the per-project view of installed skills. One of the
+ * two sub-pages the old combined `SkillsPage` split into (this one owns the
+ * "projects" mode; the Components page owns the repositories browse mode) --
+ * mirrors how the MCP page split into Components + Management.
+ *
+ * A tree of project -> ("repo / group" ->) skills, pre-checked where installed,
+ * with a per-skill install-status badge (present / add / remove), non-clickable
+ * update dots plus a hover "update" action where a newer version exists, and a
+ * per-project agent picker. "Save" applies the diff via `SkillSaveModal`.
+ * Project + repository multi-selects narrow which nodes appear; a search box
+ * fuzzy-filters the tree; a footer summarizes the result and clears the
+ * search/filters.
+ *
+ * View + selection state (query, filters, checked set, per-project agents, tree
+ * expansion) lives in the store's shared `skillsUi` slice so it survives
+ * navigating between the two sub-pages and away/back. On mount this page pins
+ * `skillsUi.mode` to 'projects' so the store discriminator,
+ * `resetSkillsSelection`, and the deep-link router (App reads `skillsUi.mode`)
+ * all agree with what is shown.
  */
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
-import type { SkillsMode } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import {
   Page,
   Toolbar,
   Button,
   SearchField,
-  Select,
   MultiCombobox,
   SearchSummary,
   TreeView,
@@ -30,7 +40,6 @@ import type { TreeNode } from '@/shared/ui';
 import { AgentSelect } from '@/entities/agent';
 import { ProjectIcon } from '@/entities/project';
 import {
-  buildRepoTree,
   buildProjectModel,
   installedLeafIds,
   installedAgentsByProject,
@@ -38,14 +47,10 @@ import {
   collectBranchIds,
   rootIds,
   countLeaves,
-  repoSkillKey,
   projectSkillKey,
 } from '@/entities/skill';
-import { SkillInstallModal } from '@/features/skillInstall';
 import { SkillSaveModal } from '@/features/skillSave';
 import './SkillsPage.scss';
-
-type Mode = SkillsMode;
 
 /** Whether two agent lists hold the same set. */
 function sameAgents(a: readonly string[], b: readonly string[]): boolean {
@@ -54,7 +59,7 @@ function sameAgents(a: readonly string[], b: readonly string[]): boolean {
   return b.every((x) => set.has(x));
 }
 
-export function SkillsPage() {
+export function SkillsManagementPage() {
   const availableSkills = useSkillkeeperStore((s) => s.availableSkills);
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const projects = useSkillkeeperStore((s) => s.projects);
@@ -63,16 +68,6 @@ export function SkillsPage() {
   const refreshProjectInfo = useSkillkeeperStore((s) => s.refreshProjectInfo);
   const t = useTranslator();
 
-  // Project icons are resolved into projectInfo by the main process; refresh it on
-  // mount so the project nodes in the tree can show them (the Projects page does
-  // the same). Cheap and idempotent.
-  useEffect(() => {
-    void refreshProjectInfo();
-  }, [refreshProjectInfo]);
-
-  // Selection + view state lives in the store so it survives navigating away and
-  // back (until the app reloads). The store reseeds the selection to the
-  // installed baseline on load and after a successful apply (see `setSkills`).
   const skillsUi = useSkillkeeperStore((s) => s.skillsUi);
   const setSkillsUi = useSkillkeeperStore((s) => s.setSkillsUi);
   const resetSkillsSelection = useSkillkeeperStore((s) => s.resetSkillsSelection);
@@ -80,77 +75,64 @@ export function SkillsPage() {
   const requestAddRepository = useSkillkeeperStore((s) => s.requestAddRepository);
   const tasks = useSkillkeeperStore((s) => s.tasks);
   const {
-    mode,
     query,
     repoFilter,
     projectFilter,
-    repoChecked,
     projectChecked,
     projectAgents,
     expandedIds: persistedExpandedIds,
   } = skillsUi;
 
-  // Modal open flags are ephemeral -- they should not persist across navigation.
-  const [installOpen, setInstallOpen] = useState(false);
+  // Modal open flag is ephemeral -- it should not persist across navigation.
   const [saveOpen, setSaveOpen] = useState(false);
 
-  // Thin setters that merge one selection field into the store at a time.
+  // This sub-page IS the projects mode; keep the store discriminator in sync
+  // (see the file header). Project icons are resolved into projectInfo by the
+  // main process; refresh on mount so the project nodes can show them.
+  useEffect(() => {
+    setSkillsUi({ mode: 'projects' });
+    void refreshProjectInfo();
+  }, [setSkillsUi, refreshProjectInfo]);
+
   const setQuery = (value: string): void => setSkillsUi({ query: value });
   const setRepoFilter = (value: string[]): void => setSkillsUi({ repoFilter: value });
   const setProjectFilter = (value: string[]): void => setSkillsUi({ projectFilter: value });
-  const setRepoChecked = (ids: string[]): void => setSkillsUi({ repoChecked: ids });
   const setProjectChecked = (ids: string[]): void => setSkillsUi({ projectChecked: ids });
 
-  // The installed skills are the baseline the project-mode selection diffs
-  // against (pre-checked leaves + each project's installed agents).
+  // The installed skills are the baseline the selection diffs against
+  // (pre-checked leaves + each project's installed agents).
   const installedSet = useMemo(() => new Set(installedLeafIds(installs)), [installs]);
   const installedAgents = useMemo(() => installedAgentsByProject(installs), [installs]);
 
-  // Leaf ids whose skill ships a GUIDE.md/RULES.md guidance file -- they get a
-  // grey "rules" badge. Keyed to the active mode's id scheme; keys that map to
-  // no node are harmless (the membership test only ever hits real leaves).
+  // Leaf ids whose skill ships a guidance file -> grey "rules" badge, keyed to
+  // the project id scheme (one entry per project the skill could appear under).
   const guidanceIds = useMemo(() => {
     const ids = new Set<string>();
     for (const s of availableSkills) {
       if (!s.hasGuidance) continue;
-      if (mode === 'repositories') ids.add(repoSkillKey(s.repoId, s.group, s.name));
-      else for (const p of projects) ids.add(projectSkillKey(p.id, s.repoId, s.group, s.name));
+      for (const p of projects) ids.add(projectSkillKey(p.id, s.repoId, s.group, s.name));
     }
     return ids;
-  }, [availableSkills, projects, mode]);
+  }, [availableSkills, projects]);
 
   // The filters narrow which repos/projects appear (empty = all).
   const shownRepos = useMemo(
-    () =>
-      repoFilter.length === 0
-        ? repositories
-        : repositories.filter((r) => repoFilter.includes(r.id)),
+    () => (repoFilter.length === 0 ? repositories : repositories.filter((r) => repoFilter.includes(r.id))),
     [repositories, repoFilter],
   );
   const shownProjects = useMemo(
-    () =>
-      projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id)),
+    () => (projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id))),
     [projects, projectFilter],
   );
 
-  // Project mode: merge available skills with what is installed, so orphaned
-  // installs appear (grey, remove-only) and update dots can be attached.
+  // Merge available skills with what is installed, so orphaned installs appear
+  // (grey, remove-only) and update dots can be attached.
   const projectModel = useMemo(
-    () =>
-      mode === 'projects'
-        ? buildProjectModel(availableSkills, shownRepos, repositories, shownProjects, installs)
-        : null,
-    [mode, availableSkills, shownRepos, repositories, shownProjects, installs],
+    () => buildProjectModel(availableSkills, shownRepos, repositories, shownProjects, installs),
+    [availableSkills, shownRepos, repositories, shownProjects, installs],
   );
 
-  const baseTree = useMemo(
-    () =>
-      mode === 'repositories'
-        ? buildRepoTree(availableSkills, shownRepos)
-        : (projectModel?.nodes ?? []),
-    [mode, availableSkills, shownRepos, projectModel],
-  );
-
+  const baseTree = projectModel.nodes;
   const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
 
   // An update-skill task in flight makes every dot pulse and non-clickable.
@@ -159,12 +141,10 @@ export function SkillsPage() {
     [tasks],
   );
 
-  // Project mode: tag each visible skill leaf with its install-status badge,
-  // attach update dots (leaf/group/repo) from the model, and give each project
-  // root an agent picker (with an "agents changed" marker).
+  // Tag each visible skill leaf with its install-status badge, attach update
+  // dots (leaf/group/repo) from the model, and give each project root an agent
+  // picker (with an "agents changed" marker).
   const decorated = useMemo(() => {
-    // Grey, always-visible "rules" badge for skills that ship guidance. Wrapped
-    // so a click lands on the badge, not the TreeView row (no checkbox toggle).
     const rulesBadge = (
       <span className="sk-skills-badgewrap" onClick={(e) => e.stopPropagation()}>
         <Tooltip content={t('skills.rulesHint')}>
@@ -173,38 +153,16 @@ export function SkillsPage() {
       </span>
     );
 
-    if (mode !== 'projects' || projectModel === null) {
-      // Repo mode has no status/update decoration -- only the rules badge.
-      if (guidanceIds.size === 0) return shownTree;
-      const walk = (node: TreeNode): TreeNode => {
-        if (node.children !== undefined && node.children.length > 0) {
-          return { ...node, children: node.children.map(walk) };
-        }
-        if (!guidanceIds.has(node.id)) return node;
-        return {
-          ...node,
-          label: (
-            <span className="sk-skills-nodelabel">
-              <span className="sk-skills-name">{node.label}</span>
-              {rulesBadge}
-            </span>
-          ),
-        };
-      };
-      return shownTree.map(walk);
-    }
     const checkedSet = new Set(projectChecked);
     const { updatesByNode, orphanLeaves, statusByLeaf } = projectModel;
     // A node's label: name, then a non-interactive update dot when an update is
-    // available, then a single action/status badge. The update action badge shows
-    // only while the row is hovered; the unlinked/local status badges are always
-    // visible. `updateTooltip` names the update scope (skill / group / repository).
+    // available, then a single action/status badge. The update action badge
+    // shows only while the row is hovered; the unlinked/local status badges are
+    // always visible. `updateTooltip` names the update scope.
     const buildLabel = (node: TreeNode, updateTooltip: string): ReactNode => {
       const ups = updatesByNode.get(node.id);
       const orphan = orphanLeaves.get(node.id);
       let badge: ReactNode = null;
-      // `hoverOnly`: the action badge (update) shows only on row hover; status
-      // badges (unlinked / local) are always visible.
       let hoverOnly = false;
       if (ups !== undefined) {
         hoverOnly = true;
@@ -253,8 +211,8 @@ export function SkillsPage() {
             />
           )}
           {badge !== null && (
-            // Badges own their commands; swallow the click so it never reaches the
-            // TreeView row (no accidental select/checkbox toggle).
+            // Badges own their commands; swallow the click so it never reaches
+            // the TreeView row (no accidental select/checkbox toggle).
             <span
               className={`sk-skills-badgewrap${hoverOnly ? ' sk-skills-badge--hover' : ''}`}
               onClick={(e) => e.stopPropagation()}
@@ -285,9 +243,9 @@ export function SkillsPage() {
       else if (!wasInstalled && isChecked)
         detail = <ChangeBadge kind="add" label={t('skills.status.add')} />;
       else detail = undefined;
-      // Installed-from-a-tracked-repo leaves (present/update) render their
-      // glyph in the accent color, matching how installed MCP instances render
-      // blue on the MCP tree -- available/orphan leaves keep the default gray.
+      // Installed-from-a-tracked-repo leaves (present/update) render their glyph
+      // in the accent color, matching how installed MCP instances render blue --
+      // available/orphan leaves keep the default gray.
       const status = statusByLeaf.get(node.id);
       const icon =
         status === 'present' || status === 'update' ? (
@@ -334,7 +292,6 @@ export function SkillsPage() {
       return { ...root, icon, trailing, children };
     });
   }, [
-    mode,
     projectModel,
     shownTree,
     guidanceIds,
@@ -355,19 +312,12 @@ export function SkillsPage() {
   const filtering = repoFilter.length > 0 || projectFilter.length > 0;
   const totalSkills = useMemo(() => countLeaves(baseTree), [baseTree]);
   const shownSkills = useMemo(() => countLeaves(decorated), [decorated]);
-  // Seed from the persisted expansion (falling back to the roots the first
-  // time), so navigating away and back keeps whatever the user opened. While
-  // searching, union in the match branches too -- so matches still auto-open
-  // without collapsing anything the user had open.
   const baseExpandedIds = persistedExpandedIds ?? rootIds(baseTree);
   const expandedIds = searching
     ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])]
     : baseExpandedIds;
 
-  const checkedIds = mode === 'repositories' ? repoChecked : projectChecked;
-  const onCheckedChange = mode === 'repositories' ? setRepoChecked : setProjectChecked;
-
-  // Project-mode pending change (drives the Save button + its notification).
+  // Pending change (drives the Save button + its notification).
   const pendingAdd = projectChecked.filter((id) => !installedSet.has(id)).length;
   const pendingRemove = useMemo(() => {
     const checkedSet = new Set(projectChecked);
@@ -380,29 +330,12 @@ export function SkillsPage() {
   );
   const hasProjectChanges = pendingAdd > 0 || pendingRemove > 0 || agentsChangedAny;
 
-  // Whether the current mode has pending changes to discard (enables Reset).
-  const canReset = mode === 'repositories' ? repoChecked.length > 0 : hasProjectChanges;
-
-  function changeMode(next: Mode): void {
-    setSkillsUi({ mode: next, query: '' });
-  }
-
-  function onAdd(): void {
-    setInstallOpen(true);
-  }
-
-  function onSave(): void {
-    setSaveOpen(true);
-  }
-
-  const sourceOptions = [
-    { value: 'repositories', label: t('skills.source.repositories') },
-    { value: 'projects', label: t('skills.source.projects') },
-  ];
-
+  const projectOptions = projects.map((p) => ({
+    value: p.id,
+    label: p.name,
+    icon: <ProjectIcon iconUrl={projectInfo[p.id]?.iconDataUrl} name={p.name} size={18} />,
+  }));
   const repoOptions = repositories.map((r) => ({ value: r.id, label: r.name }));
-  const projectOptions = projects.map((p) => ({ value: p.id, label: p.name }));
-  const checkboxLevels = mode === 'repositories' ? [1, 2] : [1, 2, 3];
 
   const actions = (
     <>
@@ -414,42 +347,33 @@ export function SkillsPage() {
         onClear={() => setQuery('')}
         clearLabel={t('common.clear')}
       />
-      <Button variant="secondary" glass disabled={!canReset} onClick={() => resetSkillsSelection(mode)}>
+      <Button
+        variant="secondary"
+        glass
+        disabled={!hasProjectChanges}
+        onClick={() => resetSkillsSelection('projects')}
+      >
         {t('skills.action.reset')}
       </Button>
-      {mode === 'repositories' ? (
-        <Button variant="primary" glass disabled={repoChecked.length === 0} onClick={onAdd}>
-          {t('skills.action.add')}
-        </Button>
-      ) : (
-        <Button variant="primary" glass disabled={!hasProjectChanges} onClick={onSave}>
-          {t('skills.action.save')}
-        </Button>
-      )}
+      <Button variant="primary" glass disabled={!hasProjectChanges} onClick={() => setSaveOpen(true)}>
+        {t('skills.action.save')}
+      </Button>
     </>
   );
 
-  // Second toolbar row: display mode and the repo/project multi-select filters
-  // that narrow which nodes the tree shows.
+  // Second toolbar row: the project + repository multi-select filters (projects
+  // first). The project options carry a leading `ProjectIcon`.
   const filters = (
     <div className="sk-skills-filters">
-      <Select
-        label={t('skills.source')}
-        options={sourceOptions}
-        value={mode}
-        onChange={(v) => changeMode(v as Mode)}
+      <MultiCombobox
+        label={t('skills.filterProjects')}
+        options={projectOptions}
+        value={projectFilter}
+        onChange={setProjectFilter}
+        placeholder={t('skills.filterProjectsPlaceholder')}
+        emptyText={t('skills.filterProjectsEmpty')}
+        ariaLabel={t('skills.filterProjects')}
       />
-      {mode === 'projects' && (
-        <MultiCombobox
-          label={t('skills.filterProjects')}
-          options={projectOptions}
-          value={projectFilter}
-          onChange={setProjectFilter}
-          placeholder={t('skills.filterProjectsPlaceholder')}
-          emptyText={t('skills.filterProjectsEmpty')}
-          ariaLabel={t('skills.filterProjects')}
-        />
-      )}
       <MultiCombobox
         label={t('skills.filterRepositories')}
         options={repoOptions}
@@ -466,28 +390,34 @@ export function SkillsPage() {
     <Page
       toolbar={
         <div className="sk-skills-header">
-          <Toolbar title={t('nav.skills')} trailing={actions} />
+          <Toolbar
+            title={
+              <>
+                {t('nav.skills')}
+                <span className="sk-skills-title-sep">/</span>
+                {t('skills.managementTitle')}
+              </>
+            }
+            trailing={actions}
+          />
           {filters}
         </div>
       }
     >
       {baseTree.length === 0 ? (
-        <p className="sk-empty">
-          {mode === 'repositories' ? t('skills.emptyRepositories') : t('skills.emptyProjects')}
-        </p>
+        <p className="sk-empty">{t('skills.emptyProjects')}</p>
       ) : (
         <>
           <TreeView
-            key={mode}
             className="sk-skills-tree"
             nodes={decorated}
             checkable
-            checkboxLevels={checkboxLevels}
-            checkedIds={checkedIds}
-            onCheckedChange={onCheckedChange}
+            checkboxLevels={[1, 2, 3]}
+            checkedIds={projectChecked}
+            onCheckedChange={setProjectChecked}
             defaultExpandedIds={expandedIds}
             onExpandedChange={(ids) => setSkillsUi({ expandedIds: ids })}
-            ariaLabel={t('nav.skills')}
+            ariaLabel={t('skills.managementTitle')}
           />
           {(searching || filtering) && (
             <div className="sk-list-footer">
@@ -516,11 +446,6 @@ export function SkillsPage() {
           )}
         </>
       )}
-      <SkillInstallModal
-        open={installOpen}
-        onClose={() => setInstallOpen(false)}
-        skillKeys={repoChecked}
-      />
       <SkillSaveModal
         open={saveOpen}
         onClose={() => setSaveOpen(false)}

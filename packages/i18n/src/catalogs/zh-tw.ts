@@ -24,6 +24,8 @@ export const zhTw: Partial<Catalog> = {
   'common.clear': '清除',
   'common.goToSkills': '前往技能',
   'skills.resetFilters': '重置篩選條件',
+  'skills.componentsTitle': '元件',
+  'skills.managementTitle': '管理',
   'common.search': '搜尋',
   'common.decrease': '減少',
   'common.increase': '增加',

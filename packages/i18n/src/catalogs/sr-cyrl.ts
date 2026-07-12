@@ -24,6 +24,8 @@ export const srCyrl: Partial<Catalog> = {
   'common.clear': 'Очисти',
   'common.goToSkills': 'Иди на вештине',
   'skills.resetFilters': 'Ресетуј филтере',
+  'skills.componentsTitle': 'Компоненте',
+  'skills.managementTitle': 'Управљање',
   'common.search': 'Претрага',
   'common.decrease': 'Смањи',
   'common.increase': 'Повећај',

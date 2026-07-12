@@ -17,7 +17,7 @@ import { useUpdateSchedule } from '@/systems/updates';
 import { useProjectCheckSchedule } from '@/systems/projects';
 import { ConfigBanner } from '@/features/configBanner';
 import { RepositoriesPage } from '@/pages/Repositories';
-import { SkillsPage } from '@/pages/Skills';
+import { SkillsComponentsPage, SkillsManagementPage } from '@/pages/Skills';
 import { ProjectsPage } from '@/pages/Projects';
 import { ComponentsPage, ManagementPage } from '@/pages/Mcp';
 import { SettingsPage } from '@/pages/Settings';
@@ -27,18 +27,24 @@ import { TerminalPage } from '@/systems/terminal';
 import { TasksPage } from '@/systems/tasks';
 import './App.scss';
 
-type View = 'repositories' | 'skills' | 'projects' | 'mcp-components' | 'mcp-management' | 'settings';
+type View =
+  | 'repositories'
+  | 'skills-components'
+  | 'skills-management'
+  | 'projects'
+  | 'mcp-components'
+  | 'mcp-management'
+  | 'settings';
 
-// The MCP nav item is rendered separately (as a two-level group) since it
-// does not map 1:1 to a single `View` -- see the MCP group block in the
+// Skills and MCP are rendered separately (each as a two-level group) since
+// they do not map 1:1 to a single `View` -- see their group blocks in the
 // Sidebar JSX below.
 const NAV_ITEMS: {
-  id: 'projects' | 'repositories' | 'skills';
-  key: 'nav.projects' | 'nav.repositories' | 'nav.skills';
+  id: 'projects' | 'repositories';
+  key: 'nav.projects' | 'nav.repositories';
 }[] = [
   { id: 'projects', key: 'nav.projects' },
   { id: 'repositories', key: 'nav.repositories' },
-  { id: 'skills', key: 'nav.skills' },
 ];
 
 export function App() {
@@ -54,10 +60,11 @@ export function App() {
   const skillsNav = useSkillkeeperStore((s) => s.skillsNav);
   const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
   const t = useTranslator();
-  // The MCP nav group is a pure expand/collapse toggle (local, ephemeral):
-  // clicking the header opens/closes its sub-items; navigation happens only
-  // through the sub-items. No "remember last sub-page" -- clicking the header
-  // never navigates.
+  // The Skills and MCP nav groups are pure expand/collapse toggles (local,
+  // ephemeral): clicking a header opens/closes its sub-items; navigation
+  // happens only through the sub-items. No "remember last sub-page" -- clicking
+  // a header never navigates.
+  const [skillsOpen, setSkillsOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
 
   useEffect(() => {
@@ -71,10 +78,16 @@ export function App() {
   }, [addRepoRequest]);
 
   // A "go to skills" request (from a project/repository card) switches to the
-  // Skills view; the store already set the mode/filters. Nonce-driven so a repeat
-  // request re-fires even when already on the page.
+  // matching Skills sub-page -- Management for the projects mode, Components for
+  // the repositories mode -- reading the mode the store already set alongside
+  // the filters, and opens the Skills group so the active sub-item is visible.
+  // Nonce-driven so a repeat request re-fires even when already on the page.
   useEffect(() => {
-    if (skillsNav > 0) setActiveView('skills');
+    if (skillsNav > 0) {
+      const mode = useSkillkeeperStore.getState().skillsUi.mode;
+      setActiveView(mode === 'projects' ? 'skills-management' : 'skills-components');
+      setSkillsOpen(true);
+    }
   }, [skillsNav]);
 
   // A "focus this repository" request (e.g. from an MCP preset's source-repo
@@ -98,8 +111,10 @@ export function App() {
     switch (activeView) {
       case 'repositories':
         return <RepositoriesPage />;
-      case 'skills':
-        return <SkillsPage />;
+      case 'skills-components':
+        return <SkillsComponentsPage />;
+      case 'skills-management':
+        return <SkillsManagementPage />;
       case 'projects':
         return <ProjectsPage />;
       case 'mcp-components':
@@ -126,6 +141,45 @@ export function App() {
               {t(key)}
             </SidebarItem>
           ))}
+
+          {/* Skills: a group header + two sub-pages (Components / Management),
+              composed here exactly like the MCP group below. The header is a
+              pure expand/collapse TOGGLE; navigation lives on the sub-items. */}
+          <SidebarItem
+            icon={<Icon name="skills" />}
+            className={cx('sk-sidebar-item--group', skillsOpen && 'sk-sidebar-item--group--open')}
+            onClick={() => setSkillsOpen((open) => !open)}
+          >
+            {t('nav.skills')}
+            <Icon name="chevron-right" size={14} className="sk-nav-group__chevron" />
+          </SidebarItem>
+          <AnimatePresence initial={false}>
+            {skillsOpen && (
+              <motion.div
+                key="skills-subgroup"
+                className="sk-nav-subgroup"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <SidebarItem
+                  className="sk-sidebar-item--sub"
+                  active={activeView === 'skills-components'}
+                  onClick={() => setActiveView('skills-components')}
+                >
+                  {t('skills.componentsTitle')}
+                </SidebarItem>
+                <SidebarItem
+                  className="sk-sidebar-item--sub"
+                  active={activeView === 'skills-management'}
+                  onClick={() => setActiveView('skills-management')}
+                >
+                  {t('skills.managementTitle')}
+                </SidebarItem>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* MCP: a group header + two sub-pages, composed here (the shared
               Sidebar/SidebarItem stay generic). The header is a pure

@@ -27,6 +27,8 @@ export const ru: Partial<Catalog> = {
   'common.clear': 'Очистить',
   'common.goToSkills': 'Перейти к навыкам',
   'skills.resetFilters': 'Сбросить фильтры',
+  'skills.componentsTitle': 'Компоненты',
+  'skills.managementTitle': 'Менеджмент',
   'common.search': 'Поиск',
   'common.decrease': 'Уменьшить',
   'common.increase': 'Увеличить',

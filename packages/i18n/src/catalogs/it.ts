@@ -24,6 +24,8 @@ export const it: Partial<Catalog> = {
   'common.clear': 'Cancella',
   'common.goToSkills': 'Vai alle competenze',
   'skills.resetFilters': 'Reimposta filtri',
+  'skills.componentsTitle': 'Componenti',
+  'skills.managementTitle': 'Gestione',
   'common.search': 'Cerca',
   'common.decrease': 'Diminuisci',
   'common.increase': 'Aumenta',

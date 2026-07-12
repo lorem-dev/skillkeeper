@@ -24,6 +24,8 @@ export const uk: Partial<Catalog> = {
   'common.clear': 'Очистити',
   'common.goToSkills': 'Перейти до навичок',
   'skills.resetFilters': 'Скинути фільтри',
+  'skills.componentsTitle': 'Компоненти',
+  'skills.managementTitle': 'Менеджмент',
   'common.search': 'Пошук',
   'common.decrease': 'Зменшити',
   'common.increase': 'Збільшити',
