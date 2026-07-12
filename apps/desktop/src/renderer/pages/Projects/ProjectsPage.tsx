@@ -15,6 +15,10 @@ import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, Tooltip, Icon } 
 import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
 import './ProjectsPage.scss';
 
+/** Minimum time the Refresh button stays in its loading state, so a refresh
+ *  that finishes quickly still reads as a deliberate action, not a flicker. */
+const REFRESH_MIN_MS = 1000;
+
 export function ProjectsPage() {
   const projects = useSkillkeeperStore((s) => s.projects);
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
@@ -73,9 +77,14 @@ export function ProjectsPage() {
           className="sk-refresh-btn"
           loading={refreshing}
           onClick={() => {
-            // Run the folder check now (reschedules the loop) plus the info refresh.
+            // Run the folder check now (reschedules the loop) plus the info
+            // refresh -- holding the loading state for at least REFRESH_MIN_MS
+            // so a fast refresh does not just flash.
             setRefreshing(true);
-            void Promise.all([sweepProjects(), refreshProjectInfo()]).finally(() => setRefreshing(false));
+            const minDelay = new Promise((resolve) => setTimeout(resolve, REFRESH_MIN_MS));
+            void Promise.all([sweepProjects(), refreshProjectInfo(), minDelay]).finally(() =>
+              setRefreshing(false),
+            );
           }}
         >
           <Icon name="sync" size={16} />

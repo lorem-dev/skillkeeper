@@ -18,6 +18,10 @@ import './RepositoriesPage.scss';
  *  `repoFocus` (e.g. from an MCP preset's source-repo badge). */
 const FOCUS_HIGHLIGHT_MS = 1600;
 
+/** Minimum time the Refresh button stays in its loading state, so a refresh
+ *  that finishes quickly still reads as a deliberate action, not a flicker. */
+const REFRESH_MIN_MS = 1000;
+
 export function RepositoriesPage() {
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const repoStatus = useSkillkeeperStore((s) => s.repoStatus);
@@ -105,9 +109,11 @@ export function RepositoriesPage() {
           loading={refreshing}
           onClick={() => {
             // Loading (and non-clickable) until every queued update-check task
-            // and the info refresh have fully settled.
+            // and the info refresh have fully settled -- but for at least
+            // REFRESH_MIN_MS, so a fast refresh does not just flash.
             setRefreshing(true);
-            void Promise.all([refreshRepoUpdates(), refreshRepoInfo()]).finally(() =>
+            const minDelay = new Promise((resolve) => setTimeout(resolve, REFRESH_MIN_MS));
+            void Promise.all([refreshRepoUpdates(), refreshRepoInfo(), minDelay]).finally(() =>
               setRefreshing(false),
             );
           }}
