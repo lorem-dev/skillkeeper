@@ -14,3 +14,5 @@ export { getDisplacementFilter, supportsBackdropUrl } from './glassRefraction';
 export type { DisplacementOptions } from './glassRefraction';
 export { useGlassRefraction } from './useGlassRefraction';
 export type { GlassRefractionOptions } from './useGlassRefraction';
+export { useFilterToggle } from './useFilterToggle';
+export type { FilterToggle } from './useFilterToggle';

@@ -19,8 +19,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { Page, Toolbar, Button, ExpandingSearch, MultiCombobox, SearchSummary, TreeView, Badge, Tooltip } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, FilterButton, CollapsibleFilters, MultiCombobox, SearchSummary, TreeView, Badge, Tooltip } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
+import { useFilterToggle } from '@/shared/lib';
 import { buildRepoTree, filterTree, collectBranchIds, rootIds, countLeaves, repoSkillKey } from '@/entities/skill';
 import { SkillInstallModal } from '@/features/skillInstall';
 import './SkillsPage.scss';
@@ -114,6 +115,10 @@ export function SkillsComponentsPage() {
 
   const repoOptions = repositories.map((r) => ({ value: r.id, label: r.name }));
 
+  // One filter control (repositories); drives the count badge + collapsible row.
+  const filterCount = repoFilter.length > 0 ? 1 : 0;
+  const filterToggle = useFilterToggle(filterCount);
+
   const actions = (
     <>
       <ExpandingSearch
@@ -124,6 +129,14 @@ export function SkillsComponentsPage() {
         onChange={(e) => setQuery(e.target.value)}
         onClear={() => setQuery('')}
         clearLabel={t('common.clear')}
+      />
+      <FilterButton
+        count={filterCount}
+        open={filterToggle.open}
+        onToggle={filterToggle.toggle}
+        onClear={() => setRepoFilter([])}
+        filterLabel={t('common.filter')}
+        clearLabel={t('common.clearFilters')}
       />
       <Button
         variant="secondary"
@@ -141,7 +154,11 @@ export function SkillsComponentsPage() {
 
   // Second toolbar row: the repository multi-select filter.
   const filters = (
-    <div className="sk-skills-filters">
+    <CollapsibleFilters
+      open={filterToggle.visible}
+      onFocusWithinChange={filterToggle.onFocusWithinChange}
+      className="sk-skills-filters"
+    >
       <MultiCombobox
         label={t('skills.filterRepositories')}
         options={repoOptions}
@@ -151,7 +168,7 @@ export function SkillsComponentsPage() {
         emptyText={t('skills.filterRepositoriesEmpty')}
         ariaLabel={t('skills.filterRepositories')}
       />
-    </div>
+    </CollapsibleFilters>
   );
 
   return (

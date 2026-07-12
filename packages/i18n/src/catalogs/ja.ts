@@ -29,6 +29,8 @@ export const ja: Partial<Catalog> = {
   'common.search': '検索',
   'common.decrease': '減らす',
   'common.increase': '増やす',
+  'common.filter': 'フィルター',
+  'common.clearFilters': 'フィルターをリセット',
 
   'notifications.error': 'エラー',
   'notifications.info': '通知',

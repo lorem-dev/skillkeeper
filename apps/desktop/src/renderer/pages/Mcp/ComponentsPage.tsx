@@ -23,9 +23,9 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, FilterButton, CollapsibleFilters, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
-import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
+import { fuzzyFilter, fadeRise, fade, useFilterToggle } from '@/shared/lib';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
 import { McpCard } from '@/entities/mcp';
 import { McpViewToggle } from '@/features/mcpView';
@@ -64,6 +64,11 @@ export function ComponentsPage() {
   // Repo filter is ephemeral (not persisted), mirroring the toolbar search and
   // the Management page. Empty filter = show all (mirrors SkillsPage).
   const [repoFilter, setRepoFilter] = useState<string[]>([]);
+
+  // One filter control here (repositories); the filter row + count badge are
+  // driven by whether it is non-empty.
+  const filterCount = repoFilter.length > 0 ? 1 : 0;
+  const filterToggle = useFilterToggle(filterCount);
 
   // Manual presets belong to no repository, so they always survive the repo
   // filter -- matching how `buildMcpRepoTree` always keeps manual presets as
@@ -176,6 +181,14 @@ export function ComponentsPage() {
         onChange={(e) => setQuery(e.target.value)}
         onClear={() => setQuery('')}
       />
+      <FilterButton
+        count={filterCount}
+        open={filterToggle.open}
+        onToggle={filterToggle.toggle}
+        onClear={() => setRepoFilter([])}
+        filterLabel={t('common.filter')}
+        clearLabel={t('common.clearFilters')}
+      />
       <Button variant="primary" glass onClick={openCreate}>
         {t('mcp.add')}
       </Button>
@@ -203,7 +216,11 @@ export function ComponentsPage() {
             }
             trailing={actions}
           />
-          <div className="sk-mcp-components-filters">
+          <CollapsibleFilters
+            open={filterToggle.visible}
+            onFocusWithinChange={filterToggle.onFocusWithinChange}
+            className="sk-mcp-components-filters"
+          >
             <MultiCombobox
               label={t('skills.filterRepositories')}
               options={repoOptions}
@@ -213,7 +230,7 @@ export function ComponentsPage() {
               emptyText={t('skills.filterRepositoriesEmpty')}
               ariaLabel={t('skills.filterRepositories')}
             />
-          </div>
+          </CollapsibleFilters>
         </div>
       }
     >

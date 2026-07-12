@@ -29,6 +29,8 @@ export const uk: Partial<Catalog> = {
   'common.search': 'Пошук',
   'common.decrease': 'Зменшити',
   'common.increase': 'Збільшити',
+  'common.filter': 'Фільтрація',
+  'common.clearFilters': 'Скинути фільтри',
 
   'notifications.error': 'Помилка',
   'notifications.info': 'Сповіщення',

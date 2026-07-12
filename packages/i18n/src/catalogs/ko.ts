@@ -29,6 +29,8 @@ export const ko: Partial<Catalog> = {
   'common.search': '검색',
   'common.decrease': '감소',
   'common.increase': '증가',
+  'common.filter': '필터',
+  'common.clearFilters': '필터 초기화',
 
   'notifications.error': '오류',
   'notifications.info': '알림',

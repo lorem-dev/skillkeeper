@@ -24,6 +24,7 @@ import mcp from './assets/mcp.svg?raw';
 import mcpGroup from './assets/mcp-group.svg?raw';
 import viewTiles from './assets/view-tiles.svg?raw';
 import viewTree from './assets/view-tree.svg?raw';
+import filter from './assets/filter.svg?raw';
 
 const assets: Record<string, string> = {
   repositories,
@@ -49,6 +50,7 @@ const assets: Record<string, string> = {
   'mcp-group': mcpGroup,
   'view-tiles': viewTiles,
   'view-tree': viewTree,
+  filter,
 };
 
 describe('Icon assets', () => {

@@ -4,15 +4,16 @@
 .sk-mcp-components-header {
   display: flex;
   flex-direction: column;
-  gap: var(--sk-space-6);
 }
 
 // Filters row: labeled controls aligned along their bottom edge. Mirrors
-// SkillsPage.scss's `.sk-skills-filters`.
+// SkillsPage.scss's `.sk-skills-filters`. The top spacing lives here (not the
+// header's flex gap) so it is part of the collapsible row's animated height.
 .sk-mcp-components-filters {
   display: flex;
   align-items: flex-end;
   gap: var(--sk-space-5);
+  padding-top: var(--sk-space-6);
 }
 
 // The "/" separator in the "MCP / <page>" heading -- muted so it reads as a

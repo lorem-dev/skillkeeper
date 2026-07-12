@@ -32,6 +32,8 @@ export const ru: Partial<Catalog> = {
   'common.search': 'Поиск',
   'common.decrease': 'Уменьшить',
   'common.increase': 'Увеличить',
+  'common.filter': 'Фильтрация',
+  'common.clearFilters': 'Сбросить фильтры',
 
   'notifications.error': 'Ошибка',
   'notifications.info': 'Уведомление',

@@ -28,6 +28,8 @@ import {
   Toolbar,
   Button,
   ExpandingSearch,
+  FilterButton,
+  CollapsibleFilters,
   MultiCombobox,
   SearchSummary,
   TreeView,
@@ -37,6 +39,7 @@ import {
   Icon,
 } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
+import { useFilterToggle } from '@/shared/lib';
 import { AgentSelect } from '@/entities/agent';
 import { ProjectIcon } from '@/entities/project';
 import {
@@ -340,6 +343,15 @@ export function SkillsManagementPage() {
   }));
   const repoOptions = repositories.map((r) => ({ value: r.id, label: r.name }));
 
+  // Two filter controls (projects, repositories); the count badge shows how
+  // many are non-empty and drives the collapsible filter row.
+  const filterCount = (projectFilter.length > 0 ? 1 : 0) + (repoFilter.length > 0 ? 1 : 0);
+  const filterToggle = useFilterToggle(filterCount);
+  const clearFilters = (): void => {
+    setProjectFilter([]);
+    setRepoFilter([]);
+  };
+
   const actions = (
     <>
       <ExpandingSearch
@@ -350,6 +362,14 @@ export function SkillsManagementPage() {
         onChange={(e) => setQuery(e.target.value)}
         onClear={() => setQuery('')}
         clearLabel={t('common.clear')}
+      />
+      <FilterButton
+        count={filterCount}
+        open={filterToggle.open}
+        onToggle={filterToggle.toggle}
+        onClear={clearFilters}
+        filterLabel={t('common.filter')}
+        clearLabel={t('common.clearFilters')}
       />
       <Button
         variant="secondary"
@@ -368,7 +388,11 @@ export function SkillsManagementPage() {
   // Second toolbar row: the project + repository multi-select filters (projects
   // first). The project options carry a leading `ProjectIcon`.
   const filters = (
-    <div className="sk-skills-filters">
+    <CollapsibleFilters
+      open={filterToggle.visible}
+      onFocusWithinChange={filterToggle.onFocusWithinChange}
+      className="sk-skills-filters"
+    >
       <MultiCombobox
         label={t('skills.filterProjects')}
         options={projectOptions}
@@ -387,7 +411,7 @@ export function SkillsManagementPage() {
         emptyText={t('skills.filterRepositoriesEmpty')}
         ariaLabel={t('skills.filterRepositories')}
       />
-    </div>
+    </CollapsibleFilters>
   );
 
   return (

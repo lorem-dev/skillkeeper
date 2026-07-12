@@ -35,6 +35,7 @@ import mcp from './assets/mcp.svg?raw';
 import mcpGroup from './assets/mcp-group.svg?raw';
 import viewTiles from './assets/view-tiles.svg?raw';
 import viewTree from './assets/view-tree.svg?raw';
+import filter from './assets/filter.svg?raw';
 
 export type IconName =
   | 'repositories'
@@ -59,7 +60,8 @@ export type IconName =
   | 'mcp'
   | 'mcp-group'
   | 'view-tiles'
-  | 'view-tree';
+  | 'view-tree'
+  | 'filter';
 
 const ICONS: Record<IconName, string> = {
   repositories: stripSvgRoot(repositories),
@@ -85,6 +87,7 @@ const ICONS: Record<IconName, string> = {
   'mcp-group': stripSvgRoot(mcpGroup),
   'view-tiles': stripSvgRoot(viewTiles),
   'view-tree': stripSvgRoot(viewTree),
+  filter: stripSvgRoot(filter),
 };
 
 /**

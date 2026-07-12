@@ -29,6 +29,8 @@ export const zhTw: Partial<Catalog> = {
   'common.search': '搜尋',
   'common.decrease': '減少',
   'common.increase': '增加',
+  'common.filter': '篩選',
+  'common.clearFilters': '重置篩選條件',
 
   'notifications.error': '錯誤',
   'notifications.info': '通知',

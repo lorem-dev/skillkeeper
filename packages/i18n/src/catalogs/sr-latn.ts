@@ -29,6 +29,8 @@ export const srLatn: Partial<Catalog> = {
   'common.search': 'Pretraga',
   'common.decrease': 'Smanji',
   'common.increase': 'Povećaj',
+  'common.filter': 'Filtriraj',
+  'common.clearFilters': 'Resetuj filtere',
 
   'notifications.error': 'Greška',
   'notifications.info': 'Obaveštenje',

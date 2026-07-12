@@ -33,6 +33,8 @@ export const de: Partial<Catalog> = {
   'common.search': 'Suchen',
   'common.decrease': 'Verringern',
   'common.increase': 'Erhöhen',
+  'common.filter': 'Filter',
+  'common.clearFilters': 'Filter zurücksetzen',
 
   'notifications.error': 'Fehler',
   'notifications.info': 'Benachrichtigung',

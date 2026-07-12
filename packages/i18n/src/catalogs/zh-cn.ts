@@ -29,6 +29,8 @@ export const zhCn: Partial<Catalog> = {
   'common.search': '搜索',
   'common.decrease': '减少',
   'common.increase': '增加',
+  'common.filter': '筛选',
+  'common.clearFilters': '重置筛选条件',
 
   'notifications.error': '错误',
   'notifications.info': '通知',

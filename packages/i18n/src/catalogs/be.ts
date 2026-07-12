@@ -29,6 +29,8 @@ export const be: Partial<Catalog> = {
   'common.search': 'Пошук',
   'common.decrease': 'Паменшыць',
   'common.increase': 'Павялічыць',
+  'common.filter': 'Фільтрацыя',
+  'common.clearFilters': 'Скінуць фільтры',
 
   'notifications.error': 'Памылка',
   'notifications.info': 'Апавяшчэнне',

@@ -29,6 +29,8 @@ export const pl: Partial<Catalog> = {
   'common.search': 'Szukaj',
   'common.decrease': 'Zmniejsz',
   'common.increase': 'Zwieksz',
+  'common.filter': 'Filtruj',
+  'common.clearFilters': 'Zresetuj filtry',
 
   'notifications.error': 'Blad',
   'notifications.info': 'Powiadomienie',

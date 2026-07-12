@@ -22,8 +22,9 @@ import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import type { Project } from '@/services/bridge';
-import { Page, Toolbar, ExpandingSearch, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
+import { Page, Toolbar, ExpandingSearch, FilterButton, CollapsibleFilters, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
+import { useFilterToggle } from '@/shared/lib';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
 import { ProjectIcon } from '@/entities/project';
 import { buildMcpProjectTree, mcpProjectRootId } from './lib/mcpTree';
@@ -67,6 +68,15 @@ export function ManagementPage() {
   // navigating away and back. Empty filter = show all (mirrors SkillsPage).
   const [repoFilter, setRepoFilter] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState<string[]>([]);
+
+  // Two filter controls (projects, repositories); the count badge shows how
+  // many are non-empty and drives the collapsible filter row.
+  const filterCount = (projectFilter.length > 0 ? 1 : 0) + (repoFilter.length > 0 ? 1 : 0);
+  const filterToggle = useFilterToggle(filterCount);
+  const clearFilters = (): void => {
+    setProjectFilter([]);
+    setRepoFilter([]);
+  };
 
   const shownRepos = useMemo(
     () =>
@@ -190,14 +200,24 @@ export function ManagementPage() {
     : baseExpandedIds;
 
   const actions = (
-    <ExpandingSearch
-      glass
-      label={t('common.search')}
-      placeholder={t('common.search')}
-      value={query}
-      onChange={(e) => setQuery(e.target.value)}
-      onClear={() => setQuery('')}
-    />
+    <>
+      <ExpandingSearch
+        glass
+        label={t('common.search')}
+        placeholder={t('common.search')}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onClear={() => setQuery('')}
+      />
+      <FilterButton
+        count={filterCount}
+        open={filterToggle.open}
+        onToggle={filterToggle.toggle}
+        onClear={clearFilters}
+        filterLabel={t('common.filter')}
+        clearLabel={t('common.clearFilters')}
+      />
+    </>
   );
 
   // Second toolbar row: the repo/project multi-select filters that narrow
@@ -211,7 +231,11 @@ export function ManagementPage() {
   }));
 
   const filters = (
-    <div className="sk-mcp-management-filters">
+    <CollapsibleFilters
+      open={filterToggle.visible}
+      onFocusWithinChange={filterToggle.onFocusWithinChange}
+      className="sk-mcp-management-filters"
+    >
       <MultiCombobox
         label={t('skills.filterProjects')}
         options={projectOptions}
@@ -230,7 +254,7 @@ export function ManagementPage() {
         emptyText={t('skills.filterRepositoriesEmpty')}
         ariaLabel={t('skills.filterRepositories')}
       />
-    </div>
+    </CollapsibleFilters>
   );
 
   return (

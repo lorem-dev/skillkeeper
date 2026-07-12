@@ -1,0 +1,43 @@
+// Filter toggle button styles. Co-located; tokens only. A round glass button
+// with a small count badge overlapping its top-right corner.
+
+.sk-filter-btn {
+  // Positioning context for the corner badge; the badge sits OUTSIDE the button
+  // (a sibling, not a child) so the button's own `overflow: hidden` -- which
+  // clips its glass refraction -- never clips the badge.
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+// Round icon-only button: drop the text-button padding to a control-height
+// square and force the pill radius so it reads as a circle.
+.sk-filter-btn__button {
+  width: var(--sk-control-height);
+  padding: 0;
+  border-radius: var(--sk-radius-pill);
+}
+
+// Count badge: a small accent pill in the top-right corner, ringed in the page
+// background so it separates cleanly from the button edge.
+.sk-filter-btn__badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-color-accent);
+  // White on accent, matching the primary button's on-accent text.
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 0 0 2px var(--sk-color-bg);
+  pointer-events: none;
+}

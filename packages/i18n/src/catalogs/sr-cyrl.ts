@@ -29,6 +29,8 @@ export const srCyrl: Partial<Catalog> = {
   'common.search': 'Претрага',
   'common.decrease': 'Смањи',
   'common.increase': 'Повећај',
+  'common.filter': 'Филтрирај',
+  'common.clearFilters': 'Ресетуј филтере',
 
   'notifications.error': 'Грешка',
   'notifications.info': 'Обавештење',

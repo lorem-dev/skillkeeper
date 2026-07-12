@@ -34,6 +34,8 @@ export const en = {
   'common.search': 'Search',
   'common.decrease': 'Decrease',
   'common.increase': 'Increase',
+  'common.filter': 'Filter',
+  'common.clearFilters': 'Reset filters',
 
   'notifications.error': 'Error',
   'notifications.info': 'Notification',
