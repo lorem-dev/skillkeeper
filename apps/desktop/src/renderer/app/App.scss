@@ -56,18 +56,15 @@
   color: var(--sk-color-label-3);
 }
 
-// The "MCP" group header (a first-level item that owns sub-items). It never
-// carries the selected-background itself -- selection lives on the active
-// sub-item -- so it is composed WITHOUT the `--active` class; `--open` marks
-// it expanded (emphasised text + rotated chevron). Its label row makes space
-// for the trailing disclosure chevron.
+// A group header (a first-level item that owns sub-items). It never carries the
+// selected-background OR the emphasised text colour itself -- selection lives on
+// the active sub-item, so an open group is NOT highlighted; it keeps the resting
+// colour and only lights on hover (the base `.sk-sidebar-item` rules). `--open`
+// only rotates the disclosure chevron. Its label row makes space for that
+// trailing chevron.
 .sk-sidebar-item--group .sk-sidebar-item__label {
   display: flex;
   align-items: center;
-}
-
-.sk-sidebar-item--group--open {
-  color: var(--sk-color-label);
 }
 
 .sk-nav-group__chevron {
