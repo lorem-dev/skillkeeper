@@ -39,9 +39,13 @@ export function SkillsComponentsPage() {
   const [installOpen, setInstallOpen] = useState(false);
 
   // This sub-page IS the repositories browse mode; keep the store discriminator
-  // in sync (see the file header).
+  // in sync (see the file header). Clear the shared search only when arriving
+  // from the OTHER mode -- mirrors the old in-page mode Select, which reset the
+  // query on switch -- while keeping it when re-entering this mode (navigating
+  // away and back).
   useEffect(() => {
-    setSkillsUi({ mode: 'repositories' });
+    const switching = useSkillkeeperStore.getState().skillsUi.mode !== 'repositories';
+    setSkillsUi(switching ? { mode: 'repositories', query: '' } : { mode: 'repositories' });
   }, [setSkillsUi]);
 
   const setQuery = (value: string): void => setSkillsUi({ query: value });

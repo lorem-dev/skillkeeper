@@ -87,10 +87,13 @@ export function SkillsManagementPage() {
   const [saveOpen, setSaveOpen] = useState(false);
 
   // This sub-page IS the projects mode; keep the store discriminator in sync
-  // (see the file header). Project icons are resolved into projectInfo by the
+  // (see the file header). Clear the shared search only when arriving from the
+  // OTHER mode (mirrors the old in-page mode Select), while keeping it when
+  // re-entering this mode. Project icons are resolved into projectInfo by the
   // main process; refresh on mount so the project nodes can show them.
   useEffect(() => {
-    setSkillsUi({ mode: 'projects' });
+    const switching = useSkillkeeperStore.getState().skillsUi.mode !== 'projects';
+    setSkillsUi(switching ? { mode: 'projects', query: '' } : { mode: 'projects' });
     void refreshProjectInfo();
   }, [setSkillsUi, refreshProjectInfo]);
 
