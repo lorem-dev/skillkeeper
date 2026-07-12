@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { bridgeClient } from '@/services/bridge';
@@ -8,19 +9,29 @@ import { Button } from '@/shared/ui';
  * "Add project": opens the native folder picker, then tracks the chosen folder.
  * The initial name is derived from the folder name the same way as repositories
  * (PascalCase split into Title-Cased words).
+ *
+ * The button shows its pending shimmer (and is non-interactive) while the folder
+ * dialog is open and the chosen folder is being added, so a slow pick cannot be
+ * double-triggered.
  */
 export function ProjectAddButton() {
   const t = useTranslator();
   const addProject = useSkillkeeperStore((s) => s.addProject);
+  const [busy, setBusy] = useState(false);
 
   async function pick(): Promise<void> {
-    const path = await bridgeClient.selectFolder();
-    if (path === null) return;
-    await addProject(path, deriveRepoName(path));
+    setBusy(true);
+    try {
+      const path = await bridgeClient.selectFolder();
+      if (path === null) return;
+      await addProject(path, deriveRepoName(path));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <Button variant="primary" glass onClick={() => void pick()}>
+    <Button variant="primary" glass loading={busy} onClick={() => void pick()}>
       {t('projects.add')}
     </Button>
   );
