@@ -64,7 +64,7 @@ const catalogs: Record<Lang, Partial<Catalog>> = {
 export const SUPPORTED_LANGS = Object.keys(catalogs) as Lang[];
 
 // Native language names (the picker's primary label; non-ASCII i18n data).
-export { LANGUAGE_NATIVE_NAMES } from './nativeNames.js';
+export { LANGUAGE_NATIVE_NAMES, LANGUAGE_CHINESE_QUALIFIERS } from './nativeNames.js';
 
 /**
  * Interpolation variables bag: keys are placeholder names (without braces),

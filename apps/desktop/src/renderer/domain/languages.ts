@@ -1,7 +1,10 @@
 import type { Lang } from '@/services/bridge';
 // Pinned native names live in the i18n package (the sanctioned home for
 // non-ASCII text); see the note there and in AGENTS.md.
-import { LANGUAGE_NATIVE_NAMES as NATIVE_NAMES } from '@skillkeeper/i18n';
+import {
+  LANGUAGE_NATIVE_NAMES as NATIVE_NAMES,
+  LANGUAGE_CHINESE_QUALIFIERS as CHINESE_QUALIFIERS,
+} from '@skillkeeper/i18n';
 
 const LANGS: readonly Lang[] = [
   'en',
@@ -42,6 +45,15 @@ function displayName(target: Lang, inLocale: Lang): string {
   // The native label comes from the pinned table; the cross-locale qualifier
   // uses Intl (with a native-name fallback).
   const name = target === inLocale ? NATIVE_NAMES[target] : localizedName(target, inLocale);
+  // The Chinese variants use a pinned neutral qualifier for the cross-locale
+  // label rather than the region name Intl appends. The base language name is
+  // whatever precedes the parenthesised qualifier (or the whole string when
+  // the runtime returns no qualifier).
+  if (target !== inLocale && (target === 'zh-cn' || target === 'zh-tw')) {
+    const base = name.replace(/ \(.+\)$/u, '');
+    const q = CHINESE_QUALIFIERS[inLocale][target === 'zh-cn' ? 'mainland' : 'traditional'];
+    return capitalize(`${base}/${q}`);
+  }
   // Render a region/script qualifier with a slash instead of parentheses, e.g.
   // "Chinese (China)" -> "Chinese/China".
   const slashed = name.replace(/^(.+) \((.+)\)$/u, '$1/$2');

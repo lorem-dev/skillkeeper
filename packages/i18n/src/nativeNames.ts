@@ -30,3 +30,28 @@ export const LANGUAGE_NATIVE_NAMES: Record<Lang, string> = {
   ko: '한국어',
   it: 'italiano',
 };
+
+/**
+ * Qualifier words for the two Chinese variants, per UI locale, used in the
+ * language picker's cross-locale label instead of the region name Intl would
+ * append. Keyed by the locale the label is shown in. Non-ASCII, so it lives
+ * here alongside the native names.
+ */
+export const LANGUAGE_CHINESE_QUALIFIERS: Record<Lang, { mainland: string; traditional: string }> = {
+  en: { mainland: 'Mainland', traditional: 'Traditional' },
+  de: { mainland: 'Festland', traditional: 'Traditionell' },
+  ru: { mainland: 'Материк', traditional: 'Традиционный' },
+  uk: { mainland: 'Материк', traditional: 'Традиційний' },
+  be: { mainland: 'Мацярык', traditional: 'Традыцыйны' },
+  fr: { mainland: 'Continental', traditional: 'Traditionnel' },
+  ja: { mainland: '本土', traditional: '繁体' },
+  'zh-cn': { mainland: '大陆', traditional: '繁体' },
+  pl: { mainland: 'Kontynentalny', traditional: 'Tradycyjny' },
+  'sr-cyrl': { mainland: 'Копно', traditional: 'Традиционални' },
+  'sr-latn': { mainland: 'Kopno', traditional: 'Tradicionalni' },
+  'zh-tw': { mainland: '大陸', traditional: '繁體' },
+  es: { mainland: 'Continental', traditional: 'Tradicional' },
+  pt: { mainland: 'Continental', traditional: 'Tradicional' },
+  ko: { mainland: '본토', traditional: '번체' },
+  it: { mainland: 'Continentale', traditional: 'Tradizionale' },
+};
