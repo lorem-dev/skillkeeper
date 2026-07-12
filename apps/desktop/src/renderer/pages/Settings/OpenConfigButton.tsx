@@ -106,7 +106,9 @@ export function OpenConfigButton() {
   // load never flashes the skeleton. Same 50ms-defer + 500ms-hold staging as
   // the TreeView; skipped when animations are off. See useSkeletonStage.
   if (stage.showSkeleton) {
-    return <Skeleton width={74} height={30} radius="var(--sk-radius-sm)" />;
+    // Match the compact SplitButton's footprint: control-height tall with the
+    // pill (radius-xl) ends, so the shape does not change when it loads.
+    return <Skeleton width={74} height="var(--sk-control-height)" radius="var(--sk-radius-xl)" />;
   }
   // Not ready yet (the sub-frame before the skeleton, or animations-off while
   // loading): render nothing rather than flash.
