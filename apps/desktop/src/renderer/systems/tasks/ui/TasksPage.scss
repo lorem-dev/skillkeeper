@@ -33,6 +33,14 @@
   color: var(--sk-color-label);
 }
 
+// Round icon-only close button: a control-height circle, no glass -- just the
+// plain-variant hover fill.
+.sk-tasks__close {
+  width: var(--sk-control-height);
+  padding: 0;
+  border-radius: var(--sk-radius-pill);
+}
+
 .sk-tasks__actions {
   display: flex;
   align-items: center;
