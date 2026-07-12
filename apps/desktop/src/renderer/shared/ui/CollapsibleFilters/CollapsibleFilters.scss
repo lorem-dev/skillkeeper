@@ -1,0 +1,18 @@
+// Jump-free collapsible filter row: animate the grid row from 0fr to 1fr. No
+// height measurement, so there is no snap at the end of the animation (mirrors
+// DisclosureGroup). The inner element must clip its overflow and be allowed to
+// shrink to zero (min-height: 0).
+.sk-collapsible-filters {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--sk-duration-medium) var(--sk-ease-standard);
+}
+
+.sk-collapsible-filters--open {
+  grid-template-rows: 1fr;
+}
+
+.sk-collapsible-filters__inner {
+  min-height: 0;
+  overflow: hidden;
+}
