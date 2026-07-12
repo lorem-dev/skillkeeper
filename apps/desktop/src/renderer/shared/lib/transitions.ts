@@ -51,7 +51,7 @@ export const fadeRise: Variants = {
  * title (see `titleEnter`) so the title leads and the cards follow.
  */
 export const cardStagger: Variants = {
-  initial: { opacity: 0, x: 24, filter: 'blur(4px)' },
+  initial: { opacity: 0, x: 24, filter: 'blur(2px)' },
   animate: (i = 0) => ({
     opacity: 1,
     x: 0,
@@ -59,7 +59,7 @@ export const cardStagger: Variants = {
     filter: 'blur(0px)',
     transition: { ...transitionSlow, delay: Math.min(i, 14) * 0.035 },
   }),
-  exit: { opacity: 0, x: 24, filter: 'blur(4px)', transition: transitionFast },
+  exit: { opacity: 0, x: 24, filter: 'blur(2px)', transition: transitionFast },
 };
 
 /**
@@ -68,10 +68,10 @@ export const cardStagger: Variants = {
  * they appear one after another.
  */
 export const dockButton: Variants = {
-  initial: { opacity: 0, y: 10, filter: 'blur(4px)' },
+  initial: { opacity: 0, y: 10, filter: 'blur(2px)' },
   // A small motion blur while it moves, resolving to sharp as it settles.
   animate: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: SK_EASE_OUT } },
-  exit: { opacity: 0, y: 10, filter: 'blur(4px)', transition: { duration: 0.4, ease: SK_EASE_OUT } },
+  exit: { opacity: 0, y: 10, filter: 'blur(2px)', transition: { duration: 0.4, ease: SK_EASE_OUT } },
 };
 
 /** Orchestrates the dock buttons' entrance/exit stagger (in order). */
