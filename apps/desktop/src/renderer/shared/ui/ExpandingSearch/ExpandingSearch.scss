@@ -1,0 +1,146 @@
+// Expanding search styles. Co-located; tokens only. A pill that animates its
+// width between the control height (a collapsed magnifier circle) and
+// `--sk-xsearch-w` (the expanded search field). The leading magnifier is a
+// fixed square so it never shifts between the two states.
+@use '../../../styles/glass';
+
+.sk-xsearch {
+  // Expanded target width; override per instance to fit a toolbar.
+  --sk-xsearch-w: 14rem;
+
+  display: inline-flex;
+  align-items: center;
+  // Centre the collapsed magnifier square in the collapsed circle; in the
+  // expanded state the flex-grow input fills the free space, so this has no
+  // effect and the icon stays on the left.
+  justify-content: center;
+  box-sizing: border-box;
+  flex: none;
+  width: var(--sk-control-height);
+  height: var(--sk-control-height);
+  background: var(--sk-color-fill-3);
+  border-radius: var(--sk-radius-pill);
+  // Clip the input while collapsed (and the glass refraction to the pill).
+  overflow: hidden;
+  transition:
+    width var(--sk-duration-medium) var(--sk-ease-standard),
+    box-shadow var(--sk-duration-fast) var(--sk-ease-standard);
+
+  // A layout-neutral focus ring: an inset shadow rather than a border, so
+  // nothing peeks out from behind the glass rim and the box size never shifts.
+  &:focus-within {
+    box-shadow: inset 0 0 0 1px var(--sk-color-accent);
+  }
+}
+
+.sk-xsearch--expanded {
+  width: var(--sk-xsearch-w);
+}
+
+// The magnifier: a fixed control-height square. Centred, it reads as a round
+// button while collapsed; on the left, it reads as the field's leading icon
+// while expanded -- either way the glyph stays put.
+.sk-xsearch__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--sk-control-height);
+  height: var(--sk-control-height);
+  padding: 0;
+  border: none;
+  background: transparent;
+  // Collapsed, the magnifier reads as a normal button glyph (full label
+  // colour); expanded, it dims to the muted leading-icon colour (see below).
+  color: var(--sk-color-label);
+  cursor: pointer;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sk-color-accent);
+    outline-offset: -2px;
+    border-radius: var(--sk-radius-pill);
+  }
+}
+
+.sk-xsearch__input {
+  flex: 1;
+  min-width: 0;
+  // No padding while collapsed -- padding would give the (0-width) input a
+  // min-width that nudges the centred magnifier off-centre. The expanded rule
+  // below adds the right breathing room.
+  padding: 0;
+  appearance: none;
+  border: none;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--sk-color-label);
+  // Fades in as the pill widens; hidden (and unfocusable) while collapsed.
+  opacity: 0;
+  transition: opacity var(--sk-duration-fast) var(--sk-ease-standard);
+
+  &::placeholder {
+    color: var(--sk-color-label-2);
+  }
+
+  // Hide the native search clear; the component provides its own.
+  &::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+.sk-xsearch--expanded .sk-xsearch__input {
+  opacity: 1;
+  padding-right: var(--sk-space-3);
+}
+
+// Expanded, the leading magnifier dims to the muted search-field icon colour.
+.sk-xsearch--expanded .sk-xsearch__icon {
+  color: var(--sk-color-label-2);
+}
+
+.sk-xsearch__clear {
+  display: inline-flex;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-right: var(--sk-space-3);
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--sk-color-label-3);
+  transition: color var(--sk-duration-fast) var(--sk-ease-standard);
+
+  &:hover {
+    color: var(--sk-color-label-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sk-color-accent);
+    outline-offset: 2px;
+    border-radius: var(--sk-radius-pill);
+  }
+}
+
+// Glass: the refraction backdrop is set on the root by useGlassRefraction; keep
+// the translucent tint + gradient rim so it reads as a frosted control, matching
+// the glass buttons. `overflow: hidden` (above) clips the refraction to the pill.
+.sk-xsearch--glass {
+  position: relative;
+  background: var(--sk-glass-tint);
+  box-shadow: var(--sk-shadow-1);
+
+  @include glass.border;
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    background: var(--sk-color-bg-tertiary);
+  }
+}

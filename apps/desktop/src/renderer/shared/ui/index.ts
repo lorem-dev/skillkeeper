@@ -53,6 +53,8 @@ export { IntervalStepper } from './IntervalStepper';
 export type { IntervalStepperProps } from './IntervalStepper';
 export { SearchField } from './SearchField';
 export type { SearchFieldProps } from './SearchField';
+export { ExpandingSearch, isSearchEmpty } from './ExpandingSearch';
+export type { ExpandingSearchProps } from './ExpandingSearch';
 export { SearchSummary } from './SearchSummary';
 export type { SearchSummaryProps } from './SearchSummary';
 export { Table } from './Table';

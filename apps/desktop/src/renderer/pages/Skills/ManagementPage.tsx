@@ -27,7 +27,7 @@ import {
   Page,
   Toolbar,
   Button,
-  SearchField,
+  ExpandingSearch,
   MultiCombobox,
   SearchSummary,
   TreeView,
@@ -342,9 +342,10 @@ export function SkillsManagementPage() {
 
   const actions = (
     <>
-      <SearchField
-        className="sk-skills-search"
-        placeholder={t('skills.searchPlaceholder')}
+      <ExpandingSearch
+        glass
+        label={t('common.search')}
+        placeholder={t('common.search')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onClear={() => setQuery('')}

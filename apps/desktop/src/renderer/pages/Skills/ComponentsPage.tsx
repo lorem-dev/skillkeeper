@@ -19,7 +19,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { Page, Toolbar, Button, SearchField, MultiCombobox, SearchSummary, TreeView, Badge, Tooltip } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, MultiCombobox, SearchSummary, TreeView, Badge, Tooltip } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { buildRepoTree, filterTree, collectBranchIds, rootIds, countLeaves, repoSkillKey } from '@/entities/skill';
 import { SkillInstallModal } from '@/features/skillInstall';
@@ -116,9 +116,10 @@ export function SkillsComponentsPage() {
 
   const actions = (
     <>
-      <SearchField
-        className="sk-skills-search"
-        placeholder={t('skills.searchPlaceholder')}
+      <ExpandingSearch
+        glass
+        label={t('common.search')}
+        placeholder={t('common.search')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onClear={() => setQuery('')}

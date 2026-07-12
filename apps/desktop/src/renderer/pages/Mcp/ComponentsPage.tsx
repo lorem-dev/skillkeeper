@@ -23,7 +23,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { Page, Toolbar, Button, SearchField, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
@@ -168,10 +168,10 @@ export function ComponentsPage() {
 
   const actions = (
     <>
-      <SearchField
-        className="sk-list-search"
+      <ExpandingSearch
+        glass
+        label={t('common.search')}
         placeholder={t('common.search')}
-        aria-label={t('common.search')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onClear={() => setQuery('')}

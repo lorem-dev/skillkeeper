@@ -10,7 +10,7 @@ import { RepositoryCard } from '@/entities/repository';
 import { RepoAddButton } from '@/features/repoAdd';
 import { RepoEditModal } from '@/features/repoEdit';
 import type { Repository } from '@/services/bridge';
-import { Page, Toolbar, Button, SearchField, SearchSummary } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, SearchSummary } from '@/shared/ui';
 import { fuzzyFilter, fadeRise, fade, cx } from '@/shared/lib';
 import './RepositoriesPage.scss';
 
@@ -87,10 +87,10 @@ export function RepositoriesPage() {
   const trailing = (
     <>
       {repositories.length >= 2 && (
-        <SearchField
-          className="sk-list-search"
+        <ExpandingSearch
+          glass
+          label={t('common.search')}
           placeholder={t('common.search')}
-          aria-label={t('common.search')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onClear={() => setQuery('')}

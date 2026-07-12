@@ -11,7 +11,7 @@ import { ProjectAddButton } from '@/features/projectAdd';
 import { ProjectEditModal } from '@/features/projectEdit';
 import { OpenProjectButton } from '@/features/projectOpen';
 import type { Project } from '@/services/bridge';
-import { Page, Toolbar, Button, SearchField, SearchSummary } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, SearchSummary } from '@/shared/ui';
 import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
 import './ProjectsPage.scss';
 
@@ -56,10 +56,10 @@ export function ProjectsPage() {
   const trailing = (
     <>
       {projects.length >= 2 && (
-        <SearchField
-          className="sk-list-search"
+        <ExpandingSearch
+          glass
+          label={t('common.search')}
           placeholder={t('common.search')}
-          aria-label={t('common.search')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onClear={() => setQuery('')}
