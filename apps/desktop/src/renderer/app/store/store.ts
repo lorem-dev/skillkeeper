@@ -305,6 +305,9 @@ export interface McpUiState {
   expandedIds: string[] | null;
   /** Components-page display: tile grid or tree. */
   componentsView: McpComponentsView;
+  /** Components-page repository filter (empty = all). Lives here (not local
+   *  component state) so `goToMcp` can set it from another page. */
+  componentsRepoFilter: string[];
 }
 
 export interface SkillkeeperState {
@@ -349,6 +352,9 @@ export interface SkillkeeperState {
   /** Nonce bumped by `goToSkills` to request navigating to the Skills page (App
    *  watches it and switches the active view). */
   skillsNav: number;
+  /** Nonce bumped by `goToMcp` to request navigating to the MCP Components page
+   *  (App watches it, switches the active view, and opens the MCP nav group). */
+  mcpNav: number;
   /**
    * A pending "add repository" request from another page (e.g. an unlinked skill
    * on the Skills page): the remote URL to prefill. Setting it navigates to the
@@ -405,6 +411,9 @@ export interface SkillkeeperActions {
    * selection and only apply the patch (e.g. just narrowing a filter).
    */
   goToSkills(patch: Partial<SkillsUiState>, resetSelection?: boolean): void;
+  /** Navigate to the MCP Components page filtered to one repository: set the
+   *  components repo filter and bump `mcpNav` so the shell switches view. */
+  goToMcp(repoId: string): void;
   setProjects(projects: Project[]): void;
   /** Refetch the available-skills catalog from all repos. */
   refreshAvailableSkills(): Promise<void>;
@@ -558,8 +567,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     mode: 'repositories',
     expandedIds: null,
     componentsView: 'tiles',
+    componentsRepoFilter: [],
   },
   skillsNav: 0,
+  mcpNav: 0,
   addRepoRequest: null,
   projects: [],
   mcpPresets: [],
@@ -1141,6 +1152,13 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   focusRepository(repoId) {
     set((s) => ({ repoFocus: { repoId, nonce: (s.repoFocus?.nonce ?? 0) + 1 } }));
+  },
+
+  goToMcp(repoId) {
+    set((s) => ({
+      mcpUi: { ...s.mcpUi, componentsRepoFilter: [repoId] },
+      mcpNav: s.mcpNav + 1,
+    }));
   },
 
   updateProjectSkills(requests) {

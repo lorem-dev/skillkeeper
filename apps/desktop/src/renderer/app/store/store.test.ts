@@ -50,6 +50,7 @@ function reset(): void {
       mode: 'repositories',
       expandedIds: null,
       componentsView: 'tiles',
+      componentsRepoFilter: [],
     },
   });
 }

@@ -28,6 +28,7 @@ export const en = {
   'common.close': 'Close',
   'common.clear': 'Clear',
   'common.goToSkills': 'Go to skills',
+  'common.goToMcp': 'Go to MCP',
   'skills.resetFilters': 'Reset filters',
   'skills.componentsTitle': 'Components',
   'skills.managementTitle': 'Management',

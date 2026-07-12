@@ -23,6 +23,7 @@ export const fr: Partial<Catalog> = {
   'common.close': 'Fermer',
   'common.clear': 'Effacer',
   'common.goToSkills': 'Aller aux competences',
+  'common.goToMcp': 'Aller aux MCP',
   'skills.resetFilters': 'Reinitialiser les filtres',
   'skills.componentsTitle': 'Composants',
   'skills.managementTitle': 'Gestion',

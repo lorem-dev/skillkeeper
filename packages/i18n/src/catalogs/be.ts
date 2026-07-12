@@ -23,6 +23,7 @@ export const be: Partial<Catalog> = {
   'common.close': 'Закрыць',
   'common.clear': 'Ачысціць',
   'common.goToSkills': 'Перайсці да навыкаў',
+  'common.goToMcp': 'Перайсці да MCP',
   'skills.resetFilters': 'Скінуць фільтры',
   'skills.componentsTitle': 'Кампаненты',
   'skills.managementTitle': 'Менеджмент',

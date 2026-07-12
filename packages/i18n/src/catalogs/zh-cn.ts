@@ -23,6 +23,7 @@ export const zhCn: Partial<Catalog> = {
   'common.close': '关闭',
   'common.clear': '清除',
   'common.goToSkills': '前往技能',
+  'common.goToMcp': '前往 MCP',
   'skills.resetFilters': '重置筛选条件',
   'skills.componentsTitle': '组件',
   'skills.managementTitle': '管理',

@@ -23,6 +23,7 @@ export const srCyrl: Partial<Catalog> = {
   'common.close': 'Затвори',
   'common.clear': 'Очисти',
   'common.goToSkills': 'Иди на вештине',
+  'common.goToMcp': 'Иди на MCP',
   'skills.resetFilters': 'Ресетуј филтере',
   'skills.componentsTitle': 'Компоненте',
   'skills.managementTitle': 'Управљање',

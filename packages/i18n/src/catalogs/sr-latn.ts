@@ -23,6 +23,7 @@ export const srLatn: Partial<Catalog> = {
   'common.close': 'Zatvori',
   'common.clear': 'Očisti',
   'common.goToSkills': 'Idi na vestine',
+  'common.goToMcp': 'Idi na MCP',
   'skills.resetFilters': 'Resetuj filtere',
   'skills.componentsTitle': 'Komponente',
   'skills.managementTitle': 'Upravljanje',

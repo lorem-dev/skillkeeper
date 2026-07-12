@@ -23,6 +23,7 @@ export const ja: Partial<Catalog> = {
   'common.close': '閉じる',
   'common.clear': 'クリア',
   'common.goToSkills': 'スキルへ移動',
+  'common.goToMcp': 'MCPへ移動',
   'skills.resetFilters': 'フィルターをリセット',
   'skills.componentsTitle': 'コンポーネント',
   'skills.managementTitle': '管理',

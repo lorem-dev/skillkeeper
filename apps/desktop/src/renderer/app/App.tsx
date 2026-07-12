@@ -58,6 +58,7 @@ export function App() {
   const error = useSkillkeeperStore((s) => s.error);
   const addRepoRequest = useSkillkeeperStore((s) => s.addRepoRequest);
   const skillsNav = useSkillkeeperStore((s) => s.skillsNav);
+  const mcpNav = useSkillkeeperStore((s) => s.mcpNav);
   const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
   const t = useTranslator();
   // The Skills and MCP nav groups are pure expand/collapse toggles (local,
@@ -89,6 +90,17 @@ export function App() {
       setSkillsOpen(true);
     }
   }, [skillsNav]);
+
+  // A "go to MCP" request (from a repository card) switches to the MCP
+  // Components sub-page (the store already set its repo filter) and opens the
+  // MCP group so the active sub-item is visible. Nonce-driven, mirroring
+  // skillsNav.
+  useEffect(() => {
+    if (mcpNav > 0) {
+      setActiveView('mcp-components');
+      setMcpOpen(true);
+    }
+  }, [mcpNav]);
 
   // A "focus this repository" request (e.g. from an MCP preset's source-repo
   // badge) switches to the Repositories view; RepositoriesPage scrolls the

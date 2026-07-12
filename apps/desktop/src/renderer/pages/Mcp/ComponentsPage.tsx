@@ -58,12 +58,12 @@ export function ComponentsPage() {
   // by the exact same `buildMcpRepoTree` call and shares its node ids.
   const mcpUi = useSkillkeeperStore((s) => s.mcpUi);
   const setMcpUi = useSkillkeeperStore((s) => s.setMcpUi);
-  const { componentsView, expandedIds: persistedExpandedIds } = mcpUi;
+  const { componentsView, expandedIds: persistedExpandedIds, componentsRepoFilter: repoFilter } = mcpUi;
   const [query, setQuery] = useState('');
 
-  // Repo filter is ephemeral (not persisted), mirroring the toolbar search and
-  // the Management page. Empty filter = show all (mirrors SkillsPage).
-  const [repoFilter, setRepoFilter] = useState<string[]>([]);
+  // Repo filter lives in the store (`mcpUi.componentsRepoFilter`) so `goToMcp`
+  // can set it from a repository card. Empty filter = show all.
+  const setRepoFilter = (value: string[]): void => setMcpUi({ componentsRepoFilter: value });
 
   // One filter control here (repositories); the filter row + count badge are
   // driven by whether it is non-empty.

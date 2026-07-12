@@ -23,6 +23,7 @@ export const ko: Partial<Catalog> = {
   'common.close': '닫기',
   'common.clear': '지우기',
   'common.goToSkills': '스킬로 이동',
+  'common.goToMcp': 'MCP로 이동',
   'skills.resetFilters': '필터 초기화',
   'skills.componentsTitle': '컴포넌트',
   'skills.managementTitle': '관리',

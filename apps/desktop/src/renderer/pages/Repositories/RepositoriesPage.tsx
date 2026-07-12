@@ -31,6 +31,8 @@ export function RepositoriesPage() {
   const refreshRepoInfo = useSkillkeeperStore((s) => s.refreshRepoInfo);
   const showRepoError = useSkillkeeperStore((s) => s.showRepoError);
   const goToSkills = useSkillkeeperStore((s) => s.goToSkills);
+  const goToMcp = useSkillkeeperStore((s) => s.goToMcp);
+  const mcpPresets = useSkillkeeperStore((s) => s.mcpPresets);
   const notify = useSkillkeeperStore((s) => s.notify);
   const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
   const t = useTranslator();
@@ -87,6 +89,12 @@ export function RepositoriesPage() {
     r.url,
     repoInfo[r.id]?.branch ?? '',
   ]);
+
+  // Repositories that contribute at least one MCP preset -- gates each card's
+  // "go to MCP" button (cheap to rebuild; the preset list is small).
+  const reposWithMcp = new Set(
+    mcpPresets.map((p) => p.repoId).filter((id): id is string => id !== undefined),
+  );
 
   const trailing = (
     <>
@@ -169,9 +177,15 @@ export function RepositoriesPage() {
               }
               infoPending={repoInfo[r.id] === undefined}
               skillsLabel={t('common.goToSkills')}
+              mcpLabel={t('common.goToMcp')}
               onSync={() => void syncRepository(r.id)}
               onEdit={() => setEditing(r)}
-              onGoToSkills={() => goToSkills({ mode: 'repositories', repoFilter: [r.id] }, false)}
+              onGoToSkills={
+                (repoInfo[r.id]?.skillCount ?? 0) > 0
+                  ? () => goToSkills({ mode: 'repositories', repoFilter: [r.id] }, false)
+                  : undefined
+              }
+              onGoToMcp={reposWithMcp.has(r.id) ? () => goToMcp(r.id) : undefined}
               onErrorClick={() => showRepoError(r.id)}
             />
             </motion.div>

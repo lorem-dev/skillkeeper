@@ -35,10 +35,16 @@ export interface RepositoryCardProps {
   readonly infoPending?: boolean;
   /** Tooltip/label for the "go to skills" button (shown when onGoToSkills is set). */
   readonly skillsLabel?: string;
+  /** Tooltip/label for the "go to MCP" button (shown when onGoToMcp is set). */
+  readonly mcpLabel?: string;
   readonly onSync: () => void;
   readonly onEdit: () => void;
-  /** Navigate to the Skills page filtered to this repository. */
+  /** Navigate to the Skills page filtered to this repository. Omit to hide the
+   *  button (e.g. when the repository has no skills). */
   readonly onGoToSkills?: () => void;
+  /** Navigate to the MCP Components page filtered to this repository. Omit to
+   *  hide the button (e.g. when the repository has no MCP servers). */
+  readonly onGoToMcp?: () => void;
   readonly onErrorClick: () => void;
 }
 
@@ -69,9 +75,11 @@ export function RepositoryCard({
   skillCountLabel,
   infoPending,
   skillsLabel,
+  mcpLabel,
   onSync,
   onEdit,
   onGoToSkills,
+  onGoToMcp,
   onErrorClick,
 }: RepositoryCardProps) {
   const busy = phase !== 'idle';
@@ -196,6 +204,18 @@ export function RepositoryCard({
               aria-label={skillsLabel}
             >
               <Icon name="skills" />
+            </Button>
+          </Tooltip>
+        )}
+        {onGoToMcp !== undefined && (
+          <Tooltip content={mcpLabel}>
+            <Button
+              variant="secondary"
+              className="sk-repo-card__icon-btn"
+              onClick={onGoToMcp}
+              aria-label={mcpLabel}
+            >
+              <Icon name="mcp" />
             </Button>
           </Tooltip>
         )}
