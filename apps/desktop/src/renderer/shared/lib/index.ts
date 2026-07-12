@@ -8,6 +8,7 @@ export {
   fade,
   fadeScale,
   fadeRise,
+  cardStagger,
   collapse,
 } from './transitions';
 export { getDisplacementFilter, supportsBackdropUrl } from './glassRefraction';

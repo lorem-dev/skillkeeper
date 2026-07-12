@@ -39,6 +39,22 @@ export const fadeRise: Variants = {
   exit: { opacity: 0, y: 8, transition: transitionFast },
 };
 
+/**
+ * Cards sliding in from the right, one after another -- a quick entrance
+ * stagger for list/grid pages on open. `custom` is the item index (pass it via
+ * `custom={i}` on each motion child); the per-item delay is capped so long
+ * lists still finish quickly.
+ */
+export const cardStagger: Variants = {
+  initial: { opacity: 0, x: 24 },
+  animate: (i = 0) => ({
+    opacity: 1,
+    x: 0,
+    transition: { ...transitionMedium, delay: Math.min(i, 14) * 0.035 },
+  }),
+  exit: { opacity: 0, x: 24, transition: transitionFast },
+};
+
 /** Collapse height + fade, for inline banners/alerts joining/leaving a column. */
 export const collapse: Variants = {
   initial: { opacity: 0, height: 0 },

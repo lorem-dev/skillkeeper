@@ -12,7 +12,7 @@ import { ProjectEditModal } from '@/features/projectEdit';
 import { OpenProjectButton } from '@/features/projectOpen';
 import type { Project } from '@/services/bridge';
 import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, Tooltip, Icon } from '@/shared/ui';
-import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
+import { fuzzyFilter, cardStagger, fade } from '@/shared/lib';
 import './ProjectsPage.scss';
 
 /** Minimum time the Refresh button stays in its loading state, so a refresh
@@ -102,13 +102,14 @@ export function ProjectsPage() {
         <>
         <div className="sk-project-list">
           <AnimatePresence mode="popLayout" initial={false}>
-            {filtered.map((p) => {
+            {filtered.map((p, i) => {
               const info = projectInfo[p.id];
               return (
                 <motion.div
                   key={p.id}
                   layout
-                  variants={fadeRise}
+                  custom={i}
+                  variants={cardStagger}
                   initial="initial"
                   animate="animate"
                   exit="exit"
