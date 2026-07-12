@@ -10,8 +10,9 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Row } from '../Row';
-import { cx } from '../../lib';
+import { cx, transitionMedium } from '../../lib';
 import './Page.scss';
 
 export interface PageProps {
@@ -83,7 +84,24 @@ export function Page({ title, toolbar, dock, children }: PageProps) {
         )}
         aria-hidden="true"
       />
-      {hasDock && <div className="sk-page__dock">{dock}</div>}
+      {/* The dock's buttons rise/fade in when the dock appears and slide/fade
+          out when it leaves (e.g. the skills Reset/Save bar toggling with
+          pending changes). `initial={false}` skips the animation for a dock
+          present on first render (an always-shown Add bar). */}
+      <AnimatePresence initial={false}>
+        {hasDock && (
+          <motion.div
+            key="dock"
+            className="sk-page__dock"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={transitionMedium}
+          >
+            {dock}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
