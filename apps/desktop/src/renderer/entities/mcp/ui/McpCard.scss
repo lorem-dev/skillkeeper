@@ -1,6 +1,8 @@
 .sk-mcp-card {
-  // Promote to its own compositor layer for the smooth entrance-slide animation.
+  // Promote to its own compositor layer for the smooth entrance-slide animation;
+  // backface-visibility keeps edges anti-aliased while it moves.
   will-change: transform;
+  backface-visibility: hidden;
   display: flex;
   align-items: center;
   gap: var(--sk-space-4);

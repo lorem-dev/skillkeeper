@@ -201,6 +201,8 @@
 // animations are enabled (TreeView `animate` prop + the global setting).
 .sk-tree__row--reveal {
   animation: sk-tree-reveal var(--sk-duration-medium) var(--sk-ease-standard) backwards;
+  // Keep edges anti-aliased through the mask sweep.
+  backface-visibility: hidden;
 }
 
 @keyframes sk-tree-reveal {

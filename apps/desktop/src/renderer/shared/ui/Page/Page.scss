@@ -146,7 +146,9 @@
 // its button and promotes to a layer for the smooth slide.
 .sk-page__dock-item {
   display: inline-flex;
+  // Layer promotion + anti-aliased edges while the button slides/blurs in.
   will-change: transform;
+  backface-visibility: hidden;
 }
 
 // When a dock is present, reserve space at the end of the scroll body so the

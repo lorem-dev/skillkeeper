@@ -1,6 +1,8 @@
 .sk-project-card {
-  // Promote to its own compositor layer for the smooth entrance-slide animation.
+  // Promote to its own compositor layer for the smooth entrance-slide animation;
+  // backface-visibility keeps edges anti-aliased while it moves.
   will-change: transform;
+  backface-visibility: hidden;
   // Own stacking context + clip so the decorative left wash sits behind the
   // content (z-index -1) and is cropped to the card's rounded shape.
   position: relative;
