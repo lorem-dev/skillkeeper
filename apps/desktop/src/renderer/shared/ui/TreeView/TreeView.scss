@@ -202,3 +202,26 @@
     opacity: 1;
   }
 }
+
+// Wrapper around the tree; positioning context for the loading skeleton overlay.
+.sk-tree-wrap {
+  position: relative;
+}
+
+// Loading skeleton: overlays the (laid-out but hidden) tree, so it adds no
+// height of its own. A short column of placeholder rows.
+.sk-tree-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+  pointer-events: none;
+}
+
+.sk-tree-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  height: var(--sk-control-height);
+}

@@ -31,6 +31,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { Skeleton } from '../Skeleton';
 import { cx, fade, SK_DURATION, SK_EASE, useAnimationsEnabled } from '../../lib';
 import { Checkbox } from '../Checkbox';
 import './TreeView.scss';
@@ -112,6 +113,36 @@ function flattenVisible(
   return acc;
 }
 
+// A few placeholder rows (varying indent + width) that read as a loading tree.
+const SKELETON_ROWS: readonly { readonly depth: number; readonly w: number }[] = [
+  { depth: 0, w: 150 },
+  { depth: 1, w: 108 },
+  { depth: 1, w: 92 },
+  { depth: 2, w: 120 },
+  { depth: 1, w: 100 },
+  { depth: 0, w: 140 },
+  { depth: 1, w: 96 },
+];
+
+/** Loading placeholder shown while a slow tree prepares; overlays the hidden
+ *  tree in the wrapper. */
+function TreeSkeleton() {
+  return (
+    <div className="sk-tree-skeleton" aria-hidden="true">
+      {SKELETON_ROWS.map((r, i) => (
+        <div
+          key={i}
+          className="sk-tree-skeleton__row"
+          style={{ paddingLeft: `calc(${r.depth} * var(--sk-space-6) + var(--sk-space-2))` }}
+        >
+          <Skeleton width={16} height={16} radius="var(--sk-radius-xs)" />
+          <Skeleton width={r.w} height={12} radius="var(--sk-radius-pill)" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function TreeView({
   nodes,
   selectedId = null,
@@ -150,7 +181,34 @@ export function TreeView({
       cancelAnimationFrame(raf2);
     };
   }, []);
-  const reveal = revealed && ready;
+  const readyRef = useRef(ready);
+  readyRef.current = ready;
+
+  // Preparation staging (animations on only): if the tree is not laid out
+  // within 100ms, show a skeleton and hold it at least 500ms before the tree,
+  // so a slow-to-render tree shows a steady loading state instead of a blank
+  // wait. With animations off, none of this applies -- the tree shows as soon
+  // as it is ready.
+  const [showSkeleton, setShowSkeleton] = useState(false);
+  const [skeletonHeld, setSkeletonHeld] = useState(false);
+  useEffect(() => {
+    if (!animationsEnabled) return undefined;
+    const id = setTimeout(() => {
+      if (!readyRef.current) setShowSkeleton(true);
+    }, 100);
+    return () => clearTimeout(id);
+  }, [animationsEnabled]);
+  useEffect(() => {
+    if (!showSkeleton) return undefined;
+    const id = setTimeout(() => setSkeletonHeld(true), 500);
+    return () => clearTimeout(id);
+  }, [showSkeleton]);
+
+  // The tree is shown once laid out AND either no skeleton was needed (ready
+  // within 100ms) or the skeleton has been held its minimum.
+  const treeShown = ready && (!showSkeleton || skeletonHeld);
+  const skeletonVisible = showSkeleton && !treeShown;
+  const reveal = revealed && treeShown;
 
   // When the caller changes which ids should be open (e.g. expand matches while
   // searching), merge them into the open set -- without collapsing anything the
@@ -466,18 +524,24 @@ export function TreeView({
   }
 
   return (
-    <ul
-      className={cx('sk-tree', className)}
-      role="tree"
-      aria-label={ariaLabel}
-      aria-multiselectable={checkable ? true : undefined}
-      // Laid out but unpainted until the first frame, so the tree never shows a
-      // mid-render jump; it appears (and the rows reveal) once ready.
-      style={{ visibility: ready ? undefined : 'hidden' }}
-    >
-      <AnimatePresence initial={false} mode="popLayout">
-        {nodes.map((node) => renderItem(node, 0))}
-      </AnimatePresence>
-    </ul>
+    // Relative wrapper so the loading skeleton can overlay the (laid-out but
+    // hidden) tree without adding its own height. The caller's className (page
+    // spacing) goes here.
+    <div className={cx('sk-tree-wrap', className)}>
+      <ul
+        className="sk-tree"
+        role="tree"
+        aria-label={ariaLabel}
+        aria-multiselectable={checkable ? true : undefined}
+        // Laid out but unpainted until it is shown, so the tree never flashes a
+        // mid-render jump; it appears (and the rows reveal) once ready/held.
+        style={{ visibility: treeShown ? undefined : 'hidden' }}
+      >
+        <AnimatePresence initial={false} mode="popLayout">
+          {nodes.map((node) => renderItem(node, 0))}
+        </AnimatePresence>
+      </ul>
+      {skeletonVisible && <TreeSkeleton />}
+    </div>
   );
 }
