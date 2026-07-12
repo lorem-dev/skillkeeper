@@ -265,6 +265,8 @@ export const zhTw: Partial<Catalog> = {
   'settings.editor.defaultApp': '以預設應用程式開啟',
   'settings.openConfigFailed': '無法開啟設定檔',
   'settings.theme': '佈景主題',
+  'settings.animations': '動畫',
+  'settings.animationsHint': '在整個介面中播放進入和退出動畫。',
   'settings.theme.system': '系統',
   'settings.theme.light': '淺色',
   'settings.theme.dark': '深色',

@@ -298,6 +298,8 @@ export const pl: Partial<Catalog> = {
   'settings.editor.defaultApp': 'Otworz w domyslnej aplikacji',
   'settings.openConfigFailed': 'Nie udalo sie otworzyc pliku konfiguracyjnego',
   'settings.theme': 'Motyw',
+  'settings.animations': 'Animacje',
+  'settings.animationsHint': 'Odtwarzaj animacje wejścia i wyjścia w całym interfejsie.',
   'settings.theme.system': 'Systemowy',
   'settings.theme.light': 'Jasny',
   'settings.theme.dark': 'Ciemny',

@@ -265,6 +265,8 @@ export const ja: Partial<Catalog> = {
   'settings.editor.defaultApp': '既定のアプリで開く',
   'settings.openConfigFailed': '設定ファイルを開けませんでした',
   'settings.theme': 'テーマ',
+  'settings.animations': 'アニメーション',
+  'settings.animationsHint': 'UI全体で表示および非表示のアニメーションを再生します。',
   'settings.theme.system': 'システム',
   'settings.theme.light': 'ライト',
   'settings.theme.dark': 'ダーク',

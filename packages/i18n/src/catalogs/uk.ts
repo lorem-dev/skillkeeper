@@ -298,6 +298,8 @@ export const uk: Partial<Catalog> = {
   'settings.editor.defaultApp': 'Відкрити у програмі за замовчуванням',
   'settings.openConfigFailed': 'Не вдалося відкрити файл конфігурації',
   'settings.theme': 'Тема',
+  'settings.animations': 'Анімації',
+  'settings.animationsHint': 'Відтворювати анімації появи та зникнення в інтерфейсі.',
   'settings.theme.system': 'Системна',
   'settings.theme.light': 'Світла',
   'settings.theme.dark': 'Темна',

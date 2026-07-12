@@ -12,7 +12,7 @@ import { Children, isValidElement, useCallback, useEffect, useRef, useState } fr
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Row } from '../Row';
-import { cx, dockButton, dockContainer } from '../../lib';
+import { cx, dockButton, dockContainer, useAnimationsEnabled } from '../../lib';
 import './Page.scss';
 
 export interface PageProps {
@@ -39,6 +39,7 @@ export interface PageProps {
 
 export function Page({ title, toolbar, dock, children }: PageProps) {
   const hasDock = Boolean(dock);
+  const animate = useAnimationsEnabled();
   const header =
     toolbar ??
     (title !== undefined ? (
@@ -88,15 +89,15 @@ export function Page({ title, toolbar, dock, children }: PageProps) {
           (staggerDirection -1), and out the same way -- e.g. the skills
           Reset/Save bar toggling with pending changes, or any dock on page open.
           Each `dock` child is wrapped so it can be staggered individually. */}
-      <AnimatePresence>
+      <AnimatePresence initial={animate}>
         {hasDock && (
           <motion.div
             key="dock"
             className="sk-page__dock"
             variants={dockContainer}
-            initial="initial"
+            initial={animate ? 'initial' : false}
             animate="animate"
-            exit="exit"
+            exit={animate ? 'exit' : undefined}
           >
             {Children.toArray(dock).map((item, i) => (
               <motion.div

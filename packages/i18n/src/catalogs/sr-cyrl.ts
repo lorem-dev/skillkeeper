@@ -287,6 +287,8 @@ export const srCyrl: Partial<Catalog> = {
   'settings.editor.defaultApp': 'Отвори у подразумеваној апликацији',
   'settings.openConfigFailed': 'Конфигурациону датотеку није могуће отворити',
   'settings.theme': 'Тема',
+  'settings.animations': 'Анимације',
+  'settings.animationsHint': 'Репродукуј анимације уласка и изласка кроз цео интерфејс.',
   'settings.theme.system': 'Системска',
   'settings.theme.light': 'Светла',
   'settings.theme.dark': 'Тамна',

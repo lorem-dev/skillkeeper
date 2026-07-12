@@ -282,6 +282,8 @@ export const de: Partial<Catalog> = {
   'settings.editor.defaultApp': 'In Standard-App öffnen',
   'settings.openConfigFailed': 'Konfigurationsdatei konnte nicht geöffnet werden',
   'settings.theme': 'Design',
+  'settings.animations': 'Animationen',
+  'settings.animationsHint': 'Ein- und Ausblendanimationen in der gesamten Oberfläche abspielen.',
   'settings.theme.system': 'System',
   'settings.theme.light': 'Hell',
   'settings.theme.dark': 'Dunkel',

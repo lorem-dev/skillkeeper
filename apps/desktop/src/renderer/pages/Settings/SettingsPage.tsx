@@ -87,6 +87,12 @@ export function SettingsPage() {
               onChange={(value) => setPref(value as ThemePref)}
             />
           </FormRow>
+          <FormRow label={t('settings.animations')} description={t('settings.animationsHint')}>
+            <Toggle
+              checked={config.general.animations}
+              onChange={(e) => void updateConfig({ general: { animations: e.target.checked } })}
+            />
+          </FormRow>
         </FormSection>
 
         <FormSection title={t('settings.section.repositories')}>

@@ -298,6 +298,8 @@ export const be: Partial<Catalog> = {
   'settings.editor.defaultApp': 'Адкрыць у прадвызначанай праграме',
   'settings.openConfigFailed': 'Не ўдалося адкрыць файл канфігурацыі',
   'settings.theme': 'Тэма',
+  'settings.animations': 'Анімацыі',
+  'settings.animationsHint': 'Прайграваць анімацыі з\'яўлення і знікнення ў інтэрфейсе.',
   'settings.theme.system': 'Сістэмная',
   'settings.theme.light': 'Светлая',
   'settings.theme.dark': 'Цёмная',

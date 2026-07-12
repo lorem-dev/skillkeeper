@@ -11,7 +11,7 @@ import { RepoAddButton } from '@/features/repoAdd';
 import { RepoEditModal } from '@/features/repoEdit';
 import type { Repository } from '@/services/bridge';
 import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, Tooltip, Icon } from '@/shared/ui';
-import { fuzzyFilter, cardStagger, fade, cx } from '@/shared/lib';
+import { fuzzyFilter, cardStagger, fade, cx, useAnimationsEnabled } from '@/shared/lib';
 import './RepositoriesPage.scss';
 
 /** How long the transient focus ring stays on a card scrolled into view by
@@ -23,6 +23,7 @@ const FOCUS_HIGHLIGHT_MS = 1600;
 const REFRESH_MIN_MS = 1000;
 
 export function RepositoriesPage() {
+  const animate = useAnimationsEnabled();
   const repositories = useSkillkeeperStore((s) => s.repositories);
   const repoStatus = useSkillkeeperStore((s) => s.repoStatus);
   const repoInfo = useSkillkeeperStore((s) => s.repoInfo);
@@ -142,7 +143,7 @@ export function RepositoriesPage() {
       ) : (
         <>
         <div className="sk-repo-list">
-          <AnimatePresence mode="popLayout" initial>
+          <AnimatePresence mode="popLayout" initial={animate}>
           {filtered.map((r, i) => (
             <motion.div
               key={r.id}

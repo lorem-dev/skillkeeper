@@ -12,7 +12,7 @@ import { ProjectEditModal } from '@/features/projectEdit';
 import { OpenProjectButton } from '@/features/projectOpen';
 import type { Project } from '@/services/bridge';
 import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, Tooltip, Icon } from '@/shared/ui';
-import { fuzzyFilter, cardStagger, fade } from '@/shared/lib';
+import { fuzzyFilter, cardStagger, fade, useAnimationsEnabled } from '@/shared/lib';
 import './ProjectsPage.scss';
 
 /** Minimum time the Refresh button stays in its loading state, so a refresh
@@ -20,6 +20,7 @@ import './ProjectsPage.scss';
 const REFRESH_MIN_MS = 1000;
 
 export function ProjectsPage() {
+  const animate = useAnimationsEnabled();
   const projects = useSkillkeeperStore((s) => s.projects);
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
   const projectMissing = useSkillkeeperStore((s) => s.projectMissing);
@@ -101,7 +102,7 @@ export function ProjectsPage() {
       ) : (
         <>
         <div className="sk-project-list">
-          <AnimatePresence mode="popLayout" initial>
+          <AnimatePresence mode="popLayout" initial={animate}>
             {filtered.map((p, i) => {
               const info = projectInfo[p.id];
               return (

@@ -1,4 +1,5 @@
 export { cx } from './cx';
+export { AnimationProvider, useAnimationsEnabled } from './animation';
 export { levenshtein, fuzzyFilter, fuzzyMatches } from './fuzzyMatch';
 export {
   SK_EASE,

@@ -302,6 +302,8 @@ export const ru: Partial<Catalog> = {
   'settings.editor.defaultApp': 'Открыть в приложении по умолчанию',
   'settings.openConfigFailed': 'Не удалось открыть файл конфигурации',
   'settings.theme': 'Тема',
+  'settings.animations': 'Анимации',
+  'settings.animationsHint': 'Проигрывать анимации появления и исчезновения в интерфейсе.',
   'settings.theme.system': 'Система',
   'settings.theme.light': 'Светлая',
   'settings.theme.dark': 'Тёмная',

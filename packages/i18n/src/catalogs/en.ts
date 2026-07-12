@@ -324,6 +324,8 @@ export const en = {
   'settings.editor.defaultApp': 'Open in default app',
   'settings.openConfigFailed': 'Could not open the config file',
   'settings.theme': 'Theme',
+  'settings.animations': 'Animations',
+  'settings.animationsHint': 'Play entrance and exit animations across the UI.',
   'settings.theme.system': 'System',
   'settings.theme.light': 'Light',
   'settings.theme.dark': 'Dark',

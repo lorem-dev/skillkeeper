@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
-import { cx } from '@/shared/lib';
+import { cx, AnimationProvider } from '@/shared/lib';
 import { bridgeClient } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { useTheme } from '@/systems/theme';
@@ -53,6 +53,7 @@ export function App() {
   useUpdateSchedule();
   useProjectCheckSchedule();
   const [activeView, setActiveView] = useState<View>('repositories');
+  const animationsEnabled = useSkillkeeperStore((s) => s.config?.general.animations ?? true);
   const loadAll = useSkillkeeperStore((s) => s.loadAll);
   const loading = useSkillkeeperStore((s) => s.loading);
   const error = useSkillkeeperStore((s) => s.error);
@@ -139,6 +140,7 @@ export function App() {
   }
 
   return (
+    <AnimationProvider enabled={animationsEnabled}>
     <div className="sk-app">
       <ConfigBanner />
       <div className="sk-shell">
@@ -264,5 +266,6 @@ export function App() {
       <TerminalPage />
       <TasksPage />
     </div>
+    </AnimationProvider>
   );
 }

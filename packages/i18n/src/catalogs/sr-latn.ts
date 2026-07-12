@@ -287,6 +287,8 @@ export const srLatn: Partial<Catalog> = {
   'settings.editor.defaultApp': 'Otvori u podrazumevanoj aplikaciji',
   'settings.openConfigFailed': 'Konfiguracionu datoteku nije moguće otvoriti',
   'settings.theme': 'Tema',
+  'settings.animations': 'Animacije',
+  'settings.animationsHint': 'Reprodukuj animacije ulaska i izlaska kroz ceo interfejs.',
   'settings.theme.system': 'Sistemska',
   'settings.theme.light': 'Svetla',
   'settings.theme.dark': 'Tamna',

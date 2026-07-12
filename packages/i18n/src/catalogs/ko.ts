@@ -295,6 +295,8 @@ export const ko: Partial<Catalog> = {
   'settings.editor.defaultApp': '기본 앱에서 열기',
   'settings.openConfigFailed': '설정 파일을 열 수 없습니다',
   'settings.theme': '테마',
+  'settings.animations': '애니메이션',
+  'settings.animationsHint': 'UI 전체에서 등장 및 퇴장 애니메이션을 재생합니다.',
   'settings.theme.system': '시스템',
   'settings.theme.light': '밝게',
   'settings.theme.dark': '어둡게',

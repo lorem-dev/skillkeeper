@@ -265,6 +265,8 @@ export const zhCn: Partial<Catalog> = {
   'settings.editor.defaultApp': '用默认应用打开',
   'settings.openConfigFailed': '无法打开配置文件',
   'settings.theme': '主题',
+  'settings.animations': '动画',
+  'settings.animationsHint': '在整个界面中播放进入和退出动画。',
   'settings.theme.system': '跟随系统',
   'settings.theme.light': '浅色',
   'settings.theme.dark': '深色',
