@@ -56,6 +56,7 @@ export const srCyrl: Partial<Catalog> = {
   'tasks.kind.sync': 'Синхронизација',
   'tasks.kind.check': 'Провери ажурирања',
   'tasks.kind.update-skill': 'Ажурирај вештину',
+  'tasks.kind.refresh-projects': 'Освежи пројекте',
   'tasks.status.queued': 'У реду',
   'tasks.status.running': 'У току',
   'tasks.status.done': 'Готово',

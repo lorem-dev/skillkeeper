@@ -45,18 +45,19 @@
 
 .sk-statusbar__badge {
   position: absolute;
-  top: 2px;
-  inset-inline-end: 2px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 var(--sk-space-1);
+  // Tucked into the very corner and kept small so the button glyph stays legible.
+  top: 1px;
+  inset-inline-end: 1px;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 3px;
   border-radius: var(--sk-radius-pill);
   background: var(--sk-red);
   // Always-white count text on the red pill; there is no on-danger token, so this
   // is the one allowed literal here (mirrors Badge's danger treatment).
   color: #fff;
-  font-size: 10px;
-  line-height: 16px;
+  font-size: 9px;
+  line-height: 13px;
   text-align: center;
 }
 

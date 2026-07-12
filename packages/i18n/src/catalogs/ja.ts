@@ -56,6 +56,7 @@ export const ja: Partial<Catalog> = {
   'tasks.kind.sync': '同期',
   'tasks.kind.check': '更新を確認',
   'tasks.kind.update-skill': 'スキルを更新',
+  'tasks.kind.refresh-projects': 'プロジェクトを更新',
   'tasks.status.queued': '待機中',
   'tasks.status.running': '実行中',
   'tasks.status.done': '完了',

@@ -248,8 +248,10 @@ export interface RepoTask {
   readonly repoId: string;
   readonly repoName: string;
   /** 'sync' force-pulls; 'check' fetches to refresh the update indicator;
-   *  'update-skill' re-installs one project skill from its repository. */
-  readonly kind: 'sync' | 'check' | 'update-skill';
+   *  'update-skill' re-installs one project skill from its repository;
+   *  'refresh-projects' re-scans tracked project folders + their skill counts
+   *  (not tied to a repository -- `repoName` is empty). */
+  readonly kind: 'sync' | 'check' | 'update-skill' | 'refresh-projects';
   readonly status: RepoTaskStatus;
   /** ISO timestamp of when it was queued. */
   readonly at: string;
@@ -476,6 +478,9 @@ export interface SkillkeeperActions {
   checkProjects(): Promise<void>;
   /** Run the folder check now and (re)schedule the next run after the interval. */
   sweepProjects(): Promise<void>;
+  /** User-triggered project refresh: re-scan folders + skill counts, tracked as
+   *  a `refresh-projects` task in the task list. */
+  refreshProjects(): Promise<void>;
   /** Re-check one project's folder before an action; notifies + marks it missing
    * when the folder is gone. Resolves to whether the folder still exists. */
   ensureProjectAvailable(id: string): Promise<boolean>;
@@ -697,8 +702,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set((s) => ({ toasts: [...s.toasts, entry] }));
   },
 
+  // The logs / terminal / tasks overlays are mutually exclusive: opening one
+  // closes the other two, so switching between them never stacks.
   openLogs() {
-    set({ logsOpen: true });
+    set({ logsOpen: true, terminalOpen: false, tasksOpen: false });
   },
 
   closeLogs() {
@@ -706,7 +713,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   },
 
   openTerminal() {
-    set({ terminalOpen: true });
+    set({ terminalOpen: true, logsOpen: false, tasksOpen: false });
   },
 
   closeTerminal() {
@@ -714,7 +721,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   },
 
   openTasks() {
-    set({ tasksOpen: true });
+    set({ tasksOpen: true, logsOpen: false, terminalOpen: false });
   },
 
   closeTasks() {
@@ -1292,6 +1299,37 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const minutes = get().config?.projects.checkIntervalMinutes ?? 1;
       projectSweepTimer = setTimeout(() => void get().sweepProjects(), minutes * 60 * 1000);
     })();
+  },
+
+  refreshProjects() {
+    // Track the user-triggered refresh as a task (visible in the task list and
+    // counted by the status-bar badge), running the folder sweep + skill-count
+    // refresh through the shared task chain like the repo tasks.
+    const taskId = crypto.randomUUID();
+    const setTaskStatus = (status: RepoTask['status']): void =>
+      set((s) => ({ tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)) }));
+    set((s) => ({
+      tasks: [
+        ...s.tasks,
+        {
+          id: taskId,
+          repoId: 'projects',
+          repoName: '',
+          kind: 'refresh-projects' as const,
+          status: 'queued' as const,
+          at: new Date().toISOString(),
+        },
+      ],
+    }));
+    return enqueue(async () => {
+      setTaskStatus('running');
+      try {
+        await Promise.all([get().sweepProjects(), get().refreshProjectInfo()]);
+        setTaskStatus('done');
+      } catch {
+        setTaskStatus('error');
+      }
+    });
   },
 
   ensureProjectAvailable(id) {

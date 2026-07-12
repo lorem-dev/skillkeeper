@@ -19,9 +19,15 @@ export function StatusBar() {
   const activeTaskCount = useSkillkeeperStore(
     (s) => s.tasks.filter((task) => task.status === 'queued' || task.status === 'running').length,
   );
+  const logsOpen = useSkillkeeperStore((s) => s.logsOpen);
+  const terminalOpen = useSkillkeeperStore((s) => s.terminalOpen);
+  const tasksOpen = useSkillkeeperStore((s) => s.tasksOpen);
   const openLogs = useSkillkeeperStore((s) => s.openLogs);
+  const closeLogs = useSkillkeeperStore((s) => s.closeLogs);
   const openTerminal = useSkillkeeperStore((s) => s.openTerminal);
+  const closeTerminal = useSkillkeeperStore((s) => s.closeTerminal);
   const openTasks = useSkillkeeperStore((s) => s.openTasks);
+  const closeTasks = useSkillkeeperStore((s) => s.closeTasks);
   const t = useTranslator();
   const label = t('statusbar.notifications', { count: String(count) });
   return (
@@ -33,7 +39,7 @@ export function StatusBar() {
           'sk-statusbar__tasks',
           activeTaskCount === 0 && 'sk-statusbar__tasks--empty',
         )}
-        onClick={openTasks}
+        onClick={tasksOpen ? closeTasks : openTasks}
         aria-label={t('statusbar.tasks')}
       >
         <Icon name="check" size={18} />
@@ -44,7 +50,7 @@ export function StatusBar() {
       <Button
         variant="plain"
         className="sk-statusbar__btn"
-        onClick={openTerminal}
+        onClick={terminalOpen ? closeTerminal : openTerminal}
         aria-label={t('statusbar.terminal')}
       >
         <Icon name="terminal" size={18} />
@@ -52,7 +58,7 @@ export function StatusBar() {
       <Button
         variant="plain"
         className={cx('sk-statusbar__btn', 'sk-statusbar__bell', count === 0 && 'sk-statusbar__bell--empty')}
-        onClick={openLogs}
+        onClick={logsOpen ? closeLogs : openLogs}
         aria-label={label}
       >
         <Icon name="bell" size={18} />

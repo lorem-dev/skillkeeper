@@ -56,6 +56,7 @@ export const srLatn: Partial<Catalog> = {
   'tasks.kind.sync': 'Sinhronizacija',
   'tasks.kind.check': 'Proveri ažuriranja',
   'tasks.kind.update-skill': 'Ažuriraj veštinu',
+  'tasks.kind.refresh-projects': 'Osveži projekte',
   'tasks.status.queued': 'U redu',
   'tasks.status.running': 'U toku',
   'tasks.status.done': 'Gotovo',

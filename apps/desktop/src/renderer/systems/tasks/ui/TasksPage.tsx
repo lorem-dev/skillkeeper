@@ -73,7 +73,7 @@ export function TasksPage() {
               {entries.map((task) => (
                 <li key={task.id} className={cx('sk-tasks__row', `sk-tasks__row--${task.status}`)}>
                   <div className="sk-tasks__info">
-                    <span className="sk-tasks__repo">{task.repoName}</span>
+                    {task.repoName !== '' && <span className="sk-tasks__repo">{task.repoName}</span>}
                     <span className="sk-tasks__kind">{t(`tasks.kind.${task.kind}`)}</span>
                   </div>
                   <div className="sk-tasks__status">

@@ -56,6 +56,7 @@ export const pt: Partial<Catalog> = {
   'tasks.kind.sync': 'Sincronizar',
   'tasks.kind.check': 'Procurar atualizações',
   'tasks.kind.update-skill': 'Atualizar competência',
+  'tasks.kind.refresh-projects': 'Atualizar projetos',
   'tasks.status.queued': 'Em fila',
   'tasks.status.running': 'Em execução',
   'tasks.status.done': 'Concluído',

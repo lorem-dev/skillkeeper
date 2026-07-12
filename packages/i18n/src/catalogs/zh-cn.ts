@@ -56,6 +56,7 @@ export const zhCn: Partial<Catalog> = {
   'tasks.kind.sync': '同步',
   'tasks.kind.check': '检查更新',
   'tasks.kind.update-skill': '更新技能',
+  'tasks.kind.refresh-projects': '刷新项目',
   'tasks.status.queued': '排队中',
   'tasks.status.running': '运行中',
   'tasks.status.done': '完成',

@@ -56,6 +56,7 @@ export const uk: Partial<Catalog> = {
   'tasks.kind.sync': 'Синхронізація',
   'tasks.kind.check': 'Перевірка оновлень',
   'tasks.kind.update-skill': 'Оновити навичку',
+  'tasks.kind.refresh-projects': 'Оновити проєкти',
   'tasks.status.queued': 'У черзі',
   'tasks.status.running': 'Виконується',
   'tasks.status.done': 'Готово',

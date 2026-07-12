@@ -56,6 +56,7 @@ export const be: Partial<Catalog> = {
   'tasks.kind.sync': 'Сінхранізацыя',
   'tasks.kind.check': 'Праверка абнаўленняў',
   'tasks.kind.update-skill': 'Абнавіць навык',
+  'tasks.kind.refresh-projects': 'Абнавіць праекты',
   'tasks.status.queued': 'У чарзе',
   'tasks.status.running': 'Выконваецца',
   'tasks.status.done': 'Гатова',

@@ -61,6 +61,7 @@ export const en = {
   'tasks.kind.sync': 'Sync',
   'tasks.kind.check': 'Check for updates',
   'tasks.kind.update-skill': 'Update skill',
+  'tasks.kind.refresh-projects': 'Refresh projects',
   'tasks.status.queued': 'Queued',
   'tasks.status.running': 'Running',
   'tasks.status.done': 'Done',

@@ -56,6 +56,7 @@ export const ko: Partial<Catalog> = {
   'tasks.kind.sync': '동기화',
   'tasks.kind.check': '업데이트 확인',
   'tasks.kind.update-skill': '스킬 업데이트',
+  'tasks.kind.refresh-projects': '프로젝트 새로고침',
   'tasks.status.queued': '대기 중',
   'tasks.status.running': '실행 중',
   'tasks.status.done': '완료',

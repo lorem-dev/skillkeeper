@@ -24,7 +24,7 @@ export function ProjectsPage() {
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
   const projectMissing = useSkillkeeperStore((s) => s.projectMissing);
   const refreshProjectInfo = useSkillkeeperStore((s) => s.refreshProjectInfo);
-  const sweepProjects = useSkillkeeperStore((s) => s.sweepProjects);
+  const refreshProjects = useSkillkeeperStore((s) => s.refreshProjects);
   const ensureProjectAvailable = useSkillkeeperStore((s) => s.ensureProjectAvailable);
   const removeProject = useSkillkeeperStore((s) => s.removeProject);
   const goToSkills = useSkillkeeperStore((s) => s.goToSkills);
@@ -77,14 +77,12 @@ export function ProjectsPage() {
           className="sk-refresh-btn"
           loading={refreshing}
           onClick={() => {
-            // Run the folder check now (reschedules the loop) plus the info
-            // refresh -- holding the loading state for at least REFRESH_MIN_MS
-            // so a fast refresh does not just flash.
+            // Run the folder sweep + skill-count refresh as a tracked task,
+            // holding the button's loading state for at least REFRESH_MIN_MS so
+            // a fast refresh does not just flash.
             setRefreshing(true);
             const minDelay = new Promise((resolve) => setTimeout(resolve, REFRESH_MIN_MS));
-            void Promise.all([sweepProjects(), refreshProjectInfo(), minDelay]).finally(() =>
-              setRefreshing(false),
-            );
+            void Promise.all([refreshProjects(), minDelay]).finally(() => setRefreshing(false));
           }}
         >
           <Icon name="sync" size={16} />

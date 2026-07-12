@@ -59,6 +59,7 @@ export const ru: Partial<Catalog> = {
   'tasks.kind.sync': 'Синхронизация',
   'tasks.kind.check': 'Проверка обновлений',
   'tasks.kind.update-skill': 'Обновить навык',
+  'tasks.kind.refresh-projects': 'Обновление проектов',
   'tasks.status.queued': 'В очереди',
   'tasks.status.running': 'Выполняется',
   'tasks.status.done': 'Готово',
