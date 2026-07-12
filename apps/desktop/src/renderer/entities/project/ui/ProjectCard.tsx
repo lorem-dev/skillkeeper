@@ -55,6 +55,10 @@ export interface ProjectCardProps {
   readonly skillsLabel?: string;
   /** Navigate to the Skills page filtered to this project. */
   readonly onGoToSkills?: () => void;
+  /** Tooltip/label for the "go to MCP" button (shown when onGoToMcp is set). */
+  readonly mcpLabel?: string;
+  /** Navigate to the MCP page filtered to this project. */
+  readonly onGoToMcp?: () => void;
   /** Drop a missing-folder project (no confirmation). */
   readonly onRemove: () => void;
 }
@@ -76,6 +80,8 @@ export function ProjectCard({
   onEdit,
   skillsLabel,
   onGoToSkills,
+  mcpLabel,
+  onGoToMcp,
   onRemove,
 }: ProjectCardProps) {
   const washHue = hueFromName(project.name);
@@ -187,6 +193,19 @@ export function ProjectCard({
                   aria-label={skillsLabel}
                 >
                   <Icon name="skills" />
+                </Button>
+              </Tooltip>
+            )}
+            {onGoToMcp !== undefined && (
+              <Tooltip content={mcpLabel}>
+                <Button
+                  variant="secondary"
+                  glass
+                  className="sk-project-card__icon-btn"
+                  onClick={onGoToMcp}
+                  aria-label={mcpLabel}
+                >
+                  <Icon name="mcp" />
                 </Button>
               </Tooltip>
             )}

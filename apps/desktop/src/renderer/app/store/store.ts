@@ -310,6 +310,9 @@ export interface McpUiState {
   /** Components-page repository filter (empty = all). Lives here (not local
    *  component state) so `goToMcp` can set it from another page. */
   componentsRepoFilter: string[];
+  /** Management-page project filter (empty = all). Lives here so `goToMcpProject`
+   *  can set it from a project card. */
+  managementProjectFilter: string[];
 }
 
 export interface SkillkeeperState {
@@ -354,9 +357,11 @@ export interface SkillkeeperState {
   /** Nonce bumped by `goToSkills` to request navigating to the Skills page (App
    *  watches it and switches the active view). */
   skillsNav: number;
-  /** Nonce bumped by `goToMcp` to request navigating to the MCP Components page
-   *  (App watches it, switches the active view, and opens the MCP nav group). */
+  /** Nonce bumped by `goToMcp`/`goToMcpProject` to request navigating to an MCP
+   *  sub-page (App watches it, switches the active view, and opens the MCP nav
+   *  group). `mcpNavView` says which sub-page. */
   mcpNav: number;
+  mcpNavView: 'mcp-components' | 'mcp-management';
   /**
    * A pending "add repository" request from another page (e.g. an unlinked skill
    * on the Skills page): the remote URL to prefill. Setting it navigates to the
@@ -416,6 +421,9 @@ export interface SkillkeeperActions {
   /** Navigate to the MCP Components page filtered to one repository: set the
    *  components repo filter and bump `mcpNav` so the shell switches view. */
   goToMcp(repoId: string): void;
+  /** Navigate to the MCP Management page filtered to one project: set the
+   *  management project filter and bump `mcpNav`. */
+  goToMcpProject(projectId: string): void;
   setProjects(projects: Project[]): void;
   /** Refetch the available-skills catalog from all repos. */
   refreshAvailableSkills(): Promise<void>;
@@ -573,9 +581,11 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     expandedIds: null,
     componentsView: 'tiles',
     componentsRepoFilter: [],
+    managementProjectFilter: [],
   },
   skillsNav: 0,
   mcpNav: 0,
+  mcpNavView: 'mcp-components',
   addRepoRequest: null,
   projects: [],
   mcpPresets: [],
@@ -1165,6 +1175,15 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set((s) => ({
       mcpUi: { ...s.mcpUi, componentsRepoFilter: [repoId] },
       mcpNav: s.mcpNav + 1,
+      mcpNavView: 'mcp-components',
+    }));
+  },
+
+  goToMcpProject(projectId) {
+    set((s) => ({
+      mcpUi: { ...s.mcpUi, managementProjectFilter: [projectId] },
+      mcpNav: s.mcpNav + 1,
+      mcpNavView: 'mcp-management',
     }));
   },
 

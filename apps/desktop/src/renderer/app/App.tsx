@@ -92,13 +92,13 @@ export function App() {
     }
   }, [skillsNav]);
 
-  // A "go to MCP" request (from a repository card) switches to the MCP
-  // Components sub-page (the store already set its repo filter) and opens the
-  // MCP group so the active sub-item is visible. Nonce-driven, mirroring
-  // skillsNav.
+  // A "go to MCP" request (from a repository card -> Components filtered by the
+  // repo, or a project card -> Management filtered by the project) switches to
+  // the sub-page named by `mcpNavView` (the store already set the matching
+  // filter) and opens the MCP group. Nonce-driven, mirroring skillsNav.
   useEffect(() => {
     if (mcpNav > 0) {
-      setActiveView('mcp-components');
+      setActiveView(useSkillkeeperStore.getState().mcpNavView);
       setMcpOpen(true);
     }
   }, [mcpNav]);

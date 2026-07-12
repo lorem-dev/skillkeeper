@@ -29,6 +29,7 @@ export function ProjectsPage() {
   const ensureProjectAvailable = useSkillkeeperStore((s) => s.ensureProjectAvailable);
   const removeProject = useSkillkeeperStore((s) => s.removeProject);
   const goToSkills = useSkillkeeperStore((s) => s.goToSkills);
+  const goToMcpProject = useSkillkeeperStore((s) => s.goToMcpProject);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
   const [editing, setEditing] = useState<Project | null>(null);
@@ -141,6 +142,8 @@ export function ProjectsPage() {
                     onGoToSkills={() =>
                       goToSkills({ mode: 'projects', projectFilter: [p.id], repoFilter: [], query: '' })
                     }
+                    mcpLabel={t('common.goToMcp')}
+                    onGoToMcp={() => goToMcpProject(p.id)}
                     removeLabel={t('projects.remove')}
                     openControl={
                       <OpenProjectButton path={p.path} beforeOpen={() => ensureProjectAvailable(p.id)} />

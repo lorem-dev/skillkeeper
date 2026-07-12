@@ -67,7 +67,10 @@ export function ManagementPage() {
   // mirroring the toolbar search above -- only the tree expansion survives
   // navigating away and back. Empty filter = show all (mirrors SkillsPage).
   const [repoFilter, setRepoFilter] = useState<string[]>([]);
-  const [projectFilter, setProjectFilter] = useState<string[]>([]);
+  // Project filter lives in the store so `goToMcpProject` can set it from a
+  // project card; the repo filter stays local/ephemeral.
+  const projectFilter = mcpUi.managementProjectFilter;
+  const setProjectFilter = (value: string[]): void => setMcpUi({ managementProjectFilter: value });
 
   // Two filter controls (projects, repositories); the count badge shows how
   // many are non-empty and drives the collapsible filter row.

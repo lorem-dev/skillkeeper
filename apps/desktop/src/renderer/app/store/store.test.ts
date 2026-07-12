@@ -51,6 +51,7 @@ function reset(): void {
       expandedIds: null,
       componentsView: 'tiles',
       componentsRepoFilter: [],
+      managementProjectFilter: [],
     },
   });
 }
