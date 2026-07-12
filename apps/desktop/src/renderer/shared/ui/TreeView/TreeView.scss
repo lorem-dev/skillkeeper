@@ -190,7 +190,7 @@
 // `ready` gate). Added only when animations are enabled (the `animate` prop +
 // the global setting).
 .sk-tree__row--reveal {
-  animation: sk-tree-reveal var(--sk-duration-medium) var(--sk-ease-standard) backwards;
+  animation: sk-tree-reveal var(--sk-duration-fast) var(--sk-ease-standard) backwards;
 }
 
 @keyframes sk-tree-reveal {
