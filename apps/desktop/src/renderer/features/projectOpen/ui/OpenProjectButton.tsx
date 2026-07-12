@@ -28,7 +28,9 @@ function loadEditors(): Promise<EditorOption[]> {
 function EditorIconImage({ src }: { readonly src: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) return <Icon name="folder" />;
-  return <img src={src} width={20} height={20} alt="" onError={() => setFailed(true)} />;
+  return (
+    <img src={src} width={20} height={20} alt="" decoding="async" onError={() => setFailed(true)} />
+  );
 }
 
 function openerIcon(option: EditorOption | undefined): ReactNode {

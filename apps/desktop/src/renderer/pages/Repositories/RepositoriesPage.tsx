@@ -2,7 +2,7 @@
  * Repositories page. Displays all installed repositories with refresh and
  * add options in the toolbar.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
@@ -86,16 +86,16 @@ export function RepositoriesPage() {
   // Fuzzy search by name, remote URL, and tracked branch. The field only
   // appears once there are at least two cards to sift through.
   const searching = query.trim() !== '';
-  const filtered = fuzzyFilter(repositories, query, (r) => [
-    r.name,
-    r.url,
-    repoInfo[r.id]?.branch ?? '',
-  ]);
+  const filtered = useMemo(
+    () => fuzzyFilter(repositories, query, (r) => [r.name, r.url, repoInfo[r.id]?.branch ?? '']),
+    [repositories, query, repoInfo],
+  );
 
   // Repositories that contribute at least one MCP preset -- gates each card's
-  // "go to MCP" button (cheap to rebuild; the preset list is small).
-  const reposWithMcp = new Set(
-    mcpPresets.map((p) => p.repoId).filter((id): id is string => id !== undefined),
+  // "go to MCP" button.
+  const reposWithMcp = useMemo(
+    () => new Set(mcpPresets.map((p) => p.repoId).filter((id): id is string => id !== undefined)),
+    [mcpPresets],
   );
 
   const trailing = (

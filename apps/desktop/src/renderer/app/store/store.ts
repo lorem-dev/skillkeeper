@@ -676,7 +676,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       at: new Date().toISOString(),
     };
     set((s) => ({
-      notifications: [...s.notifications, entry],
+      // Cap the retained log so a long-running session (background update
+      // checks, per-op info entries) cannot grow it without bound -- the
+      // LogsPage renders one DOM node per entry. Keep the most recent.
+      notifications: [...s.notifications, entry].slice(-500),
       toasts: [...s.toasts, entry],
       // Only an error marks the repo's status (the red dot); info never does.
       // Repo errors are always raw text (a git error), so store that text.

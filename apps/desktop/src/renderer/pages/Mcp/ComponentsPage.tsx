@@ -162,8 +162,16 @@ export function ComponentsPage() {
   }
 
   const searching = query.trim() !== '';
-  const totalCount = componentsView === 'tree' ? countLeaves(baseTree) : repoFilteredPresets.length;
-  const shownCount = componentsView === 'tree' ? countLeaves(shownTree) : filteredPresets.length;
+  // countLeaves is a full recursive tree walk -- memoize so an incidental
+  // re-render (modal open/close, store tick) does not re-walk the preset tree.
+  const totalCount = useMemo(
+    () => (componentsView === 'tree' ? countLeaves(baseTree) : repoFilteredPresets.length),
+    [componentsView, baseTree, repoFilteredPresets.length],
+  );
+  const shownCount = useMemo(
+    () => (componentsView === 'tree' ? countLeaves(shownTree) : filteredPresets.length),
+    [componentsView, shownTree, filteredPresets.length],
+  );
 
   // Seed from the persisted expansion (falling back to the roots the first
   // time), mirroring McpPage: union in the search-match branches while

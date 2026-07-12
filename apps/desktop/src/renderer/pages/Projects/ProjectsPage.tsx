@@ -59,7 +59,10 @@ export function ProjectsPage() {
   // Fuzzy search by name and path. The field only appears once there are at
   // least two cards to sift through.
   const searching = query.trim() !== '';
-  const filtered = fuzzyFilter(projects, query, (p) => [p.name, p.path]);
+  const filtered = useMemo(
+    () => fuzzyFilter(projects, query, (p) => [p.name, p.path]),
+    [projects, query],
+  );
 
   // Count of MCP servers installed from repositories, per project id. A
   // repo-origin install carries a `remote` on its identity (manual installs

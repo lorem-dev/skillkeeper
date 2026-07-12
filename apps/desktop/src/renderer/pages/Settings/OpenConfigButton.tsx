@@ -32,7 +32,9 @@ function loadEditors(): Promise<EditorOption[]> {
 function EditorIconImage({ src }: { readonly src: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) return <Icon name="placeholder" />;
-  return <img src={src} width={20} height={20} alt="" onError={() => setFailed(true)} />;
+  return (
+    <img src={src} width={20} height={20} alt="" decoding="async" onError={() => setFailed(true)} />
+  );
 }
 
 function editorIcon(option: EditorOption | undefined): ReactNode {
