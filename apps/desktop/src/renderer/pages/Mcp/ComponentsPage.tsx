@@ -190,10 +190,14 @@ export function ComponentsPage() {
         filterLabel={t('common.filter')}
         clearLabel={t('common.clearFilters')}
       />
-      <Button variant="primary" glass onClick={openCreate}>
-        {t('mcp.add')}
-      </Button>
     </>
+  );
+
+  // Docked at the page bottom (over the fade), not in the toolbar row.
+  const dock = (
+    <Button variant="primary" glass onClick={openCreate}>
+      {t('mcp.add')}
+    </Button>
   );
 
   // Second toolbar row: the repository multi-select filter that narrows which
@@ -231,6 +235,7 @@ export function ComponentsPage() {
           </CollapsibleFilters>
         </div>
       }
+      dock={dock}
     >
       {mcpPresets.length === 0 ? (
         <p className="sk-empty">{t('mcp.empty')}</p>

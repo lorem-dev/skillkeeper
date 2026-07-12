@@ -23,10 +23,21 @@ export interface PageProps {
    * `<h1>` is not rendered. See shared/ui Toolbar.
    */
   readonly toolbar?: ReactNode;
+  /**
+   * Optional content docked to the bottom of the page viewport (NOT a footer in
+   * the content flow): a bar pinned over the scroll area, sharing the bottom
+   * fade's blurred backdrop and overlapping content that scrolls beneath it.
+   * When set, the fade is always shown (the bar rides on it); when omitted, the
+   * fade behaves normally (shown only when there is more content below). Pass a
+   * falsy value to hide the bar -- callers show/hide it rather than disabling
+   * its controls.
+   */
+  readonly dock?: ReactNode;
   readonly children?: ReactNode;
 }
 
-export function Page({ title, toolbar, children }: PageProps) {
+export function Page({ title, toolbar, dock, children }: PageProps) {
+  const hasDock = Boolean(dock);
   const header =
     toolbar ??
     (title !== undefined ? (
@@ -62,12 +73,17 @@ export function Page({ title, toolbar, children }: PageProps) {
     <main className="sk-page" ref={pageRef}>
       <div className="sk-page__scroll" ref={scrollRef} onScroll={update}>
         {header != null && <div className="sk-page__header">{header}</div>}
-        <div className="sk-page__body">{children}</div>
+        <div className={cx('sk-page__body', hasDock && 'sk-page__body--docked')}>{children}</div>
       </div>
       <div
-        className={cx('sk-page__fade', 'sk-page__fade--bottom', canScrollDown && 'sk-page__fade--visible')}
+        className={cx(
+          'sk-page__fade',
+          'sk-page__fade--bottom',
+          (canScrollDown || hasDock) && 'sk-page__fade--visible',
+        )}
         aria-hidden="true"
       />
+      {hasDock && <div className="sk-page__dock">{dock}</div>}
     </main>
   );
 }

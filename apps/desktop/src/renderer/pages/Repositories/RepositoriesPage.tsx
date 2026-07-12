@@ -129,12 +129,14 @@ export function RepositoriesPage() {
           <Icon name="sync" size={16} />
         </Button>
       </Tooltip>
-      <RepoAddButton />
     </>
   );
 
   return (
-    <Page toolbar={<Toolbar title={t('nav.repositories')} trailing={trailing} />}>
+    <Page
+      toolbar={<Toolbar title={t('nav.repositories')} trailing={trailing} />}
+      dock={<RepoAddButton />}
+    >
       {repositories.length === 0 ? (
         <p className="sk-empty">{t('repositories.empty')}</p>
       ) : (

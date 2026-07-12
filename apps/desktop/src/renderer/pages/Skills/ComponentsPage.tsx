@@ -138,19 +138,22 @@ export function SkillsComponentsPage() {
         filterLabel={t('common.filter')}
         clearLabel={t('common.clearFilters')}
       />
-      <Button
-        variant="secondary"
-        glass
-        disabled={repoChecked.length === 0}
-        onClick={() => resetSkillsSelection('repositories')}
-      >
-        {t('skills.action.reset')}
-      </Button>
-      <Button variant="primary" glass disabled={repoChecked.length === 0} onClick={() => setInstallOpen(true)}>
-        {t('skills.action.add')}
-      </Button>
     </>
   );
+
+  // Reset + Install live in the bottom dock; the whole dock is hidden (rather
+  // than the buttons disabled) when nothing is checked.
+  const dock =
+    repoChecked.length > 0 ? (
+      <>
+        <Button variant="secondary" glass onClick={() => resetSkillsSelection('repositories')}>
+          {t('skills.action.reset')}
+        </Button>
+        <Button variant="primary" glass onClick={() => setInstallOpen(true)}>
+          {t('skills.action.add')}
+        </Button>
+      </>
+    ) : undefined;
 
   // Second toolbar row: the repository multi-select filter.
   const filters = (
@@ -188,6 +191,7 @@ export function SkillsComponentsPage() {
           {filters}
         </div>
       }
+      dock={dock}
     >
       {baseTree.length === 0 ? (
         <p className="sk-empty">{t('skills.emptyRepositories')}</p>

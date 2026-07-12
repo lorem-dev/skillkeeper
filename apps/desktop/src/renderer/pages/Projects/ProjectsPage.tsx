@@ -90,12 +90,14 @@ export function ProjectsPage() {
           <Icon name="sync" size={16} />
         </Button>
       </Tooltip>
-      <ProjectAddButton />
     </>
   );
 
   return (
-    <Page toolbar={<Toolbar title={t('nav.projects')} trailing={trailing} />}>
+    <Page
+      toolbar={<Toolbar title={t('nav.projects')} trailing={trailing} />}
+      dock={<ProjectAddButton />}
+    >
       {projects.length === 0 ? (
         <p className="sk-empty">{t('projects.empty')}</p>
       ) : (
