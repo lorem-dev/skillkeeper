@@ -11,7 +11,7 @@ import { ProjectAddButton } from '@/features/projectAdd';
 import { ProjectEditModal } from '@/features/projectEdit';
 import { OpenProjectButton } from '@/features/projectOpen';
 import type { Project } from '@/services/bridge';
-import { Page, Toolbar, Button, ExpandingSearch, SearchSummary } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, Tooltip, Icon } from '@/shared/ui';
 import { fuzzyFilter, fadeRise, fade } from '@/shared/lib';
 import './ProjectsPage.scss';
 
@@ -65,18 +65,22 @@ export function ProjectsPage() {
           onClear={() => setQuery('')}
         />
       )}
-      <Button
-        variant="secondary"
-        glass
-        loading={refreshing}
-        onClick={() => {
-          // Run the folder check now (reschedules the loop) plus the info refresh.
-          setRefreshing(true);
-          void Promise.all([sweepProjects(), refreshProjectInfo()]).finally(() => setRefreshing(false));
-        }}
-      >
-        {t('common.refresh')}
-      </Button>
+      <Tooltip content={t('common.refresh')}>
+        <Button
+          variant="secondary"
+          glass
+          aria-label={t('common.refresh')}
+          className="sk-refresh-btn"
+          loading={refreshing}
+          onClick={() => {
+            // Run the folder check now (reschedules the loop) plus the info refresh.
+            setRefreshing(true);
+            void Promise.all([sweepProjects(), refreshProjectInfo()]).finally(() => setRefreshing(false));
+          }}
+        >
+          <Icon name="sync" size={16} />
+        </Button>
+      </Tooltip>
       <ProjectAddButton />
     </>
   );

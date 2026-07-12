@@ -10,7 +10,7 @@ import { RepositoryCard } from '@/entities/repository';
 import { RepoAddButton } from '@/features/repoAdd';
 import { RepoEditModal } from '@/features/repoEdit';
 import type { Repository } from '@/services/bridge';
-import { Page, Toolbar, Button, ExpandingSearch, SearchSummary } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, Tooltip, Icon } from '@/shared/ui';
 import { fuzzyFilter, fadeRise, fade, cx } from '@/shared/lib';
 import './RepositoriesPage.scss';
 
@@ -96,21 +96,25 @@ export function RepositoriesPage() {
           onClear={() => setQuery('')}
         />
       )}
-      <Button
-        variant="secondary"
-        glass
-        loading={refreshing}
-        onClick={() => {
-          // Loading (and non-clickable) until every queued update-check task
-          // and the info refresh have fully settled.
-          setRefreshing(true);
-          void Promise.all([refreshRepoUpdates(), refreshRepoInfo()]).finally(() =>
-            setRefreshing(false),
-          );
-        }}
-      >
-        {t('common.refresh')}
-      </Button>
+      <Tooltip content={t('common.refresh')}>
+        <Button
+          variant="secondary"
+          glass
+          aria-label={t('common.refresh')}
+          className="sk-refresh-btn"
+          loading={refreshing}
+          onClick={() => {
+            // Loading (and non-clickable) until every queued update-check task
+            // and the info refresh have fully settled.
+            setRefreshing(true);
+            void Promise.all([refreshRepoUpdates(), refreshRepoInfo()]).finally(() =>
+              setRefreshing(false),
+            );
+          }}
+        >
+          <Icon name="sync" size={16} />
+        </Button>
+      </Tooltip>
       <RepoAddButton />
     </>
   );

@@ -4,6 +4,14 @@
   gap: var(--sk-space-3);
 }
 
+// Round icon-only Refresh button: drop the text-button padding to a
+// control-height square, and force the pill radius so it reads as a circle.
+.sk-refresh-btn {
+  width: var(--sk-control-height);
+  padding: 0;
+  border-radius: var(--sk-radius-pill);
+}
+
 // Toolbar search: a compact field that yields space before the action buttons.
 .sk-list-search {
   flex: 0 1 9rem;

@@ -1,7 +1,9 @@
 /**
  * Expanding search: a round icon button (a centred magnifier) that grows into a
- * full search field on click or focus, and shrinks back to the button when it
- * is left empty and loses focus. A controlled input (value / onChange / onClear)
+ * full search field on click or focus, and shrinks back to the button whenever
+ * it is empty and unfocused -- whether the user blurred it or a control
+ * elsewhere cleared the value while it was not focused. A controlled input
+ * (value / onChange / onClear)
  * like `SearchField`, so callers keep owning the query; the expand/collapse is
  * internal, ephemeral UI state.
  *
@@ -58,6 +60,17 @@ export function ExpandingSearch({
   useEffect(() => {
     if (expanded) inputRef.current?.focus();
   }, [expanded]);
+
+  // Collapse when the value is emptied from the OUTSIDE while unfocused -- e.g.
+  // a "show all" / "reset filters" control elsewhere clears the query. `onBlur`
+  // never fires in that case (focus is already elsewhere), so watch the value:
+  // if it goes empty and focus is not within the field, shrink back. Runs after
+  // the focus effect above, so a just-expanded (focused) field is never caught.
+  useEffect(() => {
+    if (!expanded || !isSearchEmpty(value)) return;
+    const root = rootRef.current;
+    if (root !== null && !root.contains(document.activeElement)) setExpanded(false);
+  }, [expanded, value]);
 
   const expand = (): void => setExpanded(true);
 
