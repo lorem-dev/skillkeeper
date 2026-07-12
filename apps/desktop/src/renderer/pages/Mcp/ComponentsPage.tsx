@@ -181,6 +181,7 @@ export function ComponentsPage() {
         onChange={(e) => setQuery(e.target.value)}
         onClear={() => setQuery('')}
       />
+      <McpViewToggle value={componentsView} onChange={(v) => setMcpUi({ componentsView: v })} />
       <FilterButton
         count={filterCount}
         open={filterToggle.open}
@@ -210,9 +211,6 @@ export function ComponentsPage() {
                 <span className="sk-mcp-title-sep">/</span>
                 {t('mcp.componentsTitle')}
               </>
-            }
-            titleAdornment={
-              <McpViewToggle value={componentsView} onChange={(v) => setMcpUi({ componentsView: v })} />
             }
             trailing={actions}
           />
