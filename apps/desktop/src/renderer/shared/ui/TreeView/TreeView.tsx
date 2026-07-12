@@ -31,7 +31,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { cx, fade, SK_DURATION, SK_EASE } from '../../lib';
+import { cx, fade, SK_DURATION, SK_EASE, useAnimationsEnabled } from '../../lib';
 import { Checkbox } from '../Checkbox';
 import './TreeView.scss';
 
@@ -80,6 +80,10 @@ export interface TreeViewProps {
   readonly checkedIds?: readonly string[];
   /** Called with the next full set of checked leaf ids after a toggle. */
   readonly onCheckedChange?: (checkedIds: string[]) => void;
+  /** Whether rows play the mask-reveal entrance animation. Defaults to true;
+   *  pass false to opt a specific tree out (e.g. inside an overlay window).
+   *  Also gated by the global `animations` setting. */
+  readonly animate?: boolean;
   readonly className?: string;
 }
 
@@ -119,8 +123,11 @@ export function TreeView({
   checkboxLevels,
   checkedIds,
   onCheckedChange,
+  animate = true,
   className,
 }: TreeViewProps) {
+  const animationsEnabled = useAnimationsEnabled();
+  const revealed = animate && animationsEnabled;
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(
     () => new Set(defaultExpandedIds ?? []),
   );
@@ -340,10 +347,7 @@ export function TreeView({
     return (
       <motion.li
         key={node.id}
-        variants={fade}
-        initial="initial"
-        animate="animate"
-        exit="exit"
+        {...(revealed ? { variants: fade, initial: 'initial', animate: 'animate', exit: 'exit' } : {})}
         role="treeitem"
         aria-expanded={hasChildren ? isOpen : undefined}
         aria-selected={!checkable && selectable ? isSelected : undefined}
@@ -359,6 +363,7 @@ export function TreeView({
           }}
           className={cx(
             'sk-tree__row',
+            revealed && 'sk-tree__row--reveal',
             isSelected && 'sk-tree__row--selected',
             !selectable && 'sk-tree__row--plain',
             node.muted === true && 'sk-tree__row--muted',
