@@ -185,7 +185,7 @@ export function TreeView({
   readyRef.current = ready;
 
   // Preparation staging (animations on only): if the tree is not laid out
-  // within 100ms, show a skeleton and hold it at least 500ms before the tree,
+  // within 50ms, show a skeleton and hold it at least 500ms before the tree,
   // so a slow-to-render tree shows a steady loading state instead of a blank
   // wait. With animations off, none of this applies -- the tree shows as soon
   // as it is ready.
@@ -195,7 +195,7 @@ export function TreeView({
     if (!animationsEnabled) return undefined;
     const id = setTimeout(() => {
       if (!readyRef.current) setShowSkeleton(true);
-    }, 100);
+    }, 50);
     return () => clearTimeout(id);
   }, [animationsEnabled]);
   useEffect(() => {
