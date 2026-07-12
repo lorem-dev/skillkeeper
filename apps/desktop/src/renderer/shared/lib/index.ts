@@ -23,3 +23,5 @@ export { useGlassRefraction } from './useGlassRefraction';
 export type { GlassRefractionOptions } from './useGlassRefraction';
 export { useFilterToggle } from './useFilterToggle';
 export type { FilterToggle } from './useFilterToggle';
+export { useSkeletonStage } from './useSkeletonStage';
+export type { SkeletonStage, SkeletonStageOptions } from './useSkeletonStage';

@@ -4,6 +4,7 @@ import { bridgeClient } from '@/services/bridge';
 import type { EditorOption } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { SplitButton, Button, Tooltip, Icon, Skeleton } from '@/shared/ui';
+import { useAnimationsEnabled, useSkeletonStage } from '@/shared/lib';
 
 const STORAGE_KEY = 'sk-config-editor';
 const DEFAULT_ID = 'default';
@@ -67,6 +68,7 @@ function primaryIcon(option: EditorOption | undefined): ReactNode {
  */
 export function OpenConfigButton() {
   const t = useTranslator();
+  const animationsEnabled = useAnimationsEnabled();
   const [editors, setEditors] = useState<EditorOption[] | null>(() => editorsCache);
   const [selected, setSelected] = useState<string>(
     () => localStorage.getItem(STORAGE_KEY) ?? DEFAULT_ID,
@@ -83,6 +85,8 @@ export function OpenConfigButton() {
     };
   }, []);
 
+  const stage = useSkeletonStage(editors !== null, { enabled: animationsEnabled });
+
   const tooltip = t('settings.openConfigInEditor');
 
   function labelFor(option: EditorOption): string {
@@ -97,9 +101,17 @@ export function OpenConfigButton() {
     }
   }
 
-  // Loading: hold the control's footprint with a skeleton so nothing reflows.
-  if (editors === null) {
+  // Loading: hold the control's footprint with a skeleton so nothing reflows --
+  // but only if the (session-cached) editor list is slow to arrive, so a fast
+  // load never flashes the skeleton. Same 50ms-defer + 500ms-hold staging as
+  // the TreeView; skipped when animations are off. See useSkeletonStage.
+  if (stage.showSkeleton) {
     return <Skeleton width={74} height={30} radius="var(--sk-radius-sm)" />;
+  }
+  // Not ready yet (the sub-frame before the skeleton, or animations-off while
+  // loading): render nothing rather than flash.
+  if (editors === null) {
+    return null;
   }
 
   // Fallback: no editors listed -> single edit button opening the default app.

@@ -32,7 +32,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Skeleton } from '../Skeleton';
-import { cx, fade, SK_DURATION, SK_EASE, useAnimationsEnabled } from '../../lib';
+import { cx, fade, SK_DURATION, SK_EASE, useAnimationsEnabled, useSkeletonStage } from '../../lib';
 import { Checkbox } from '../Checkbox';
 import './TreeView.scss';
 
@@ -181,33 +181,13 @@ export function TreeView({
       cancelAnimationFrame(raf2);
     };
   }, []);
-  const readyRef = useRef(ready);
-  readyRef.current = ready;
-
-  // Preparation staging (animations on only): if the tree is not laid out
-  // within 50ms, show a skeleton and hold it at least 500ms before the tree,
-  // so a slow-to-render tree shows a steady loading state instead of a blank
-  // wait. With animations off, none of this applies -- the tree shows as soon
-  // as it is ready.
-  const [showSkeleton, setShowSkeleton] = useState(false);
-  const [skeletonHeld, setSkeletonHeld] = useState(false);
-  useEffect(() => {
-    if (!animationsEnabled) return undefined;
-    const id = setTimeout(() => {
-      if (!readyRef.current) setShowSkeleton(true);
-    }, 50);
-    return () => clearTimeout(id);
-  }, [animationsEnabled]);
-  useEffect(() => {
-    if (!showSkeleton) return undefined;
-    const id = setTimeout(() => setSkeletonHeld(true), 500);
-    return () => clearTimeout(id);
-  }, [showSkeleton]);
-
-  // The tree is shown once laid out AND either no skeleton was needed (ready
-  // within 100ms) or the skeleton has been held its minimum.
-  const treeShown = ready && (!showSkeleton || skeletonHeld);
-  const skeletonVisible = showSkeleton && !treeShown;
+  // Preparation staging: a slow-to-render tree shows a skeleton (held its
+  // minimum) instead of a blank wait; a fast one shows immediately; with
+  // animations off there is no staging -- it shows as soon as ready. See
+  // useSkeletonStage.
+  const { showContent: treeShown, showSkeleton: skeletonVisible } = useSkeletonStage(ready, {
+    enabled: animationsEnabled,
+  });
   const reveal = revealed && treeShown;
 
   // When the caller changes which ids should be open (e.g. expand matches while
