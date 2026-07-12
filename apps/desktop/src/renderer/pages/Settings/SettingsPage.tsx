@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
+import { useAnimationsEnabled, transitionMedium } from '@/shared/lib';
 import { useTheme, type ThemePref } from '@/systems/theme';
 import { buildLanguageOptions, AGENT_LABELS, ALL_AGENTS } from '@/domain';
 import type { Lang, AgentKind, UpdatesConfig } from '@/services/bridge';
@@ -46,6 +48,7 @@ function GitRow({ value, label, description, onCommit }: GitRowProps) {
 export function SettingsPage() {
   const config = useSkillkeeperStore((s) => s.config);
   const updateConfig = useSkillkeeperStore((s) => s.updateConfig);
+  const animate = useAnimationsEnabled();
   const t = useTranslator();
   const { pref, setPref } = useTheme();
 
@@ -66,7 +69,12 @@ export function SettingsPage() {
         <Toolbar title={t('nav.settings')} trailing={<OpenConfigButton />} />
       }
     >
-      <div className="sk-settings">
+      <motion.div
+        className="sk-settings"
+        initial={animate ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={transitionMedium}
+      >
         <FormSection title={t('settings.section.general')}>
           <FormRow label={t('settings.language')}>
             <Combobox
@@ -164,7 +172,7 @@ export function SettingsPage() {
             />
           </FormRow>
         </FormSection>
-      </div>
+      </motion.div>
     </Page>
   );
 }
