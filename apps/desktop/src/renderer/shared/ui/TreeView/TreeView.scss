@@ -186,53 +186,19 @@
   overflow: hidden;
 }
 
-// Registered so it interpolates smoothly during the reveal -- a bare custom
-// property would jump between keyframes instead of animating.
-@property --sk-tree-reveal {
-  syntax: '<percentage>';
-  inherits: false;
-  initial-value: 100%;
-}
-
-// Mask-reveal entrance for a row: a soft-edged (blurred) mask uncovers it from
-// the RIGHT edge leftward, together with a short opacity fade, so rows appear
-// tidily. The mask lives only in the keyframes (fill: backwards), so a settled
-// row carries no mask -- nothing clips its inset focus ring. Added only when
-// animations are enabled (TreeView `animate` prop + the global setting).
+// Row entrance: a plain opacity fade once the tree is laid out (see TreeView's
+// `ready` gate). Added only when animations are enabled (the `animate` prop +
+// the global setting).
 .sk-tree__row--reveal {
   animation: sk-tree-reveal var(--sk-duration-medium) var(--sk-ease-standard) backwards;
-  // Keep edges anti-aliased through the mask sweep.
-  backface-visibility: hidden;
 }
 
 @keyframes sk-tree-reveal {
   from {
     opacity: 0;
-    --sk-tree-reveal: 0%;
-    -webkit-mask-image: linear-gradient(
-      to left,
-      #000 var(--sk-tree-reveal),
-      transparent calc(var(--sk-tree-reveal) + 25%)
-    );
-    mask-image: linear-gradient(
-      to left,
-      #000 var(--sk-tree-reveal),
-      transparent calc(var(--sk-tree-reveal) + 25%)
-    );
   }
 
   to {
     opacity: 1;
-    --sk-tree-reveal: 100%;
-    -webkit-mask-image: linear-gradient(
-      to left,
-      #000 var(--sk-tree-reveal),
-      transparent calc(var(--sk-tree-reveal) + 25%)
-    );
-    mask-image: linear-gradient(
-      to left,
-      #000 var(--sk-tree-reveal),
-      transparent calc(var(--sk-tree-reveal) + 25%)
-    );
   }
 }
