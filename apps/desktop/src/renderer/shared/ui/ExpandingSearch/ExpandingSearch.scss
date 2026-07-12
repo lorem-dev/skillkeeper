@@ -24,12 +24,19 @@
   overflow: hidden;
   transition:
     width var(--sk-duration-medium) var(--sk-ease-standard),
+    background var(--sk-duration-fast) var(--sk-ease-standard),
     box-shadow var(--sk-duration-fast) var(--sk-ease-standard);
 
   // A layout-neutral focus ring: an inset shadow rather than a border, so
   // nothing peeks out from behind the glass rim and the box size never shifts.
   &:focus-within {
     box-shadow: inset 0 0 0 1px var(--sk-color-accent);
+  }
+
+  // While collapsed it is a button, so it takes the same hover feedback as the
+  // other (non-glass) buttons; the expanded field keeps its plain background.
+  &:not(.sk-xsearch--expanded):hover {
+    background: var(--sk-color-fill-2);
   }
 }
 
@@ -142,5 +149,11 @@
 
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     background: var(--sk-color-bg-tertiary);
+  }
+
+  // Collapsed (a button), match the glass buttons' hover: a gentle translucent
+  // tint of the label colour over the glass tint.
+  &:not(.sk-xsearch--expanded):hover {
+    background: color-mix(in srgb, var(--sk-color-label) 8%, var(--sk-glass-tint));
   }
 }
