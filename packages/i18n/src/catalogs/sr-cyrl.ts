@@ -301,7 +301,7 @@ export const srCyrl: Partial<Catalog> = {
   'settings.openConfigFailed': 'Конфигурациону датотеку није могуће отворити',
   'settings.theme': 'Тема',
   'settings.animations': 'Анимације',
-  'settings.animationsHint': 'Брзина анимација уласка и изласка кроз цео интерфејс.',
+  'settings.animationsHint': 'Брзина анимација уласка и изласка кроз цео интерфејс',
   'settings.animations.fast': 'Брзо',
   'settings.animations.normal': 'Нормално',
   'settings.animations.off': 'Искључено',

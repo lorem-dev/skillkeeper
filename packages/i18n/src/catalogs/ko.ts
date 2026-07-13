@@ -313,7 +313,7 @@ export const ko: Partial<Catalog> = {
   'settings.openConfigFailed': '설정 파일을 열 수 없습니다',
   'settings.theme': '테마',
   'settings.animations': '애니메이션',
-  'settings.animationsHint': 'UI 전체의 등장 및 퇴장 애니메이션 속도입니다.',
+  'settings.animationsHint': 'UI 전체의 등장 및 퇴장 애니메이션 속도입니다',
   'settings.animations.fast': '빠름',
   'settings.animations.normal': '보통',
   'settings.animations.off': '끄기',

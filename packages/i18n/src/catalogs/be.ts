@@ -316,7 +316,7 @@ export const be: Partial<Catalog> = {
   'settings.openConfigFailed': 'Не ўдалося адкрыць файл канфігурацыі',
   'settings.theme': 'Тэма',
   'settings.animations': 'Анімацыі',
-  'settings.animationsHint': 'Хуткасць анімацый з\'яўлення і знікнення ў інтэрфейсе.',
+  'settings.animationsHint': 'Хуткасць анімацый з\'яўлення і знікнення ў інтэрфейсе',
   'settings.animations.fast': 'Хутка',
   'settings.animations.normal': 'Звычайна',
   'settings.animations.off': 'Выключана',

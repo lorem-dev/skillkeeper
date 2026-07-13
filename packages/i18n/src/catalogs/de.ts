@@ -292,7 +292,7 @@ export const de: Partial<Catalog> = {
   'settings.openConfigFailed': 'Konfigurationsdatei konnte nicht geöffnet werden',
   'settings.theme': 'Design',
   'settings.animations': 'Animationen',
-  'settings.animationsHint': 'Geschwindigkeit der Ein- und Ausblendanimationen in der gesamten Oberfläche.',
+  'settings.animationsHint': 'Geschwindigkeit der Ein- und Ausblendanimationen in der gesamten Oberfläche',
   'settings.animations.fast': 'Schnell',
   'settings.animations.normal': 'Normal',
   'settings.animations.off': 'Aus',

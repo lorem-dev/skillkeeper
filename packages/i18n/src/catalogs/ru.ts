@@ -320,7 +320,7 @@ export const ru: Partial<Catalog> = {
   'settings.openConfigFailed': 'Не удалось открыть файл конфигурации',
   'settings.theme': 'Тема',
   'settings.animations': 'Анимации',
-  'settings.animationsHint': 'Скорость анимаций появления и исчезновения в интерфейсе.',
+  'settings.animationsHint': 'Скорость анимаций появления и исчезновения в интерфейсе',
   'settings.animations.fast': 'Быстро',
   'settings.animations.normal': 'Нормально',
   'settings.animations.off': 'Отключена',

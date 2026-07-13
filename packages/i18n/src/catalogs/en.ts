@@ -347,7 +347,7 @@ export const en = {
   'settings.openConfigFailed': 'Could not open the config file',
   'settings.theme': 'Theme',
   'settings.animations': 'Animations',
-  'settings.animationsHint': 'Entrance and exit animation speed across the UI.',
+  'settings.animationsHint': 'Entrance and exit animation speed across the UI',
   'settings.animations.fast': 'Fast',
   'settings.animations.normal': 'Normal',
   'settings.animations.off': 'Off',

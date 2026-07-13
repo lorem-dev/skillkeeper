@@ -301,7 +301,7 @@ export const srLatn: Partial<Catalog> = {
   'settings.openConfigFailed': 'Konfiguracionu datoteku nije moguće otvoriti',
   'settings.theme': 'Tema',
   'settings.animations': 'Animacije',
-  'settings.animationsHint': 'Brzina animacija ulaska i izlaska kroz ceo interfejs.',
+  'settings.animationsHint': 'Brzina animacija ulaska i izlaska kroz ceo interfejs',
   'settings.animations.fast': 'Brzo',
   'settings.animations.normal': 'Normalno',
   'settings.animations.off': 'Isključeno',

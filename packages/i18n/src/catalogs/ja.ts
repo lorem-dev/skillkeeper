@@ -271,7 +271,7 @@ export const ja: Partial<Catalog> = {
   'settings.openConfigFailed': '設定ファイルを開けませんでした',
   'settings.theme': 'テーマ',
   'settings.animations': 'アニメーション',
-  'settings.animationsHint': 'UI全体での表示および非表示アニメーションの速度です。',
+  'settings.animationsHint': 'UI全体での表示および非表示アニメーションの速度です',
   'settings.animations.fast': '高速',
   'settings.animations.normal': '標準',
   'settings.animations.off': 'オフ',

@@ -316,7 +316,7 @@ export const pl: Partial<Catalog> = {
   'settings.openConfigFailed': 'Nie udalo sie otworzyc pliku konfiguracyjnego',
   'settings.theme': 'Motyw',
   'settings.animations': 'Animacje',
-  'settings.animationsHint': 'Szybkość animacji wejścia i wyjścia w całym interfejsie.',
+  'settings.animationsHint': 'Szybkość animacji wejścia i wyjścia w całym interfejsie',
   'settings.animations.fast': 'Szybko',
   'settings.animations.normal': 'Normalnie',
   'settings.animations.off': 'Wyłączone',

@@ -271,7 +271,7 @@ export const zhTw: Partial<Catalog> = {
   'settings.openConfigFailed': '無法開啟設定檔',
   'settings.theme': '佈景主題',
   'settings.animations': '動畫',
-  'settings.animationsHint': '整個介面中進入和退出動畫的速度。',
+  'settings.animationsHint': '整個介面中進入和退出動畫的速度',
   'settings.animations.fast': '快速',
   'settings.animations.normal': '正常',
   'settings.animations.off': '關閉',

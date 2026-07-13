@@ -271,7 +271,7 @@ export const zhCn: Partial<Catalog> = {
   'settings.openConfigFailed': '无法打开配置文件',
   'settings.theme': '主题',
   'settings.animations': '动画',
-  'settings.animationsHint': '整个界面中进入和退出动画的速度。',
+  'settings.animationsHint': '整个界面中进入和退出动画的速度',
   'settings.animations.fast': '快速',
   'settings.animations.normal': '正常',
   'settings.animations.off': '关闭',
