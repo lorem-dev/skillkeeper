@@ -16,6 +16,8 @@ import { useConfigWatch } from '@/systems/config';
 import { useUpdateSchedule } from '@/systems/updates';
 import { useProjectCheckSchedule } from '@/systems/projects';
 import { ConfigBanner } from '@/features/configBanner';
+import { WindowChrome } from './WindowChrome';
+import { hostPlatform } from './hostPlatform';
 import { RepositoriesPage } from '@/pages/Repositories';
 import { SkillsComponentsPage, SkillsManagementPage } from '@/pages/Skills';
 import { ProjectsPage } from '@/pages/Projects';
@@ -141,7 +143,11 @@ export function App() {
 
   return (
     <AnimationProvider mode={animationMode}>
-    <div className="sk-app" data-anim={animationMode}>
+    <div
+      className={cx('sk-app', `sk-app--${hostPlatform(bridgeClient.platform)}`)}
+      data-anim={animationMode}
+    >
+      <WindowChrome />
       <ConfigBanner />
       <div className="sk-shell">
         <Sidebar title={t('app.title')}>

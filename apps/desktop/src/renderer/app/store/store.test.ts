@@ -416,6 +416,12 @@ describe('useSkillkeeperStore', () => {
         onTerminalData: () => () => {},
         onTerminalExit: () => () => {},
         onTerminalRequestOpen: () => () => {},
+        platform: 'darwin',
+        minimizeWindow: () => {},
+        toggleMaximizeWindow: () => {},
+        closeWindow: () => {},
+        isWindowMaximized: async () => false,
+        onMaximizeChange: () => () => {},
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);
@@ -476,6 +482,12 @@ describe('useSkillkeeperStore', () => {
         onTerminalData: () => () => {},
         onTerminalExit: () => () => {},
         onTerminalRequestOpen: () => () => {},
+        platform: 'darwin',
+        minimizeWindow: () => {},
+        toggleMaximizeWindow: () => {},
+        closeWindow: () => {},
+        isWindowMaximized: async () => false,
+        onMaximizeChange: () => () => {},
       };
 
       await useSkillkeeperStore.getState().loadAll(bridge);

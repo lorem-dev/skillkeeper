@@ -104,6 +104,18 @@ export interface SkillkeeperBridge {
   onTerminalExit(callback: () => void): () => void;
   /** Subscribe to the main process requesting the terminal overlay be opened. Returns an unsubscribe fn. */
   onTerminalRequestOpen(callback: () => void): () => void;
+  /** The host platform (`process.platform`); chooses the window-control chrome. */
+  readonly platform: string;
+  /** Minimize the window (frameless title bar). */
+  minimizeWindow(): void;
+  /** Toggle the window between maximized and restored. */
+  toggleMaximizeWindow(): void;
+  /** Close the window. */
+  closeWindow(): void;
+  /** Whether the window is currently maximized. */
+  isWindowMaximized(): Promise<boolean>;
+  /** Subscribe to maximize/restore changes. Returns an unsubscribe fn. */
+  onMaximizeChange(callback: (maximized: boolean) => void): () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -255,6 +267,26 @@ const bridge: SkillkeeperBridge = {
     ipcRenderer.on('terminal:requestOpen', listener);
     return () => {
       ipcRenderer.removeListener('terminal:requestOpen', listener);
+    };
+  },
+  platform: process.platform,
+  minimizeWindow(): void {
+    ipcRenderer.send('window:minimize');
+  },
+  toggleMaximizeWindow(): void {
+    ipcRenderer.send('window:toggleMaximize');
+  },
+  closeWindow(): void {
+    ipcRenderer.send('window:close');
+  },
+  isWindowMaximized(): Promise<boolean> {
+    return ipcRenderer.invoke('window:isMaximized') as Promise<boolean>;
+  },
+  onMaximizeChange(callback: (maximized: boolean) => void): () => void {
+    const listener = (_event: IpcRendererEvent, maximized: boolean): void => callback(maximized);
+    ipcRenderer.on('window:maximizeChanged', listener);
+    return () => {
+      ipcRenderer.removeListener('window:maximizeChanged', listener);
     };
   },
 };

@@ -97,3 +97,54 @@
   overflow: clip;
   overflow-clip-margin: 4px;
 }
+
+// macOS frameless window: no title-bar strip, so the content reaches the very
+// top. The native traffic lights float over the top-left, so the surfaces that
+// reach up there (the sidebar and the full-screen overlays) get a top inset to
+// clear them. The draggable region (to move the window) lives on the
+// non-interactive top areas -- the sidebar top, the page header, and the
+// overlay headers -- while interactive controls opt out with `no-drag`.
+// (Windows/Linux use the TitleBar strip instead; see WindowChrome.)
+.sk-app--mac {
+  // Clearance below the native traffic lights, shared by every top surface so
+  // their content lines up.
+  --sk-mac-inset: 44px;
+}
+
+.sk-app--mac .sk-sidebar {
+  padding-top: var(--sk-mac-inset);
+  -webkit-app-region: drag;
+}
+
+.sk-app--mac .sk-sidebar__items {
+  -webkit-app-region: no-drag;
+}
+
+.sk-app--mac .sk-page__header {
+  -webkit-app-region: drag;
+}
+
+.sk-app--mac .sk-toolbar__leading,
+.sk-app--mac .sk-toolbar__title-adornment,
+.sk-app--mac .sk-toolbar__trailing {
+  -webkit-app-region: no-drag;
+}
+
+// Full-screen overlays (tasks / terminal / logs) also reach the top-left under
+// the traffic lights: inset their headers to clear them and make the header
+// draggable so the window still moves while an overlay is open (its buttons opt
+// out). Keyed on the header so only the top strip drags, not the body.
+.sk-app--mac .sk-tasks__header,
+.sk-app--mac .sk-terminal-page__header,
+.sk-app--mac .sk-logs__header {
+  padding-top: var(--sk-mac-inset);
+  -webkit-app-region: drag;
+}
+
+.sk-app--mac .sk-tasks__actions,
+.sk-app--mac .sk-tasks__close,
+.sk-app--mac .sk-terminal-page__close,
+.sk-app--mac .sk-logs__actions,
+.sk-app--mac .sk-logs__close {
+  -webkit-app-region: no-drag;
+}

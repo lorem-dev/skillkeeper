@@ -1,0 +1,74 @@
+// Custom window controls for the frameless title bar (Windows / Linux). Opt out
+// of the drag region so the buttons stay clickable inside the draggable bar.
+
+.sk-winctl {
+  -webkit-app-region: no-drag;
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 100%;
+}
+
+.sk-winctl__btn {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // A caption control is not a text link -- keep the arrow cursor, not a hand.
+  cursor: default;
+  color: var(--sk-color-label-2);
+  background: transparent;
+  transition:
+    background var(--sk-duration-fast) var(--sk-ease-standard),
+    color var(--sk-duration-fast) var(--sk-ease-standard);
+}
+
+.sk-winctl__btn svg {
+  display: block;
+}
+
+// --- Windows: flat, full-height rectangles; red close hover. -----------------
+.sk-winctl--windows {
+  align-self: stretch;
+}
+
+.sk-winctl--windows .sk-winctl__btn {
+  width: 46px;
+  height: 100%;
+}
+
+.sk-winctl--windows .sk-winctl__btn:hover {
+  background: var(--sk-color-fill-3);
+  color: var(--sk-color-label);
+}
+
+.sk-winctl--windows .sk-winctl__btn--close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+// --- Linux (GNOME/Adwaita-ish): small circular buttons with a subtle fill. ---
+.sk-winctl--linux {
+  gap: var(--sk-space-2);
+  padding-inline: var(--sk-space-3);
+}
+
+.sk-winctl--linux .sk-winctl__btn {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--sk-radius-pill);
+  background: var(--sk-color-fill-3);
+  color: var(--sk-color-label);
+}
+
+.sk-winctl--linux .sk-winctl__btn:hover {
+  background: var(--sk-color-fill-2);
+}
+
+.sk-winctl--linux .sk-winctl__btn--close:hover {
+  background: #e81123;
+  color: #fff;
+}

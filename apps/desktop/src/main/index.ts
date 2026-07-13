@@ -423,6 +423,21 @@ function registerHandlers(): void {
   ipcMain.handle('terminal:runSshAdd', () => {
     terminal.runSshAdd();
   });
+
+  // Window controls for the frameless title bar. Driven by the renderer's
+  // custom controls (Windows/Linux); each acts on the window that sent it.
+  ipcMain.on('window:minimize', (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());
+  ipcMain.on('window:toggleMaximize', (e) => {
+    const w = BrowserWindow.fromWebContents(e.sender);
+    if (w === null) return;
+    if (w.isMaximized()) w.unmaximize();
+    else w.maximize();
+  });
+  ipcMain.on('window:close', (e) => BrowserWindow.fromWebContents(e.sender)?.close());
+  ipcMain.handle(
+    'window:isMaximized',
+    (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -431,10 +446,21 @@ function registerHandlers(): void {
 
 function createWindow(): void {
   const preloadPath = path.join(moduleDir, '../preload/index.cjs');
+  const isMac = process.platform === 'darwin';
 
   const win = new BrowserWindow({
     width: 1024,
     height: 768,
+    // Frameless. On macOS there is no custom bar: the app content reaches the
+    // top and the native traffic lights (kept via the hidden title-bar style)
+    // float over the sidebar's top-left, which reserves top padding for them
+    // (see App.scss `.sk-app--mac .sk-sidebar`); the draggable region is set on
+    // the top of the sidebar and page header there. On Windows/Linux there are
+    // no native overlay controls, so go fully frameless and the renderer draws
+    // its own window controls in a top strip (TitleBar).
+    ...(isMac
+      ? { titleBarStyle: 'hidden' as const, trafficLightPosition: { x: 16, y: 13 } }
+      : { frame: false }),
     webPreferences: {
       sandbox: true,
       contextIsolation: true,
@@ -442,6 +468,12 @@ function createWindow(): void {
       preload: preloadPath,
     },
   });
+
+  // Tell the renderer when the window's maximized state changes, so the custom
+  // maximize/restore control (Windows/Linux) can swap its glyph.
+  const sendMaximized = (value: boolean): void => win.webContents.send('window:maximizeChanged', value);
+  win.on('maximize', () => sendMaximized(true));
+  win.on('unmaximize', () => sendMaximized(false));
 
   // In production: load the built renderer HTML.
   // In dev (electron-vite): the ELECTRON_RENDERER_URL env var is set.

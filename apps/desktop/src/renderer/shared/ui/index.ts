@@ -91,3 +91,7 @@ export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
 export { Menu } from './Menu';
 export type { MenuItem, MenuProps, MenuPlacement } from './Menu';
+export { TitleBar } from './TitleBar';
+export type { TitleBarProps } from './TitleBar';
+export { WindowControls } from './WindowControls';
+export type { WindowControlsProps, WindowControlLabels } from './WindowControls';

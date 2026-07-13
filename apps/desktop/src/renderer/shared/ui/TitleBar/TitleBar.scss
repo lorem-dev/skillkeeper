@@ -1,0 +1,30 @@
+// Frameless-window title bar (Windows/Linux): a transparent, draggable strip at
+// the very top of the window. It has NO background of its own -- it only
+// reserves a top band you can grab to move the window, with the custom controls
+// at the right. The app content sits below it. (macOS does not use this -- see
+// App.scss `.sk-app--mac`, where the drag regions live on the real content.)
+.sk-titlebar {
+  -webkit-app-region: drag;
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 38px;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sk-titlebar__title {
+  padding-inline: var(--sk-space-4);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sk-color-label-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Push the window controls to the far right of the bar.
+.sk-titlebar__controls {
+  margin-left: auto;
+}

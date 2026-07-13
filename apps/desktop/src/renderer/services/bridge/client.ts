@@ -70,6 +70,18 @@ export interface BridgeClient {
   onTerminalData(callback: (chunk: string) => void): () => void;
   onTerminalExit(callback: () => void): () => void;
   onTerminalRequestOpen(callback: () => void): () => void;
+  /** The host platform (`process.platform`), for choosing the window-control chrome. */
+  readonly platform: string;
+  /** Minimize the window (frameless title bar). */
+  minimizeWindow(): void;
+  /** Toggle the window between maximized and restored. */
+  toggleMaximizeWindow(): void;
+  /** Close the window. */
+  closeWindow(): void;
+  /** Whether the window is currently maximized. */
+  isWindowMaximized(): Promise<boolean>;
+  /** Subscribe to maximize/restore changes. Returns an unsubscribe fn. */
+  onMaximizeChange(callback: (maximized: boolean) => void): () => void;
 }
 
 /** The live client, backed by the preload bridge on window.skillkeeper. */
@@ -116,4 +128,14 @@ export const bridgeClient: BridgeClient = {
   onTerminalData: (callback) => window.skillkeeper.onTerminalData(callback),
   onTerminalExit: (callback) => window.skillkeeper.onTerminalExit(callback),
   onTerminalRequestOpen: (callback) => window.skillkeeper.onTerminalRequestOpen(callback),
+  // Lazy getter (not a load-time read) so importing the client never touches
+  // window.skillkeeper before the preload bridge exists.
+  get platform() {
+    return window.skillkeeper.platform;
+  },
+  minimizeWindow: () => window.skillkeeper.minimizeWindow(),
+  toggleMaximizeWindow: () => window.skillkeeper.toggleMaximizeWindow(),
+  closeWindow: () => window.skillkeeper.closeWindow(),
+  isWindowMaximized: () => window.skillkeeper.isWindowMaximized(),
+  onMaximizeChange: (callback) => window.skillkeeper.onMaximizeChange(callback),
 };

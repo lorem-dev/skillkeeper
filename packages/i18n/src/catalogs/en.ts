@@ -45,6 +45,11 @@ export const en = {
   'statusbar.terminal': 'Terminal',
   'statusbar.tasks': 'Tasks',
 
+  'titlebar.minimize': 'Minimize',
+  'titlebar.maximize': 'Maximize',
+  'titlebar.restore': 'Restore',
+  'titlebar.close': 'Close',
+
   'logs.title': 'Notifications',
   'terminal.title': 'Terminal',
   'logs.empty': 'Nothing to show.',
