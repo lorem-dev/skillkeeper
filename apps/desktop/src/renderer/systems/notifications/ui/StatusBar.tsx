@@ -6,7 +6,7 @@
  * opens the full-screen notifications log, the terminal button opens the
  * embedded terminal. Cross-cutting chrome -> systems/notifications.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon } from '@/shared/ui';
@@ -41,6 +41,25 @@ function useThrottledValue<T>(value: T, ms: number): T {
   return throttled;
 }
 
+/**
+ * Wraps `fn` so it fires on the leading edge at most once per `ms`: the first
+ * call runs immediately, and further calls within the window are dropped. Keeps
+ * a rapid double/triple click from flip-flopping an overlay faster than its
+ * open/close animation. The returned callback is stable; it always invokes the
+ * latest `fn`.
+ */
+function useThrottledCallback(fn: () => void, ms: number): () => void {
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+  const lastRef = useRef(0);
+  return useCallback(() => {
+    const now = Date.now();
+    if (now - lastRef.current < ms) return;
+    lastRef.current = now;
+    fnRef.current();
+  }, [ms]);
+}
+
 export function StatusBar() {
   const count = useSkillkeeperStore(
     (s) => s.notifications.filter((n) => n.level === 'error').length,
@@ -60,6 +79,12 @@ export function StatusBar() {
   const closeTerminal = useSkillkeeperStore((s) => s.closeTerminal);
   const openTasks = useSkillkeeperStore((s) => s.openTasks);
   const closeTasks = useSkillkeeperStore((s) => s.closeTasks);
+  // Throttle the tasks toggle so a rapid re-click cannot flip the overlay
+  // open/closed faster than its animation settles.
+  const toggleTasks = useThrottledCallback(() => {
+    if (tasksOpen) closeTasks();
+    else openTasks();
+  }, 500);
   const t = useTranslator();
   const label = t('statusbar.notifications', { count: String(count) });
   return (
@@ -71,7 +96,7 @@ export function StatusBar() {
           'sk-statusbar__tasks',
           activeTaskCount === 0 && 'sk-statusbar__tasks--empty',
         )}
-        onClick={tasksOpen ? closeTasks : openTasks}
+        onClick={toggleTasks}
         aria-label={t('statusbar.tasks')}
       >
         <Icon name="check" size={18} />
