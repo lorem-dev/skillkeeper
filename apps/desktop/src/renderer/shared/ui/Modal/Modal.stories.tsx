@@ -50,16 +50,13 @@ export const ShortContentStaysCentered: Story = {
   },
 };
 
-// Content much taller than the viewport: the dialog cannot fit, so it flows
-// to its full height and the whole modal block -- title through actions --
-// scrolls as one unit within the overlay. The off-screen-going edge gets a
-// dark, blurred scrim bar that stays PINNED to the visible edge while the
-// content slides under it: the leaving content keeps full opacity and is
-// darkened AND blurred into the dark surroundings (it is not faded to
-// transparent). Scroll the story canvas to see the top bar appear once
-// scrolled past the start and the bottom bar disappear at the end, while
-// both bars hold their position.
-export const VeryTallContentScrollsWithDarkeningScrim: Story = {
+// Content taller than the window: the dialog flows to its full content height
+// and the whole block scrolls within the window (the scroll is on the window,
+// not the dialog), keeping its margin on every side. A fade block appears at
+// whichever edge still has hidden content -- the leaving content dissolves into
+// the dark surroundings. Scroll to see the top block appear once past the start
+// and the bottom block disappear at the end.
+export const VeryTallContentScrollsWithEdgeFades: Story = {
   render: () => {
     const [open, setOpen] = useState(false);
     return (
@@ -70,15 +67,15 @@ export const VeryTallContentScrollsWithDarkeningScrim: Story = {
         <Modal open={open} onClose={() => setOpen(false)} title="Very tall content">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <p>
-              This dialog is much taller than the viewport. The overlay scrolls
-              the whole block -- title, body, and actions together -- rather
-              than growing off-screen or scrolling only an inner region.
+              This dialog is much taller than the window, so the whole block
+              scrolls within the window (title through actions) as one unit,
+              keeping a margin on every side.
             </p>
             {Array.from({ length: 24 }, (_, i) => (
               <p key={i}>
-                Section {i + 1} of a long form. Keep scrolling to watch the
-                pinned top bar darken and blur the content sliding under it,
-                and the bottom bar dim away near the end.
+                Section {i + 1} of a long form. Keep scrolling to watch the top
+                fade block appear as content leaves upward and the bottom block
+                fade away near the end.
               </p>
             ))}
             <Button variant="primary" onClick={() => setOpen(false)}>

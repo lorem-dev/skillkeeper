@@ -4,14 +4,19 @@
  * scrim click. A solid elevated surface (no backdrop refraction) so the
  * entrance never flickers. Generic -- no product knowledge. See 8.9.
  *
- * A dialog taller than the viewport is not clipped or capped: it flows to
- * its full content height and the whole block scrolls, as one unit, within
- * an inner scroll viewport (see Modal.scss for the centering technique). The
- * scrim itself does NOT scroll -- it hosts the edge bars, which therefore
- * stay pinned to the visible top/bottom edges while the dialog slides under
- * them. Whichever edge still has hidden content gets a dark, blurred scrim
- * bar (the leaving content darkens and blurs into the dark surroundings),
- * sized from the viewport's scroll position in the effect below.
+ * Sizing & scroll: the dialog is always exactly as tall as its content -- it is
+ * never capped or given an inner scroll region. Instead the scroll lives on the
+ * WINDOW around it (`.sk-modal__viewport`, the scroll container filling the
+ * scrim): a short dialog centers with a margin on every side; a tall one flows
+ * to its full content height and the whole block scrolls within that window, as
+ * one unit, keeping its margins (including the bottom).
+ *
+ * Edge fades: the scrim is stationary and hosts the fade blocks, so they stay
+ * pinned to the window's top/bottom edges while the dialog scrolls under them.
+ * A block appears only on the edge that still has hidden content -- a gradient
+ * that dissolves the leaving content into the dark surroundings -- and none
+ * shows when the dialog fits without scrolling (sized from the window's scroll
+ * position in the effect below).
  */
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
@@ -28,28 +33,26 @@ export interface ModalProps {
   readonly className?: string;
 }
 
-// Height of the top/bottom dark scrim band. A fixed pixel size reads
-// consistently regardless of how tall the dialog gets.
-const EDGE_SCRIM_PX = 48;
+// Height of a top/bottom fade block when that edge has hidden content.
+const FADE_PX = 48;
 // Sub-pixel scroll positions are common (fractional zoom, high-DPI); treat
 // anything under this as "at the edge" rather than "still scrollable".
 const EDGE_EPSILON_PX = 1;
 
 /**
- * Reads the viewport's scroll position and sizes the scrim's edge-scrim
- * custom properties so a bar appears only on the edge that has hidden
- * content: none at the very top, none at the very bottom, and none at all
- * when the dialog fits without scrolling. The bars live on `scrim` (the
- * stationary overlay), so they read the properties there even though the
- * scroll happens on `viewport`.
+ * Reads the scroll window's position and sizes the fade custom properties so a
+ * block appears only on the edge that has hidden content: none at the very top,
+ * none at the very bottom, and none at all when the dialog fits without
+ * scrolling. The blocks live on `scrim` (stationary), so they read the
+ * properties there even though the scroll happens on `viewport`.
  */
-function updateEdgeScrim(viewport: HTMLDivElement, scrim: HTMLDivElement): void {
+function updateFades(viewport: HTMLDivElement, scrim: HTMLDivElement): void {
   const { scrollTop, scrollHeight, clientHeight } = viewport;
   const overflows = scrollHeight - clientHeight > EDGE_EPSILON_PX;
   const hasHiddenTop = overflows && scrollTop > EDGE_EPSILON_PX;
   const hasHiddenBottom = overflows && scrollTop < scrollHeight - clientHeight - EDGE_EPSILON_PX;
-  scrim.style.setProperty('--sk-modal-scrim-top', hasHiddenTop ? `${EDGE_SCRIM_PX}px` : '0px');
-  scrim.style.setProperty('--sk-modal-scrim-bottom', hasHiddenBottom ? `${EDGE_SCRIM_PX}px` : '0px');
+  scrim.style.setProperty('--sk-modal-fade-top', hasHiddenTop ? `${FADE_PX}px` : '0px');
+  scrim.style.setProperty('--sk-modal-fade-bottom', hasHiddenBottom ? `${FADE_PX}px` : '0px');
 }
 
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
@@ -66,17 +69,16 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // Recompute the edge scrim on scroll, on viewport resize, and whenever the
-  // dialog's own size changes (a field growing, a validation message
-  // appearing) -- all of which can change whether content is hidden above or
-  // below the visible band.
+  // Recompute the fades on window scroll, on viewport resize, and whenever the
+  // dialog's own size changes (a field growing, a validation message appearing)
+  // -- all of which can change whether content is hidden above or below.
   useEffect(() => {
     if (!open) return undefined;
     const viewport = viewportRef.current;
     const scrim = scrimRef.current;
     if (viewport === null || scrim === null) return undefined;
 
-    const recompute = (): void => updateEdgeScrim(viewport, scrim);
+    const recompute = (): void => updateFades(viewport, scrim);
     recompute();
 
     viewport.addEventListener('scroll', recompute, { passive: true });
@@ -106,20 +108,22 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
           onClick={onClose}
         >
           <div className="sk-modal__viewport" ref={viewportRef}>
-            <motion.div
-              ref={dialogRef}
-              role="dialog"
-              aria-modal="true"
-              className={cx('sk-modal', className)}
-              variants={fadeScale}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {title !== undefined && <div className="sk-modal__title">{title}</div>}
-              <div className="sk-modal__body">{children}</div>
-            </motion.div>
+            <div className="sk-modal__center">
+              <motion.div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                className={cx('sk-modal', className)}
+                variants={fadeScale}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {title !== undefined && <div className="sk-modal__title">{title}</div>}
+                <div className="sk-modal__body">{children}</div>
+              </motion.div>
+            </div>
           </div>
         </motion.div>
       )}
