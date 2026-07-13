@@ -141,16 +141,17 @@ export function App() {
     }
   }
 
+  const platform = hostPlatform(bridgeClient.platform);
+
   return (
     <AnimationProvider mode={animationMode}>
-    <div
-      className={cx('sk-app', `sk-app--${hostPlatform(bridgeClient.platform)}`)}
-      data-anim={animationMode}
-    >
+    <div className={cx('sk-app', `sk-app--${platform}`)} data-anim={animationMode}>
       <WindowChrome />
       <ConfigBanner />
       <div className="sk-shell">
-        <Sidebar title={t('app.title')}>
+        {/* On macOS the sidebar top is the drag/traffic-light zone, so drop the
+            app-title header there; other platforms keep it. */}
+        <Sidebar title={platform === 'mac' ? undefined : t('app.title')}>
           {NAV_ITEMS.map(({ id, key }) => (
             <SidebarItem
               key={id}
