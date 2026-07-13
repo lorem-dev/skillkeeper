@@ -1,10 +1,10 @@
 /**
  * App-level wiring for the frameless-window title bar.
  *
- * On macOS there is no title-bar strip: the app content reaches the top, the
- * native traffic lights float over the sidebar's top-left, and the draggable
- * region is set on the top of the sidebar and page header (App.scss), so this
- * renders nothing. On Windows/Linux it renders the (pure) TitleBar strip with
+ * On macOS this renders nothing: the sidebar reserves and drags its own top
+ * region (its `dragRegion` panel), and the toolbar/overlay headers are dragged
+ * by their non-interactive parts (title + spacer), set up in App.scss
+ * `.sk-app--mac`. On Windows/Linux it renders the (pure) TitleBar strip with
  * custom window controls, wired to the bridge and tracking the maximized state.
  */
 import { useEffect, useState } from 'react';
@@ -32,8 +32,8 @@ export function WindowChrome() {
     };
   }, [platform]);
 
-  // No custom bar on macOS -- the native traffic lights and the drag regions on
-  // the real content (App.scss) do the job.
+  // macOS draws no chrome element -- the sidebar's own drag panel and the
+  // header title/spacer areas (App.scss) move the window.
   if (platform === 'mac') return null;
 
   return (

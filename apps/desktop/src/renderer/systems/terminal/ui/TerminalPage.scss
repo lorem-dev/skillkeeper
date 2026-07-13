@@ -12,22 +12,25 @@
   background: var(--sk-color-bg);
   color: var(--sk-color-label);
   outline: none;
-  // No transition on the base: SHOWING is instant. So when switching here from
-  // another overlay (which unmounts at the same moment), the terminal is opaque
-  // immediately and the main page never flashes through a fade-in. The fade
-  // lives on `--hidden` below, so only HIDING animates.
+  opacity: 1;
+  // Fully hidden (display:none) when closed -- unlike opacity alone, it then
+  // takes no layout, so its draggable header (App.scss) projects no drag region
+  // over the app. The overlay stays MOUNTED (the PTY lives on), so display is
+  // toggled by `--hidden` rather than unmounting. Opening flips display first,
+  // then fades in (@starting-style); closing fades out, then flips to
+  // display:none after the fade (transition-behavior: allow-discrete).
+  transition:
+    opacity var(--sk-duration-medium) var(--sk-ease-standard),
+    display var(--sk-duration-medium) allow-discrete;
+
+  @starting-style {
+    opacity: 0;
+  }
 }
 
-// Hidden, but kept mounted and full-size so the terminal stays sized to the
-// window (the PTY width tracks the display even while closed). Not painted and
-// click-through; `inert` (set in the component) blocks focus/interaction. Fades
-// out (this is the state being transitioned TO when the class is added), so a
-// close reveals what is beneath gently; a switch hides it behind the opaque
-// incoming overlay, so the fade is not seen there.
 .sk-terminal-page--hidden {
+  display: none;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--sk-duration-medium) var(--sk-ease-standard);
 }
 
 .sk-terminal-page__header {

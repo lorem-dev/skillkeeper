@@ -101,6 +101,10 @@ export function TerminalView() {
     const onInput = term.onData((data) => bridgeClient.writeTerminal(data));
     let prevCols = term.cols;
     const ro = new ResizeObserver(() => {
+      // Skip while hidden (the overlay is display:none -> zero size): fitting to
+      // 0 would drop the scrollback and resize the PTY to nothing. The observer
+      // fires again with the real size when the overlay is shown, refitting.
+      if (el.clientWidth === 0 || el.clientHeight === 0) return;
       fit.fit();
       if (term.cols !== prevCols) {
         prevCols = term.cols;

@@ -149,9 +149,13 @@ export function App() {
       <WindowChrome />
       <ConfigBanner />
       <div className="sk-shell">
-        {/* On macOS the sidebar top is the drag/traffic-light zone, so drop the
-            app-title header there; other platforms keep it. */}
-        <Sidebar title={platform === 'mac' ? undefined : t('app.title')}>
+        {/* On macOS the sidebar top is the drag/traffic-light zone: drop the
+            app-title header there and render a draggable panel instead; other
+            platforms keep the title and no drag region. */}
+        <Sidebar
+          title={platform === 'mac' ? undefined : t('app.title')}
+          dragRegion={platform === 'mac'}
+        >
           {NAV_ITEMS.map(({ id, key }) => (
             <SidebarItem
               key={id}

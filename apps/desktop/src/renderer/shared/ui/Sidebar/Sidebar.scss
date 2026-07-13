@@ -6,7 +6,6 @@
   width: 200px;
   display: flex;
   flex-direction: column;
-  padding: var(--sk-space-3) 0;
   background: var(--sk-glass-tint);
   backdrop-filter: blur(15px) saturate(180%);
   -webkit-backdrop-filter: blur(15px) saturate(180%);
@@ -15,6 +14,16 @@
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     background: var(--sk-color-bg-secondary);
   }
+}
+
+// Top spacer for a frameless window (macOS traffic-light zone): a real in-flow
+// block that reserves its own height, so the first item clears the native
+// window controls. It is also the drag region (moves the window); being empty,
+// it never intercepts a click.
+.sk-sidebar__drag {
+  flex: none;
+  height: 44px;
+  -webkit-app-region: drag;
 }
 
 .sk-sidebar__title {
