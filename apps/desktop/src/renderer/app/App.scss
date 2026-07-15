@@ -106,11 +106,13 @@
 .sk-app--mac .sk-tasks__header,
 .sk-app--mac .sk-terminal-page__header,
 .sk-app--mac .sk-logs__header {
-  // Raise the controls so their top lines up with the traffic lights, and shift
-  // the header content past the lights (top-left) so the title clears them. The
-  // whole header drags the window except its controls (its h1 title stays drag).
+  // Same size as a page header (same top/bottom padding, so its controls line
+  // up with the traffic lights); only the content is shifted right so the title
+  // begins past the lights (top-left) with a comfortable gap. The whole header
+  // drags the window except its controls (its h1 title stays draggable).
   padding-top: var(--sk-space-4);
-  padding-left: 76px;
+  padding-bottom: var(--sk-space-6);
+  padding-left: 100px;
   -webkit-app-region: drag;
   * {
     -webkit-app-region: no-drag;
@@ -118,16 +120,6 @@
   h1 {
     -webkit-app-region: drag;
   }
-}
-
-// Compact overlay title: a window-title-bar heading (small) rather than the big
-// page heading, since it now sits in the raised, traffic-light-aligned header.
-.sk-app--mac .sk-tasks__title,
-.sk-app--mac .sk-terminal-page__title,
-.sk-app--mac .sk-logs__title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
 }
 
 // Shrink the page header's top so its controls sit up at the traffic-light
