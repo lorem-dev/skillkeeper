@@ -1,4 +1,5 @@
 site_name: SkillKeeper
+repo_url: https://github.com/lorem-dev/skillkeeper
 theme:
   name: readthedocs
 nav:

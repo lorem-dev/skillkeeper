@@ -11,7 +11,7 @@
 Clone the repository and install dependencies:
 
 ```
-git clone git@github.com:lorem/skillkeeper.git
+git clone git@github.com:lorem-dev/skillkeeper.git
 cd skillkeeper
 pnpm install
 ```

@@ -2,6 +2,8 @@
   "name": "@skillkeeper/desktop",
   "version": "0.0.0",
   "private": true,
+  "author": "Lorem Dev",
+  "homepage": "https://github.com/lorem-dev/skillkeeper",
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
@@ -16,7 +18,7 @@
     "build-storybook": "storybook build"
   },
   "build": {
-    "appId": "dev.skillkeeper.app",
+    "appId": "dev.lorem.skillkeeper",
     "productName": "SkillKeeper",
     "directories": {
       "buildResources": "build",
@@ -85,9 +87,9 @@
       "applicationId": "SkillKeeper",
       "backgroundColor": "#1e40af",
       "displayName": "SkillKeeper",
-      "identityName": "dev.skillkeeper.SkillKeeper",
-      "publisher": "CN=SkillKeeper",
-      "publisherDisplayName": "SkillKeeper",
+      "identityName": "dev.lorem.SkillKeeper",
+      "publisher": "CN=Lorem Dev",
+      "publisherDisplayName": "Lorem Dev",
       "languages": [
         "en-US"
       ]
