@@ -14,7 +14,7 @@ import {
   buildForceCheckoutArgs,
   createSystemGit,
 } from './systemGit.js';
-import type { HostEnv } from '../ports.js';
+import type { HostEnv } from '../kernel/ports.js';
 
 const ENV: HostEnv = { homeDir: '/home/u', platform: 'linux', env: { PATH: '/usr/bin' } };
 

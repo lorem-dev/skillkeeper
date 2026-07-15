@@ -1,5 +1,5 @@
 /**
- * Mirrors core's `supportsTransport` (`packages/core/src/mcpWriters/index.ts`):
+ * Mirrors core's `supportsTransport` (`packages/core/src/mcp/writers/index.ts`):
  * whether an agent's native MCP config can express a given transport. Codex
  * writes TOML `[mcp_servers.*]` entries that only support stdio; every other
  * agent's JSON config can express all three transports.

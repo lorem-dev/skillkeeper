@@ -87,7 +87,7 @@ function repoMcpPresetId(repoId: string, group: string | undefined, name: string
 // `@skillkeeper/core` is one barrel module: importing any single runtime
 // export from it pulls the whole module graph into the renderer bundle,
 // including files that reach for Node's `fs`/`crypto`/`child_process`
-// (`nodeFs.ts`, `mcpHashing.ts`, `systemGit.ts`), which the sandboxed renderer
+// (`kernel/nodeFs.ts`, `mcp/hashing.ts`, `git/systemGit.ts`), which the sandboxed renderer
 // (`nodeIntegration: false`) cannot run. `parseParams` and `normalizeRemote`
 // happen to be pure and dependency-free in isolation, but importing them still
 // drags that graph in (verified: doing so adds "externalized for browser
@@ -95,7 +95,7 @@ function repoMcpPresetId(repoId: string, group: string | undefined, name: string
 // The three helpers below duplicate those small, stable algorithms locally
 // instead, byte-for-byte, so the store never reaches into core's runtime.
 
-/** Mirrors core's `parseParams` (`mcpParams.ts`): scans every string field of
+/** Mirrors core's `parseParams` (`mcp/params.ts`): scans every string field of
  *  an MCP def for `{param}` placeholders and returns the sorted, deduped set.
  *  Exported so a guard test can pin it to core's `parseParams`. */
 export function scanMcpParams(def: McpServerDef): string[] {
@@ -142,7 +142,7 @@ export function normalizeMcpRemote(url: string): string {
 
 /**
  * Recursively sorts object keys for stable JSON, mirroring core's
- * `canonicalMcpJson` (in `mcpHashing.ts`). Duplicated for the same reason as
+ * `canonicalMcpJson` (in `mcp/hashing.ts`). Duplicated for the same reason as
  * `scanMcpParams`/`normalizeMcpRemote` above: `hashMcpDef` itself calls Node's
  * `crypto.createHash`, unreachable from the sandboxed renderer.
  * `hashMcpDefInRenderer` below reproduces the same canonical-JSON + SHA-256

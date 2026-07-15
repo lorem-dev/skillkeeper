@@ -167,7 +167,7 @@ function instanceKey(identity: McpInstall['identity'], instanceName: string): st
 
 /** Display label for an installed instance: its source name plus the numeric
  *  suffix parsed off its instance-config name (`github_1` -> `github 1`), per
- *  the `<snake>_<n>` naming convention in `packages/core/src/mcpNaming.ts`.
+ *  the `<snake>_<n>` naming convention in `packages/core/src/mcp/naming.ts`.
  *  Falls back to the bare source when the instance name does not follow that
  *  convention (should not happen for a SkillKeeper-managed instance). */
 function instanceDisplayName(source: string, instanceName: string): string {

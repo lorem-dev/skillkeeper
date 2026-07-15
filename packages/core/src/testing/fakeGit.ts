@@ -1,4 +1,4 @@
-import type { CloneOptions, GitPort, GitRef } from '../ports.js';
+import type { CloneOptions, GitPort, GitRef } from '../kernel/ports.js';
 
 /** A recorded git operation, for assertions in tests. */
 export interface GitCall {
