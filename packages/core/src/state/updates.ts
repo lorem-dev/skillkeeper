@@ -1,7 +1,7 @@
-import { manifestContentHash, resolvedContentHash } from './hashing.js';
-import type { GitPort } from './ports.js';
-import type { FsPort } from './ports.js';
-import type { InstallManifest, Repository, ResolvedSkill } from './model.js';
+import { manifestContentHash, resolvedContentHash } from '../kernel/hashing.js';
+import type { GitPort } from '../kernel/ports.js';
+import type { FsPort } from '../kernel/ports.js';
+import type { InstallManifest, Repository, ResolvedSkill } from '../kernel/model.js';
 
 /** Revision used to resolve the tracked upstream ref. */
 const UPSTREAM = '@{upstream}';

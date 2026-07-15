@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalMcpJson, hashMcpDef } from './mcpHashing.js';
+import { canonicalMcpJson, hashMcpDef } from './hashing.js';
 
 describe('hashMcpDef', () => {
   it('excludes name from the hash', () => {

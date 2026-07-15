@@ -1,5 +1,5 @@
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { SKID_FILE } from './hashing.js';
+import { SKID_FILE } from '../kernel/hashing.js';
 
 export { SKID_FILE };
 

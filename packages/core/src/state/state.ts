@@ -7,8 +7,8 @@
  * SkillKeeper. Writes are atomic (temp file then rename). This module is pure
  * over an injected {@link FsPort} so it is testable with the in-memory fake.
  */
-import type { FsPort } from './ports.js';
-import type { InstallManifest, Project, Repository } from './model.js';
+import type { FsPort } from '../kernel/ports.js';
+import type { InstallManifest, Project, Repository } from '../kernel/model.js';
 
 /** Current on-disk state schema version, for forward migration. */
 export const STATE_VERSION = 1;

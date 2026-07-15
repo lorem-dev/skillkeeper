@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { installMcpInstance, removeMcpInstance } from './mcpInstall.js';
-import type { InstallMcpArgs } from './mcpInstall.js';
-import { createMemFs } from './testing/memfs.js';
-import type { McpServerDef } from './mcpModel.js';
-import { hashMcpDef } from './mcpHashing.js';
+import { installMcpInstance, removeMcpInstance } from './install.js';
+import type { InstallMcpArgs } from './install.js';
+import { createMemFs } from '../testing/memfs.js';
+import type { McpServerDef } from './model.js';
+import { hashMcpDef } from './hashing.js';
 import { parseSkmcp, parseSkmcpParams } from './skmcp.js';
-import { guidanceKey } from './guidance.js';
+import { guidanceKey } from '../hooks/guidance.js';
 
 const STDIO_DEF: McpServerDef = {
   name: 'GitHub MCP',

@@ -1,4 +1,4 @@
-import type { FileStat, FsPort } from '../ports.js';
+import type { FileStat, FsPort } from '../kernel/ports.js';
 
 interface MemFile {
   content: string;

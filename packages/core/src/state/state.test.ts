@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMemFs } from './testing/index.js';
+import { createMemFs } from '../testing/index.js';
 import { emptyState, loadState, saveState, StateError, STATE_VERSION } from './state.js';
 import type { AppState } from './state.js';
-import type { Repository } from './model.js';
+import type { Repository } from '../kernel/model.js';
 
 const STATE_PATH = '/data/state.json';
 

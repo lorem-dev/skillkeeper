@@ -1,9 +1,9 @@
-import { sha256 } from './hashing.js';
-import { extractRegion } from './hookRegion.js';
-import { canonicalJson, findOwnedNode } from './hookJson.js';
+import { sha256 } from '../kernel/hashing.js';
+import { extractRegion } from '../hooks/hookRegion.js';
+import { canonicalJson, findOwnedNode } from '../hooks/hookJson.js';
 import { installSkill, type InstallOptions } from './install.js';
-import type { InstallManifest, ManagedHookEdit } from './model.js';
-import type { FsPort } from './ports.js';
+import type { InstallManifest, ManagedHookEdit } from '../kernel/model.js';
+import type { FsPort } from '../kernel/ports.js';
 
 /** Per-file or per-edit verification status. */
 export type VerifyStatus = 'ok' | 'modified' | 'missing' | 'extraneous';

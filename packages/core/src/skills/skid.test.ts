@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { installSkill } from './install.js';
+import { installSkill } from '../install/install.js';
 import { resolveSkills } from './resolver.js';
-import { skillHasUpdate } from './updates.js';
-import { createMemFs } from './testing/memfs.js';
-import { contentHash, manifestContentHash, resolvedContentHash } from './hashing.js';
+import { skillHasUpdate } from '../state/updates.js';
+import { createMemFs } from '../testing/memfs.js';
+import { contentHash, manifestContentHash, resolvedContentHash } from '../kernel/hashing.js';
 import { parseSkid, serializeSkid } from './skid.js';
-import { normalizeRemote } from './repoRemote.js';
-import type { AgentAdapter } from './adapter.js';
-import type { FsPort, HostEnv, ResolvedSkill } from './index.js';
+import { normalizeRemote } from '../git/repoRemote.js';
+import type { AgentAdapter } from '../adapters/adapter.js';
+import type { FsPort, HostEnv } from '../kernel/ports.js';
+import type { ResolvedSkill } from '../kernel/model.js';
 
 const ENV: HostEnv = { homeDir: '/home/u', platform: 'linux', env: {} };
 const REMOTE = 'git@github.com:acme/skills.git';

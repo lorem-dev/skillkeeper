@@ -1,20 +1,20 @@
-import { matchesAny } from './glob.js';
-import { contentHash, hashTree, sha256, SKID_FILE } from './hashing.js';
-import { serializeSkid } from './skid.js';
+import { matchesAny } from '../kernel/glob.js';
+import { contentHash, hashTree, sha256, SKID_FILE } from '../kernel/hashing.js';
+import { serializeSkid } from '../skills/skid.js';
 import {
   encapsulateForeignDelimiters,
   insertRegion,
   removeRegion,
   wrapRegion,
-} from './hookRegion.js';
+} from '../hooks/hookRegion.js';
 import {
   canonicalJson,
   encapsulateForeignMarkers,
   MARKER_FIELD,
   mergeHookNode,
   removeHookNode,
-} from './hookJson.js';
-import type { AgentAdapter } from './adapter.js';
+} from '../hooks/hookJson.js';
+import type { AgentAdapter } from '../adapters/adapter.js';
 import type {
   AgentTarget,
   InstallManifest,
@@ -23,8 +23,8 @@ import type {
   ResolvedHook,
   ResolvedSkill,
   SkillId,
-} from './model.js';
-import type { FsPort, HostEnv } from './ports.js';
+} from '../kernel/model.js';
+import type { FsPort, HostEnv } from '../kernel/ports.js';
 
 /** Options shared by install and repair. */
 export interface InstallOptions {

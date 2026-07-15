@@ -1,4 +1,4 @@
-import type { McpServerDef } from './mcpModel.js';
+import type { McpServerDef } from './model.js';
 
 const PLACEHOLDER = /\{([A-Za-z0-9_]+)\}/g;
 

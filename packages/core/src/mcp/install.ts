@@ -9,14 +9,14 @@
  * config, ledger, params, guidance files); the main process resolves agent ->
  * path before calling in.
  */
-import type { AgentKind } from './model.js';
-import type { McpServerDef } from './mcpModel.js';
-import type { FsPort } from './ports.js';
-import { renderParams } from './mcpParams.js';
-import { writerFor } from './mcpWriters/index.js';
-import { allocateInstanceName } from './mcpNaming.js';
-import { hashMcpDef } from './mcpHashing.js';
-import { guidanceKey, stripGuidanceMarkers, upsertGuidanceBlock, removeGuidanceBlock } from './guidance.js';
+import type { AgentKind } from '../kernel/model.js';
+import type { McpServerDef } from './model.js';
+import type { FsPort } from '../kernel/ports.js';
+import { renderParams } from './params.js';
+import { writerFor } from './writers/index.js';
+import { allocateInstanceName } from './naming.js';
+import { hashMcpDef } from './hashing.js';
+import { guidanceKey, stripGuidanceMarkers, upsertGuidanceBlock, removeGuidanceBlock } from '../hooks/guidance.js';
 import {
   parseSkmcp,
   serializeSkmcp,

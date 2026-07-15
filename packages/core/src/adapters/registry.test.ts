@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AdapterRegistry } from './registry.js';
 import type { AgentAdapter } from './adapter.js';
-import type { AgentKind } from './model.js';
+import type { AgentKind } from '../kernel/model.js';
 
 function fakeAdapter(kind: AgentKind): AgentAdapter {
   return {

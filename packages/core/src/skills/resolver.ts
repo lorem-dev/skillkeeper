@@ -1,8 +1,8 @@
-import { matchesAny } from './glob.js';
+import { matchesAny } from '../kernel/glob.js';
 import { parseHookManifest, parseSkillManifest } from './manifest.js';
 import { parseRepoConfig, RepoConfigError } from './repoConfig.js';
-import type { FsPort } from './ports.js';
-import type { ResolvedHook, ResolvedSkill, SkillId } from './model.js';
+import type { FsPort } from '../kernel/ports.js';
+import type { ResolvedHook, ResolvedSkill, SkillId } from '../kernel/model.js';
 
 const SKILL_FILE = 'SKILL.md';
 const HOOK_FILE = 'HOOK.md';

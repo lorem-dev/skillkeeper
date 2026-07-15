@@ -3,9 +3,9 @@
  * file. The pure string manipulation lives in ./guidance; these wrap it with
  * the FsPort + adapter so the desktop and CLI share one implementation.
  */
-import type { AgentAdapter } from './adapter.js';
-import type { AgentTarget, SkillId } from './model.js';
-import type { FsPort, HostEnv } from './ports.js';
+import type { AgentAdapter } from '../adapters/adapter.js';
+import type { AgentTarget, SkillId } from '../kernel/model.js';
+import type { FsPort, HostEnv } from '../kernel/ports.js';
 import {
   guidanceKey,
   skillGuidanceId,

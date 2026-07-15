@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { installSkill, uninstallSkill } from './install.js';
-import { resolveSkills } from './resolver.js';
-import { createMemFs } from './testing/memfs.js';
-import { sha256 } from './hashing.js';
-import type { AgentAdapter, HookCapability } from './adapter.js';
-import type { FsPort, HostEnv } from './ports.js';
-import type { ResolvedSkill } from './model.js';
+import { resolveSkills } from '../skills/resolver.js';
+import { createMemFs } from '../testing/memfs.js';
+import { sha256 } from '../kernel/hashing.js';
+import type { AgentAdapter, HookCapability } from '../adapters/adapter.js';
+import type { FsPort, HostEnv } from '../kernel/ports.js';
+import type { ResolvedSkill } from '../kernel/model.js';
 
 const ENV: HostEnv = { homeDir: '/home/u', platform: 'linux', env: {} };
 

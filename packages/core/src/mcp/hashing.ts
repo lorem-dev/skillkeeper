@@ -6,7 +6,7 @@
  */
 
 import { createHash } from 'crypto';
-import type { McpServerDef } from './mcpModel.js';
+import type { McpServerDef } from './model.js';
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 

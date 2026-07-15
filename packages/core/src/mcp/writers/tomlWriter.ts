@@ -13,7 +13,7 @@
  * is out of scope for this task.
  */
 import { parse as parseToml, stringify as stringifyToml } from 'smol-toml';
-import type { McpServerDef } from '../mcpModel.js';
+import type { McpServerDef } from '../model.js';
 import type { McpConfigWriter } from './types.js';
 
 const CONTAINER_KEY = 'mcp_servers';

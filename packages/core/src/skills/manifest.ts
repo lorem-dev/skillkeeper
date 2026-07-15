@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { FrontmatterError, splitFrontmatter } from './frontmatter.js';
-import type { HookManifest, SkillManifest } from './model.js';
+import { FrontmatterError, splitFrontmatter } from '../kernel/frontmatter.js';
+import type { HookManifest, SkillManifest } from '../kernel/model.js';
 
 /** Thrown when SKILL.md or HOOK.md frontmatter fails validation. */
 export class ManifestError extends Error {

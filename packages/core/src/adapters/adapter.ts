@@ -5,8 +5,8 @@
  * interfaces only and is excluded from the coverage gate.
  */
 
-import type { AgentKind, AgentTarget, HookStrategy } from './model.js';
-import type { HostEnv } from './ports.js';
+import type { AgentKind, AgentTarget, HookStrategy } from '../kernel/model.js';
+import type { HostEnv } from '../kernel/ports.js';
 
 /** A skill discovered in an agent location that SkillKeeper did not install. */
 export interface DiscoveredSkill {

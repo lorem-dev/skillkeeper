@@ -3,7 +3,7 @@
  *
  * The core {@link AgentAdapter} interface deliberately keeps its method
  * signatures free of an explicit `FsPort` parameter (see
- * `@skillkeeper/core/src/adapter.ts`). Filesystem-backed methods
+ * `@skillkeeper/core/src/adapters/adapter.ts`). Filesystem-backed methods
  * (`isAvailable`, `discoverInstalled`) therefore read the {@link FsPort} from
  * the host environment they are handed. {@link AdapterHostEnv} is the concrete
  * shape the front ends pass in: a {@link HostEnv} plus the injected `FsPort`.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseMcpConfig, McpConfigError } from './mcpConfig.js';
+import { parseMcpConfig, McpConfigError } from './config.js';
 
 describe('parseMcpConfig', () => {
   it('parses an http server with headers + rules', () => {

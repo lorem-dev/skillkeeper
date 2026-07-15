@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { dirname } from 'node:path';
-import type { CloneOptions, GitPort, GitRef, HostEnv } from '../ports.js';
+import type { CloneOptions, GitPort, GitRef, HostEnv } from '../kernel/ports.js';
 
 const execFileAsync = promisify(execFile);
 

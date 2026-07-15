@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { McpServerDef } from '../mcpModel.js';
+import type { McpServerDef } from '../model.js';
 import { mcpDestination, supportsTransport, writerFor } from './index.js';
 
 const stdioDef: McpServerDef = {

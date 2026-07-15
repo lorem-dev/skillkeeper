@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest';
-import { parseParams, validateParamSyntax, renderParams, missingParams } from './mcpParams.js';
+import { parseParams, validateParamSyntax, renderParams, missingParams } from './params.js';
 
 const def = { name: 'github', type: 'http', url: 'https://{host}/mcp',
   headers: { Authorization: 'Bearer {token}' }, rules: 'host={host}' } as const;

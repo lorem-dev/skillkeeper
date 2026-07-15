@@ -1,4 +1,4 @@
-import type { Clock } from './ports.js';
+import type { Clock } from '../kernel/ports.js';
 
 /** Update-check scheduling mode. */
 export type SchedulerMode = 'manual' | 'on-startup' | 'scheduled';

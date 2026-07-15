@@ -6,10 +6,10 @@ import {
   writeSkillGuidance,
 } from './guidanceApply.js';
 import { guidanceKey, skillGuidanceId, upsertGuidanceBlock } from './guidance.js';
-import { createMemFs } from './testing/memfs.js';
-import type { AgentAdapter } from './adapter.js';
-import type { AgentTarget } from './model.js';
-import type { HostEnv } from './ports.js';
+import { createMemFs } from '../testing/memfs.js';
+import type { AgentAdapter } from '../adapters/adapter.js';
+import type { AgentTarget } from '../kernel/model.js';
+import type { HostEnv } from '../kernel/ports.js';
 
 const REMOTE = 'git@github.com:acme/skills.git';
 const ENV: HostEnv = { homeDir: '/home/u', platform: 'linux', env: {} };

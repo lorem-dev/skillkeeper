@@ -4,7 +4,7 @@
  * never be committed. Idempotent: writes only when a line is actually missing.
  */
 import { SKMCP_PARAMS_FILE } from './skmcp.js';
-import type { FsPort } from './ports.js';
+import type { FsPort } from '../kernel/ports.js';
 
 /** Sibling `.yaml`-spelled variant of {@link SKMCP_PARAMS_FILE}. */
 const SKMCP_PARAMS_FILE_YAML = '.skmcp.params.yaml';

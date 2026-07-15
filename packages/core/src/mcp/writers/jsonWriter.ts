@@ -9,7 +9,7 @@
  * Output is deterministic: keys are sorted recursively before serializing,
  * matching the convention in `hookJson.ts`.
  */
-import type { McpServerDef } from '../mcpModel.js';
+import type { McpServerDef } from '../model.js';
 import type { McpConfigWriter } from './types.js';
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };

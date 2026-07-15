@@ -2,7 +2,7 @@
  * Renderer-local validation for the manual MCP preset editor
  * (`McpEditModal`).
  *
- * `validateParamSyntax` mirrors `packages/core/src/mcpParams.ts`'s function
+ * `validateParamSyntax` mirrors `packages/core/src/mcp/params.ts`'s function
  * of the same name byte-for-byte (pinned by the drift-guard test in
  * `validate.test.ts`). It is duplicated here rather than imported because
  * `@skillkeeper/core`'s barrel pulls Node-only runtime deps (`node:fs`,
@@ -46,7 +46,7 @@ export type ParamSyntaxResult = { ok: true } | { ok: false; index: number; reaso
  * Validates that every `{` in the text opens a well-formed placeholder: a
  * non-empty run of `[A-Za-z0-9_]` characters followed by `}`. MUST stay
  * byte-for-byte identical to core's `validateParamSyntax`
- * (`packages/core/src/mcpParams.ts`) -- see the drift-guard test.
+ * (`packages/core/src/mcp/params.ts`) -- see the drift-guard test.
  */
 export function validateParamSyntax(text: string): ParamSyntaxResult {
   for (let i = 0; i < text.length; i += 1) {

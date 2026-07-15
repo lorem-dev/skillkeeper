@@ -3,8 +3,8 @@
  * transport gating and destination-path resolution. See the per-agent
  * mapping table in the design doc (MCP support, section 4).
  */
-import type { AgentKind } from '../model.js';
-import type { McpTransport } from '../mcpModel.js';
+import type { AgentKind } from '../../kernel/model.js';
+import type { McpTransport } from '../model.js';
 import { createJsonWriter, toOpencodeServerJson, toStandardServerJson } from './jsonWriter.js';
 import { createCodexTomlWriter } from './tomlWriter.js';
 import type { McpConfigWriter } from './types.js';

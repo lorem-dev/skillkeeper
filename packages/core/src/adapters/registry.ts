@@ -1,5 +1,5 @@
 import type { AgentAdapter } from './adapter.js';
-import type { AgentKind } from './model.js';
+import type { AgentKind } from '../kernel/model.js';
 
 /**
  * Registry of agent adapters keyed by {@link AgentKind}. This is the only place

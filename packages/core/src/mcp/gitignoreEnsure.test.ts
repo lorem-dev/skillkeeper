@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ensureGitignore } from './gitignoreEnsure.js';
-import { createMemFs } from './testing/memfs.js';
-import type { FsPort } from './ports.js';
+import { createMemFs } from '../testing/memfs.js';
+import type { FsPort } from '../kernel/ports.js';
 
 const PROJECT = '/proj';
 const GITIGNORE = `${PROJECT}/.gitignore`;

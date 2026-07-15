@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveSkills } from './resolver.js';
-import { createMemFs } from './testing/memfs.js';
+import { createMemFs } from '../testing/memfs.js';
 
 const SKILL = (name: string): string => `---\nname: ${name}\n---\n# ${name}\n`;
 const HOOK = (name: string, agent = 'codex'): string =>

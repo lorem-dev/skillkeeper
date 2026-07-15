@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Scheduler } from './scheduler.js';
-import type { Clock } from './ports.js';
+import type { Clock } from '../kernel/ports.js';
 
 /** A controllable clock for deterministic scheduler tests. */
 function fakeClock(

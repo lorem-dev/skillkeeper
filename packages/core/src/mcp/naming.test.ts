@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toSnakeCase, allocateInstanceName } from './mcpNaming.js';
+import { toSnakeCase, allocateInstanceName } from './naming.js';
 
 describe('toSnakeCase', () => {
   it('snake-cases names', () => {

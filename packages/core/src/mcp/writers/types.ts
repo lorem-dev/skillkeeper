@@ -4,7 +4,7 @@
  * caller reads the destination file (or passes `''` when it is absent), calls
  * the writer, and writes the result back.
  */
-import type { McpServerDef } from '../mcpModel.js';
+import type { McpServerDef } from '../model.js';
 
 export interface McpConfigWriter {
   /** Add server `name`, or replace it if already present. */

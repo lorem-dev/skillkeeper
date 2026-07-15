@@ -11,7 +11,7 @@ import { constants } from 'node:fs';
 import { chmod, access, mkdir, readdir, readFile, rename, rm, rmdir, stat, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
-import type { FileStat, FsPort } from '../ports.js';
+import type { FileStat, FsPort } from './ports.js';
 
 const OWNER_EXEC = 0o100;
 const ALL_EXEC = 0o111;

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { repoHasUpdate, skillHasUpdate } from './updates.js';
-import { resolveSkills } from './resolver.js';
-import { installSkill } from './install.js';
-import { createFakeGit } from './testing/fakeGit.js';
-import { createMemFs } from './testing/memfs.js';
-import type { AgentAdapter } from './adapter.js';
-import type { HostEnv, FsPort } from './ports.js';
-import type { Repository, ResolvedSkill } from './model.js';
+import { resolveSkills } from '../skills/resolver.js';
+import { installSkill } from '../install/install.js';
+import { createFakeGit } from '../testing/fakeGit.js';
+import { createMemFs } from '../testing/memfs.js';
+import type { AgentAdapter } from '../adapters/adapter.js';
+import type { HostEnv, FsPort } from '../kernel/ports.js';
+import type { Repository, ResolvedSkill } from '../kernel/model.js';
 
 const ENV: HostEnv = { homeDir: '/home/u', platform: 'linux', env: {} };
 
