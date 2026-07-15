@@ -67,3 +67,7 @@
   // window edge; a small inset on the left. Vertical padding unchanged.
   padding: var(--sk-space-3) 0 var(--sk-space-3) var(--sk-space-3);
 }
+
+[data-theme='light'] .sk-terminal {
+  filter: invert(1);
+}

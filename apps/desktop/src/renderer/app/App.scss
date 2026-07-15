@@ -111,7 +111,7 @@
   // begins past the lights (top-left) with a comfortable gap. The whole header
   // drags the window except its controls (its h1 title stays draggable).
   padding-top: var(--sk-space-4);
-  padding-bottom: var(--sk-space-6);
+  padding-bottom: var(--sk-space-4);
   padding-left: 100px;
   -webkit-app-region: drag;
   * {
@@ -119,6 +119,8 @@
   }
   h1 {
     -webkit-app-region: drag;
+    font-size: 16px;
+    text-align: center;
   }
 }
 
