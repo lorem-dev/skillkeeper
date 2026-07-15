@@ -1,10 +1,43 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import type { Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import sonda from 'sonda/vite';
 
 const fromHere = (relative: string): string =>
   fileURLToPath(new URL(relative, import.meta.url));
+
+// Minify the (small, hand-authored) inline preloader CSS: drop comments,
+// collapse whitespace, and trim around braces/semicolons/commas. Colons are
+// left untouched so `@media (feature: value)` and `property: value` stay valid.
+function minifyInlineCss(css: string): string {
+  return css
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*([{};,])\s*/g, '$1')
+    .replace(/;}/g, '}')
+    .trim();
+}
+
+// This Vite build minifies JS/CSS assets but leaves the index.html entry (and
+// its inline preloader <style>) untouched. Minify it at build time: minify the
+// inline CSS, then strip comments and collapse whitespace in the markup (safe
+// here -- the document has no whitespace-sensitive text nodes).
+function minifyIndexHtml(): Plugin {
+  return {
+    name: 'sk-minify-index-html',
+    apply: 'build',
+    enforce: 'post',
+    transformIndexHtml(html) {
+      return html
+        .replace(/<style>([\s\S]*?)<\/style>/g, (_all, css: string) => `<style>${minifyInlineCss(css)}</style>`)
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/>\s+</g, '><')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+    },
+  };
+}
 
 // Workspace packages are aliased to their TypeScript source so the desktop
 // app builds without requiring the libraries to be compiled first.
@@ -58,6 +91,7 @@ export default defineConfig(({ mode }) => {
       resolve: { alias: { ...alias, '@': fromHere('./src/renderer') } },
       plugins: [
         react(),
+        minifyIndexHtml(),
         sonda({
           enabled: analyze,
           format: 'html',
@@ -71,8 +105,12 @@ export default defineConfig(({ mode }) => {
       ],
       build: {
         outDir: 'out/renderer',
-        // Sonda attributes bytes back to source through source maps, so emit
-        // them when analyzing.
+        // Minify the production renderer (JS, CSS, and the index.html entry with
+        // its inline preloader styles). electron-vite leaves the renderer on
+        // Vite's own defaults, and this Vite build does not minify unless asked.
+        // Disabled under `analyze` so Sonda can attribute bytes to readable
+        // source via the sourcemaps it needs.
+        minify: !analyze,
         sourcemap: analyze,
         rollupOptions: {
           input: fromHere('./src/renderer/index.html'),

@@ -71,6 +71,20 @@ single final check before a change is considered done or a pull request opened.
 
 ---
 
+## App Packaging
+
+Desktop packaging uses electron-builder (`pnpm --filter @skillkeeper/desktop run
+package`). The app icon source is `apps/desktop/build/icon.icon` (Icon Composer)
+exported to `icon.png`; every platform binary (macOS `.icns`, Windows `.ico`,
+Windows Store Visual Assets) is generated from that PNG at build time by the
+cross-platform script
+[`apps/desktop/build/generate-icons.mjs`](apps/desktop/build/generate-icons.mjs)
+and is git-ignored. See
+[`apps/desktop/build/README.md`](apps/desktop/build/README.md) for the full
+icon / signing / desktop-entry setup.
+
+---
+
 ## Conventions
 
 ### TypeScript

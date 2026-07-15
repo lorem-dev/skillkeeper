@@ -1,0 +1,9 @@
+# Generated at build time from icon-default.png / icon-dark.png by
+# generate-icons.mjs. Only those two full-bleed sources are committed.
+/icon.app.png
+/icon-dark.app.png
+/icon.icns
+/icon.ico
+/appx/
+# Source-hash cache used to skip regeneration when the sources are unchanged.
+/.icon-cache.json

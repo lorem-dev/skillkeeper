@@ -57,6 +57,15 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'off',
     },
   },
+  // Node build scripts (e.g. the icon generator) run under Node, so expose its
+  // globals -- js.configs.recommended enables no-undef for plain .mjs files
+  // (unlike the TS configs, which delegate undefined-name checks to tsc).
+  {
+    files: ['apps/desktop/build/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly' },
+    },
+  },
   // Keep this last: disable formatting rules that conflict with Prettier.
   prettier,
 );

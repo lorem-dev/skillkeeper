@@ -5,7 +5,7 @@
  * placeholder content area that shows the selected view. No router library is
  * used for the v1 shell -- a simple useState drives view selection.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { cx, AnimationProvider } from '@/shared/lib';
@@ -17,6 +17,7 @@ import { useUpdateSchedule } from '@/systems/updates';
 import { useProjectCheckSchedule } from '@/systems/projects';
 import { ConfigBanner } from '@/features/configBanner';
 import { WindowChrome } from './WindowChrome';
+import { dismissPreloader } from './preloader';
 import { hostPlatform } from './hostPlatform';
 import { RepositoriesPage } from '@/pages/Repositories';
 import { SkillsComponentsPage, SkillsManagementPage } from '@/pages/Skills';
@@ -70,10 +71,26 @@ export function App() {
   // a header never navigates.
   const [skillsOpen, setSkillsOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
+  const initialLoadStarted = useRef(false);
 
   useEffect(() => {
     void loadAll(bridgeClient);
   }, [loadAll]);
+
+  // Reveal the app by dismissing the hardcoded startup preloader once the
+  // initial load settles (loading goes true then false). This effect runs after
+  // the loaded content is committed, so the reveal never flashes an unloaded
+  // frame. Fades over 300ms unless animations are off; dismissPreloader is
+  // idempotent, so a later reload's loading cycle is a harmless no-op.
+  useEffect(() => {
+    if (loading) {
+      initialLoadStarted.current = true;
+      return;
+    }
+    if (initialLoadStarted.current) {
+      dismissPreloader(animationMode !== 'off');
+    }
+  }, [loading, animationMode]);
 
   // An add-repository request (e.g. from an unlinked skill) switches to the
   // Repositories view; RepoAddButton then opens the prefilled form and clears it.

@@ -40,6 +40,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # The desktop build needs the real binary assets, not LFS pointers:
+          # the fonts (woff2) bundled by the renderer and the icon source PNGs
+          # (icon-default.png / icon-dark.png) that generate-icons reads. All are
+          # tracked via Git LFS, which checkout does not fetch by default.
+          lfs: true
 
       - name: Enable pnpm via corepack
         run: corepack enable

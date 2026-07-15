@@ -5,9 +5,15 @@
  * The renderer process is sandboxed and communicates only through the preload
  * bridge via ipcMain.handle channels.
  */
-import { app, BrowserWindow, ipcMain, session, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, session, dialog, nativeImage, nativeTheme } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
+// The padded app icons (generate-icons.mjs), bundled into the build output.
+// electron-builder only applies icons to packaged apps, so the dock/taskbar
+// shows the default Electron icon in `dev` unless we set it at runtime here.
+// Two appearances are bundled and swapped to follow the OS theme.
+import appIconLightAsset from '../../build/icon.app.png?asset';
+import appIconDarkAsset from '../../build/icon-dark.app.png?asset';
 import { createNodeFs, loadState, StateError, createSystemGit } from '@skillkeeper/core';
 import type { HostEnv } from '@skillkeeper/core';
 import { loadConfig, saveConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
@@ -62,6 +68,7 @@ let configWatcher: ConfigWatcher | undefined;
  */
 function broadcastConfig(result: LoadConfigResult): void {
   rememberGitPath(result.config);
+  rememberTheme(result.config);
   const [win] = BrowserWindow.getAllWindows();
   win?.webContents.send('config:changed', result);
 }
@@ -77,6 +84,20 @@ let gitPath = 'git';
 /** Remember the configured git executable path for subsequent git commands. */
 function rememberGitPath(config: SkillKeeperConfig): void {
   gitPath = config.repositories.gitPath;
+}
+
+/**
+ * Drive the OS-level theme source from the app's theme preference so the
+ * dock/taskbar icon (and native chrome) follow the same setting the renderer
+ * uses -- `config.general.theme` is 'system' | 'light' | 'dark', matching
+ * nativeTheme.themeSource exactly. Then refresh the icon. `shouldUseDarkColors`
+ * (read by themedAppIcon) reflects this, so a 'dark'/'light' preference picks
+ * the right icon and 'system' tracks the OS. Called on every config
+ * load/save/watch so an in-app theme switch updates the icon immediately.
+ */
+function rememberTheme(config: SkillKeeperConfig): void {
+  nativeTheme.themeSource = config.general.theme;
+  applyAppIcon();
 }
 
 /**
@@ -232,6 +253,7 @@ function registerHandlers(): void {
     try {
       const result = await loadConfig(fs, configPath);
       rememberGitPath(result.config);
+      rememberTheme(result.config);
       return result;
     } catch (err) {
       // Defensive: should not happen because loadConfig handles missing files,
@@ -260,6 +282,7 @@ function registerHandlers(): void {
         await saveConfig(fs, configPath, config);
         const result = await loadConfig(fs, configPath);
         rememberGitPath(result.config);
+        rememberTheme(result.config);
         await configWatcher?.noteWritten();
         return result;
       } catch (err) {
@@ -444,6 +467,35 @@ function registerHandlers(): void {
 // Window creation
 // ---------------------------------------------------------------------------
 
+/** The app icon for the current OS theme (dark appearance -> dark variant). */
+function themedAppIcon(): Electron.NativeImage {
+  const asset = nativeTheme.shouldUseDarkColors ? appIconDarkAsset : appIconLightAsset;
+  return nativeImage.createFromPath(asset);
+}
+
+/**
+ * Window background for the current theme. Matches the index.html preloader and
+ * --sk-color-bg-secondary, so the window shows its themed colour rather than the
+ * default white before the renderer's first paint.
+ */
+function themedWindowBackground(): string {
+  return nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#f2f2f7';
+}
+
+/**
+ * Apply the theme-appropriate icon. macOS ignores BrowserWindow.icon, so the
+ * dock icon is set on the app; Windows/Linux set it per window. Called on
+ * window creation and whenever the OS theme changes.
+ */
+function applyAppIcon(): void {
+  const icon = themedAppIcon();
+  if (process.platform === 'darwin') {
+    app.dock?.setIcon(icon);
+  } else {
+    for (const w of BrowserWindow.getAllWindows()) w.setIcon(icon);
+  }
+}
+
 function createWindow(): void {
   const preloadPath = path.join(moduleDir, '../preload/index.cjs');
   const isMac = process.platform === 'darwin';
@@ -451,6 +503,11 @@ function createWindow(): void {
   const win = new BrowserWindow({
     width: 1024,
     height: 768,
+    // Created hidden with a themed background and revealed on `ready-to-show`
+    // (the renderer's first paint, i.e. the themed preloader), so the window
+    // never flashes the default white before content is drawn.
+    show: false,
+    backgroundColor: themedWindowBackground(),
     // Frameless. On macOS there is no custom bar: the app content reaches the
     // top and the native traffic lights (kept via the hidden title-bar style)
     // float over the sidebar's top-left, which reserves top padding for them
@@ -458,9 +515,11 @@ function createWindow(): void {
     // the top of the sidebar and page header there. On Windows/Linux there are
     // no native overlay controls, so go fully frameless and the renderer draws
     // its own window controls in a top strip (TitleBar).
+    // macOS ignores BrowserWindow.icon (the dock icon is set via app.dock in
+    // applyAppIcon); Windows/Linux take the themed icon here.
     ...(isMac
       ? { titleBarStyle: 'hidden' as const, trafficLightPosition: { x: 16, y: 13 } }
-      : { frame: false }),
+      : { frame: false, icon: themedAppIcon() }),
     webPreferences: {
       sandbox: true,
       contextIsolation: true,
@@ -468,6 +527,8 @@ function createWindow(): void {
       preload: preloadPath,
     },
   });
+
+  win.once('ready-to-show', () => win.show());
 
   // Tell the renderer when the window's maximized state changes, so the custom
   // maximize/restore control (Windows/Linux) can swap its glyph.
@@ -497,9 +558,19 @@ function createWindow(): void {
 registerHandlers();
 
 void app.whenReady().then(async () => {
-  // Seed the git path from config before the first git command may run.
+  // Set the dock/taskbar icon to the theme-appropriate variant from the very
+  // first frame -- before any async init below can delay it -- and keep it in
+  // sync when the OS appearance (or, via themeSource, the app preference)
+  // changes.
+  nativeTheme.on('updated', applyAppIcon);
+  applyAppIcon();
+  // Seed the git path and theme from config before the first git command may
+  // run and before the window appears, so the persisted theme preference wins
+  // over the bare OS default immediately.
   try {
-    rememberGitPath((await loadConfig(createNodeFs(), resolveConfigPath())).config);
+    const { config } = await loadConfig(createNodeFs(), resolveConfigPath());
+    rememberGitPath(config);
+    rememberTheme(config);
   } catch {
     // Keep the "git" default; config:get will refresh it once the renderer loads.
   }

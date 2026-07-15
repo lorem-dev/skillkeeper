@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Electron uses a JIT for V8. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <!-- Required to load the node-pty native module under the hardened runtime. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+  <!--
+    No file-access entitlements (com.apple.security.files.*) are listed: they
+    only take effect under App Sandbox (com.apple.security.app-sandbox), which
+    the dmg target does not enable, so the app already has full user-level file
+    access. Runtime access to protected folders (Documents/Desktop/Downloads/
+    removable volumes) is granted via TCC using the NS*UsageDescription strings
+    in build.mac.extendInfo. Add a sandboxed entitlements file only for a Mac
+    App Store (mas) target.
+  -->
+</dict>
+</plist>
