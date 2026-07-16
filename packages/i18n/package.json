@@ -11,6 +11,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./lazy": {
+      "types": "./dist/lazy.d.ts",
+      "default": "./dist/lazy.js"
     }
   },
   "scripts": {

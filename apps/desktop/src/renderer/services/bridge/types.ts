@@ -17,7 +17,7 @@ export type {
   RepositoriesConfig,
   ProjectsConfig,
 } from '@skillkeeper/config';
-export type { Lang } from '@skillkeeper/i18n';
+export type { Lang } from '@skillkeeper/i18n/lazy';
 export type { EditorOption, OpenResult } from '../../../main/editors.js';
 export type { RepoResult, RemoveResult, RepoInfo, AvailableSkill } from '../../../main/repositories.js';
 export type { ProjectResult, ProjectInfo } from '../../../main/projects.js';

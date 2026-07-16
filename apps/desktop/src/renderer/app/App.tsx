@@ -5,7 +5,7 @@
  * placeholder content area that shows the selected view. No router library is
  * used for the v1 shell -- a simple useState drives view selection.
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { cx, AnimationProvider } from '@/shared/lib';
@@ -19,25 +19,34 @@ import { ConfigBanner } from '@/features/configBanner';
 import { WindowChrome } from './WindowChrome';
 import { dismissPreloader } from './preloader';
 import { hostPlatform } from './hostPlatform';
-import { RepositoriesPage } from '@/pages/Repositories';
-import { SkillsComponentsPage, SkillsManagementPage } from '@/pages/Skills';
-import { ProjectsPage } from '@/pages/Projects';
-import { ComponentsPage, ManagementPage } from '@/pages/Mcp';
-import { SettingsPage } from '@/pages/Settings';
+import { type View, VIEW_LOADERS, preloadView } from './navigation';
 import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
 import { Toasts, StatusBar, LogsPage } from '@/systems/notifications';
 import { TerminalPage } from '@/systems/terminal';
 import { TasksPage } from '@/systems/tasks';
 import './App.scss';
 
-type View =
-  | 'repositories'
-  | 'skills-components'
-  | 'skills-management'
-  | 'projects'
-  | 'mcp-components'
-  | 'mcp-management'
-  | 'settings';
+const RepositoriesPage = lazy(() =>
+  import('@/pages/Repositories').then((m) => ({ default: m.RepositoriesPage })),
+);
+const SkillsComponentsPage = lazy(() =>
+  import('@/pages/Skills').then((m) => ({ default: m.SkillsComponentsPage })),
+);
+const SkillsManagementPage = lazy(() =>
+  import('@/pages/Skills').then((m) => ({ default: m.SkillsManagementPage })),
+);
+const ProjectsPage = lazy(() =>
+  import('@/pages/Projects').then((m) => ({ default: m.ProjectsPage })),
+);
+const ComponentsPage = lazy(() =>
+  import('@/pages/Mcp').then((m) => ({ default: m.ComponentsPage })),
+);
+const ManagementPage = lazy(() =>
+  import('@/pages/Mcp').then((m) => ({ default: m.ManagementPage })),
+);
+const SettingsPage = lazy(() =>
+  import('@/pages/Settings').then((m) => ({ default: m.SettingsPage })),
+);
 
 // Skills and MCP are rendered separately (each as a two-level group) since
 // they do not map 1:1 to a single `View` -- see their group blocks in the
@@ -55,7 +64,7 @@ export function App() {
   useConfigWatch();
   useUpdateSchedule();
   useProjectCheckSchedule();
-  const [activeView, setActiveView] = useState<View>('repositories');
+  const [activeView, setActiveView] = useState<View>('projects');
   const animationMode = useSkillkeeperStore((s) => s.config?.general.animations ?? 'normal');
   const loadAll = useSkillkeeperStore((s) => s.loadAll);
   const loading = useSkillkeeperStore((s) => s.loading);
@@ -73,7 +82,15 @@ export function App() {
   const [mcpOpen, setMcpOpen] = useState(false);
   const initialLoadStarted = useRef(false);
 
+  // Load-then-swap navigation: fetch the target page's chunk, THEN switch. The
+  // current page stays on screen until the next module resolves (no spinner);
+  // local chunk loads are fast. Every activeView change routes through this.
+  const goTo = useCallback((view: View) => {
+    void preloadView(view).then(() => setActiveView(view));
+  }, []);
+
   useEffect(() => {
+    void VIEW_LOADERS.projects();
     void loadAll(bridgeClient);
   }, [loadAll]);
 
@@ -95,8 +112,8 @@ export function App() {
   // An add-repository request (e.g. from an unlinked skill) switches to the
   // Repositories view; RepoAddButton then opens the prefilled form and clears it.
   useEffect(() => {
-    if (addRepoRequest !== null) setActiveView('repositories');
-  }, [addRepoRequest]);
+    if (addRepoRequest !== null) goTo('repositories');
+  }, [addRepoRequest, goTo]);
 
   // A "go to skills" request (from a project/repository card) switches to the
   // matching Skills sub-page -- Management for the projects mode, Components for
@@ -106,10 +123,10 @@ export function App() {
   useEffect(() => {
     if (skillsNav > 0) {
       const mode = useSkillkeeperStore.getState().skillsUi.mode;
-      setActiveView(mode === 'projects' ? 'skills-management' : 'skills-components');
+      goTo(mode === 'projects' ? 'skills-management' : 'skills-components');
       setSkillsOpen(true);
     }
-  }, [skillsNav]);
+  }, [skillsNav, goTo]);
 
   // A "go to MCP" request (from a repository card -> Components filtered by the
   // repo, or a project card -> Management filtered by the project) switches to
@@ -117,18 +134,18 @@ export function App() {
   // filter) and opens the MCP group. Nonce-driven, mirroring skillsNav.
   useEffect(() => {
     if (mcpNav > 0) {
-      setActiveView(useSkillkeeperStore.getState().mcpNavView);
+      goTo(useSkillkeeperStore.getState().mcpNavView);
       setMcpOpen(true);
     }
-  }, [mcpNav]);
+  }, [mcpNav, goTo]);
 
   // A "focus this repository" request (e.g. from an MCP preset's source-repo
   // badge) switches to the Repositories view; RepositoriesPage scrolls the
   // matching card into view and applies a transient highlight. Bumped by a
   // nonce so a repeat request for the same repo re-fires, mirroring skillsNav.
   useEffect(() => {
-    if (repoFocus !== null) setActiveView('repositories');
-  }, [repoFocus]);
+    if (repoFocus !== null) goTo('repositories');
+  }, [repoFocus, goTo]);
 
   // A background ssh auth failure requests the terminal (for the passphrase
   // prompt); subscribed once for the app's lifetime.
@@ -178,7 +195,7 @@ export function App() {
               key={id}
               icon={<Icon name={id} />}
               active={activeView === id}
-              onClick={() => setActiveView(id)}
+              onClick={() => goTo(id)}
             >
               {t(key)}
             </SidebarItem>
@@ -208,14 +225,14 @@ export function App() {
                 <SidebarItem
                   className="sk-sidebar-item--sub"
                   active={activeView === 'skills-components'}
-                  onClick={() => setActiveView('skills-components')}
+                  onClick={() => goTo('skills-components')}
                 >
                   {t('skills.componentsTitle')}
                 </SidebarItem>
                 <SidebarItem
                   className="sk-sidebar-item--sub"
                   active={activeView === 'skills-management'}
-                  onClick={() => setActiveView('skills-management')}
+                  onClick={() => goTo('skills-management')}
                 >
                   {t('skills.managementTitle')}
                 </SidebarItem>
@@ -250,14 +267,14 @@ export function App() {
                 <SidebarItem
                   className="sk-sidebar-item--sub"
                   active={activeView === 'mcp-components'}
-                  onClick={() => setActiveView('mcp-components')}
+                  onClick={() => goTo('mcp-components')}
                 >
                   {t('mcp.componentsTitle')}
                 </SidebarItem>
                 <SidebarItem
                   className="sk-sidebar-item--sub"
                   active={activeView === 'mcp-management'}
-                  onClick={() => setActiveView('mcp-management')}
+                  onClick={() => goTo('mcp-management')}
                 >
                   {t('mcp.managementTitle')}
                 </SidebarItem>
@@ -268,7 +285,7 @@ export function App() {
           <SidebarItem
             icon={<Icon name="settings" />}
             active={activeView === 'settings'}
-            onClick={() => setActiveView('settings')}
+            onClick={() => goTo('settings')}
           >
             {t('nav.settings')}
           </SidebarItem>
@@ -285,7 +302,7 @@ export function App() {
               {t('common.errorPrefix', { message: error })}
             </div>
           )}
-          {!loading && renderView()}
+          {!loading && <Suspense fallback={null}>{renderView()}</Suspense>}
         </div>
       </div>
       <StatusBar />

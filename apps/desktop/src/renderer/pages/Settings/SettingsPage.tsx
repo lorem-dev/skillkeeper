@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
-import { useTranslator } from '@/systems/i18n';
+import { useTranslator, ensureCatalog } from '@/systems/i18n';
 import { useAnimationsEnabled, useAnimationScale, SK_DURATION, SK_EASE } from '@/shared/lib';
 import { useTheme, type ThemePref } from '@/systems/theme';
 import { buildLanguageOptions, AGENT_LABELS, ALL_AGENTS } from '@/domain';
@@ -87,7 +87,11 @@ export function SettingsPage() {
               className="sk-settings-language"
               options={languageOptions}
               value={lang}
-              onChange={(v) => void updateConfig({ general: { language: v as Lang } })}
+              onChange={(v) =>
+                void ensureCatalog(v as Lang).then(() =>
+                  updateConfig({ general: { language: v as Lang } }),
+                )
+              }
               ariaLabel={t('settings.language')}
               placeholder={t('settings.language')}
               emptyText={t('settings.languageEmpty')}

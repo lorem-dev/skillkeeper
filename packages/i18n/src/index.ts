@@ -15,27 +15,11 @@ import { pt } from './catalogs/pt.js';
 import { ko } from './catalogs/ko.js';
 import { it } from './catalogs/it.js';
 import type { MessageKey, Catalog } from './catalogs/en.js';
+import { type Lang, SUPPORTED_LANGS } from './langs.js';
+import { type Vars, type Translator, createTranslatorFrom } from './translator.js';
 
-/** Supported locale codes. */
-export type Lang =
-  | 'en'
-  | 'de'
-  | 'ru'
-  | 'uk'
-  | 'be'
-  | 'fr'
-  | 'ja'
-  | 'zh-cn'
-  | 'pl'
-  | 'sr-cyrl'
-  | 'sr-latn'
-  | 'zh-tw'
-  | 'es'
-  | 'pt'
-  | 'ko'
-  | 'it';
-
-export type { MessageKey, Catalog };
+export type { MessageKey, Catalog, Lang, Vars, Translator };
+export { SUPPORTED_LANGS };
 
 /**
  * Map of all available catalogs. Any keys a catalog omits fall back to English
@@ -60,83 +44,13 @@ const catalogs: Record<Lang, Partial<Catalog>> = {
   it,
 };
 
-/** All selectable locale codes (the catalog keys), for runtime validation. */
-export const SUPPORTED_LANGS = Object.keys(catalogs) as Lang[];
-
 // Native language names (the picker's primary label; non-ASCII i18n data).
 export { LANGUAGE_NATIVE_NAMES, LANGUAGE_CHINESE_QUALIFIERS } from './nativeNames.js';
 
 /**
- * Interpolation variables bag: keys are placeholder names (without braces),
- * values are string representations.
- */
-export type Vars = Record<string, string>;
-
-/**
- * Translator function returned by {@link createTranslator}.
- *
- * @param key A {@link MessageKey} from the English catalog.
- * @param vars Optional interpolation variables. Each `{name}` token in the
- *             resolved string is replaced with `vars[name]`.
- * @returns The localized string, or the key itself when no translation exists.
- */
-export interface Translator {
-  (key: MessageKey | (string & {}), vars?: Vars): string;
-  /**
-   * Select a plural form for `count`. Looks up `${baseKey}.${category}`, where
-   * `category` is chosen by `Intl.PluralRules` for the bound language (`one`,
-   * `few`, `many`, `other`, ...), falling back to `${baseKey}.other`. `{count}`
-   * is interpolated automatically (extra `vars` are merged in).
-   */
-  plural(baseKey: string, count: number, vars?: Vars): string;
-}
-
-/**
- * Replace all `{name}` tokens in `template` with values from `vars`.
- */
-function interpolate(template: string, vars: Vars): string {
-  return template.replace(/\{([^}]+)\}/g, (_match, name: string) => {
-    const value = vars[name];
-    return value !== undefined ? value : `{${name}}`;
-  });
-}
-
-/**
- * Create a translator bound to the given language.
- *
- * Lookup order for a key:
- * 1. `lang` catalog (if `lang !== 'en'`)
- * 2. `en` catalog (fallback for missing keys)
- * 3. The raw key string (last resort)
- *
- * @param lang The desired language.
- * @returns A `t(key, vars?)` function.
+ * Create a translator bound to the given language (eager: all catalogs are
+ * already in memory). Kept for the CLI and any sync consumer.
  */
 export function createTranslator(lang: Lang): Translator {
-  const primary = catalogs[lang];
-  const fallback: Partial<Catalog> = catalogs['en'];
-  const pluralRules = new Intl.PluralRules(lang);
-
-  const has = (key: string): boolean =>
-    (primary as Record<string, string>)[key] !== undefined ||
-    (fallback as Record<string, string>)[key] !== undefined;
-
-  const t = function t(key: MessageKey | (string & {}), vars?: Vars): string {
-    // Cast needed because primary/fallback are Partial -- the key may not exist.
-    const raw =
-      (primary as Record<string, string>)[key] ??
-      (fallback as Record<string, string>)[key] ??
-      key;
-
-    return vars !== undefined ? interpolate(raw, vars) : raw;
-  } as Translator;
-
-  t.plural = (baseKey: string, count: number, vars?: Vars): string => {
-    const category = pluralRules.select(count);
-    const categoryKey = `${baseKey}.${category}`;
-    const key = has(categoryKey) ? categoryKey : `${baseKey}.other`;
-    return t(key, { count: String(count), ...vars });
-  };
-
-  return t;
+  return createTranslatorFrom(catalogs[lang], catalogs['en'], lang);
 }

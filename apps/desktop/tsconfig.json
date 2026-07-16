@@ -14,6 +14,7 @@
       "@skillkeeper/core/testing": ["../../packages/core/src/testing/index.ts"],
       "@skillkeeper/config": ["../../packages/config/src/index.ts"],
       "@skillkeeper/agents": ["../../packages/agents/src/index.ts"],
+      "@skillkeeper/i18n/lazy": ["../../packages/i18n/src/lazy.ts"],
       "@skillkeeper/i18n": ["../../packages/i18n/src/index.ts"]
     }
   },
