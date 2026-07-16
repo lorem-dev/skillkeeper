@@ -4,7 +4,7 @@ import type { Lang } from '@/services/bridge';
 import {
   LANGUAGE_NATIVE_NAMES as NATIVE_NAMES,
   LANGUAGE_CHINESE_QUALIFIERS as CHINESE_QUALIFIERS,
-} from '@skillkeeper/i18n';
+} from '@skillkeeper/i18n/lazy';
 
 const LANGS: readonly Lang[] = [
   'en',

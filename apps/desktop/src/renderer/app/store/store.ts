@@ -37,6 +37,7 @@ import type {
 import { bridgeClient } from '@/services/bridge';
 import { installedLeafIds, installedAgentsByProject } from '@/entities/skill';
 import type { ProjectSkillUpdate } from '@/entities/skill';
+import { ensureCatalog, resolveLang } from '@/systems/i18n';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
@@ -763,6 +764,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         client.reconcileMcp(),
       ]);
       setConfig(configResult.config, configResult.validity, configResult.warnings);
+      // Load the active locale catalog before the app is revealed, so the first
+      // paint is already in the user's language (no English flash). English is
+      // synchronous; a non-English start loads exactly one chunk here.
+      await ensureCatalog(resolveLang(configResult.config.general.language));
       setRepositories(repos);
       setSkills(skills);
       set({ availableSkills: available, mcpInstalls });
