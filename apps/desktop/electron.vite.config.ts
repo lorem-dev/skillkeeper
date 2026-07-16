@@ -115,6 +115,29 @@ export default defineConfig(({ mode }) => {
         sourcemap: analyze,
         rollupOptions: {
           input: fromHere('./src/renderer/index.html'),
+          output: {
+            // Split large, stable vendor deps into their own cacheable chunks.
+            // Return undefined for everything else so Rollup keeps its own
+            // dynamic-import splitting for pages and locale catalogs. xterm is
+            // statically imported (the terminal mounts at startup) -- this is a
+            // caching split, not a defer.
+            manualChunks(id) {
+              if (!id.includes('node_modules')) return undefined;
+              if (id.includes('/node_modules/react-dom/') || id.includes('/node_modules/react/')) {
+                return 'vendor-react';
+              }
+              if (
+                id.includes('/node_modules/motion/') ||
+                id.includes('/node_modules/motion-dom/') ||
+                id.includes('/node_modules/motion-utils/') ||
+                id.includes('/node_modules/framer-motion/')
+              ) {
+                return 'vendor-motion';
+              }
+              if (id.includes('/node_modules/@xterm/')) return 'vendor-xterm';
+              return 'vendor';
+            },
+          },
         },
       },
     },
