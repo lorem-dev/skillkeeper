@@ -45,6 +45,7 @@ const alias = {
   '@skillkeeper/core': fromHere('../../packages/core/src/index.ts'),
   '@skillkeeper/config': fromHere('../../packages/config/src/index.ts'),
   '@skillkeeper/agents': fromHere('../../packages/agents/src/index.ts'),
+  '@skillkeeper/i18n/lazy': fromHere('../../packages/i18n/src/lazy.ts'),
   '@skillkeeper/i18n': fromHere('../../packages/i18n/src/index.ts'),
 };
 
