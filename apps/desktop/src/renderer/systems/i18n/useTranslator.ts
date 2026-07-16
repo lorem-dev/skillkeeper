@@ -1,26 +1,27 @@
 /**
- * React hook that provides a translator bound to the current language from
- * the store's config.
- *
- * Falls back to 'en' when no config is loaded yet. The translator is memoized
- * so component re-renders only when the language actually changes.
+ * React hook providing a translator bound to the current language from the
+ * store's config. The active catalog is loaded lazily; until it arrives the
+ * translator falls back to English. `useSyncExternalStore` re-renders the hook
+ * when the catalog finishes loading (see the i18n runtime).
  */
-import { useMemo } from 'react';
-import { createTranslator, SUPPORTED_LANGS } from '@skillkeeper/i18n';
-import type { Translator, Lang } from '@skillkeeper/i18n';
+import { useMemo, useSyncExternalStore } from 'react';
+import { createTranslatorFrom, en } from '@skillkeeper/i18n/lazy';
+import type { Translator } from '@skillkeeper/i18n/lazy';
 import { useSkillkeeperStore } from '@/app/store';
+import { getCatalog, subscribe, resolveLang } from './runtime';
 
 export type { Translator };
 
 export function useTranslator(): Translator {
   const config = useSkillkeeperStore((s) => s.config);
-  const current = config?.general?.language;
-  // Accept any supported locale (the config is schema-validated); fall back to
-  // English when unset or unrecognized.
-  const lang: Lang =
-    current !== undefined && (SUPPORTED_LANGS as readonly string[]).includes(current)
-      ? (current as Lang)
-      : 'en';
-
-  return useMemo(() => createTranslator(lang), [lang]);
+  const lang = resolveLang(config?.general?.language);
+  // Re-render whenever any catalog loads; the snapshot is the catalog object for
+  // `lang`, so React sees a new reference once `lang` transitions from the
+  // English fallback to its real catalog.
+  const catalog = useSyncExternalStore(
+    subscribe,
+    () => getCatalog(lang),
+    () => getCatalog(lang),
+  );
+  return useMemo(() => createTranslatorFrom(catalog, en, lang), [catalog, lang]);
 }
