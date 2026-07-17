@@ -5,7 +5,7 @@
  * The renderer process is sandboxed and communicates only through the preload
  * bridge via ipcMain.handle channels.
  */
-import { app, BrowserWindow, ipcMain, session, dialog, nativeImage, nativeTheme } from 'electron';
+import { app, BrowserWindow, ipcMain, session, dialog, nativeImage, nativeTheme, Menu } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
 // The padded app icons (generate-icons.mjs), bundled into the build output.
@@ -18,7 +18,11 @@ import { createNodeFs, loadState, StateError, createSystemGit } from '@skillkeep
 import type { HostEnv } from '@skillkeeper/core';
 import { loadConfig, saveConfig, defaultConfig, SECTIONS } from '@skillkeeper/config';
 import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
+import { createTranslator } from '@skillkeeper/i18n';
+import type { Translator } from '@skillkeeper/i18n';
 import { listEditors, openInEditor } from './editors.js';
+import { buildMenuTemplate } from './menu.js';
+import { isSettingsShortcut } from './settingsShortcut.js';
 import { createConfigWatcher } from './configWatcher.js';
 import type { ConfigWatcher } from './configWatcher.js';
 import { ensureSshAgent, stopSshAgent } from './sshAgent.js';
@@ -69,6 +73,7 @@ let configWatcher: ConfigWatcher | undefined;
 function broadcastConfig(result: LoadConfigResult): void {
   rememberGitPath(result.config);
   rememberTheme(result.config);
+  rememberLanguage(result.config);
   const [win] = BrowserWindow.getAllWindows();
   win?.webContents.send('config:changed', result);
 }
@@ -98,6 +103,45 @@ function rememberGitPath(config: SkillKeeperConfig): void {
 function rememberTheme(config: SkillKeeperConfig): void {
   nativeTheme.themeSource = config.general.theme;
   applyAppIcon();
+}
+
+/**
+ * Install the application menu for the given translator. macOS only; on other
+ * platforms the menu is blocked (set to null). Menu clicks post `menu:navigate`
+ * to the focused window (or the first window) so the renderer can switch pages.
+ */
+function installAppMenu(t: Translator): void {
+  if (process.platform !== 'darwin') {
+    Menu.setApplicationMenu(null);
+    return;
+  }
+  const template = buildMenuTemplate({
+    t,
+    onNavigate: (view) => {
+      const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+      win?.webContents.send('menu:navigate', view);
+    },
+  });
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+/** Configure the native About panel (name, version, our icon). */
+function applyAboutPanel(t: Translator): void {
+  app.setAboutPanelOptions({
+    applicationName: t('app.title'),
+    applicationVersion: app.getVersion(),
+    iconPath: appIconLightAsset,
+  });
+}
+
+/** Effective app language; rebuilds the menu when it changes. */
+let currentLang: SkillKeeperConfig['general']['language'] | undefined;
+
+/** Remember the configured language and (re)install the menu when it changes. */
+function rememberLanguage(config: SkillKeeperConfig): void {
+  if (config.general.language === currentLang) return;
+  currentLang = config.general.language;
+  installAppMenu(createTranslator(currentLang));
 }
 
 /**
@@ -254,6 +298,7 @@ function registerHandlers(): void {
       const result = await loadConfig(fs, configPath);
       rememberGitPath(result.config);
       rememberTheme(result.config);
+      rememberLanguage(result.config);
       return result;
     } catch (err) {
       // Defensive: should not happen because loadConfig handles missing files,
@@ -283,6 +328,7 @@ function registerHandlers(): void {
         const result = await loadConfig(fs, configPath);
         rememberGitPath(result.config);
         rememberTheme(result.config);
+        rememberLanguage(result.config);
         await configWatcher?.noteWritten();
         return result;
       } catch (err) {
@@ -536,6 +582,16 @@ function createWindow(): void {
   win.on('maximize', () => sendMaximized(true));
   win.on('unmaximize', () => sendMaximized(false));
 
+  // Cmd+, (macOS) / Ctrl+, (Windows/Linux) opens Settings on every platform.
+  // Matched by physical key code (not accelerator) so a non-Latin keyboard
+  // layout still triggers it; see settingsShortcut.ts.
+  win.webContents.on('before-input-event', (event, input) => {
+    if (isSettingsShortcut(input, process.platform)) {
+      event.preventDefault();
+      win.webContents.send('menu:navigate', 'settings');
+    }
+  });
+
   // In production: load the built renderer HTML.
   // In dev (electron-vite): the ELECTRON_RENDERER_URL env var is set.
   const rendererUrl = process.env['ELECTRON_RENDERER_URL'];
@@ -571,9 +627,12 @@ void app.whenReady().then(async () => {
     const { config } = await loadConfig(createNodeFs(), resolveConfigPath());
     rememberGitPath(config);
     rememberTheme(config);
+    rememberLanguage(config);
   } catch {
     // Keep the "git" default; config:get will refresh it once the renderer loads.
+    rememberLanguage(defaultConfig);
   }
+  applyAboutPanel(createTranslator(currentLang ?? defaultConfig.general.language));
   await ensureSshAgent();
   // Start the terminal session now (after the ssh-agent env is set, so the shell
   // inherits SSH_AUTH_SOCK) so it is initialized before any task runs; runGit
