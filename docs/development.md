@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- Node.js 20 or later (`engines.node >= 20` is enforced).
-- pnpm 9 (`packageManager: pnpm@9` is pinned in `package.json`).
+- Node.js 22.13 or later (`engines.node >= 22.13` is enforced).
+- pnpm 11 (`packageManager: pnpm@11.9.0` is pinned in `package.json`).
 - System `git`.
 
 ## Setup
