@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- Node.js 20 or later.
-- pnpm 9 (the package manager used by this project).
+- Node.js 22.13 or later.
+- pnpm 11 (the package manager used by this project).
 - `git` on your PATH. SkillKeeper invokes the system `git` binary directly and
   relies on your existing ssh-agent, SSH config, and Git LFS installation.
 - `git-lfs` if any repository you add uses Git LFS (SkillKeeper reports a clear
