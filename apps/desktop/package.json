@@ -2,6 +2,7 @@
   "name": "@skillkeeper/desktop",
   "version": "0.1.0-rc.1",
   "private": true,
+  "description": "Install and manage skills and hooks for AI coding agents",
   "author": "Lorem Dev",
   "homepage": "https://github.com/lorem-dev/skillkeeper",
   "type": "module",
@@ -21,6 +22,7 @@
   "build": {
     "appId": "dev.lorem.skillkeeper",
     "productName": "SkillKeeper",
+    "executableName": "skillkeeper",
     "directories": {
       "buildResources": "build",
       "output": "dist"
