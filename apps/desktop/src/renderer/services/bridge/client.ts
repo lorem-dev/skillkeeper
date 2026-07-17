@@ -47,6 +47,8 @@ export interface BridgeClient {
   listEditors(): Promise<EditorOption[]>;
   openConfigInEditor(editorId: string): Promise<OpenResult>;
   onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
+  /** Subscribe to application-menu / Settings-shortcut navigation. Returns an unsubscribe fn. */
+  onMenuNavigate(callback: (view: string) => void): () => void;
   addRepository(url: string, name: string): Promise<RepoResult>;
   cloneRepository(id: string): Promise<RepoResult>;
   updateRepository(id: string, name: string, url: string, branch?: string): Promise<RepoResult>;
@@ -105,6 +107,7 @@ export const bridgeClient: BridgeClient = {
   listEditors: () => window.skillkeeper.listEditors(),
   openConfigInEditor: (editorId) => window.skillkeeper.openConfigInEditor(editorId),
   onConfigChanged: (callback) => window.skillkeeper.onConfigChanged(callback),
+  onMenuNavigate: (callback) => window.skillkeeper.onMenuNavigate(callback),
   addRepository: (url, name) => window.skillkeeper.addRepository(url, name),
   cloneRepository: (id) => window.skillkeeper.cloneRepository(id),
   updateRepository: (id, name, url, branch) => window.skillkeeper.updateRepository(id, name, url, branch),

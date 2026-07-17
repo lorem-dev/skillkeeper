@@ -69,6 +69,9 @@ export interface SkillkeeperBridge {
   openConfigInEditor(editorId: string): Promise<OpenResult>;
   /** Subscribe to config-file changes detected by the main process. Returns an unsubscribe fn. */
   onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
+  /** Subscribe to navigation requests from the application menu (macOS) and the
+   *  Settings keyboard shortcut. Returns an unsubscribe fn. */
+  onMenuNavigate(callback: (view: string) => void): () => void;
   addRepository(url: string, name: string): Promise<RepoResult>;
   cloneRepository(id: string): Promise<RepoResult>;
   updateRepository(id: string, name: string, url: string, branch?: string): Promise<RepoResult>;
@@ -186,6 +189,13 @@ const bridge: SkillkeeperBridge = {
     ipcRenderer.on('config:changed', listener);
     return () => {
       ipcRenderer.removeListener('config:changed', listener);
+    };
+  },
+  onMenuNavigate(callback: (view: string) => void): () => void {
+    const listener = (_event: IpcRendererEvent, view: string): void => callback(view);
+    ipcRenderer.on('menu:navigate', listener);
+    return () => {
+      ipcRenderer.removeListener('menu:navigate', listener);
     };
   },
   addRepository(url, name) {
