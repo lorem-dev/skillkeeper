@@ -72,6 +72,10 @@ export interface SkillkeeperBridge {
   /** Subscribe to navigation requests from the application menu (macOS) and the
    *  Settings keyboard shortcut. Returns an unsubscribe fn. */
   onMenuNavigate(callback: (view: string) => void): () => void;
+  /** Subscribe to the application menu's About item. Returns an unsubscribe fn. */
+  onMenuAbout(callback: () => void): () => void;
+  /** The app version (from the main process). */
+  getAppVersion(): Promise<string>;
   addRepository(url: string, name: string): Promise<RepoResult>;
   cloneRepository(id: string): Promise<RepoResult>;
   updateRepository(id: string, name: string, url: string, branch?: string): Promise<RepoResult>;
@@ -197,6 +201,16 @@ const bridge: SkillkeeperBridge = {
     return () => {
       ipcRenderer.removeListener('menu:navigate', listener);
     };
+  },
+  onMenuAbout(callback: () => void): () => void {
+    const listener = (): void => callback();
+    ipcRenderer.on('menu:about', listener);
+    return () => {
+      ipcRenderer.removeListener('menu:about', listener);
+    };
+  },
+  getAppVersion(): Promise<string> {
+    return ipcRenderer.invoke('app:getVersion') as Promise<string>;
   },
   addRepository(url, name) {
     return ipcRenderer.invoke('repositories:add', { url, name }) as Promise<RepoResult>;

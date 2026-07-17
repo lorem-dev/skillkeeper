@@ -49,6 +49,10 @@ export interface BridgeClient {
   onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
   /** Subscribe to application-menu / Settings-shortcut navigation. Returns an unsubscribe fn. */
   onMenuNavigate(callback: (view: string) => void): () => void;
+  /** Subscribe to the application menu's About item. Returns an unsubscribe fn. */
+  onMenuAbout(callback: () => void): () => void;
+  /** The app version string. */
+  getAppVersion(): Promise<string>;
   addRepository(url: string, name: string): Promise<RepoResult>;
   cloneRepository(id: string): Promise<RepoResult>;
   updateRepository(id: string, name: string, url: string, branch?: string): Promise<RepoResult>;
@@ -108,6 +112,8 @@ export const bridgeClient: BridgeClient = {
   openConfigInEditor: (editorId) => window.skillkeeper.openConfigInEditor(editorId),
   onConfigChanged: (callback) => window.skillkeeper.onConfigChanged(callback),
   onMenuNavigate: (callback) => window.skillkeeper.onMenuNavigate(callback),
+  onMenuAbout: (callback) => window.skillkeeper.onMenuAbout(callback),
+  getAppVersion: () => window.skillkeeper.getAppVersion(),
   addRepository: (url, name) => window.skillkeeper.addRepository(url, name),
   cloneRepository: (id) => window.skillkeeper.cloneRepository(id),
   updateRepository: (id, name, url, branch) => window.skillkeeper.updateRepository(id, name, url, branch),
