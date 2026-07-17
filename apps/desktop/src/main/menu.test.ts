@@ -1,74 +1,79 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { MenuItemConstructorOptions } from 'electron';
 import type { Translator } from '@skillkeeper/i18n';
-import { buildMenuTemplate, type MenuNavTarget } from './menu.js';
+import { buildMenuTemplate } from './menu.js';
 
 const t = ((key: string) => key) as unknown as Translator;
-
-function build(onNavigate: (v: MenuNavTarget) => void): MenuItemConstructorOptions[] {
-  return buildMenuTemplate({ t, onNavigate });
-}
-
-function byLabel(items: MenuItemConstructorOptions[], label: string): MenuItemConstructorOptions {
-  const found = items.find((i) => i.label === label);
-  if (found === undefined) throw new Error(`no menu item labelled ${label}`);
-  return found;
-}
-
-function sub(item: MenuItemConstructorOptions): MenuItemConstructorOptions[] {
-  return item.submenu as MenuItemConstructorOptions[];
-}
+const build = (over: Partial<Parameters<typeof buildMenuTemplate>[0]> = {}) =>
+  buildMenuTemplate({ t, onNavigate: () => {}, onAbout: () => {}, ...over });
+const byLabel = (items: MenuItemConstructorOptions[], label: string): MenuItemConstructorOptions => {
+  const f = items.find((i) => i.label === label);
+  if (f === undefined) throw new Error(`no item ${label}`);
+  return f;
+};
+const sub = (i: MenuItemConstructorOptions) => i.submenu as MenuItemConstructorOptions[];
+const click = (i: MenuItemConstructorOptions) => (i.click as unknown as () => void)();
 
 describe('buildMenuTemplate', () => {
-  it('lays out top-level menus in macOS-standard order', () => {
-    const items = build(() => {});
+  it('orders menus Skillkeeper, Edit, View, Settings, Window, Help (no top-level MCP)', () => {
+    const items = build();
     expect(items[0]?.label).toBe('app.title');
-    expect(items[1]?.role).toBe('editMenu');
+    expect(items[1]?.label).toBe('menu.edit');
     expect(items[2]?.label).toBe('menu.view');
-    expect(items[3]?.label).toBe('nav.mcp');
-    expect(items[4]?.label).toBe('nav.settings');
-    expect(items[5]?.role).toBe('windowMenu');
-    expect(items[6]?.role).toBe('help');
+    expect(items[3]?.label).toBe('nav.settings');
+    expect(items[4]?.label).toBe('menu.window');
+    expect(items[5]?.label).toBe('menu.help');
+    expect(items.find((i) => i.label === 'nav.mcp' && i !== undefined && items.indexOf(i) < 6)).toBeUndefined();
   });
 
-  it('puts About (native panel) and Settings in the app menu', () => {
-    const appMenu = sub(build(() => {})[0]!);
+  it('nests MCP inside View', () => {
+    const view = sub(build()[2]!);
+    const mcp = byLabel(view, 'nav.mcp');
+    const mcpItems = sub(mcp);
+    expect(mcpItems.map((i) => i.label)).toEqual(['mcp.componentsTitle', 'mcp.managementTitle']);
+  });
+
+  it('localizes Edit items with role + label', () => {
+    const edit = sub(build()[1]!);
+    const undo = byLabel(edit, 'menu.undo');
+    expect(undo.role).toBe('undo');
+    expect(byLabel(edit, 'menu.selectAll').role).toBe('selectAll');
+  });
+
+  it('localizes Window items with role + label', () => {
+    const win = sub(build()[4]!);
+    expect(byLabel(win, 'menu.minimize').role).toBe('minimize');
+    expect(byLabel(win, 'menu.close').role).toBe('close');
+  });
+
+  it('Help menu uses role help and localized label', () => {
+    expect(build()[5]?.role).toBe('help');
+  });
+
+  it('app menu: About via onAbout (not role about), localized Quit/Hide', () => {
+    const onAbout = vi.fn();
+    const appMenu = sub(build({ onAbout })[0]!);
     const about = byLabel(appMenu, 'menu.about');
-    expect(about.role).toBe('about');
-    const settings = byLabel(appMenu, 'nav.settings');
-    expect(settings.accelerator).toBe('CmdOrCtrl+,');
-    expect(settings.registerAccelerator).toBe(false);
+    expect(about.role).toBeUndefined();
+    click(about);
+    expect(onAbout).toHaveBeenCalledTimes(1);
+    expect(byLabel(appMenu, 'menu.quit').role).toBe('quit');
+    expect(byLabel(appMenu, 'menu.hide').role).toBe('hide');
   });
 
-  it('navigates from View items', () => {
-    const onNav = vi.fn();
-    const view = sub(build(onNav)[2]!);
-    (byLabel(view, 'nav.projects').click as unknown as () => void)();
-    expect(onNav).toHaveBeenCalledWith('projects');
-    (byLabel(view, 'nav.repositories').click as unknown as () => void)();
-    expect(onNav).toHaveBeenCalledWith('repositories');
-    const skills = sub(byLabel(view, 'nav.skills'));
-    (byLabel(skills, 'skills.componentsTitle').click as unknown as () => void)();
-    expect(onNav).toHaveBeenCalledWith('skills-components');
-    (byLabel(skills, 'skills.managementTitle').click as unknown as () => void)();
-    expect(onNav).toHaveBeenCalledWith('skills-management');
+  it('navigates from View items including nested MCP', () => {
+    const onNavigate = vi.fn();
+    const view = sub(build({ onNavigate })[2]!);
+    click(byLabel(view, 'nav.projects'));
+    expect(onNavigate).toHaveBeenCalledWith('projects');
+    click(byLabel(sub(byLabel(view, 'nav.mcp')), 'mcp.componentsTitle'));
+    expect(onNavigate).toHaveBeenCalledWith('mcp-components');
   });
 
-  it('navigates from MCP items', () => {
-    const onNav = vi.fn();
-    const mcp = sub(build(onNav)[3]!);
-    (byLabel(mcp, 'mcp.componentsTitle').click as unknown as () => void)();
-    expect(onNav).toHaveBeenCalledWith('mcp-components');
-    (byLabel(mcp, 'mcp.managementTitle').click as unknown as () => void)();
-    expect(onNav).toHaveBeenCalledWith('mcp-management');
-  });
-
-  it('navigates to settings from both the app menu and the Settings menu', () => {
-    const onNav = vi.fn();
-    const items = build(onNav);
-    (byLabel(sub(items[0]!), 'nav.settings').click as unknown as () => void)();
-    (byLabel(sub(items[4]!), 'menu.openSettings').click as unknown as () => void)();
-    expect(onNav).toHaveBeenNthCalledWith(1, 'settings');
-    expect(onNav).toHaveBeenNthCalledWith(2, 'settings');
+  it('attaches icons only when provided', () => {
+    const view = sub(build()[2]!);
+    expect(byLabel(view, 'nav.projects').icon).toBeUndefined();
+    const view2 = sub(build({ icons: { projects: '/tmp/projectsTemplate.png' } })[2]!);
+    expect(byLabel(view2, 'nav.projects').icon).toBe('/tmp/projectsTemplate.png');
   });
 });

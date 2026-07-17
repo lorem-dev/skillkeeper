@@ -121,6 +121,9 @@ function installAppMenu(t: Translator): void {
       const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
       win?.webContents.send('menu:navigate', view);
     },
+    // TEMPORARY: real About wiring lands in a later task (native panel /
+    // renderer dialog); this stub only keeps the tree typechecking now.
+    onAbout: () => {},
   });
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
