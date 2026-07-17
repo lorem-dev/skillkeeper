@@ -25,8 +25,25 @@ on:
       - "v*"
 
 jobs:
+  verify-version:
+    name: Verify tag matches version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check the tag matches every package version
+        run: node scripts/check-version.mjs
+
   build:
     name: Build and package (${{ matrix.os }})
+    needs: verify-version
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -135,6 +152,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Generate release notes from CHANGES.md
+        run: node scripts/release-notes.mjs
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -144,7 +169,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist-all/**/*
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
         # GITHUB_TOKEN is automatically available; no extra secret needed.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
