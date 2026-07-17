@@ -31,3 +31,18 @@ export function preloadView(
 ): Promise<void> {
   return loaders[view]().then(() => undefined);
 }
+
+/** Runtime guard: is `value` one of the known views? */
+export function isView(value: string): value is View {
+  return value in VIEW_LOADERS;
+}
+
+/**
+ * Which sidebar group (if any) a view belongs to, so menu-driven navigation can
+ * open it -- mirrors the skillsNav/mcpNav effects in App.
+ */
+export function groupForView(view: View): 'skills' | 'mcp' | null {
+  if (view === 'skills-components' || view === 'skills-management') return 'skills';
+  if (view === 'mcp-components' || view === 'mcp-management') return 'mcp';
+  return null;
+}
