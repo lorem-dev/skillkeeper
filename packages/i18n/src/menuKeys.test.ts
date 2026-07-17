@@ -41,3 +41,54 @@ describe('menu.* keys', () => {
     }
   }
 });
+
+const REFINEMENT_KEYS = [
+  'menu.edit', 'menu.window', 'menu.help',
+  'menu.undo', 'menu.redo', 'menu.cut', 'menu.copy', 'menu.paste',
+  'menu.pasteAndMatchStyle', 'menu.delete', 'menu.selectAll',
+  'menu.minimize', 'menu.zoom', 'menu.close',
+  'menu.services', 'menu.hide', 'menu.hideOthers', 'menu.showAll', 'menu.quit',
+  'about.version', 'about.tagline',
+] as const;
+
+describe('menu refinement keys', () => {
+  it('defines English source values', () => {
+    expect(en['menu.edit']).toBe('Edit');
+    expect(en['menu.window']).toBe('Window');
+    expect(en['menu.help']).toBe('Help');
+    expect(en['menu.selectAll']).toBe('Select All');
+    expect(en['menu.pasteAndMatchStyle']).toBe('Paste and Match Style');
+    expect(en['menu.hide']).toBe('Hide SkillKeeper');
+    expect(en['menu.quit']).toBe('Quit SkillKeeper');
+    expect(en['about.version']).toBe('Version {version}');
+    expect(en['about.tagline']).toBe('Install and manage skills for AI coding agents');
+    expect(en['about.copyright']).toBe('(c) 2026 Lorem Dev');
+  });
+
+  // Some canonical Apple localizations legitimately equal the English word
+  // (e.g. "Version", "Zoom", "Services" are the shipped Apple terms in these
+  // locales). For those `${lang}|${key}` pairs we only require the value to be
+  // present, not that it differs from English.
+  const SAME_AS_EN_OK = new Set<string>([
+    'de|about.version',
+    'fr|about.version',
+    'es|menu.zoom',
+    'fr|menu.zoom',
+    'it|menu.zoom',
+    'pt|menu.zoom',
+    'pl|menu.zoom',
+    'fr|menu.services',
+  ]);
+
+  for (const [lang, cat] of Object.entries(LOCALES)) {
+    for (const key of REFINEMENT_KEYS) {
+      it(`${lang} translates ${key}`, () => {
+        const value = cat[key];
+        expect(value).toBeTruthy();
+        if (!SAME_AS_EN_OK.has(`${lang}|${key}`)) {
+          expect(value).not.toBe(en[key]);
+        }
+      });
+    }
+  }
+});
