@@ -345,6 +345,8 @@ export interface SkillkeeperState {
   terminalOpen: boolean;
   /** Whether the full-screen sync task-list page is open. */
   tasksOpen: boolean;
+  /** Whether the About dialog is open. */
+  aboutOpen: boolean;
   /** Installed skills. */
   skills: InstallManifest[];
   /** Every skill available across all cloned repositories (for the Skills page). */
@@ -515,6 +517,10 @@ export interface SkillkeeperActions {
   openTasks(): void;
   /** Close the full-screen sync task-list page. */
   closeTasks(): void;
+  /** Open the About dialog. */
+  openAbout(): void;
+  /** Close the About dialog. */
+  closeAbout(): void;
   /** Empty the notifications log. Leaves toasts and per-repo errors intact. */
   clearNotifications(): void;
 }
@@ -564,6 +570,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   logsOpen: false,
   terminalOpen: false,
   tasksOpen: false,
+  aboutOpen: false,
   skills: [],
   availableSkills: [],
   skillApply: null,
@@ -716,10 +723,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set((s) => ({ toasts: [...s.toasts, entry] }));
   },
 
-  // The logs / terminal / tasks overlays are mutually exclusive: opening one
-  // closes the other two, so switching between them never stacks.
+  // The logs / terminal / tasks / about overlays are mutually exclusive:
+  // opening one closes the others, so switching between them never stacks.
   openLogs() {
-    set({ logsOpen: true, terminalOpen: false, tasksOpen: false });
+    set({ logsOpen: true, terminalOpen: false, tasksOpen: false, aboutOpen: false });
   },
 
   closeLogs() {
@@ -727,7 +734,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   },
 
   openTerminal() {
-    set({ terminalOpen: true, logsOpen: false, tasksOpen: false });
+    set({ terminalOpen: true, logsOpen: false, tasksOpen: false, aboutOpen: false });
   },
 
   closeTerminal() {
@@ -735,11 +742,19 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   },
 
   openTasks() {
-    set({ tasksOpen: true, logsOpen: false, terminalOpen: false });
+    set({ tasksOpen: true, logsOpen: false, terminalOpen: false, aboutOpen: false });
   },
 
   closeTasks() {
     set({ tasksOpen: false });
+  },
+
+  openAbout() {
+    set({ aboutOpen: true, logsOpen: false, terminalOpen: false, tasksOpen: false });
+  },
+
+  closeAbout() {
+    set({ aboutOpen: false });
   },
 
   clearNotifications() {

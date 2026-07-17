@@ -24,6 +24,7 @@ import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
 import { Toasts, StatusBar, LogsPage } from '@/systems/notifications';
 import { TerminalPage } from '@/systems/terminal';
 import { TasksPage } from '@/systems/tasks';
+import { AboutDialog } from '@/features/about';
 import './App.scss';
 
 const RepositoriesPage = lazy(() =>
@@ -169,6 +170,15 @@ export function App() {
     });
     return off;
   }, [goTo]);
+
+  // The application menu's About item (macOS) arrives as a 'menu:about' event;
+  // subscribed once for the app's lifetime, mirroring onTerminalRequestOpen.
+  useEffect(() => {
+    const off = bridgeClient.onMenuAbout(() => {
+      useSkillkeeperStore.getState().openAbout();
+    });
+    return off;
+  }, []);
 
   function renderView() {
     switch (activeView) {
@@ -324,6 +334,7 @@ export function App() {
       <LogsPage />
       <TerminalPage />
       <TasksPage />
+      <AboutDialog />
     </div>
     </AnimationProvider>
   );
