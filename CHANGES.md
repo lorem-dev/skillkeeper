@@ -2,6 +2,15 @@
 
 ## Development
 
+### Features
+
+- Add a native macOS application menu (Skillkeeper, Edit, View, MCP, Settings,
+  Window, Help) that mirrors the sidebar navigation, opens the native About
+  panel with the app icon, and localizes its app-specific items in every
+  supported language. Add a Cmd+, (Ctrl+, on other platforms) shortcut that
+  opens Settings on all platforms, matched by physical key so it works under
+  non-Latin keyboard layouts. The menu is disabled on Windows and Linux.
+
 ## Version 0.1.0-rc.1 - 2026-07-17
 
 ### Features
