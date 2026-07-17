@@ -44,6 +44,10 @@ describe('isSettingsShortcut', () => {
   it('rejects a different physical key', () => {
     expect(isSettingsShortcut(input({ meta: true, code: 'Period' }), 'darwin')).toBe(false);
   });
+  it('rejects when both meta and control are held', () => {
+    expect(isSettingsShortcut(input({ meta: true, control: true }), 'darwin')).toBe(false);
+    expect(isSettingsShortcut(input({ meta: true, control: true }), 'win32')).toBe(false);
+  });
   it('rejects keyUp', () => {
     expect(isSettingsShortcut(input({ meta: true, type: 'keyUp' }), 'darwin')).toBe(false);
   });

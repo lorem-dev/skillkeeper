@@ -643,13 +643,6 @@ void app.whenReady().then(async () => {
   // macOS: surface the disk-access prompt early so project folders in protected
   // locations are readable when needed. No-op elsewhere; never blocks startup.
   void primeMacDiskAccess();
-
-  app.on('activate', () => {
-    // macOS: re-create window when dock icon is clicked and no windows are open.
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
 });
 
 app.on('before-quit', () => {
