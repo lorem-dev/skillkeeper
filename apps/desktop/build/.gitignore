@@ -7,3 +7,7 @@
 /appx/
 # Source-hash cache used to skip regeneration when the sources are unchanged.
 /.icon-cache.json
+
+# Generated at build time from the Icon glyph SVGs by generate-menu-icons.mjs.
+/menu-icons/
+/.menu-icon-cache.json

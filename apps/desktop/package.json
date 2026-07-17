@@ -11,14 +11,15 @@
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "pnpm run generate-icons && electron-vite dev",
-    "build": "pnpm run generate-icons && electron-vite build",
+    "dev": "pnpm run generate-icons && pnpm run generate-menu-icons && electron-vite dev",
+    "build": "pnpm run generate-icons && pnpm run generate-menu-icons && electron-vite build",
     "analyze": "pnpm run generate-icons && electron-vite build --mode analyze",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",
     "generate-icons": "node build/generate-icons.mjs",
-    "package": "pnpm run generate-icons && electron-builder",
-    "package:dir": "pnpm run generate-icons && electron-builder --dir",
+    "generate-menu-icons": "node build/generate-menu-icons.mjs",
+    "package": "pnpm run generate-icons && pnpm run generate-menu-icons && electron-builder",
+    "package:dir": "pnpm run generate-icons && pnpm run generate-menu-icons && electron-builder --dir",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -141,6 +142,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.1.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@storybook/react": "10.4.6",
     "@storybook/react-vite": "10.4.6",
     "@types/react": "19.2.17",
