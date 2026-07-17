@@ -19,7 +19,7 @@ import { ConfigBanner } from '@/features/configBanner';
 import { WindowChrome } from './WindowChrome';
 import { dismissPreloader } from './preloader';
 import { hostPlatform } from './hostPlatform';
-import { type View, VIEW_LOADERS, preloadView } from './navigation';
+import { type View, VIEW_LOADERS, preloadView, isView, groupForView } from './navigation';
 import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
 import { Toasts, StatusBar, LogsPage } from '@/systems/notifications';
 import { TerminalPage } from '@/systems/terminal';
@@ -155,6 +155,20 @@ export function App() {
     });
     return off;
   }, []);
+
+  // Application-menu items (macOS) and the Cmd+,/Ctrl+, Settings shortcut arrive
+  // as 'menu:navigate' events. Route them through the same goTo the sidebar uses,
+  // opening the matching group so a Skills/MCP sub-page is visible in the sidebar.
+  useEffect(() => {
+    const off = bridgeClient.onMenuNavigate((view) => {
+      if (!isView(view)) return;
+      goTo(view);
+      const group = groupForView(view);
+      if (group === 'skills') setSkillsOpen(true);
+      else if (group === 'mcp') setMcpOpen(true);
+    });
+    return off;
+  }, [goTo]);
 
   function renderView() {
     switch (activeView) {
