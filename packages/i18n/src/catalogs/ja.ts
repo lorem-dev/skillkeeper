@@ -15,6 +15,10 @@ export const ja: Partial<Catalog> = {
   'nav.mcp': 'MCP',
   'nav.settings': '設定',
 
+  'menu.view': '表示',
+  'menu.about': 'SkillKeeper について',
+  'menu.openSettings': '設定を開く',
+
   'common.loading': '読み込み中',
   'common.errorPrefix': 'エラー: {message}',
 

@@ -15,6 +15,10 @@ export const srCyrl: Partial<Catalog> = {
   'nav.mcp': 'MCP',
   'nav.settings': 'Подешавања',
 
+  'menu.view': 'Приказ',
+  'menu.about': 'О програму SkillKeeper',
+  'menu.openSettings': 'Отвори подешавања',
+
   'common.loading': 'Учитавање',
   'common.errorPrefix': 'Грешка: {message}',
 

@@ -15,6 +15,10 @@ export const pt: Partial<Catalog> = {
   'nav.mcp': 'MCP',
   'nav.settings': 'Definições',
 
+  'menu.view': 'Ver',
+  'menu.about': 'Sobre o SkillKeeper',
+  'menu.openSettings': 'Abrir definições',
+
   'common.loading': 'A carregar',
   'common.errorPrefix': 'Erro: {message}',
 

@@ -15,6 +15,10 @@ export const uk: Partial<Catalog> = {
   'nav.mcp': 'MCP',
   'nav.settings': 'Налаштування',
 
+  'menu.view': 'Вигляд',
+  'menu.about': 'Про SkillKeeper',
+  'menu.openSettings': 'Відкрити налаштування',
+
   'common.loading': 'Завантаження',
   'common.errorPrefix': 'Помилка: {message}',
 

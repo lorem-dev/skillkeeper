@@ -15,6 +15,10 @@ export const en = {
   'nav.mcp': 'MCP',
   'nav.settings': 'Settings',
 
+  'menu.view': 'View',
+  'menu.about': 'About SkillKeeper',
+  'menu.openSettings': 'Open Settings',
+
   /** Generic activity/loading label. */
   'common.loading': 'Loading',
   /**

@@ -15,6 +15,10 @@ export const be: Partial<Catalog> = {
   'nav.mcp': 'MCP',
   'nav.settings': 'Налады',
 
+  'menu.view': 'Выгляд',
+  'menu.about': 'Пра SkillKeeper',
+  'menu.openSettings': 'Адкрыць налады',
+
   'common.loading': 'Загрузка',
   'common.errorPrefix': 'Памылка: {message}',
 

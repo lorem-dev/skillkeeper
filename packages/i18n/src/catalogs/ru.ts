@@ -18,6 +18,10 @@ export const ru: Partial<Catalog> = {
   'nav.mcp': 'MCP',
   'nav.settings': 'Настройки',
 
+  'menu.view': 'Вид',
+  'menu.about': 'О SkillKeeper',
+  'menu.openSettings': 'Открыть настройки',
+
   'common.loading': 'Загрузка',
   'common.errorPrefix': 'Ошибка: {message}',
 

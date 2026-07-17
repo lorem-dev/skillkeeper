@@ -15,6 +15,10 @@ export const zhCn: Partial<Catalog> = {
   'nav.mcp': 'MCP',
   'nav.settings': '设置',
 
+  'menu.view': '视图',
+  'menu.about': '关于 SkillKeeper',
+  'menu.openSettings': '打开设置',
+
   'common.loading': '加载中',
   'common.errorPrefix': '错误：{message}',
 

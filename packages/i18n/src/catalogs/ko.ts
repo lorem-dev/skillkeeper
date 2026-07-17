@@ -15,6 +15,10 @@ export const ko: Partial<Catalog> = {
   'nav.mcp': 'MCP',
   'nav.settings': '설정',
 
+  'menu.view': '보기',
+  'menu.about': 'SkillKeeper 정보',
+  'menu.openSettings': '설정 열기',
+
   'common.loading': '불러오는 중',
   'common.errorPrefix': '오류: {message}',
 

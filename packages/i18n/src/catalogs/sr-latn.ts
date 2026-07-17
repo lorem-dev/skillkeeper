@@ -15,6 +15,10 @@ export const srLatn: Partial<Catalog> = {
   'nav.mcp': 'MCP',
   'nav.settings': 'Podešavanja',
 
+  'menu.view': 'Prikaz',
+  'menu.about': 'O programu SkillKeeper',
+  'menu.openSettings': 'Otvori podešavanja',
+
   'common.loading': 'Učitavanje',
   'common.errorPrefix': 'Greška: {message}',
 
