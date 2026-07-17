@@ -599,8 +599,8 @@ app.on('before-quit', () => {
 });
 
 app.on('window-all-closed', () => {
-  // Quit on all platforms except macOS (where apps conventionally stay active).
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // Quit on every platform once the last window closes. This deliberately
+  // overrides the macOS convention of keeping the app active with no windows:
+  // SkillKeeper is a single-window shell, so closing that window means done.
+  app.quit();
 });
