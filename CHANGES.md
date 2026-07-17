@@ -2,9 +2,7 @@
 
 ## Development
 
-### Breaking Changes
-
-- None.
+## Version 0.1.0-rc.1 - 2026-07-17
 
 ### Features
 
