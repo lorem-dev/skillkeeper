@@ -46,6 +46,14 @@ jobs:
     needs: verify-version
     runs-on: ${{ matrix.os }}
 
+    env:
+      # Sign macOS only when a signing certificate is actually configured.
+      # The env var is always present in CI (set to "" when the secret is
+      # missing), and an empty CSC_LINK makes electron-builder resolve it as a
+      # path relative to the project dir and abort with "not a file". This flag
+      # lets the steps below pick the signed or unsigned path accordingly.
+      HAS_MAC_CERT: ${{ secrets.CSC_LINK != '' }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -83,12 +91,13 @@ jobs:
         run: pnpm --filter @skillkeeper/desktop run build
 
       # -----------------------------------------------------------------------
-      # macOS: sign and notarize via electron-builder using CI secrets.
-      # CSC_LINK and CSC_KEY_PASSWORD must be set for code signing.
-      # APPLE_ID / APPLE_ID_PASSWORD / APPLE_TEAM_ID enable notarization.
+      # macOS: sign and notarize via electron-builder when a certificate is
+      # configured (CSC_LINK / CSC_KEY_PASSWORD, plus APPLE_ID /
+      # APPLE_ID_PASSWORD / APPLE_TEAM_ID for notarization). When no certificate
+      # secret is present, build unsigned instead of failing.
       # -----------------------------------------------------------------------
-      - name: Package (macOS -- dmg)
-        if: matrix.os == 'macos-latest'
+      - name: Package (macOS -- dmg, signed)
+        if: matrix.os == 'macos-latest' && env.HAS_MAC_CERT == 'true'
         run: pnpm --filter @skillkeeper/desktop run package
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -96,6 +105,13 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Package (macOS -- dmg, unsigned; no certificate configured)
+        if: matrix.os == 'macos-latest' && env.HAS_MAC_CERT != 'true'
+        run: pnpm --filter @skillkeeper/desktop run package
+        env:
+          # No CSC_LINK here: skip signing entirely rather than resolve "".
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
       # -----------------------------------------------------------------------
       # Linux: produces AppImage and deb; no signing needed.
