@@ -64,6 +64,10 @@ import type { ApplyMcpArgs, UpdateMcpArgs, McpUpdatePreflightArgs } from './mcp.
 // conflict with bundler-injected `__dirname` shims.
 const moduleDir = import.meta.dirname;
 
+// macOS role labels (Quit/Hide) and app.getName() use this; the app-menu bold
+// title still comes from the bundle in dev (shows "Electron"), correct when packaged.
+app.setName('SkillKeeper');
+
 let configWatcher: ConfigWatcher | undefined;
 
 /**
@@ -121,20 +125,12 @@ function installAppMenu(t: Translator): void {
       const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
       win?.webContents.send('menu:navigate', view);
     },
-    // TEMPORARY: real About wiring lands in a later task (native panel /
-    // renderer dialog); this stub only keeps the tree typechecking now.
-    onAbout: () => {},
+    onAbout: () => {
+      const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+      win?.webContents.send('menu:about');
+    },
   });
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
-}
-
-/** Configure the native About panel (name, version, our icon). */
-function applyAboutPanel(t: Translator): void {
-  app.setAboutPanelOptions({
-    applicationName: t('app.title'),
-    applicationVersion: app.getVersion(),
-    iconPath: appIconLightAsset,
-  });
 }
 
 /** Effective app language; rebuilds the menu when it changes. */
@@ -510,6 +506,8 @@ function registerHandlers(): void {
     'window:isMaximized',
     (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false,
   );
+
+  ipcMain.handle('app:getVersion', () => app.getVersion());
 }
 
 // ---------------------------------------------------------------------------
@@ -635,7 +633,6 @@ void app.whenReady().then(async () => {
     // Keep the "git" default; config:get will refresh it once the renderer loads.
     rememberLanguage(defaultConfig);
   }
-  applyAboutPanel(createTranslator(currentLang ?? defaultConfig.general.language));
   await ensureSshAgent();
   // Start the terminal session now (after the ssh-agent env is set, so the shell
   // inherits SSH_AUTH_SOCK) so it is initialized before any task runs; runGit
