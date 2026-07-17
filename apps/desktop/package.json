@@ -3,7 +3,10 @@
   "version": "0.1.0-rc.1",
   "private": true,
   "description": "Install and manage skills and hooks for AI coding agents",
-  "author": "Lorem Dev",
+  "author": {
+    "name": "Lorem Dev",
+    "email": "lorem-dev@users.noreply.github.com"
+  },
   "homepage": "https://github.com/lorem-dev/skillkeeper",
   "type": "module",
   "main": "./out/main/index.js",
@@ -36,6 +39,7 @@
       "**/node_modules/node-pty/**"
     ],
     "linux": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "AppImage",
