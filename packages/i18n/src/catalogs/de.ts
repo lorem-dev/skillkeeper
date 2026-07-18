@@ -42,7 +42,7 @@ export const de: Partial<Catalog> = {
   'menu.showAll': 'Alle einblenden',
   'menu.quit': 'SkillKeeper beenden',
   'about.version': 'Version {version}',
-  'about.tagline': 'Fähigkeiten für KI-Programmieragenten installieren und verwalten',
+  'about.tagline': 'Fähigkeiten für KI-Agenten installieren und verwalten',
 
   'common.loading': 'Wird geladen',
   'common.errorPrefix': 'Fehler: {message}',

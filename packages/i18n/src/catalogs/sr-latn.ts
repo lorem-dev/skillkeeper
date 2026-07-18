@@ -38,7 +38,7 @@ export const srLatn: Partial<Catalog> = {
   'menu.showAll': 'Prikaži sve',
   'menu.quit': 'Izađi iz SkillKeeper',
   'about.version': 'Verzija {version}',
-  'about.tagline': 'Instalirajte i upravljajte veštinama za AI agente za programiranje',
+  'about.tagline': 'Instalirajte i upravljajte veštinama za AI agente',
 
   'common.loading': 'Učitavanje',
   'common.errorPrefix': 'Greška: {message}',

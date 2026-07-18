@@ -38,7 +38,7 @@ export const zhTw: Partial<Catalog> = {
   'menu.showAll': '全部顯示',
   'menu.quit': '結束 SkillKeeper',
   'about.version': '版本 {version}',
-  'about.tagline': '為 AI 程式設計助理安裝與管理技能',
+  'about.tagline': '為 AI 助理安裝與管理技能',
 
   'common.loading': '載入中',
   'common.errorPrefix': '錯誤：{message}',

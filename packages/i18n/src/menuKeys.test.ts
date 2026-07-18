@@ -61,7 +61,7 @@ describe('menu refinement keys', () => {
     expect(en['menu.hide']).toBe('Hide SkillKeeper');
     expect(en['menu.quit']).toBe('Quit SkillKeeper');
     expect(en['about.version']).toBe('Version {version}');
-    expect(en['about.tagline']).toBe('Install and manage skills for AI coding agents');
+    expect(en['about.tagline']).toBe('Install and manage skills for AI agents');
     expect(en['about.copyright']).toBe('(c) {years} Lorem Dev');
   });
 

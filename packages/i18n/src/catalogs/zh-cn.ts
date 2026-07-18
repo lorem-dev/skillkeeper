@@ -38,7 +38,7 @@ export const zhCn: Partial<Catalog> = {
   'menu.showAll': '全部显示',
   'menu.quit': '退出 SkillKeeper',
   'about.version': '版本 {version}',
-  'about.tagline': '为 AI 编程助手安装和管理技能',
+  'about.tagline': '为 AI 助手安装和管理技能',
 
   'common.loading': '加载中',
   'common.errorPrefix': '错误：{message}',

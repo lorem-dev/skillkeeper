@@ -38,7 +38,7 @@ export const ko: Partial<Catalog> = {
   'menu.showAll': '모두 보기',
   'menu.quit': 'SkillKeeper 종료',
   'about.version': '버전 {version}',
-  'about.tagline': 'AI 코딩 에이전트용 스킬 설치 및 관리',
+  'about.tagline': 'AI 에이전트용 스킬 설치 및 관리',
 
   'common.loading': '불러오는 중',
   'common.errorPrefix': '오류: {message}',

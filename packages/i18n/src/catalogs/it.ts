@@ -38,7 +38,7 @@ export const it: Partial<Catalog> = {
   'menu.showAll': 'Mostra tutte',
   'menu.quit': 'Esci da SkillKeeper',
   'about.version': 'Versione {version}',
-  'about.tagline': 'Installa e gestisci competenze per agenti di programmazione IA',
+  'about.tagline': 'Installa e gestisci competenze per agenti IA',
 
   'common.loading': 'Caricamento',
   'common.errorPrefix': 'Errore: {message}',

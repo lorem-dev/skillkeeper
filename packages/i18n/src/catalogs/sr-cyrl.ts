@@ -38,7 +38,7 @@ export const srCyrl: Partial<Catalog> = {
   'menu.showAll': 'Прикажи све',
   'menu.quit': 'Изађи из SkillKeeper',
   'about.version': 'Верзија {version}',
-  'about.tagline': 'Инсталирајте и управљајте вештинама за AI агенте за програмирање',
+  'about.tagline': 'Инсталирајте и управљајте вештинама за AI агенте',
 
   'common.loading': 'Учитавање',
   'common.errorPrefix': 'Грешка: {message}',

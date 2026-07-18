@@ -38,7 +38,7 @@ export const ja: Partial<Catalog> = {
   'menu.showAll': 'すべてを表示',
   'menu.quit': 'SkillKeeper を終了',
   'about.version': 'バージョン {version}',
-  'about.tagline': 'AI コーディングエージェント用のスキルをインストール・管理',
+  'about.tagline': 'AI エージェント用のスキルをインストール・管理',
 
   'common.loading': '読み込み中',
   'common.errorPrefix': 'エラー: {message}',

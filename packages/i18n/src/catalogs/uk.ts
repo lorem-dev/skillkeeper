@@ -38,7 +38,7 @@ export const uk: Partial<Catalog> = {
   'menu.showAll': 'Показати все',
   'menu.quit': 'Завершити SkillKeeper',
   'about.version': 'Версія {version}',
-  'about.tagline': 'Встановлюйте навички для AI-агентів програмування та керуйте ними',
+  'about.tagline': 'Встановлюйте навички для AI-агентів та керуйте ними',
 
   'common.loading': 'Завантаження',
   'common.errorPrefix': 'Помилка: {message}',
