@@ -41,7 +41,7 @@ export const ru: Partial<Catalog> = {
   'menu.showAll': 'Показать все',
   'menu.quit': 'Выйти из SkillKeeper',
   'about.version': 'Версия {version}',
-  'about.tagline': 'Устанавливайте и управляйте навыками для ИИ-агентов',
+  'about.tagline': 'Устанавливайте и управляйте навыками для ИИ-агентов программирования',
 
   'common.loading': 'Загрузка',
   'common.errorPrefix': 'Ошибка: {message}',
