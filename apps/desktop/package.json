@@ -84,6 +84,9 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
+      "extraResources": [
+        { "from": "build/menu-icons", "to": "menu-icons" }
+      ],
       "extendInfo": {
         "NSDesktopFolderUsageDescription": "SkillKeeper needs access to open and manage skills in projects on your Desktop.",
         "NSDocumentsFolderUsageDescription": "SkillKeeper needs access to open and manage skills in projects in your Documents.",

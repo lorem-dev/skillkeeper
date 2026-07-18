@@ -8,6 +8,7 @@
 import { app, BrowserWindow, ipcMain, session, dialog, nativeImage, nativeTheme, Menu } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
+import { existsSync } from 'node:fs';
 // The padded app icons (generate-icons.mjs), bundled into the build output.
 // electron-builder only applies icons to packaged apps, so the dock/taskbar
 // shows the default Electron icon in `dev` unless we set it at runtime here.
@@ -21,7 +22,7 @@ import type { LoadConfigResult, SkillKeeperConfig } from '@skillkeeper/config';
 import { createTranslator } from '@skillkeeper/i18n';
 import type { Translator } from '@skillkeeper/i18n';
 import { listEditors, openInEditor } from './editors.js';
-import { buildMenuTemplate } from './menu.js';
+import { buildMenuTemplate, type MenuIcons } from './menu.js';
 import { isSettingsShortcut } from './settingsShortcut.js';
 import { createConfigWatcher } from './configWatcher.js';
 import type { ConfigWatcher } from './configWatcher.js';
@@ -109,6 +110,23 @@ function rememberTheme(config: SkillKeeperConfig): void {
   applyAppIcon();
 }
 
+/** Resolve template-icon paths for the menu (macOS). Dev: the build output dir;
+ *  packaged: the mac extraResources copy. Returns only glyphs whose file exists,
+ *  so a build without generated icons (non-macOS, or generator skipped) simply
+ *  shows no icons rather than failing. */
+function menuIcons(): MenuIcons {
+  const dir = app.isPackaged
+    ? path.join(process.resourcesPath, 'menu-icons')
+    : path.join(moduleDir, '../../build/menu-icons');
+  const glyphs = ['projects', 'repositories', 'skills', 'mcp', 'settings'] as const;
+  const icons: MenuIcons = {};
+  for (const g of glyphs) {
+    const p = path.join(dir, `${g}Template.png`);
+    if (existsSync(p)) icons[g] = p;
+  }
+  return icons;
+}
+
 /**
  * Install the application menu for the given translator. macOS only; on other
  * platforms the menu is blocked (set to null). Menu clicks post `menu:navigate`
@@ -121,6 +139,7 @@ function installAppMenu(t: Translator): void {
   }
   const template = buildMenuTemplate({
     t,
+    icons: menuIcons(),
     onNavigate: (view) => {
       const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
       win?.webContents.send('menu:navigate', view);
