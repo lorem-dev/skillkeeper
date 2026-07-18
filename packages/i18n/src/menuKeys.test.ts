@@ -62,7 +62,7 @@ describe('menu refinement keys', () => {
     expect(en['menu.quit']).toBe('Quit SkillKeeper');
     expect(en['about.version']).toBe('Version {version}');
     expect(en['about.tagline']).toBe('Install and manage skills for AI coding agents');
-    expect(en['about.copyright']).toBe('(c) 2026 Lorem Dev');
+    expect(en['about.copyright']).toBe('(c) {years} Lorem Dev');
   });
 
   // Some canonical Apple localizations legitimately equal the English word

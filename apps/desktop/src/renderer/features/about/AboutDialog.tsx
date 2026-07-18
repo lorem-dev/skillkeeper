@@ -37,6 +37,12 @@ export function AboutDialog() {
     theme === 'dark' ||
     (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
+  // Copyright years: a single "2026" while the end year is still 2026, otherwise
+  // the range "2026-<end>". The end year is the build year for a production build
+  // (baked via __SK_BUILD_YEAR__ at build time), or the current year in dev.
+  const endYear = import.meta.env.PROD ? __SK_BUILD_YEAR__ : new Date().getFullYear();
+  const years = endYear > 2026 ? `2026-${endYear}` : '2026';
+
   return (
     <Modal open={open} onClose={closeAbout} className="sk-about">
       <div className="sk-about__body">
@@ -50,7 +56,7 @@ export function AboutDialog() {
         <div className="sk-about__name">{t('app.title')}</div>
         {version !== '' && <div className="sk-about__version">{t('about.version', { version })}</div>}
         <div className="sk-about__tagline">{t('about.tagline')}</div>
-        <div className="sk-about__copyright">{t('about.copyright')}</div>
+        <div className="sk-about__copyright">{t('about.copyright', { years })}</div>
       </div>
     </Modal>
   );

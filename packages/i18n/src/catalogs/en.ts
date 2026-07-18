@@ -39,7 +39,7 @@ export const en = {
   'menu.quit': 'Quit SkillKeeper',
   'about.version': 'Version {version}',
   'about.tagline': 'Install and manage skills for AI coding agents',
-  'about.copyright': '(c) 2026 Lorem Dev',
+  'about.copyright': '(c) {years} Lorem Dev',
 
   /** Generic activity/loading label. */
   'common.loading': 'Loading',

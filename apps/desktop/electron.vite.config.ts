@@ -87,6 +87,10 @@ export default defineConfig(({ mode }) => {
     },
     renderer: {
       root: 'src/renderer',
+      // Bake the build year so a production build shows it in the About-dialog
+      // copyright range; dev uses the runtime year (see AboutDialog). The config
+      // is evaluated at build time, so `new Date()` here is the build date.
+      define: { __SK_BUILD_YEAR__: JSON.stringify(new Date().getFullYear()) },
       // The renderer also gets the `@/` alias -> src/renderer, the entry point
       // for the FSD-inspired layered imports (`@/shared`, `@/app/store`, ...).
       resolve: { alias: { ...alias, '@': fromHere('./src/renderer') } },
