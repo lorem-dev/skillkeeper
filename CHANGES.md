@@ -10,6 +10,10 @@
   supported language. Add a Cmd+, (Ctrl+, on other platforms) shortcut that
   opens Settings on all platforms, matched by physical key so it works under
   non-Latin keyboard layouts. The menu is disabled on Windows and Linux.
+- Refine the macOS application menu: move MCP under View, localize the Edit,
+  Window, Help and app-menu items in every supported language, show glyph icons
+  on the menu items, and replace the native About panel with a custom About
+  dialog that shows the SkillKeeper icon, version, and tagline.
 
 ## Version 0.1.0-rc.1 - 2026-07-17
 
