@@ -17,6 +17,9 @@ import {
   IntervalStepper,
   Toggle,
   MultiSelect,
+  Button,
+  Tooltip,
+  Icon,
 } from '@/shared/ui';
 import { OpenConfigButton } from './OpenConfigButton';
 import './SettingsPage.scss';
@@ -48,6 +51,7 @@ function GitRow({ value, label, description, onCommit }: GitRowProps) {
 export function SettingsPage() {
   const config = useSkillkeeperStore((s) => s.config);
   const updateConfig = useSkillkeeperStore((s) => s.updateConfig);
+  const openAbout = useSkillkeeperStore((s) => s.openAbout);
   const animate = useAnimationsEnabled();
   const scale = useAnimationScale();
   const t = useTranslator();
@@ -72,7 +76,25 @@ export function SettingsPage() {
     <Page
       title={t('nav.settings')}
       toolbar={
-        <Toolbar title={t('nav.settings')} trailing={<OpenConfigButton />} />
+        <Toolbar
+          title={t('nav.settings')}
+          trailing={
+            <>
+              <OpenConfigButton />
+              <Tooltip content={t('menu.about')}>
+                <Button
+                  variant="secondary"
+                  glass
+                  className="sk-about-btn"
+                  aria-label={t('menu.about')}
+                  onClick={openAbout}
+                >
+                  <Icon name="info" />
+                </Button>
+              </Tooltip>
+            </>
+          }
+        />
       }
     >
       <motion.div

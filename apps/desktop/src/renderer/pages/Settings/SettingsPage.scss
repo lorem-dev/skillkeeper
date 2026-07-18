@@ -9,3 +9,12 @@
 .sk-settings-language {
   width: 18rem;
 }
+
+// Round icon-only About button next to the config-editor control: drop the
+// text-button padding to a control-height square and force the pill radius so
+// it reads as a circle (mirrors the Refresh button on the Projects page).
+.sk-about-btn {
+  width: var(--sk-control-height);
+  padding: 0;
+  border-radius: var(--sk-radius-pill);
+}
