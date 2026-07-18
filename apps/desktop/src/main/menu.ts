@@ -1,6 +1,9 @@
 import type { MenuItemConstructorOptions } from 'electron';
 import type { Translator } from '@skillkeeper/i18n';
 
+// Local union mirroring the renderer's `View`, not imported from it: the
+// main process must not depend on renderer build output. The renderer
+// re-validates incoming targets with `isView` before navigating.
 export type MenuNavTarget =
   | 'projects'
   | 'repositories'

@@ -24,7 +24,6 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import { Resvg } from '@resvg/resvg-js';
 
 const BUILD_DIR = dirname(fileURLToPath(import.meta.url));
 const ASSETS = join(BUILD_DIR, '..', 'src', 'renderer', 'shared', 'ui', 'Icon', 'assets');
@@ -48,7 +47,7 @@ function blacken(svg) {
     .replace(/stroke="(?!none)[^"]*"/g, 'stroke="#000000"');
 }
 
-function render(svg, size) {
+function render(Resvg, svg, size) {
   const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: size } });
   return resvg.render().asPng();
 }
@@ -67,9 +66,11 @@ function isUpToDate(hash) {
   return OUTPUT_FILES.every((rel) => existsSync(join(BUILD_DIR, rel)));
 }
 
-export function generateMenuIcons({ force = false } = {}) {
+export async function generateMenuIcons({ force = false } = {}) {
   if (process.platform !== 'darwin') {
-    // Menu icons are a macOS-only affordance; no-op elsewhere.
+    // Menu icons are a macOS-only affordance; no-op elsewhere. Bail out
+    // before ever importing @resvg/resvg-js, whose native binding is not
+    // guaranteed to have a prebuilt for every non-macOS CI platform.
     return { skipped: true, reason: 'not-darwin' };
   }
 
@@ -86,12 +87,14 @@ export function generateMenuIcons({ force = false } = {}) {
     return { skipped: true, reason: 'up-to-date', hash };
   }
 
+  const { Resvg } = await import('@resvg/resvg-js');
+
   mkdirSync(OUT, { recursive: true });
 
   for (const glyph of GLYPHS) {
     const svg = blacken(readFileSync(join(ASSETS, `${glyph}.svg`), 'utf8'));
-    writeFileSync(join(OUT, `${glyph}Template.png`), render(svg, 16));
-    writeFileSync(join(OUT, `${glyph}Template@2x.png`), render(svg, 32));
+    writeFileSync(join(OUT, `${glyph}Template.png`), render(Resvg, svg, 16));
+    writeFileSync(join(OUT, `${glyph}Template@2x.png`), render(Resvg, svg, 32));
   }
 
   writeFileSync(CACHE, `${JSON.stringify({ sources: GLYPHS.map((g) => `${g}.svg`), hash, files: OUTPUT_FILES }, null, 2)}\n`);
@@ -102,7 +105,7 @@ export function generateMenuIcons({ force = false } = {}) {
 const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (invokedDirectly) {
   try {
-    const r = generateMenuIcons({ force: process.argv.includes('--force') });
+    const r = await generateMenuIcons({ force: process.argv.includes('--force') });
     if (r.skipped && r.reason === 'not-darwin') {
       console.log('skipping menu icon generation: not macOS');
     } else if (r.skipped) {
