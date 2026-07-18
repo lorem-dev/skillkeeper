@@ -164,6 +164,11 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
+    # Creating a GitHub release requires write access to repo contents; the
+    # default GITHUB_TOKEN is read-only, which fails with a 403.
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
