@@ -30,7 +30,7 @@ const ASSETS = join(BUILD_DIR, '..', 'src', 'renderer', 'shared', 'ui', 'Icon', 
 const OUT = join(BUILD_DIR, 'menu-icons');
 const CACHE = join(BUILD_DIR, '.menu-icon-cache.json');
 
-const GLYPHS = ['projects', 'repositories', 'skills', 'mcp', 'settings'];
+const GLYPHS = ['projects', 'repositories', 'skills', 'mcp', 'settings', 'info'];
 
 // Every file this script produces, relative to BUILD_DIR.
 const OUTPUT_FILES = GLYPHS.flatMap((glyph) => [

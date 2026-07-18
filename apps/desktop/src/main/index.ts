@@ -118,7 +118,7 @@ function menuIcons(): MenuIcons {
   const dir = app.isPackaged
     ? path.join(process.resourcesPath, 'menu-icons')
     : path.join(moduleDir, '../../build/menu-icons');
-  const glyphs = ['projects', 'repositories', 'skills', 'mcp', 'settings'] as const;
+  const glyphs = ['projects', 'repositories', 'skills', 'mcp', 'settings', 'info'] as const;
   const icons: MenuIcons = {};
   for (const g of glyphs) {
     const p = path.join(dir, `${g}Template.png`);

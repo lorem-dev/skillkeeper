@@ -73,7 +73,15 @@ describe('buildMenuTemplate', () => {
   it('attaches icons only when provided', () => {
     const view = sub(build()[2]!);
     expect(byLabel(view, 'nav.projects').icon).toBeUndefined();
-    const view2 = sub(build({ icons: { projects: '/tmp/projectsTemplate.png' } })[2]!);
-    expect(byLabel(view2, 'nav.projects').icon).toBe('/tmp/projectsTemplate.png');
+    const icons = {
+      projects: '/tmp/projectsTemplate.png',
+      info: '/tmp/infoTemplate.png',
+      settings: '/tmp/settingsTemplate.png',
+    };
+    const items = build({ icons });
+    expect(byLabel(sub(items[2]!), 'nav.projects').icon).toBe('/tmp/projectsTemplate.png');
+    const appMenu = sub(items[0]!);
+    expect(byLabel(appMenu, 'menu.about').icon).toBe('/tmp/infoTemplate.png');
+    expect(byLabel(appMenu, 'nav.settings').icon).toBe('/tmp/settingsTemplate.png');
   });
 });

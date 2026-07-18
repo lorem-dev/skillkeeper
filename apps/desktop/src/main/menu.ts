@@ -15,7 +15,7 @@ export type MenuNavTarget =
 
 /** Filesystem paths to template-PNG glyphs, keyed by glyph name (macOS only). */
 export type MenuIcons = Partial<
-  Record<'projects' | 'repositories' | 'skills' | 'mcp' | 'settings', string>
+  Record<'projects' | 'repositories' | 'skills' | 'mcp' | 'settings' | 'info', string>
 >;
 
 export interface MenuDeps {
@@ -45,14 +45,14 @@ export function buildMenuTemplate(deps: MenuDeps): MenuItemConstructorOptions[] 
     {
       label: t('app.title'),
       submenu: [
-        { label: t('menu.about'), click: (): void => onAbout() },
+        withIcon('info', { label: t('menu.about'), click: (): void => onAbout() }),
         { type: 'separator' },
-        {
+        withIcon('settings', {
           label: t('nav.settings'),
           accelerator: 'CmdOrCtrl+,',
           registerAccelerator: false,
           click: nav('settings'),
-        },
+        }),
         { type: 'separator' },
         { role: 'services', label: t('menu.services') },
         { type: 'separator' },
