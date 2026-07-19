@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.1.0-rc.2
+
 ### Features
 
 - Add a native macOS application menu (Skillkeeper, Edit, View, MCP, Settings,
@@ -14,6 +16,14 @@
   Window, Help and app-menu items in every supported language, show glyph icons
   on the menu items, and replace the native About panel with a custom About
   dialog that shows the SkillKeeper icon, version, and tagline.
+- Publish releases with a signed checksum file: the release workflow attaches a
+  SHA-256 `checksums.txt` and a detached GPG signature (`checksums.txt.asc`)
+  verifiable against the public key committed at `.github/release-key.asc`.
+
+### Fixes
+
+- Generate the localization catalogs before `dev`/`build` so a fresh or cleaned
+  checkout no longer fails to build with missing i18n catalog modules.
 
 ## Version 0.1.0-rc.1
 
