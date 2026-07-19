@@ -45,6 +45,11 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+          # This job only runs node scripts/check-version.mjs and never installs
+          # deps. Disable setup-node's package-manager cache: it otherwise
+          # auto-detects the pnpm packageManager field and fails locating pnpm
+          # before corepack is enabled.
+          package-manager-cache: false
 
       - name: Check the tag matches every package, tauri, and crate version
         run: node scripts/check-version.mjs
@@ -338,6 +343,10 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+          # This job runs only node scripts (release notes) plus gh/gpg and
+          # never installs deps. Disable the package-manager cache so setup-node
+          # does not try to locate pnpm before corepack is enabled.
+          package-manager-cache: false
 
       - name: Generate release notes from CHANGES.md
         run: node scripts/release-notes.mjs
