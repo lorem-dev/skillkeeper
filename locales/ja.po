@@ -1,0 +1,935 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ja\n"
+
+msgid "app.title"
+msgstr "SkillKeeper"
+
+msgid "nav.repositories"
+msgstr "リポジトリ"
+
+msgid "nav.skills"
+msgstr "スキル"
+
+msgid "nav.projects"
+msgstr "プロジェクト"
+
+msgid "nav.mcp"
+msgstr "MCP"
+
+msgid "nav.settings"
+msgstr "設定"
+
+msgid "menu.view"
+msgstr "表示"
+
+msgid "menu.about"
+msgstr "SkillKeeper について"
+
+msgid "menu.openSettings"
+msgstr "設定を開く"
+
+msgid "menu.edit"
+msgstr "編集"
+
+msgid "menu.window"
+msgstr "ウインドウ"
+
+msgid "menu.help"
+msgstr "ヘルプ"
+
+msgid "menu.undo"
+msgstr "取り消す"
+
+msgid "menu.redo"
+msgstr "やり直す"
+
+msgid "menu.cut"
+msgstr "カット"
+
+msgid "menu.copy"
+msgstr "コピー"
+
+msgid "menu.paste"
+msgstr "ペースト"
+
+msgid "menu.pasteAndMatchStyle"
+msgstr "ペーストしてスタイルを合わせる"
+
+msgid "menu.delete"
+msgstr "削除"
+
+msgid "menu.selectAll"
+msgstr "すべてを選択"
+
+msgid "menu.minimize"
+msgstr "しまう"
+
+msgid "menu.zoom"
+msgstr "拡大/縮小"
+
+msgid "menu.close"
+msgstr "閉じる"
+
+msgid "menu.services"
+msgstr "サービス"
+
+msgid "menu.hide"
+msgstr "SkillKeeper を隠す"
+
+msgid "menu.hideOthers"
+msgstr "ほかを隠す"
+
+msgid "menu.showAll"
+msgstr "すべてを表示"
+
+msgid "menu.quit"
+msgstr "SkillKeeper を終了"
+
+msgid "about.version"
+msgstr "バージョン {version}"
+
+msgid "about.tagline"
+msgstr "AI エージェント用のスキルをインストール・管理"
+
+msgid "common.loading"
+msgstr "読み込み中"
+
+msgid "common.errorPrefix"
+msgstr "エラー: {message}"
+
+msgid "common.refresh"
+msgstr "更新"
+
+msgid "common.comingSoon"
+msgstr "近日公開"
+
+msgid "common.close"
+msgstr "閉じる"
+
+msgid "common.clear"
+msgstr "クリア"
+
+msgid "common.goToSkills"
+msgstr "スキルへ移動"
+
+msgid "common.goToMcp"
+msgstr "MCPへ移動"
+
+msgid "skills.resetFilters"
+msgstr "フィルターをリセット"
+
+msgid "skills.componentsTitle"
+msgstr "コンポーネント"
+
+msgid "skills.managementTitle"
+msgstr "管理"
+
+msgid "common.search"
+msgstr "検索"
+
+msgid "common.decrease"
+msgstr "減らす"
+
+msgid "common.increase"
+msgstr "増やす"
+
+msgid "common.filter"
+msgstr "フィルター"
+
+msgid "common.clearFilters"
+msgstr "フィルターをリセット"
+
+msgid "notifications.error"
+msgstr "エラー"
+
+msgid "notifications.info"
+msgstr "通知"
+
+msgid "statusbar.notifications"
+msgstr "エラー: {count}"
+
+msgid "statusbar.terminal"
+msgstr "ターミナル"
+
+msgid "statusbar.tasks"
+msgstr "タスク"
+
+msgid "logs.title"
+msgstr "通知"
+
+msgid "terminal.title"
+msgstr "ターミナル"
+
+msgid "logs.empty"
+msgstr "表示するものはありません。"
+
+msgid "logs.copy"
+msgstr "コピー"
+
+msgid "logs.copyAll"
+msgstr "すべてコピー"
+
+msgid "logs.clear"
+msgstr "クリア"
+
+msgid "logs.filter"
+msgstr "表示"
+
+msgid "logs.level.error"
+msgstr "エラー"
+
+msgid "logs.level.info"
+msgstr "メッセージ"
+
+msgid "tasks.title"
+msgstr "タスク"
+
+msgid "tasks.empty"
+msgstr "タスクはありません。"
+
+msgid "tasks.clear"
+msgstr "完了済みをクリア"
+
+msgid "tasks.kind.sync"
+msgstr "同期"
+
+msgid "tasks.kind.check"
+msgstr "更新を確認"
+
+msgid "tasks.kind.update-skill"
+msgstr "スキルを更新"
+
+msgid "tasks.kind.refresh-projects"
+msgstr "プロジェクトを更新"
+
+msgid "tasks.status.queued"
+msgstr "待機中"
+
+msgid "tasks.status.running"
+msgstr "実行中"
+
+msgid "tasks.status.done"
+msgstr "完了"
+
+msgid "tasks.status.error"
+msgstr "失敗"
+
+msgid "repositories.empty"
+msgstr "まだリポジトリが追加されていません。"
+
+msgid "repositories.add"
+msgstr "リポジトリを追加"
+
+msgid "repositories.lfs"
+msgstr "LFS"
+
+msgid "repositories.lastFetched"
+msgstr "最終取得: {when}"
+
+msgid "repositories.neverFetched"
+msgstr "未取得"
+
+msgid "repositories.addRemote"
+msgstr "リモート URL"
+
+msgid "repositories.invalidRemote"
+msgstr "有効なリモート URL を入力してください (https://... または git@host:path)。"
+
+msgid "repositories.addName"
+msgstr "名前"
+
+msgid "repositories.edit"
+msgstr "リポジトリを編集"
+
+msgid "repositories.save"
+msgstr "保存"
+
+msgid "repositories.sync"
+msgstr "同期"
+
+msgid "repositories.syncing"
+msgstr "同期中"
+
+msgid "repositories.delete"
+msgstr "削除"
+
+msgid "repositories.deleteConfirm"
+msgstr "削除の確認"
+
+msgid "repositories.hasUpdate"
+msgstr "更新があります"
+
+msgid "repositories.viewError"
+msgstr "クリックしてエラーを表示"
+
+msgid "repositories.copyBranch"
+msgstr "ブランチ名をコピー"
+
+msgid "repositories.branchCopied"
+msgstr "ブランチ名をクリップボードにコピーしました"
+
+msgid "repositories.copyRemote"
+msgstr "リンクをコピー"
+
+msgid "repositories.remoteCopied"
+msgstr "リモート URL をクリップボードにコピーしました"
+
+msgid "repositories.branch"
+msgstr "ブランチ"
+
+msgid "repositories.branchSearch"
+msgstr "ブランチを検索"
+
+msgid "repositories.branchNone"
+msgstr "一致するブランチがありません"
+
+msgid "repositories.skillCount.other"
+msgstr "{count} 件のスキル"
+
+msgid "repositories.searchFound.other"
+msgstr "{count} 件のリポジトリが見つかりました"
+
+msgid "repositories.searchTotal.other"
+msgstr "合計 {count} 件のリポジトリ"
+
+msgid "repositories.showAll"
+msgstr "すべてのリポジトリを表示"
+
+msgid "projects.empty"
+msgstr "まだプロジェクトが登録されていません。"
+
+msgid "projects.add"
+msgstr "プロジェクトを追加"
+
+msgid "projects.addedAt"
+msgstr "追加日: {when}"
+
+msgid "projects.edit"
+msgstr "プロジェクトを編集"
+
+msgid "projects.name"
+msgstr "名前"
+
+msgid "projects.remove"
+msgstr "プロジェクトを削除"
+
+msgid "projects.removeConfirm"
+msgstr "削除の確認"
+
+msgid "projects.removeKeepsFolder"
+msgstr "プロジェクトを一覧から削除します。フォルダーはディスク上に残ります。"
+
+msgid "projects.changeFolder"
+msgstr "フォルダーを変更"
+
+msgid "projects.open"
+msgstr "プロジェクトを開く"
+
+msgid "projects.openInFileManager"
+msgstr "ファイルマネージャーで開く"
+
+msgid "projects.openFailed"
+msgstr "プロジェクトを開けませんでした"
+
+msgid "projects.missing"
+msgstr "フォルダーが削除または移動されました"
+
+msgid "projects.copyPath"
+msgstr "フルパスをコピー"
+
+msgid "projects.pathCopied"
+msgstr "パスをクリップボードにコピーしました"
+
+msgid "projects.skillCount.other"
+msgstr "{count} 件のスキル"
+
+msgid "projects.fromRepos"
+msgstr "リポジトリから {count} 件"
+
+msgid "projects.agentCount.other"
+msgstr "{count} 件のエージェント"
+
+msgid "projects.fromReposHint.other"
+msgstr "リポジトリから {count} 件のスキルをインストール済み"
+
+msgid "projects.skillCountHint.other"
+msgstr "プロジェクト内に合計 {count} 件のスキル"
+
+msgid "projects.agentsHint.other"
+msgstr "{count} 件のエージェントの構成があります"
+
+msgid "projects.mcpCount"
+msgstr "{count} 件のMCP"
+
+msgid "projects.mcpHint.other"
+msgstr "リポジトリから {count} 件のMCPサーバーをインストール済み"
+
+msgid "projects.searchFound.other"
+msgstr "{count} 件のプロジェクトが見つかりました"
+
+msgid "projects.searchTotal.other"
+msgstr "合計 {count} 件のプロジェクト"
+
+msgid "projects.showAll"
+msgstr "すべてのプロジェクトを表示"
+
+msgid "skills.empty"
+msgstr "まだスキルがインストールされていません。"
+
+msgid "skills.add"
+msgstr "スキルをインストール"
+
+msgid "skills.searchPlaceholder"
+msgstr "スキルを検索"
+
+msgid "skills.filterAgent"
+msgstr "エージェント"
+
+msgid "skills.allAgents"
+msgstr "すべてのエージェント"
+
+msgid "skills.noVersion"
+msgstr "バージョンなし"
+
+msgid "skills.installedFor"
+msgstr "インストール先"
+
+msgid "skills.scope.project"
+msgstr "プロジェクト"
+
+msgid "skills.scope.global"
+msgstr "グローバル"
+
+msgid "skills.source.repo"
+msgstr "リポジトリから"
+
+msgid "skills.source.local"
+msgstr "ローカルパスから"
+
+msgid "skills.details.title"
+msgstr "スキルの詳細"
+
+msgid "skills.details.files"
+msgstr "{n} 個のファイル"
+
+msgid "skills.details.hooks"
+msgstr "{n} 個のフック"
+
+msgid "skills.details.installedAt"
+msgstr "インストール日: {when}"
+
+msgid "skills.details.destination"
+msgstr "インストール先"
+
+msgid "skills.verify"
+msgstr "検証"
+
+msgid "skills.update"
+msgstr "更新"
+
+msgid "skills.source"
+msgstr "表示モード"
+
+msgid "skills.source.repositories"
+msgstr "リポジトリ"
+
+msgid "skills.source.projects"
+msgstr "プロジェクト"
+
+msgid "skills.filterRepositories"
+msgstr "リポジトリ"
+
+msgid "skills.filterRepositoriesPlaceholder"
+msgstr "すべてのリポジトリ"
+
+msgid "skills.filterRepositoriesEmpty"
+msgstr "一致するリポジトリがありません"
+
+msgid "skills.filterProjects"
+msgstr "プロジェクト"
+
+msgid "skills.filterProjectsPlaceholder"
+msgstr "すべてのプロジェクト"
+
+msgid "skills.filterProjectsEmpty"
+msgstr "一致するプロジェクトがありません"
+
+msgid "skills.action.add"
+msgstr "インストール"
+
+msgid "skills.action.save"
+msgstr "保存"
+
+msgid "skills.action.reset"
+msgstr "リセット"
+
+msgid "skills.showAll"
+msgstr "すべてのスキルを表示"
+
+msgid "skills.emptyRepositories"
+msgstr "リポジトリ内にスキルが見つかりませんでした。"
+
+msgid "skills.emptyProjects"
+msgstr "まだプロジェクトが登録されていません。"
+
+msgid "skills.status.add"
+msgstr "スキルが追加されます"
+
+msgid "skills.status.remove"
+msgstr "スキルが削除されます"
+
+msgid "skills.status.present"
+msgstr "スキルはすでにインストールされています"
+
+msgid "skills.installPending"
+msgstr "スキルのインストールは近日公開予定です ({count} 件選択中)"
+
+msgid "skills.savePending"
+msgstr "変更の保存は近日公開予定です (+{add} / -{remove})"
+
+msgid "skills.install.title"
+msgstr "スキルのインストール"
+
+msgid "skills.install.chooseProject"
+msgstr "プロジェクト"
+
+msgid "skills.install.agents"
+msgstr "選択したエージェント"
+
+msgid "skills.install.agentsPlaceholder"
+msgstr "エージェントを選択"
+
+msgid "skills.install.next"
+msgstr "次へ"
+
+msgid "skills.install.back"
+msgstr "戻る"
+
+msgid "skills.install.confirm"
+msgstr "確認しますか？"
+
+msgid "skills.install.installing"
+msgstr "変更を適用中"
+
+msgid "skills.install.summary"
+msgstr "+{add} / -{remove}"
+
+msgid "skills.save.title"
+msgstr "変更を確認"
+
+msgid "skills.save.confirm"
+msgstr "確認しますか？"
+
+msgid "skills.save.empty"
+msgstr "適用する変更はありません"
+
+msgid "skills.col.project"
+msgstr "プロジェクト"
+
+msgid "skills.col.repository"
+msgstr "リポジトリ"
+
+msgid "skills.col.skill"
+msgstr "スキル"
+
+msgid "skills.col.action"
+msgstr "操作"
+
+msgid "skills.col.agents"
+msgstr "エージェント"
+
+msgid "skills.change.install"
+msgstr "インストール"
+
+msgid "skills.change.remove"
+msgstr "削除"
+
+msgid "skills.agentsLabel"
+msgstr "エージェント"
+
+msgid "skills.agentsTooltip"
+msgstr "使用中のエージェント"
+
+msgid "skills.agentsChanged"
+msgstr "エージェントが変更されました"
+
+msgid "skills.updateSkill"
+msgstr "スキルを更新"
+
+msgid "skills.updateRepo"
+msgstr "リポジトリのスキルを更新"
+
+msgid "skills.updateGroup"
+msgstr "グループのスキルを更新"
+
+msgid "skills.updateBadge"
+msgstr "更新"
+
+msgid "skills.unlinked"
+msgstr "未リンク"
+
+msgid "skills.addRepo"
+msgstr "リポジトリを追加"
+
+msgid "skills.local"
+msgstr "ローカル"
+
+msgid "skills.localHint"
+msgstr "手書きのローカルスキル"
+
+msgid "skills.rulesBadge"
+msgstr "ルール"
+
+msgid "skills.rulesHint"
+msgstr "このスキルにはルールがあります"
+
+msgid "skills.searchFound.other"
+msgstr "{count} 件のスキルが見つかりました"
+
+msgid "skills.searchTotal.other"
+msgstr "合計 {count} 件のスキル"
+
+msgid "mcp.empty"
+msgstr "MCPサーバーはまだありません。"
+
+msgid "mcp.searchFound.other"
+msgstr "{count} 件のMCPサーバーが見つかりました"
+
+msgid "mcp.searchTotal.other"
+msgstr "合計 {count} 件のMCPサーバー"
+
+msgid "mcp.showAll"
+msgstr "すべてのMCPサーバーを表示"
+
+msgid "mcp.add"
+msgstr "MCPを追加"
+
+msgid "mcp.addTitle"
+msgstr "MCPサーバーを追加"
+
+msgid "mcp.editTitle"
+msgstr "MCPサーバーを編集"
+
+msgid "mcp.edit"
+msgstr "編集"
+
+msgid "mcp.install"
+msgstr "インストール"
+
+msgid "mcp.installMcp"
+msgstr "MCPをインストール"
+
+msgid "mcp.installTitle"
+msgstr "{name} をインストール"
+
+msgid "mcp.remove"
+msgstr "削除"
+
+msgid "mcp.update"
+msgstr "更新"
+
+msgid "mcp.cancel"
+msgstr "キャンセル"
+
+msgid "mcp.save"
+msgstr "保存"
+
+msgid "mcp.copy"
+msgstr "コピー"
+
+msgid "mcp.copiedToClipboard"
+msgstr "クリップボードにコピーしました"
+
+msgid "mcp.goToRepository"
+msgstr "リポジトリへ移動"
+
+msgid "mcp.rulesBadge"
+msgstr "ルール"
+
+msgid "mcp.protocol.stdio"
+msgstr "stdio"
+
+msgid "mcp.protocol.http"
+msgstr "http"
+
+msgid "mcp.protocol.sse"
+msgstr "sse"
+
+msgid "mcp.paramsHelp"
+msgstr "パラメーター {name} は URL、ヘッダー、コマンド、引数、環境変数、ルールで使用できます。"
+
+msgid "mcp.field.name"
+msgstr "名前"
+
+msgid "mcp.namePlaceholder"
+msgstr "例: GitHub MCP"
+
+msgid "mcp.field.type"
+msgstr "タイプ"
+
+msgid "mcp.field.url"
+msgstr "URL"
+
+msgid "mcp.urlPlaceholder"
+msgstr "https://example.com/{token}"
+
+msgid "mcp.field.headers"
+msgstr "ヘッダー"
+
+msgid "mcp.headerNamePlaceholder"
+msgstr "ヘッダー名"
+
+msgid "mcp.headerValuePlaceholder"
+msgstr "ヘッダーの値"
+
+msgid "mcp.addHeader"
+msgstr "ヘッダーを追加"
+
+msgid "mcp.field.command"
+msgstr "コマンド"
+
+msgid "mcp.commandPlaceholder"
+msgstr "npx some-mcp-server"
+
+msgid "mcp.field.arguments"
+msgstr "引数"
+
+msgid "mcp.argumentPlaceholder"
+msgstr "引数"
+
+msgid "mcp.addArgument"
+msgstr "引数を追加"
+
+msgid "mcp.field.env"
+msgstr "環境変数"
+
+msgid "mcp.varNamePlaceholder"
+msgstr "変数名"
+
+msgid "mcp.varValuePlaceholder"
+msgstr "変数の値"
+
+msgid "mcp.addVariable"
+msgstr "変数を追加"
+
+msgid "mcp.field.rules"
+msgstr "ルール"
+
+msgid "mcp.rulesPlaceholder"
+msgstr "このサーバーをインストールするときにエージェントのルール/ガイダンスファイルに挿入される内容です。"
+
+msgid "mcp.validation.nameRequired"
+msgstr "名前は必須です。"
+
+msgid "mcp.validation.selectType"
+msgstr "転送方式を選択してください。"
+
+msgid "mcp.validation.commandRequired"
+msgstr "stdioサーバーにはコマンドが必要です。"
+
+msgid "mcp.validation.urlRequired"
+msgstr "http/sseサーバーにはURLが必要です。"
+
+msgid "mcp.validation.invalidParam"
+msgstr "無効なパラメーター ({reason})、位置 {index}。"
+
+msgid "mcp.field.project"
+msgstr "プロジェクト"
+
+msgid "mcp.chooseProject"
+msgstr "プロジェクトを選択"
+
+msgid "mcp.field.agents"
+msgstr "エージェント"
+
+msgid "mcp.field.parameters"
+msgstr "パラメーター"
+
+msgid "mcp.codexGlobalNote"
+msgstr "Codexはグローバルにインストールされます(このプロジェクトに限定されません)。"
+
+msgid "mcp.transportUnsupported"
+msgstr "{agent} はネイティブ設定で {transport} トランスポートを表現できません。"
+
+msgid "mcp.skippedAgents"
+msgstr "{count} 件のエージェントがスキップされました: プリセットのトランスポートがサポートされていません。"
+
+msgid "mcp.needsParamsNotice"
+msgstr "次のMCPインストールを追加する前にパラメーターが必要です:"
+
+msgid "mcp.delete"
+msgstr "削除"
+
+msgid "mcp.deleteConfirmTitle"
+msgstr "{name} を削除しますか?"
+
+msgid "mcp.deleteConfirmBody"
+msgstr "この操作は元に戻せません。"
+
+msgid "mcp.detailsTitle"
+msgstr "MCPサーバーの詳細"
+
+msgid "mcp.view.label"
+msgstr "表示形式"
+
+msgid "mcp.view.tiles"
+msgstr "タイル"
+
+msgid "mcp.view.tree"
+msgstr "ツリー"
+
+msgid "mcp.componentsTitle"
+msgstr "コンポーネント"
+
+msgid "mcp.managementTitle"
+msgstr "管理"
+
+msgid "settings.comingSoon"
+msgstr "設定画面は近日公開予定です。"
+
+msgid "settings.section.general"
+msgstr "一般"
+
+msgid "settings.section.updates"
+msgstr "更新"
+
+msgid "settings.section.agents"
+msgstr "エージェント"
+
+msgid "settings.section.executables"
+msgstr "実行ファイル"
+
+msgid "settings.section.security"
+msgstr "セキュリティ"
+
+msgid "settings.section.notifications"
+msgstr "通知"
+
+msgid "settings.valid"
+msgstr "有効"
+
+msgid "settings.invalid"
+msgstr "無効"
+
+msgid "settings.openConfig"
+msgstr "設定ファイルを開く"
+
+msgid "settings.openConfigInEditor"
+msgstr "設定ファイルをエディターで開く"
+
+msgid "settings.editor.defaultApp"
+msgstr "既定のアプリで開く"
+
+msgid "settings.openConfigFailed"
+msgstr "設定ファイルを開けませんでした"
+
+msgid "settings.theme"
+msgstr "テーマ"
+
+msgid "settings.animations"
+msgstr "アニメーション"
+
+msgid "settings.animationsHint"
+msgstr "UI全体での表示および非表示アニメーションの速度です"
+
+msgid "settings.animations.fast"
+msgstr "高速"
+
+msgid "settings.animations.normal"
+msgstr "標準"
+
+msgid "settings.animations.off"
+msgstr "オフ"
+
+msgid "settings.theme.system"
+msgstr "システム"
+
+msgid "settings.theme.light"
+msgstr "ライト"
+
+msgid "settings.theme.dark"
+msgstr "ダーク"
+
+msgid "settings.language"
+msgstr "言語"
+
+msgid "settings.languageEmpty"
+msgstr "一致する言語がありません"
+
+msgid "settings.section.repositories"
+msgstr "リポジトリ"
+
+msgid "settings.section.projects"
+msgstr "プロジェクト"
+
+msgid "settings.git"
+msgstr "Git"
+
+msgid "settings.gitDescription"
+msgstr "git 実行ファイルのパス"
+
+msgid "settings.updates.mode"
+msgstr "更新の確認"
+
+msgid "settings.updates.mode.manual"
+msgstr "手動"
+
+msgid "settings.updates.mode.onStartup"
+msgstr "起動時"
+
+msgid "settings.updates.mode.scheduled"
+msgstr "スケジュール"
+
+msgid "settings.updates.interval"
+msgstr "更新間隔"
+
+msgid "settings.projects.checkInterval"
+msgstr "フォルダー確認間隔"
+
+msgid "settings.interval.minutesUnit"
+msgstr "分"
+
+msgid "settings.interval.hoursUnit"
+msgstr "時"
+
+msgid "settings.agents.enabled"
+msgstr "有効なエージェント"
+
+msgid "settings.agents.placeholder"
+msgstr "エージェントを選択"
+
+msgid "settings.agents.selected"
+msgstr "{count} 件選択中"
+
+msgid "settings.notifications.enabled"
+msgstr "システム通知"
+
+msgid "config.invalidBanner"
+msgstr "設定に無効なセクションがあります。既定値が使用されています。詳細は \"skillkeeper config validate\" を実行してください。"
+
+msgid "hooks.requireConsent"
+msgstr "フックのインストールには明示的な同意 (--allow-hooks) が必要です。スキル本体はインストールされ、フックはスキップされました。"
+
+msgid "skills.count"
+msgstr "{n} 件のスキルがインストール済み"
+
+msgid "about.docs"
+msgstr "ドキュメント"
+
+msgid "about.openDocs"
+msgstr "ドキュメントを開く"
+
+msgid "about.repo"
+msgstr "リポジトリ"
+
+msgid "about.openRepo"
+msgstr "リポジトリを開く"
+
+msgid "about.license"
+msgstr "ライセンス"
+
+msgid "about.openLicense"
+msgstr "ライセンスを表示"

@@ -1,0 +1,1061 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ko\n"
+
+msgid "app.title"
+msgstr "SkillKeeper"
+
+msgid "nav.repositories"
+msgstr "저장소"
+
+msgid "nav.skills"
+msgstr "스킬"
+
+msgid "nav.projects"
+msgstr "프로젝트"
+
+msgid "nav.mcp"
+msgstr "MCP"
+
+msgid "nav.settings"
+msgstr "설정"
+
+msgid "menu.view"
+msgstr "보기"
+
+msgid "menu.about"
+msgstr "SkillKeeper 정보"
+
+msgid "menu.openSettings"
+msgstr "설정 열기"
+
+msgid "menu.edit"
+msgstr "편집"
+
+msgid "menu.window"
+msgstr "윈도우"
+
+msgid "menu.help"
+msgstr "도움말"
+
+msgid "menu.undo"
+msgstr "실행 취소"
+
+msgid "menu.redo"
+msgstr "다시 실행"
+
+msgid "menu.cut"
+msgstr "오려두기"
+
+msgid "menu.copy"
+msgstr "복사하기"
+
+msgid "menu.paste"
+msgstr "붙여넣기"
+
+msgid "menu.pasteAndMatchStyle"
+msgstr "붙여넣고 스타일 일치시키기"
+
+msgid "menu.delete"
+msgstr "삭제"
+
+msgid "menu.selectAll"
+msgstr "전체 선택"
+
+msgid "menu.minimize"
+msgstr "최소화"
+
+msgid "menu.zoom"
+msgstr "확대/축소"
+
+msgid "menu.close"
+msgstr "닫기"
+
+msgid "menu.services"
+msgstr "서비스"
+
+msgid "menu.hide"
+msgstr "SkillKeeper 가리기"
+
+msgid "menu.hideOthers"
+msgstr "기타 가리기"
+
+msgid "menu.showAll"
+msgstr "모두 보기"
+
+msgid "menu.quit"
+msgstr "SkillKeeper 종료"
+
+msgid "about.version"
+msgstr "버전 {version}"
+
+msgid "about.tagline"
+msgstr "AI 에이전트용 스킬 설치 및 관리"
+
+msgid "common.loading"
+msgstr "불러오는 중"
+
+msgid "common.errorPrefix"
+msgstr "오류: {message}"
+
+msgid "common.refresh"
+msgstr "새로고침"
+
+msgid "common.comingSoon"
+msgstr "곧 제공 예정"
+
+msgid "common.close"
+msgstr "닫기"
+
+msgid "common.clear"
+msgstr "지우기"
+
+msgid "common.goToSkills"
+msgstr "스킬로 이동"
+
+msgid "common.goToMcp"
+msgstr "MCP로 이동"
+
+msgid "skills.resetFilters"
+msgstr "필터 초기화"
+
+msgid "skills.componentsTitle"
+msgstr "컴포넌트"
+
+msgid "skills.managementTitle"
+msgstr "관리"
+
+msgid "common.search"
+msgstr "검색"
+
+msgid "common.decrease"
+msgstr "감소"
+
+msgid "common.increase"
+msgstr "증가"
+
+msgid "common.filter"
+msgstr "필터"
+
+msgid "common.clearFilters"
+msgstr "필터 초기화"
+
+msgid "notifications.error"
+msgstr "오류"
+
+msgid "notifications.info"
+msgstr "알림"
+
+msgid "statusbar.notifications"
+msgstr "오류: {count}"
+
+msgid "statusbar.terminal"
+msgstr "터미널"
+
+msgid "statusbar.tasks"
+msgstr "작업"
+
+msgid "logs.title"
+msgstr "알림"
+
+msgid "terminal.title"
+msgstr "터미널"
+
+msgid "logs.empty"
+msgstr "표시할 항목이 없습니다."
+
+msgid "logs.copy"
+msgstr "복사"
+
+msgid "logs.copyAll"
+msgstr "모두 복사"
+
+msgid "logs.clear"
+msgstr "지우기"
+
+msgid "logs.filter"
+msgstr "표시"
+
+msgid "logs.level.error"
+msgstr "오류"
+
+msgid "logs.level.info"
+msgstr "메시지"
+
+msgid "tasks.title"
+msgstr "작업"
+
+msgid "tasks.empty"
+msgstr "작업이 없습니다."
+
+msgid "tasks.clear"
+msgstr "완료된 작업 지우기"
+
+msgid "tasks.kind.sync"
+msgstr "동기화"
+
+msgid "tasks.kind.check"
+msgstr "업데이트 확인"
+
+msgid "tasks.kind.update-skill"
+msgstr "스킬 업데이트"
+
+msgid "tasks.kind.refresh-projects"
+msgstr "프로젝트 새로고침"
+
+msgid "tasks.status.queued"
+msgstr "대기 중"
+
+msgid "tasks.status.running"
+msgstr "실행 중"
+
+msgid "tasks.status.done"
+msgstr "완료"
+
+msgid "tasks.status.error"
+msgstr "실패"
+
+msgid "repositories.empty"
+msgstr "추가된 저장소가 없습니다."
+
+msgid "repositories.add"
+msgstr "저장소 추가"
+
+msgid "repositories.lfs"
+msgstr "LFS"
+
+msgid "repositories.lastFetched"
+msgstr "마지막 가져오기: {when}"
+
+msgid "repositories.neverFetched"
+msgstr "가져온 적 없음"
+
+msgid "repositories.addRemote"
+msgstr "원격 URL"
+
+msgid "repositories.invalidRemote"
+msgstr "유효한 원격 URL을 입력하세요 (https://... 또는 git@host:path)."
+
+msgid "repositories.addName"
+msgstr "이름"
+
+msgid "repositories.edit"
+msgstr "저장소 편집"
+
+msgid "repositories.save"
+msgstr "저장"
+
+msgid "repositories.sync"
+msgstr "동기화"
+
+msgid "repositories.syncing"
+msgstr "동기화 중"
+
+msgid "repositories.delete"
+msgstr "삭제"
+
+msgid "repositories.deleteConfirm"
+msgstr "삭제 확인"
+
+msgid "repositories.hasUpdate"
+msgstr "업데이트 사용 가능"
+
+msgid "repositories.viewError"
+msgstr "클릭하여 오류 보기"
+
+msgid "repositories.copyBranch"
+msgstr "브랜치 이름 복사"
+
+msgid "repositories.branchCopied"
+msgstr "브랜치 이름을 클립보드에 복사했습니다"
+
+msgid "repositories.copyRemote"
+msgstr "링크 복사"
+
+msgid "repositories.remoteCopied"
+msgstr "원격 URL을 클립보드에 복사했습니다"
+
+msgid "repositories.branch"
+msgstr "브랜치"
+
+msgid "repositories.branchSearch"
+msgstr "브랜치 검색"
+
+msgid "repositories.branchNone"
+msgstr "일치하는 브랜치 없음"
+
+msgid "repositories.skillCount.one"
+msgstr "스킬 {count}개"
+
+msgid "repositories.skillCount.few"
+msgstr "스킬 {count}개"
+
+msgid "repositories.skillCount.many"
+msgstr "스킬 {count}개"
+
+msgid "repositories.skillCount.other"
+msgstr "스킬 {count}개"
+
+msgid "repositories.searchFound.one"
+msgstr "저장소 {count}개 찾음"
+
+msgid "repositories.searchFound.few"
+msgstr "저장소 {count}개 찾음"
+
+msgid "repositories.searchFound.many"
+msgstr "저장소 {count}개 찾음"
+
+msgid "repositories.searchFound.other"
+msgstr "저장소 {count}개 찾음"
+
+msgid "repositories.searchTotal.one"
+msgstr "전체 저장소 {count}개"
+
+msgid "repositories.searchTotal.few"
+msgstr "전체 저장소 {count}개"
+
+msgid "repositories.searchTotal.many"
+msgstr "전체 저장소 {count}개"
+
+msgid "repositories.searchTotal.other"
+msgstr "전체 저장소 {count}개"
+
+msgid "repositories.showAll"
+msgstr "모든 저장소 표시"
+
+msgid "projects.empty"
+msgstr "추적 중인 프로젝트가 없습니다."
+
+msgid "projects.add"
+msgstr "프로젝트 추가"
+
+msgid "projects.addedAt"
+msgstr "{when} 추가됨"
+
+msgid "projects.edit"
+msgstr "프로젝트 편집"
+
+msgid "projects.name"
+msgstr "이름"
+
+msgid "projects.remove"
+msgstr "프로젝트 제거"
+
+msgid "projects.removeConfirm"
+msgstr "제거 확인"
+
+msgid "projects.removeKeepsFolder"
+msgstr "목록에서 프로젝트를 제거합니다. 폴더는 디스크에 남습니다."
+
+msgid "projects.changeFolder"
+msgstr "폴더 변경"
+
+msgid "projects.open"
+msgstr "프로젝트 열기"
+
+msgid "projects.openInFileManager"
+msgstr "파일 관리자에서 열기"
+
+msgid "projects.openFailed"
+msgstr "프로젝트를 열 수 없습니다"
+
+msgid "projects.missing"
+msgstr "폴더가 삭제되었거나 이동되었습니다"
+
+msgid "projects.copyPath"
+msgstr "전체 경로 복사"
+
+msgid "projects.pathCopied"
+msgstr "경로를 클립보드에 복사했습니다"
+
+msgid "projects.skillCount.one"
+msgstr "스킬 {count}개"
+
+msgid "projects.skillCount.few"
+msgstr "스킬 {count}개"
+
+msgid "projects.skillCount.many"
+msgstr "스킬 {count}개"
+
+msgid "projects.skillCount.other"
+msgstr "스킬 {count}개"
+
+msgid "projects.fromRepos"
+msgstr "저장소에서 {count}개"
+
+msgid "projects.agentCount.other"
+msgstr "에이전트 {count}개"
+
+msgid "projects.fromReposHint.one"
+msgstr "저장소에서 스킬 {count}개 설치됨"
+
+msgid "projects.fromReposHint.few"
+msgstr "저장소에서 스킬 {count}개 설치됨"
+
+msgid "projects.fromReposHint.many"
+msgstr "저장소에서 스킬 {count}개 설치됨"
+
+msgid "projects.fromReposHint.other"
+msgstr "저장소에서 스킬 {count}개 설치됨"
+
+msgid "projects.skillCountHint.one"
+msgstr "프로젝트에 총 스킬 {count}개"
+
+msgid "projects.skillCountHint.few"
+msgstr "프로젝트에 총 스킬 {count}개"
+
+msgid "projects.skillCountHint.many"
+msgstr "프로젝트에 총 스킬 {count}개"
+
+msgid "projects.skillCountHint.other"
+msgstr "프로젝트에 총 스킬 {count}개"
+
+msgid "projects.agentsHint.one"
+msgstr "에이전트 {count}개에 대한 구성 있음"
+
+msgid "projects.agentsHint.few"
+msgstr "에이전트 {count}개에 대한 구성 있음"
+
+msgid "projects.agentsHint.many"
+msgstr "에이전트 {count}개에 대한 구성 있음"
+
+msgid "projects.agentsHint.other"
+msgstr "에이전트 {count}개에 대한 구성 있음"
+
+msgid "projects.mcpCount"
+msgstr "MCP {count}개"
+
+msgid "projects.mcpHint.one"
+msgstr "저장소에서 MCP 서버 {count}개 설치됨"
+
+msgid "projects.mcpHint.few"
+msgstr "저장소에서 MCP 서버 {count}개 설치됨"
+
+msgid "projects.mcpHint.many"
+msgstr "저장소에서 MCP 서버 {count}개 설치됨"
+
+msgid "projects.mcpHint.other"
+msgstr "저장소에서 MCP 서버 {count}개 설치됨"
+
+msgid "projects.searchFound.one"
+msgstr "프로젝트 {count}개 찾음"
+
+msgid "projects.searchFound.few"
+msgstr "프로젝트 {count}개 찾음"
+
+msgid "projects.searchFound.many"
+msgstr "프로젝트 {count}개 찾음"
+
+msgid "projects.searchFound.other"
+msgstr "프로젝트 {count}개 찾음"
+
+msgid "projects.searchTotal.one"
+msgstr "전체 프로젝트 {count}개"
+
+msgid "projects.searchTotal.few"
+msgstr "전체 프로젝트 {count}개"
+
+msgid "projects.searchTotal.many"
+msgstr "전체 프로젝트 {count}개"
+
+msgid "projects.searchTotal.other"
+msgstr "전체 프로젝트 {count}개"
+
+msgid "projects.showAll"
+msgstr "모든 프로젝트 표시"
+
+msgid "skills.empty"
+msgstr "설치된 스킬이 없습니다."
+
+msgid "skills.add"
+msgstr "스킬 설치"
+
+msgid "skills.searchPlaceholder"
+msgstr "스킬 검색"
+
+msgid "skills.filterAgent"
+msgstr "에이전트"
+
+msgid "skills.allAgents"
+msgstr "모든 에이전트"
+
+msgid "skills.noVersion"
+msgstr "버전 없음"
+
+msgid "skills.installedFor"
+msgstr "설치 대상"
+
+msgid "skills.scope.project"
+msgstr "프로젝트"
+
+msgid "skills.scope.global"
+msgstr "전역"
+
+msgid "skills.source.repo"
+msgstr "저장소에서"
+
+msgid "skills.source.local"
+msgstr "로컬 경로에서"
+
+msgid "skills.details.title"
+msgstr "스킬 세부 정보"
+
+msgid "skills.details.files"
+msgstr "파일 {n}개"
+
+msgid "skills.details.hooks"
+msgstr "훅 {n}개"
+
+msgid "skills.details.installedAt"
+msgstr "설치됨: {when}"
+
+msgid "skills.details.destination"
+msgstr "대상 경로"
+
+msgid "skills.verify"
+msgstr "검증"
+
+msgid "skills.update"
+msgstr "업데이트"
+
+msgid "skills.source"
+msgstr "표시 모드"
+
+msgid "skills.source.repositories"
+msgstr "저장소"
+
+msgid "skills.source.projects"
+msgstr "프로젝트"
+
+msgid "skills.filterRepositories"
+msgstr "저장소"
+
+msgid "skills.filterRepositoriesPlaceholder"
+msgstr "모든 저장소"
+
+msgid "skills.filterRepositoriesEmpty"
+msgstr "일치하는 저장소 없음"
+
+msgid "skills.filterProjects"
+msgstr "프로젝트"
+
+msgid "skills.filterProjectsPlaceholder"
+msgstr "모든 프로젝트"
+
+msgid "skills.filterProjectsEmpty"
+msgstr "일치하는 프로젝트 없음"
+
+msgid "skills.action.add"
+msgstr "설치"
+
+msgid "skills.action.save"
+msgstr "저장"
+
+msgid "skills.action.reset"
+msgstr "초기화"
+
+msgid "skills.showAll"
+msgstr "모든 스킬 표시"
+
+msgid "skills.emptyRepositories"
+msgstr "저장소에서 스킬을 찾을 수 없습니다."
+
+msgid "skills.emptyProjects"
+msgstr "추적 중인 프로젝트가 없습니다."
+
+msgid "skills.status.add"
+msgstr "스킬이 추가됩니다"
+
+msgid "skills.status.remove"
+msgstr "스킬이 제거됩니다"
+
+msgid "skills.status.present"
+msgstr "이미 설치된 스킬"
+
+msgid "skills.installPending"
+msgstr "스킬 설치는 곧 제공됩니다 ({count}개 선택됨)"
+
+msgid "skills.savePending"
+msgstr "변경 사항 저장은 곧 제공됩니다 (+{add} / -{remove})"
+
+msgid "skills.install.title"
+msgstr "스킬 설치"
+
+msgid "skills.install.chooseProject"
+msgstr "프로젝트"
+
+msgid "skills.install.agents"
+msgstr "선택된 에이전트"
+
+msgid "skills.install.agentsPlaceholder"
+msgstr "에이전트 선택"
+
+msgid "skills.install.next"
+msgstr "다음"
+
+msgid "skills.install.back"
+msgstr "뒤로"
+
+msgid "skills.install.confirm"
+msgstr "확인?"
+
+msgid "skills.install.installing"
+msgstr "변경 사항 적용 중"
+
+msgid "skills.install.summary"
+msgstr "+{add} / -{remove}"
+
+msgid "skills.save.title"
+msgstr "변경 사항 검토"
+
+msgid "skills.save.confirm"
+msgstr "확인?"
+
+msgid "skills.save.empty"
+msgstr "적용할 변경 사항 없음"
+
+msgid "skills.col.project"
+msgstr "프로젝트"
+
+msgid "skills.col.repository"
+msgstr "저장소"
+
+msgid "skills.col.skill"
+msgstr "스킬"
+
+msgid "skills.col.action"
+msgstr "작업"
+
+msgid "skills.col.agents"
+msgstr "에이전트"
+
+msgid "skills.change.install"
+msgstr "설치"
+
+msgid "skills.change.remove"
+msgstr "제거"
+
+msgid "skills.agentsLabel"
+msgstr "에이전트"
+
+msgid "skills.agentsTooltip"
+msgstr "사용된 에이전트"
+
+msgid "skills.agentsChanged"
+msgstr "에이전트가 변경됨"
+
+msgid "skills.updateSkill"
+msgstr "스킬 업데이트"
+
+msgid "skills.updateRepo"
+msgstr "저장소의 스킬 업데이트"
+
+msgid "skills.updateGroup"
+msgstr "그룹의 스킬 업데이트"
+
+msgid "skills.updateBadge"
+msgstr "업데이트"
+
+msgid "skills.unlinked"
+msgstr "연결 해제됨"
+
+msgid "skills.addRepo"
+msgstr "저장소 추가"
+
+msgid "skills.local"
+msgstr "로컬"
+
+msgid "skills.localHint"
+msgstr "직접 작성한 로컬 스킬"
+
+msgid "skills.rulesBadge"
+msgstr "규칙"
+
+msgid "skills.rulesHint"
+msgstr "이 스킬에 규칙이 있습니다"
+
+msgid "skills.searchFound.one"
+msgstr "스킬 {count}개 찾음"
+
+msgid "skills.searchFound.few"
+msgstr "스킬 {count}개 찾음"
+
+msgid "skills.searchFound.many"
+msgstr "스킬 {count}개 찾음"
+
+msgid "skills.searchFound.other"
+msgstr "스킬 {count}개 찾음"
+
+msgid "skills.searchTotal.one"
+msgstr "전체 스킬 {count}개"
+
+msgid "skills.searchTotal.few"
+msgstr "전체 스킬 {count}개"
+
+msgid "skills.searchTotal.many"
+msgstr "전체 스킬 {count}개"
+
+msgid "skills.searchTotal.other"
+msgstr "전체 스킬 {count}개"
+
+msgid "mcp.empty"
+msgstr "아직 MCP 서버가 없습니다."
+
+msgid "mcp.searchFound.one"
+msgstr "MCP 서버 {count}개 찾음"
+
+msgid "mcp.searchFound.few"
+msgstr "MCP 서버 {count}개 찾음"
+
+msgid "mcp.searchFound.many"
+msgstr "MCP 서버 {count}개 찾음"
+
+msgid "mcp.searchFound.other"
+msgstr "MCP 서버 {count}개 찾음"
+
+msgid "mcp.searchTotal.one"
+msgstr "전체 MCP 서버 {count}개"
+
+msgid "mcp.searchTotal.few"
+msgstr "전체 MCP 서버 {count}개"
+
+msgid "mcp.searchTotal.many"
+msgstr "전체 MCP 서버 {count}개"
+
+msgid "mcp.searchTotal.other"
+msgstr "전체 MCP 서버 {count}개"
+
+msgid "mcp.showAll"
+msgstr "모든 MCP 서버 표시"
+
+msgid "mcp.add"
+msgstr "MCP 추가"
+
+msgid "mcp.addTitle"
+msgstr "MCP 서버 추가"
+
+msgid "mcp.editTitle"
+msgstr "MCP 서버 편집"
+
+msgid "mcp.edit"
+msgstr "편집"
+
+msgid "mcp.install"
+msgstr "설치"
+
+msgid "mcp.installMcp"
+msgstr "MCP 설치"
+
+msgid "mcp.installTitle"
+msgstr "{name} 설치"
+
+msgid "mcp.remove"
+msgstr "제거"
+
+msgid "mcp.update"
+msgstr "업데이트"
+
+msgid "mcp.cancel"
+msgstr "취소"
+
+msgid "mcp.save"
+msgstr "저장"
+
+msgid "mcp.copy"
+msgstr "복사"
+
+msgid "mcp.copiedToClipboard"
+msgstr "클립보드에 복사됨"
+
+msgid "mcp.goToRepository"
+msgstr "저장소로 이동"
+
+msgid "mcp.rulesBadge"
+msgstr "규칙"
+
+msgid "mcp.protocol.stdio"
+msgstr "stdio"
+
+msgid "mcp.protocol.http"
+msgstr "http"
+
+msgid "mcp.protocol.sse"
+msgstr "sse"
+
+msgid "mcp.paramsHelp"
+msgstr "매개변수 {name}는 URL, 헤더, 명령, 인수, 환경 변수, 규칙에서 사용할 수 있습니다."
+
+msgid "mcp.field.name"
+msgstr "이름"
+
+msgid "mcp.namePlaceholder"
+msgstr "예: GitHub MCP"
+
+msgid "mcp.field.type"
+msgstr "유형"
+
+msgid "mcp.field.url"
+msgstr "URL"
+
+msgid "mcp.urlPlaceholder"
+msgstr "https://example.com/{token}"
+
+msgid "mcp.field.headers"
+msgstr "헤더"
+
+msgid "mcp.headerNamePlaceholder"
+msgstr "헤더 이름"
+
+msgid "mcp.headerValuePlaceholder"
+msgstr "헤더 값"
+
+msgid "mcp.addHeader"
+msgstr "헤더 추가"
+
+msgid "mcp.field.command"
+msgstr "명령"
+
+msgid "mcp.commandPlaceholder"
+msgstr "npx some-mcp-server"
+
+msgid "mcp.field.arguments"
+msgstr "인수"
+
+msgid "mcp.argumentPlaceholder"
+msgstr "인수"
+
+msgid "mcp.addArgument"
+msgstr "인수 추가"
+
+msgid "mcp.field.env"
+msgstr "환경 변수"
+
+msgid "mcp.varNamePlaceholder"
+msgstr "변수 이름"
+
+msgid "mcp.varValuePlaceholder"
+msgstr "변수 값"
+
+msgid "mcp.addVariable"
+msgstr "변수 추가"
+
+msgid "mcp.field.rules"
+msgstr "규칙"
+
+msgid "mcp.rulesPlaceholder"
+msgstr "이 서버를 설치할 때 에이전트의 규칙/가이드 파일에 삽입되는 안내입니다."
+
+msgid "mcp.validation.nameRequired"
+msgstr "이름을 입력해야 합니다."
+
+msgid "mcp.validation.selectType"
+msgstr "전송 방식을 선택하세요."
+
+msgid "mcp.validation.commandRequired"
+msgstr "stdio 서버에는 명령이 필요합니다."
+
+msgid "mcp.validation.urlRequired"
+msgstr "http/sse 서버에는 URL이 필요합니다."
+
+msgid "mcp.validation.invalidParam"
+msgstr "잘못된 매개변수({reason}), 위치 {index}."
+
+msgid "mcp.field.project"
+msgstr "프로젝트"
+
+msgid "mcp.chooseProject"
+msgstr "프로젝트 선택"
+
+msgid "mcp.field.agents"
+msgstr "에이전트"
+
+msgid "mcp.field.parameters"
+msgstr "매개변수"
+
+msgid "mcp.codexGlobalNote"
+msgstr "Codex는 전역으로 설치됩니다(이 프로젝트에 한정되지 않음)."
+
+msgid "mcp.transportUnsupported"
+msgstr "{agent}는 기본 설정에서 {transport} 전송 방식을 표현할 수 없습니다."
+
+msgid "mcp.skippedAgents"
+msgstr "{count}개의 에이전트가 건너뛰어졌습니다: 프리셋의 전송 방식이 지원되지 않습니다."
+
+msgid "mcp.needsParamsNotice"
+msgstr "다음 MCP 설치에는 추가하기 전에 매개변수가 필요합니다:"
+
+msgid "mcp.delete"
+msgstr "삭제"
+
+msgid "mcp.deleteConfirmTitle"
+msgstr "{name}을 삭제하시겠습니까?"
+
+msgid "mcp.deleteConfirmBody"
+msgstr "이 작업은 되돌릴 수 없습니다."
+
+msgid "mcp.detailsTitle"
+msgstr "MCP 서버 세부정보"
+
+msgid "mcp.view.label"
+msgstr "보기 방식"
+
+msgid "mcp.view.tiles"
+msgstr "타일"
+
+msgid "mcp.view.tree"
+msgstr "트리"
+
+msgid "mcp.componentsTitle"
+msgstr "컴포넌트"
+
+msgid "mcp.managementTitle"
+msgstr "관리"
+
+msgid "settings.comingSoon"
+msgstr "설정 화면은 곧 제공됩니다."
+
+msgid "settings.section.general"
+msgstr "일반"
+
+msgid "settings.section.updates"
+msgstr "업데이트"
+
+msgid "settings.section.agents"
+msgstr "에이전트"
+
+msgid "settings.section.executables"
+msgstr "실행 파일"
+
+msgid "settings.section.security"
+msgstr "보안"
+
+msgid "settings.section.notifications"
+msgstr "알림"
+
+msgid "settings.valid"
+msgstr "유효함"
+
+msgid "settings.invalid"
+msgstr "유효하지 않음"
+
+msgid "settings.openConfig"
+msgstr "설정 파일 열기"
+
+msgid "settings.openConfigInEditor"
+msgstr "편집기에서 설정 파일 열기"
+
+msgid "settings.editor.defaultApp"
+msgstr "기본 앱에서 열기"
+
+msgid "settings.openConfigFailed"
+msgstr "설정 파일을 열 수 없습니다"
+
+msgid "settings.theme"
+msgstr "테마"
+
+msgid "settings.animations"
+msgstr "애니메이션"
+
+msgid "settings.animationsHint"
+msgstr "UI 전체의 등장 및 퇴장 애니메이션 속도입니다"
+
+msgid "settings.animations.fast"
+msgstr "빠름"
+
+msgid "settings.animations.normal"
+msgstr "보통"
+
+msgid "settings.animations.off"
+msgstr "끄기"
+
+msgid "settings.theme.system"
+msgstr "시스템"
+
+msgid "settings.theme.light"
+msgstr "밝게"
+
+msgid "settings.theme.dark"
+msgstr "어둡게"
+
+msgid "settings.language"
+msgstr "언어"
+
+msgid "settings.languageEmpty"
+msgstr "일치하는 언어 없음"
+
+msgid "settings.section.repositories"
+msgstr "저장소"
+
+msgid "settings.section.projects"
+msgstr "프로젝트"
+
+msgid "settings.git"
+msgstr "Git"
+
+msgid "settings.gitDescription"
+msgstr "git 실행 파일 경로"
+
+msgid "settings.updates.mode"
+msgstr "업데이트 확인"
+
+msgid "settings.updates.mode.manual"
+msgstr "수동"
+
+msgid "settings.updates.mode.onStartup"
+msgstr "시작 시"
+
+msgid "settings.updates.mode.scheduled"
+msgstr "예약됨"
+
+msgid "settings.updates.interval"
+msgstr "업데이트 간격"
+
+msgid "settings.projects.checkInterval"
+msgstr "폴더 확인 간격"
+
+msgid "settings.interval.minutesUnit"
+msgstr "분"
+
+msgid "settings.interval.hoursUnit"
+msgstr "시"
+
+msgid "settings.agents.enabled"
+msgstr "활성화된 에이전트"
+
+msgid "settings.agents.placeholder"
+msgstr "에이전트 선택"
+
+msgid "settings.agents.selected"
+msgstr "{count}개 선택됨"
+
+msgid "settings.notifications.enabled"
+msgstr "시스템 알림"
+
+msgid "config.invalidBanner"
+msgstr "구성에 유효하지 않은 섹션이 있습니다. 기본값이 사용됩니다. 자세한 내용은 \"skillkeeper config validate\"를 실행하세요."
+
+msgid "hooks.requireConsent"
+msgstr "훅 설치에는 명시적 동의가 필요합니다 (--allow-hooks). 스킬 본문은 설치되었으며 훅은 건너뛰었습니다."
+
+msgid "skills.count"
+msgstr "설치된 스킬 {n}개"
+
+msgid "about.docs"
+msgstr "문서"
+
+msgid "about.openDocs"
+msgstr "문서 열기"
+
+msgid "about.repo"
+msgstr "저장소"
+
+msgid "about.openRepo"
+msgstr "저장소로 이동"
+
+msgid "about.license"
+msgstr "라이선스"
+
+msgid "about.openLicense"
+msgstr "라이선스 보기"
