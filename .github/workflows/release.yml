@@ -306,8 +306,7 @@ jobs:
             '        Square150x150Logo="Assets\Square150x150Logo.png"',
             '        Square44x44Logo="Assets\Square44x44Logo.png">',
             '        <uap:DefaultTile',
-            '          Square71x71Logo="Assets\Square71x71Logo.png"',
-            '          Square310x310Logo="Assets\Square310x310Logo.png">',
+            '          Square71x71Logo="Assets\Square71x71Logo.png">',
             '          <uap:ShowNameOnTiles>',
             '            <uap:ShowOn Tile="square150x150Logo" />',
             '          </uap:ShowNameOnTiles>',
@@ -335,6 +334,14 @@ jobs:
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
           $msix = Join-Path $outDir "SkillKeeper-$msixVersion.msix"
           & $makeappx.FullName pack /d $stage /p $msix /o
+          # Native tools do not trip $ErrorActionPreference; check the exit code
+          # explicitly so a failed pack is a real (visible) step failure instead
+          # of a false "Built MSIX". The step stays continue-on-error, so a
+          # broken MSIX is surfaced but does not block the msi/nsis upload.
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "MakeAppx failed with exit code $LASTEXITCODE; MSIX not produced."
+            exit 1
+          }
           Write-Host "Built MSIX: $msix"
 
       # -----------------------------------------------------------------------
@@ -407,7 +414,11 @@ jobs:
               exit 1
             fi
             cp "$f" "dist/$base"
-          done < <(find dist-all -type f -not -path '*.app/*' -print0)
+          done < <(find dist-all -type f \( \
+              -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' \
+              -o -name '*.AppImage' -o -name '*.msi' -o -name '*.exe' \
+              -o -name '*.msix' \
+            \) -print0)
           echo "Staged $(find dist -type f | wc -l) files:"
           ls -1 dist
 
