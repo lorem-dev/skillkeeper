@@ -1,0 +1,1656 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://lorem-dev.github.io/skillkeeper/0.1.0-rc.2/ui/components/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>SkillKeeper UI Components - SkillKeeper</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#skillkeeper-ui-components" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="SkillKeeper" class="md-header__button md-logo" aria-label="SkillKeeper" data-md-component="logo">
+      
+  <img src="../../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SkillKeeper
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SkillKeeper UI Components
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/lorem-dev/skillkeeper" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SkillKeeper" class="md-nav__button md-logo" aria-label="SkillKeeper" data-md-component="logo">
+      
+  <img src="../../assets/logo.png" alt="logo">
+
+    </a>
+    SkillKeeper
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/lorem-dev/skillkeeper" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Usage
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/skills-and-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills and Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/repositories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repositories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Servers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releasing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conventions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#animation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Animation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout-and-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout and structure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layout and structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Card
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#divider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Divider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glasssurface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GlassSurface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#toolbar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toolbar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidebar-sidebaritem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar / SidebarItem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#icon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Icon
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-listrow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List / ListRow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formsection-formrow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FormSection / FormRow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disclosuregroup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DisclosureGroup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#row" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Row
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#treeview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreeView
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Controls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#button" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Button
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#checkbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checkbox
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#toggle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toggle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#radiogroup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RadioGroup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#segmentedcontrol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SegmentedControl
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#textfield" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TextField
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#select" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Select
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#searchfield" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SearchField
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stepper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stepper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#intervalstepper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IntervalStepper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#combobox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Combobox
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multicombobox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MultiCombobox
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiselect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MultiSelect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#splitbutton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SplitButton
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feedback-and-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feedback and content
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feedback and content">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#badge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Badge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spinner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spinner
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#progressbar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ProgressBar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skeleton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skeleton
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tooltip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tooltip
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#alert" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alert
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#menu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Menu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changebadge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ChangeBadge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#searchsummary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SearchSummary
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="skillkeeper-ui-components">SkillKeeper UI Components<a class="headerlink" href="#skillkeeper-ui-components" title="Permanent link">&para;</a></h1>
+<p>Status: draft (v0.1)
+Scope: the generic component kit in <code>apps/desktop/src/renderer/shared/ui</code>.</p>
+<p>This is the API reference for the reusable renderer components. It is a companion
+to <a href="../design-system/">design-system.md</a>: the design doc defines the visual
+language and tokens (the <em>what it looks like</em>), this doc lists the implemented
+components and their props (the <em>how to use it</em>). The components are the source of
+truth; this catalog points at them.</p>
+<h2 id="conventions">Conventions<a class="headerlink" href="#conventions" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Import through the kit barrel:</strong> <code>import { Button, Select } from '@/shared/ui'</code>.
+  Never deep-import a component file.</li>
+<li><strong>Tokens only.</strong> Every component styles itself with <code>--sk-*</code> custom properties
+  (see design-system.md). No hardcoded colors or sizes.</li>
+<li><strong>Co-located styles.</strong> Each component has a sibling <code>.scss</code> file; global
+  foundations live in <code>styles/</code>.</li>
+<li><strong>i18n via props.</strong> Shared components carry no translation logic (they cannot
+  import <code>@/systems/i18n</code>). Pass already-translated strings in (e.g.
+  <code>label={t('common.loading')}</code>). See the architecture doc's Internationalization
+  section.</li>
+<li><strong>Accessibility.</strong> Form controls wrap native inputs (kept focusable); overlays
+  set the right roles (<code>tooltip</code>, <code>dialog</code>, <code>progressbar</code>, <code>radiogroup</code>). Every
+  interactive element has a visible <code>:focus-visible</code> ring.</li>
+</ul>
+<h2 id="animation">Animation<a class="headerlink" href="#animation" title="Permanent link">&para;</a></h2>
+<p>State and presence transitions use <a href="https://motion.dev">Framer Motion</a> (the
+<code>motion</code> package). Shared presets live in
+<a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/lib/transitions.ts"><code>shared/lib/transitions.ts</code></a>
+(<code>fade</code>, <code>fadeScale</code>, <code>fadeRise</code>, <code>collapse</code>, plus <code>SK_EASE</code> / <code>SK_DURATION</code> that
+mirror the CSS motion tokens). Simple state changes (hover, checked, focus) stay in
+CSS transitions for weight; Framer Motion is used where CSS cannot help -- enter and
+exit (<code>AnimatePresence</code>) and shared-layout moves:</p>
+<ul>
+<li><code>SegmentedControl</code> -- the selected pill slides between segments (<code>layoutId</code>).</li>
+<li><code>Tooltip</code>, <code>Modal</code> -- fade/scale and rise on mount, animate out on unmount.</li>
+<li><code>Alert</code> -- collapses its height on exit (wrap in <code>&lt;AnimatePresence&gt;</code>).</li>
+</ul>
+<p>Framer Motion honors <code>prefers-reduced-motion</code>; CSS animations are disabled under it
+by the base layer.</p>
+<hr />
+<h2 id="layout-and-structure">Layout and structure<a class="headerlink" href="#layout-and-structure" title="Permanent link">&para;</a></h2>
+<h3 id="page">Page<a class="headerlink" href="#page" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Page title={...}&gt;children&lt;/Page&gt;</code> -- a titled content column. Outer padding comes
+from the app shell's content area.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Page/Page.tsx">shared/ui/Page/Page.tsx</a></p>
+<h3 id="card">Card<a class="headerlink" href="#card" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Card glass?&gt;children&lt;/Card&gt;</code> -- a rounded surface for grouping content. <code>glass</code>
+switches to a translucent material (with an opaque fallback).
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Card/Card.tsx">shared/ui/Card/Card.tsx</a></p>
+<h3 id="divider">Divider<a class="headerlink" href="#divider" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Divider /&gt;</code> -- a hairline separator.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Divider/Divider.tsx">shared/ui/Divider/Divider.tsx</a></p>
+<h3 id="glasssurface">GlassSurface<a class="headerlink" href="#glasssurface" title="Permanent link">&para;</a></h3>
+<p><code>&lt;GlassSurface depth? strength? blur? chromaticAberration? borderBrightness?&gt;children&lt;/GlassSurface&gt;</code>
+-- a translucent panel whose backdrop is refracted like glass, with the
+displacement concentrated at the rim so the edge reads as a rounded glass lens,
+plus a directional rim shine. <code>borderBrightness</code> (default 1) scales the rim
+border's opacity -- lower (e.g. 0.5) dims it, higher intensifies it. The refraction is applied by the <code>useGlassRefraction</code>
+hook (<code>@/shared/lib</code>) via a per-element SVG displacement filter in
+<code>backdrop-filter</code> (re-measured on resize); the surface clips it to the rounded
+shape (<code>overflow: hidden</code>) for a clean edge and a thin gradient rim border (bright
+at the top-left/bottom-right corners, fading elsewhere). <strong>Falls back</strong> to plain
+blur+saturate where <code>backdrop-filter: url()</code> is
+unsupported. The Card <code>glass</code> variant uses the same hook. The refraction is most
+visible over detailed/high-contrast backdrops; over flat color it stays subtle.
+See design-system.md Section 4.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/GlassSurface/GlassSurface.tsx">shared/ui/GlassSurface/GlassSurface.tsx</a></p>
+<h3 id="toolbar">Toolbar<a class="headerlink" href="#toolbar" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Toolbar title leading trailing /&gt;</code> -- a glass bar with leading controls, a title,
+and trailing actions (design-system.md 8.7).
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Toolbar/Toolbar.tsx">shared/ui/Toolbar/Toolbar.tsx</a></p>
+<h3 id="sidebar-sidebaritem">Sidebar / SidebarItem<a class="headerlink" href="#sidebar-sidebaritem" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Sidebar title?&gt;</code> is the leading-edge glass navigation panel; <code>&lt;SidebarItem icon?
+active? onClick&gt;label&lt;/SidebarItem&gt;</code> is a nav row with an optional leading icon and
+an active state. Design-system.md 8.6.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Sidebar/Sidebar.tsx">shared/ui/Sidebar</a></p>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">Sidebar</span><span class="w"> </span><span class="na">title</span><span class="o">=</span><span class="s">&quot;SkillKeeper&quot;</span><span class="p">&gt;</span>
+<span class="w">  </span><span class="p">{</span><span class="nx">items</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">it</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="p">&lt;</span><span class="nt">SidebarItem</span><span class="w"> </span><span class="na">key</span><span class="o">=</span><span class="p">{</span><span class="nx">it</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span><span class="w"> </span><span class="na">icon</span><span class="o">=</span><span class="p">{&lt;</span><span class="nt">Icon</span><span class="w"> </span><span class="na">name</span><span class="o">=</span><span class="p">{</span><span class="nx">it</span><span class="p">.</span><span class="nx">icon</span><span class="p">}</span><span class="w"> </span><span class="p">/&gt;}</span><span class="w"> </span><span class="na">active</span><span class="o">=</span><span class="p">{</span><span class="nx">active</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="nx">it</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span>
+<span class="w">      </span><span class="na">onClick</span><span class="o">=</span><span class="p">{()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setActive</span><span class="p">(</span><span class="nx">it</span><span class="p">.</span><span class="nx">id</span><span class="p">)}&gt;{</span><span class="nx">it</span><span class="p">.</span><span class="nx">label</span><span class="p">}&lt;/</span><span class="nt">SidebarItem</span><span class="p">&gt;</span>
+<span class="w">  </span><span class="p">))}</span>
+<span class="p">&lt;/</span><span class="nt">Sidebar</span><span class="p">&gt;</span>
+</code></pre></div>
+<h3 id="icon">Icon<a class="headerlink" href="#icon" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Icon name size? label? /&gt;</code> -- a named line icon (inline SVG, 24x24, <code>currentColor</code>,
+stroke-based). Names: <code>repositories</code>, <code>skills</code>, <code>projects</code>, <code>settings</code>, <code>search</code>,
+<code>plus</code>, <code>check</code>, <code>chevron-right</code>. Decorative by default; pass <code>label</code> for an
+accessible name.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Icon/Icon.tsx">shared/ui/Icon/Icon.tsx</a></p>
+<h3 id="list-listrow">List / ListRow<a class="headerlink" href="#list-listrow" title="Permanent link">&para;</a></h3>
+<p><code>&lt;List&gt;</code> is a grouped, rounded surface with hairline separators; <code>&lt;ListRow&gt;</code> has
+<code>leading</code> / <code>title</code> + <code>subtitle</code> / <code>trailing</code> slots and becomes a button when given
+<code>onClick</code> (with a <code>selected</code> state). Design-system.md 8.5.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/List/ListRow.tsx">shared/ui/List</a></p>
+<h3 id="formsection-formrow">FormSection / FormRow<a class="headerlink" href="#formsection-formrow" title="Permanent link">&para;</a></h3>
+<p>The inset-grouped form layout. <code>&lt;FormSection title? footer?&gt;</code> stacks rows on a
+rounded surface with hairline separators (header + footer outside the card).
+<code>&lt;FormRow label description? htmlFor? align?&gt;</code> puts the label/description on the
+leading edge and the control (children) on the trailing edge -- drop any control
+in and it aligns automatically. Design-system.md 8.5.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Form/FormRow.tsx">shared/ui/Form</a></p>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">FormSection</span><span class="w"> </span><span class="na">title</span><span class="o">=</span><span class="s">&quot;General&quot;</span><span class="w"> </span><span class="na">footer</span><span class="o">=</span><span class="s">&quot;Applies to every project.&quot;</span><span class="p">&gt;</span>
+<span class="w">  </span><span class="p">&lt;</span><span class="nt">FormRow</span><span class="w"> </span><span class="na">label</span><span class="o">=</span><span class="s">&quot;Enable hooks&quot;</span><span class="w"> </span><span class="na">description</span><span class="o">=</span><span class="s">&quot;Ask before installing&quot;</span><span class="p">&gt;</span>
+<span class="w">    </span><span class="p">&lt;</span><span class="nt">Toggle</span><span class="w"> </span><span class="na">checked</span><span class="o">=</span><span class="p">{</span><span class="nx">on</span><span class="p">}</span><span class="w"> </span><span class="na">onChange</span><span class="o">=</span><span class="p">{(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setOn</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">checked</span><span class="p">)}</span><span class="w"> </span><span class="p">/&gt;</span>
+<span class="w">  </span><span class="p">&lt;/</span><span class="nt">FormRow</span><span class="p">&gt;</span>
+<span class="w">  </span><span class="p">&lt;</span><span class="nt">FormRow</span><span class="w"> </span><span class="na">label</span><span class="o">=</span><span class="s">&quot;Language&quot;</span><span class="p">&gt;</span>
+<span class="w">    </span><span class="p">&lt;</span><span class="nt">Select</span><span class="w"> </span><span class="na">value</span><span class="o">=</span><span class="p">{</span><span class="nx">lang</span><span class="p">}</span><span class="w"> </span><span class="na">onChange</span><span class="o">=</span><span class="p">{...}</span><span class="w"> </span><span class="na">options</span><span class="o">=</span><span class="p">{</span><span class="nx">langs</span><span class="p">}</span><span class="w"> </span><span class="p">/&gt;</span>
+<span class="w">  </span><span class="p">&lt;/</span><span class="nt">FormRow</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">FormSection</span><span class="p">&gt;</span>
+</code></pre></div>
+<h3 id="disclosuregroup">DisclosureGroup<a class="headerlink" href="#disclosuregroup" title="Permanent link">&para;</a></h3>
+<p><code>&lt;DisclosureGroup title defaultOpen?&gt;children&lt;/DisclosureGroup&gt;</code> -- a header with a
+rotating chevron that expands/collapses its content (animated height + chevron
+rotation). Wires <code>aria-expanded</code> / <code>aria-controls</code>. A desktop pattern (disclosure
+control) useful for advanced/collapsible sections.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/DisclosureGroup/DisclosureGroup.tsx">shared/ui/DisclosureGroup/DisclosureGroup.tsx</a></p>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">List</span><span class="p">&gt;</span>
+<span class="w">  </span><span class="p">{</span><span class="nx">repos</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">r</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="p">&lt;</span><span class="nt">ListRow</span><span class="w"> </span><span class="na">key</span><span class="o">=</span><span class="p">{</span><span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span><span class="w"> </span><span class="na">title</span><span class="o">=</span><span class="p">{</span><span class="nx">r</span><span class="p">.</span><span class="nx">name</span><span class="p">}</span><span class="w"> </span><span class="na">subtitle</span><span class="o">=</span><span class="p">{</span><span class="nx">r</span><span class="p">.</span><span class="nx">url</span><span class="p">}</span><span class="w"> </span><span class="na">onClick</span><span class="o">=</span><span class="p">{()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">open</span><span class="p">(</span><span class="nx">r</span><span class="p">)}</span><span class="w"> </span><span class="p">/&gt;</span>
+<span class="w">  </span><span class="p">))}</span>
+<span class="p">&lt;/</span><span class="nt">List</span><span class="p">&gt;</span>
+</code></pre></div>
+<h3 id="row">Row<a class="headerlink" href="#row" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Row align? justify? gap? wrap?&gt;children&lt;/Row&gt;</code> -- a horizontal flex layout
+primitive. Arranges children in a row with a token-based <code>gap</code> (a <code>--sk-space-N</code>
+step, 1-8) and configurable <code>align</code> (<code>start</code> | <code>center</code> | <code>end</code> | <code>stretch</code> |
+<code>baseline</code>) / <code>justify</code> (<code>start</code> | <code>center</code> | <code>end</code> | <code>between</code>); <code>wrap</code> allows
+multiple lines.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Row/Row.tsx">shared/ui/Row/Row.tsx</a></p>
+<h3 id="table">Table<a class="headerlink" href="#table" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Table columns rows stickyHeader? maxBodyHeight? emptyText? ariaLabel? /&gt;</code> -- a
+borderless, grid-aligned data table. <code>columns: { key, header, width?, align? }[]</code>
+share one CSS grid track template so the header and every row line up;
+<code>rows: { id, cells }[]</code> with <code>cells</code> index-aligned to <code>columns</code>. With
+<code>stickyHeader</code> + <code>maxBodyHeight</code> the header stays pinned while the body scrolls
+(rows blur under it, a blurred fade marks more content below). Design-system.md
+8.12.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Table/Table.tsx">shared/ui/Table/Table.tsx</a></p>
+<h3 id="treeview">TreeView<a class="headerlink" href="#treeview" title="Permanent link">&para;</a></h3>
+<p><code>&lt;TreeView nodes selectedId? onSelect? defaultExpandedIds? checkable?
+checkboxLevels? checkedIds? onCheckedChange? ariaLabel? /&gt;</code> -- a hierarchical
+outline of indented, collapsible rows. <code>nodes: TreeNode[]</code> where a node with
+<code>children</code> is an expandable branch (each node has <code>label</code>, optional <code>icon</code>,
+<code>detail</code>/<code>trailing</code>, <code>muted</code>, <code>selectable</code>). Single-select
+(<code>selectedId</code>/<code>onSelect</code>) or checkbox selection (<code>checkable</code>, scoped per depth
+via <code>checkboxLevels</code>, <code>checkedIds</code>/<code>onCheckedChange</code>, with tri-state branch
+checkboxes). Full arrow-key tree navigation. Design-system.md 8.5.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/TreeView/TreeView.tsx">shared/ui/TreeView/TreeView.tsx</a></p>
+<hr />
+<h2 id="controls">Controls<a class="headerlink" href="#controls" title="Permanent link">&para;</a></h2>
+<h3 id="button">Button<a class="headerlink" href="#button" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Button variant glass? loading?&gt;</code> -- <code>variant</code>: <code>primary</code> | <code>secondary</code>
+(default) | <code>tinted</code> | <code>plain</code> | <code>destructive</code> | <code>glass</code>. <code>glass</code> overlays the
+refractive glass-surface treatment on top of any variant (a frosted primary,
+secondary, etc.); <code>loading</code> shows a shimmer and disables the button. Forwards all
+native button attributes. Design-system.md 8.2.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Button/Button.tsx">shared/ui/Button/Button.tsx</a></p>
+<h3 id="checkbox">Checkbox<a class="headerlink" href="#checkbox" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Checkbox label? /&gt;</code> -- native checkbox with a styled box. Forwards native input
+attributes (<code>checked</code>, <code>onChange</code>, <code>disabled</code>, ...).
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Checkbox/Checkbox.tsx">shared/ui/Checkbox/Checkbox.tsx</a></p>
+<h3 id="toggle">Toggle<a class="headerlink" href="#toggle" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Toggle label? /&gt;</code> -- a switch (native checkbox, <code>role="switch"</code>) styled as a pill
+track with a sliding knob; on = green. Design-system.md 8.3.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Toggle/Toggle.tsx">shared/ui/Toggle/Toggle.tsx</a></p>
+<h3 id="radiogroup">RadioGroup<a class="headerlink" href="#radiogroup" title="Permanent link">&para;</a></h3>
+<p><code>&lt;RadioGroup name value options onChange label? /&gt;</code> -- controlled single choice;
+<code>options: { value, label, disabled? }[]</code>.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/RadioGroup/RadioGroup.tsx">shared/ui/RadioGroup/RadioGroup.tsx</a></p>
+<h3 id="segmentedcontrol">SegmentedControl<a class="headerlink" href="#segmentedcontrol" title="Permanent link">&para;</a></h3>
+<p><code>&lt;SegmentedControl options value onChange label? /&gt;</code> -- single choice as a segmented
+bar; the selected pill slides between segments. Design-system.md 8.3.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/SegmentedControl/SegmentedControl.tsx">shared/ui/SegmentedControl/SegmentedControl.tsx</a></p>
+<h3 id="textfield">TextField<a class="headerlink" href="#textfield" title="Permanent link">&para;</a></h3>
+<p><code>&lt;TextField label? invalid? /&gt;</code> -- single-line input; forwards native input
+attributes; <code>invalid</code> adds a red border + <code>aria-invalid</code>. Design-system.md 8.4.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/TextField/TextField.tsx">shared/ui/TextField/TextField.tsx</a></p>
+<h3 id="select">Select<a class="headerlink" href="#select" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Select label? options? /&gt;</code> -- styled native select with a custom chevron; pass
+<code>options: { value, label, disabled? }[]</code> or <code>&lt;option&gt;</code> children.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Select/Select.tsx">shared/ui/Select/Select.tsx</a></p>
+<h3 id="searchfield">SearchField<a class="headerlink" href="#searchfield" title="Permanent link">&para;</a></h3>
+<p><code>&lt;SearchField value onChange onClear? clearLabel? /&gt;</code> -- a pill input with a
+leading magnifier and a trailing clear button (shown when controlled with a
+non-empty value). Pass a translated <code>clearLabel</code>. A desktop pattern.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/SearchField/SearchField.tsx">shared/ui/SearchField/SearchField.tsx</a></p>
+<h3 id="slider">Slider<a class="headerlink" href="#slider" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Slider /&gt;</code> -- styled native range input; forwards native input attributes
+(<code>min</code>, <code>max</code>, <code>step</code>, <code>value</code>, <code>onChange</code>). Design-system.md 8.3.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Slider/Slider.tsx">shared/ui/Slider/Slider.tsx</a></p>
+<h3 id="stepper">Stepper<a class="headerlink" href="#stepper" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Stepper value onChange min? max? step? /&gt;</code> -- numeric value with decrement /
+increment buttons. Button accessible names come from <code>decreaseLabel</code> /
+<code>increaseLabel</code> (pass translated strings). Design-system.md 8.3.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Stepper/Stepper.tsx">shared/ui/Stepper/Stepper.tsx</a></p>
+<h3 id="intervalstepper">IntervalStepper<a class="headerlink" href="#intervalstepper" title="Permanent link">&para;</a></h3>
+<p><code>&lt;IntervalStepper minutes onChange minMinutes? maxMinutes? label? minutesUnitLabel?
+hoursUnitLabel? decreaseLabel? increaseLabel? disabled? /&gt;</code> -- pick a duration as
+a <code>Stepper</code> value plus a minutes/hours <code>SegmentedControl</code> unit. The stored value
+is always minutes (switching to hours snaps to whole hours), clamped to
+<code>[minMinutes, maxMinutes]</code>. Pass translated unit and button labels.
+Design-system.md 8.3.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/IntervalStepper/IntervalStepper.tsx">shared/ui/IntervalStepper/IntervalStepper.tsx</a></p>
+<h3 id="combobox">Combobox<a class="headerlink" href="#combobox" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Combobox options value onChange label? placeholder? emptyText? maxLabelLength?
+ariaLabel? disabled? /&gt;</code> -- a text input paired with a filterable dropdown list;
+typing filters <code>options: { value, label, icon?, disabled? }[]</code> and the selection
+commits a single <code>value</code>. An option's <code>icon</code> shows in its list row and, for the
+selected option, as a leading adornment in the input; <code>fallbackIcon</code> fills that
+leading slot while nothing is committed or the user is typing. The input matches the text
+field / select trigger; the list matches the Menu (glass, portal-positioned,
+window-aware). <code>maxLabelLength</code> truncates the displayed label only.
+Design-system.md 8.11.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Combobox/Combobox.tsx">shared/ui/Combobox/Combobox.tsx</a></p>
+<h3 id="multicombobox">MultiCombobox<a class="headerlink" href="#multicombobox" title="Permanent link">&para;</a></h3>
+<p><code>&lt;MultiCombobox options value onChange label? placeholder? emptyText? ariaLabel?
+disabled? /&gt;</code> -- like Combobox but multi-select: <code>value: string[]</code>; the list stays
+open while several options are toggled (a leading checkmark marks each selected).
+When idle the input shows the joined selected labels. Design-system.md 8.11.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/MultiCombobox/MultiCombobox.tsx">shared/ui/MultiCombobox/MultiCombobox.tsx</a></p>
+<h3 id="multiselect">MultiSelect<a class="headerlink" href="#multiselect" title="Permanent link">&para;</a></h3>
+<p><code>&lt;MultiSelect options value onChange placeholder? summary? ariaLabel? disabled? /&gt;</code>
+-- a fixed-width pop-up trigger showing the selected labels, opening a Menu as a
+multi-selectable listbox. When the joined labels overflow the trigger it falls
+back to a caller-supplied <code>summary(count)</code> string (e.g. <code>(n) =&gt; "Selected " + n</code>).
+Design-system.md 8.11.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/MultiSelect/MultiSelect.tsx">shared/ui/MultiSelect/MultiSelect.tsx</a></p>
+<h3 id="splitbutton">SplitButton<a class="headerlink" href="#splitbutton" title="Permanent link">&para;</a></h3>
+<p><code>&lt;SplitButton icon? tooltip onPrimary items menuLabel size? glass? disabled? /&gt;</code>
+-- a primary action button joined to a chevron toggle that opens a dropdown Menu
+of related actions (<code>items: { id, label, icon?, onSelect }[]</code>). <code>size</code>: <code>default</code>
+| <code>compact</code> (matches the round icon buttons); <code>glass</code> frosts the shell.
+Design-system.md 8.2.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/SplitButton/SplitButton.tsx">shared/ui/SplitButton/SplitButton.tsx</a></p>
+<hr />
+<h2 id="feedback-and-content">Feedback and content<a class="headerlink" href="#feedback-and-content" title="Permanent link">&para;</a></h2>
+<h3 id="badge">Badge<a class="headerlink" href="#badge" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Badge tone&gt;</code> -- a status pill; <code>tone</code>: <code>neutral</code> (default) | <code>accent</code> | <code>success</code>
+| <code>warning</code> | <code>danger</code>.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Badge/Badge.tsx">shared/ui/Badge/Badge.tsx</a></p>
+<h3 id="spinner">Spinner<a class="headerlink" href="#spinner" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Spinner label? /&gt;</code> -- indeterminate activity ring with a status label.
+Design-system.md 8.10.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Spinner/Spinner.tsx">shared/ui/Spinner/Spinner.tsx</a></p>
+<h3 id="progressbar">ProgressBar<a class="headerlink" href="#progressbar" title="Permanent link">&para;</a></h3>
+<p><code>&lt;ProgressBar value? label? /&gt;</code> -- determinate when <code>value</code> (0..1) is given,
+indeterminate when omitted. Design-system.md 8.10.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/ProgressBar/ProgressBar.tsx">shared/ui/ProgressBar/ProgressBar.tsx</a></p>
+<h3 id="skeleton">Skeleton<a class="headerlink" href="#skeleton" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Skeleton width? height? radius? /&gt;</code> -- shimmering loading placeholder
+(decorative; hidden from assistive tech).
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Skeleton/Skeleton.tsx">shared/ui/Skeleton/Skeleton.tsx</a></p>
+<h3 id="tooltip">Tooltip<a class="headerlink" href="#tooltip" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Tooltip content&gt;trigger&lt;/Tooltip&gt;</code> -- shows a label on hover/focus; animated
+in/out. Sets <code>role="tooltip"</code> and wires <code>aria-describedby</code>.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Tooltip/Tooltip.tsx">shared/ui/Tooltip/Tooltip.tsx</a></p>
+<h3 id="alert">Alert<a class="headerlink" href="#alert" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Alert tone title?&gt;children&lt;/Alert&gt;</code> -- inline message surface; <code>tone</code>: <code>info</code>
+(default) | <code>success</code> | <code>warning</code> | <code>danger</code>. A tone-tinted glass surface: the
+backdrop is frosted (useGlassRefraction) and the tone color is blended into the
+translucent glass tint, with a solid fallback where backdrop-filter is absent.
+Animates its height; wrap in <code>&lt;AnimatePresence&gt;</code> for a smooth dismiss.
+Design-system.md 8.9.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Alert/Alert.tsx">shared/ui/Alert/Alert.tsx</a></p>
+<h3 id="modal">Modal<a class="headerlink" href="#modal" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Modal open onClose title?&gt;children&lt;/Modal&gt;</code> -- portal dialog over a dimmed scrim;
+fades/rises in, closes on Escape or scrim click. Sets <code>role="dialog"</code> +
+<code>aria-modal</code>. Design-system.md 8.9.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Modal/Modal.tsx">shared/ui/Modal/Modal.tsx</a></p>
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">open</span><span class="p">,</span><span class="w"> </span><span class="nx">setOpen</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
+<span class="p">&lt;</span><span class="nt">Button</span><span class="w"> </span><span class="na">variant</span><span class="o">=</span><span class="s">&quot;primary&quot;</span><span class="w"> </span><span class="na">onClick</span><span class="o">=</span><span class="p">{()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setOpen</span><span class="p">(</span><span class="kc">true</span><span class="p">)}&gt;</span><span class="nx">Open</span><span class="p">&lt;/</span><span class="nt">Button</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">Modal</span><span class="w"> </span><span class="na">open</span><span class="o">=</span><span class="p">{</span><span class="nx">open</span><span class="p">}</span><span class="w"> </span><span class="na">onClose</span><span class="o">=</span><span class="p">{()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setOpen</span><span class="p">(</span><span class="kc">false</span><span class="p">)}</span><span class="w"> </span><span class="na">title</span><span class="o">=</span><span class="s">&quot;Confirm&quot;</span><span class="p">&gt;</span>
+<span class="w">  </span><span class="p">...</span>
+<span class="p">&lt;/</span><span class="nt">Modal</span><span class="p">&gt;</span>
+</code></pre></div>
+<h3 id="menu">Menu<a class="headerlink" href="#menu" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Menu open onClose anchorRef items closeOnSelect? placement? role? multiselectable?
+ariaLabel? /&gt;</code> -- a portaled, window-aware floating glass list that positions
+against <code>anchorRef</code> and backs the app's dropdowns. <code>items: { id, label, icon?,
+selected?, disabled?, onSelect }[]</code>; <code>role</code>: <code>menu</code> (actions / checkables,
+default) | <code>listbox</code> (selects). <code>placement</code> (<code>auto</code> default) flips to fit the
+window. Full keyboard navigation; selection state is owned by the consumer.
+Design-system.md 8.8.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Menu/Menu.tsx">shared/ui/Menu/Menu.tsx</a></p>
+<h3 id="changebadge">ChangeBadge<a class="headerlink" href="#changebadge" title="Permanent link">&para;</a></h3>
+<p><code>&lt;ChangeBadge kind label /&gt;</code> -- a small filled circle with a knocked-out glyph
+previewing a pending change; <code>kind</code>: <code>add</code> (green, <code>+</code>) | <code>remove</code> (red, <code>-</code>) |
+<code>present</code> (gray, check). The glyph is a true SVG-mask knockout so it reads on any
+row background. Wrapped in a Tooltip with <code>label</code> (also the accessible name).
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/ChangeBadge/ChangeBadge.tsx">shared/ui/ChangeBadge/ChangeBadge.tsx</a></p>
+<h3 id="searchsummary">SearchSummary<a class="headerlink" href="#searchsummary" title="Permanent link">&para;</a></h3>
+<p><code>&lt;SearchSummary foundLabel totalLabel showAllLabel onShowAll /&gt;</code> -- a footer shown
+below a filtered list: a "found N / M total" summary and a button that clears the
+active search. All strings are passed in already translated and plural-aware.
+Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/SearchSummary/SearchSummary.tsx">shared/ui/SearchSummary/SearchSummary.tsx</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
