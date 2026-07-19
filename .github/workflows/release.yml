@@ -127,7 +127,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
-          workspaces: "apps/desktop/src-tauri -> target"
+          workspaces: ". -> target"
 
       - name: Enable pnpm via corepack
         run: corepack enable
@@ -231,15 +231,23 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
 
-          # 4-part numeric version required by MSIX (no prerelease suffix).
+          # MSIX requires a 4-part numeric version. Match the MSI (wix) scheme:
+          #   X.Y.Z-rc.N -> X.Y.Z.N   (rc number in the 4th field)
+          #   X.Y.Z       -> X.Y.Z.0
+          # Note: the Microsoft Store reserves the 4th field (must be 0) and
+          # forbids a 0 first field, so these best-effort rc packages are for
+          # local distribution, not direct Store submission.
           $conf = Get-Content "apps/desktop/src-tauri/tauri.conf.json" | ConvertFrom-Json
-          $semver = $conf.version -replace '-.*$', ''
-          $parts = $semver.Split('.')
-          $msixVersion = "{0}.{1}.{2}.0" -f $parts[0], $parts[1], $parts[2]
+          if ($conf.version -match '^(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?$') {
+            $rc = if ($matches[4]) { $matches[4] } else { "0" }
+            $msixVersion = "{0}.{1}.{2}.{3}" -f $matches[1], $matches[2], $matches[3], $rc
+          } else {
+            throw "Unexpected app version '$($conf.version)'; expected X.Y.Z or X.Y.Z-rc.N"
+          }
           Write-Host "MSIX version: $msixVersion"
 
           # Locate the built executable (target name = crate name skillkeeper).
-          $exe = Get-ChildItem -Path "apps/desktop/src-tauri/target" -Recurse -Filter "skillkeeper.exe" |
+          $exe = Get-ChildItem -Path "target" -Recurse -Filter "skillkeeper.exe" |
             Where-Object { $_.FullName -match "release" -and $_.FullName -notmatch "deps" } |
             Select-Object -First 1
           if (-not $exe) {
@@ -338,8 +346,8 @@ jobs:
         with:
           name: skillkeeper-${{ github.ref_name }}-${{ matrix.target }}
           path: |
-            apps/desktop/src-tauri/target/release/bundle/**/*
-            apps/desktop/src-tauri/target/*/release/bundle/**/*
+            target/release/bundle/**/*
+            target/*/release/bundle/**/*
             apps/desktop/dist-msix/*.msix
           if-no-files-found: warn
 
@@ -399,7 +407,7 @@ jobs:
               exit 1
             fi
             cp "$f" "dist/$base"
-          done < <(find dist-all -type f)
+          done < <(find dist-all -type f -not -path '*.app/*' -print0)
           echo "Staged $(find dist -type f | wc -l) files:"
           ls -1 dist
 
