@@ -33,7 +33,7 @@ export const Interactive: Story = {
 /** Starts expanded (the field state). */
 export const Expanded: Story = {
   render: () => {
-    const [value, setValue] = useState('electron');
+    const [value, setValue] = useState('formatter');
     return (
       <div style={{ width: 320 }}>
         <ExpandingSearch

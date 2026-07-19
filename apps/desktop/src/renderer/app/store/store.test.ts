@@ -1,16 +1,12 @@
 /**
  * Unit tests for the Zustand store actions.
  *
- * These tests run in Node (no React rendering, no Electron). They exercise the
+ * These tests run in Node (no React rendering, no Tauri). They exercise the
  * pure state-mutation logic of each action so we can verify the store behaves
- * correctly without spinning up a browser or Electron environment.
+ * correctly without spinning up a browser or a Tauri runtime.
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-// Core IS importable in the Node/vitest env (unlike the sandboxed renderer),
-// so the guard test below can pin the store's local reimplementations against
-// core's originals. These runtime imports must stay confined to the test.
-import { parseParams, hashMcpDef, normalizeRemote } from '@skillkeeper/core';
-import type { McpServerDef } from '@skillkeeper/core';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { McpServerDef } from '@/services/bridge';
 import {
   useSkillkeeperStore,
   mcpInstallHasUpdate,
@@ -19,7 +15,25 @@ import {
   hashMcpDefInRenderer,
 } from './store';
 import type { SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest, McpPreset } from './store';
+import { bridgeClient } from '@/services/bridge';
 import type { RepoResult, RemoveResult, ProjectResult, AvailableMcp, McpInstall } from '@/services/bridge';
+
+// The store reaches the Rust backend through the `bridgeClient` singleton, whose
+// methods call Tauri `invoke` under the hood -- unavailable in the Node/vitest
+// env. Mock the module so the MCP-preset actions (which use the singleton rather
+// than a passed-in bridge) can be driven directly. Only the methods those
+// actions touch need stubbing; the rest stay bare `vi.fn()`s.
+vi.mock('@/services/bridge', () => ({
+  bridgeClient: {
+    listAvailableMcp: vi.fn(),
+    applyMcp: vi.fn(),
+    listMcpInstalls: vi.fn(),
+    setConfig: vi.fn(),
+    syncRepository: vi.fn(),
+    repoHasUpdate: vi.fn(),
+    describeRepository: vi.fn(),
+  },
+}));
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -366,6 +380,7 @@ describe('useSkillkeeperStore', () => {
   describe('loadAll', () => {
     it('populates all state from the bridge and clears loading', async () => {
       const bridge = {
+        init: async () => {},
         getConfig: async () => ({
           config: mockConfig,
           validity: validValidity,
@@ -392,6 +407,7 @@ describe('useSkillkeeperStore', () => {
         listProjects: async () => [mockProject],
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
+        openExternal: async () => ({ ok: true }),
         onConfigChanged: () => () => {},
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
@@ -439,6 +455,7 @@ describe('useSkillkeeperStore', () => {
 
     it('stores error message and clears loading when bridge throws', async () => {
       const bridge = {
+        init: async () => {},
         getConfig: async (): Promise<never> => {
           throw new Error('IPC failure');
         },
@@ -461,6 +478,7 @@ describe('useSkillkeeperStore', () => {
         listProjects: async () => [],
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
+        openExternal: async () => ({ ok: true }),
         onConfigChanged: () => () => {},
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
@@ -636,13 +654,8 @@ describe('useSkillkeeperStore', () => {
         validValidity,
         [],
       );
-      (globalThis as unknown as { window: { skillkeeper: unknown } }).window = {
-        skillkeeper: { listAvailableMcp: async () => [repoAvailable] },
-      };
-    });
-
-    afterEach(() => {
-      delete (globalThis as unknown as { window?: unknown }).window;
+      vi.mocked(bridgeClient.listAvailableMcp).mockReset();
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue([repoAvailable]);
     });
 
     it('unions manual config presets and repo-discovered presets with correct origin/params/hasRules', async () => {
@@ -707,17 +720,25 @@ describe('useSkillkeeperStore', () => {
       hasParams: false,
     };
 
-    let applyMcpCalls: unknown[];
-    let setConfigCalls: SkillKeeperConfig[];
-    let applyMcpImpl: (args: unknown) => Promise<{ ok: boolean; installed?: number; removed?: number; skipped?: never[]; error?: string }>;
+    /** The args passed to each `bridgeClient.applyMcp` call this test made. */
+    const applyMcpArgs = (): unknown[] => vi.mocked(bridgeClient.applyMcp).mock.calls.map((c) => c[0]);
+    /** The configs passed to each `bridgeClient.setConfig` call this test made. */
+    const setConfigArgs = (): SkillKeeperConfig[] =>
+      vi.mocked(bridgeClient.setConfig).mock.calls.map((c) => c[0]);
 
     beforeEach(() => {
-      applyMcpCalls = [];
-      setConfigCalls = [];
-      applyMcpImpl = async (args) => {
-        applyMcpCalls.push(args);
-        return { ok: true, installed: 0, removed: 1, skipped: [] };
-      };
+      vi.mocked(bridgeClient.applyMcp).mockReset();
+      vi.mocked(bridgeClient.applyMcp).mockResolvedValue({ ok: true, installed: 0, removed: 1, skipped: [] });
+      vi.mocked(bridgeClient.listMcpInstalls).mockReset();
+      vi.mocked(bridgeClient.listMcpInstalls).mockResolvedValue([unrelatedInstall]);
+      vi.mocked(bridgeClient.listAvailableMcp).mockReset();
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue([]);
+      vi.mocked(bridgeClient.setConfig).mockReset();
+      vi.mocked(bridgeClient.setConfig).mockImplementation(async (config) => ({
+        config,
+        validity: validValidity,
+        warnings: [],
+      }));
       useSkillkeeperStore.getState().setConfig(
         { ...mockConfig, mcp: { servers: [manualDef, otherManualDef] } },
         validValidity,
@@ -729,27 +750,12 @@ describe('useSkillkeeperStore', () => {
         notifications: [],
         toasts: [],
       });
-      (globalThis as unknown as { window: { skillkeeper: unknown } }).window = {
-        skillkeeper: {
-          applyMcp: (args: unknown) => applyMcpImpl(args),
-          listMcpInstalls: async () => [unrelatedInstall],
-          listAvailableMcp: async () => [],
-          setConfig: async (config: SkillKeeperConfig) => {
-            setConfigCalls.push(config);
-            return { config, validity: validValidity, warnings: [] };
-          },
-        },
-      };
-    });
-
-    afterEach(() => {
-      delete (globalThis as unknown as { window?: unknown }).window;
     });
 
     it('uninstalls every instance of the manual preset across projects and global, then drops it from config', async () => {
       await useSkillkeeperStore.getState().deleteMcpPreset('m1');
 
-      expect(applyMcpCalls).toEqual(
+      expect(applyMcpArgs()).toEqual(
         expect.arrayContaining([
           {
             projectId: 'proj-1',
@@ -763,20 +769,20 @@ describe('useSkillkeeperStore', () => {
           },
         ]),
       );
-      expect(applyMcpCalls).toHaveLength(2);
+      expect(applyMcpArgs()).toHaveLength(2);
 
-      expect(setConfigCalls).toHaveLength(1);
-      expect(setConfigCalls[0]!.mcp.servers.map((s) => s.id)).toEqual(['m2']);
+      expect(setConfigArgs()).toHaveLength(1);
+      expect(setConfigArgs()[0]!.mcp.servers.map((s) => s.id)).toEqual(['m2']);
 
       expect(useSkillkeeperStore.getState().mcpInstalls).toEqual([unrelatedInstall]);
     });
 
     it('notifies and leaves the preset in config when an applyMcp call fails', async () => {
-      applyMcpImpl = async () => ({ ok: false, error: 'boom' });
+      vi.mocked(bridgeClient.applyMcp).mockResolvedValue({ ok: false, error: 'boom' });
 
       await useSkillkeeperStore.getState().deleteMcpPreset('m1');
 
-      expect(setConfigCalls).toHaveLength(0);
+      expect(setConfigArgs()).toHaveLength(0);
       expect(useSkillkeeperStore.getState().config?.mcp.servers.map((s) => s.id)).toEqual(['m1', 'm2']);
       expect(useSkillkeeperStore.getState().notifications.some((n) => n.text === 'boom')).toBe(true);
     });
@@ -786,9 +792,9 @@ describe('useSkillkeeperStore', () => {
 
       await useSkillkeeperStore.getState().deleteMcpPreset('m1');
 
-      expect(applyMcpCalls).toHaveLength(0);
-      expect(setConfigCalls).toHaveLength(1);
-      expect(setConfigCalls[0]!.mcp.servers.map((s) => s.id)).toEqual(['m2']);
+      expect(applyMcpArgs()).toHaveLength(0);
+      expect(setConfigArgs()).toHaveLength(1);
+      expect(setConfigArgs()[0]!.mcp.servers.map((s) => s.id)).toEqual(['m2']);
     });
   });
 
@@ -880,59 +886,55 @@ describe('useSkillkeeperStore', () => {
     });
   });
 
-  // The renderer cannot call `@skillkeeper/core`'s runtime exports (they pull
-  // Node-only modules into the sandboxed bundle), so `store.ts` reimplements
-  // `parseParams`, `normalizeRemote`, and `hashMcpDef` locally. These guards
-  // pin those copies to core's originals -- a drift in either side fails here
-  // rather than silently breaking manual-preset update detection at runtime.
-  describe('renderer helpers match core (drift guard)', () => {
-    const fixtures: McpServerDef[] = [
-      {
-        // http with headers + rules + params (tricky: `{param}` in url + header)
+  // `store.ts` reimplements the MCP param/remote/hash helpers locally because
+  // the renderer cannot call the domain layer's runtime exports (they pull
+  // Node-only modules into the sandboxed bundle); the canonical algorithms now
+  // live in the Rust `skillkeeper-core` crate (covered by its `cargo test`
+  // suite). These tests pin the renderer copies to their expected outputs so a
+  // drift fails here rather than silently breaking manual-preset update
+  // detection at runtime.
+  describe('renderer MCP helpers', () => {
+    it('scanMcpParams collects the sorted, deduped placeholder set', () => {
+      const linear: McpServerDef = {
         name: 'linear',
         type: 'http',
         url: 'https://api.linear.app/{workspace}/mcp',
         headers: { Authorization: 'Bearer {token}', 'X-Env': 'prod' },
         rules: 'Use {token} only for the {workspace} workspace.',
-      },
-      {
-        // stdio with args + env placeholders
+      };
+      expect(scanMcpParams(linear)).toEqual(['token', 'workspace']);
+
+      const github: McpServerDef = {
         name: 'github',
         type: 'stdio',
         command: 'github-mcp',
         args: ['--token', '{gh_token}', '--repo', '{repo}'],
         env: { GH_HOST: 'github.com', GH_TOKEN: '{gh_token}' },
-      },
-      {
-        // no placeholders at all (params must be empty)
-        name: 'plain',
-        type: 'sse',
-        url: 'https://example.com/sse',
-      },
-    ];
+      };
+      expect(scanMcpParams(github)).toEqual(['gh_token', 'repo']);
 
-    it('scanMcpParams matches core parseParams for every fixture', () => {
-      for (const def of fixtures) {
-        expect(scanMcpParams(def)).toEqual(parseParams(def));
-      }
+      const plain: McpServerDef = { name: 'plain', type: 'sse', url: 'https://example.com/sse' };
+      expect(scanMcpParams(plain)).toEqual([]);
     });
 
-    it('hashMcpDefInRenderer matches core hashMcpDef for every fixture', async () => {
-      for (const def of fixtures) {
-        expect(await hashMcpDefInRenderer(def)).toBe(hashMcpDef(def));
-      }
+    it('normalizeMcpRemote canonicalizes scp, https, ssh+port, and userinfo forms', () => {
+      expect(normalizeMcpRemote('git@github.com:acme/x.git')).toBe('github.com/acme/x');
+      expect(normalizeMcpRemote('https://github.com/Acme/X.git')).toBe('github.com/acme/x');
+      expect(normalizeMcpRemote('ssh://git@example.com:2222/org/repo/')).toBe('example.com/org/repo');
+      expect(normalizeMcpRemote('https://user:pass@host.example.com/a/b')).toBe('host.example.com/a/b');
     });
 
-    it('normalizeMcpRemote matches core normalizeRemote, incl. scp + https forms', () => {
-      const remotes = [
-        'git@github.com:acme/x.git',
-        'https://github.com/Acme/X.git',
-        'ssh://git@example.com:2222/org/repo/',
-        'https://user:pass@host.example.com/a/b',
-      ];
-      for (const remote of remotes) {
-        expect(normalizeMcpRemote(remote)).toBe(normalizeRemote(remote));
-      }
+    it('hashMcpDefInRenderer emits a sha256 digest that ignores the def name', async () => {
+      const a: McpServerDef = { name: 'one', type: 'http', url: 'https://example.com' };
+      const b: McpServerDef = { name: 'two', type: 'http', url: 'https://example.com' };
+      const hashA = await hashMcpDefInRenderer(a);
+      expect(hashA).toMatch(/^sha256:[0-9a-f]{64}$/);
+      // `name` is excluded from the hash, so these must collide.
+      expect(hashA).toBe(await hashMcpDefInRenderer(b));
+      // A change to a hashed field must change the digest.
+      expect(hashA).not.toBe(
+        await hashMcpDefInRenderer({ name: 'one', type: 'http', url: 'https://other.example.com' }),
+      );
     });
   });
 });

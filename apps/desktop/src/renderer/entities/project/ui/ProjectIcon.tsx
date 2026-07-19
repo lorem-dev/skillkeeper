@@ -1,6 +1,6 @@
 /**
  * ProjectIcon: a project's square icon at an arbitrary size. Renders the
- * project's own icon (a data URL resolved in the main process) when it has one,
+ * project's own icon (a data URL resolved by the Rust backend) when it has one,
  * otherwise a generated placeholder -- a filled tile in the project's colour
  * (keyed to the name) with the name's first letter. Reused on the project card
  * and in the skills TreeView, where it is rendered small.

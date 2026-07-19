@@ -12,7 +12,7 @@ import { Children, isValidElement, useCallback, useEffect, useRef, useState } fr
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Row } from '../Row';
-import { cx, useAnimationsEnabled, useMotion } from '../../lib';
+import { cx, dragRegion, useAnimationsEnabled, useMotion } from '../../lib';
 import './Page.scss';
 
 export interface PageProps {
@@ -45,7 +45,9 @@ export function Page({ title, toolbar, dock, children }: PageProps) {
     toolbar ??
     (title !== undefined ? (
       <Row className="sk-page__title-row">
-        <h1 className="sk-page__title">{title}</h1>
+        <h1 className="sk-page__title" {...dragRegion()}>
+          {title}
+        </h1>
       </Row>
     ) : null);
 
@@ -75,7 +77,14 @@ export function Page({ title, toolbar, dock, children }: PageProps) {
   return (
     <main className="sk-page" ref={pageRef}>
       <div className="sk-page__scroll" ref={scrollRef} onScroll={update}>
-        {header != null && <div className="sk-page__header">{header}</div>}
+        {/* The header's own padding strip doubles as a macOS window-drag handle
+            (no-op elsewhere); its inner controls stay untagged, so a click on a
+            control never starts a drag. */}
+        {header != null && (
+          <div className="sk-page__header" {...dragRegion()}>
+            {header}
+          </div>
+        )}
         <div className={cx('sk-page__body', hasDock && 'sk-page__body--docked')}>{children}</div>
       </div>
       <div

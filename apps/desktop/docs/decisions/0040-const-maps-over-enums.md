@@ -14,7 +14,7 @@ TypeScript `enum`s bring baggage that cuts against our goals:
    under erasable-types / `isolatedModules` settings.
 3. **Bundle noise.** String enums add extra object literals to the output.
 4. **Interop friction.** Values coming from outside the type system - a string read from config,
-   a value crossing the IPC bridge - cannot be assigned to an enum type without a cast.
+   a value crossing the bridge - cannot be assigned to an enum type without a cast.
 
 The renderer targets zero TypeScript-only runtime artifacts in its output
 (`verbatimModuleSyntax`, an erasable-types philosophy), so anything that leaves a runtime trace

@@ -5,7 +5,7 @@ export type {
   Project,
   InstallManifest,
   AgentKind,
-} from '@skillkeeper/core';
+} from './generated/core';
 export type {
   LoadConfigResult,
   SectionValidity,
@@ -16,14 +16,22 @@ export type {
   NotificationsConfig,
   RepositoriesConfig,
   ProjectsConfig,
-} from '@skillkeeper/config';
+} from './generated/config';
 export type { Lang } from '@skillkeeper/i18n/lazy';
-export type { EditorOption, OpenResult } from '../../../main/editors.js';
-export type { RepoResult, RemoveResult, RepoInfo, AvailableSkill } from '../../../main/repositories.js';
-export type { ProjectResult, ProjectInfo } from '../../../main/projects.js';
-export type { SkillRef, ApplyArgs, ApplyProgress, ApplyResult } from '../../../main/skills.js';
-export type { AvailableMcp } from '../../../main/mcp.js';
 export type {
+  EditorOption,
+  OpenResult,
+  RepoResult,
+  RemoveResult,
+  RepoInfo,
+  AvailableSkill,
+  ProjectResult,
+  ProjectInfo,
+  SkillRef,
+  ApplyArgs,
+  ApplyProgress,
+  ApplyResult,
+  AvailableMcp,
   McpInstallReq,
   McpBatch,
   ApplyMcpArgs,
@@ -35,5 +43,5 @@ export type {
   UpdateMcpResult,
   McpUpdatePreflightArgs,
   McpUpdatePreflightResult,
-} from '../../../main/mcp.js';
-export type { McpServerDef, McpTransport, McpIdentity, McpPresetOrigin } from '@skillkeeper/core';
+} from './contracts';
+export type { McpServerDef, McpTransport, McpIdentity, McpPresetOrigin } from './generated/core';

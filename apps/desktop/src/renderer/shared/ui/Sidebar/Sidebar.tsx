@@ -23,7 +23,9 @@ export interface SidebarProps {
 export function Sidebar({ title, children, className, dragRegion = false }: SidebarProps) {
   return (
     <nav className={cx('sk-sidebar', className)}>
-      {dragRegion && <div className="sk-sidebar__drag" aria-hidden="true" />}
+      {dragRegion && (
+        <div className="sk-sidebar__drag" aria-hidden="true" data-tauri-drag-region />
+      )}
       {title !== undefined && <div className="sk-sidebar__title">{title}</div>}
       <div className="sk-sidebar__items">{children}</div>
     </nav>

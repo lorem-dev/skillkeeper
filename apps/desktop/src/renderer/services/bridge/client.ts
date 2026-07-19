@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import type {
   LoadConfigResult,
   Repository,
@@ -26,8 +28,11 @@ import type {
   McpUpdatePreflightResult,
 } from './types';
 
-/** The typed transport surface the renderer uses to reach the main process. */
+/** The typed transport surface the renderer uses to reach the Rust backend. */
 export interface BridgeClient {
+  /** Resolve host-derived values that must be read synchronously later (the
+   *  platform string). Awaited once at renderer startup before the first paint. */
+  init(): Promise<void>;
   getConfig(): Promise<LoadConfigResult>;
   setConfig(config: SkillKeeperConfig): Promise<LoadConfigResult>;
   listRepositories(): Promise<Repository[]>;
@@ -46,6 +51,8 @@ export interface BridgeClient {
   listProjects(): Promise<Project[]>;
   listEditors(): Promise<EditorOption[]>;
   openConfigInEditor(editorId: string): Promise<OpenResult>;
+  /** Open a URL in the OS default browser (e.g. the online documentation). */
+  openExternal(url: string): Promise<OpenResult>;
   onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
   /** Subscribe to application-menu / Settings-shortcut navigation. Returns an unsubscribe fn. */
   onMenuNavigate(callback: (view: string) => void): () => void;
@@ -90,61 +97,98 @@ export interface BridgeClient {
   onMaximizeChange(callback: (maximized: boolean) => void): () => void;
 }
 
-/** The live client, backed by the preload bridge on window.skillkeeper. */
+// The platform string is exposed synchronously on the client but resolved
+// asynchronously from the `platform` Tauri command. `init()` fills this cache
+// once, before the first render reads `bridgeClient.platform`. It defaults to
+// the browser's user-agent guess so a read before init still yields something
+// sensible (init always runs first at startup, so this is only a safety net).
+let platformCache = '';
+
+/**
+ * Subscribe to a Tauri backend event, adapting the async `listen` API to the
+ * synchronous unsubscribe contract the renderer expects. The returned function
+ * unlistens once `listen` has resolved (a call before then is queued via the
+ * promise, so no event is leaked).
+ */
+function subscribe<T>(channel: string, callback: (payload: T) => void): () => void {
+  const unlisten = listen<T>(channel, (event) => callback(event.payload));
+  return () => {
+    void unlisten.then((off) => off());
+  };
+}
+
+/** The live client, backed by the Tauri command/event bridge. */
 export const bridgeClient: BridgeClient = {
-  getConfig: () => window.skillkeeper.getConfig(),
-  setConfig: (config) => window.skillkeeper.setConfig(config),
-  listRepositories: () => window.skillkeeper.listRepositories(),
-  listSkills: () => window.skillkeeper.listSkills() as Promise<InstallManifest[]>,
-  listAvailableSkills: () => window.skillkeeper.listAvailableSkills() as Promise<AvailableSkill[]>,
-  reconcileSkills: () => window.skillkeeper.reconcileSkills() as Promise<InstallManifest[]>,
-  listAvailableMcp: () => window.skillkeeper.listAvailableMcp() as Promise<AvailableMcp[]>,
-  applyMcp: (args) => window.skillkeeper.applyMcp(args),
-  listMcpInstalls: () => window.skillkeeper.listMcpInstalls() as Promise<McpInstall[]>,
-  reconcileMcp: () => window.skillkeeper.reconcileMcp() as Promise<McpInstall[]>,
-  updateMcp: (args) => window.skillkeeper.updateMcp(args),
-  mcpUpdatePreflight: (args) => window.skillkeeper.mcpUpdatePreflight(args),
-  detectProjectAgents: (path) => window.skillkeeper.detectProjectAgents(path) as Promise<AgentKind[]>,
-  applySkillChanges: (args) => window.skillkeeper.applySkillChanges(args),
-  onSkillsProgress: (callback) => window.skillkeeper.onSkillsProgress(callback),
-  listProjects: () => window.skillkeeper.listProjects(),
-  listEditors: () => window.skillkeeper.listEditors(),
-  openConfigInEditor: (editorId) => window.skillkeeper.openConfigInEditor(editorId),
-  onConfigChanged: (callback) => window.skillkeeper.onConfigChanged(callback),
-  onMenuNavigate: (callback) => window.skillkeeper.onMenuNavigate(callback),
-  onMenuAbout: (callback) => window.skillkeeper.onMenuAbout(callback),
-  getAppVersion: () => window.skillkeeper.getAppVersion(),
-  addRepository: (url, name) => window.skillkeeper.addRepository(url, name),
-  cloneRepository: (id) => window.skillkeeper.cloneRepository(id),
-  updateRepository: (id, name, url, branch) => window.skillkeeper.updateRepository(id, name, url, branch),
-  removeRepository: (id) => window.skillkeeper.removeRepository(id),
-  syncRepository: (id) => window.skillkeeper.syncRepository(id),
-  repoHasUpdate: (id) => window.skillkeeper.repoHasUpdate(id),
-  describeRepository: (id) => window.skillkeeper.describeRepository(id),
-  listBranches: (id) => window.skillkeeper.listBranches(id),
-  selectFolder: () => window.skillkeeper.selectFolder(),
-  addProject: (path, name) => window.skillkeeper.addProject(path, name),
-  updateProject: (id, path, name) => window.skillkeeper.updateProject(id, path, name),
-  removeProject: (id) => window.skillkeeper.removeProject(id),
-  describeProject: (id) => window.skillkeeper.describeProject(id),
-  projectExists: (id) => window.skillkeeper.projectExists(id),
-  openProject: (path, editorId) => window.skillkeeper.openProject(path, editorId),
-  startTerminal: (cols, rows) => window.skillkeeper.startTerminal(cols, rows),
-  writeTerminal: (data) => window.skillkeeper.writeTerminal(data),
-  resizeTerminal: (cols, rows) => window.skillkeeper.resizeTerminal(cols, rows),
-  clearTerminalBuffer: () => window.skillkeeper.clearTerminalBuffer(),
-  runSshAdd: () => window.skillkeeper.runSshAdd(),
-  onTerminalData: (callback) => window.skillkeeper.onTerminalData(callback),
-  onTerminalExit: (callback) => window.skillkeeper.onTerminalExit(callback),
-  onTerminalRequestOpen: (callback) => window.skillkeeper.onTerminalRequestOpen(callback),
-  // Lazy getter (not a load-time read) so importing the client never touches
-  // window.skillkeeper before the preload bridge exists.
-  get platform() {
-    return window.skillkeeper.platform;
+  async init() {
+    platformCache = await invoke<string>('platform');
   },
-  minimizeWindow: () => window.skillkeeper.minimizeWindow(),
-  toggleMaximizeWindow: () => window.skillkeeper.toggleMaximizeWindow(),
-  closeWindow: () => window.skillkeeper.closeWindow(),
-  isWindowMaximized: () => window.skillkeeper.isWindowMaximized(),
-  onMaximizeChange: (callback) => window.skillkeeper.onMaximizeChange(callback),
+  getConfig: () => invoke<LoadConfigResult>('config_get'),
+  setConfig: (config) => invoke<LoadConfigResult>('config_set', { config }),
+  listRepositories: () => invoke<Repository[]>('repositories_list'),
+  listSkills: () => invoke<InstallManifest[]>('skills_list'),
+  listAvailableSkills: () => invoke<AvailableSkill[]>('skills_available'),
+  reconcileSkills: () => invoke<InstallManifest[]>('skills_reconcile'),
+  listAvailableMcp: () => invoke<AvailableMcp[]>('mcp_list_available'),
+  applyMcp: (args) => invoke<ApplyMcpResult>('mcp_apply', { args }),
+  listMcpInstalls: () => invoke<McpInstall[]>('mcp_installs'),
+  reconcileMcp: () => invoke<McpInstall[]>('mcp_reconcile'),
+  updateMcp: (args) => invoke<UpdateMcpResult>('mcp_update', { args }),
+  mcpUpdatePreflight: (args) => invoke<McpUpdatePreflightResult>('mcp_update_preflight', { args }),
+  detectProjectAgents: (path) => invoke<AgentKind[]>('projects_detect_agents', { path }),
+  applySkillChanges: (args) => invoke<ApplyResult>('skills_apply', { args }),
+  onSkillsProgress: (callback) => subscribe<ApplyProgress>('skills:progress', callback),
+  listProjects: () => invoke<Project[]>('projects_list'),
+  listEditors: () => invoke<EditorOption[]>('editors_list'),
+  openConfigInEditor: (editorId) => invoke<OpenResult>('open_config_in_editor', { editorId }),
+  openExternal: (url) => invoke<OpenResult>('open_external', { url }),
+  onConfigChanged: (callback) => subscribe<LoadConfigResult>('config:changed', callback),
+  onMenuNavigate: (callback) => subscribe<string>('menu:navigate', callback),
+  onMenuAbout: (callback) => subscribe<void>('menu:about', () => callback()),
+  getAppVersion: () => invoke<string>('get_app_version'),
+  addRepository: (url, name) => invoke<RepoResult>('repositories_add', { url, name }),
+  cloneRepository: (id) => invoke<RepoResult>('repositories_clone', { id }),
+  updateRepository: (id, name, url, branch) =>
+    invoke<RepoResult>('repositories_update', { id, name, url, branch }),
+  removeRepository: (id) => invoke<RemoveResult>('repositories_remove', { id }),
+  syncRepository: (id) => invoke<RepoResult>('repositories_sync', { id }),
+  repoHasUpdate: (id) => invoke<boolean>('repositories_has_update', { id }),
+  describeRepository: (id) => invoke<RepoInfo>('repositories_describe', { id }),
+  listBranches: (id) => invoke<string[]>('repositories_list_branches', { id }),
+  selectFolder: () => invoke<string | null>('dialog_select_folder'),
+  addProject: (path, name) => invoke<ProjectResult>('projects_add', { path, name }),
+  updateProject: (id, path, name) => invoke<ProjectResult>('projects_update', { id, path, name }),
+  removeProject: (id) => invoke<RemoveResult>('projects_remove', { id }),
+  describeProject: (id) => invoke<ProjectInfo>('projects_describe', { id }),
+  projectExists: (id) => invoke<boolean>('projects_exists', { id }),
+  openProject: (path, editorId) => invoke<OpenResult>('open_project', { path, editorId }),
+  startTerminal: (cols, rows) => invoke<string>('terminal_start', { cols, rows }),
+  writeTerminal: (data) => {
+    void invoke('terminal_input', { data });
+  },
+  resizeTerminal: (cols, rows) => {
+    void invoke('terminal_resize', { cols, rows });
+  },
+  clearTerminalBuffer: () => {
+    void invoke('terminal_clear_buffer');
+  },
+  runSshAdd: () => invoke<void>('terminal_run_ssh_add'),
+  onTerminalData: (callback) => subscribe<string>('terminal:data', callback),
+  onTerminalExit: (callback) => subscribe<void>('terminal:exit', () => callback()),
+  onTerminalRequestOpen: (callback) => subscribe<void>('terminal:requestOpen', () => callback()),
+  // Resolved once by `init()` at startup and cached; read synchronously here so
+  // the public interface stays sync (the App reads it during the first render).
+  get platform() {
+    return platformCache;
+  },
+  minimizeWindow: () => {
+    void invoke('window_minimize');
+  },
+  toggleMaximizeWindow: () => {
+    void invoke('window_toggle_maximize');
+  },
+  closeWindow: () => {
+    void invoke('window_close');
+  },
+  isWindowMaximized: () => invoke<boolean>('window_is_maximized'),
+  onMaximizeChange: (callback) => subscribe<boolean>('window:maximizeChanged', callback),
 };

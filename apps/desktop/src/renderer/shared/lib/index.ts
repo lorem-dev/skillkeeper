@@ -1,4 +1,6 @@
 export { cx } from './cx';
+export { dragRegion, setMacChrome } from './dragRegion';
+export type { DragRegionProps } from './dragRegion';
 export { AnimationProvider, useAnimationsEnabled, useAnimationScale, useMotion } from './animation';
 export type { AnimationMode } from './animation';
 export { levenshtein, fuzzyFilter, fuzzyMatches } from './fuzzyMatch';

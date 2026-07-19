@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon, Spinner } from '@/shared/ui';
-import { cx, fade } from '@/shared/lib';
+import { cx, dragRegion, fade } from '@/shared/lib';
 import './TasksPage.scss';
 
 export function TasksPage() {
@@ -49,8 +49,10 @@ export function TasksPage() {
           animate="animate"
           exit="exit"
         >
-          <header className="sk-tasks__header">
-            <h1 className="sk-tasks__title">{t('tasks.title')}</h1>
+          <header className="sk-tasks__header" {...dragRegion()}>
+            <h1 className="sk-tasks__title" {...dragRegion()}>
+              {t('tasks.title')}
+            </h1>
             <div className="sk-tasks__actions">
               <Button variant="secondary" onClick={clearFinishedTasks} disabled={!hasFinished}>
                 {t('tasks.clear')}

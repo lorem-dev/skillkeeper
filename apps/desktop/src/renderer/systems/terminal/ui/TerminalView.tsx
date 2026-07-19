@@ -1,5 +1,5 @@
 /**
- * xterm.js terminal surface. Starts (or re-attaches to) the main-process PTY,
+ * xterm.js terminal surface. Starts (or re-attaches to) the Rust backend PTY,
  * replays its retained buffer, and pipes data + resize both ways over the
  * bridge. Stays mounted for the app's lifetime (TerminalPage only toggles the
  * overlay's visibility), so the PTY is always sized to the window and receives
@@ -8,6 +8,7 @@
 import { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { bridgeClient } from '@/services/bridge';
 import '@xterm/xterm/css/xterm.css';
 import './TerminalView.scss';
@@ -61,11 +62,11 @@ export function TerminalView() {
       if (modCombo && e.code === 'KeyC') {
         const selection = term.getSelection();
         if (selection.length === 0) return true;
-        void navigator.clipboard.writeText(selection);
+        void writeText(selection);
         return false;
       }
       if (modCombo && e.code === 'KeyV') {
-        void navigator.clipboard.readText().then((text) => {
+        void readText().then((text) => {
           if (text.length > 0) term.paste(text);
         });
         return false;

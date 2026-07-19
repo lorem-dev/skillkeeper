@@ -16,6 +16,6 @@ describe('isSearchEmpty', () => {
   it('is false once the field holds any text', () => {
     expect(isSearchEmpty('a')).toBe(false);
     expect(isSearchEmpty(' ')).toBe(false);
-    expect(isSearchEmpty('electron')).toBe(false);
+    expect(isSearchEmpty('formatter')).toBe(false);
   });
 });

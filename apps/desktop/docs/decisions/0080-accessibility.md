@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-SkillKeeper ships as an Electron desktop application: the renderer is a Chromium window driven
+SkillKeeper ships as a Tauri desktop application: the renderer is a web (WebView) window driven
 mostly with mouse and keyboard by a developer at their own machine. It is not a public web page,
 and we have no sign of assistive technology in the loop for this tool today.
 
