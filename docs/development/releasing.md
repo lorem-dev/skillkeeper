@@ -94,6 +94,65 @@ pnpm --filter @skillkeeper/desktop build
 (This runs `tauri build`; with no signing credentials configured it emits
 unsigned artifacts.)
 
+## Release integrity: checksums and GPG signature
+
+Every release ships two extra assets next to the installers:
+
+- `checksums.txt` -- SHA-256 of every attached artifact (one line per file).
+- `checksums.txt.asc` -- a detached, armored GPG signature over
+  `checksums.txt`, produced in the `publish` job of
+  `.github/workflows/release.yml`.
+
+The signing key is a dedicated release key (`Lorem Dev Release
+<contact@lorem.dev>`), separate from any maintainer's personal
+commit-signing key. Its private half and passphrase live in the CI secrets
+`SKILLKEEPER_RELEASE_GPG_KEY` and `SKILLKEEPER_RELEASE_GPG_PASSPHRASE`; the
+public half is committed at
+[`.github/release-key.asc`](https://github.com/lorem-dev/skillkeeper/blob/main/.github/release-key.asc).
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for how the key is bootstrapped
+and rotated.
+
+Signing is gated on the `SKILLKEEPER_RELEASE_GPG_KEY` secret: when it is
+absent the workflow still publishes `checksums.txt` but skips the signature
+and prints a warning, so a release stays green-able before the key is
+configured (the same way the macOS and Windows code-signing steps degrade to
+unsigned artifacts).
+
+| Field       | Value                                                |
+|-------------|------------------------------------------------------|
+| Owner       | `Lorem Dev Release <contact@lorem.dev>`              |
+| Algorithm   | ed25519 (signing) + cv25519 (encryption subkey)      |
+| Fingerprint | `CFE6 485E 2351 9A25 A475  B900 AD0F 7A29 E439 8670` |
+
+## Verifying a release
+
+```sh
+# 1. Import the public key and confirm the fingerprint matches the table above.
+curl -fsSL https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/.github/release-key.asc \
+  | gpg --import
+gpg --list-keys --fingerprint contact@lorem.dev
+
+# 2. Download the checksum file, its signature, and the artifact you want.
+TAG=v1.0.0
+BASE="https://github.com/lorem-dev/skillkeeper/releases/download/${TAG}"
+curl -fsSLO "${BASE}/checksums.txt"
+curl -fsSLO "${BASE}/checksums.txt.asc"
+# ...and one artifact, e.g. the Linux AppImage:
+curl -fsSLO "${BASE}/SkillKeeper_1.0.0_amd64.AppImage"
+
+# 3. Verify the signature over the checksum file.
+gpg --verify checksums.txt.asc checksums.txt
+
+# 4. Verify the artifact against the now-trusted checksum file.
+sha256sum -c checksums.txt --ignore-missing
+# macOS: shasum -a 256 -c checksums.txt --ignore-missing
+```
+
+A successful run prints
+`Good signature from "Lorem Dev Release <contact@lorem.dev>"` followed by
+`<artifact>: OK`. Any other outcome means the file should be discarded and
+re-downloaded.
+
 ## Desktop UI
 
 The desktop app is a Tauri v2 shell (Rust backend) with a React 19 + Zustand

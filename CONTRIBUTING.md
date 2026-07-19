@@ -108,3 +108,63 @@ git rebase "$LAST_SIGNED" --exec "git commit --amend --no-edit -S"
 
 A release commit prepares the version bump, then `develop` merges to `main`
 via Merge Request.
+
+---
+
+## Release signing (CI)
+
+The release workflow signs `checksums.txt` with a dedicated GPG key that is
+separate from any maintainer's personal commit-signing key. The signing runs
+in CI; the steps below are the one-time bootstrap (or rotation) of the key
+that CI uses. The current key is fingerprint
+`CFE6 485E 2351 9A25 A475  B900 AD0F 7A29 E439 8670`.
+
+1. Generate a dedicated release key (drop `%no-protection` to add a
+   passphrase, which then goes in `SKILLKEEPER_RELEASE_GPG_PASSPHRASE`):
+
+   ```sh
+   gpg --batch --gen-key <<EOF
+   %no-protection
+   Key-Type: EDDSA
+   Key-Curve: ed25519
+   Subkey-Type: ECDH
+   Subkey-Curve: cv25519
+   Name-Real: Lorem Dev Release
+   Name-Email: contact@lorem.dev
+   Expire-Date: 5y
+   EOF
+   ```
+
+2. Export both halves:
+
+   ```sh
+   FPR="$(gpg --list-secret-keys --with-colons contact@lorem.dev \
+        | awk -F: '/^fpr:/ {print $10; exit}')"
+   gpg --armor --export-secret-keys "$FPR" > release-key.priv.asc
+   gpg --armor --export             "$FPR" > release-key.asc
+   ```
+
+3. Commit the public key (GPG-signed) and record the fingerprint and expiry
+   in [`docs/development/releasing.md`](docs/development/releasing.md):
+
+   ```sh
+   mkdir -p .github
+   mv release-key.asc .github/release-key.asc
+   git add .github/release-key.asc
+   git commit -S -m "chore: add release-signing public key"
+   ```
+
+4. Add the GitHub Actions secrets in
+   `Settings -> Secrets and variables -> Actions`:
+
+   - `SKILLKEEPER_RELEASE_GPG_KEY` = contents of `release-key.priv.asc`.
+   - `SKILLKEEPER_RELEASE_GPG_PASSPHRASE` = the passphrase (or empty).
+
+5. Securely destroy the local secret material:
+
+   ```sh
+   shred -u release-key.priv.asc
+   ```
+
+Consumers verify a release with the public key; the end-to-end steps are in
+[`docs/development/releasing.md`](docs/development/releasing.md).

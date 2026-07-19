@@ -323,6 +323,13 @@ jobs:
     permissions:
       contents: write
 
+    # Sign checksums.txt only when the release GPG key is configured; GitHub
+    # passes "" for a missing secret. Gating keeps the release green-able
+    # (unsigned) before the secret is set, matching how the macOS/Windows
+    # signing steps degrade to unsigned artifacts.
+    env:
+      HAS_GPG: ${{ secrets.SKILLKEEPER_RELEASE_GPG_KEY != '' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -340,10 +347,61 @@ jobs:
         with:
           path: dist-all
 
+      # Flatten every built artifact into a single dist/ directory. The upload
+      # action names each release asset by basename, so a duplicate basename
+      # across targets would silently clobber an asset -- fail loudly instead.
+      - name: Stage release assets
+        run: |
+          mkdir -p dist
+          while IFS= read -r -d '' f; do
+            base="$(basename "$f")"
+            if [ -e "dist/$base" ]; then
+              echo "::error::Duplicate release asset basename: $base"
+              exit 1
+            fi
+            cp "$f" "dist/$base"
+          done < <(find dist-all -type f)
+          echo "Staged $(find dist -type f | wc -l) files:"
+          ls -1 dist
+
+      # Checksum every staged asset. Written outside dist/ first so the glob
+      # cannot include the (empty) checksums.txt the redirection would create.
+      - name: Generate SHA-256 checksums
+        run: |
+          ( cd dist && sha256sum * ) > checksums.txt
+          mv checksums.txt dist/checksums.txt
+          cat dist/checksums.txt
+
+      - name: Import GPG release key
+        if: env.HAS_GPG == 'true'
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.SKILLKEEPER_RELEASE_GPG_KEY }}
+        run: |
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+
+      - name: Sign checksums
+        if: env.HAS_GPG == 'true'
+        env:
+          GPG_PASSPHRASE: ${{ secrets.SKILLKEEPER_RELEASE_GPG_PASSPHRASE }}
+        working-directory: dist
+        run: |
+          gpg --batch --yes --pinentry-mode loopback \
+              --passphrase "$GPG_PASSPHRASE" \
+              --detach-sign --armor \
+              --output checksums.txt.asc \
+              checksums.txt
+
+      - name: Warn when the release is unsigned
+        if: env.HAS_GPG != 'true'
+        run: echo "::warning::SKILLKEEPER_RELEASE_GPG_KEY is not set; publishing checksums.txt without a GPG signature."
+
       - name: Create GitHub release and attach artifacts
         uses: softprops/action-gh-release@v2
         with:
-          files: dist-all/**/*
+          files: dist/*
           body_path: RELEASE_NOTES.md
           prerelease: ${{ contains(github.ref_name, '-') }}
         env:

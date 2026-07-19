@@ -13,9 +13,9 @@
   },
   "scripts": {
     "postinstall": "node scripts/gen-i18n.mjs",
-    "dev": "pnpm --filter @skillkeeper/desktop dev",
-    "build": "tsc -b tsconfig.build.json && pnpm --filter @skillkeeper/desktop run build",
-    "build:libs": "tsc -b tsconfig.build.json",
+    "dev": "node scripts/gen-i18n.mjs && pnpm --filter @skillkeeper/desktop dev",
+    "build": "node scripts/gen-i18n.mjs && tsc -b tsconfig.build.json && pnpm --filter @skillkeeper/desktop run build",
+    "build:libs": "node scripts/gen-i18n.mjs && tsc -b tsconfig.build.json",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
