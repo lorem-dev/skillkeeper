@@ -37,6 +37,13 @@ jobs:
       - name: Install dependencies (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
+      - name: Generate localization catalogs
+        # The .ts (renderer) and .mo (Rust) catalogs are generated from
+        # locales/*.po and are not committed. postinstall already runs this on
+        # install, but do it explicitly so generation never silently depends on
+        # the install lifecycle firing or on cache state.
+        run: pnpm run i18n
+
       - name: Lint
         run: pnpm lint
 
@@ -101,6 +108,13 @@ jobs:
 
       - name: Install dependencies (frozen lockfile)
         run: pnpm install --frozen-lockfile
+
+      - name: Generate localization catalogs
+        # The .ts (renderer) and .mo (Rust) catalogs are generated from
+        # locales/*.po and are not committed. postinstall already runs this on
+        # install, but do it explicitly so generation never silently depends on
+        # the install lifecycle firing or on cache state.
+        run: pnpm run i18n
 
       - name: Generate the desktop icon set
         run: pnpm run icons
