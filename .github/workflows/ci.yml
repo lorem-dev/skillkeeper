@@ -20,6 +20,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Fetch LFS blobs (png/ttf/woff2): the icon generator and the font
+          # assets read real bytes, not the LFS pointer text.
+          lfs: true
 
       - name: Enable pnpm via corepack
         run: corepack enable
@@ -54,6 +58,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Fetch LFS blobs (png/ttf/woff2): the icon generator and the font
+          # assets read real bytes, not the LFS pointer text.
+          lfs: true
 
       # The Cargo workspace includes the `skillkeeper` Tauri app crate, which
       # links against the system WebKitGTK/libsoup stack. These packages must
