@@ -1,0 +1,18 @@
+[package]
+name = "skillkeeper-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# The published binary name matches the TypeScript CLI's `bin` key
+# (`@skillkeeper/cli` -> `skillkeeper`).
+[[bin]]
+name = "skillkeeper"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+uuid = { workspace = true }
+skillkeeper-core = { path = "../skillkeeper-core" }
+skillkeeper-config = { path = "../skillkeeper-config" }
+skillkeeper-agents = { path = "../skillkeeper-agents" }
