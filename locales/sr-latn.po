@@ -1,0 +1,1025 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: sr-latn\n"
+
+msgid "app.title"
+msgstr "SkillKeeper"
+
+msgid "nav.repositories"
+msgstr "Repozitorijumi"
+
+msgid "nav.skills"
+msgstr "Veštine"
+
+msgid "nav.projects"
+msgstr "Projekti"
+
+msgid "nav.mcp"
+msgstr "MCP"
+
+msgid "nav.settings"
+msgstr "Podešavanja"
+
+msgid "menu.view"
+msgstr "Prikaz"
+
+msgid "menu.about"
+msgstr "O programu SkillKeeper"
+
+msgid "menu.openSettings"
+msgstr "Otvori podešavanja"
+
+msgid "menu.edit"
+msgstr "Uređivanje"
+
+msgid "menu.window"
+msgstr "Prozor"
+
+msgid "menu.help"
+msgstr "Pomoć"
+
+msgid "menu.undo"
+msgstr "Opozovi"
+
+msgid "menu.redo"
+msgstr "Ponovi"
+
+msgid "menu.cut"
+msgstr "Iseci"
+
+msgid "menu.copy"
+msgstr "Kopiraj"
+
+msgid "menu.paste"
+msgstr "Nalepi"
+
+msgid "menu.pasteAndMatchStyle"
+msgstr "Nalepi i uskladi stil"
+
+msgid "menu.delete"
+msgstr "Obriši"
+
+msgid "menu.selectAll"
+msgstr "Izaberi sve"
+
+msgid "menu.minimize"
+msgstr "Umanji"
+
+msgid "menu.zoom"
+msgstr "Zumiraj"
+
+msgid "menu.close"
+msgstr "Zatvori"
+
+msgid "menu.services"
+msgstr "Usluge"
+
+msgid "menu.hide"
+msgstr "Sakrij SkillKeeper"
+
+msgid "menu.hideOthers"
+msgstr "Sakrij ostale"
+
+msgid "menu.showAll"
+msgstr "Prikaži sve"
+
+msgid "menu.quit"
+msgstr "Izađi iz SkillKeeper"
+
+msgid "about.version"
+msgstr "Verzija {version}"
+
+msgid "about.tagline"
+msgstr "Instalirajte i upravljajte veštinama za AI agente"
+
+msgid "common.loading"
+msgstr "Učitavanje"
+
+msgid "common.errorPrefix"
+msgstr "Greška: {message}"
+
+msgid "common.refresh"
+msgstr "Osveži"
+
+msgid "common.comingSoon"
+msgstr "Uskoro"
+
+msgid "common.close"
+msgstr "Zatvori"
+
+msgid "common.clear"
+msgstr "Očisti"
+
+msgid "common.goToSkills"
+msgstr "Idi na vestine"
+
+msgid "common.goToMcp"
+msgstr "Idi na MCP"
+
+msgid "skills.resetFilters"
+msgstr "Resetuj filtere"
+
+msgid "skills.componentsTitle"
+msgstr "Komponente"
+
+msgid "skills.managementTitle"
+msgstr "Upravljanje"
+
+msgid "common.search"
+msgstr "Pretraga"
+
+msgid "common.decrease"
+msgstr "Smanji"
+
+msgid "common.increase"
+msgstr "Povećaj"
+
+msgid "common.filter"
+msgstr "Filtriraj"
+
+msgid "common.clearFilters"
+msgstr "Resetuj filtere"
+
+msgid "notifications.error"
+msgstr "Greška"
+
+msgid "notifications.info"
+msgstr "Obaveštenje"
+
+msgid "statusbar.notifications"
+msgstr "Greške: {count}"
+
+msgid "statusbar.terminal"
+msgstr "Terminal"
+
+msgid "statusbar.tasks"
+msgstr "Zadaci"
+
+msgid "logs.title"
+msgstr "Obaveštenja"
+
+msgid "terminal.title"
+msgstr "Terminal"
+
+msgid "logs.empty"
+msgstr "Nema šta da se prikaže."
+
+msgid "logs.copy"
+msgstr "Kopiraj"
+
+msgid "logs.copyAll"
+msgstr "Kopiraj sve"
+
+msgid "logs.clear"
+msgstr "Očisti"
+
+msgid "logs.filter"
+msgstr "Prikaži"
+
+msgid "logs.level.error"
+msgstr "Greške"
+
+msgid "logs.level.info"
+msgstr "Poruke"
+
+msgid "tasks.title"
+msgstr "Zadaci"
+
+msgid "tasks.empty"
+msgstr "Nema zadataka."
+
+msgid "tasks.clear"
+msgstr "Očisti završene"
+
+msgid "tasks.kind.sync"
+msgstr "Sinhronizacija"
+
+msgid "tasks.kind.check"
+msgstr "Proveri ažuriranja"
+
+msgid "tasks.kind.update-skill"
+msgstr "Ažuriraj veštinu"
+
+msgid "tasks.kind.refresh-projects"
+msgstr "Osveži projekte"
+
+msgid "tasks.status.queued"
+msgstr "U redu"
+
+msgid "tasks.status.running"
+msgstr "U toku"
+
+msgid "tasks.status.done"
+msgstr "Gotovo"
+
+msgid "tasks.status.error"
+msgstr "Neuspešno"
+
+msgid "repositories.empty"
+msgstr "Još nema dodatih repozitorijuma."
+
+msgid "repositories.add"
+msgstr "Dodaj repozitorijum"
+
+msgid "repositories.lfs"
+msgstr "LFS"
+
+msgid "repositories.lastFetched"
+msgstr "Poslednje preuzimanje: {when}"
+
+msgid "repositories.neverFetched"
+msgstr "Nikad preuzeto"
+
+msgid "repositories.addRemote"
+msgstr "Remote URL"
+
+msgid "repositories.invalidRemote"
+msgstr "Unesite ispravan remote URL (https://... ili git@host:putanja)."
+
+msgid "repositories.addName"
+msgstr "Naziv"
+
+msgid "repositories.edit"
+msgstr "Izmeni repozitorijum"
+
+msgid "repositories.save"
+msgstr "Sačuvaj"
+
+msgid "repositories.sync"
+msgstr "Sinhronizuj"
+
+msgid "repositories.syncing"
+msgstr "Sinhronizacija"
+
+msgid "repositories.delete"
+msgstr "Obriši"
+
+msgid "repositories.deleteConfirm"
+msgstr "Potvrdi brisanje"
+
+msgid "repositories.hasUpdate"
+msgstr "Dostupno ažuriranje"
+
+msgid "repositories.viewError"
+msgstr "Kliknite da vidite grešku"
+
+msgid "repositories.copyBranch"
+msgstr "Kopiraj naziv grane"
+
+msgid "repositories.branchCopied"
+msgstr "Naziv grane kopiran u ostavu"
+
+msgid "repositories.copyRemote"
+msgstr "Kopiraj link"
+
+msgid "repositories.remoteCopied"
+msgstr "Remote URL kopiran u ostavu"
+
+msgid "repositories.branch"
+msgstr "Grana"
+
+msgid "repositories.branchSearch"
+msgstr "Pretraži grane"
+
+msgid "repositories.branchNone"
+msgstr "Nema odgovarajuće grane"
+
+msgid "repositories.skillCount.one"
+msgstr "{count} veština"
+
+msgid "repositories.skillCount.few"
+msgstr "{count} veštine"
+
+msgid "repositories.skillCount.other"
+msgstr "{count} veština"
+
+msgid "repositories.searchFound.one"
+msgstr "Pronađen {count} repozitorijum"
+
+msgid "repositories.searchFound.few"
+msgstr "Pronađena {count} repozitorijuma"
+
+msgid "repositories.searchFound.other"
+msgstr "Pronađeno {count} repozitorijuma"
+
+msgid "repositories.searchTotal.one"
+msgstr "Ukupno {count} repozitorijum"
+
+msgid "repositories.searchTotal.few"
+msgstr "Ukupno {count} repozitorijuma"
+
+msgid "repositories.searchTotal.other"
+msgstr "Ukupno {count} repozitorijuma"
+
+msgid "repositories.showAll"
+msgstr "Prikaži sve repozitorijume"
+
+msgid "projects.empty"
+msgstr "Još nema praćenih projekata."
+
+msgid "projects.add"
+msgstr "Dodaj projekat"
+
+msgid "projects.addedAt"
+msgstr "Dodato {when}"
+
+msgid "projects.edit"
+msgstr "Izmeni projekat"
+
+msgid "projects.name"
+msgstr "Naziv"
+
+msgid "projects.remove"
+msgstr "Ukloni projekat"
+
+msgid "projects.removeConfirm"
+msgstr "Potvrdi uklanjanje"
+
+msgid "projects.removeKeepsFolder"
+msgstr "Uklanja projekat sa liste. Fascikla ostaje na disku."
+
+msgid "projects.changeFolder"
+msgstr "Promeni fasciklu"
+
+msgid "projects.open"
+msgstr "Otvori projekat"
+
+msgid "projects.openInFileManager"
+msgstr "Otvori u menadžeru datoteka"
+
+msgid "projects.openFailed"
+msgstr "Projekat nije moguće otvoriti"
+
+msgid "projects.missing"
+msgstr "Fascikla je obrisana ili premeštena"
+
+msgid "projects.copyPath"
+msgstr "Kopiraj punu putanju"
+
+msgid "projects.pathCopied"
+msgstr "Putanja kopirana u ostavu"
+
+msgid "projects.skillCount.one"
+msgstr "{count} veština"
+
+msgid "projects.skillCount.few"
+msgstr "{count} veštine"
+
+msgid "projects.skillCount.other"
+msgstr "{count} veština"
+
+msgid "projects.fromRepos"
+msgstr "{count} iz repozitorijuma"
+
+msgid "projects.agentCount.one"
+msgstr "{count} agent"
+
+msgid "projects.agentCount.few"
+msgstr "{count} agenta"
+
+msgid "projects.agentCount.other"
+msgstr "{count} agenata"
+
+msgid "projects.fromReposHint.one"
+msgstr "Instalirana {count} veština iz repozitorijuma"
+
+msgid "projects.fromReposHint.few"
+msgstr "Instalirane {count} veštine iz repozitorijuma"
+
+msgid "projects.fromReposHint.other"
+msgstr "Instalirano {count} veština iz repozitorijuma"
+
+msgid "projects.skillCountHint.one"
+msgstr "Ukupno {count} veština u projektu"
+
+msgid "projects.skillCountHint.few"
+msgstr "Ukupno {count} veštine u projektu"
+
+msgid "projects.skillCountHint.other"
+msgstr "Ukupno {count} veština u projektu"
+
+msgid "projects.agentsHint.one"
+msgstr "Postoje konfiguracije za {count} agent"
+
+msgid "projects.agentsHint.few"
+msgstr "Postoje konfiguracije za {count} agenta"
+
+msgid "projects.agentsHint.other"
+msgstr "Postoje konfiguracije za {count} agenata"
+
+msgid "projects.mcpCount"
+msgstr "{count} MCP"
+
+msgid "projects.mcpHint.one"
+msgstr "Instaliran {count} MCP server iz repozitorijuma"
+
+msgid "projects.mcpHint.few"
+msgstr "Instalirana {count} MCP servera iz repozitorijuma"
+
+msgid "projects.mcpHint.other"
+msgstr "Instalirano {count} MCP servera iz repozitorijuma"
+
+msgid "projects.searchFound.one"
+msgstr "Pronađen {count} projekat"
+
+msgid "projects.searchFound.few"
+msgstr "Pronađena {count} projekta"
+
+msgid "projects.searchFound.other"
+msgstr "Pronađeno {count} projekata"
+
+msgid "projects.searchTotal.one"
+msgstr "Ukupno {count} projekat"
+
+msgid "projects.searchTotal.few"
+msgstr "Ukupno {count} projekta"
+
+msgid "projects.searchTotal.other"
+msgstr "Ukupno {count} projekata"
+
+msgid "projects.showAll"
+msgstr "Prikaži sve projekte"
+
+msgid "skills.empty"
+msgstr "Još nema instaliranih veština."
+
+msgid "skills.add"
+msgstr "Instaliraj veštinu"
+
+msgid "skills.searchPlaceholder"
+msgstr "Pretraži veštine"
+
+msgid "skills.filterAgent"
+msgstr "Agent"
+
+msgid "skills.allAgents"
+msgstr "Svi agenti"
+
+msgid "skills.noVersion"
+msgstr "Bez verzije"
+
+msgid "skills.installedFor"
+msgstr "Instalirano za"
+
+msgid "skills.scope.project"
+msgstr "Projekat"
+
+msgid "skills.scope.global"
+msgstr "Globalno"
+
+msgid "skills.source.repo"
+msgstr "Iz repozitorijuma"
+
+msgid "skills.source.local"
+msgstr "Sa lokalne putanje"
+
+msgid "skills.details.title"
+msgstr "Detalji veštine"
+
+msgid "skills.details.files"
+msgstr "{n} datoteka"
+
+msgid "skills.details.hooks"
+msgstr "{n} hookova"
+
+msgid "skills.details.installedAt"
+msgstr "Instalirano: {when}"
+
+msgid "skills.details.destination"
+msgstr "Odredište"
+
+msgid "skills.verify"
+msgstr "Proveri"
+
+msgid "skills.update"
+msgstr "Ažuriraj"
+
+msgid "skills.source"
+msgstr "Režim prikaza"
+
+msgid "skills.source.repositories"
+msgstr "Repozitorijumi"
+
+msgid "skills.source.projects"
+msgstr "Projekti"
+
+msgid "skills.filterRepositories"
+msgstr "Repozitorijumi"
+
+msgid "skills.filterRepositoriesPlaceholder"
+msgstr "Svi repozitorijumi"
+
+msgid "skills.filterRepositoriesEmpty"
+msgstr "Nema odgovarajućeg repozitorijuma"
+
+msgid "skills.filterProjects"
+msgstr "Projekti"
+
+msgid "skills.filterProjectsPlaceholder"
+msgstr "Svi projekti"
+
+msgid "skills.filterProjectsEmpty"
+msgstr "Nema odgovarajućeg projekta"
+
+msgid "skills.action.add"
+msgstr "Instaliraj"
+
+msgid "skills.action.save"
+msgstr "Sačuvaj"
+
+msgid "skills.action.reset"
+msgstr "Poništi"
+
+msgid "skills.showAll"
+msgstr "Prikaži sve veštine"
+
+msgid "skills.emptyRepositories"
+msgstr "Nema pronađenih veština u vašim repozitorijumima."
+
+msgid "skills.emptyProjects"
+msgstr "Još nema praćenih projekata."
+
+msgid "skills.status.add"
+msgstr "Veština će biti dodata"
+
+msgid "skills.status.remove"
+msgstr "Veština će biti uklonjena"
+
+msgid "skills.status.present"
+msgstr "Veština je već instalirana"
+
+msgid "skills.installPending"
+msgstr "Instaliranje veština uskoro stiže ({count} izabrano)"
+
+msgid "skills.savePending"
+msgstr "Čuvanje izmena uskoro stiže (+{add} / -{remove})"
+
+msgid "skills.install.title"
+msgstr "Instaliraj veštine"
+
+msgid "skills.install.chooseProject"
+msgstr "Projekat"
+
+msgid "skills.install.agents"
+msgstr "Izabrani agenti"
+
+msgid "skills.install.agentsPlaceholder"
+msgstr "Izaberite agente"
+
+msgid "skills.install.next"
+msgstr "Dalje"
+
+msgid "skills.install.back"
+msgstr "Nazad"
+
+msgid "skills.install.confirm"
+msgstr "Potvrditi?"
+
+msgid "skills.install.installing"
+msgstr "Primena izmena"
+
+msgid "skills.install.summary"
+msgstr "+{add} / -{remove}"
+
+msgid "skills.save.title"
+msgstr "Pregled izmena"
+
+msgid "skills.save.confirm"
+msgstr "Potvrditi?"
+
+msgid "skills.save.empty"
+msgstr "Nema izmena za primenu"
+
+msgid "skills.col.project"
+msgstr "Projekat"
+
+msgid "skills.col.repository"
+msgstr "Repozitorijum"
+
+msgid "skills.col.skill"
+msgstr "Veština"
+
+msgid "skills.col.action"
+msgstr "Radnja"
+
+msgid "skills.col.agents"
+msgstr "Agent"
+
+msgid "skills.change.install"
+msgstr "Instaliraj"
+
+msgid "skills.change.remove"
+msgstr "Ukloni"
+
+msgid "skills.agentsLabel"
+msgstr "Agenti"
+
+msgid "skills.agentsTooltip"
+msgstr "Korišćeni agenti"
+
+msgid "skills.agentsChanged"
+msgstr "Agenti izmenjeni"
+
+msgid "skills.updateSkill"
+msgstr "ažuriraj veštinu"
+
+msgid "skills.updateRepo"
+msgstr "ažuriraj veštine u repozitorijumu"
+
+msgid "skills.updateGroup"
+msgstr "ažuriraj veštine u grupi"
+
+msgid "skills.updateBadge"
+msgstr "ažuriraj"
+
+msgid "skills.unlinked"
+msgstr "odvojen"
+
+msgid "skills.addRepo"
+msgstr "Dodaj repozitorijum"
+
+msgid "skills.local"
+msgstr "lokalni"
+
+msgid "skills.localHint"
+msgstr "Lokalna, ručno pisana veština"
+
+msgid "skills.rulesBadge"
+msgstr "pravila"
+
+msgid "skills.rulesHint"
+msgstr "Veština ima pravila"
+
+msgid "skills.searchFound.one"
+msgstr "Pronađena {count} veština"
+
+msgid "skills.searchFound.few"
+msgstr "Pronađene {count} veštine"
+
+msgid "skills.searchFound.other"
+msgstr "Pronađeno {count} veština"
+
+msgid "skills.searchTotal.one"
+msgstr "Ukupno {count} veština"
+
+msgid "skills.searchTotal.few"
+msgstr "Ukupno {count} veštine"
+
+msgid "skills.searchTotal.other"
+msgstr "Ukupno {count} veština"
+
+msgid "mcp.empty"
+msgstr "Jos nema MCP servera."
+
+msgid "mcp.searchFound.one"
+msgstr "Pronađen {count} MCP server"
+
+msgid "mcp.searchFound.few"
+msgstr "Pronađena {count} MCP servera"
+
+msgid "mcp.searchFound.other"
+msgstr "Pronađeno {count} MCP servera"
+
+msgid "mcp.searchTotal.one"
+msgstr "Ukupno {count} MCP server"
+
+msgid "mcp.searchTotal.few"
+msgstr "Ukupno {count} MCP servera"
+
+msgid "mcp.searchTotal.other"
+msgstr "Ukupno {count} MCP servera"
+
+msgid "mcp.showAll"
+msgstr "Prikaži sve MCP servere"
+
+msgid "mcp.add"
+msgstr "Dodaj MCP"
+
+msgid "mcp.addTitle"
+msgstr "Dodaj MCP server"
+
+msgid "mcp.editTitle"
+msgstr "Izmeni MCP server"
+
+msgid "mcp.edit"
+msgstr "Izmeni"
+
+msgid "mcp.install"
+msgstr "Instaliraj"
+
+msgid "mcp.installMcp"
+msgstr "Instaliraj MCP"
+
+msgid "mcp.installTitle"
+msgstr "Instaliraj {name}"
+
+msgid "mcp.remove"
+msgstr "Ukloni"
+
+msgid "mcp.update"
+msgstr "Ažuriraj"
+
+msgid "mcp.cancel"
+msgstr "Otkaži"
+
+msgid "mcp.save"
+msgstr "Sačuvaj"
+
+msgid "mcp.copy"
+msgstr "Kopiraj"
+
+msgid "mcp.copiedToClipboard"
+msgstr "Kopirano u privremenu memoriju"
+
+msgid "mcp.goToRepository"
+msgstr "Idi na repozitorijum"
+
+msgid "mcp.rulesBadge"
+msgstr "pravila"
+
+msgid "mcp.protocol.stdio"
+msgstr "stdio"
+
+msgid "mcp.protocol.http"
+msgstr "http"
+
+msgid "mcp.protocol.sse"
+msgstr "sse"
+
+msgid "mcp.paramsHelp"
+msgstr "Parametri {name} su podrzani u URL-u, zaglavljima, komandi, argumentima, promenljivama okruzenja i pravilima."
+
+msgid "mcp.field.name"
+msgstr "Naziv"
+
+msgid "mcp.namePlaceholder"
+msgstr "npr. GitHub MCP"
+
+msgid "mcp.field.type"
+msgstr "Tip"
+
+msgid "mcp.field.url"
+msgstr "URL"
+
+msgid "mcp.urlPlaceholder"
+msgstr "https://example.com/{token}"
+
+msgid "mcp.field.headers"
+msgstr "Zaglavlja"
+
+msgid "mcp.headerNamePlaceholder"
+msgstr "Naziv zaglavlja"
+
+msgid "mcp.headerValuePlaceholder"
+msgstr "Vrednost zaglavlja"
+
+msgid "mcp.addHeader"
+msgstr "Dodaj zaglavlje"
+
+msgid "mcp.field.command"
+msgstr "Komanda"
+
+msgid "mcp.commandPlaceholder"
+msgstr "npx some-mcp-server"
+
+msgid "mcp.field.arguments"
+msgstr "Argumenti"
+
+msgid "mcp.argumentPlaceholder"
+msgstr "Argument"
+
+msgid "mcp.addArgument"
+msgstr "Dodaj argument"
+
+msgid "mcp.field.env"
+msgstr "Promenljive okruzenja"
+
+msgid "mcp.varNamePlaceholder"
+msgstr "Naziv promenljive"
+
+msgid "mcp.varValuePlaceholder"
+msgstr "Vrednost promenljive"
+
+msgid "mcp.addVariable"
+msgstr "Dodaj promenljivu"
+
+msgid "mcp.field.rules"
+msgstr "Pravila"
+
+msgid "mcp.rulesPlaceholder"
+msgstr "Uputstva koja se ubacuju u datoteku pravila/uputstava agenta prilikom instaliranja ovog servera."
+
+msgid "mcp.validation.nameRequired"
+msgstr "Naziv je obavezan."
+
+msgid "mcp.validation.selectType"
+msgstr "Izaberite tip transporta."
+
+msgid "mcp.validation.commandRequired"
+msgstr "Komanda je obavezna za stdio servere."
+
+msgid "mcp.validation.urlRequired"
+msgstr "URL je obavezan za http/sse servere."
+
+msgid "mcp.validation.invalidParam"
+msgstr "Nevazeci parametar ({reason}) na poziciji {index}."
+
+msgid "mcp.field.project"
+msgstr "Projekat"
+
+msgid "mcp.chooseProject"
+msgstr "Izaberite projekat"
+
+msgid "mcp.field.agents"
+msgstr "Agenti"
+
+msgid "mcp.field.parameters"
+msgstr "Parametri"
+
+msgid "mcp.codexGlobalNote"
+msgstr "Codex se instalira globalno (nije ogranicen na ovaj projekat)."
+
+msgid "mcp.transportUnsupported"
+msgstr "{agent} ne moze izraziti transport {transport} u svojoj izvornoj konfiguraciji."
+
+msgid "mcp.skippedAgents"
+msgstr "Preskoceno je {count} agenata: transport preseta nije podrzan."
+
+msgid "mcp.needsParamsNotice"
+msgstr "Ove MCP instalacije zahtevaju parametre pre nego sto mogu biti dodate:"
+
+msgid "mcp.delete"
+msgstr "Obriši"
+
+msgid "mcp.deleteConfirmTitle"
+msgstr "Obrisati {name}?"
+
+msgid "mcp.deleteConfirmBody"
+msgstr "Ova radnja se ne moze opozvati."
+
+msgid "mcp.detailsTitle"
+msgstr "Detalji MCP servera"
+
+msgid "mcp.view.label"
+msgstr "Prikaži kao"
+
+msgid "mcp.view.tiles"
+msgstr "Pločice"
+
+msgid "mcp.view.tree"
+msgstr "Stablo"
+
+msgid "mcp.componentsTitle"
+msgstr "Komponente"
+
+msgid "mcp.managementTitle"
+msgstr "Upravljanje"
+
+msgid "settings.comingSoon"
+msgstr "Ekran podešavanja uskoro stiže."
+
+msgid "settings.section.general"
+msgstr "Opšte"
+
+msgid "settings.section.updates"
+msgstr "Ažuriranja"
+
+msgid "settings.section.agents"
+msgstr "Agenti"
+
+msgid "settings.section.executables"
+msgstr "Izvršne datoteke"
+
+msgid "settings.section.security"
+msgstr "Bezbednost"
+
+msgid "settings.section.notifications"
+msgstr "Obaveštenja"
+
+msgid "settings.valid"
+msgstr "Ispravno"
+
+msgid "settings.invalid"
+msgstr "Neispravno"
+
+msgid "settings.openConfig"
+msgstr "Otvori konfiguracionu datoteku"
+
+msgid "settings.openConfigInEditor"
+msgstr "Otvori konfiguracionu datoteku u uređivaču"
+
+msgid "settings.editor.defaultApp"
+msgstr "Otvori u podrazumevanoj aplikaciji"
+
+msgid "settings.openConfigFailed"
+msgstr "Konfiguracionu datoteku nije moguće otvoriti"
+
+msgid "settings.theme"
+msgstr "Tema"
+
+msgid "settings.animations"
+msgstr "Animacije"
+
+msgid "settings.animationsHint"
+msgstr "Brzina animacija ulaska i izlaska kroz ceo interfejs"
+
+msgid "settings.animations.fast"
+msgstr "Brzo"
+
+msgid "settings.animations.normal"
+msgstr "Normalno"
+
+msgid "settings.animations.off"
+msgstr "Isključeno"
+
+msgid "settings.theme.system"
+msgstr "Sistemska"
+
+msgid "settings.theme.light"
+msgstr "Svetla"
+
+msgid "settings.theme.dark"
+msgstr "Tamna"
+
+msgid "settings.language"
+msgstr "Jezik"
+
+msgid "settings.languageEmpty"
+msgstr "Nema odgovarajućeg jezika"
+
+msgid "settings.section.repositories"
+msgstr "Repozitorijumi"
+
+msgid "settings.section.projects"
+msgstr "Projekti"
+
+msgid "settings.git"
+msgstr "Git"
+
+msgid "settings.gitDescription"
+msgstr "Putanja do git izvršne datoteke"
+
+msgid "settings.updates.mode"
+msgstr "Provere ažuriranja"
+
+msgid "settings.updates.mode.manual"
+msgstr "Ručno"
+
+msgid "settings.updates.mode.onStartup"
+msgstr "Pri pokretanju"
+
+msgid "settings.updates.mode.scheduled"
+msgstr "Zakazano"
+
+msgid "settings.updates.interval"
+msgstr "Interval ažuriranja"
+
+msgid "settings.projects.checkInterval"
+msgstr "Interval provere fascikli"
+
+msgid "settings.interval.minutesUnit"
+msgstr "min"
+
+msgid "settings.interval.hoursUnit"
+msgstr "č"
+
+msgid "settings.agents.enabled"
+msgstr "Omogućeni agenti"
+
+msgid "settings.agents.placeholder"
+msgstr "Izaberite agente"
+
+msgid "settings.agents.selected"
+msgstr "Izabrano {count}"
+
+msgid "settings.notifications.enabled"
+msgstr "Sistemska obaveštenja"
+
+msgid "config.invalidBanner"
+msgstr "Konfiguracija ima neispravne sekcije. Koriste se podrazumevane vrednosti. Pokrenite \"skillkeeper config validate\" za detalje."
+
+msgid "hooks.requireConsent"
+msgstr "Instalacija hookova zahteva izričitu saglasnost (--allow-hooks). Telo veštine je instalirano; hookovi su preskočeni."
+
+msgid "skills.count"
+msgstr "{n} instaliranih veština"
+
+msgid "about.docs"
+msgstr "Dokumentacija"
+
+msgid "about.openDocs"
+msgstr "Otvori dokumentaciju"
+
+msgid "about.repo"
+msgstr "Repozitorijum"
+
+msgid "about.openRepo"
+msgstr "Otvori repozitorijum"
+
+msgid "about.license"
+msgstr "Licenca"
+
+msgid "about.openLicense"
+msgstr "Pogledaj licencu"

@@ -5,7 +5,7 @@
  * See design-system.md Section 8.7.
  */
 import type { ReactNode } from 'react';
-import { cx } from '../../lib';
+import { cx, dragRegion } from '../../lib';
 import './Toolbar.scss';
 
 export interface ToolbarProps {
@@ -33,14 +33,36 @@ export function Toolbar({
   className,
 }: ToolbarProps) {
   return (
-    <div className={cx('sk-toolbar', separator && 'sk-toolbar--separator', className)}>
-      {leading !== undefined && <div className="sk-toolbar__leading">{leading}</div>}
-      {title !== undefined && <h1 className="sk-toolbar__title">{title}</h1>}
-      {titleAdornment !== undefined && (
-        <div className="sk-toolbar__title-adornment">{titleAdornment}</div>
+    // Every structural slot of the toolbar doubles as a macOS window-drag handle
+    // (no-op elsewhere), so the whole top strip drags the window. Tauri starts a
+    // drag only when the *pressed* element itself is tagged, so the interactive
+    // children inside the slots (buttons, inputs, selects) keep working -- only
+    // the slots' own background/gaps drag.
+    <div
+      className={cx('sk-toolbar', separator && 'sk-toolbar--separator', className)}
+      {...dragRegion()}
+    >
+      {leading !== undefined && (
+        <div className="sk-toolbar__leading" {...dragRegion()}>
+          {leading}
+        </div>
       )}
-      <div className="sk-toolbar__spacer" />
-      {trailing !== undefined && <div className="sk-toolbar__trailing">{trailing}</div>}
+      {title !== undefined && (
+        <h1 className="sk-toolbar__title" {...dragRegion()}>
+          {title}
+        </h1>
+      )}
+      {titleAdornment !== undefined && (
+        <div className="sk-toolbar__title-adornment" {...dragRegion()}>
+          {titleAdornment}
+        </div>
+      )}
+      <div className="sk-toolbar__spacer" {...dragRegion()} />
+      {trailing !== undefined && (
+        <div className="sk-toolbar__trailing" {...dragRegion()}>
+          {trailing}
+        </div>
+      )}
     </div>
   );
 }

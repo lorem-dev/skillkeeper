@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.1.0-rc.2
+
 ### Features
 
 - Add a native macOS application menu (Skillkeeper, Edit, View, MCP, Settings,
@@ -14,8 +16,16 @@
   Window, Help and app-menu items in every supported language, show glyph icons
   on the menu items, and replace the native About panel with a custom About
   dialog that shows the SkillKeeper icon, version, and tagline.
+- Publish releases with a signed checksum file: the release workflow attaches a
+  SHA-256 `checksums.txt` and a detached GPG signature (`checksums.txt.asc`)
+  verifiable against the public key committed at `.github/release-key.asc`.
 
-## Version 0.1.0-rc.1 - 2026-07-17
+### Fixes
+
+- Generate the localization catalogs before `dev`/`build` so a fresh or cleaned
+  checkout no longer fails to build with missing i18n catalog modules.
+
+## Version 0.1.0-rc.1
 
 ### Features
 
@@ -45,7 +55,7 @@
 - Add agent adapters for Claude (skills and hooks), Codex, Copilot, Cursor, and
   OpenCode.
 - Add the CLI with repo, skill, project, config, and check commands.
-- Add the Electron desktop shell with a sandboxed, typed IPC bridge.
+- Add the desktop shell with a sandboxed, typed IPC bridge.
 - Add the mkdocs documentation site.
 - Add five local development skills: changelog, docs, tests and linters, licenses,
   and pre-release checks.
@@ -54,8 +64,7 @@
 
 ### Fixes
 
-- Make the desktop app launch reliably: auto-download the Electron binary, use
-  `import.meta.dirname` in the ESM main process, load the preload as CommonJS
-  with `electron` kept external, and allow inline styles in the production CSP.
+- Make the desktop app launch reliably: resolve the main-process entry paths
+  correctly and allow inline styles in the production CSP.
 - Restrict macOS packaging to arm64; the x64 target is not supported in CI.
 - Attribute the bundled Inter and Cormorant Garamond fonts (OFL-1.1) in LICENSE.

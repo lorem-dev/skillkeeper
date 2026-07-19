@@ -1,0 +1,69 @@
+# After a release lands on main, keep develop in sync by opening (or
+# refreshing) a pull request that merges main back into develop. A PR is
+# used rather than a direct push so the merge is visible and CI runs on it;
+# resolve any conflicts on the PR before merging.
+
+name: Back-merge main -> develop
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: backmerge
+  cancel-in-progress: false
+
+jobs:
+  open-backmerge-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Skip if develop already contains main
+        id: check
+        run: |
+          if git merge-base --is-ancestor origin/main origin/develop; then
+            echo "needs_pr=false" >> "$GITHUB_OUTPUT"
+            echo "develop already contains main; nothing to do."
+          else
+            echo "needs_pr=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update back-merge PR
+        if: steps.check.outputs.needs_pr == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          MAIN_SHA="$(git rev-parse --short origin/main)"
+          MAIN_SUBJECT="$(git log -1 --format='%s' origin/main)"
+
+          EXISTING="$(gh pr list --head main --base develop --state open --json number --jq '.[0].number')"
+          if [ -n "$EXISTING" ]; then
+            echo "PR #$EXISTING already open for main -> develop; it will auto-update with the new push."
+            exit 0
+          fi
+
+          BODY_FILE="$(mktemp)"
+          cat > "$BODY_FILE" <<EOF
+          Automated back-merge of \`main\` into \`develop\`.
+
+          Latest commit on main: \`${MAIN_SHA}\` - ${MAIN_SUBJECT}
+
+          Triggered by push to \`main\` in workflow \`${WORKFLOW_NAME}\` run \`${RUN_ID}\`.
+
+          Merge this PR (or enable auto-merge on it) to keep \`develop\` in sync with the latest release commit on \`main\`. Resolve any conflicts manually before merging.
+          EOF
+
+          gh pr create \
+            --base develop \
+            --head main \
+            --title "chore: back-merge main into develop" \
+            --body-file "$BODY_FILE"

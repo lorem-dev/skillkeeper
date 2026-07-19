@@ -113,9 +113,9 @@ const INSTALLS: McpInstall[] = [
  * page's mount effect makes (`listAvailableMcp`, `listMcpInstalls`,
  * `describeProject`, via `refreshMcpPresets`/`refreshMcpInstalls`/
  * `refreshProjectInfo`) so the real store actions compute `mcpPresets`/
- * `mcpInstalls` from these fixtures instead of throwing on the missing
- * `window.skillkeeper` -- Storybook has no Electron preload bridge. Mirrors
- * `McpPage.stories.tsx`'s own `seedMcp`.
+ * `mcpInstalls` from these fixtures instead of throwing on the unavailable
+ * Tauri bridge -- Storybook runs outside Tauri, so `invoke` is not present.
+ * Mirrors `McpPage.stories.tsx`'s own `seedMcp`.
  *
  * Called directly in `render()` (not a `useEffect`) so it runs before
  * `ManagementPage` mounts -- its own mount effect calls `refreshMcpPresets`

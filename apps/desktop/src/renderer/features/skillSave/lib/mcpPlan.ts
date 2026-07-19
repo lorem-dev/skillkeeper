@@ -20,9 +20,10 @@
  * `McpInstall.hasParams`, never their content -- they may hold secrets). When
  * a to-install instance's preset requires params and an already-installed
  * sibling agent has them stored, the install request carries a
- * `copyParamsFrom` hint instead of values; the main process resolves it
+ * `copyParamsFrom` hint instead of values; the Rust backend resolves it
  * against that sibling's own `.skmcp.params.yml` at apply time (see
- * `resolveInstallValues` in `apps/desktop/src/main/mcp.ts`). When no sibling
+ * `resolve_install_values` in `apps/desktop/src-tauri/src/commands/mcp.rs`,
+ * reached via the `mcp_apply` command). When no sibling
  * has stored params yet (should not happen for an existing instance, per the
  * design spec), the row is flagged `needsParamPrompt` and carries no batch
  * entry -- the caller must collect values (e.g. via a param prompt) and build

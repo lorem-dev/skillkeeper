@@ -79,8 +79,8 @@ const AVAILABLE: AvailableMcp[] = [
  * Seeds `config`/`repositories` and stubs the bridge calls the page's mount
  * effect makes (`listAvailableMcp`, via `refreshMcpPresets`) so the real store
  * action computes `mcpPresets` from these fixtures instead of throwing on the
- * missing `window.skillkeeper` -- Storybook has no Electron preload bridge.
- * Mirrors `McpPage.stories.tsx`'s own `seedMcp`.
+ * unavailable Tauri bridge -- Storybook runs outside Tauri, so `invoke` is not
+ * present. Mirrors `McpPage.stories.tsx`'s own `seedMcp`.
  *
  * Called directly in `render()` (not a `useEffect`) so it runs before
  * `ComponentsPage` mounts -- its own mount effect calls `refreshMcpPresets`

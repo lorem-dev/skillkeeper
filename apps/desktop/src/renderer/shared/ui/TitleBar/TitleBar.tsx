@@ -38,8 +38,15 @@ export function TitleBar({
   controlLabels,
 }: TitleBarProps): ReactElement {
   return (
-    <div className={cx('sk-titlebar', `sk-titlebar--${platform}`)}>
-      {title !== undefined && <span className="sk-titlebar__title">{title}</span>}
+    // The strip itself is the window-drag handle: Tauri starts a drag only when
+    // the pressed element is tagged, so the controls (separate children) stay
+    // clickable. WebKit ignores the old app-region CSS; this drives dragging.
+    <div className={cx('sk-titlebar', `sk-titlebar--${platform}`)} data-tauri-drag-region>
+      {title !== undefined && (
+        <span className="sk-titlebar__title" data-tauri-drag-region>
+          {title}
+        </span>
+      )}
       <WindowControls
         variant={platform}
         maximized={maximized}

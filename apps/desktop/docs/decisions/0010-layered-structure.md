@@ -8,8 +8,8 @@ Accepted
 
 SkillKeeper's desktop GUI is a React renderer through which users browse, install, verify, and
 repair AI-agent skills and hooks. It is deliberately a thin front end: the real work happens in
-the Electron main process, which owns the filesystem, Git, configuration, and the
-`@skillkeeper/core` engine, and the renderer talks to it only over the typed IPC bridge.
+the Rust backend, which owns the filesystem, Git, configuration, and the `skillkeeper-core`
+engine, and the renderer talks to it only over the typed bridge (Tauri `invoke`/`listen`).
 
 We needed a structure that makes that thin-client discipline visible - somewhere for the
 transport layer, somewhere for shared display vocabulary, and explicit rules for which part of
@@ -48,15 +48,15 @@ downward-only dependency order:
 | `shared/` | Generic UI kit, hooks, utilities - no product knowledge |
 | `systems/` | Cross-cutting infrastructure (modals, routing, onboarding) |
 
-This layering applies to the renderer only; the Electron `src/main/` and `src/preload/` roots
-sit outside it. Two deliberate departures from textbook FSD: the horizontal `systems/` layer
+This layering applies to the renderer under `src/renderer/`; the Rust backend lives in
+`src-tauri/` and sits outside it. Two deliberate departures from textbook FSD: the horizontal `systems/` layer
 (see [0020](0020-cross-cutting-systems.md)) and the dedicated `domain/` layer (see
 [0050](0050-domain-vocabulary.md)).
 
 ## Consequences
 
 - The thin-client boundary is structural - the `services/` transport layer is the only route
-  to the main process, making it hard to slip filesystem or Git logic into the UI.
+  to the Rust backend, making it hard to slip filesystem or Git logic into the UI.
 - Ownership stays local: a change to one feature is contained within its folder.
 - Off-the-shelf FSD lint presets need tweaking to account for the non-standard `systems/` and
   `domain/` layers.

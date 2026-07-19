@@ -1,0 +1,69 @@
+# Docs: build the versioned documentation site with mike (Material for MkDocs)
+# and publish it to the `gh-pages` branch, which GitHub Pages serves.
+#
+# One-time repository setup (Settings -> Pages):
+#   Source: "Deploy from a branch" -> branch `gh-pages`, folder `/ (root)`.
+#
+# Versioning (the switcher in the site header reads mike's versions.json):
+#   - A `v*` tag publishes that release under its version (e.g. 0.1.0-rc.1)
+#     and moves the `latest` alias, which the bare site URL redirects to.
+#   - A push to `main` publishes the in-progress docs under the `dev` alias.
+#   - `workflow_dispatch` re-runs the current ref manually.
+
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+# mike pushes commits to the gh-pages branch.
+permissions:
+  contents: write
+
+# Serialize deploys so two runs never race on pushing gh-pages.
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy versioned docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          # mike needs full history plus the gh-pages branch it maintains.
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Configure git identity for mike
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Make the gh-pages branch available to mike
+        run: git fetch origin gh-pages --depth=1 || true
+
+      - name: Deploy docs
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+            echo "Publishing release docs ${version} (alias: latest)"
+            uv run --with mkdocs-material --with mike \
+              mike deploy --push --update-aliases "${version}" latest
+            uv run --with mkdocs-material --with mike \
+              mike set-default --push latest
+          else
+            echo "Publishing development docs (alias: dev)"
+            uv run --with mkdocs-material --with mike \
+              mike deploy --push --update-aliases dev
+          fi

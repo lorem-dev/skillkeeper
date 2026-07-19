@@ -2,17 +2,16 @@
  * Renderer-local validation for the manual MCP preset editor
  * (`McpEditModal`).
  *
- * `validateParamSyntax` mirrors `packages/core/src/mcp/params.ts`'s function
- * of the same name byte-for-byte (pinned by the drift-guard test in
- * `validate.test.ts`). It is duplicated here rather than imported because
- * `@skillkeeper/core`'s barrel pulls Node-only runtime deps (`node:fs`,
- * `node:child_process`, `crypto`, ...) into the renderer bundle -- see
- * `apps/desktop/docs/architecture.md`, "In the renderer, import only TYPES."
- * (The same call was made for the store's MCP helpers in task C1.)
+ * `validateParamSyntax` mirrors the canonical `validate_param_syntax` in the
+ * Rust `skillkeeper-core` crate (covered by its `cargo test` suite). It is
+ * reimplemented here rather than crossing the bridge because it must run
+ * synchronously as the user types -- see `apps/desktop/docs/architecture.md`,
+ * "In the renderer, import only TYPES." (The same call was made for the
+ * store's MCP helpers.)
  *
- * `validatePreset` is net-new: the config schema for `mcp.servers`
- * (`packages/config/src/schema.ts`) is a flat list with no cross-field
- * validation, so the transport-specific required-field rules live here.
+ * `validatePreset` is renderer-only: the config schema for `mcp.servers` is a
+ * flat list with no cross-field validation, so the transport-specific
+ * required-field rules live here.
  */
 
 export type McpTransportDraft = '' | 'stdio' | 'http' | 'sse';

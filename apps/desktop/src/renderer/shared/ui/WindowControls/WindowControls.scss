@@ -1,8 +1,9 @@
-// Custom window controls for the frameless title bar (Windows / Linux). Opt out
-// of the drag region so the buttons stay clickable inside the draggable bar.
+// Custom window controls for the frameless title bar (Windows / Linux). The
+// buttons stay clickable inside the draggable bar because Tauri only starts a
+// drag when the click lands on the tagged strip itself, not on its children
+// (see the `data-tauri-drag-region` tag in TitleBar.tsx).
 
 .sk-winctl {
-  -webkit-app-region: no-drag;
   display: flex;
   flex: none;
   align-items: center;

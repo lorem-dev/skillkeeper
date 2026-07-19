@@ -50,7 +50,7 @@ export const Selected: Story = {
   },
 };
 
-// A project with its own icon (a data URL) resolved in the main process.
+// A project with its own icon (a data URL) resolved by the Rust backend.
 export const WithProjectIcon: Story = {
   render: () => {
     const [value, setValue] = useState('p1');

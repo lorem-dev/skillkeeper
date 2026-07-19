@@ -1,163 +1,42 @@
 {
   "name": "@skillkeeper/desktop",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0-rc.2",
   "private": true,
   "description": "Install and manage skills and hooks for AI coding agents",
   "author": {
     "name": "Lorem Dev",
-    "email": "lorem-dev@users.noreply.github.com"
+    "email": "contact@lorem.dev"
   },
   "homepage": "https://github.com/lorem-dev/skillkeeper",
   "type": "module",
-  "main": "./out/main/index.js",
   "scripts": {
-    "dev": "pnpm run generate-icons && pnpm run generate-menu-icons && electron-vite dev",
-    "build": "pnpm run generate-icons && pnpm run generate-menu-icons && electron-vite build",
-    "analyze": "pnpm run generate-icons && electron-vite build --mode analyze",
-    "start": "electron-vite preview",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri",
+    "frontend:build": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",
-    "generate-icons": "node build/generate-icons.mjs",
-    "generate-menu-icons": "node build/generate-menu-icons.mjs",
-    "package": "pnpm run generate-icons && pnpm run generate-menu-icons && electron-builder",
-    "package:dir": "pnpm run generate-icons && pnpm run generate-menu-icons && electron-builder --dir",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
-  "build": {
-    "appId": "dev.lorem.skillkeeper",
-    "productName": "SkillKeeper",
-    "executableName": "skillkeeper",
-    "directories": {
-      "buildResources": "build",
-      "output": "dist"
-    },
-    "files": [
-      "out/**/*",
-      "!out/**/*.map",
-      "node_modules/node-pty/**/*"
-    ],
-    "asarUnpack": [
-      "**/node_modules/node-pty/**"
-    ],
-    "linux": {
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "deb",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ],
-      "icon": "build/icon.app.png",
-      "category": "Development",
-      "desktop": {
-        "entry": {
-          "Name": "SkillKeeper",
-          "Comment": "Install and manage skills and hooks for AI coding agents",
-          "Categories": "Development;Utility;",
-          "Keywords": "AI;agents;skills;hooks;Claude;Codex;Copilot;Cursor;",
-          "StartupWMClass": "SkillKeeper"
-        }
-      }
-    },
-    "mac": {
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "arm64"
-          ]
-        }
-      ],
-      "icon": "build/icon.icns",
-      "category": "public.app-category.developer-tools",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist",
-      "extraResources": [
-        { "from": "build/menu-icons", "to": "menu-icons" }
-      ],
-      "extendInfo": {
-        "NSDesktopFolderUsageDescription": "SkillKeeper needs access to open and manage skills in projects on your Desktop.",
-        "NSDocumentsFolderUsageDescription": "SkillKeeper needs access to open and manage skills in projects in your Documents.",
-        "NSDownloadsFolderUsageDescription": "SkillKeeper needs access to open and manage skills in projects in your Downloads.",
-        "NSRemovableVolumesUsageDescription": "SkillKeeper needs access to open and manage skills in projects on removable volumes."
-      }
-    },
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "appx",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ],
-      "icon": "build/icon.ico"
-    },
-    "appx": {
-      "applicationId": "SkillKeeper",
-      "backgroundColor": "#1e40af",
-      "displayName": "SkillKeeper",
-      "identityName": "dev.lorem.SkillKeeper",
-      "publisher": "CN=Lorem Dev",
-      "publisherDisplayName": "Lorem Dev",
-      "languages": [
-        "en-US"
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true
-    }
-  },
   "dependencies": {
-    "@skillkeeper/agents": "workspace:*",
-    "@skillkeeper/config": "workspace:*",
-    "@skillkeeper/core": "workspace:*",
     "@skillkeeper/i18n": "workspace:*",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "motion": "12.42.0",
-    "node-pty": "^1.1.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "zustand": "5.0.14"
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.1.0",
-    "@resvg/resvg-js": "^2.6.2",
     "@storybook/react": "10.4.6",
     "@storybook/react-vite": "10.4.6",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.3",
-    "electron": "42.5.0",
-    "electron-builder": "26.15.3",
-    "electron-vite": "5.0.0",
-    "jimp": "^1.6.1",
-    "png2icons": "^2.0.1",
     "sass": "1.101.0",
-    "sonda": "0.13.1",
     "storybook": "10.4.6",
     "vite": "8.1.0"
   }

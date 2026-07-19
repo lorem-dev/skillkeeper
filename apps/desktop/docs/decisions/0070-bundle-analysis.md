@@ -23,9 +23,10 @@ Use [Sonda](https://sonda.dev) (`sonda/vite`) as the bundle analyzer. Sonda read
 output plus sourcemaps**, so its uncompressed / gzip / brotli numbers are the real per-chunk
 sizes and the treemap's compression toggle reflects what ships.
 
-- It is gated on the analyze build only: `electron-vite build --mode analyze`, exposed as the
-  `analyze` script in the desktop package and `analyze:desktop` from the workspace root. A normal
-  `build`/`dev` leaves the plugin disabled, so the default workflow carries no overhead.
+- It is gated on the analyze mode of the Vite frontend build only: the renderer builds with Vite
+  directly (`vite build`, exposed as `frontend:build`), and the analyzer is wired in only for that
+  analyze mode. A normal `build`/`dev` leaves the plugin disabled, so the default workflow carries
+  no overhead.
 - Sourcemaps are emitted only for the analyze build, since Sonda needs them to attribute emitted
   bytes back to source modules.
 - The HTML report is written to `out/analyze/` (under the git-ignored `out/`), not committed.

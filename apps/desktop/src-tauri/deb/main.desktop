@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name={{name}}
+Comment=Install and manage skills and hooks for AI coding agents
+Exec={{exec}}
+Icon={{icon}}
+Terminal=false
+Categories=Development;Utility;
+Keywords=AI;agents;skills;hooks;Claude;Codex;Copilot;Cursor;
+StartupWMClass=SkillKeeper

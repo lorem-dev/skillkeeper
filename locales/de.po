@@ -1,0 +1,980 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+
+msgid "app.title"
+msgstr "SkillKeeper"
+
+msgid "nav.repositories"
+msgstr "Repositories"
+
+msgid "nav.skills"
+msgstr "Fahigkeiten"
+
+msgid "nav.projects"
+msgstr "Projekte"
+
+msgid "nav.mcp"
+msgstr "MCP"
+
+msgid "nav.settings"
+msgstr "Einstellungen"
+
+msgid "menu.view"
+msgstr "Ansicht"
+
+msgid "menu.about"
+msgstr "Über SkillKeeper"
+
+msgid "menu.openSettings"
+msgstr "Einstellungen öffnen"
+
+msgid "menu.edit"
+msgstr "Bearbeiten"
+
+msgid "menu.window"
+msgstr "Fenster"
+
+msgid "menu.help"
+msgstr "Hilfe"
+
+msgid "menu.undo"
+msgstr "Widerrufen"
+
+msgid "menu.redo"
+msgstr "Wiederholen"
+
+msgid "menu.cut"
+msgstr "Ausschneiden"
+
+msgid "menu.copy"
+msgstr "Kopieren"
+
+msgid "menu.paste"
+msgstr "Einsetzen"
+
+msgid "menu.pasteAndMatchStyle"
+msgstr "Einsetzen und Stil anpassen"
+
+msgid "menu.delete"
+msgstr "Löschen"
+
+msgid "menu.selectAll"
+msgstr "Alles auswählen"
+
+msgid "menu.minimize"
+msgstr "Im Dock ablegen"
+
+msgid "menu.zoom"
+msgstr "Zoomen"
+
+msgid "menu.close"
+msgstr "Schließen"
+
+msgid "menu.services"
+msgstr "Dienste"
+
+msgid "menu.hide"
+msgstr "SkillKeeper ausblenden"
+
+msgid "menu.hideOthers"
+msgstr "Andere ausblenden"
+
+msgid "menu.showAll"
+msgstr "Alle einblenden"
+
+msgid "menu.quit"
+msgstr "SkillKeeper beenden"
+
+msgid "about.version"
+msgstr "Version {version}"
+
+msgid "about.tagline"
+msgstr "Fähigkeiten für KI-Agenten installieren und verwalten"
+
+msgid "about.docs"
+msgstr "Dokumentation"
+
+msgid "about.openDocs"
+msgstr "Dokumentation öffnen"
+
+msgid "about.repo"
+msgstr "Repository"
+
+msgid "about.openRepo"
+msgstr "Zum Repository"
+
+msgid "about.license"
+msgstr "Lizenz"
+
+msgid "about.openLicense"
+msgstr "Lizenz anzeigen"
+
+msgid "common.loading"
+msgstr "Wird geladen"
+
+msgid "common.errorPrefix"
+msgstr "Fehler: {message}"
+
+msgid "common.refresh"
+msgstr "Aktualisieren"
+
+msgid "common.comingSoon"
+msgstr "Demnächst verfügbar"
+
+msgid "common.close"
+msgstr "Schließen"
+
+msgid "common.clear"
+msgstr "Löschen"
+
+msgid "common.goToSkills"
+msgstr "Zu den Skills"
+
+msgid "common.goToMcp"
+msgstr "Zu MCP"
+
+msgid "skills.resetFilters"
+msgstr "Filter zurücksetzen"
+
+msgid "skills.componentsTitle"
+msgstr "Komponenten"
+
+msgid "skills.managementTitle"
+msgstr "Verwaltung"
+
+msgid "common.search"
+msgstr "Suchen"
+
+msgid "common.decrease"
+msgstr "Verringern"
+
+msgid "common.increase"
+msgstr "Erhöhen"
+
+msgid "common.filter"
+msgstr "Filter"
+
+msgid "common.clearFilters"
+msgstr "Filter zurücksetzen"
+
+msgid "notifications.error"
+msgstr "Fehler"
+
+msgid "notifications.info"
+msgstr "Benachrichtigung"
+
+msgid "statusbar.notifications"
+msgstr "Fehler: {count}"
+
+msgid "statusbar.terminal"
+msgstr "Terminal"
+
+msgid "statusbar.tasks"
+msgstr "Aufgaben"
+
+msgid "logs.title"
+msgstr "Benachrichtigungen"
+
+msgid "terminal.title"
+msgstr "Terminal"
+
+msgid "logs.empty"
+msgstr "Nichts anzuzeigen."
+
+msgid "logs.copy"
+msgstr "Kopieren"
+
+msgid "logs.copyAll"
+msgstr "Alle kopieren"
+
+msgid "logs.clear"
+msgstr "Leeren"
+
+msgid "logs.filter"
+msgstr "Anzeigen"
+
+msgid "logs.level.error"
+msgstr "Fehler"
+
+msgid "logs.level.info"
+msgstr "Meldungen"
+
+msgid "tasks.title"
+msgstr "Aufgaben"
+
+msgid "tasks.empty"
+msgstr "Keine Aufgaben."
+
+msgid "tasks.clear"
+msgstr "Erledigte leeren"
+
+msgid "tasks.kind.sync"
+msgstr "Synchronisieren"
+
+msgid "tasks.kind.check"
+msgstr "Nach Updates suchen"
+
+msgid "tasks.kind.update-skill"
+msgstr "Skill aktualisieren"
+
+msgid "tasks.kind.refresh-projects"
+msgstr "Projekte aktualisieren"
+
+msgid "tasks.status.queued"
+msgstr "In Warteschlange"
+
+msgid "tasks.status.running"
+msgstr "Läuft"
+
+msgid "tasks.status.done"
+msgstr "Fertig"
+
+msgid "tasks.status.error"
+msgstr "Fehlgeschlagen"
+
+msgid "repositories.empty"
+msgstr "Noch keine Repositories hinzugefügt."
+
+msgid "repositories.add"
+msgstr "Repository hinzufügen"
+
+msgid "repositories.lfs"
+msgstr "LFS"
+
+msgid "repositories.lastFetched"
+msgstr "Zuletzt abgerufen: {when}"
+
+msgid "repositories.neverFetched"
+msgstr "Nie abgerufen"
+
+msgid "repositories.addRemote"
+msgstr "Remote-URL"
+
+msgid "repositories.invalidRemote"
+msgstr "Gültige Remote-URL eingeben (https://... oder git@host:pfad)."
+
+msgid "repositories.addName"
+msgstr "Name"
+
+msgid "repositories.edit"
+msgstr "Repository bearbeiten"
+
+msgid "repositories.save"
+msgstr "Speichern"
+
+msgid "repositories.sync"
+msgstr "Sync"
+
+msgid "repositories.syncing"
+msgstr "Wird synchronisiert"
+
+msgid "repositories.delete"
+msgstr "Löschen"
+
+msgid "repositories.deleteConfirm"
+msgstr "Löschen bestätigen"
+
+msgid "repositories.hasUpdate"
+msgstr "Update verfügbar"
+
+msgid "repositories.viewError"
+msgstr "Zum Anzeigen des Fehlers klicken"
+
+msgid "repositories.copyBranch"
+msgstr "Branch-Namen kopieren"
+
+msgid "repositories.branchCopied"
+msgstr "Branch-Name in die Zwischenablage kopiert"
+
+msgid "repositories.copyRemote"
+msgstr "Link kopieren"
+
+msgid "repositories.remoteCopied"
+msgstr "Remote-URL in die Zwischenablage kopiert"
+
+msgid "repositories.branch"
+msgstr "Branch"
+
+msgid "repositories.branchSearch"
+msgstr "Branches suchen"
+
+msgid "repositories.branchNone"
+msgstr "Kein passender Branch"
+
+msgid "repositories.skillCount.one"
+msgstr "{count} Fähigkeit"
+
+msgid "repositories.skillCount.other"
+msgstr "{count} Fähigkeiten"
+
+msgid "repositories.searchFound.one"
+msgstr "{count} Repository gefunden"
+
+msgid "repositories.searchFound.other"
+msgstr "{count} Repositories gefunden"
+
+msgid "repositories.searchTotal.one"
+msgstr "{count} Repository insgesamt"
+
+msgid "repositories.searchTotal.other"
+msgstr "{count} Repositories insgesamt"
+
+msgid "repositories.showAll"
+msgstr "Alle Repositories anzeigen"
+
+msgid "projects.empty"
+msgstr "Noch keine Projekte erfasst."
+
+msgid "projects.add"
+msgstr "Projekt hinzufügen"
+
+msgid "projects.addedAt"
+msgstr "Hinzugefügt {when}"
+
+msgid "projects.edit"
+msgstr "Projekt bearbeiten"
+
+msgid "projects.name"
+msgstr "Name"
+
+msgid "projects.remove"
+msgstr "Projekt entfernen"
+
+msgid "projects.removeConfirm"
+msgstr "Entfernen bestätigen"
+
+msgid "projects.removeKeepsFolder"
+msgstr "Entfernt das Projekt aus der Liste. Der Ordner bleibt auf der Festplatte."
+
+msgid "projects.changeFolder"
+msgstr "Ordner ändern"
+
+msgid "projects.open"
+msgstr "Projekt öffnen"
+
+msgid "projects.openInFileManager"
+msgstr "Im Dateimanager öffnen"
+
+msgid "projects.openFailed"
+msgstr "Projekt konnte nicht geöffnet werden"
+
+msgid "projects.missing"
+msgstr "Der Ordner wurde gelöscht oder verschoben"
+
+msgid "projects.copyPath"
+msgstr "Vollständigen Pfad kopieren"
+
+msgid "projects.pathCopied"
+msgstr "Pfad in die Zwischenablage kopiert"
+
+msgid "projects.skillCount.one"
+msgstr "{count} Fähigkeit"
+
+msgid "projects.skillCount.other"
+msgstr "{count} Fähigkeiten"
+
+msgid "projects.fromRepos"
+msgstr "{count} aus Repos"
+
+msgid "projects.agentCount.one"
+msgstr "{count} Agent"
+
+msgid "projects.agentCount.other"
+msgstr "{count} Agenten"
+
+msgid "projects.fromReposHint.one"
+msgstr "{count} Fähigkeit aus Repositories installiert"
+
+msgid "projects.fromReposHint.other"
+msgstr "{count} Fähigkeiten aus Repositories installiert"
+
+msgid "projects.skillCountHint.one"
+msgstr "Insgesamt {count} Fähigkeit im Projekt"
+
+msgid "projects.skillCountHint.other"
+msgstr "Insgesamt {count} Fähigkeiten im Projekt"
+
+msgid "projects.agentsHint.one"
+msgstr "Konfigurationen für {count} Agent vorhanden"
+
+msgid "projects.agentsHint.other"
+msgstr "Konfigurationen für {count} Agenten vorhanden"
+
+msgid "projects.mcpCount"
+msgstr "{count} MCP"
+
+msgid "projects.mcpHint.one"
+msgstr "{count} MCP-Server aus Repositories installiert"
+
+msgid "projects.mcpHint.other"
+msgstr "{count} MCP-Server aus Repositories installiert"
+
+msgid "projects.searchFound.one"
+msgstr "{count} Projekt gefunden"
+
+msgid "projects.searchFound.other"
+msgstr "{count} Projekte gefunden"
+
+msgid "projects.searchTotal.one"
+msgstr "{count} Projekt insgesamt"
+
+msgid "projects.searchTotal.other"
+msgstr "{count} Projekte insgesamt"
+
+msgid "projects.showAll"
+msgstr "Alle Projekte anzeigen"
+
+msgid "skills.empty"
+msgstr "Noch keine Fähigkeiten installiert."
+
+msgid "skills.add"
+msgstr "Skill installieren"
+
+msgid "skills.searchPlaceholder"
+msgstr "Skills suchen"
+
+msgid "skills.filterAgent"
+msgstr "Agent"
+
+msgid "skills.allAgents"
+msgstr "Alle Agenten"
+
+msgid "skills.noVersion"
+msgstr "Keine Version"
+
+msgid "skills.installedFor"
+msgstr "Installiert für"
+
+msgid "skills.scope.project"
+msgstr "Projekt"
+
+msgid "skills.scope.global"
+msgstr "Global"
+
+msgid "skills.source.repo"
+msgstr "Aus Repository"
+
+msgid "skills.source.local"
+msgstr "Aus lokalem Pfad"
+
+msgid "skills.details.title"
+msgstr "Skill-Details"
+
+msgid "skills.details.files"
+msgstr "{n} Dateien"
+
+msgid "skills.details.hooks"
+msgstr "{n} Hooks"
+
+msgid "skills.details.installedAt"
+msgstr "Installiert: {when}"
+
+msgid "skills.details.destination"
+msgstr "Ziel"
+
+msgid "skills.verify"
+msgstr "Prüfen"
+
+msgid "skills.update"
+msgstr "Aktualisieren"
+
+msgid "skills.source"
+msgstr "Anzeigemodus"
+
+msgid "skills.source.repositories"
+msgstr "Repositories"
+
+msgid "skills.source.projects"
+msgstr "Projekte"
+
+msgid "skills.filterRepositories"
+msgstr "Repositories"
+
+msgid "skills.filterRepositoriesPlaceholder"
+msgstr "Alle Repositories"
+
+msgid "skills.filterRepositoriesEmpty"
+msgstr "Kein passendes Repository"
+
+msgid "skills.filterProjects"
+msgstr "Projekte"
+
+msgid "skills.filterProjectsPlaceholder"
+msgstr "Alle Projekte"
+
+msgid "skills.filterProjectsEmpty"
+msgstr "Kein passendes Projekt"
+
+msgid "skills.action.add"
+msgstr "Installieren"
+
+msgid "skills.action.save"
+msgstr "Speichern"
+
+msgid "skills.action.reset"
+msgstr "Zurücksetzen"
+
+msgid "skills.showAll"
+msgstr "Alle Skills anzeigen"
+
+msgid "skills.emptyRepositories"
+msgstr "In deinen Repositories wurden keine Skills gefunden."
+
+msgid "skills.emptyProjects"
+msgstr "Noch keine Projekte erfasst."
+
+msgid "skills.status.add"
+msgstr "Skill wird hinzugefügt"
+
+msgid "skills.status.remove"
+msgstr "Skill wird entfernt"
+
+msgid "skills.status.present"
+msgstr "Skill bereits installiert"
+
+msgid "skills.installPending"
+msgstr "Skills installieren kommt bald ({count} ausgewählt)"
+
+msgid "skills.savePending"
+msgstr "Änderungen speichern kommt bald (+{add} / -{remove})"
+
+msgid "skills.install.title"
+msgstr "Skills installieren"
+
+msgid "skills.install.chooseProject"
+msgstr "Projekt"
+
+msgid "skills.install.agents"
+msgstr "Ausgewählte Agenten"
+
+msgid "skills.install.agentsPlaceholder"
+msgstr "Agenten wählen"
+
+msgid "skills.install.next"
+msgstr "Weiter"
+
+msgid "skills.install.back"
+msgstr "Zurück"
+
+msgid "skills.install.confirm"
+msgstr "Bestätigen?"
+
+msgid "skills.install.installing"
+msgstr "Änderungen werden angewendet"
+
+msgid "skills.install.summary"
+msgstr "+{add} / -{remove}"
+
+msgid "skills.save.title"
+msgstr "Änderungen prüfen"
+
+msgid "skills.save.confirm"
+msgstr "Bestätigen?"
+
+msgid "skills.save.empty"
+msgstr "Keine Änderungen anzuwenden"
+
+msgid "skills.col.project"
+msgstr "Projekt"
+
+msgid "skills.col.repository"
+msgstr "Repository"
+
+msgid "skills.col.skill"
+msgstr "Skill"
+
+msgid "skills.col.action"
+msgstr "Aktion"
+
+msgid "skills.col.agents"
+msgstr "Agent"
+
+msgid "skills.change.install"
+msgstr "Installieren"
+
+msgid "skills.change.remove"
+msgstr "Entfernen"
+
+msgid "skills.agentsLabel"
+msgstr "Agenten"
+
+msgid "skills.agentsTooltip"
+msgstr "Verwendete Agenten"
+
+msgid "skills.agentsChanged"
+msgstr "Agenten geändert"
+
+msgid "skills.updateSkill"
+msgstr "Skill aktualisieren"
+
+msgid "skills.updateRepo"
+msgstr "Skills im Repository aktualisieren"
+
+msgid "skills.updateGroup"
+msgstr "Skills in der Gruppe aktualisieren"
+
+msgid "skills.updateBadge"
+msgstr "aktualisieren"
+
+msgid "skills.unlinked"
+msgstr "losgelöst"
+
+msgid "skills.addRepo"
+msgstr "Repository hinzufügen"
+
+msgid "skills.local"
+msgstr "lokal"
+
+msgid "skills.localHint"
+msgstr "Lokaler, handgeschriebener Skill"
+
+msgid "skills.rulesBadge"
+msgstr "Regeln"
+
+msgid "skills.rulesHint"
+msgstr "Der Skill hat Regeln"
+
+msgid "skills.searchFound.one"
+msgstr "{count} Skill gefunden"
+
+msgid "skills.searchFound.other"
+msgstr "{count} Skills gefunden"
+
+msgid "skills.searchTotal.one"
+msgstr "{count} Skill insgesamt"
+
+msgid "skills.searchTotal.other"
+msgstr "{count} Skills insgesamt"
+
+msgid "mcp.empty"
+msgstr "Noch keine MCP-Server vorhanden."
+
+msgid "mcp.searchFound.one"
+msgstr "{count} MCP-Server gefunden"
+
+msgid "mcp.searchFound.other"
+msgstr "{count} MCP-Server gefunden"
+
+msgid "mcp.searchTotal.one"
+msgstr "{count} MCP-Server insgesamt"
+
+msgid "mcp.searchTotal.other"
+msgstr "{count} MCP-Server insgesamt"
+
+msgid "mcp.showAll"
+msgstr "Alle MCP-Server anzeigen"
+
+msgid "mcp.add"
+msgstr "MCP hinzufügen"
+
+msgid "mcp.addTitle"
+msgstr "MCP-Server hinzufügen"
+
+msgid "mcp.editTitle"
+msgstr "MCP-Server bearbeiten"
+
+msgid "mcp.edit"
+msgstr "Bearbeiten"
+
+msgid "mcp.install"
+msgstr "Installieren"
+
+msgid "mcp.installMcp"
+msgstr "MCP installieren"
+
+msgid "mcp.installTitle"
+msgstr "{name} installieren"
+
+msgid "mcp.remove"
+msgstr "Entfernen"
+
+msgid "mcp.update"
+msgstr "Aktualisieren"
+
+msgid "mcp.cancel"
+msgstr "Abbrechen"
+
+msgid "mcp.save"
+msgstr "Speichern"
+
+msgid "mcp.copy"
+msgstr "Kopieren"
+
+msgid "mcp.copiedToClipboard"
+msgstr "In die Zwischenablage kopiert"
+
+msgid "mcp.goToRepository"
+msgstr "Zum Repository"
+
+msgid "mcp.rulesBadge"
+msgstr "Regeln"
+
+msgid "mcp.protocol.stdio"
+msgstr "stdio"
+
+msgid "mcp.protocol.http"
+msgstr "http"
+
+msgid "mcp.protocol.sse"
+msgstr "sse"
+
+msgid "mcp.paramsHelp"
+msgstr "Parameter {name} werden in URL, Headern, Befehl, Argumenten, Umgebungsvariablen und Regeln unterstützt."
+
+msgid "mcp.field.name"
+msgstr "Name"
+
+msgid "mcp.namePlaceholder"
+msgstr "z. B. GitHub MCP"
+
+msgid "mcp.field.type"
+msgstr "Typ"
+
+msgid "mcp.field.url"
+msgstr "URL"
+
+msgid "mcp.urlPlaceholder"
+msgstr "https://example.com/{token}"
+
+msgid "mcp.field.headers"
+msgstr "Header"
+
+msgid "mcp.headerNamePlaceholder"
+msgstr "Header-Name"
+
+msgid "mcp.headerValuePlaceholder"
+msgstr "Header-Wert"
+
+msgid "mcp.addHeader"
+msgstr "Header hinzufügen"
+
+msgid "mcp.field.command"
+msgstr "Befehl"
+
+msgid "mcp.commandPlaceholder"
+msgstr "npx some-mcp-server"
+
+msgid "mcp.field.arguments"
+msgstr "Argumente"
+
+msgid "mcp.argumentPlaceholder"
+msgstr "Argument"
+
+msgid "mcp.addArgument"
+msgstr "Argument hinzufügen"
+
+msgid "mcp.field.env"
+msgstr "Umgebungsvariablen"
+
+msgid "mcp.varNamePlaceholder"
+msgstr "Variablenname"
+
+msgid "mcp.varValuePlaceholder"
+msgstr "Variablenwert"
+
+msgid "mcp.addVariable"
+msgstr "Variable hinzufügen"
+
+msgid "mcp.field.rules"
+msgstr "Regeln"
+
+msgid "mcp.rulesPlaceholder"
+msgstr "Anweisungen, die beim Installieren dieses Servers in die Regel-/Anleitungsdatei des Agenten eingefügt werden."
+
+msgid "mcp.validation.nameRequired"
+msgstr "Name ist erforderlich."
+
+msgid "mcp.validation.selectType"
+msgstr "Wählen Sie einen Transporttyp."
+
+msgid "mcp.validation.commandRequired"
+msgstr "Für stdio-Server ist ein Befehl erforderlich."
+
+msgid "mcp.validation.urlRequired"
+msgstr "Für http/sse-Server ist eine URL erforderlich."
+
+msgid "mcp.validation.invalidParam"
+msgstr "Ungültiger Parameter ({reason}) an Position {index}."
+
+msgid "mcp.field.project"
+msgstr "Projekt"
+
+msgid "mcp.chooseProject"
+msgstr "Projekt wählen"
+
+msgid "mcp.filterProjectsEmpty"
+msgstr "Kein passendes Projekt"
+
+msgid "mcp.field.agents"
+msgstr "Agenten"
+
+msgid "mcp.field.parameters"
+msgstr "Parameter"
+
+msgid "mcp.codexGlobalNote"
+msgstr "Codex installiert global (nicht auf dieses Projekt beschränkt)."
+
+msgid "mcp.transportUnsupported"
+msgstr "{agent} kann den Transport {transport} in seiner nativen Konfiguration nicht abbilden."
+
+msgid "mcp.skippedAgents"
+msgstr "{count} Agent(en) wurden übersprungen: Der Transport des Presets wird nicht unterstützt."
+
+msgid "mcp.needsParamsNotice"
+msgstr "Diese MCP-Installationen benötigen Parameter, bevor sie hinzugefügt werden können:"
+
+msgid "mcp.delete"
+msgstr "Löschen"
+
+msgid "mcp.deleteConfirmTitle"
+msgstr "{name} löschen?"
+
+msgid "mcp.deleteConfirmBody"
+msgstr "Dies kann nicht rückgängig gemacht werden."
+
+msgid "mcp.detailsTitle"
+msgstr "MCP-Server-Details"
+
+msgid "mcp.view.label"
+msgstr "Anzeigen als"
+
+msgid "mcp.view.tiles"
+msgstr "Kacheln"
+
+msgid "mcp.view.tree"
+msgstr "Baum"
+
+msgid "mcp.componentsTitle"
+msgstr "Komponenten"
+
+msgid "mcp.managementTitle"
+msgstr "Verwaltung"
+
+msgid "settings.comingSoon"
+msgstr "Einstellungen folgen in Kürze."
+
+msgid "settings.section.general"
+msgstr "Allgemein"
+
+msgid "settings.section.updates"
+msgstr "Updates"
+
+msgid "settings.section.agents"
+msgstr "Agenten"
+
+msgid "settings.section.executables"
+msgstr "Ausführbare Dateien"
+
+msgid "settings.section.security"
+msgstr "Sicherheit"
+
+msgid "settings.section.notifications"
+msgstr "Benachrichtigungen"
+
+msgid "settings.valid"
+msgstr "Gültig"
+
+msgid "settings.invalid"
+msgstr "Ungültig"
+
+msgid "settings.openConfig"
+msgstr "Konfigurationsdatei öffnen"
+
+msgid "settings.openConfigInEditor"
+msgstr "Konfigurationsdatei in einem Editor öffnen"
+
+msgid "settings.editor.defaultApp"
+msgstr "In Standard-App öffnen"
+
+msgid "settings.openConfigFailed"
+msgstr "Konfigurationsdatei konnte nicht geöffnet werden"
+
+msgid "settings.theme"
+msgstr "Design"
+
+msgid "settings.animations"
+msgstr "Animationen"
+
+msgid "settings.animationsHint"
+msgstr "Geschwindigkeit der Ein- und Ausblendanimationen in der gesamten Oberfläche"
+
+msgid "settings.animations.fast"
+msgstr "Schnell"
+
+msgid "settings.animations.normal"
+msgstr "Normal"
+
+msgid "settings.animations.off"
+msgstr "Aus"
+
+msgid "settings.theme.system"
+msgstr "System"
+
+msgid "settings.theme.light"
+msgstr "Hell"
+
+msgid "settings.theme.dark"
+msgstr "Dunkel"
+
+msgid "settings.language"
+msgstr "Sprache"
+
+msgid "settings.languageEmpty"
+msgstr "Keine passende Sprache"
+
+msgid "settings.section.repositories"
+msgstr "Repositories"
+
+msgid "settings.section.projects"
+msgstr "Projekte"
+
+msgid "settings.git"
+msgstr "Git"
+
+msgid "settings.gitDescription"
+msgstr "Pfad zur Git-Programmdatei"
+
+msgid "settings.updates.mode"
+msgstr "Aktualisierungen"
+
+msgid "settings.updates.mode.manual"
+msgstr "Manuell"
+
+msgid "settings.updates.mode.onStartup"
+msgstr "Beim Start"
+
+msgid "settings.updates.mode.scheduled"
+msgstr "Geplant"
+
+msgid "settings.updates.interval"
+msgstr "Aktualisierungsintervall"
+
+msgid "settings.projects.checkInterval"
+msgstr "Ordner-Prüfintervall"
+
+msgid "settings.interval.minutesUnit"
+msgstr "Min"
+
+msgid "settings.interval.hoursUnit"
+msgstr "Std"
+
+msgid "settings.agents.enabled"
+msgstr "Aktivierte Agenten"
+
+msgid "settings.agents.placeholder"
+msgstr "Agenten wählen"
+
+msgid "settings.agents.selected"
+msgstr "Ausgewählt: {count}"
+
+msgid "settings.notifications.enabled"
+msgstr "Systembenachrichtigungen"
+
+msgid "config.invalidBanner"
+msgstr "Die Konfiguration enthält ungültige Abschnitte. Standardwerte werden verwendet. Führen Sie \"skillkeeper config validate\" aus."
+
+msgid "skills.count"
+msgstr "{n} Fähigkeit(en) installiert"

@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "apps/desktop/src-tauri",
+    "crates/skillkeeper-core",
+    "crates/skillkeeper-config",
+    "crates/skillkeeper-agents",
+    "crates/skillkeeper-cli",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0-rc.2"
+license = "Apache-2.0"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml_ng = "0.10"
+toml = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+thiserror = "2"
+uuid = { version = "1", features = ["v4"] }
+regex = "1"
+ts-rs = "12"

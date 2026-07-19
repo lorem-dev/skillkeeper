@@ -1,0 +1,935 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: zh-tw\n"
+
+msgid "app.title"
+msgstr "SkillKeeper"
+
+msgid "nav.repositories"
+msgstr "儲存庫"
+
+msgid "nav.skills"
+msgstr "技能"
+
+msgid "nav.projects"
+msgstr "專案"
+
+msgid "nav.mcp"
+msgstr "MCP"
+
+msgid "nav.settings"
+msgstr "設定"
+
+msgid "menu.view"
+msgstr "檢視"
+
+msgid "menu.about"
+msgstr "關於 SkillKeeper"
+
+msgid "menu.openSettings"
+msgstr "開啟設定"
+
+msgid "menu.edit"
+msgstr "編輯"
+
+msgid "menu.window"
+msgstr "視窗"
+
+msgid "menu.help"
+msgstr "輔助說明"
+
+msgid "menu.undo"
+msgstr "還原"
+
+msgid "menu.redo"
+msgstr "重做"
+
+msgid "menu.cut"
+msgstr "剪下"
+
+msgid "menu.copy"
+msgstr "拷貝"
+
+msgid "menu.paste"
+msgstr "貼上"
+
+msgid "menu.pasteAndMatchStyle"
+msgstr "貼上並符合樣式"
+
+msgid "menu.delete"
+msgstr "刪除"
+
+msgid "menu.selectAll"
+msgstr "全選"
+
+msgid "menu.minimize"
+msgstr "縮到最小"
+
+msgid "menu.zoom"
+msgstr "縮放"
+
+msgid "menu.close"
+msgstr "關閉"
+
+msgid "menu.services"
+msgstr "服務"
+
+msgid "menu.hide"
+msgstr "隱藏 SkillKeeper"
+
+msgid "menu.hideOthers"
+msgstr "隱藏其他"
+
+msgid "menu.showAll"
+msgstr "全部顯示"
+
+msgid "menu.quit"
+msgstr "結束 SkillKeeper"
+
+msgid "about.version"
+msgstr "版本 {version}"
+
+msgid "about.tagline"
+msgstr "為 AI 助理安裝與管理技能"
+
+msgid "common.loading"
+msgstr "載入中"
+
+msgid "common.errorPrefix"
+msgstr "錯誤：{message}"
+
+msgid "common.refresh"
+msgstr "重新整理"
+
+msgid "common.comingSoon"
+msgstr "即將推出"
+
+msgid "common.close"
+msgstr "關閉"
+
+msgid "common.clear"
+msgstr "清除"
+
+msgid "common.goToSkills"
+msgstr "前往技能"
+
+msgid "common.goToMcp"
+msgstr "前往 MCP"
+
+msgid "skills.resetFilters"
+msgstr "重置篩選條件"
+
+msgid "skills.componentsTitle"
+msgstr "元件"
+
+msgid "skills.managementTitle"
+msgstr "管理"
+
+msgid "common.search"
+msgstr "搜尋"
+
+msgid "common.decrease"
+msgstr "減少"
+
+msgid "common.increase"
+msgstr "增加"
+
+msgid "common.filter"
+msgstr "篩選"
+
+msgid "common.clearFilters"
+msgstr "重置篩選條件"
+
+msgid "notifications.error"
+msgstr "錯誤"
+
+msgid "notifications.info"
+msgstr "通知"
+
+msgid "statusbar.notifications"
+msgstr "錯誤：{count}"
+
+msgid "statusbar.terminal"
+msgstr "終端機"
+
+msgid "statusbar.tasks"
+msgstr "工作"
+
+msgid "logs.title"
+msgstr "通知"
+
+msgid "terminal.title"
+msgstr "終端機"
+
+msgid "logs.empty"
+msgstr "沒有可顯示的內容。"
+
+msgid "logs.copy"
+msgstr "複製"
+
+msgid "logs.copyAll"
+msgstr "全部複製"
+
+msgid "logs.clear"
+msgstr "清除"
+
+msgid "logs.filter"
+msgstr "顯示"
+
+msgid "logs.level.error"
+msgstr "錯誤"
+
+msgid "logs.level.info"
+msgstr "訊息"
+
+msgid "tasks.title"
+msgstr "工作"
+
+msgid "tasks.empty"
+msgstr "沒有工作。"
+
+msgid "tasks.clear"
+msgstr "清除已完成"
+
+msgid "tasks.kind.sync"
+msgstr "同步"
+
+msgid "tasks.kind.check"
+msgstr "檢查更新"
+
+msgid "tasks.kind.update-skill"
+msgstr "更新技能"
+
+msgid "tasks.kind.refresh-projects"
+msgstr "重新整理專案"
+
+msgid "tasks.status.queued"
+msgstr "已排入佇列"
+
+msgid "tasks.status.running"
+msgstr "執行中"
+
+msgid "tasks.status.done"
+msgstr "完成"
+
+msgid "tasks.status.error"
+msgstr "失敗"
+
+msgid "repositories.empty"
+msgstr "尚未新增任何儲存庫。"
+
+msgid "repositories.add"
+msgstr "新增儲存庫"
+
+msgid "repositories.lfs"
+msgstr "LFS"
+
+msgid "repositories.lastFetched"
+msgstr "上次擷取：{when}"
+
+msgid "repositories.neverFetched"
+msgstr "從未擷取"
+
+msgid "repositories.addRemote"
+msgstr "遠端網址"
+
+msgid "repositories.invalidRemote"
+msgstr "請輸入有效的遠端網址（https://... 或 git@host:path）。"
+
+msgid "repositories.addName"
+msgstr "名稱"
+
+msgid "repositories.edit"
+msgstr "編輯儲存庫"
+
+msgid "repositories.save"
+msgstr "儲存"
+
+msgid "repositories.sync"
+msgstr "同步"
+
+msgid "repositories.syncing"
+msgstr "同步中"
+
+msgid "repositories.delete"
+msgstr "刪除"
+
+msgid "repositories.deleteConfirm"
+msgstr "確認刪除"
+
+msgid "repositories.hasUpdate"
+msgstr "有可用更新"
+
+msgid "repositories.viewError"
+msgstr "按一下以檢視錯誤"
+
+msgid "repositories.copyBranch"
+msgstr "複製分支名稱"
+
+msgid "repositories.branchCopied"
+msgstr "分支名稱已複製到剪貼簿"
+
+msgid "repositories.copyRemote"
+msgstr "複製連結"
+
+msgid "repositories.remoteCopied"
+msgstr "遠端網址已複製到剪貼簿"
+
+msgid "repositories.branch"
+msgstr "分支"
+
+msgid "repositories.branchSearch"
+msgstr "搜尋分支"
+
+msgid "repositories.branchNone"
+msgstr "沒有相符的分支"
+
+msgid "repositories.skillCount.other"
+msgstr "{count} 個技能"
+
+msgid "repositories.searchFound.other"
+msgstr "找到 {count} 個儲存庫"
+
+msgid "repositories.searchTotal.other"
+msgstr "共 {count} 個儲存庫"
+
+msgid "repositories.showAll"
+msgstr "顯示所有儲存庫"
+
+msgid "projects.empty"
+msgstr "尚未追蹤任何專案。"
+
+msgid "projects.add"
+msgstr "新增專案"
+
+msgid "projects.addedAt"
+msgstr "新增於 {when}"
+
+msgid "projects.edit"
+msgstr "編輯專案"
+
+msgid "projects.name"
+msgstr "名稱"
+
+msgid "projects.remove"
+msgstr "移除專案"
+
+msgid "projects.removeConfirm"
+msgstr "確認移除"
+
+msgid "projects.removeKeepsFolder"
+msgstr "從清單中移除專案。資料夾會保留在磁碟上。"
+
+msgid "projects.changeFolder"
+msgstr "變更資料夾"
+
+msgid "projects.open"
+msgstr "開啟專案"
+
+msgid "projects.openInFileManager"
+msgstr "在檔案管理員中開啟"
+
+msgid "projects.openFailed"
+msgstr "無法開啟專案"
+
+msgid "projects.missing"
+msgstr "資料夾已刪除或移動"
+
+msgid "projects.copyPath"
+msgstr "複製完整路徑"
+
+msgid "projects.pathCopied"
+msgstr "路徑已複製到剪貼簿"
+
+msgid "projects.skillCount.other"
+msgstr "{count} 個技能"
+
+msgid "projects.fromRepos"
+msgstr "{count} 個來自儲存庫"
+
+msgid "projects.agentCount.other"
+msgstr "{count} 個代理"
+
+msgid "projects.fromReposHint.other"
+msgstr "已從儲存庫安裝 {count} 個技能"
+
+msgid "projects.skillCountHint.other"
+msgstr "專案中共有 {count} 個技能"
+
+msgid "projects.agentsHint.other"
+msgstr "存在 {count} 個代理的設定"
+
+msgid "projects.mcpCount"
+msgstr "{count} 個 MCP"
+
+msgid "projects.mcpHint.other"
+msgstr "已從儲存庫安裝 {count} 個 MCP 伺服器"
+
+msgid "projects.searchFound.other"
+msgstr "找到 {count} 個專案"
+
+msgid "projects.searchTotal.other"
+msgstr "共 {count} 個專案"
+
+msgid "projects.showAll"
+msgstr "顯示所有專案"
+
+msgid "skills.empty"
+msgstr "尚未安裝任何技能。"
+
+msgid "skills.add"
+msgstr "安裝技能"
+
+msgid "skills.searchPlaceholder"
+msgstr "搜尋技能"
+
+msgid "skills.filterAgent"
+msgstr "代理"
+
+msgid "skills.allAgents"
+msgstr "所有代理"
+
+msgid "skills.noVersion"
+msgstr "沒有版本"
+
+msgid "skills.installedFor"
+msgstr "已安裝於"
+
+msgid "skills.scope.project"
+msgstr "專案"
+
+msgid "skills.scope.global"
+msgstr "全域"
+
+msgid "skills.source.repo"
+msgstr "來自儲存庫"
+
+msgid "skills.source.local"
+msgstr "來自本機路徑"
+
+msgid "skills.details.title"
+msgstr "技能詳細資料"
+
+msgid "skills.details.files"
+msgstr "{n} 個檔案"
+
+msgid "skills.details.hooks"
+msgstr "{n} 個掛鉤"
+
+msgid "skills.details.installedAt"
+msgstr "已安裝：{when}"
+
+msgid "skills.details.destination"
+msgstr "目的地"
+
+msgid "skills.verify"
+msgstr "驗證"
+
+msgid "skills.update"
+msgstr "更新"
+
+msgid "skills.source"
+msgstr "顯示模式"
+
+msgid "skills.source.repositories"
+msgstr "儲存庫"
+
+msgid "skills.source.projects"
+msgstr "專案"
+
+msgid "skills.filterRepositories"
+msgstr "儲存庫"
+
+msgid "skills.filterRepositoriesPlaceholder"
+msgstr "所有儲存庫"
+
+msgid "skills.filterRepositoriesEmpty"
+msgstr "沒有相符的儲存庫"
+
+msgid "skills.filterProjects"
+msgstr "專案"
+
+msgid "skills.filterProjectsPlaceholder"
+msgstr "所有專案"
+
+msgid "skills.filterProjectsEmpty"
+msgstr "沒有相符的專案"
+
+msgid "skills.action.add"
+msgstr "安裝"
+
+msgid "skills.action.save"
+msgstr "儲存"
+
+msgid "skills.action.reset"
+msgstr "重設"
+
+msgid "skills.showAll"
+msgstr "顯示所有技能"
+
+msgid "skills.emptyRepositories"
+msgstr "在您的儲存庫中找不到技能。"
+
+msgid "skills.emptyProjects"
+msgstr "尚未追蹤任何專案。"
+
+msgid "skills.status.add"
+msgstr "將新增技能"
+
+msgid "skills.status.remove"
+msgstr "將移除技能"
+
+msgid "skills.status.present"
+msgstr "技能已安裝"
+
+msgid "skills.installPending"
+msgstr "安裝技能即將推出（已選取 {count} 個）"
+
+msgid "skills.savePending"
+msgstr "儲存變更即將推出（+{add} / -{remove}）"
+
+msgid "skills.install.title"
+msgstr "安裝技能"
+
+msgid "skills.install.chooseProject"
+msgstr "專案"
+
+msgid "skills.install.agents"
+msgstr "已選取的代理"
+
+msgid "skills.install.agentsPlaceholder"
+msgstr "選擇代理"
+
+msgid "skills.install.next"
+msgstr "下一步"
+
+msgid "skills.install.back"
+msgstr "上一步"
+
+msgid "skills.install.confirm"
+msgstr "確認？"
+
+msgid "skills.install.installing"
+msgstr "正在套用變更"
+
+msgid "skills.install.summary"
+msgstr "+{add} / -{remove}"
+
+msgid "skills.save.title"
+msgstr "檢視變更"
+
+msgid "skills.save.confirm"
+msgstr "確認？"
+
+msgid "skills.save.empty"
+msgstr "沒有要套用的變更"
+
+msgid "skills.col.project"
+msgstr "專案"
+
+msgid "skills.col.repository"
+msgstr "儲存庫"
+
+msgid "skills.col.skill"
+msgstr "技能"
+
+msgid "skills.col.action"
+msgstr "動作"
+
+msgid "skills.col.agents"
+msgstr "代理"
+
+msgid "skills.change.install"
+msgstr "安裝"
+
+msgid "skills.change.remove"
+msgstr "移除"
+
+msgid "skills.agentsLabel"
+msgstr "代理"
+
+msgid "skills.agentsTooltip"
+msgstr "使用的代理"
+
+msgid "skills.agentsChanged"
+msgstr "代理已變更"
+
+msgid "skills.updateSkill"
+msgstr "更新技能"
+
+msgid "skills.updateRepo"
+msgstr "更新儲存庫中的技能"
+
+msgid "skills.updateGroup"
+msgstr "更新群組中的技能"
+
+msgid "skills.updateBadge"
+msgstr "更新"
+
+msgid "skills.unlinked"
+msgstr "已分離"
+
+msgid "skills.addRepo"
+msgstr "新增儲存庫"
+
+msgid "skills.local"
+msgstr "本機"
+
+msgid "skills.localHint"
+msgstr "手動撰寫的本機技能"
+
+msgid "skills.rulesBadge"
+msgstr "規則"
+
+msgid "skills.rulesHint"
+msgstr "此技能包含規則"
+
+msgid "skills.searchFound.other"
+msgstr "找到 {count} 個技能"
+
+msgid "skills.searchTotal.other"
+msgstr "共 {count} 個技能"
+
+msgid "mcp.empty"
+msgstr "尚無 MCP 伺服器。"
+
+msgid "mcp.searchFound.other"
+msgstr "找到 {count} 個 MCP 伺服器"
+
+msgid "mcp.searchTotal.other"
+msgstr "共 {count} 個 MCP 伺服器"
+
+msgid "mcp.showAll"
+msgstr "顯示所有 MCP 伺服器"
+
+msgid "mcp.add"
+msgstr "新增 MCP"
+
+msgid "mcp.addTitle"
+msgstr "新增 MCP 伺服器"
+
+msgid "mcp.editTitle"
+msgstr "編輯 MCP 伺服器"
+
+msgid "mcp.edit"
+msgstr "編輯"
+
+msgid "mcp.install"
+msgstr "安裝"
+
+msgid "mcp.installMcp"
+msgstr "安裝 MCP"
+
+msgid "mcp.installTitle"
+msgstr "安裝 {name}"
+
+msgid "mcp.remove"
+msgstr "移除"
+
+msgid "mcp.update"
+msgstr "更新"
+
+msgid "mcp.cancel"
+msgstr "取消"
+
+msgid "mcp.save"
+msgstr "儲存"
+
+msgid "mcp.copy"
+msgstr "複製"
+
+msgid "mcp.copiedToClipboard"
+msgstr "已複製到剪貼簿"
+
+msgid "mcp.goToRepository"
+msgstr "前往儲存庫"
+
+msgid "mcp.rulesBadge"
+msgstr "規則"
+
+msgid "mcp.protocol.stdio"
+msgstr "stdio"
+
+msgid "mcp.protocol.http"
+msgstr "http"
+
+msgid "mcp.protocol.sse"
+msgstr "sse"
+
+msgid "mcp.paramsHelp"
+msgstr "參數 {name} 可用於 URL、標頭、指令、引數、環境變數和規則。"
+
+msgid "mcp.field.name"
+msgstr "名稱"
+
+msgid "mcp.namePlaceholder"
+msgstr "例如 GitHub MCP"
+
+msgid "mcp.field.type"
+msgstr "類型"
+
+msgid "mcp.field.url"
+msgstr "URL"
+
+msgid "mcp.urlPlaceholder"
+msgstr "https://example.com/{token}"
+
+msgid "mcp.field.headers"
+msgstr "標頭"
+
+msgid "mcp.headerNamePlaceholder"
+msgstr "標頭名稱"
+
+msgid "mcp.headerValuePlaceholder"
+msgstr "標頭值"
+
+msgid "mcp.addHeader"
+msgstr "新增標頭"
+
+msgid "mcp.field.command"
+msgstr "指令"
+
+msgid "mcp.commandPlaceholder"
+msgstr "npx some-mcp-server"
+
+msgid "mcp.field.arguments"
+msgstr "引數"
+
+msgid "mcp.argumentPlaceholder"
+msgstr "引數"
+
+msgid "mcp.addArgument"
+msgstr "新增引數"
+
+msgid "mcp.field.env"
+msgstr "環境變數"
+
+msgid "mcp.varNamePlaceholder"
+msgstr "變數名稱"
+
+msgid "mcp.varValuePlaceholder"
+msgstr "變數值"
+
+msgid "mcp.addVariable"
+msgstr "新增變數"
+
+msgid "mcp.field.rules"
+msgstr "規則"
+
+msgid "mcp.rulesPlaceholder"
+msgstr "安裝此伺服器時注入代理規則/指引檔案中的說明。"
+
+msgid "mcp.validation.nameRequired"
+msgstr "名稱為必填。"
+
+msgid "mcp.validation.selectType"
+msgstr "請選擇傳輸類型。"
+
+msgid "mcp.validation.commandRequired"
+msgstr "stdio 伺服器需要指令。"
+
+msgid "mcp.validation.urlRequired"
+msgstr "http/sse 伺服器需要 URL。"
+
+msgid "mcp.validation.invalidParam"
+msgstr "參數無效({reason}),位置 {index}。"
+
+msgid "mcp.field.project"
+msgstr "專案"
+
+msgid "mcp.chooseProject"
+msgstr "選擇專案"
+
+msgid "mcp.field.agents"
+msgstr "代理"
+
+msgid "mcp.field.parameters"
+msgstr "參數"
+
+msgid "mcp.codexGlobalNote"
+msgstr "Codex 為全域安裝(不侷限於此專案)。"
+
+msgid "mcp.transportUnsupported"
+msgstr "{agent} 無法在其原生設定中表達 {transport} 傳輸方式。"
+
+msgid "mcp.skippedAgents"
+msgstr "已略過 {count} 個代理:此預設集的傳輸方式不受支援。"
+
+msgid "mcp.needsParamsNotice"
+msgstr "以下 MCP 安裝需要參數才能新增:"
+
+msgid "mcp.delete"
+msgstr "刪除"
+
+msgid "mcp.deleteConfirmTitle"
+msgstr "刪除 {name}?"
+
+msgid "mcp.deleteConfirmBody"
+msgstr "此操作無法復原。"
+
+msgid "mcp.detailsTitle"
+msgstr "MCP 伺服器詳情"
+
+msgid "mcp.view.label"
+msgstr "顯示為"
+
+msgid "mcp.view.tiles"
+msgstr "平鋪"
+
+msgid "mcp.view.tree"
+msgstr "樹狀"
+
+msgid "mcp.componentsTitle"
+msgstr "元件"
+
+msgid "mcp.managementTitle"
+msgstr "管理"
+
+msgid "settings.comingSoon"
+msgstr "設定畫面即將推出。"
+
+msgid "settings.section.general"
+msgstr "一般"
+
+msgid "settings.section.updates"
+msgstr "更新"
+
+msgid "settings.section.agents"
+msgstr "代理"
+
+msgid "settings.section.executables"
+msgstr "執行檔"
+
+msgid "settings.section.security"
+msgstr "安全性"
+
+msgid "settings.section.notifications"
+msgstr "通知"
+
+msgid "settings.valid"
+msgstr "有效"
+
+msgid "settings.invalid"
+msgstr "無效"
+
+msgid "settings.openConfig"
+msgstr "開啟設定檔"
+
+msgid "settings.openConfigInEditor"
+msgstr "在編輯器中開啟設定檔"
+
+msgid "settings.editor.defaultApp"
+msgstr "以預設應用程式開啟"
+
+msgid "settings.openConfigFailed"
+msgstr "無法開啟設定檔"
+
+msgid "settings.theme"
+msgstr "佈景主題"
+
+msgid "settings.animations"
+msgstr "動畫"
+
+msgid "settings.animationsHint"
+msgstr "整個介面中進入和退出動畫的速度"
+
+msgid "settings.animations.fast"
+msgstr "快速"
+
+msgid "settings.animations.normal"
+msgstr "正常"
+
+msgid "settings.animations.off"
+msgstr "關閉"
+
+msgid "settings.theme.system"
+msgstr "系統"
+
+msgid "settings.theme.light"
+msgstr "淺色"
+
+msgid "settings.theme.dark"
+msgstr "深色"
+
+msgid "settings.language"
+msgstr "語言"
+
+msgid "settings.languageEmpty"
+msgstr "沒有相符的語言"
+
+msgid "settings.section.repositories"
+msgstr "儲存庫"
+
+msgid "settings.section.projects"
+msgstr "專案"
+
+msgid "settings.git"
+msgstr "Git"
+
+msgid "settings.gitDescription"
+msgstr "git 執行檔的路徑"
+
+msgid "settings.updates.mode"
+msgstr "更新檢查"
+
+msgid "settings.updates.mode.manual"
+msgstr "手動"
+
+msgid "settings.updates.mode.onStartup"
+msgstr "啟動時"
+
+msgid "settings.updates.mode.scheduled"
+msgstr "排程"
+
+msgid "settings.updates.interval"
+msgstr "更新間隔"
+
+msgid "settings.projects.checkInterval"
+msgstr "資料夾檢查間隔"
+
+msgid "settings.interval.minutesUnit"
+msgstr "分"
+
+msgid "settings.interval.hoursUnit"
+msgstr "時"
+
+msgid "settings.agents.enabled"
+msgstr "啟用的代理"
+
+msgid "settings.agents.placeholder"
+msgstr "選擇代理"
+
+msgid "settings.agents.selected"
+msgstr "已選取 {count}"
+
+msgid "settings.notifications.enabled"
+msgstr "系統通知"
+
+msgid "config.invalidBanner"
+msgstr "設定包含無效的區段。目前使用預設值。請執行 \"skillkeeper config validate\" 以取得詳細資訊。"
+
+msgid "hooks.requireConsent"
+msgstr "安裝掛鉤需要明確同意（--allow-hooks）。已安裝技能主體；略過掛鉤。"
+
+msgid "skills.count"
+msgstr "已安裝 {n} 個技能"
+
+msgid "about.docs"
+msgstr "文件"
+
+msgid "about.openDocs"
+msgstr "開啟文件"
+
+msgid "about.repo"
+msgstr "程式碼儲存庫"
+
+msgid "about.openRepo"
+msgstr "前往程式碼儲存庫"
+
+msgid "about.license"
+msgstr "授權條款"
+
+msgid "about.openLicense"
+msgstr "檢視授權條款"

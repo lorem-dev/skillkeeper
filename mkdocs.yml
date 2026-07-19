@@ -1,18 +1,59 @@
 site_name: SkillKeeper
+site_url: https://lorem-dev.github.io/skillkeeper/
 repo_url: https://github.com/lorem-dev/skillkeeper
+
 theme:
-  name: readthedocs
+  name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+extra_css:
+  - assets/extra.css
+
+# The header version switcher is populated from mike's versions.json on the
+# deployed gh-pages branch (see .github/workflows/docs.yml).
+extra:
+  version:
+    provider: mike
+
+# The documentation is English-only.
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - Architecture: architecture.md
-  - Skills and Hooks: skills-and-hooks.md
-  - Repositories: repositories.md
-  - Projects: projects.md
-  - Agents: agents.md
-  - MCP Servers: mcp.md
-  - Configuration: configuration.md
-  - CLI Reference: cli.md
-  - Security: security.md
-  - Development: development.md
-  - Releasing: releasing.md
+  - Usage:
+      - Skills and Hooks: usage/skills-and-hooks.md
+      - Repositories: usage/repositories.md
+      - Projects: usage/projects.md
+      - Agents: usage/agents.md
+      - MCP Servers: usage/mcp.md
+      - Configuration: usage/configuration.md
+      - Localization: usage/localization.md
+      - CLI Reference: usage/cli.md
+      - Security: usage/security.md
+  - Development:
+      - Architecture: development/architecture.md
+      - Development: development/development.md
+      - Releasing: development/releasing.md

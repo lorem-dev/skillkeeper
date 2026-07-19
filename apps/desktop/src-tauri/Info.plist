@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!--
+    Merged into the generated macOS bundle Info.plist at bundle time (see
+    bundle.macOS.infoPlist in tauri.conf.json). These TCC usage strings are
+    shown when the app first requests access to protected folders.
+  -->
+  <key>NSDesktopFolderUsageDescription</key>
+  <string>SkillKeeper needs access to open and manage skills in projects on your Desktop.</string>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>SkillKeeper needs access to open and manage skills in projects in your Documents.</string>
+  <key>NSDownloadsFolderUsageDescription</key>
+  <string>SkillKeeper needs access to open and manage skills in projects in your Downloads.</string>
+  <key>NSRemovableVolumesUsageDescription</key>
+  <string>SkillKeeper needs access to open and manage skills in projects on removable volumes.</string>
+  <!--
+    Declare every UI language the app localizes programmatically. This makes
+    NSBundle's preferred localization follow the app's own language override
+    (set via AppleLanguages at startup), so AppKit renders the standard menu
+    items it injects itself (the Window tiling group: Fill, Center, Move &
+    Resize, Full Screen Tile, Remove Window from Set) in that language rather
+    than the development region. Codes are BCP-47 (matching set_process_language).
+  -->
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleAllowMixedLocalizations</key>
+  <true/>
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>en</string>
+    <string>ru</string>
+    <string>de</string>
+    <string>es</string>
+    <string>fr</string>
+    <string>it</string>
+    <string>ja</string>
+    <string>ko</string>
+    <string>pl</string>
+    <string>pt</string>
+    <string>uk</string>
+    <string>be</string>
+    <string>sr-Cyrl</string>
+    <string>sr-Latn</string>
+    <string>zh-Hans</string>
+    <string>zh-Hant</string>
+  </array>
+</dict>
+</plist>

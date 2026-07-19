@@ -1,6 +1,6 @@
 {
   "name": "skillkeeper",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0-rc.2",
   "private": true,
   "type": "module",
   "description": "Install and manage skills and hooks for AI coding agents",
@@ -12,11 +12,10 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "postinstall": "node scripts/ensure-electron.mjs",
-    "dev": "pnpm --filter @skillkeeper/desktop dev",
-    "build": "tsc -b tsconfig.build.json && pnpm --filter @skillkeeper/desktop run build",
-    "build:libs": "tsc -b tsconfig.build.json",
-    "analyze:desktop": "pnpm --filter @skillkeeper/desktop run analyze",
+    "postinstall": "node scripts/gen-i18n.mjs",
+    "dev": "node scripts/gen-i18n.mjs && pnpm --filter @skillkeeper/desktop dev",
+    "build": "node scripts/gen-i18n.mjs && tsc -b tsconfig.build.json && pnpm --filter @skillkeeper/desktop run build",
+    "build:libs": "node scripts/gen-i18n.mjs && tsc -b tsconfig.build.json",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -24,10 +23,17 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "icons": "node scripts/gen-icons.mjs",
+    "i18n": "node scripts/gen-i18n.mjs",
+    "storybook": "pnpm --filter @skillkeeper/desktop run storybook",
+    "docs:install": "node scripts/ensure-mkdocs.mjs",
+    "docs:build": "node scripts/ensure-mkdocs.mjs build",
+    "docs:serve": "node scripts/ensure-mkdocs.mjs serve"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/node": "26.0.1",
     "@vitest/coverage-v8": "4.1.9",
     "eslint": "10.6.0",
@@ -36,6 +42,8 @@
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.3",
+    "gettext-parser": "^8.0.0",
+    "jimp": "^1.6.1",
     "prettier": "3.9.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.62.0",

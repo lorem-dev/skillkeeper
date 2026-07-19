@@ -2,7 +2,7 @@
 
 Status: draft (v0.1)
 Scope: visual language and UI tokens for the SkillKeeper desktop app
-(`apps/desktop`, Electron + React renderer).
+(`apps/desktop`, Tauri + React renderer).
 
 This document defines a self-contained design system for the desktop app. It was
 derived from a reference UI kit (translucent, depth-based interface style) but is
@@ -42,7 +42,7 @@ single source of truth can drive both light and dark themes.
 - Section 2-6 are the human-readable spec and rationale for each token group.
 
 **Single source of truth.** The tokens are implemented once, in
-[`apps/desktop/src/renderer/styles/_tokens.scss`](../../apps/desktop/src/renderer/styles/_tokens.scss).
+[`apps/desktop/src/renderer/styles/_tokens.scss`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/styles/_tokens.scss).
 That file is canonical: the build emits the `--sk-*` CSS custom properties from it,
 and if any value in the tables below ever disagrees with the SCSS, the SCSS wins.
 The tables exist to explain intent, not to be a second copy of the values - update
@@ -153,12 +153,12 @@ next to the fonts).
 ### 3.1 Font setup
 
 The `@font-face` declarations live in
-[`_fonts.scss`](../../apps/desktop/src/renderer/styles/_fonts.scss) and the
+[`_fonts.scss`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/styles/_fonts.scss) and the
 `--sk-font-*` variables in
-[`_tokens.scss`](../../apps/desktop/src/renderer/styles/_tokens.scss); those files
+[`_tokens.scss`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/styles/_tokens.scss); those files
 are the canonical setup. Key points:
 
-- Fonts ship as WOFF2 only (the renderer is Chromium-only). The variable TTFs in
+- Fonts ship as WOFF2 only (every target system WebView supports WOFF2). The variable TTFs in
   `apps/desktop/src/renderer/assets/fonts/` are the source of truth and kept for
   tooling, but the bundler ships only the smaller WOFF2 files.
 - `body` sets `font-family: var(--sk-font-sans)` and `font-optical-sizing: auto`,
@@ -236,7 +236,7 @@ neutral in the center so it concentrates at the rim -- which reads as a rounded
 glass edge) drives `feDisplacementMap`, with an optional gentle chromatic
 aberration. It is applied through `backdrop-filter: url(...)`, built and
 re-measured on resize by the `useGlassRefraction` hook
-([`shared/lib/glassRefraction.ts`](../../apps/desktop/src/renderer/shared/lib/glassRefraction.ts)).
+([`shared/lib/glassRefraction.ts`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/lib/glassRefraction.ts)).
 
 The glass surfaces (`GlassSurface`, the Card `glass` variant, the Button `glass`
 variant, and the Modal panel) clip the effect to their rounded shape
@@ -329,7 +329,7 @@ Tokens: `--sk-ease-standard`, `--sk-duration-fast` (150ms),
 ## 7. Token reference
 
 The complete, canonical token set is
-[`_tokens.scss`](../../apps/desktop/src/renderer/styles/_tokens.scss). That file is
+[`_tokens.scss`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/styles/_tokens.scss). That file is
 the single source of truth; this section describes its shape rather than restating
 the values, so the two can never drift.
 
@@ -344,9 +344,9 @@ Structure of `_tokens.scss`:
   `--sk-ease-*`, `--sk-duration-*`, and `--sk-color-accent`) are declared once in
   `:root`.
 - `_tokens.scss` is composed by
-  [`index.scss`](../../apps/desktop/src/renderer/styles/index.scss) (with
-  [`_fonts.scss`](../../apps/desktop/src/renderer/styles/_fonts.scss) and
-  [`_base.scss`](../../apps/desktop/src/renderer/styles/_base.scss)), which
+  [`index.scss`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/styles/index.scss) (with
+  [`_fonts.scss`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/styles/_fonts.scss) and
+  [`_base.scss`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/styles/_base.scss)), which
   `main.tsx` imports once.
 
 Consuming tokens: reference the emitted custom properties, for example
@@ -395,7 +395,7 @@ Padding `--sk-space-3` vertical, `--sk-space-5` horizontal. Label weight 600,
 `--sk-text-headline`. Icon-only buttons are square with `--sk-radius-pill`.
 
 > Implemented. The reusable primitive is
-> [`shared/ui/Button`](../../apps/desktop/src/renderer/shared/ui/Button/Button.tsx)
+> [`shared/ui/Button`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Button/Button.tsx)
 > (`<Button variant="primary|secondary|plain|destructive|glass">`), with styles in
 > the co-located `Button.scss`. Import it through the kit barrel: `@/shared/ui`.
 
@@ -419,7 +419,7 @@ Both segments use the secondary fill (`--sk-color-fill-2`, hover
 points toward the primary action.
 
 > Implemented as
-> [`shared/ui/SplitButton`](../../apps/desktop/src/renderer/shared/ui/SplitButton/SplitButton.tsx)
+> [`shared/ui/SplitButton`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/SplitButton/SplitButton.tsx)
 > (`icon` / `tooltip` / `onPrimary` / `items` / `size`, plus `glass` for a
 > frosted shell), opening the shared `Menu` (8.8) for its dropdown.
 
@@ -466,7 +466,7 @@ icon in `--sk-color-label-2`.
   full arrow-key tree navigation.
 
 > The tree is implemented as
-> [`shared/ui/TreeView`](../../apps/desktop/src/renderer/shared/ui/TreeView/TreeView.tsx)
+> [`shared/ui/TreeView`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/TreeView/TreeView.tsx)
 > (`TreeNode[]`; single-select via `selectedId`/`onSelect`, or `checkable`
 > selection). Data tables use the companion `Table` primitive (8.12).
 
@@ -479,9 +479,9 @@ A `--sk-glass-regular` surface on the leading edge. Items use `--sk-radius-sm`,
 surface for the desktop window.
 
 > Implemented as a reusable component:
-> [`shared/ui/Sidebar`](../../apps/desktop/src/renderer/shared/ui/Sidebar/Sidebar.tsx)
+> [`shared/ui/Sidebar`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Sidebar/Sidebar.tsx)
 > (`Sidebar` + `SidebarItem`, with an optional leading `Icon`). The app shell in
-> [`app/App.tsx`](../../apps/desktop/src/renderer/app/App.tsx) composes it. The
+> [`app/App.tsx`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/app/App.tsx) composes it. The
 > glass panel includes an opaque `@supports` fallback per Section 4.
 
 ### 8.7 Toolbars
@@ -494,9 +494,9 @@ with the page content; an optional bottom hairline (`--sk-color-separator`) is
 available via the `separator` prop when a view wants a divider under the header.
 Controls are vertically centred regardless of height.
 
-> Implemented as [`shared/ui/Toolbar`](../../apps/desktop/src/renderer/shared/ui/Toolbar/Toolbar.tsx)
+> Implemented as [`shared/ui/Toolbar`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Toolbar/Toolbar.tsx)
 > (`title` / `leading` / `trailing` / `separator`). Compose it through
-> [`shared/ui/Page`](../../apps/desktop/src/renderer/shared/ui/Page/Page.tsx)'s
+> [`shared/ui/Page`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Page/Page.tsx)'s
 > `toolbar` slot; see `SettingsPage`, `ProjectsPage`, and `RepositoriesPage`.
 
 ### 8.8 Menus and popovers
@@ -507,7 +507,7 @@ Controls are vertically centred regardless of height.
 - Popover: `--sk-glass-regular`, `--sk-radius-xl`, `--sk-shadow-2`, with an optional
   arrow toward its anchor. Used for transient detail/edit panels.
 
-> Implemented as [`shared/ui/Menu`](../../apps/desktop/src/renderer/shared/ui/Menu/Menu.tsx):
+> Implemented as [`shared/ui/Menu`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Menu/Menu.tsx):
 > a portaled, window-aware floating list (single/multi/action items) that backs
 > the app's dropdowns. Selection state is owned by the consumer.
 
@@ -527,7 +527,7 @@ Controls are vertically centred regardless of height.
 - Spinner/activity: accent or `--sk-color-label-2`; use for indeterminate waits.
 
 > Spinner implemented as
-> [`shared/ui/Spinner`](../../apps/desktop/src/renderer/shared/ui/Spinner/Spinner.tsx)
+> [`shared/ui/Spinner`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Spinner/Spinner.tsx)
 > (`@/shared/ui`); the app shell uses it for the loading state. The animation is
 > disabled under `prefers-reduced-motion` by the base layer.
 
@@ -543,9 +543,9 @@ checkmark in `--sk-color-accent`. A multi-select variant keeps the list open
 while several options are toggled.
 
 > Implemented as
-> [`shared/ui/Combobox`](../../apps/desktop/src/renderer/shared/ui/Combobox/Combobox.tsx)
+> [`shared/ui/Combobox`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Combobox/Combobox.tsx)
 > (single value) and
-> [`MultiCombobox`](../../apps/desktop/src/renderer/shared/ui/MultiCombobox/MultiCombobox.tsx)
+> [`MultiCombobox`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/MultiCombobox/MultiCombobox.tsx)
 > (multi). `MultiSelect` is the read-only-input sibling: a fixed-width trigger
 > over a multi-select `Menu` listbox.
 
@@ -562,7 +562,7 @@ below (both blend into `--sk-table-surface`, which defaults to
 is unavailable.
 
 > Implemented as
-> [`shared/ui/Table`](../../apps/desktop/src/renderer/shared/ui/Table/Table.tsx)
+> [`shared/ui/Table`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Table/Table.tsx)
 > (`columns` / `rows`, optional `stickyHeader` + `maxBodyHeight`). See also the
 > `TreeView` outline (8.5).
 
@@ -577,7 +577,7 @@ it sits above every other overlay. The reveal fades and scales from the anchored
 edge.
 
 > Implemented as
-> [`shared/ui/Tooltip`](../../apps/desktop/src/renderer/shared/ui/Tooltip/Tooltip.tsx);
+> [`shared/ui/Tooltip`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Tooltip/Tooltip.tsx);
 > sets `role="tooltip"` and wires `aria-describedby`.
 
 ### 8.14 Disclosure control
@@ -590,7 +590,7 @@ open; the content animates open with a jump-free height transition (a `0fr` to
 `aria-expanded` / `aria-controls`. Useful for advanced or secondary sections.
 
 > Implemented as
-> [`shared/ui/DisclosureGroup`](../../apps/desktop/src/renderer/shared/ui/DisclosureGroup/DisclosureGroup.tsx)
+> [`shared/ui/DisclosureGroup`](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/DisclosureGroup/DisclosureGroup.tsx)
 > (`title` / `defaultOpen`).
 
 ### 8.15 Desktop adaptation rules
@@ -625,7 +625,7 @@ imported once from `main.tsx`; `index.html` defaults the renderer to the dark
 theme. The app shell, the four pages, the config banner, and the `Button` / `Page`
 / `Spinner` primitives all run on tokens with co-located styles - no inline
 hardcoded styles remain. The renderer follows the layered architecture in
-[apps/desktop/docs/architecture.md](../../apps/desktop/docs/architecture.md)
+[apps/desktop/docs/architecture.md](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/docs/architecture.md)
 (`shared/ui` for the kit, `pages/` for screens, `app/` for the shell and store).
 
 Standing rules:

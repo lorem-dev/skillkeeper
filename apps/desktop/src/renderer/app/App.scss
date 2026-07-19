@@ -108,17 +108,13 @@
 .sk-app--mac .sk-logs__header {
   // Same size as a page header (same top/bottom padding, so its controls line
   // up with the traffic lights); only the content is shifted right so the title
-  // begins past the lights (top-left) with a comfortable gap. The whole header
-  // drags the window except its controls (its h1 title stays draggable).
+  // begins past the lights (top-left) with a comfortable gap. The header (and
+  // its h1 title) drags the window via `data-tauri-drag-region` tags in the
+  // overlay JSX; the controls, being separate children, never start a drag.
   padding-top: var(--sk-space-4);
   padding-bottom: var(--sk-space-4);
   padding-left: 100px;
-  -webkit-app-region: drag;
-  * {
-    -webkit-app-region: no-drag;
-  }
   h1 {
-    -webkit-app-region: drag;
     font-size: 16px;
     text-align: center;
   }
@@ -129,31 +125,12 @@
 // the lights, so it needs no inset of its own).
 .sk-app--mac .sk-page__header {
   padding-top: var(--sk-space-4);
-  -webkit-app-region: drag;
 }
 
-// Window dragging: the NON-interactive parts of the PAGE header -- the title
-// and the flexible spacer -- are the drag region, while the blocks that hold
-// buttons and other controls stay no-drag so they always take the interaction.
-// -webkit-app-region is a geometric hit-test (not z-index), and no drag element
-// wraps a control, so nothing swallows a click.
-//
-// The full-screen overlays (terminal / tasks / logs) are NOT made draggable:
-// -webkit-app-region ignores opacity/pointer-events, so the always-rendered
-// (but hidden) terminal overlay -- fixed, full-window, z-index 310 -- would
-// otherwise project an invisible drag region over the sidebar and page,
-// swallowing their clicks. The window is dragged via the sidebar spacer and the
-// page header instead.
-.sk-app--mac .sk-toolbar__title,
-.sk-app--mac .sk-toolbar__spacer,
-.sk-app--mac .sk-page__title-row,
-.sk-app--mac .sk-page__title {
-  -webkit-app-region: drag;
-}
-
-.sk-app--mac .sk-toolbar__leading,
-.sk-app--mac .sk-toolbar__title-adornment,
-.sk-app--mac .sk-sidebar__items,
-.sk-app--mac .sk-toolbar__trailing {
-  -webkit-app-region: no-drag;
-}
+// Window dragging on macOS is driven by `data-tauri-drag-region` tags on the
+// non-interactive chrome (the sidebar spacer, the page header + its title and
+// spacer, and each full-screen overlay header + its title), not by CSS: WebKit
+// ignores the old app-region CSS property, so Tauri hit-tests the tagged element
+// under the cursor natively. Because it drags only when the pressed element is
+// tagged (not its descendants), the control blocks stay interactive with no
+// no-drag opt-out. See Toolbar.tsx, Page.tsx, and the overlay pages.
