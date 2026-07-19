@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createTranslator } from './index.js';
+import { createTranslatorFrom } from './translator.js';
+import type { Catalog } from './index.js';
 
 describe('createTranslator', () => {
   it('returns a different value per language for a shared key', () => {
@@ -107,6 +109,23 @@ describe('createTranslator', () => {
     // German only defines one/other; select(2) is "other".
     expect(t.plural('repositories.skillCount', 1)).toBe('1 Fähigkeit');
     expect(t.plural('repositories.skillCount', 2)).toBe('2 Fähigkeiten');
+  });
+
+  it('plural falls back to .other when the exact category key is absent', () => {
+    const primary = { 'x.other': '{count} items' } as unknown as Partial<Catalog>;
+    const t = createTranslatorFrom(primary, {} as Partial<Catalog>, 'en');
+    // count 1 selects "one"; "x.one" is absent in both catalogs, so it falls
+    // back to "x.other".
+    expect(t.plural('x', 1)).toBe('1 items');
+  });
+
+  it('plural resolves a category key found only in the fallback catalog', () => {
+    const fallback = {
+      'x.one': '{count} item',
+      'x.other': '{count} items',
+    } as unknown as Partial<Catalog>;
+    const t = createTranslatorFrom({} as Partial<Catalog>, fallback, 'en');
+    expect(t.plural('x', 1)).toBe('1 item');
   });
 
   it('leaves a placeholder unchanged when its var is not supplied', () => {
