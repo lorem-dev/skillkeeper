@@ -16,9 +16,9 @@ SkillKeeper is designed around a small set of security principles:
    skipped with a clear notice.
 
 3. Git runs as a subprocess with no shell interpolation. SkillKeeper invokes
-   the system `git` binary with argument arrays only (`child_process.execFile`
-   with an array, never a shell string). SkillKeeper never reads private keys
-   or passphrases; these remain in the user's ssh-agent.
+   the system `git` binary with argument arrays only (never a shell string).
+   SkillKeeper never reads private keys or passphrases; these remain in the
+   user's ssh-agent.
 
 4. State writes are atomic. The application state store is written by first
    writing to a temp file and then renaming it, preventing partial writes from
@@ -28,11 +28,12 @@ SkillKeeper is designed around a small set of security principles:
    region is recorded with a SHA-256 hash. `verify` detects any modification
    and reports it explicitly.
 
-6. The desktop renderer is sandboxed. The renderer process has
-   `contextIsolation: true`, `nodeIntegration: false`, and `sandbox: true`.
-   All privileged work crosses IPC to the main process over a narrow, typed
-   `window.skillkeeper` bridge exposed by the preload script. The main process
-   re-validates every IPC request.
+6. The desktop renderer is unprivileged. The renderer is a web UI with no
+   direct host access; it cannot touch the filesystem, Git, or config on its
+   own. All privileged work goes through the Rust Tauri backend over a narrow,
+   typed command/event bridge (`services/bridge/client.ts`, using Tauri
+   `invoke()` and `listen()`). The backend is the authority for the filesystem,
+   Git, config, and state, and re-validates every request.
 
 7. No dynamic code evaluation, no opaque downloads-and-runs. The codebase
    avoids patterns a platform malware scanner would flag.

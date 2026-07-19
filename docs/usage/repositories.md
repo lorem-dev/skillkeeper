@@ -84,8 +84,8 @@ checkout.
 
 ## How Git is invoked
 
-SkillKeeper invokes the system `git` binary via `child_process.execFile` with
-argument arrays only - no shell string interpolation. This design:
+SkillKeeper invokes the system `git` binary as a subprocess with argument
+arrays only - no shell string interpolation. This design:
 
 - Reuses the user's existing SSH config, ssh-agent, and Git LFS setup.
 - Keeps credential handling out of the application.

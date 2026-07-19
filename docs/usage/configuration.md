@@ -24,7 +24,7 @@ skillkeeper config validate
 ## Sectioned validation with default fallback
 
 `config.yaml` is divided into independently-validated sections. Each section
-has a zod schema and a default value. On load:
+has a schema and a default value. On load:
 
 1. Every section is validated separately.
 2. An invalid section is replaced in memory by its default.

@@ -3,37 +3,46 @@
 ## Supported agents
 
 SkillKeeper supports five agents in v1: Claude, Codex, Copilot, Cursor, and
-OpenCode. Agents are extensible via a module registry; new agents are added as
-new modules implementing `AgentAdapter` and registering themselves.
+OpenCode. Agents are extensible via an adapter registry; a new agent is added by
+building an `AgentAdapter` and registering it under its `AgentKind`.
 
 ## Adapter model
 
-Each agent is implemented as an `AgentAdapter`:
+Each agent is an `AgentAdapter` (a value type in the `skillkeeper-agents`
+crate): a struct holding the agent's per-path logic, built either by the
+`make_adapter` factory from an `AdapterSpec` or, for Claude, hand-written. Every
+filesystem-backed method takes the `FsPort`/`HostEnv` ports explicitly and
+returns a `PortResult`:
 
-```ts
-interface AgentAdapter {
-  readonly kind: AgentKind;
-  isAvailable(env: HostEnv): Promise<boolean>;
-  destinationRoot(target: AgentTarget, env: HostEnv): Promise<string>;
-  discoverInstalled(target: AgentTarget, env: HostEnv): Promise<DiscoveredSkill[]>;
-  hookSupport?: HookCapability;
+```rust
+pub struct AgentAdapter {
+    pub kind: AgentKind,
+    pub hook_support: Option<HookCapability>,
+    // ...per-agent closures, invoked through the methods below.
+}
+
+impl AgentAdapter {
+    pub fn is_available(&self, fs: &dyn FsPort, env: &dyn HostEnv) -> PortResult<bool>;
+    pub fn destination_root(&self, target: &AgentTarget, env: &dyn HostEnv) -> PortResult<String>;
+    pub fn guidance_file(&self, fs: &dyn FsPort, target: &AgentTarget, env: &dyn HostEnv) -> PortResult<String>;
+    pub fn discover_installed(&self, fs: &dyn FsPort, target: &AgentTarget, env: &dyn HostEnv) -> PortResult<Vec<DiscoveredSkill>>;
 }
 ```
 
-`destinationRoot` returns the directory where the agent expects to find
-skills for a given target (project-scoped or global). `discoverInstalled`
-returns skills present in that location that SkillKeeper did not install
-(external skills). `hookSupport` is absent for agents that do not accept hooks.
+`destination_root` returns the directory where the agent expects to find skills
+for a given target (project-scoped or global). `discover_installed` returns
+skills present in that location that SkillKeeper did not install (external
+skills). `hook_support` is `None` for agents that do not accept hooks.
 
 `HookCapability` declares the agent's hook strategy (`delimited-text`,
-`json-merge`, or `file`), a `resolveTargetFile` function that returns the
-config file to edit, and (for `delimited-text`) the comment token. The install
-engine uses this to drive hook installs for every agent without knowing the
-agent's concrete type.
+`json-merge`, or `file`), a `resolve_target_file` closure that returns the
+config file to edit, and (for `delimited-text`) the comment token(s). The
+install engine uses this to drive hook installs for every agent without knowing
+the agent's concrete path logic.
 
-The registry is the only place that enumerates concrete agents. Adapters are
-registered by `AgentKind` string. New agents are added as new modules; no
-existing code needs to change.
+The `AdapterRegistry` is the only place that enumerates concrete agents; each is
+registered by its `AgentKind`. New agents are added by supplying a new
+`AdapterSpec`; no existing code needs to change.
 
 ## Agent scopes
 

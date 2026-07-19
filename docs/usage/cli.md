@@ -1,7 +1,8 @@
 # CLI Reference
 
-The SkillKeeper CLI is built with [commander](https://github.com/tj/commander.js).
-All output is localizable. Commands exit with a non-zero code on failure.
+The SkillKeeper CLI is a Rust binary (`skillkeeper`) built with
+[clap](https://github.com/clap-rs/clap). All output is localizable. Commands
+exit with a non-zero code on failure.
 
 A startup warning is printed when `config.yaml` has any invalid section.
 

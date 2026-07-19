@@ -23,16 +23,22 @@ to commit or stash first. The bump must be reviewable as an isolated diff.
 Run `node scripts/bump-version.mjs <version>` with the target version (for
 example `0.1.0-rc.1`). The script:
 - writes `<version>` into the root and all workspace `package.json` files, and
-- promotes `## Development` in `CHANGES.md` to `## Version <version> - <date>`,
+- promotes `## Development` in `CHANGES.md` to `## Version <version>`,
   leaving a fresh empty `## Development` block above it.
 
 If the script exits non-zero, report the error and stop.
 
 ### 3. Review the diff
 
-Run `git diff` and confirm: exactly 7 `package.json` files changed to the new
-version, and `CHANGES.md` shows the promoted section plus a new empty
-`## Development`. No other files changed.
+Run `git diff` and confirm the version bump touched exactly these files:
+- the 3 `package.json` files (root, `packages/i18n`, `apps/desktop`),
+- `apps/desktop/src-tauri/tauri.conf.json` (the Tauri bundle version),
+- `Cargo.toml` (the workspace version every crate inherits), and
+- `CHANGES.md` (the promoted `## Version <v>` section plus a fresh empty
+  `## Development`).
+
+No other files changed. (The old TS domain/CLI packages are gone since the
+Tauri migration, so there are only 3 `package.json` files, not the former set.)
 
 ### 4. Create the release commit
 
