@@ -1,7 +1,7 @@
 /**
  * Zustand store for the SkillKeeper renderer.
  *
- * Holds all UI state derived from IPC calls to the main process. The renderer
+ * Holds all UI state derived from bridge calls to the Rust backend. The renderer
  * never owns domain logic -- it only stores results returned by the bridge.
  */
 import { create } from 'zustand';
@@ -82,23 +82,17 @@ function repoMcpPresetId(repoId: string, group: string | undefined, name: string
   return `repo:${repoId}:${group ?? ''}:${name}`;
 }
 
-// The renderer must not call `@skillkeeper/core`'s runtime exports directly --
-// only its types cross the layer boundary (see architecture.md: "In the
-// renderer, import only TYPES ... cross the IPC bridge instead"). Concretely,
-// `@skillkeeper/core` is one barrel module: importing any single runtime
-// export from it pulls the whole module graph into the renderer bundle,
-// including files that reach for Node's `fs`/`crypto`/`child_process`
-// (`kernel/nodeFs.ts`, `mcp/hashing.ts`, `git/systemGit.ts`), which the sandboxed renderer
-// (`nodeIntegration: false`) cannot run. `parseParams` and `normalizeRemote`
-// happen to be pure and dependency-free in isolation, but importing them still
-// drags that graph in (verified: doing so adds "externalized for browser
-// compatibility" warnings to the renderer build that are otherwise absent).
-// The three helpers below duplicate those small, stable algorithms locally
-// instead, byte-for-byte, so the store never reaches into core's runtime.
+// The domain logic runs in the Rust backend (`skillkeeper-core`) and reaches
+// the renderer only through the typed Tauri bridge -- only TYPES cross the
+// layer boundary (see architecture.md: "In the renderer, import only TYPES ...
+// cross the IPC bridge instead"). A few small, pure MCP algorithms are needed
+// synchronously in the renderer (for live preset editing/update detection), so
+// the three helpers below reimplement them locally, matching the canonical Rust
+// implementations in `skillkeeper-core` (which its `cargo test` suite covers).
 
-/** Mirrors core's `parseParams` (`mcp/params.ts`): scans every string field of
+/** Mirrors the Rust `parse_params` (`skillkeeper-core` `mcp`): scans every string field of
  *  an MCP def for `{param}` placeholders and returns the sorted, deduped set.
- *  Exported so a guard test can pin it to core's `parseParams`. */
+ *  Exported so its behavior can be tested directly. */
 export function scanMcpParams(def: McpServerDef): string[] {
   const names = new Set<string>();
   const scan = (text: string): void => {
@@ -116,10 +110,10 @@ export function scanMcpParams(def: McpServerDef): string[] {
   return [...names].sort();
 }
 
-/** Mirrors core's `normalizeRemote` (`repoRemote.ts`): canonicalizes a git
+/** Mirrors the Rust `normalize_remote` (`skillkeeper-core`): canonicalizes a git
  *  remote URL to `host/path`, lowercased, without transport/user/port/`.git`,
- *  so ssh/https/scp forms of the same remote compare equal. Exported so a
- *  guard test can pin it to core's `normalizeRemote`. */
+ *  so ssh/https/scp forms of the same remote compare equal. Exported so its
+ *  behavior can be tested directly. */
 export function normalizeMcpRemote(url: string): string {
   let s = url.trim();
   const scp = /^[^/@]+@([^:/]+):(.+)$/.exec(s);
@@ -142,14 +136,14 @@ export function normalizeMcpRemote(url: string): string {
 }
 
 /**
- * Recursively sorts object keys for stable JSON, mirroring core's
- * `canonicalMcpJson` (in `mcp/hashing.ts`). Duplicated for the same reason as
- * `scanMcpParams`/`normalizeMcpRemote` above: `hashMcpDef` itself calls Node's
- * `crypto.createHash`, unreachable from the sandboxed renderer.
- * `hashMcpDefInRenderer` below reproduces the same canonical-JSON + SHA-256
- * algorithm using the standard Web Crypto API (`crypto.subtle`), available in
- * every renderer/browser context, so its output matches the main process's
- * `hashMcpDef` byte-for-byte.
+ * Recursively sorts object keys for stable JSON, mirroring the Rust
+ * `canonical_mcp_json` (`skillkeeper-core` `mcp`). Reimplemented for the same
+ * reason as `scanMcpParams`/`normalizeMcpRemote` above: the canonical hash is
+ * computed in the backend, but the renderer needs it synchronously for update
+ * detection. `hashMcpDefInRenderer` below reproduces the same canonical-JSON +
+ * SHA-256 algorithm using the standard Web Crypto API (`crypto.subtle`),
+ * available in every renderer/browser context, so its output matches the
+ * backend's `hash_mcp_def` byte-for-byte.
  */
 function sortMcpKeysForHash(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortMcpKeysForHash);
@@ -165,8 +159,8 @@ function sortMcpKeysForHash(value: unknown): unknown {
 }
 
 /** Content hash of an MCP server def, excluding `name` -- see the note on
- *  {@link sortMcpKeysForHash} for why this is not simply `core`'s `hashMcpDef`.
- *  Exported so a guard test can pin it to core's `hashMcpDef`. */
+ *  {@link sortMcpKeysForHash} for why this reimplements the backend's
+ *  `hash_mcp_def`. Exported so its behavior can be tested directly. */
 export async function hashMcpDefInRenderer(def: McpServerDef): Promise<string> {
   const { name: _name, ...rest } = def;
   const canonical = JSON.stringify(sortMcpKeysForHash(rest));
@@ -463,7 +457,7 @@ export interface SkillkeeperActions {
   focusRepository(repoId: string): void;
   setLoading(loading: boolean): void;
   setError(error: string | null): void;
-  /** Load all data from the main process via the bridge client. */
+  /** Load all data from the Rust backend via the bridge client. */
   loadAll(client: BridgeClient): Promise<void>;
   /** Reload all data using the singleton bridge client. */
   reload(): Promise<void>;
@@ -1171,7 +1165,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
       if (globalInstalls.length > 0) {
         // Codex resolves globally regardless of projectId/projectPath (see
-        // `resolveMcpTarget` in main/mcp.ts), so an empty path is safe here.
+        // `resolve_mcp_target` in apps/desktop/src-tauri/src/commands/mcp.rs),
+        // so an empty path is safe here.
         const result = await applyMcp({
           projectId: 'global',
           projectPath: '',

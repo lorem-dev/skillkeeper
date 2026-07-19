@@ -15,7 +15,8 @@ release.
 
 1. **Find the last release boundary.**
    Run `git log --oneline` and locate the most recent release commit (a commit
-   whose message starts with `chore: release` or a version tag such as `v1.0.0`).
+   whose message starts with `release:` -- the prefix the `bump-version` skill
+   uses, e.g. `release: 0.1.0-rc.1` -- or a version tag such as `v1.0.0`).
    If no release commit exists yet, the boundary is the initial commit.
 
 2. **Collect commits since that boundary.**

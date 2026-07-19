@@ -7,10 +7,6 @@ const fromRoot = (relative: string): string =>
 export default defineConfig({
   resolve: {
     alias: {
-      '@skillkeeper/core/testing': fromRoot('./packages/core/src/testing/index.ts'),
-      '@skillkeeper/core': fromRoot('./packages/core/src/index.ts'),
-      '@skillkeeper/config': fromRoot('./packages/config/src/index.ts'),
-      '@skillkeeper/agents': fromRoot('./packages/agents/src/index.ts'),
       '@skillkeeper/i18n/lazy': fromRoot('./packages/i18n/src/lazy.ts'),
       '@skillkeeper/i18n': fromRoot('./packages/i18n/src/index.ts'),
       '@': fromRoot('./apps/desktop/src/renderer'),
@@ -26,12 +22,7 @@ export default defineConfig({
       // (cli, desktop) are integration layers covered by their own targeted
       // tests; they are excluded from the coverage gate until their commands
       // and screens are fleshed out (see the design spec, testing strategy).
-      include: [
-        'packages/core/src/**/*.ts',
-        'packages/config/src/**/*.ts',
-        'packages/i18n/src/**/*.ts',
-        'packages/agents/src/**/*.ts',
-      ],
+      include: ['packages/i18n/src/**/*.ts'],
       exclude: [
         '**/*.test.ts',
         '**/testing/**',

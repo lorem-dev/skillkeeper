@@ -13,7 +13,7 @@ import type { KeyboardEvent } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon } from '@/shared/ui';
-import { cx } from '@/shared/lib';
+import { cx, dragRegion } from '@/shared/lib';
 import { TerminalView } from './TerminalView';
 import './TerminalPage.scss';
 
@@ -44,8 +44,10 @@ export function TerminalPage() {
       onKeyDown={onKeyDown}
       ref={overlayRef}
     >
-      <header className="sk-terminal-page__header">
-        <h1 className="sk-terminal-page__title">{t('terminal.title')}</h1>
+      <header className="sk-terminal-page__header" {...dragRegion()}>
+        <h1 className="sk-terminal-page__title" {...dragRegion()}>
+          {t('terminal.title')}
+        </h1>
         <Button
           variant="plain"
           className="sk-terminal-page__close"

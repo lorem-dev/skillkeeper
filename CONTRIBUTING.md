@@ -39,20 +39,23 @@ docs: document hook consent flow
 ## Dependency Discipline
 
 Add only packages that are genuinely required for the application to work.
-Prefer built-in Node APIs and the existing dependency set before reaching for
-a new library. Every new direct dependency must be justified in the pull
-request description and must pass the license policy below.
+Prefer the standard library and the existing dependency set -- across both the
+Rust crates and the TypeScript packages -- before reaching for a new library.
+Every new direct dependency (a `Cargo.toml` crate or a `package.json` package)
+must be justified in the pull request description and must pass the license
+policy below.
 
 ---
 
 ## Dependency License Policy
 
-All direct third-party dependencies must carry a license compatible with
-Apache 2.0 before being merged.
+All direct third-party dependencies -- cargo crates and npm packages alike --
+must carry a license compatible with Apache 2.0 before being merged.
 
 When adding a new library:
 
-1. Run the `check-licenses` skill after editing `package.json`.
+1. Run the `check-licenses` skill after editing any `Cargo.toml` or
+   `package.json`. It covers both ecosystems (cargo and npm).
 2. Review the license table the skill displays and confirm each entry.
 3. The skill updates `LICENSE` automatically.
 
@@ -60,7 +63,7 @@ Licenses that are NOT acceptable (prohibit commercial use or impose copyleft
 incompatible with Apache 2.0):
 
 - GPL-2.0 / GPL-3.0 / AGPL-3.0
-- LGPL-2.1 (the Electron app bundles its dependencies, so LGPL's
+- LGPL-2.1 (the desktop app bundles its dependencies statically, so LGPL's
   dynamic-linking exception does not apply)
 - SSPL-1.0 / BSL-1.1
 - Any Creative Commons -NC- variant

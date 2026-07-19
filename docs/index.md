@@ -15,8 +15,7 @@ Claude, Codex, Copilot, Cursor, OpenCode.
 
 ## Platforms
 
-Linux, macOS, Windows. Windows also ships an MSIX package for the Microsoft
-Store.
+Linux, macOS, Windows.
 
 ## Two front ends, one core
 
@@ -24,25 +23,25 @@ SkillKeeper ships two front ends over one shared, framework-agnostic core:
 
 - **CLI** - the primary interface for v1; suitable for scripting and headless
   use.
-- **Desktop app** - Electron + React. v1 delivers the application shell, IPC
-  bridge, state store, and navigation skeleton. Detailed screens are specified
-  in a follow-up document.
+- **Desktop app** - Tauri v2 (Rust backend) + a React 19 renderer. The renderer
+  reaches the backend through a typed Tauri command/event bridge; the backend is
+  the authority for the filesystem, Git, config, and state.
 
 ## Quick links
 
 - [Getting Started](getting-started.md) - install, add a repository, install
   your first skill.
-- [Skills and Hooks](skills-and-hooks.md) - skill format, hook strategies,
+- [Skills and Hooks](usage/skills-and-hooks.md) - skill format, hook strategies,
   resolution schemes.
-- [Repositories](repositories.md) - adding repositories, branch tracking,
+- [Repositories](usage/repositories.md) - adding repositories, branch tracking,
   update detection, and how Git is invoked.
-- [Projects](projects.md) - tracked project folders, per-project agent
+- [Projects](usage/projects.md) - tracked project folders, per-project agent
   selection, and reconciliation.
-- [MCP Servers](mcp.md) - MCP presets, the `mcp.yml` format, install/update/
+- [MCP Servers](usage/mcp.md) - MCP presets, the `mcp.yml` format, install/update/
   remove, and per-agent native config.
-- [CLI Reference](cli.md) - every command and option.
-- [Configuration](configuration.md) - `config.yaml` sections and defaults.
-- [Architecture](architecture.md) - package graph, process boundaries, domain
+- [CLI Reference](usage/cli.md) - every command and option.
+- [Configuration](usage/configuration.md) - `config.yaml` sections and defaults.
+- [Architecture](development/architecture.md) - package graph, process boundaries, domain
   model.
 
 ## What SkillKeeper does NOT do (v1)

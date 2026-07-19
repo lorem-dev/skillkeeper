@@ -15,7 +15,7 @@
   on the menu items, and replace the native About panel with a custom About
   dialog that shows the SkillKeeper icon, version, and tagline.
 
-## Version 0.1.0-rc.1 - 2026-07-17
+## Version 0.1.0-rc.1
 
 ### Features
 
@@ -45,7 +45,7 @@
 - Add agent adapters for Claude (skills and hooks), Codex, Copilot, Cursor, and
   OpenCode.
 - Add the CLI with repo, skill, project, config, and check commands.
-- Add the Electron desktop shell with a sandboxed, typed IPC bridge.
+- Add the desktop shell with a sandboxed, typed IPC bridge.
 - Add the mkdocs documentation site.
 - Add five local development skills: changelog, docs, tests and linters, licenses,
   and pre-release checks.
@@ -54,8 +54,7 @@
 
 ### Fixes
 
-- Make the desktop app launch reliably: auto-download the Electron binary, use
-  `import.meta.dirname` in the ESM main process, load the preload as CommonJS
-  with `electron` kept external, and allow inline styles in the production CSP.
+- Make the desktop app launch reliably: resolve the main-process entry paths
+  correctly and allow inline styles in the production CSP.
 - Restrict macOS packaging to arm64; the x64 target is not supported in CI.
 - Attribute the bundled Inter and Cormorant Garamond fonts (OFL-1.1) in LICENSE.

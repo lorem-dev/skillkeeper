@@ -2,31 +2,32 @@
 
 ## Prerequisites
 
-- Node.js 22.13 or later.
-- pnpm 11 (the package manager used by this project).
 - `git` on your PATH. SkillKeeper invokes the system `git` binary directly and
   relies on your existing ssh-agent, SSH config, and Git LFS installation.
 - `git-lfs` if any repository you add uses Git LFS (SkillKeeper reports a clear
   error when LFS is required but absent).
+- To build from source: a Rust toolchain (the pinned stable is installed
+  automatically by rustup from `rust-toolchain.toml` on first `cargo` build).
+  Node.js 22.13+ and pnpm 11 are only needed to build the desktop app's
+  renderer, not the CLI.
 
 ## Installation
 
-Install the CLI globally from the package registry:
+The desktop app is distributed as a platform bundle (dmg/`.app`, deb/AppImage,
+nsis/msi) -- download it from the project's Releases.
+
+The `skillkeeper` CLI is a Rust binary built from this workspace. Build it with
+cargo:
 
 ```
-npm install -g skillkeeper
+cargo build --release -p skillkeeper-cli
 ```
 
-Or install via pnpm:
+The binary is written to `target/release/skillkeeper`. Or run it directly during
+development:
 
 ```
-pnpm add -g skillkeeper
-```
-
-Verify the installation:
-
-```
-skillkeeper --version
+cargo run -p skillkeeper-cli -- --version
 ```
 
 ## Add a skill repository
@@ -80,7 +81,7 @@ skillkeeper skill install <id> --agent claude --global
 ```
 
 By default hooks are **not** installed. To install hooks alongside the skill
-body you must opt in explicitly (see [Skills and Hooks](skills-and-hooks.md)
+body you must opt in explicitly (see [Skills and Hooks](usage/skills-and-hooks.md)
 for what hooks are and why they require a separate flag):
 
 ```
@@ -134,7 +135,7 @@ skillkeeper skill repair <id>
 ## Configuration
 
 SkillKeeper stores its configuration in `config.yaml` inside your OS
-application-data directory. See [Configuration](configuration.md) for all
+application-data directory. See [Configuration](usage/configuration.md) for all
 options. Open the file in your editor:
 
 ```

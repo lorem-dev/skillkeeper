@@ -1,12 +1,9 @@
 /**
  * Tests for the renderer-local MCP preset validation (see validate.ts for why
- * `validateParamSyntax` is duplicated here rather than imported from
- * `@skillkeeper/core`).
+ * `validateParamSyntax` is reimplemented here rather than crossing the bridge;
+ * the canonical algorithm lives in the Rust `skillkeeper-core` crate).
  */
 import { describe, it, expect } from 'vitest';
-// Core IS importable in the Node/vitest env (unlike the sandboxed renderer);
-// used only here to pin the renderer copy against the original (drift guard).
-import { validateParamSyntax as coreValidateParamSyntax } from '@skillkeeper/core';
 import { validateParamSyntax, validatePreset } from './validate';
 import type { McpPresetDraft } from './validate';
 
@@ -50,22 +47,20 @@ describe('validateParamSyntax', () => {
     });
   });
 
-  describe('drift guard: matches @skillkeeper/core byte-for-byte', () => {
-    const cases = [
-      'plain text',
-      'hello {name}',
-      'hello {name',
-      'hello {}',
-      'hello {na-me}',
-      '{a}{b_2}{C3}',
-      '{',
-      '',
-      'trailing {unclosed',
-      '{ok}{bad-one}',
-    ];
-    it.each(cases)('matches core for %j', (text) => {
-      expect(validateParamSyntax(text)).toEqual(coreValidateParamSyntax(text));
+  it('flags the first offender in a multi-placeholder string', () => {
+    expect(validateParamSyntax('{ok}{bad-one}')).toEqual({
+      ok: false,
+      index: 4,
+      reason: 'illegal character in {bad-one}',
     });
+  });
+
+  it('accepts an empty string', () => {
+    expect(validateParamSyntax('')).toEqual({ ok: true });
+  });
+
+  it('flags a lone opening brace as unclosed', () => {
+    expect(validateParamSyntax('{')).toEqual({ ok: false, index: 0, reason: 'unclosed {' });
   });
 });
 

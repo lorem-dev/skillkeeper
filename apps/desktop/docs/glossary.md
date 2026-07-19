@@ -5,15 +5,15 @@ A plain-language dictionary for the vocabulary of the SkillKeeper desktop render
 named the way they are, and how the pieces connect.
 
 SkillKeeper's desktop GUI is the front end for managing AI-agent skills and hooks. It is a
-thin React renderer over `@skillkeeper/core`: sandboxed, it reaches the Electron main process
-only through the typed IPC bridge on `window.skillkeeper`. The main process owns the
-filesystem, Git, config, application state, and the core engine.
+thin React renderer over a Rust backend: it reaches the backend only through the typed bridge
+client at `services/bridge/client.ts`, using Tauri `invoke` (commands) and `listen` (events).
+The Rust backend owns the filesystem, Git, config, application state, and the domain engine.
 
 This page targets readers **new to this codebase or to layered frontend architecture**. Where
 it helps, a term comes with a loose **server-side analogy** - a way to build intuition, not a
 precise equivalence. One clarification: SkillKeeper has no HTTP backend of its own. Where an
 analogy says "server," read it as the abstract notion of an authoritative store living
-elsewhere; here that authority is the Electron main process, reached over IPC.
+elsewhere; here that authority is the Rust backend, reached over the Tauri bridge.
 
 For the binding rules (import matrix, lint enforcement, directory responsibilities) see
 [`architecture.md`](architecture.md). For the reasoning behind individual choices see the
@@ -39,7 +39,7 @@ imports point DOWN this stack (a band may use anything beneath it):
 
   beside the stack (horizontal bands, not in the 1..6 line):
     systems   .... cross-cutting
-    services  .... IPC transport / shared types
+    services  .... bridge transport / shared types
 ```
 
 A lower layer never imports from a higher one. `shared` knows nothing about skills or hooks;
@@ -67,12 +67,12 @@ These are the top-level folders under `src/renderer/`. Each row reads "what we c
 | **feature** | `src/renderer/features/` | Something the user *does* - a self-contained action or flow (`skillInstall`, `repoAdd`, `hookConsent`). Verbs. | A use-case / application service that runs one task |
 | **entity** | `src/renderer/entities/` | Something the product *talks about* - a building block and its UI (`skill`, `hook`, `repository`). Nouns. | A model object plus the code that renders and reads it |
 | **system** | `src/renderer/systems/` | Cross-cutting infrastructure used across many features (`modals`, `routing`, `onboarding`). Drawn off to the side because it is horizontal, not part of the downward stack. | Framework-level middleware / platform services |
-| **service** | `src/renderer/services/` | The transport layer: the typed client over `window.skillkeeper` and the shared types it carries. The only path to the main process. | A client SDK / gateway plus the types crossing its boundary |
+| **service** | `src/renderer/services/` | The transport layer: the typed bridge client (`services/bridge/client.ts`) over Tauri `invoke`/`listen` and the shared types it carries. The only path to the Rust backend. | A client SDK / gateway plus the types crossing its boundary |
 | **domain** | `src/renderer/domain/` | UI-side domain vocabulary and pure formatters over the core types: agent kinds, install scopes, status labels, version/hash formatting. Plain TypeScript, no React. | See the **important note** below - it is *not* the classic DDD domain layer |
 | **shared** | `src/renderer/shared/` | Generic, product-agnostic primitives: the UI kit (`Button`, `Tooltip`), hooks, utils, design tokens, i18n helpers. Reusable on any project. | A `common` / internal stdlib package |
 
-Note that these are renderer-only folders. The Electron `src/main/` and `src/preload/` roots
-sit outside this layering, and the `@/` alias maps to `src/renderer/`.
+Note that these are renderer-only folders. The Rust backend lives in `src-tauri/` and sits
+outside this layering, and the `@/` alias maps to `src/renderer/`.
 
 ### `domain` vs `entities` - the one that trips people up
 
@@ -91,7 +91,7 @@ entity's `lib/`; if it is cross-entity vocabulary or shared display logic, it go
 
 > **Important for server-side readers:** our `domain/` is **not** a DDD aggregate /
 > business-rule layer. The real business rules - the engine that installs, verifies, and
-> repairs skills - live in `@skillkeeper/core` in the Electron main process. On the
+> repairs skills - live in the `skillkeeper-core` Rust crate in the Rust backend. On the
 > renderer, `domain/` is the shared *vocabulary and display logic* for the UI: think "the
 > labels and formatters for the things on screen," not "the place where invariants are
 > enforced." There is no engine singleton in the renderer. See
@@ -126,7 +126,7 @@ entity, one feature, one system). A module is split into **segments** - the `ui/
 | **model** | `<module>/model/` | State and behavior: store actions and selectors, hooks, local constants | The stateful service layer for that feature |
 | **lib** | `<module>/lib/` | Pure helpers, label maps, formatting - no state, no JSX | Pure utility functions |
 | **assets** | `<module>/assets/` | Images and static files used by that module | Bundled static resources |
-| **invoke** | `services/bridge/invoke.ts` | The typed `window.skillkeeper.*` wrappers, grouped per area (skills, repositories, config) | The client methods that call the boundary |
+| **invoke** | `services/bridge/client.ts` | The typed bridge-client methods, grouped per area (skills, repositories, config), each calling a Tauri command via `invoke` | The client methods that call the boundary |
 | **index.ts** | every module | The **barrel** - the only file other code may import from | A package's exported surface |
 
 Only `ui/` and `index.ts` are mandatory. `model/` exists only if the module has state;
@@ -139,28 +139,28 @@ but no `model/`).
 
 The renderer keeps one [Zustand](https://zustand.docs.pmnd.rs) store
 ([decision 0030](decisions/0030-ui-state-store.md)). It holds both the UI's own state and the
-snapshots of main-process data the renderer reads over the bridge.
+snapshots of backend data the renderer reads over the bridge.
 
 | Term | What it means | Server-side analogy |
 |---|---|---|
 | **store** | The single Zustand object. Holds UI state plus the mirrored `config`, `repositories`, `skills`, and `projects`, with loading/error flags and the actions that load and update them. Set up in `app/store/`. | An in-memory state container |
-| **mirrored data** | A renderer-held copy of data the main process owns. The store mirrors what it reads over IPC; the main process stays the source of truth. | A local cache of authoritative records |
+| **mirrored data** | A renderer-held copy of data the Rust backend owns. The store mirrors what it reads over the bridge; the Rust backend stays the source of truth. | A local cache of authoritative records |
 | **action** | A store function that changes state - for example `loadAll(bridge)`, `setConfig`, `setRepositories`. | A state mutator |
 | **selector** | A function that reads a value out of the store (often derived/memoized). | A read query / getter over state |
-| **bridge** | `window.skillkeeper`, the typed `contextBridge` IPC surface the sandboxed renderer uses to reach the main process. Wrapped by `services/`. | The client SDK to an authoritative store |
-| **invoke wrapper** | A typed function in `services/bridge/invoke.ts` that calls one `window.skillkeeper.*` method and returns a typed promise. | A typed client method |
+| **bridge** | The typed client in `services/bridge` (`client.ts`) over Tauri `invoke`/`listen` - the only surface the renderer uses to reach the Rust backend. Wrapped by `services/`. | The client SDK to an authoritative store |
+| **invoke wrapper** | A typed method in `services/bridge/client.ts` that calls one Tauri command via `invoke` and returns a typed promise. | A typed client method |
 
 > The store is a **mirror, not a second source of truth.** After any action that changes
-> main-process state, re-read the affected data over the bridge and write the result back.
-> Letting the mirror drift from the main process is an anti-pattern. See
+> backend state, re-read the affected data over the bridge and write the result back.
+> Letting the mirror drift from the Rust backend is an anti-pattern. See
 > [`architecture.md`](architecture.md).
 
 ---
 
 ## SkillKeeper domain terms
 
-Specific to this product. The shapes come from `@skillkeeper/core`; the UI-side vocabulary
-and formatting live in `domain/`.
+Specific to this product. The shapes are generated from the Rust crates (via ts-rs) into
+`services/bridge/generated/`; the UI-side vocabulary and formatting live in `domain/`.
 
 | Term | What it means |
 |---|---|
@@ -170,7 +170,7 @@ and formatting live in `domain/`.
 | **project** | A target location (a folder/workspace) where skills are installed. |
 | **agent** | An AI coding agent SkillKeeper installs into. An `AgentTarget` names a concrete one; `AgentKind` is its type. |
 | **install scope** | Where a skill is installed - per `project` or `global`. Vocabulary lives in `domain/install.ts`. |
-| **install manifest** | The `InstallManifest` from `@skillkeeper/core` recording what was installed and where (its `ManagedFile`s and `ManagedHookEdit`s). |
+| **install manifest** | The `InstallManifest` type (generated from the `skillkeeper-core` Rust crate) recording what was installed and where (its `ManagedFile`s and `ManagedHookEdit`s). |
 | **verify / repair** | Checking an installed skill against its manifest (`skillVerify`) and restoring it when it has drifted (`skillRepair`). Verify reports come from the core types. |
 
 These names are the model the renderer works with - imported through the one
@@ -198,7 +198,7 @@ These names are the model the renderer works with - imported through the one
 ## "Why is the folder called that?" - the short answers
 
 - **`services`** rather than `bridge` alone: it is the whole transport story - the typed
-  client, the invoke wrappers, and the shared types - not just the raw IPC call.
+  client, the invoke wrappers, and the shared types - not just the raw `invoke` call.
 - **`shared`** rather than `common` or `utils`: it carries the extra promise that the code
   here has **zero product knowledge** and could be lifted into any project.
 - **camelCase folders, PascalCase components**: the folder name matches its main export;
@@ -215,7 +215,7 @@ These names are the model the renderer works with - imported through the one
   horizontal infrastructure, so they get their own off-to-the-side layer
   ([decision 0020](decisions/0020-cross-cutting-systems.md)).
 - **`domain`** rather than `core`: it is the shared *vocabulary* of the UI. (See the note
-  above - it is not the DDD domain layer, and not the `@skillkeeper/core` engine.)
+  above - it is not the DDD domain layer, and not the `skillkeeper-core` engine.)
 
 ---
 
@@ -225,7 +225,7 @@ These names are the model the renderer works with - imported through the one
 2. Is it **something the user does** (an action/flow)? -> `features/<thing>`
 3. Is it a **product noun** and its display/reads? -> `entities/<thing>`
 4. Is it **cross-cutting infra** used everywhere (modal, route helper)? -> `systems/<thing>`
-5. Does it **talk to the main process** (an IPC call, a shared type)? -> `services/bridge`
+5. Does it **talk to the Rust backend** (a Tauri `invoke`/`listen` call, a shared type)? -> `services/bridge`
 6. Is it **cross-entity vocabulary or shared display logic**? -> `domain/`
 7. Is it **generic with no product knowledge** (a button, a date util)? -> `shared/`
 8. Within a module: a **component** -> `ui/`, **state/hooks** -> `model/`, **a pure helper**

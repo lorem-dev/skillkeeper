@@ -93,7 +93,7 @@ export function SkillsManagementPage() {
   // (see the file header). Clear the shared search only when arriving from the
   // OTHER mode (mirrors the old in-page mode Select), while keeping it when
   // re-entering this mode. Project icons are resolved into projectInfo by the
-  // main process; refresh on mount so the project nodes can show them.
+  // Rust backend; refresh on mount so the project nodes can show them.
   useEffect(() => {
     const switching = useSkillkeeperStore.getState().skillsUi.mode !== 'projects';
     setSkillsUi(switching ? { mode: 'projects', query: '' } : { mode: 'projects' });

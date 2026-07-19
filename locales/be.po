@@ -1,0 +1,1070 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: be\n"
+
+msgid "app.title"
+msgstr "SkillKeeper"
+
+msgid "nav.repositories"
+msgstr "Рэпазіторыі"
+
+msgid "nav.skills"
+msgstr "Навыкі"
+
+msgid "nav.projects"
+msgstr "Праекты"
+
+msgid "nav.mcp"
+msgstr "MCP"
+
+msgid "nav.settings"
+msgstr "Налады"
+
+msgid "menu.view"
+msgstr "Выгляд"
+
+msgid "menu.about"
+msgstr "Пра SkillKeeper"
+
+msgid "menu.openSettings"
+msgstr "Адкрыць налады"
+
+msgid "menu.edit"
+msgstr "Праўка"
+
+msgid "menu.window"
+msgstr "Акно"
+
+msgid "menu.help"
+msgstr "Даведка"
+
+msgid "menu.undo"
+msgstr "Адрабіць"
+
+msgid "menu.redo"
+msgstr "Паўтарыць"
+
+msgid "menu.cut"
+msgstr "Выразаць"
+
+msgid "menu.copy"
+msgstr "Скапіраваць"
+
+msgid "menu.paste"
+msgstr "Уставіць"
+
+msgid "menu.pasteAndMatchStyle"
+msgstr "Уставіць і сумясціць стыль"
+
+msgid "menu.delete"
+msgstr "Выдаліць"
+
+msgid "menu.selectAll"
+msgstr "Выбраць усё"
+
+msgid "menu.minimize"
+msgstr "Прыбраць у Dock"
+
+msgid "menu.zoom"
+msgstr "Змяніць маштаб"
+
+msgid "menu.close"
+msgstr "Закрыць"
+
+msgid "menu.services"
+msgstr "Службы"
+
+msgid "menu.hide"
+msgstr "Схаваць SkillKeeper"
+
+msgid "menu.hideOthers"
+msgstr "Схаваць астатнія"
+
+msgid "menu.showAll"
+msgstr "Паказаць усё"
+
+msgid "menu.quit"
+msgstr "Выйсці з SkillKeeper"
+
+msgid "about.version"
+msgstr "Версія {version}"
+
+msgid "about.tagline"
+msgstr "Усталёўвайце навыкі для AI-агентаў і кіруйце імі"
+
+msgid "common.loading"
+msgstr "Загрузка"
+
+msgid "common.errorPrefix"
+msgstr "Памылка: {message}"
+
+msgid "common.refresh"
+msgstr "Абнавіць"
+
+msgid "common.comingSoon"
+msgstr "Хутка з’явіцца"
+
+msgid "common.close"
+msgstr "Закрыць"
+
+msgid "common.clear"
+msgstr "Ачысціць"
+
+msgid "common.goToSkills"
+msgstr "Перайсці да навыкаў"
+
+msgid "common.goToMcp"
+msgstr "Перайсці да MCP"
+
+msgid "skills.resetFilters"
+msgstr "Скінуць фільтры"
+
+msgid "skills.componentsTitle"
+msgstr "Кампаненты"
+
+msgid "skills.managementTitle"
+msgstr "Менеджмент"
+
+msgid "common.search"
+msgstr "Пошук"
+
+msgid "common.decrease"
+msgstr "Паменшыць"
+
+msgid "common.increase"
+msgstr "Павялічыць"
+
+msgid "common.filter"
+msgstr "Фільтрацыя"
+
+msgid "common.clearFilters"
+msgstr "Скінуць фільтры"
+
+msgid "notifications.error"
+msgstr "Памылка"
+
+msgid "notifications.info"
+msgstr "Апавяшчэнне"
+
+msgid "statusbar.notifications"
+msgstr "Памылкі: {count}"
+
+msgid "statusbar.terminal"
+msgstr "Тэрмінал"
+
+msgid "statusbar.tasks"
+msgstr "Задачы"
+
+msgid "logs.title"
+msgstr "Апавяшчэнні"
+
+msgid "terminal.title"
+msgstr "Тэрмінал"
+
+msgid "logs.empty"
+msgstr "Няма чаго паказаць."
+
+msgid "logs.copy"
+msgstr "Капіраваць"
+
+msgid "logs.copyAll"
+msgstr "Капіраваць усё"
+
+msgid "logs.clear"
+msgstr "Ачысціць"
+
+msgid "logs.filter"
+msgstr "Паказваць"
+
+msgid "logs.level.error"
+msgstr "Памылкі"
+
+msgid "logs.level.info"
+msgstr "Паведамленні"
+
+msgid "tasks.title"
+msgstr "Задачы"
+
+msgid "tasks.empty"
+msgstr "Задач няма."
+
+msgid "tasks.clear"
+msgstr "Ачысціць завершаныя"
+
+msgid "tasks.kind.sync"
+msgstr "Сінхранізацыя"
+
+msgid "tasks.kind.check"
+msgstr "Праверка абнаўленняў"
+
+msgid "tasks.kind.update-skill"
+msgstr "Абнавіць навык"
+
+msgid "tasks.kind.refresh-projects"
+msgstr "Абнавіць праекты"
+
+msgid "tasks.status.queued"
+msgstr "У чарзе"
+
+msgid "tasks.status.running"
+msgstr "Выконваецца"
+
+msgid "tasks.status.done"
+msgstr "Гатова"
+
+msgid "tasks.status.error"
+msgstr "Памылка"
+
+msgid "repositories.empty"
+msgstr "Рэпазіторыі яшчэ не дададзеныя."
+
+msgid "repositories.add"
+msgstr "Дадаць рэпазіторый"
+
+msgid "repositories.lfs"
+msgstr "LFS"
+
+msgid "repositories.lastFetched"
+msgstr "Апошняе абнаўленне: {when}"
+
+msgid "repositories.neverFetched"
+msgstr "Не абнаўлялася"
+
+msgid "repositories.addRemote"
+msgstr "URL аддаленага рэпазіторыя"
+
+msgid "repositories.invalidRemote"
+msgstr "Увядзіце сапраўдны URL рэпазіторыя (https://... або git@host:шлях)."
+
+msgid "repositories.addName"
+msgstr "Назва"
+
+msgid "repositories.edit"
+msgstr "Рэдагаваць рэпазіторый"
+
+msgid "repositories.save"
+msgstr "Захаваць"
+
+msgid "repositories.sync"
+msgstr "Сінхранізаваць"
+
+msgid "repositories.syncing"
+msgstr "Сінхранізацыя…"
+
+msgid "repositories.delete"
+msgstr "Выдаліць"
+
+msgid "repositories.deleteConfirm"
+msgstr "Пацвердзіць выдаленне"
+
+msgid "repositories.hasUpdate"
+msgstr "Даступна абнаўленне"
+
+msgid "repositories.viewError"
+msgstr "Націсніце, каб паглядзець памылку"
+
+msgid "repositories.copyBranch"
+msgstr "Скапіраваць назву галіны"
+
+msgid "repositories.branchCopied"
+msgstr "Назва галіны скапіравана ў буфер абмену"
+
+msgid "repositories.copyRemote"
+msgstr "Скапіраваць спасылку"
+
+msgid "repositories.remoteCopied"
+msgstr "URL аддаленага рэпазіторыя скапіраваны ў буфер абмену"
+
+msgid "repositories.branch"
+msgstr "Галіна"
+
+msgid "repositories.branchSearch"
+msgstr "Пошук галіны"
+
+msgid "repositories.branchNone"
+msgstr "Няма адпаведнай галіны"
+
+msgid "repositories.skillCount.one"
+msgstr "{count} навык"
+
+msgid "repositories.skillCount.few"
+msgstr "{count} навыкі"
+
+msgid "repositories.skillCount.many"
+msgstr "{count} навыкаў"
+
+msgid "repositories.skillCount.other"
+msgstr "{count} навыку"
+
+msgid "repositories.searchFound.one"
+msgstr "Знойдзены {count} рэпазіторый"
+
+msgid "repositories.searchFound.few"
+msgstr "Знойдзена {count} рэпазіторыі"
+
+msgid "repositories.searchFound.many"
+msgstr "Знойдзена {count} рэпазіторыяў"
+
+msgid "repositories.searchFound.other"
+msgstr "Знойдзена {count} рэпазіторыя"
+
+msgid "repositories.searchTotal.one"
+msgstr "Усяго {count} рэпазіторый"
+
+msgid "repositories.searchTotal.few"
+msgstr "Усяго {count} рэпазіторыі"
+
+msgid "repositories.searchTotal.many"
+msgstr "Усяго {count} рэпазіторыяў"
+
+msgid "repositories.searchTotal.other"
+msgstr "Усяго {count} рэпазіторыя"
+
+msgid "repositories.showAll"
+msgstr "Паказаць усе рэпазіторыі"
+
+msgid "projects.empty"
+msgstr "Праекты яшчэ не адсочваюцца."
+
+msgid "projects.add"
+msgstr "Дадаць праект"
+
+msgid "projects.addedAt"
+msgstr "Дададзена {when}"
+
+msgid "projects.edit"
+msgstr "Рэдагаваць праект"
+
+msgid "projects.name"
+msgstr "Назва"
+
+msgid "projects.remove"
+msgstr "Прыбраць праект"
+
+msgid "projects.removeConfirm"
+msgstr "Пацвердзіць"
+
+msgid "projects.removeKeepsFolder"
+msgstr "Прыбірае праект са спіса. Тэчка застаецца на дыску."
+
+msgid "projects.changeFolder"
+msgstr "Выбраць іншую тэчку"
+
+msgid "projects.open"
+msgstr "Адкрыць праект"
+
+msgid "projects.openInFileManager"
+msgstr "Адкрыць у файлавым менеджары"
+
+msgid "projects.openFailed"
+msgstr "Не ўдалося адкрыць праект"
+
+msgid "projects.missing"
+msgstr "Тэчка выдалена або перамешчана"
+
+msgid "projects.copyPath"
+msgstr "Скапіраваць поўны шлях"
+
+msgid "projects.pathCopied"
+msgstr "Шлях скапіраваны ў буфер абмену"
+
+msgid "projects.skillCount.one"
+msgstr "{count} навык"
+
+msgid "projects.skillCount.few"
+msgstr "{count} навыкі"
+
+msgid "projects.skillCount.many"
+msgstr "{count} навыкаў"
+
+msgid "projects.skillCount.other"
+msgstr "{count} навыку"
+
+msgid "projects.fromRepos"
+msgstr "{count} з рэпазіторыяў"
+
+msgid "projects.agentCount.one"
+msgstr "{count} агент"
+
+msgid "projects.agentCount.few"
+msgstr "{count} агенты"
+
+msgid "projects.agentCount.many"
+msgstr "{count} агентаў"
+
+msgid "projects.agentCount.other"
+msgstr "{count} агента"
+
+msgid "projects.fromReposHint.one"
+msgstr "Усталяваны {count} навык з рэпазіторыяў"
+
+msgid "projects.fromReposHint.few"
+msgstr "Усталявана {count} навыкі з рэпазіторыяў"
+
+msgid "projects.fromReposHint.many"
+msgstr "Усталявана {count} навыкаў з рэпазіторыяў"
+
+msgid "projects.fromReposHint.other"
+msgstr "Усталявана {count} навыку з рэпазіторыяў"
+
+msgid "projects.skillCountHint.one"
+msgstr "Усяго {count} навык у праекце"
+
+msgid "projects.skillCountHint.few"
+msgstr "Усяго {count} навыкі у праекце"
+
+msgid "projects.skillCountHint.many"
+msgstr "Усяго {count} навыкаў у праекце"
+
+msgid "projects.skillCountHint.other"
+msgstr "Усяго {count} навыку у праекце"
+
+msgid "projects.agentsHint.one"
+msgstr "Наяўныя канфігурацыі для {count} агента"
+
+msgid "projects.agentsHint.few"
+msgstr "Наяўныя канфігурацыі для {count} агентаў"
+
+msgid "projects.agentsHint.many"
+msgstr "Наяўныя канфігурацыі для {count} агентаў"
+
+msgid "projects.agentsHint.other"
+msgstr "Наяўныя канфігурацыі для {count} агента"
+
+msgid "projects.mcpCount"
+msgstr "{count} MCP"
+
+msgid "projects.mcpHint.one"
+msgstr "Усталяваны {count} сервер MCP з рэпазіторыяў"
+
+msgid "projects.mcpHint.few"
+msgstr "Усталявана {count} сервера MCP з рэпазіторыяў"
+
+msgid "projects.mcpHint.many"
+msgstr "Усталявана {count} сервераў MCP з рэпазіторыяў"
+
+msgid "projects.mcpHint.other"
+msgstr "Усталявана {count} сервера MCP з рэпазіторыяў"
+
+msgid "projects.searchFound.one"
+msgstr "Знойдзены {count} праект"
+
+msgid "projects.searchFound.few"
+msgstr "Знойдзена {count} праекты"
+
+msgid "projects.searchFound.many"
+msgstr "Знойдзена {count} праектаў"
+
+msgid "projects.searchFound.other"
+msgstr "Знойдзена {count} праекта"
+
+msgid "projects.searchTotal.one"
+msgstr "Усяго {count} праект"
+
+msgid "projects.searchTotal.few"
+msgstr "Усяго {count} праекты"
+
+msgid "projects.searchTotal.many"
+msgstr "Усяго {count} праектаў"
+
+msgid "projects.searchTotal.other"
+msgstr "Усяго {count} праекта"
+
+msgid "projects.showAll"
+msgstr "Паказаць усе праекты"
+
+msgid "skills.empty"
+msgstr "Навыкі яшчэ не ўсталяваныя."
+
+msgid "skills.add"
+msgstr "Усталяваць навык"
+
+msgid "skills.searchPlaceholder"
+msgstr "Пошук навыкаў"
+
+msgid "skills.filterAgent"
+msgstr "Агент"
+
+msgid "skills.allAgents"
+msgstr "Усе агенты"
+
+msgid "skills.noVersion"
+msgstr "Без версіі"
+
+msgid "skills.installedFor"
+msgstr "Усталявана для"
+
+msgid "skills.scope.project"
+msgstr "Праект"
+
+msgid "skills.scope.global"
+msgstr "Глабальна"
+
+msgid "skills.source.repo"
+msgstr "З рэпазіторыя"
+
+msgid "skills.source.local"
+msgstr "З лакальнага шляху"
+
+msgid "skills.details.title"
+msgstr "Дэталі навыку"
+
+msgid "skills.details.files"
+msgstr "Файлаў: {n}"
+
+msgid "skills.details.hooks"
+msgstr "Хукаў: {n}"
+
+msgid "skills.details.installedAt"
+msgstr "Усталявана: {when}"
+
+msgid "skills.details.destination"
+msgstr "Прызначэнне"
+
+msgid "skills.verify"
+msgstr "Праверыць"
+
+msgid "skills.update"
+msgstr "Абнавіць"
+
+msgid "skills.source"
+msgstr "Спосаб адлюстравання"
+
+msgid "skills.source.repositories"
+msgstr "Рэпазіторыі"
+
+msgid "skills.source.projects"
+msgstr "Праекты"
+
+msgid "skills.filterRepositories"
+msgstr "Рэпазіторыі"
+
+msgid "skills.filterRepositoriesPlaceholder"
+msgstr "Усе рэпазіторыі"
+
+msgid "skills.filterRepositoriesEmpty"
+msgstr "Няма адпаведнага рэпазіторыя"
+
+msgid "skills.filterProjects"
+msgstr "Праекты"
+
+msgid "skills.filterProjectsPlaceholder"
+msgstr "Усе праекты"
+
+msgid "skills.filterProjectsEmpty"
+msgstr "Няма адпаведнага праекта"
+
+msgid "skills.action.add"
+msgstr "Усталяваць"
+
+msgid "skills.action.save"
+msgstr "Захаваць"
+
+msgid "skills.action.reset"
+msgstr "Скінуць"
+
+msgid "skills.showAll"
+msgstr "Паказаць усе навыкі"
+
+msgid "skills.emptyRepositories"
+msgstr "У вашых рэпазіторыях навыкаў не знойдзена."
+
+msgid "skills.emptyProjects"
+msgstr "Праекты яшчэ не адсочваюцца."
+
+msgid "skills.status.add"
+msgstr "Навык будзе дададзены"
+
+msgid "skills.status.remove"
+msgstr "Навык будзе выдалены"
+
+msgid "skills.status.present"
+msgstr "Навык ужо ўсталяваны"
+
+msgid "skills.installPending"
+msgstr "Усталяванне навыкаў хутка з’явіцца (выбрана: {count})"
+
+msgid "skills.savePending"
+msgstr "Захаванне зменаў хутка з’явіцца (+{add} / -{remove})"
+
+msgid "skills.install.title"
+msgstr "Усталяваць навыкі"
+
+msgid "skills.install.chooseProject"
+msgstr "Праект"
+
+msgid "skills.install.agents"
+msgstr "Выбраныя агенты"
+
+msgid "skills.install.agentsPlaceholder"
+msgstr "Выберыце агентаў"
+
+msgid "skills.install.next"
+msgstr "Далей"
+
+msgid "skills.install.back"
+msgstr "Назад"
+
+msgid "skills.install.confirm"
+msgstr "Пацвердзіць?"
+
+msgid "skills.install.installing"
+msgstr "Ужыванне зменаў"
+
+msgid "skills.install.summary"
+msgstr "+{add} / -{remove}"
+
+msgid "skills.save.title"
+msgstr "Прагляд зменаў"
+
+msgid "skills.save.confirm"
+msgstr "Пацвердзіць?"
+
+msgid "skills.save.empty"
+msgstr "Няма зменаў для ўжывання"
+
+msgid "skills.col.project"
+msgstr "Праект"
+
+msgid "skills.col.repository"
+msgstr "Рэпазіторый"
+
+msgid "skills.col.skill"
+msgstr "Навык"
+
+msgid "skills.col.action"
+msgstr "Дзеянне"
+
+msgid "skills.col.agents"
+msgstr "Агент"
+
+msgid "skills.change.install"
+msgstr "Усталяваць"
+
+msgid "skills.change.remove"
+msgstr "Выдаліць"
+
+msgid "skills.agentsLabel"
+msgstr "Агенты"
+
+msgid "skills.agentsTooltip"
+msgstr "Задзейнічаныя агенты"
+
+msgid "skills.agentsChanged"
+msgstr "Агенты змяніліся"
+
+msgid "skills.updateSkill"
+msgstr "абнавіць навык"
+
+msgid "skills.updateRepo"
+msgstr "абнавіць навыкі ў рэпазіторыі"
+
+msgid "skills.updateGroup"
+msgstr "абнавіць навыкі ў групе"
+
+msgid "skills.updateBadge"
+msgstr "абнавіць"
+
+msgid "skills.unlinked"
+msgstr "адчэплены"
+
+msgid "skills.addRepo"
+msgstr "Дадаць рэпазіторый"
+
+msgid "skills.local"
+msgstr "лакальны"
+
+msgid "skills.localHint"
+msgstr "Лакальны навык, напісаны ўручную"
+
+msgid "skills.rulesBadge"
+msgstr "правілы"
+
+msgid "skills.rulesHint"
+msgstr "У навыка ёсць правілы"
+
+msgid "skills.searchFound.one"
+msgstr "Знойдзены {count} навык"
+
+msgid "skills.searchFound.few"
+msgstr "Знойдзена {count} навыкі"
+
+msgid "skills.searchFound.many"
+msgstr "Знойдзена {count} навыкаў"
+
+msgid "skills.searchFound.other"
+msgstr "Знойдзена {count} навыку"
+
+msgid "skills.searchTotal.one"
+msgstr "Усяго {count} навык"
+
+msgid "skills.searchTotal.few"
+msgstr "Усяго {count} навыкі"
+
+msgid "skills.searchTotal.many"
+msgstr "Усяго {count} навыкаў"
+
+msgid "skills.searchTotal.other"
+msgstr "Усяго {count} навыку"
+
+msgid "mcp.empty"
+msgstr "Пакуль няма сервераў MCP."
+
+msgid "mcp.searchFound.one"
+msgstr "Знойдзены {count} сервер MCP"
+
+msgid "mcp.searchFound.few"
+msgstr "Знойдзена {count} сервера MCP"
+
+msgid "mcp.searchFound.many"
+msgstr "Знойдзена {count} сервераў MCP"
+
+msgid "mcp.searchFound.other"
+msgstr "Знойдзена {count} сервера MCP"
+
+msgid "mcp.searchTotal.one"
+msgstr "Усяго {count} сервер MCP"
+
+msgid "mcp.searchTotal.few"
+msgstr "Усяго {count} сервера MCP"
+
+msgid "mcp.searchTotal.many"
+msgstr "Усяго {count} сервераў MCP"
+
+msgid "mcp.searchTotal.other"
+msgstr "Усяго {count} сервера MCP"
+
+msgid "mcp.showAll"
+msgstr "Паказаць усе серверы MCP"
+
+msgid "mcp.add"
+msgstr "Дадаць MCP"
+
+msgid "mcp.addTitle"
+msgstr "Дадаць сервер MCP"
+
+msgid "mcp.editTitle"
+msgstr "Рэдагаваць сервер MCP"
+
+msgid "mcp.edit"
+msgstr "Рэдагаваць"
+
+msgid "mcp.install"
+msgstr "Усталяваць"
+
+msgid "mcp.installMcp"
+msgstr "Усталяваць MCP"
+
+msgid "mcp.installTitle"
+msgstr "Усталяваць {name}"
+
+msgid "mcp.remove"
+msgstr "Выдаліць"
+
+msgid "mcp.update"
+msgstr "Абнавіць"
+
+msgid "mcp.cancel"
+msgstr "Адмяніць"
+
+msgid "mcp.save"
+msgstr "Захаваць"
+
+msgid "mcp.copy"
+msgstr "Капіраваць"
+
+msgid "mcp.copiedToClipboard"
+msgstr "Скапіявана ў буфер абмену"
+
+msgid "mcp.goToRepository"
+msgstr "Перайсці да рэпазітория"
+
+msgid "mcp.rulesBadge"
+msgstr "правілы"
+
+msgid "mcp.protocol.stdio"
+msgstr "stdio"
+
+msgid "mcp.protocol.http"
+msgstr "http"
+
+msgid "mcp.protocol.sse"
+msgstr "sse"
+
+msgid "mcp.paramsHelp"
+msgstr "Параметры {name} падтрымліваюцца ў URL, загалоўках, камандзе, аргументах, зменных асяроддзя і правілах."
+
+msgid "mcp.field.name"
+msgstr "Назва"
+
+msgid "mcp.namePlaceholder"
+msgstr "напр. GitHub MCP"
+
+msgid "mcp.field.type"
+msgstr "Тып"
+
+msgid "mcp.field.url"
+msgstr "URL"
+
+msgid "mcp.urlPlaceholder"
+msgstr "https://example.com/{token}"
+
+msgid "mcp.field.headers"
+msgstr "Загалоўкі"
+
+msgid "mcp.headerNamePlaceholder"
+msgstr "Імя загалоўка"
+
+msgid "mcp.headerValuePlaceholder"
+msgstr "Значэнне загалоўка"
+
+msgid "mcp.addHeader"
+msgstr "Дадаць загаловак"
+
+msgid "mcp.field.command"
+msgstr "Каманда"
+
+msgid "mcp.commandPlaceholder"
+msgstr "npx some-mcp-server"
+
+msgid "mcp.field.arguments"
+msgstr "Аргументы"
+
+msgid "mcp.argumentPlaceholder"
+msgstr "Аргумент"
+
+msgid "mcp.addArgument"
+msgstr "Дадаць аргумент"
+
+msgid "mcp.field.env"
+msgstr "Зменныя асяроддзя"
+
+msgid "mcp.varNamePlaceholder"
+msgstr "Імя зменнай"
+
+msgid "mcp.varValuePlaceholder"
+msgstr "Значэнне зменнай"
+
+msgid "mcp.addVariable"
+msgstr "Дадаць зменную"
+
+msgid "mcp.field.rules"
+msgstr "Правілы"
+
+msgid "mcp.rulesPlaceholder"
+msgstr "Інструкцыі, якія дадаюцца ў файл правіл агента пры ўстаноўцы гэтага сервера."
+
+msgid "mcp.validation.nameRequired"
+msgstr "Патрэбна назва."
+
+msgid "mcp.validation.selectType"
+msgstr "Выберыце тып транспарту."
+
+msgid "mcp.validation.commandRequired"
+msgstr "Для сервераў stdio патрэбна каманда."
+
+msgid "mcp.validation.urlRequired"
+msgstr "Для сервераў http/sse патрэбны URL."
+
+msgid "mcp.validation.invalidParam"
+msgstr "Няправільны параметр ({reason}) у пазіцыі {index}."
+
+msgid "mcp.field.project"
+msgstr "Праект"
+
+msgid "mcp.chooseProject"
+msgstr "Выберыце праект"
+
+msgid "mcp.field.agents"
+msgstr "Агенты"
+
+msgid "mcp.field.parameters"
+msgstr "Параметры"
+
+msgid "mcp.codexGlobalNote"
+msgstr "Codex усталёўваецца глабальна (не абмежаваны гэтым праектам)."
+
+msgid "mcp.transportUnsupported"
+msgstr "{agent} не можа выразіць транспарт {transport} у сваёй роднай канфігурацыі."
+
+msgid "mcp.skippedAgents"
+msgstr "Прапушчана агентаў: {count} — транспарт набору не падтрымліваецца."
+
+msgid "mcp.needsParamsNotice"
+msgstr "Гэтым усталёўкам MCP патрэбны параметры, перш чым іх можна дадаць:"
+
+msgid "mcp.delete"
+msgstr "Выдаліць"
+
+msgid "mcp.deleteConfirmTitle"
+msgstr "Выдаліць {name}?"
+
+msgid "mcp.deleteConfirmBody"
+msgstr "Гэта дзеянне незваротнае."
+
+msgid "mcp.detailsTitle"
+msgstr "Звесткі пра сервер MCP"
+
+msgid "mcp.view.label"
+msgstr "Паказваць як"
+
+msgid "mcp.view.tiles"
+msgstr "Пліткі"
+
+msgid "mcp.view.tree"
+msgstr "Дрэва"
+
+msgid "mcp.componentsTitle"
+msgstr "Кампаненты"
+
+msgid "mcp.managementTitle"
+msgstr "Менеджмент"
+
+msgid "settings.comingSoon"
+msgstr "Экран налад хутка з’явіцца."
+
+msgid "settings.section.general"
+msgstr "Агульныя"
+
+msgid "settings.section.updates"
+msgstr "Абнаўленні"
+
+msgid "settings.section.agents"
+msgstr "Агенты"
+
+msgid "settings.section.executables"
+msgstr "Выканальныя файлы"
+
+msgid "settings.section.security"
+msgstr "Бяспека"
+
+msgid "settings.section.notifications"
+msgstr "Апавяшчэнні"
+
+msgid "settings.valid"
+msgstr "Сапраўдна"
+
+msgid "settings.invalid"
+msgstr "Несапраўдна"
+
+msgid "settings.openConfig"
+msgstr "Адкрыць файл канфігурацыі"
+
+msgid "settings.openConfigInEditor"
+msgstr "Адкрыць файл канфігурацыі ў рэдактары"
+
+msgid "settings.editor.defaultApp"
+msgstr "Адкрыць у прадвызначанай праграме"
+
+msgid "settings.openConfigFailed"
+msgstr "Не ўдалося адкрыць файл канфігурацыі"
+
+msgid "settings.theme"
+msgstr "Тэма"
+
+msgid "settings.animations"
+msgstr "Анімацыі"
+
+msgid "settings.animationsHint"
+msgstr "Хуткасць анімацый з'яўлення і знікнення ў інтэрфейсе"
+
+msgid "settings.animations.fast"
+msgstr "Хутка"
+
+msgid "settings.animations.normal"
+msgstr "Звычайна"
+
+msgid "settings.animations.off"
+msgstr "Выключана"
+
+msgid "settings.theme.system"
+msgstr "Сістэмная"
+
+msgid "settings.theme.light"
+msgstr "Светлая"
+
+msgid "settings.theme.dark"
+msgstr "Цёмная"
+
+msgid "settings.language"
+msgstr "Мова"
+
+msgid "settings.languageEmpty"
+msgstr "Няма адпаведнай мовы"
+
+msgid "settings.section.repositories"
+msgstr "Рэпазіторыі"
+
+msgid "settings.section.projects"
+msgstr "Праекты"
+
+msgid "settings.git"
+msgstr "Git"
+
+msgid "settings.gitDescription"
+msgstr "Шлях да выканальнага файла git"
+
+msgid "settings.updates.mode"
+msgstr "Праверка абнаўленняў"
+
+msgid "settings.updates.mode.manual"
+msgstr "Уручную"
+
+msgid "settings.updates.mode.onStartup"
+msgstr "Пры запуску"
+
+msgid "settings.updates.mode.scheduled"
+msgstr "Па раскладзе"
+
+msgid "settings.updates.interval"
+msgstr "Інтэрвал абнаўлення"
+
+msgid "settings.projects.checkInterval"
+msgstr "Інтэрвал праверкі тэчак"
+
+msgid "settings.interval.minutesUnit"
+msgstr "хв"
+
+msgid "settings.interval.hoursUnit"
+msgstr "гадз"
+
+msgid "settings.agents.enabled"
+msgstr "Актыўныя агенты"
+
+msgid "settings.agents.placeholder"
+msgstr "Выберыце агентаў"
+
+msgid "settings.agents.selected"
+msgstr "Выбрана: {count}"
+
+msgid "settings.notifications.enabled"
+msgstr "Сістэмныя апавяшчэнні"
+
+msgid "config.invalidBanner"
+msgstr "Канфігурацыя змяшчае недапушчальныя раздзелы. Выкарыстоўваюцца прадвызначаныя значэнні. Выканайце \"skillkeeper config validate\" для падрабязнасцей."
+
+msgid "hooks.requireConsent"
+msgstr "Усталяванне хукаў патрабуе яўнай згоды (--allow-hooks). Цела навыку ўсталявана; хукі прапушчаныя."
+
+msgid "skills.count"
+msgstr "Усталявана навыкаў: {n}"
+
+msgid "about.docs"
+msgstr "Дакументацыя"
+
+msgid "about.openDocs"
+msgstr "Адкрыць дакументацыю"
+
+msgid "about.repo"
+msgstr "Рэпазіторый"
+
+msgid "about.openRepo"
+msgstr "Перайсці да рэпазіторыя"
+
+msgid "about.license"
+msgstr "Ліцэнзія"
+
+msgid "about.openLicense"
+msgstr "Паглядзець ліцэнзію"

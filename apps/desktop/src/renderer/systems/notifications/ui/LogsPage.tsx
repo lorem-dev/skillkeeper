@@ -12,7 +12,7 @@ import type { NotificationEntry } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon, MultiSelect } from '@/shared/ui';
 import type { Translator } from '@/systems/i18n';
-import { cx, fade } from '@/shared/lib';
+import { cx, dragRegion, fade } from '@/shared/lib';
 import { resolveNotification } from '../resolveNotification';
 import './LogsPage.scss';
 
@@ -74,8 +74,10 @@ export function LogsPage() {
           animate="animate"
           exit="exit"
         >
-          <header className="sk-logs__header">
-            <h1 className="sk-logs__title">{t('logs.title')}</h1>
+          <header className="sk-logs__header" {...dragRegion()}>
+            <h1 className="sk-logs__title" {...dragRegion()}>
+              {t('logs.title')}
+            </h1>
             <div className="sk-logs__actions">
               <MultiSelect
                 options={levelOptions}

@@ -1,0 +1,1025 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: sr-cyrl\n"
+
+msgid "app.title"
+msgstr "SkillKeeper"
+
+msgid "nav.repositories"
+msgstr "Репозиторијуми"
+
+msgid "nav.skills"
+msgstr "Вештине"
+
+msgid "nav.projects"
+msgstr "Пројекти"
+
+msgid "nav.mcp"
+msgstr "MCP"
+
+msgid "nav.settings"
+msgstr "Подешавања"
+
+msgid "menu.view"
+msgstr "Приказ"
+
+msgid "menu.about"
+msgstr "О програму SkillKeeper"
+
+msgid "menu.openSettings"
+msgstr "Отвори подешавања"
+
+msgid "menu.edit"
+msgstr "Уређивање"
+
+msgid "menu.window"
+msgstr "Прозор"
+
+msgid "menu.help"
+msgstr "Помоћ"
+
+msgid "menu.undo"
+msgstr "Опозови"
+
+msgid "menu.redo"
+msgstr "Понови"
+
+msgid "menu.cut"
+msgstr "Исеци"
+
+msgid "menu.copy"
+msgstr "Копирај"
+
+msgid "menu.paste"
+msgstr "Налепи"
+
+msgid "menu.pasteAndMatchStyle"
+msgstr "Налепи и усклади стил"
+
+msgid "menu.delete"
+msgstr "Обриши"
+
+msgid "menu.selectAll"
+msgstr "Изабери све"
+
+msgid "menu.minimize"
+msgstr "Умањи"
+
+msgid "menu.zoom"
+msgstr "Зумирај"
+
+msgid "menu.close"
+msgstr "Затвори"
+
+msgid "menu.services"
+msgstr "Услуге"
+
+msgid "menu.hide"
+msgstr "Сакриј SkillKeeper"
+
+msgid "menu.hideOthers"
+msgstr "Сакриј остале"
+
+msgid "menu.showAll"
+msgstr "Прикажи све"
+
+msgid "menu.quit"
+msgstr "Изађи из SkillKeeper"
+
+msgid "about.version"
+msgstr "Верзија {version}"
+
+msgid "about.tagline"
+msgstr "Инсталирајте и управљајте вештинама за AI агенте"
+
+msgid "common.loading"
+msgstr "Учитавање"
+
+msgid "common.errorPrefix"
+msgstr "Грешка: {message}"
+
+msgid "common.refresh"
+msgstr "Освежи"
+
+msgid "common.comingSoon"
+msgstr "Ускоро"
+
+msgid "common.close"
+msgstr "Затвори"
+
+msgid "common.clear"
+msgstr "Очисти"
+
+msgid "common.goToSkills"
+msgstr "Иди на вештине"
+
+msgid "common.goToMcp"
+msgstr "Иди на MCP"
+
+msgid "skills.resetFilters"
+msgstr "Ресетуј филтере"
+
+msgid "skills.componentsTitle"
+msgstr "Компоненте"
+
+msgid "skills.managementTitle"
+msgstr "Управљање"
+
+msgid "common.search"
+msgstr "Претрага"
+
+msgid "common.decrease"
+msgstr "Смањи"
+
+msgid "common.increase"
+msgstr "Повећај"
+
+msgid "common.filter"
+msgstr "Филтрирај"
+
+msgid "common.clearFilters"
+msgstr "Ресетуј филтере"
+
+msgid "notifications.error"
+msgstr "Грешка"
+
+msgid "notifications.info"
+msgstr "Обавештење"
+
+msgid "statusbar.notifications"
+msgstr "Грешке: {count}"
+
+msgid "statusbar.terminal"
+msgstr "Терминал"
+
+msgid "statusbar.tasks"
+msgstr "Задаци"
+
+msgid "logs.title"
+msgstr "Обавештења"
+
+msgid "terminal.title"
+msgstr "Терминал"
+
+msgid "logs.empty"
+msgstr "Нема шта да се прикаже."
+
+msgid "logs.copy"
+msgstr "Копирај"
+
+msgid "logs.copyAll"
+msgstr "Копирај све"
+
+msgid "logs.clear"
+msgstr "Очисти"
+
+msgid "logs.filter"
+msgstr "Прикажи"
+
+msgid "logs.level.error"
+msgstr "Грешке"
+
+msgid "logs.level.info"
+msgstr "Поруке"
+
+msgid "tasks.title"
+msgstr "Задаци"
+
+msgid "tasks.empty"
+msgstr "Нема задатака."
+
+msgid "tasks.clear"
+msgstr "Очисти завршене"
+
+msgid "tasks.kind.sync"
+msgstr "Синхронизација"
+
+msgid "tasks.kind.check"
+msgstr "Провери ажурирања"
+
+msgid "tasks.kind.update-skill"
+msgstr "Ажурирај вештину"
+
+msgid "tasks.kind.refresh-projects"
+msgstr "Освежи пројекте"
+
+msgid "tasks.status.queued"
+msgstr "У реду"
+
+msgid "tasks.status.running"
+msgstr "У току"
+
+msgid "tasks.status.done"
+msgstr "Готово"
+
+msgid "tasks.status.error"
+msgstr "Неуспешно"
+
+msgid "repositories.empty"
+msgstr "Још нема додатих репозиторијума."
+
+msgid "repositories.add"
+msgstr "Додај репозиторијум"
+
+msgid "repositories.lfs"
+msgstr "LFS"
+
+msgid "repositories.lastFetched"
+msgstr "Последње преузимање: {when}"
+
+msgid "repositories.neverFetched"
+msgstr "Никад преузето"
+
+msgid "repositories.addRemote"
+msgstr "Remote URL"
+
+msgid "repositories.invalidRemote"
+msgstr "Унесите исправан remote URL (https://... или git@host:путања)."
+
+msgid "repositories.addName"
+msgstr "Назив"
+
+msgid "repositories.edit"
+msgstr "Измени репозиторијум"
+
+msgid "repositories.save"
+msgstr "Сачувај"
+
+msgid "repositories.sync"
+msgstr "Синхронизуј"
+
+msgid "repositories.syncing"
+msgstr "Синхронизација"
+
+msgid "repositories.delete"
+msgstr "Обриши"
+
+msgid "repositories.deleteConfirm"
+msgstr "Потврди брисање"
+
+msgid "repositories.hasUpdate"
+msgstr "Доступно ажурирање"
+
+msgid "repositories.viewError"
+msgstr "Кликните да видите грешку"
+
+msgid "repositories.copyBranch"
+msgstr "Копирај назив гране"
+
+msgid "repositories.branchCopied"
+msgstr "Назив гране копиран у оставу"
+
+msgid "repositories.copyRemote"
+msgstr "Копирај линк"
+
+msgid "repositories.remoteCopied"
+msgstr "Remote URL копиран у оставу"
+
+msgid "repositories.branch"
+msgstr "Грана"
+
+msgid "repositories.branchSearch"
+msgstr "Претражи гране"
+
+msgid "repositories.branchNone"
+msgstr "Нема одговарајуће гране"
+
+msgid "repositories.skillCount.one"
+msgstr "{count} вештина"
+
+msgid "repositories.skillCount.few"
+msgstr "{count} вештине"
+
+msgid "repositories.skillCount.other"
+msgstr "{count} вештина"
+
+msgid "repositories.searchFound.one"
+msgstr "Пронађен {count} репозиторијум"
+
+msgid "repositories.searchFound.few"
+msgstr "Пронађена {count} репозиторијума"
+
+msgid "repositories.searchFound.other"
+msgstr "Пронађено {count} репозиторијума"
+
+msgid "repositories.searchTotal.one"
+msgstr "Укупно {count} репозиторијум"
+
+msgid "repositories.searchTotal.few"
+msgstr "Укупно {count} репозиторијума"
+
+msgid "repositories.searchTotal.other"
+msgstr "Укупно {count} репозиторијума"
+
+msgid "repositories.showAll"
+msgstr "Прикажи све репозиторијуме"
+
+msgid "projects.empty"
+msgstr "Још нема праћених пројеката."
+
+msgid "projects.add"
+msgstr "Додај пројекат"
+
+msgid "projects.addedAt"
+msgstr "Додато {when}"
+
+msgid "projects.edit"
+msgstr "Измени пројекат"
+
+msgid "projects.name"
+msgstr "Назив"
+
+msgid "projects.remove"
+msgstr "Уклони пројекат"
+
+msgid "projects.removeConfirm"
+msgstr "Потврди уклањање"
+
+msgid "projects.removeKeepsFolder"
+msgstr "Уклања пројекат са листе. Фасцикла остаје на диску."
+
+msgid "projects.changeFolder"
+msgstr "Промени фасциклу"
+
+msgid "projects.open"
+msgstr "Отвори пројекат"
+
+msgid "projects.openInFileManager"
+msgstr "Отвори у менаџеру датотека"
+
+msgid "projects.openFailed"
+msgstr "Пројекат није могуће отворити"
+
+msgid "projects.missing"
+msgstr "Фасцикла је обрисана или премештена"
+
+msgid "projects.copyPath"
+msgstr "Копирај пуну путању"
+
+msgid "projects.pathCopied"
+msgstr "Путања копирана у оставу"
+
+msgid "projects.skillCount.one"
+msgstr "{count} вештина"
+
+msgid "projects.skillCount.few"
+msgstr "{count} вештине"
+
+msgid "projects.skillCount.other"
+msgstr "{count} вештина"
+
+msgid "projects.fromRepos"
+msgstr "{count} из репозиторијума"
+
+msgid "projects.agentCount.one"
+msgstr "{count} агент"
+
+msgid "projects.agentCount.few"
+msgstr "{count} агента"
+
+msgid "projects.agentCount.other"
+msgstr "{count} агената"
+
+msgid "projects.fromReposHint.one"
+msgstr "Инсталирана {count} вештина из репозиторијума"
+
+msgid "projects.fromReposHint.few"
+msgstr "Инсталиране {count} вештине из репозиторијума"
+
+msgid "projects.fromReposHint.other"
+msgstr "Инсталирано {count} вештина из репозиторијума"
+
+msgid "projects.skillCountHint.one"
+msgstr "Укупно {count} вештина у пројекту"
+
+msgid "projects.skillCountHint.few"
+msgstr "Укупно {count} вештине у пројекту"
+
+msgid "projects.skillCountHint.other"
+msgstr "Укупно {count} вештина у пројекту"
+
+msgid "projects.agentsHint.one"
+msgstr "Постоје конфигурације за {count} агент"
+
+msgid "projects.agentsHint.few"
+msgstr "Постоје конфигурације за {count} агента"
+
+msgid "projects.agentsHint.other"
+msgstr "Постоје конфигурације за {count} агената"
+
+msgid "projects.mcpCount"
+msgstr "{count} MCP"
+
+msgid "projects.mcpHint.one"
+msgstr "Инсталиран {count} MCP сервер из репозиторијума"
+
+msgid "projects.mcpHint.few"
+msgstr "Инсталирана {count} MCP сервера из репозиторијума"
+
+msgid "projects.mcpHint.other"
+msgstr "Инсталирано {count} MCP сервера из репозиторијума"
+
+msgid "projects.searchFound.one"
+msgstr "Пронађен {count} пројекат"
+
+msgid "projects.searchFound.few"
+msgstr "Пронађена {count} пројекта"
+
+msgid "projects.searchFound.other"
+msgstr "Пронађено {count} пројеката"
+
+msgid "projects.searchTotal.one"
+msgstr "Укупно {count} пројекат"
+
+msgid "projects.searchTotal.few"
+msgstr "Укупно {count} пројекта"
+
+msgid "projects.searchTotal.other"
+msgstr "Укупно {count} пројеката"
+
+msgid "projects.showAll"
+msgstr "Прикажи све пројекте"
+
+msgid "skills.empty"
+msgstr "Још нема инсталираних вештина."
+
+msgid "skills.add"
+msgstr "Инсталирај вештину"
+
+msgid "skills.searchPlaceholder"
+msgstr "Претражи вештине"
+
+msgid "skills.filterAgent"
+msgstr "Агент"
+
+msgid "skills.allAgents"
+msgstr "Сви агенти"
+
+msgid "skills.noVersion"
+msgstr "Без верзије"
+
+msgid "skills.installedFor"
+msgstr "Инсталирано за"
+
+msgid "skills.scope.project"
+msgstr "Пројекат"
+
+msgid "skills.scope.global"
+msgstr "Глобално"
+
+msgid "skills.source.repo"
+msgstr "Из репозиторијума"
+
+msgid "skills.source.local"
+msgstr "Са локалне путање"
+
+msgid "skills.details.title"
+msgstr "Детаљи вештине"
+
+msgid "skills.details.files"
+msgstr "{n} датотека"
+
+msgid "skills.details.hooks"
+msgstr "{n} hookова"
+
+msgid "skills.details.installedAt"
+msgstr "Инсталирано: {when}"
+
+msgid "skills.details.destination"
+msgstr "Одредиште"
+
+msgid "skills.verify"
+msgstr "Провери"
+
+msgid "skills.update"
+msgstr "Ажурирај"
+
+msgid "skills.source"
+msgstr "Режим приказа"
+
+msgid "skills.source.repositories"
+msgstr "Репозиторијуми"
+
+msgid "skills.source.projects"
+msgstr "Пројекти"
+
+msgid "skills.filterRepositories"
+msgstr "Репозиторијуми"
+
+msgid "skills.filterRepositoriesPlaceholder"
+msgstr "Сви репозиторијуми"
+
+msgid "skills.filterRepositoriesEmpty"
+msgstr "Нема одговарајућег репозиторијума"
+
+msgid "skills.filterProjects"
+msgstr "Пројекти"
+
+msgid "skills.filterProjectsPlaceholder"
+msgstr "Сви пројекти"
+
+msgid "skills.filterProjectsEmpty"
+msgstr "Нема одговарајућег пројекта"
+
+msgid "skills.action.add"
+msgstr "Инсталирај"
+
+msgid "skills.action.save"
+msgstr "Сачувај"
+
+msgid "skills.action.reset"
+msgstr "Поништи"
+
+msgid "skills.showAll"
+msgstr "Прикажи све вештине"
+
+msgid "skills.emptyRepositories"
+msgstr "Нема пронађених вештина у вашим репозиторијумима."
+
+msgid "skills.emptyProjects"
+msgstr "Још нема праћених пројеката."
+
+msgid "skills.status.add"
+msgstr "Вештина ће бити додата"
+
+msgid "skills.status.remove"
+msgstr "Вештина ће бити уклоњена"
+
+msgid "skills.status.present"
+msgstr "Вештина је већ инсталирана"
+
+msgid "skills.installPending"
+msgstr "Инсталирање вештина ускоро стиже ({count} изабрано)"
+
+msgid "skills.savePending"
+msgstr "Чување измена ускоро стиже (+{add} / -{remove})"
+
+msgid "skills.install.title"
+msgstr "Инсталирај вештине"
+
+msgid "skills.install.chooseProject"
+msgstr "Пројекат"
+
+msgid "skills.install.agents"
+msgstr "Изабрани агенти"
+
+msgid "skills.install.agentsPlaceholder"
+msgstr "Изаберите агенте"
+
+msgid "skills.install.next"
+msgstr "Даље"
+
+msgid "skills.install.back"
+msgstr "Назад"
+
+msgid "skills.install.confirm"
+msgstr "Потврди?"
+
+msgid "skills.install.installing"
+msgstr "Примена измена"
+
+msgid "skills.install.summary"
+msgstr "+{add} / -{remove}"
+
+msgid "skills.save.title"
+msgstr "Преглед измена"
+
+msgid "skills.save.confirm"
+msgstr "Потврди?"
+
+msgid "skills.save.empty"
+msgstr "Нема измена за примену"
+
+msgid "skills.col.project"
+msgstr "Пројекат"
+
+msgid "skills.col.repository"
+msgstr "Репозиторијум"
+
+msgid "skills.col.skill"
+msgstr "Вештина"
+
+msgid "skills.col.action"
+msgstr "Радња"
+
+msgid "skills.col.agents"
+msgstr "Агент"
+
+msgid "skills.change.install"
+msgstr "Инсталирај"
+
+msgid "skills.change.remove"
+msgstr "Уклони"
+
+msgid "skills.agentsLabel"
+msgstr "Агенти"
+
+msgid "skills.agentsTooltip"
+msgstr "Коришћени агенти"
+
+msgid "skills.agentsChanged"
+msgstr "Агенти измењени"
+
+msgid "skills.updateSkill"
+msgstr "ажурирај вештину"
+
+msgid "skills.updateRepo"
+msgstr "ажурирај вештине у репозиторијуму"
+
+msgid "skills.updateGroup"
+msgstr "ажурирај вештине у групи"
+
+msgid "skills.updateBadge"
+msgstr "ажурирај"
+
+msgid "skills.unlinked"
+msgstr "одвојен"
+
+msgid "skills.addRepo"
+msgstr "Додај репозиторијум"
+
+msgid "skills.local"
+msgstr "локални"
+
+msgid "skills.localHint"
+msgstr "Локална, ручно писана вештина"
+
+msgid "skills.rulesBadge"
+msgstr "правила"
+
+msgid "skills.rulesHint"
+msgstr "Вештина има правила"
+
+msgid "skills.searchFound.one"
+msgstr "Пронађена {count} вештина"
+
+msgid "skills.searchFound.few"
+msgstr "Пронађене {count} вештине"
+
+msgid "skills.searchFound.other"
+msgstr "Пронађено {count} вештина"
+
+msgid "skills.searchTotal.one"
+msgstr "Укупно {count} вештина"
+
+msgid "skills.searchTotal.few"
+msgstr "Укупно {count} вештине"
+
+msgid "skills.searchTotal.other"
+msgstr "Укупно {count} вештина"
+
+msgid "mcp.empty"
+msgstr "Још нема MCP сервера."
+
+msgid "mcp.searchFound.one"
+msgstr "Пронађен {count} MCP сервер"
+
+msgid "mcp.searchFound.few"
+msgstr "Пронађена {count} MCP сервера"
+
+msgid "mcp.searchFound.other"
+msgstr "Пронађено {count} MCP сервера"
+
+msgid "mcp.searchTotal.one"
+msgstr "Укупно {count} MCP сервер"
+
+msgid "mcp.searchTotal.few"
+msgstr "Укупно {count} MCP сервера"
+
+msgid "mcp.searchTotal.other"
+msgstr "Укупно {count} MCP сервера"
+
+msgid "mcp.showAll"
+msgstr "Прикажи све MCP сервере"
+
+msgid "mcp.add"
+msgstr "Додај MCP"
+
+msgid "mcp.addTitle"
+msgstr "Додај MCP сервер"
+
+msgid "mcp.editTitle"
+msgstr "Измени MCP сервер"
+
+msgid "mcp.edit"
+msgstr "Измени"
+
+msgid "mcp.install"
+msgstr "Инсталирај"
+
+msgid "mcp.installMcp"
+msgstr "Инсталирај MCP"
+
+msgid "mcp.installTitle"
+msgstr "Инсталирај {name}"
+
+msgid "mcp.remove"
+msgstr "Уклони"
+
+msgid "mcp.update"
+msgstr "Ажурирај"
+
+msgid "mcp.cancel"
+msgstr "Откажи"
+
+msgid "mcp.save"
+msgstr "Сачувај"
+
+msgid "mcp.copy"
+msgstr "Копирај"
+
+msgid "mcp.copiedToClipboard"
+msgstr "Копирано у привремену меморију"
+
+msgid "mcp.goToRepository"
+msgstr "Иди на репозиторијум"
+
+msgid "mcp.rulesBadge"
+msgstr "правила"
+
+msgid "mcp.protocol.stdio"
+msgstr "stdio"
+
+msgid "mcp.protocol.http"
+msgstr "http"
+
+msgid "mcp.protocol.sse"
+msgstr "sse"
+
+msgid "mcp.paramsHelp"
+msgstr "Параметри {name} су подржани у URL-у, заглављима, команди, аргументима, променљивама окружења и правилима."
+
+msgid "mcp.field.name"
+msgstr "Назив"
+
+msgid "mcp.namePlaceholder"
+msgstr "нпр. GitHub MCP"
+
+msgid "mcp.field.type"
+msgstr "Тип"
+
+msgid "mcp.field.url"
+msgstr "URL"
+
+msgid "mcp.urlPlaceholder"
+msgstr "https://example.com/{token}"
+
+msgid "mcp.field.headers"
+msgstr "Заглавља"
+
+msgid "mcp.headerNamePlaceholder"
+msgstr "Назив заглавља"
+
+msgid "mcp.headerValuePlaceholder"
+msgstr "Вредност заглавља"
+
+msgid "mcp.addHeader"
+msgstr "Додај заглавље"
+
+msgid "mcp.field.command"
+msgstr "Команда"
+
+msgid "mcp.commandPlaceholder"
+msgstr "npx some-mcp-server"
+
+msgid "mcp.field.arguments"
+msgstr "Аргументи"
+
+msgid "mcp.argumentPlaceholder"
+msgstr "Аргумент"
+
+msgid "mcp.addArgument"
+msgstr "Додај аргумент"
+
+msgid "mcp.field.env"
+msgstr "Променљиве окружења"
+
+msgid "mcp.varNamePlaceholder"
+msgstr "Назив променљиве"
+
+msgid "mcp.varValuePlaceholder"
+msgstr "Вредност променљиве"
+
+msgid "mcp.addVariable"
+msgstr "Додај променљиву"
+
+msgid "mcp.field.rules"
+msgstr "Правила"
+
+msgid "mcp.rulesPlaceholder"
+msgstr "Упутства која се убацују у датотеку правила/упутства агента приликом инсталирања овог сервера."
+
+msgid "mcp.validation.nameRequired"
+msgstr "Назив је обавезан."
+
+msgid "mcp.validation.selectType"
+msgstr "Изаберите тип транспорта."
+
+msgid "mcp.validation.commandRequired"
+msgstr "Команда је обавезна за stdio сервере."
+
+msgid "mcp.validation.urlRequired"
+msgstr "URL је обавезан за http/sse сервере."
+
+msgid "mcp.validation.invalidParam"
+msgstr "Неважећи параметар ({reason}) на позицији {index}."
+
+msgid "mcp.field.project"
+msgstr "Пројекат"
+
+msgid "mcp.chooseProject"
+msgstr "Изаберите пројекат"
+
+msgid "mcp.field.agents"
+msgstr "Агенти"
+
+msgid "mcp.field.parameters"
+msgstr "Параметри"
+
+msgid "mcp.codexGlobalNote"
+msgstr "Codex се инсталира глобално (није ограничен на овај пројекат)."
+
+msgid "mcp.transportUnsupported"
+msgstr "{agent} не може изразити транспорт {transport} у својој изворној конфигурацији."
+
+msgid "mcp.skippedAgents"
+msgstr "Прескочено је {count} агената: транспорт presetа није подржан."
+
+msgid "mcp.needsParamsNotice"
+msgstr "Ове MCP инсталације захтевају параметре пре него што могу бити додате:"
+
+msgid "mcp.delete"
+msgstr "Обриши"
+
+msgid "mcp.deleteConfirmTitle"
+msgstr "Обрисати {name}?"
+
+msgid "mcp.deleteConfirmBody"
+msgstr "Ова радња се не може опозвати."
+
+msgid "mcp.detailsTitle"
+msgstr "Детаљи MCP сервера"
+
+msgid "mcp.view.label"
+msgstr "Прикажи као"
+
+msgid "mcp.view.tiles"
+msgstr "Плочице"
+
+msgid "mcp.view.tree"
+msgstr "Стабло"
+
+msgid "mcp.componentsTitle"
+msgstr "Компоненте"
+
+msgid "mcp.managementTitle"
+msgstr "Управљање"
+
+msgid "settings.comingSoon"
+msgstr "Екран подешавања ускоро стиже."
+
+msgid "settings.section.general"
+msgstr "Опште"
+
+msgid "settings.section.updates"
+msgstr "Ажурирања"
+
+msgid "settings.section.agents"
+msgstr "Агенти"
+
+msgid "settings.section.executables"
+msgstr "Извршне датотеке"
+
+msgid "settings.section.security"
+msgstr "Безбедност"
+
+msgid "settings.section.notifications"
+msgstr "Обавештења"
+
+msgid "settings.valid"
+msgstr "Исправно"
+
+msgid "settings.invalid"
+msgstr "Неисправно"
+
+msgid "settings.openConfig"
+msgstr "Отвори конфигурациону датотеку"
+
+msgid "settings.openConfigInEditor"
+msgstr "Отвори конфигурациону датотеку у уређивачу"
+
+msgid "settings.editor.defaultApp"
+msgstr "Отвори у подразумеваној апликацији"
+
+msgid "settings.openConfigFailed"
+msgstr "Конфигурациону датотеку није могуће отворити"
+
+msgid "settings.theme"
+msgstr "Тема"
+
+msgid "settings.animations"
+msgstr "Анимације"
+
+msgid "settings.animationsHint"
+msgstr "Брзина анимација уласка и изласка кроз цео интерфејс"
+
+msgid "settings.animations.fast"
+msgstr "Брзо"
+
+msgid "settings.animations.normal"
+msgstr "Нормално"
+
+msgid "settings.animations.off"
+msgstr "Искључено"
+
+msgid "settings.theme.system"
+msgstr "Системска"
+
+msgid "settings.theme.light"
+msgstr "Светла"
+
+msgid "settings.theme.dark"
+msgstr "Тамна"
+
+msgid "settings.language"
+msgstr "Језик"
+
+msgid "settings.languageEmpty"
+msgstr "Нема одговарајућег језика"
+
+msgid "settings.section.repositories"
+msgstr "Репозиторијуми"
+
+msgid "settings.section.projects"
+msgstr "Пројекти"
+
+msgid "settings.git"
+msgstr "Git"
+
+msgid "settings.gitDescription"
+msgstr "Путања до git извршне датотеке"
+
+msgid "settings.updates.mode"
+msgstr "Провере ажурирања"
+
+msgid "settings.updates.mode.manual"
+msgstr "Ручно"
+
+msgid "settings.updates.mode.onStartup"
+msgstr "При покретању"
+
+msgid "settings.updates.mode.scheduled"
+msgstr "Заказано"
+
+msgid "settings.updates.interval"
+msgstr "Интервал ажурирања"
+
+msgid "settings.projects.checkInterval"
+msgstr "Интервал провере фасцикли"
+
+msgid "settings.interval.minutesUnit"
+msgstr "мин"
+
+msgid "settings.interval.hoursUnit"
+msgstr "ч"
+
+msgid "settings.agents.enabled"
+msgstr "Омогућени агенти"
+
+msgid "settings.agents.placeholder"
+msgstr "Изаберите агенте"
+
+msgid "settings.agents.selected"
+msgstr "Изабрано {count}"
+
+msgid "settings.notifications.enabled"
+msgstr "Системска обавештења"
+
+msgid "config.invalidBanner"
+msgstr "Конфигурација има неисправне секције. Користе се подразумеване вредности. Покрените \"skillkeeper config validate\" за детаље."
+
+msgid "hooks.requireConsent"
+msgstr "Инсталација hookова захтева изричиту сагласност (--allow-hooks). Тело вештине је инсталирано; hookови су прескочени."
+
+msgid "skills.count"
+msgstr "{n} инсталираних вештина"
+
+msgid "about.docs"
+msgstr "Документација"
+
+msgid "about.openDocs"
+msgstr "Отвори документацију"
+
+msgid "about.repo"
+msgstr "Репозиторијум"
+
+msgid "about.openRepo"
+msgstr "Отвори репозиторијум"
+
+msgid "about.license"
+msgstr "Лиценца"
+
+msgid "about.openLicense"
+msgstr "Погледај лиценцу"

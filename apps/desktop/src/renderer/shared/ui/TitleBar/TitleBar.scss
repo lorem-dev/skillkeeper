@@ -1,10 +1,12 @@
 // Frameless-window title bar (Windows/Linux): a transparent, draggable strip at
 // the very top of the window. It has NO background of its own -- it only
 // reserves a top band you can grab to move the window, with the custom controls
-// at the right. The app content sits below it. (macOS does not use this -- see
-// App.scss `.sk-app--mac`, where the drag regions live on the real content.)
+// at the right. The app content sits below it. The strip itself is the window
+// drag handle -- see the `data-tauri-drag-region` tag in TitleBar.tsx (WebKit
+// ignores the old app-region CSS property, so Tauri drives dragging natively).
+// (macOS does not use this -- see App.scss `.sk-app--mac`, where the drag
+// regions live on the real content.)
 .sk-titlebar {
-  -webkit-app-region: drag;
   flex: none;
   display: flex;
   align-items: center;

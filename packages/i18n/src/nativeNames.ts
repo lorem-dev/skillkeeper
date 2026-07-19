@@ -6,7 +6,7 @@ import type { Lang } from './index.js';
  * non-ASCII text.
  *
  * The language picker uses this as the authoritative primary label instead of
- * `Intl.DisplayNames`: the Electron/Chromium runtime ships a reduced ICU data
+ * `Intl.DisplayNames`: the system WebView runtime ships a reduced ICU data
  * set on some platforms, where e.g. `Intl.DisplayNames(['be']).of('be')`
  * returns the bare code "be" (Belarusian then looks untranslated) and script
  * codes render as regions ("zh-cn" -> "Chinese (China)"). Keep in sync with

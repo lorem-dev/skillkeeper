@@ -18,12 +18,12 @@
 
 // Top spacer for a frameless window (macOS traffic-light zone): a real in-flow
 // block that reserves its own height, so the first item clears the native
-// window controls. It is also the drag region (moves the window); being empty,
-// it never intercepts a click.
+// window controls. It is also the drag region (moves the window) via the
+// `data-tauri-drag-region` tag in Sidebar.tsx; being empty, it never intercepts
+// a click.
 .sk-sidebar__drag {
   flex: none;
   height: 44px;
-  -webkit-app-region: drag;
 }
 
 .sk-sidebar__title {

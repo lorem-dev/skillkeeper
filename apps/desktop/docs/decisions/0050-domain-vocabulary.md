@@ -42,9 +42,9 @@ domain helpers format the shared core types, so they depend on the stable types 
 `@/services/bridge` - but on those types alone, never on transport details.
 
 For anyone expecting a DDD domain layer: this is not that. The real engine - the business rules
-that install, verify, and repair skills - lives in `@skillkeeper/core` in the main process. The
-renderer's `domain/` is the UI's shared vocabulary and display logic, and there is no engine
-singleton in the renderer.
+that install, verify, and repair skills - lives in the `skillkeeper-core` Rust crate in the Rust
+backend. The renderer's `domain/` is the UI's shared vocabulary and display logic, and there is
+no engine singleton in the renderer.
 
 ## Consequences
 

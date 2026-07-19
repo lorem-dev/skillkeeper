@@ -9,9 +9,9 @@
        * Hardcoded startup preloader. Intentionally text-free (any label would
        * need localization, which is not available before the bundle loads).
        *
-       * Theme follows `prefers-color-scheme`: the main process mirrors
-       * `config.general.theme` onto `nativeTheme.themeSource` before the window
-       * loads, so this matches the app's chosen theme (system/light/dark). The
+       * Theme follows `prefers-color-scheme`: the Rust backend applies
+       * `config.general.theme` to the window before it loads, so this matches
+       * the app's chosen theme (system/light/dark). The
        * app itself is revealed by app/preloader.ts once initial data is loaded.
        */
       :root {
