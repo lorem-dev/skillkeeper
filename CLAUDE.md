@@ -1,13 +1,18 @@
 # SkillKeeper
 
-SkillKeeper is a TypeScript/pnpm monorepo that installs and manages "skills"
+SkillKeeper is a Rust + pnpm monorepo that installs and manages "skills"
 (and their "hooks") for AI coding agents -- Claude, Codex, Copilot, Cursor, and
-OpenCode. It ships a commander-based CLI and an Electron + React desktop app
-over a shared domain core (`@skillkeeper/core`). The monorepo contains five
-packages (`core`, `config`, `agents`, `i18n`, `cli`) and one Electron app
-(`apps/desktop`). Target platforms: Linux, macOS, Windows. All source and
-documentation are ASCII-only; the only non-ASCII text lives in the `i18n`
-catalogs for German and Russian.
+OpenCode. It ships a clap-based CLI and a Tauri v2 + React desktop app over a
+shared Rust domain core (`skillkeeper-core`). The repository is a Cargo
+workspace of four crates (`skillkeeper-core`, `skillkeeper-config`,
+`skillkeeper-agents`, `skillkeeper-cli`) plus the desktop app's Rust backend
+(`apps/desktop/src-tauri`), alongside a pnpm workspace whose only remaining
+TypeScript package is `packages/i18n` (the desktop renderer lives in
+`apps/desktop/src/renderer`). The renderer's domain types are generated from the
+Rust crates via ts-rs. Target platforms: Linux, macOS, Windows. All source and
+documentation are ASCII-only; the only non-ASCII text lives in the localization
+catalogs under `locales/` (the gettext `.po` sources for all supported
+languages).
 The desktop `shared/ui` kit ships a Storybook for viewing components in
 isolation (`pnpm --filter @skillkeeper/desktop run storybook`); see AGENTS.md.
 

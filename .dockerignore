@@ -1,0 +1,29 @@
+# No Dockerfile ships in this repo yet; this keeps any future Docker build
+# context small and free of local-only artifacts (heavy build outputs, Python
+# virtualenvs used for the docs, agent tooling).
+.git
+node_modules
+**/node_modules
+
+# Rust + frontend build output
+/target
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+dist
+out
+apps/desktop/dist-tauri
+
+# Test/coverage and Storybook
+coverage
+apps/desktop/storybook-static
+
+# Documentation site (mkdocs + uv) and any local Python virtualenv
+.venv
+.venv-docs
+site
+
+# Agent and code-intelligence tooling (not shipped)
+.claude
+.superpowers
+.codegraph
+.worktrees
