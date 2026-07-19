@@ -1,4 +1,6 @@
-# CI: lint, typecheck, coverage-gated tests, and lib build.
+# CI: lint, typecheck, coverage-gated tests, and lib build (JS/TS side),
+# plus a Rust job that fmt-checks, clippy-lints, and tests the Cargo
+# workspace (which now includes the `skillkeeper` Tauri app crate).
 # Runs on every push to main/develop and on all pull requests.
 
 name: CI
@@ -44,3 +46,62 @@ jobs:
 
       - name: Build libraries
         run: pnpm build:libs
+
+  rust:
+    name: Rust fmt, clippy, test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The Cargo workspace includes the `skillkeeper` Tauri app crate, which
+      # links against the system WebKitGTK/libsoup stack. These packages must
+      # be present for `cargo clippy`/`cargo test` to compile the app crate on
+      # ubuntu. libwebkit2gtk-4.1 matches Tauri v2's default webview backend.
+      - name: Install Tauri Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Set up Rust toolchain (stable + rustfmt + clippy)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@v2
+
+      # The Tauri app crate reads the git-ignored icon set at compile time
+      # (include_bytes! + generate_context! + the resources glob). It is
+      # generated from assets/icons/ by scripts/gen-icons.mjs; the crate's
+      # build.rs regenerates it when missing, but a warm rust-cache skips
+      # build.rs while the icons (not cached, not committed) are absent -- so
+      # generate them explicitly here before any cargo step.
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Set up Node.js 22 with pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate the desktop icon set
+        run: pnpm run icons
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Clippy (deny warnings)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test workspace
+        run: cargo test --workspace
