@@ -69,6 +69,7 @@ jobs:
       # passes "" for a missing secret. These flags gate the signing steps so
       # the build stays green-able and simply produces unsigned artifacts.
       HAS_WIN_CERT: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
+      HAS_APPLE_CERT: ${{ secrets.APPLE_CERTIFICATE != '' }}
 
     strategy:
       fail-fast: false
@@ -168,18 +169,47 @@ jobs:
           $pwd = ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
           Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password $pwd
 
-      - name: Build the app (Tauri)
-        uses: tauri-apps/tauri-action@v0
+      # The msi bundle target requires a numeric ProductVersion, but the app
+      # version carries a non-numeric pre-release (e.g. 0.1.0-rc.2). Derive an
+      # MSI-only version into bundle.windows.wix.version so the msi target
+      # bundles; every other target keeps the app version. Runs only on the
+      # Windows leg and only mutates the ephemeral runner's checkout.
+      - name: Set MSI (wix) version
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: node scripts/set-wix-version.mjs
+
+      # tauri-bundler attempts a keychain certificate import whenever
+      # APPLE_CERTIFICATE is present in the environment -- even when empty --
+      # which fails the macOS bundle. Export the Apple signing variables only
+      # when a certificate secret is actually configured, so an unset secret
+      # yields an unsigned (green-able) build instead of a failed import.
+      - name: Configure Apple code signing
+        if: startsWith(matrix.os, 'macos') && env.HAS_APPLE_CERT == 'true'
         env:
-          # macOS signing + notarization (tauri-action's documented variables).
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # Windows cert password, referenced from secrets; the certificate is
-          # imported above and selected via tauri.conf.json certificateThumbprint.
+        run: |
+          {
+            echo "APPLE_CERTIFICATE=$APPLE_CERTIFICATE"
+            echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
+            echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
+            echo "APPLE_ID=$APPLE_ID"
+            echo "APPLE_PASSWORD=$APPLE_PASSWORD"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Build the app (Tauri)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          # macOS signing is injected via $GITHUB_ENV by "Configure Apple code
+          # signing" above, and only when a certificate secret is set. The
+          # Windows cert password is harmless when empty (no thumbprint set in
+          # tauri.conf.json means the bundler does not sign).
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         with:
           # The Tauri project lives under apps/desktop (src-tauri inside it).
