@@ -165,22 +165,34 @@
   }
 }
 
-// Windows runs on WebView2 (Chromium), where a `mask` on the same element as a
-// `backdrop-filter` suppresses the blur entirely (crbug 974857 / 40778541) --
-// so the masked header backdrop and bottom fade paint nothing there. WebKit
-// (macOS/Linux) honors both together, so it keeps the soft-masked fade above;
-// only Chromium drops the mask, trading the soft edge for a visible blur. The
-// tint gradients still soften the transition.
-.sk-app--windows {
+// Windows/Linux depart from the macOS (WebKit) page chrome:
+//
+// - The toolbar backdrop keeps only its blur; its theme tint (the darkening/
+//   lightening wash) is dropped so it reads as clean frosted glass.
+// - The bottom fade drops the blur entirely and becomes a plain shading
+//   gradient toward the page background (no backdrop-filter, no mask).
+.sk-app--windows,
+.sk-app--linux {
   .sk-page__header::before {
-    mask-image: none;
-    -webkit-mask-image: none;
+    background: none;
   }
 
   .sk-page__fade {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     mask-image: none;
     -webkit-mask-image: none;
+    background: linear-gradient(to bottom, transparent, var(--sk-color-bg-secondary));
   }
+}
+
+// Windows (WebView2 / Chromium) additionally drops the toolbar backdrop mask: a
+// mask on the same element as a `backdrop-filter` suppresses the blur there
+// (crbug 974857 / 40778541). Linux (WebKitGTK) honors both, so it keeps the
+// soft-masked blur fade.
+.sk-app--windows .sk-page__header::before {
+  mask-image: none;
+  -webkit-mask-image: none;
 }
 
 // Muted empty-state text used by placeholder screens.

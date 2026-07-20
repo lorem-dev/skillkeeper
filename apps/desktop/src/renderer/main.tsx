@@ -25,7 +25,12 @@ void bridgeClient.init().finally(() => {
   // Now that init() has resolved the platform, record the chrome variant before
   // the first render so `dragRegion()` returns the drag tag on macOS. (Doing
   // this at App.tsx module-eval time ran before init and left drag disabled.)
-  setMacChrome(hostPlatform(bridgeClient.platform) === 'mac');
+  const platform = hostPlatform(bridgeClient.platform);
+  setMacChrome(platform === 'mac');
+  // Mark the platform on the document element (like data-theme) so styles can
+  // key off it even for portaled surfaces (menus, dropdowns) that mount to
+  // document.body, outside the `.sk-app` platform class.
+  document.documentElement.setAttribute('data-platform', platform);
   createRoot(container).render(
     <StrictMode>
       <App />

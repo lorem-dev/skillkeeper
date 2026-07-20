@@ -127,6 +127,14 @@
   padding-top: var(--sk-space-4);
 }
 
+// Windows/Linux: the sidebar sits directly under the TitleBar strip. Give it a
+// small top margin so it does not butt right against the top edge. (macOS keeps
+// its own in-flow drag spacer, so it needs none here.)
+.sk-app--windows .sk-sidebar,
+.sk-app--linux .sk-sidebar {
+  margin-top: var(--sk-space-3);
+}
+
 // Window dragging on macOS is driven by `data-tauri-drag-region` tags on the
 // non-interactive chrome (the sidebar spacer, the page header + its title and
 // spacer, and each full-screen overlay header + its title), not by CSS: WebKit
