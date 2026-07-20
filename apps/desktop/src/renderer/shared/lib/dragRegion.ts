@@ -23,12 +23,24 @@ export interface DragRegionProps {
   readonly 'data-tauri-drag-region'?: true;
 }
 
+export interface DragRegionOptions {
+  /**
+   * Tag the region on every platform, not just under the macOS chrome. The
+   * full-screen overlays (tasks / terminal / logs) use this: they cover the
+   * TitleBar strip while open, so without an on-content drag handle the window
+   * would be undraggable on Windows/Linux until dismissed.
+   */
+  readonly always?: boolean;
+}
+
 /**
  * Props to spread onto a non-interactive element so it becomes a window-drag
- * handle -- but only under the macOS chrome. Returns an empty object elsewhere,
- * leaving the element inert. Tauri drags only when the pressed element itself is
- * tagged, so interactive children (buttons, inputs) keep working with no opt-out.
+ * handle. Under the macOS chrome every such region is active; on Windows/Linux
+ * on-content regions stay off (those platforms drag via the dedicated TitleBar
+ * strip) unless `always` is set. Returns an empty object when inactive, leaving
+ * the element inert. Tauri drags only when the pressed element itself is tagged,
+ * so interactive children (buttons, inputs) keep working with no opt-out.
  */
-export function dragRegion(): DragRegionProps {
-  return macChrome ? { 'data-tauri-drag-region': true } : {};
+export function dragRegion(options?: DragRegionOptions): DragRegionProps {
+  return macChrome || options?.always === true ? { 'data-tauri-drag-region': true } : {};
 }

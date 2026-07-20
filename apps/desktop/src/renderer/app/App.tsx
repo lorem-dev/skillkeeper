@@ -207,13 +207,11 @@ export function App() {
       <WindowChrome />
       <ConfigBanner />
       <div className="sk-shell">
-        {/* On macOS the sidebar top is the drag/traffic-light zone: drop the
-            app-title header there and render a draggable panel instead; other
-            platforms keep the title and no drag region. */}
-        <Sidebar
-          title={platform === 'mac' ? undefined : t('app.title')}
-          dragRegion={platform === 'mac'}
-        >
+        {/* The sidebar carries no app title on any platform (matching macOS):
+            the app title lives in the top bar (WindowChrome/TitleBar) on
+            Windows/Linux, and macOS shows none. On macOS the sidebar top is the
+            drag/traffic-light zone, so it renders a draggable panel there. */}
+        <Sidebar dragRegion={platform === 'mac'}>
           {NAV_ITEMS.map(({ id, key }) => (
             <SidebarItem
               key={id}

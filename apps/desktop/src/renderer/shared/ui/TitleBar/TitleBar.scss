@@ -12,6 +12,9 @@
   align-items: center;
   height: 38px;
   background: transparent;
+  // A hairline bottom rule separating the bar from the content, matching the
+  // sidebar's trailing-edge border.
+  border-bottom: 0.5px solid var(--sk-color-separator);
   user-select: none;
   -webkit-user-select: none;
 }

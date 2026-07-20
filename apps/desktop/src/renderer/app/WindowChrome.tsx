@@ -5,7 +5,9 @@
  * region (its `dragRegion` panel), and the toolbar/overlay headers are dragged
  * by their non-interactive parts (title + spacer), set up in App.scss
  * `.sk-app--mac`. On Windows/Linux it renders the (pure) TitleBar strip with
- * custom window controls, wired to the bridge and tracking the maximized state.
+ * the app title and custom window controls, wired to the bridge and tracking
+ * the maximized state. (macOS shows no app title anywhere -- the sidebar no
+ * longer carries one on any platform.)
  */
 import { useEffect, useState } from 'react';
 import { TitleBar } from '@/shared/ui';
@@ -39,6 +41,7 @@ export function WindowChrome() {
   return (
     <TitleBar
       platform={platform}
+      title={t('app.title')}
       maximized={maximized}
       onMinimize={() => bridgeClient.minimizeWindow()}
       onToggleMaximize={() => bridgeClient.toggleMaximizeWindow()}

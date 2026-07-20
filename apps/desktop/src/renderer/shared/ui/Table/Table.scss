@@ -146,3 +146,19 @@
     display: none;
   }
 }
+
+// Windows runs on WebView2 (Chromium), where a `mask` on the same element as a
+// `backdrop-filter` kills the blur (crbug 974857 / 40778541). Drop the mask on
+// the masked head extension and the bottom fade so the blur paints; the tint
+// gradients still fade the edge. WebKit (macOS/Linux) keeps the masked fade.
+.sk-app--windows {
+  .sk-table--sticky .sk-table__head::after {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .sk-table__fade--bottom {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+}

@@ -146,9 +146,10 @@
 // its button and promotes to a layer for the smooth slide.
 .sk-page__dock-item {
   display: inline-flex;
-  // Layer promotion + anti-aliased edges while the button slides/blurs in.
-  will-change: transform;
-  backface-visibility: hidden;
+  // No permanent `will-change`/compositor promotion: on Windows (WebView2 /
+  // Chromium) a composited layer renders the button label with grayscale AA
+  // instead of subpixel ClearType. motion/react promotes the layer only while
+  // the slide/blur-in runs, which is enough.
 }
 
 // When a dock is present, reserve space at the end of the scroll body so the
@@ -161,6 +162,24 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .sk-page__fade {
     display: none;
+  }
+}
+
+// Windows runs on WebView2 (Chromium), where a `mask` on the same element as a
+// `backdrop-filter` suppresses the blur entirely (crbug 974857 / 40778541) --
+// so the masked header backdrop and bottom fade paint nothing there. WebKit
+// (macOS/Linux) honors both together, so it keeps the soft-masked fade above;
+// only Chromium drops the mask, trading the soft edge for a visible blur. The
+// tint gradients still soften the transition.
+.sk-app--windows {
+  .sk-page__header::before {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .sk-page__fade {
+    mask-image: none;
+    -webkit-mask-image: none;
   }
 }
 

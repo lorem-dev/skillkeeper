@@ -1,8 +1,9 @@
 .sk-repo-card {
-  // Promote to its own compositor layer for the smooth entrance-slide animation;
-  // backface-visibility keeps edges anti-aliased while it moves.
-  will-change: transform;
-  backface-visibility: hidden;
+  // No permanent `will-change`/compositor promotion: on Windows (WebView2 /
+  // Chromium) a composited layer renders text with grayscale AA instead of
+  // subpixel ClearType, so the static card text looks fuzzy. motion/react
+  // promotes the layer only while the entrance-slide animation runs, which is
+  // enough to keep the slide smooth without harming resting text.
   display: flex;
   align-items: center;
   gap: var(--sk-space-4);

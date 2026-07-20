@@ -89,12 +89,24 @@ export function getDisplacementFilter({
 let urlBackdropSupport: boolean | undefined;
 
 /**
- * Whether the browser keeps `backdrop-filter: url(...)`. When false, callers
- * should fall back to plain blur + saturate.
+ * Whether the engine actually *renders* an SVG `url(...)` backdrop filter (not
+ * just parses it). Only Gecko does: Chromium and WebKit both accept the value
+ * syntactically -- so a naive `el.style.backdropFilter === 'url(...)'` check is
+ * a false positive on WebView2 (Windows) -- yet neither paints it (WebKit bug
+ * 245510, and Chromium ignores SVG-referenced backdrop filters). When this is
+ * false, callers fall back to plain blur + saturate, which every engine paints.
  */
 export function supportsBackdropUrl(): boolean {
   if (urlBackdropSupport !== undefined) return urlBackdropSupport;
-  if (typeof document === 'undefined') return false;
+  if (typeof document === 'undefined' || typeof navigator === 'undefined') return false;
+  // Gecko is the only engine that paints url() backdrop filters. Chromium and
+  // WebKit both carry a "like Gecko" compatibility token in their UA (no
+  // version), so match the real "Gecko/<version>" token instead.
+  const isGecko = /\bGecko\/\d/.test(navigator.userAgent);
+  if (!isGecko) {
+    urlBackdropSupport = false;
+    return urlBackdropSupport;
+  }
   const el = document.createElement('div');
   el.style.cssText = 'backdrop-filter: url(#test)';
   urlBackdropSupport =

@@ -123,6 +123,10 @@
     position: relative;
     overflow: hidden;
     background: var(--sk-glass-tint);
+    // Dim the gradient rim: on a small pill a full-strength 1px rim reads as a
+    // hard outline (and the mask-composite ring aliases on Chromium). A softer
+    // rim keeps the glass edge without the sharp border.
+    --sk-glass-border-strength: 0.6;
     // Softer fade between states for the glass look.
     transition:
       background var(--sk-duration-medium) var(--sk-ease-standard),
@@ -152,6 +156,9 @@
     overflow: hidden;
     background: var(--sk-glass-tint);
     box-shadow: var(--sk-shadow-1);
+    // Soften the rim (see `--glass` above): a full-strength 1px pill rim reads
+    // as a hard outline and aliases on Chromium.
+    --sk-glass-border-strength: 0.6;
     transition:
       background var(--sk-duration-medium) var(--sk-ease-standard),
       filter var(--sk-duration-fast) var(--sk-ease-standard),
