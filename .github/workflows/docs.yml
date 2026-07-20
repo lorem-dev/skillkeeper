@@ -40,6 +40,10 @@ jobs:
         with:
           # mike needs full history plus the gh-pages branch it maintains.
           fetch-depth: 0
+          # The site logo and other assets (docs/assets/*.png) are LFS-tracked;
+          # without this the build embeds LFS pointer files and the logo breaks
+          # (Pages serves the ~130-byte pointer instead of the image).
+          lfs: true
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5

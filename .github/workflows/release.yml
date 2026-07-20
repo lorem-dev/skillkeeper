@@ -45,6 +45,11 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+          # This job only runs node scripts/check-version.mjs and never installs
+          # deps. Disable setup-node's package-manager cache: it otherwise
+          # auto-detects the pnpm packageManager field and fails locating pnpm
+          # before corepack is enabled.
+          package-manager-cache: false
 
       - name: Check the tag matches every package, tauri, and crate version
         run: node scripts/check-version.mjs
@@ -64,6 +69,7 @@ jobs:
       # passes "" for a missing secret. These flags gate the signing steps so
       # the build stays green-able and simply produces unsigned artifacts.
       HAS_WIN_CERT: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
+      HAS_APPLE_CERT: ${{ secrets.APPLE_CERTIFICATE != '' }}
 
     strategy:
       fail-fast: false
@@ -121,7 +127,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
-          workspaces: "apps/desktop/src-tauri -> target"
+          workspaces: ". -> target"
 
       - name: Enable pnpm via corepack
         run: corepack enable
@@ -163,18 +169,47 @@ jobs:
           $pwd = ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
           Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password $pwd
 
-      - name: Build the app (Tauri)
-        uses: tauri-apps/tauri-action@v0
+      # The msi bundle target requires a numeric ProductVersion, but the app
+      # version carries a non-numeric pre-release (e.g. 0.1.0-rc.2). Derive an
+      # MSI-only version into bundle.windows.wix.version so the msi target
+      # bundles; every other target keeps the app version. Runs only on the
+      # Windows leg and only mutates the ephemeral runner's checkout.
+      - name: Set MSI (wix) version
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: node scripts/set-wix-version.mjs
+
+      # tauri-bundler attempts a keychain certificate import whenever
+      # APPLE_CERTIFICATE is present in the environment -- even when empty --
+      # which fails the macOS bundle. Export the Apple signing variables only
+      # when a certificate secret is actually configured, so an unset secret
+      # yields an unsigned (green-able) build instead of a failed import.
+      - name: Configure Apple code signing
+        if: startsWith(matrix.os, 'macos') && env.HAS_APPLE_CERT == 'true'
         env:
-          # macOS signing + notarization (tauri-action's documented variables).
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # Windows cert password, referenced from secrets; the certificate is
-          # imported above and selected via tauri.conf.json certificateThumbprint.
+        run: |
+          {
+            echo "APPLE_CERTIFICATE=$APPLE_CERTIFICATE"
+            echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
+            echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
+            echo "APPLE_ID=$APPLE_ID"
+            echo "APPLE_PASSWORD=$APPLE_PASSWORD"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Build the app (Tauri)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          # macOS signing is injected via $GITHUB_ENV by "Configure Apple code
+          # signing" above, and only when a certificate secret is set. The
+          # Windows cert password is harmless when empty (no thumbprint set in
+          # tauri.conf.json means the bundler does not sign).
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         with:
           # The Tauri project lives under apps/desktop (src-tauri inside it).
@@ -196,15 +231,23 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
 
-          # 4-part numeric version required by MSIX (no prerelease suffix).
+          # MSIX requires a 4-part numeric version. Match the MSI (wix) scheme:
+          #   X.Y.Z-rc.N -> X.Y.Z.N   (rc number in the 4th field)
+          #   X.Y.Z       -> X.Y.Z.0
+          # Note: the Microsoft Store reserves the 4th field (must be 0) and
+          # forbids a 0 first field, so these best-effort rc packages are for
+          # local distribution, not direct Store submission.
           $conf = Get-Content "apps/desktop/src-tauri/tauri.conf.json" | ConvertFrom-Json
-          $semver = $conf.version -replace '-.*$', ''
-          $parts = $semver.Split('.')
-          $msixVersion = "{0}.{1}.{2}.0" -f $parts[0], $parts[1], $parts[2]
+          if ($conf.version -match '^(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?$') {
+            $rc = if ($matches[4]) { $matches[4] } else { "0" }
+            $msixVersion = "{0}.{1}.{2}.{3}" -f $matches[1], $matches[2], $matches[3], $rc
+          } else {
+            throw "Unexpected app version '$($conf.version)'; expected X.Y.Z or X.Y.Z-rc.N"
+          }
           Write-Host "MSIX version: $msixVersion"
 
           # Locate the built executable (target name = crate name skillkeeper).
-          $exe = Get-ChildItem -Path "apps/desktop/src-tauri/target" -Recurse -Filter "skillkeeper.exe" |
+          $exe = Get-ChildItem -Path "target" -Recurse -Filter "skillkeeper.exe" |
             Where-Object { $_.FullName -match "release" -and $_.FullName -notmatch "deps" } |
             Select-Object -First 1
           if (-not $exe) {
@@ -263,8 +306,7 @@ jobs:
             '        Square150x150Logo="Assets\Square150x150Logo.png"',
             '        Square44x44Logo="Assets\Square44x44Logo.png">',
             '        <uap:DefaultTile',
-            '          Square71x71Logo="Assets\Square71x71Logo.png"',
-            '          Square310x310Logo="Assets\Square310x310Logo.png">',
+            '          Square71x71Logo="Assets\Square71x71Logo.png">',
             '          <uap:ShowNameOnTiles>',
             '            <uap:ShowOn Tile="square150x150Logo" />',
             '          </uap:ShowNameOnTiles>',
@@ -292,6 +334,14 @@ jobs:
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
           $msix = Join-Path $outDir "SkillKeeper-$msixVersion.msix"
           & $makeappx.FullName pack /d $stage /p $msix /o
+          # Native tools do not trip $ErrorActionPreference; check the exit code
+          # explicitly so a failed pack is a real (visible) step failure instead
+          # of a false "Built MSIX". The step stays continue-on-error, so a
+          # broken MSIX is surfaced but does not block the msi/nsis upload.
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "MakeAppx failed with exit code $LASTEXITCODE; MSIX not produced."
+            exit 1
+          }
           Write-Host "Built MSIX: $msix"
 
       # -----------------------------------------------------------------------
@@ -303,8 +353,8 @@ jobs:
         with:
           name: skillkeeper-${{ github.ref_name }}-${{ matrix.target }}
           path: |
-            apps/desktop/src-tauri/target/release/bundle/**/*
-            apps/desktop/src-tauri/target/*/release/bundle/**/*
+            target/release/bundle/**/*
+            target/*/release/bundle/**/*
             apps/desktop/dist-msix/*.msix
           if-no-files-found: warn
 
@@ -338,6 +388,10 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+          # This job runs only node scripts (release notes) plus gh/gpg and
+          # never installs deps. Disable the package-manager cache so setup-node
+          # does not try to locate pnpm before corepack is enabled.
+          package-manager-cache: false
 
       - name: Generate release notes from CHANGES.md
         run: node scripts/release-notes.mjs
@@ -360,7 +414,11 @@ jobs:
               exit 1
             fi
             cp "$f" "dist/$base"
-          done < <(find dist-all -type f)
+          done < <(find dist-all -type f \( \
+              -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' \
+              -o -name '*.AppImage' -o -name '*.msi' -o -name '*.exe' \
+              -o -name '*.msix' \
+            \) -print0)
           echo "Staged $(find dist -type f | wc -l) files:"
           ls -1 dist
 
