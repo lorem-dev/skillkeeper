@@ -813,6 +813,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#testing" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1008,6 +1019,17 @@
     <span class="md-ellipsis">
       
         Common commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
       
     </span>
   </a>
@@ -1222,6 +1244,18 @@ pnpm --filter @skillkeeper/desktop build   # tauri build (installers)
 </code></pre></div>
 <p>Note: the legacy root <code>pnpm build</code> / <code>pnpm build:libs</code> scripts are not a
 reliable gate; use the per-tool commands above.</p>
+<h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
+<p>The documentation site is built from <code>docs/</code> with Material for MkDocs and is
+English-only:</p>
+<div class="highlight"><pre><span></span><code>pnpm docs:serve   # serve the docs locally with live reload
+pnpm docs:build   # render the static site to site/
+pnpm docs:install # warm the toolchain cache without serving
+</code></pre></div>
+<p><code>scripts/ensure-mkdocs.mjs</code> runs mkdocs through <a href="https://docs.astral.sh/uv/">uv</a>
+(<code>uv run --with mkdocs-material mkdocs ...</code>), which resolves and caches the docs
+toolchain on first use, so there is no global Python setup and no virtualenv to
+manage - only <code>uv</code> on <code>PATH</code>. The published site is versioned with mike; see
+<a href="../releasing/">Releasing</a>.</p>
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
 <p>The Rust crates are tested with <code>cargo test</code>. Running the crate tests also
 regenerates the ts-rs TypeScript bindings under
