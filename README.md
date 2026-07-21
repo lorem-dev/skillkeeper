@@ -12,12 +12,12 @@
 </p>
 
 <p align="center">
-  <img src="/docs/assets/screenshot.webp" width="640" alt="Screenshot of the SkillKeeper desktop app">
+SkillKeeper installs and manages skills and hooks for AI coding agents
+(Claude, Codex, Copilot, Cursor, OpenCode).
 </p>
 
 <p align="center">
-SkillKeeper installs and manages skills and hooks for AI coding agents
-(Claude, Codex, Copilot, Cursor, OpenCode), both per-project and globally.
+  <img src="/docs/assets/screenshot.webp" width="640" alt="Screenshot of the SkillKeeper desktop app">
 </p>
 
 ---
