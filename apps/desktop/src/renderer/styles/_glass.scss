@@ -8,6 +8,11 @@
 // Brightness: the rim's visibility scales with `--sk-glass-border-strength`
 // (default 1). Set it lower on an element (e.g. GlassSurface's `borderBrightness`
 // prop) to dim the rim.
+//
+// Platform: macOS (WebKit) keeps the lit gradient rim. Windows/Linux swap it for
+// a plain, slightly heavier gray border -- the mask-composite rim aliases in
+// Chromium and reads thin/harsh, so a solid separator border looks cleaner
+// there. Tune the width/color via `--sk-glass-border-solid-*` below.
 @mixin border {
   &::after {
     content: '';
@@ -26,5 +31,19 @@
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     mask-composite: exclude;
+  }
+
+  // Keyed on the document-element `data-platform` (not `.sk-app--windows`) so it
+  // also reaches portaled glass surfaces -- menus, dropdowns -- that mount to
+  // document.body, outside the `.sk-app` platform class.
+  :root[data-platform='windows'] &,
+  :root[data-platform='linux'] & {
+    border: var(--sk-glass-border-solid-width, 1.5px) solid
+      var(--sk-glass-border-solid-color, var(--sk-color-separator));
+
+    // Drop the gradient rim so only the solid border shows.
+    &::after {
+      content: none;
+    }
   }
 }

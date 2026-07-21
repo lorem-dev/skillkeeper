@@ -146,9 +146,10 @@
 // its button and promotes to a layer for the smooth slide.
 .sk-page__dock-item {
   display: inline-flex;
-  // Layer promotion + anti-aliased edges while the button slides/blurs in.
-  will-change: transform;
-  backface-visibility: hidden;
+  // No permanent `will-change`/compositor promotion: on Windows (WebView2 /
+  // Chromium) a composited layer renders the button label with grayscale AA
+  // instead of subpixel ClearType. motion/react promotes the layer only while
+  // the slide/blur-in runs, which is enough.
 }
 
 // When a dock is present, reserve space at the end of the scroll body so the
@@ -162,6 +163,36 @@
   .sk-page__fade {
     display: none;
   }
+}
+
+// Windows/Linux depart from the macOS (WebKit) page chrome:
+//
+// - The toolbar backdrop keeps only its blur; its theme tint (the darkening/
+//   lightening wash) is dropped so it reads as clean frosted glass.
+// - The bottom fade drops the blur entirely and becomes a plain shading
+//   gradient toward the page background (no backdrop-filter, no mask).
+.sk-app--windows,
+.sk-app--linux {
+  .sk-page__header::before {
+    background: none;
+  }
+
+  .sk-page__fade {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    mask-image: none;
+    -webkit-mask-image: none;
+    background: linear-gradient(to bottom, transparent, var(--sk-color-bg-secondary));
+  }
+}
+
+// Windows (WebView2 / Chromium) additionally drops the toolbar backdrop mask: a
+// mask on the same element as a `backdrop-filter` suppresses the blur there
+// (crbug 974857 / 40778541). Linux (WebKitGTK) honors both, so it keeps the
+// soft-masked blur fade.
+.sk-app--windows .sk-page__header::before {
+  mask-image: none;
+  -webkit-mask-image: none;
 }
 
 // Muted empty-state text used by placeholder screens.

@@ -44,8 +44,8 @@ export function TerminalPage() {
       onKeyDown={onKeyDown}
       ref={overlayRef}
     >
-      <header className="sk-terminal-page__header" {...dragRegion()}>
-        <h1 className="sk-terminal-page__title" {...dragRegion()}>
+      <header className="sk-terminal-page__header" {...dragRegion({ always: true })}>
+        <h1 className="sk-terminal-page__title" {...dragRegion({ always: true })}>
           {t('terminal.title')}
         </h1>
         <Button

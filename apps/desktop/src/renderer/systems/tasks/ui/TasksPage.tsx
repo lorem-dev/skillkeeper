@@ -49,8 +49,8 @@ export function TasksPage() {
           animate="animate"
           exit="exit"
         >
-          <header className="sk-tasks__header" {...dragRegion()}>
-            <h1 className="sk-tasks__title" {...dragRegion()}>
+          <header className="sk-tasks__header" {...dragRegion({ always: true })}>
+            <h1 className="sk-tasks__title" {...dragRegion({ always: true })}>
               {t('tasks.title')}
             </h1>
             <div className="sk-tasks__actions">

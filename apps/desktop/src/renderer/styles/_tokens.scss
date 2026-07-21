@@ -125,6 +125,11 @@ $themes: (
       rgba(255, 255, 255, 0) 55%,
       rgba(255, 255, 255, 0.5)
     );
+  // Solid glass border used on Windows/Linux instead of the gradient rim above
+  // (the mask-composite rim aliases in Chromium and reads thin there). A plain,
+  // slightly heavier gray edge. See the `glass.border` mixin in styles/_glass.
+  --sk-glass-border-solid-width: 1.5px;
+  --sk-glass-border-solid-color: var(--sk-color-separator);
 
   // motion
   --sk-ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
@@ -143,12 +148,12 @@ $themes: (
   --sk-z-scroll-fade: 5; // a Page's scroll fade overlays
   --sk-z-dock: 6; // a Page's bottom action dock
   --sk-z-sticky: 10; // a Page's sticky header
-  --sk-z-toast: 200; // toast stack
   --sk-z-overlay: 300; // full-screen panel (logs)
   --sk-z-overlay-raised: 310; // full-screen panel over the base one (tasks / terminal)
   --sk-z-statusbar: 320; // bottom status bar, above the full-screen panels
   --sk-z-modal: 350; // modal dialog + its dimming scrim, above the status bar
   --sk-z-popover: 400; // anchored popovers (menu / combobox), above a modal
+  --sk-z-toast: 450; // toast / alert notification stack, above modals and popovers
   --sk-z-tooltip: 500; // tooltip bubble, topmost
 }
 

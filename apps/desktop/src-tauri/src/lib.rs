@@ -44,6 +44,12 @@ pub fn run() {
                     .theme;
                 app::theme::apply(&window, theme);
                 app::theme::wire_system_theme_follow(&window);
+                // The window is created hidden (`visible: false` in the config) so
+                // the initial white, natively-decorated frame never shows. Reveal
+                // it only now -- after the decorations are off and the themed
+                // background color is applied -- so the first visible frame is the
+                // frameless, themed window (then the index.html preloader).
+                let _ = window.show();
             }
             // Publish an ssh-agent to the process env before any git command may
             // run, so git subprocesses inherit SSH_AUTH_SOCK.

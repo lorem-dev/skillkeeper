@@ -74,8 +74,8 @@ export function LogsPage() {
           animate="animate"
           exit="exit"
         >
-          <header className="sk-logs__header" {...dragRegion()}>
-            <h1 className="sk-logs__title" {...dragRegion()}>
+          <header className="sk-logs__header" {...dragRegion({ always: true })}>
+            <h1 className="sk-logs__title" {...dragRegion({ always: true })}>
               {t('logs.title')}
             </h1>
             <div className="sk-logs__actions">
