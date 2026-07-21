@@ -1,139 +1,113 @@
-# SkillKeeper
+<h1 align="center">
+  <img src="/docs/assets/logo.png" width="24" alt="SkillKeeper Logo">
+  SkillKeeper
+</h1>
 
+<p align="center">
+  <a href="https://github.com/lorem-dev/skillkeeper/releases/latest"><img src="https://img.shields.io/github/v/release/lorem-dev/skillkeeper?label=download" alt="Download"></a>
+  <a href="https://lorem-dev.github.io/skillkeeper/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Documentation"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/lorem-dev/skillkeeper" alt="License"></a>
+  <a href="https://github.com/lorem-dev/skillkeeper/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/coverage-90%25-brightgreen" alt="Coverage"></a>
+  <a href="https://github.com/lorem-dev/skillkeeper/actions/workflows/ci.yml"><img src="https://github.com/lorem-dev/skillkeeper/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
+
+<p align="center">
+  <img src="/docs/assets/screenshot.webp" width="640" alt="Screenshot of the SkillKeeper desktop app">
+</p>
+
+<p align="center">
 SkillKeeper installs and manages skills and hooks for AI coding agents
 (Claude, Codex, Copilot, Cursor, OpenCode), both per-project and globally.
-Skills are distributed through Git repositories. SkillKeeper ships a CLI and
-a Tauri desktop app over a shared Rust domain core. Target platforms: Linux,
-macOS, Windows.
+</p>
 
 ---
 
-## Prerequisites
+## Overview
 
-- A stable Rust toolchain via rustup. The pinned channel and the `rustfmt`
-  and `clippy` components are declared in `rust-toolchain.toml`; rustup
-  installs them automatically on first build.
-- Node 22.13 or later.
-- pnpm (install via corepack):
+SkillKeeper comes in two forms over one shared Rust core:
 
-```bash
-corepack enable
-```
+- A **desktop app** for browsing and installing Git repositories of skills,
+  their hooks, and sets of MCP server presets - for AI coding agents, either
+  per-project or globally.
+- A **command-line tool** (`skillkeeper`) that does the same from your shell
+  and in scripts.
 
-- On Linux, the desktop app needs the platform webview and GTK development
-  libraries that Tauri builds against (for example webkit2gtk 4.1, GTK 3,
-  libsoup3, and the related `-dev` packages). Install them through your
-  distribution's package manager.
+Skills are distributed as Git repositories; a repository can also ship MCP
+server presets. SkillKeeper clones a repository, resolves what it provides,
+installs the parts you choose into the agents you target, and tracks everything
+for updates. Supported agents: Claude, Codex, Copilot, Cursor, and OpenCode.
 
----
-
-## Install dependencies
-
-```bash
-pnpm install
-```
+Get the desktop app from the
+[latest release](https://github.com/lorem-dev/skillkeeper/releases/latest).
 
 ---
 
-## Run tests
+## CLI quick start
 
-Rust crates and the Tauri backend:
+The CLI binary is `skillkeeper`. Every command exits non-zero on failure.
 
-```bash
-cargo test
+Add a repository of skills, then see what it provides:
+
+```shell
+skillkeeper repo add git@github.com:example/skills.git ~/skills/example
+skillkeeper skill list
 ```
 
-`cargo test` also regenerates the ts-rs bindings the renderer imports.
+Install a skill for an agent (per-project by default; add `--global` for
+machine-wide). Hooks are privileged and only installed with `--allow-hooks`:
 
-The remaining TypeScript (the renderer and the `packages/i18n` catalogs):
-
-```bash
-pnpm test
+```shell
+skillkeeper skill install <skill-id> --agent claude
+skillkeeper skill install <skill-id> --agent codex --global --allow-hooks
 ```
 
-For the coverage gate (90% on `packages/i18n`):
+Track a project, then check for available updates across its repositories and
+installed skills:
 
-```bash
-pnpm test:cov
+```shell
+skillkeeper project add .
+skillkeeper check
 ```
+
+Inspect, verify against the manifest, and repair an installation:
+
+```shell
+skillkeeper skill info <skill-id>
+skillkeeper skill verify <skill-id>
+skillkeeper skill repair <skill-id>
+```
+
+Supported agents are `claude`, `codex`, `copilot`, `cursor`, and `opencode`.
+Run `skillkeeper --help` (or `<command> --help`) for the full command set, also
+documented in the
+[CLI Reference](https://lorem-dev.github.io/skillkeeper/latest/usage/cli/).
 
 ---
 
-## Lint and typecheck
+## Repositories
 
-```bash
-cargo fmt --check
-cargo clippy
-pnpm lint
-pnpm typecheck
-```
+A repository is any Git remote (SSH or HTTPS, public or private) that contains
+one or more skills, and optionally MCP server presets. A skill is a directory
+with a manifest plus the files it installs; hooks are opt-in edits a skill can
+make to an agent's configuration. To publish your own skills, create a Git
+repository with that layout and point SkillKeeper at it with `repo add`.
 
----
-
-## Run the CLI
-
-The CLI is the `skillkeeper-cli` crate:
-
-```bash
-cargo run -p skillkeeper-cli -- --help
-```
-
-To build a release binary:
-
-```bash
-cargo build --release -p skillkeeper-cli
-```
+See [Repositories](https://lorem-dev.github.io/skillkeeper/latest/usage/repositories/)
+and [Skills and Hooks](https://lorem-dev.github.io/skillkeeper/latest/usage/skills-and-hooks/)
+for the repository format and authoring guide.
 
 ---
 
-## Run the desktop app (development)
+## Development
 
-```bash
-pnpm dev
-```
+SkillKeeper is a Rust + pnpm monorepo: a Cargo workspace of domain crates
+(`skillkeeper-core`, `skillkeeper-config`, `skillkeeper-agents`,
+`skillkeeper-cli`) with a Tauri v2 + React desktop app, all over one shared
+Rust core.
 
-This is a shortcut for `pnpm --filter @skillkeeper/desktop dev`, which runs
-`tauri dev` (the Rust backend plus the Vite renderer with hot reload).
-
-To build the production app and installers:
-
-```bash
-pnpm --filter @skillkeeper/desktop build      # tauri build (bundles per platform)
-```
-
-To rebuild only the renderer bundle:
-
-```bash
-pnpm --filter @skillkeeper/desktop frontend:build   # vite build
-```
-
-To regenerate the app icons from the sources in `assets/icons/`:
-
-```bash
-pnpm run icons      # scripts/gen-icons.mjs -> apps/desktop/src-tauri/icons/ (git-ignored)
-```
-
----
-
-## Documentation
-
-The published documentation lives at
-<https://lorem-dev.github.io/skillkeeper/> (versioned via mike, with a version
-switcher in the header).
-
-Full documentation is in `docs/` and is built with
-[Material for MkDocs](https://squidfunk.github.io/mkdocs-material/). The docs are
-English-only.
-
-```bash
-pnpm docs:serve   # serve the docs locally with live reload
-pnpm docs:build   # render the static site to site/
-```
-
-`scripts/ensure-mkdocs.mjs` runs mkdocs through [uv](https://docs.astral.sh/uv/)
-(`uv run --with mkdocs-material mkdocs ...`), which resolves and caches the docs
-toolchain on first use -- no global Python setup and no virtualenv to manage,
-only `uv` on `PATH`. `pnpm docs:install` warms that cache without serving.
+See the
+[Development guide](https://lorem-dev.github.io/skillkeeper/latest/development/development/)
+for setup, commands, and conventions.
 
 ---
 

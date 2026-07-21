@@ -66,6 +66,23 @@ pnpm --filter @skillkeeper/desktop build   # tauri build (installers)
 Note: the legacy root `pnpm build` / `pnpm build:libs` scripts are not a
 reliable gate; use the per-tool commands above.
 
+## Documentation
+
+The documentation site is built from `docs/` with Material for MkDocs and is
+English-only:
+
+```
+pnpm docs:serve   # serve the docs locally with live reload
+pnpm docs:build   # render the static site to site/
+pnpm docs:install # warm the toolchain cache without serving
+```
+
+`scripts/ensure-mkdocs.mjs` runs mkdocs through [uv](https://docs.astral.sh/uv/)
+(`uv run --with mkdocs-material mkdocs ...`), which resolves and caches the docs
+toolchain on first use, so there is no global Python setup and no virtualenv to
+manage - only `uv` on `PATH`. The published site is versioned with mike; see
+[Releasing](releasing.md).
+
 ## Testing
 
 The Rust crates are tested with `cargo test`. Running the crate tests also
