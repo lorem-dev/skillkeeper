@@ -10,7 +10,13 @@
   overflow: hidden;
   border: 0.5px solid var(--sk-color-separator);
   border-radius: var(--sk-radius-lg);
-  background: color-mix(in srgb, var(--sk-alert-tone) 22%, var(--sk-glass-tint));
+  // Blend some opaque page background into the glass tint so the alert reads
+  // more solidly (less see-through) while keeping a hint of frost.
+  background: color-mix(
+    in srgb,
+    var(--sk-alert-tone) 22%,
+    color-mix(in srgb, var(--sk-glass-tint), var(--sk-color-bg-secondary) 40%)
+  );
 
   // Windows/Linux use a heavier gray border, matching the other glass surfaces
   // (see styles/_glass.scss); macOS keeps the hairline. Keyed on the

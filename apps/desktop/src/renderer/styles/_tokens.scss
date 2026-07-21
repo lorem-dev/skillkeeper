@@ -148,12 +148,12 @@ $themes: (
   --sk-z-scroll-fade: 5; // a Page's scroll fade overlays
   --sk-z-dock: 6; // a Page's bottom action dock
   --sk-z-sticky: 10; // a Page's sticky header
-  --sk-z-toast: 200; // toast stack
   --sk-z-overlay: 300; // full-screen panel (logs)
   --sk-z-overlay-raised: 310; // full-screen panel over the base one (tasks / terminal)
   --sk-z-statusbar: 320; // bottom status bar, above the full-screen panels
   --sk-z-modal: 350; // modal dialog + its dimming scrim, above the status bar
   --sk-z-popover: 400; // anchored popovers (menu / combobox), above a modal
+  --sk-z-toast: 450; // toast / alert notification stack, above modals and popovers
   --sk-z-tooltip: 500; // tooltip bubble, topmost
 }
 
