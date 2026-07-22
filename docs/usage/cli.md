@@ -215,6 +215,6 @@ Output lists per-repository and per-skill update availability.
 skillkeeper version
 ```
 
-Print the version, for example `skillkeeper 0.1.1-rc.2`. The same string is
+Print the version, for example `skillkeeper 0.1.1`. The same string is
 printed by the global `-V`, `-v`, and `--version` flags (e.g.
 `skillkeeper --version`).
