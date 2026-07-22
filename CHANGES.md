@@ -2,6 +2,18 @@
 
 ## Development
 
+### Features
+
+- Show a theme-aware app icon in the Windows/Linux title bar.
+
+### Fixes
+
+- Keep frosted surfaces legible where the engine parses but does not paint
+  backdrop-filter (Windows under software compositing): fall back to solid
+  backgrounds for headers, menus, popovers, and dialogs.
+- Stop console windows from flashing when the app runs Git and other helper
+  processes on Windows.
+
 ## Version 0.1.0
 
 ### Features
