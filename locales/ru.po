@@ -1086,6 +1086,3 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "hooks.requireConsent"
 msgstr "Установка хуков требует явного согласия (--allow-hooks). Тело навыка установлено; хуки пропущены."
-
-msgid "projects.selectingFolder"
-msgstr "Выбор папки..."

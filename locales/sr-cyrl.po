@@ -1041,6 +1041,3 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "Нема одговарајућег пројекта"
-
-msgid "projects.selectingFolder"
-msgstr "Бирање фасцикле..."

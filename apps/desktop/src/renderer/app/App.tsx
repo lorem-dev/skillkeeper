@@ -16,7 +16,6 @@ import { useConfigWatch } from '@/systems/config';
 import { useUpdateSchedule } from '@/systems/updates';
 import { useProjectCheckSchedule } from '@/systems/projects';
 import { ConfigBanner } from '@/features/configBanner';
-import { FolderPickOverlay } from '@/features/projectAdd';
 import { WindowChrome } from './WindowChrome';
 import { dismissPreloader } from './preloader';
 import { hostPlatform } from './hostPlatform';
@@ -334,7 +333,6 @@ export function App() {
       <TerminalPage />
       <TasksPage />
       <AboutDialog />
-      <FolderPickOverlay />
     </div>
     </AnimationProvider>
   );

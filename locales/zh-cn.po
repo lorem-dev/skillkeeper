@@ -951,6 +951,3 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "没有匹配的项目"
-
-msgid "projects.selectingFolder"
-msgstr "正在选择文件夹..."

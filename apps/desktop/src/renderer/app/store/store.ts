@@ -341,9 +341,6 @@ export interface SkillkeeperState {
   tasksOpen: boolean;
   /** Whether the About dialog is open. */
   aboutOpen: boolean;
-  /** Whether the modal scrim is shown over the app while the native folder
-   *  picker for adding a project is open. */
-  folderPickOpen: boolean;
   /** Installed skills. */
   skills: InstallManifest[];
   /** Every skill available across all cloned repositories (for the Skills page). */
@@ -518,20 +515,6 @@ export interface SkillkeeperActions {
   openAbout(): void;
   /** Close the About dialog. */
   closeAbout(): void;
-  /**
-   * Open the native folder picker for adding a project, showing a modal scrim
-   * over the app while it is open. Resolves to the chosen path, or null when the
-   * pick is cancelled -- either from the native dialog itself or by clicking the
-   * scrim (`cancelFolderPick`), in which case the dialog's result is ignored.
-   */
-  pickProjectFolder(): Promise<string | null>;
-  /**
-   * Cancel an in-flight `pickProjectFolder`: hide the scrim and drop whatever the
-   * native dialog eventually returns. The native dialog cannot be closed
-   * programmatically, so on platforms where it does not block the app window
-   * (Windows) this abandons the add without waiting for the dialog.
-   */
-  cancelFolderPick(): void;
   /** Empty the notifications log. Leaves toasts and per-repo errors intact. */
   clearNotifications(): void;
 }
@@ -565,12 +548,6 @@ function installedBaseline(
   return { projectChecked: installedLeafIds(installs), projectAgents: installedAgentsByProject(installs) };
 }
 
-// A scrim click can cancel an in-flight folder pick. The native dialog cannot be
-// closed programmatically, so this flag lets `pickProjectFolder` drop the path
-// the dialog eventually returns. Module-level (not reactive state): it is read
-// synchronously right after the await, and only one pick ever runs at a time.
-let folderPickCancelled = false;
-
 export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   // Initial state
   config: null,
@@ -588,7 +565,6 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   terminalOpen: false,
   tasksOpen: false,
   aboutOpen: false,
-  folderPickOpen: false,
   skills: [],
   availableSkills: [],
   skillApply: null,
@@ -773,27 +749,6 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   closeAbout() {
     set({ aboutOpen: false });
-  },
-
-  pickProjectFolder() {
-    return (async () => {
-      folderPickCancelled = false;
-      set({ folderPickOpen: true });
-      try {
-        const path = await bridgeClient.selectFolder();
-        // A scrim click (cancelFolderPick) during the pick abandons the add: the
-        // native dialog cannot be closed from here, so its eventual result is
-        // dropped rather than acted on.
-        return folderPickCancelled ? null : path;
-      } finally {
-        set({ folderPickOpen: false });
-      }
-    })();
-  },
-
-  cancelFolderPick() {
-    folderPickCancelled = true;
-    set({ folderPickOpen: false });
   },
 
   clearNotifications() {

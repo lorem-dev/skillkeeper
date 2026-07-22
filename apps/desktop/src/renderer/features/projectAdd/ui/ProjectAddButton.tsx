@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
+import { bridgeClient } from '@/services/bridge';
 import { deriveRepoName } from '@/entities/repository';
 import { Button } from '@/shared/ui';
 
@@ -16,15 +17,12 @@ import { Button } from '@/shared/ui';
 export function ProjectAddButton() {
   const t = useTranslator();
   const addProject = useSkillkeeperStore((s) => s.addProject);
-  const pickProjectFolder = useSkillkeeperStore((s) => s.pickProjectFolder);
   const [busy, setBusy] = useState(false);
 
   async function pick(): Promise<void> {
     setBusy(true);
     try {
-      // Shows the modal scrim over the app while the picker is open; a scrim
-      // click cancels and resolves to null (see the store).
-      const path = await pickProjectFolder();
+      const path = await bridgeClient.selectFolder();
       if (path === null) return;
       await addProject(path, deriveRepoName(path));
     } finally {

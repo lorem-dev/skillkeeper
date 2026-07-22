@@ -1077,6 +1077,3 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "일치하는 프로젝트 없음"
-
-msgid "projects.selectingFolder"
-msgstr "폴더 선택 중..."

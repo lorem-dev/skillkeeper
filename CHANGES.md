@@ -6,9 +6,9 @@
 
 - Add a `skillkeeper version` CLI subcommand, and accept `-v` as an alias for the
   existing `-V` / `--version` flags, all printing `skillkeeper <version>`.
-- Show a modal overlay over the app while the folder picker for adding a project
-  is open; clicking the overlay cancels the pending add (the native dialog
-  cannot be closed programmatically, so its result is dropped).
+- Make the native folder picker for adding a project window-modal (parented to
+  the main window) so the app window cannot be used while it is open, and closes
+  with it.
 
 ### Fixes
 
