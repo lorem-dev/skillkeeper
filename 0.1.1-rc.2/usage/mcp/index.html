@@ -1,0 +1,1557 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://lorem-dev.github.io/skillkeeper/0.1.1-rc.2/usage/mcp/">
+      
+      
+        <link rel="prev" href="../agents/">
+      
+      
+        <link rel="next" href="../configuration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>MCP Servers - SkillKeeper</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#mcp-servers" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="SkillKeeper" class="md-header__button md-logo" aria-label="SkillKeeper" data-md-component="logo">
+      
+  <img src="../../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SkillKeeper
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MCP Servers
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/lorem-dev/skillkeeper" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SkillKeeper" class="md-nav__button md-logo" aria-label="SkillKeeper" data-md-component="logo">
+      
+  <img src="../../assets/logo.png" alt="logo">
+
+    </a>
+    SkillKeeper
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/lorem-dev/skillkeeper" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Usage
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skills-and-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills and Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repositories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repositories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Servers
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Servers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-mcpyml-mcpyaml-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The mcp.yml / mcp.yaml format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The mcp.yml / mcp.yaml format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-repository-root" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: repository root
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-inside-a-skill-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: inside a skill group
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-update-and-remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install, update, and remove
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Install, update, and remove">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remove
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-detection-hashing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update detection (hashing)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracking-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracking files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-agent-native-destinations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-agent native destinations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rules-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules (guidance)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releasing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-mcpyml-mcpyaml-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The mcp.yml / mcp.yaml format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The mcp.yml / mcp.yaml format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-repository-root" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: repository root
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-inside-a-skill-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: inside a skill group
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-update-and-remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install, update, and remove
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Install, update, and remove">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remove
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-detection-hashing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update detection (hashing)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracking-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracking files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-agent-native-destinations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-agent native destinations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rules-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules (guidance)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="mcp-servers">MCP Servers<a class="headerlink" href="#mcp-servers" title="Permanent link">&para;</a></h1>
+<p>See also: <a href="../skills-and-hooks/">Skills and Hooks</a> (the guidance mechanism
+MCP <code>rules</code> reuses), <a href="../repositories/">Repositories</a> (a repository can
+declare MCP presets alongside skills), and <a href="../projects/">Projects</a> (MCP
+installs use the same per-project targets as skills).</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>An MCP (Model Context Protocol) server is an external tool/context provider
+an agent can call into. SkillKeeper manages MCP server <strong>presets</strong> and
+installs them into a project's agents, alongside skills.</p>
+<p>A preset comes from one of two origins:</p>
+<ul>
+<li><strong>Manual</strong> - defined by the user in SkillKeeper's own configuration
+  (<code>config.yaml</code>, section <code>mcp</code>). Editable at any time; editing a preset can
+  later update every install made from it.</li>
+<li><strong>Repo</strong> - declared in a repository's <code>mcp.yml</code>/<code>mcp.yaml</code> file. Read-only:
+  it can only change by editing the file in the repository and syncing.
+  Updated implicitly whenever the repository is fetched.</li>
+</ul>
+<p>Installing a preset renders it into the native MCP configuration format of
+one or more agents (Claude, Cursor, Copilot, OpenCode, Codex), tracks the
+install in a small ledger, and - if the preset carries <code>rules</code> - writes
+guidance into the agent's guidance file the same way skill guidance is
+written.</p>
+<h2 id="the-mcpyml-mcpyaml-format">The <code>mcp.yml</code> / <code>mcp.yaml</code> format<a class="headerlink" href="#the-mcpyml-mcpyaml-format" title="Permanent link">&para;</a></h2>
+<p>A repository may declare MCP server presets in an <code>mcp.yml</code> (or <code>mcp.yaml</code>)
+file:</p>
+<ul>
+<li>at the repository root - these presets have no group, and</li>
+<li>inside any skill-group directory - the directory name becomes the
+  preset's group.</li>
+</ul>
+<p>If a directory has both <code>mcp.yml</code> and <code>mcp.yaml</code>, <code>mcp.yml</code> is read and
+<code>mcp.yaml</code> is ignored entirely, even if <code>mcp.yml</code> fails to parse (this is a
+precedence rule, not a fallback). A file that fails to parse is skipped with
+a warning; it never fails the rest of the sync.</p>
+<p>Schema:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">servers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;string&gt;</span><span class="w">            </span><span class="c1"># required</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdio | http | sse</span><span class="w">  </span><span class="c1"># required</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;string&gt;</span><span class="w">             </span><span class="c1"># required for http/sse</span>
+<span class="w">    </span><span class="nt">headers</span><span class="p">:</span><span class="w">                  </span><span class="c1"># optional, http/sse</span>
+<span class="w">      </span><span class="nt">&lt;header-name&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value&gt;</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;string&gt;</span><span class="w">         </span><span class="c1"># required for stdio</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">&lt;string&gt;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w">     </span><span class="c1"># optional, stdio</span>
+<span class="w">    </span><span class="nt">env</span><span class="p">:</span><span class="w">                      </span><span class="c1"># optional, stdio</span>
+<span class="w">      </span><span class="nt">&lt;VAR_NAME&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value&gt;</span>
+<span class="w">    </span><span class="nt">rules</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;string&gt;</span><span class="w">           </span><span class="c1"># optional guidance body</span>
+</code></pre></div>
+<p><code>stdio</code> requires <code>command</code>; <code>http</code> and <code>sse</code> require <code>url</code>. A server missing
+the field its transport needs fails validation for the whole file.</p>
+<h3 id="example-repository-root">Example: repository root<a class="headerlink" href="#example-repository-root" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># mcp.yml at the repository root</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">servers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docs-http</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://{host}/mcp&quot;</span>
+<span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bearer</span><span class="nv"> </span><span class="s">{token}&quot;</span>
+<span class="w">    </span><span class="nt">rules</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">Prefer the docs-http MCP for {host} lookups.</span>
+<span class="w">      </span><span class="no">Cite the source path for every answer.</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local-fs</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdio</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">npx</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-y&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;@acme/fs&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;--root&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;{root}&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">FS_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{token}&quot;</span>
+</code></pre></div>
+<h3 id="example-inside-a-skill-group">Example: inside a skill group<a class="headerlink" href="#example-inside-a-skill-group" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># tooling/mcp.yml -- group &quot;tooling&quot;</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">servers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tooling-sse</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sse</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://{host}/tooling/sse&quot;</span>
+<span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">X-Api-Key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{api_key}&quot;</span>
+</code></pre></div>
+<h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
+<p>A server definition may reference <code>{name}</code> placeholders in <code>url</code>, header
+values, <code>command</code>, <code>args</code>, <code>env</code> values, and <code>rules</code>. Parameters are <strong>not</strong>
+declared anywhere - they are discovered by scanning every one of those
+fields for <code>{[A-Za-z0-9_]+}</code> and collecting the distinct names. The same
+name used in more than one field is still a single parameter.</p>
+<p>Placeholder syntax is validated separately: an unclosed <code>{</code>, an empty <code>{}</code>,
+or a name containing a character outside <code>[A-Za-z0-9_]</code> is rejected, with
+the offending position reported.</p>
+<p>At install time, every parameter is presented for a value (plain text; no
+typed or secret fields exist yet). The rendering step substitutes each
+<code>{name}</code> with its value across all of the fields listed above, including
+<code>rules</code>. Rendering fails if any referenced parameter has no value.</p>
+<p>Example: the <code>docs-http</code> server above has two parameters, <code>host</code> and
+<code>token</code> (<code>host</code> appears in both <code>url</code> and <code>rules</code>; it still counts once).</p>
+<h2 id="install-update-and-remove">Install, update, and remove<a class="headerlink" href="#install-update-and-remove" title="Permanent link">&para;</a></h2>
+<h3 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h3>
+<p>Installing a preset for one agent:</p>
+<ol>
+<li>Renders the parameter values into the definition.</li>
+<li>Allocates an instance name: the server's <code>name</code>, snake_cased, with a
+   <code>_&lt;n&gt;</code> suffix. Installing the same preset again produces a new instance
+   (<code>github_1</code>, then <code>github_2</code>, and so on). If a name is already taken by a
+   server SkillKeeper does not own, the counter skips it - an existing,
+   unmanaged entry in the native config is never overwritten.</li>
+<li>Writes the rendered definition into the agent's native MCP config file.</li>
+<li>If the definition carries <code>rules</code>, renders and writes them into the
+   agent's guidance file as a marked block (see "Rules" below).</li>
+<li>Records the instance in <code>.skmcp.yml</code> and its raw parameter values in
+   <code>.skmcp.params.yml</code>.</li>
+<li>On the first MCP install into a project, ensures the project's
+   <code>.gitignore</code> excludes both parameter files.</li>
+</ol>
+<h3 id="update">Update<a class="headerlink" href="#update" title="Permanent link">&para;</a></h3>
+<p>An installed instance can be updated when the current source definition's
+content hash differs from the hash recorded at install time (see "Update
+detection" below). Updating an instance:</p>
+<ol>
+<li>Computes the new definition's parameters and compares them against the
+   values already on file for that instance. Any newly-required parameter
+   that has no stored value is <strong>missing</strong>.</li>
+<li>If any parameter is missing, its value must be supplied before the
+   update proceeds; closing out of that prompt without supplying every
+   missing value aborts the update - nothing changes.</li>
+<li>Removes the old instance and reinstalls the new definition under the
+   <strong>same</strong> instance name, using the merged parameter values (existing
+   values kept, missing ones now filled in).</li>
+<li>Refreshes the recorded hash in <code>.skmcp.yml</code>.</li>
+</ol>
+<p>Updating a repository preset that fans out to multiple installed instances
+(different projects, agents, or both) updates every instance whose hash is
+stale.</p>
+<h3 id="remove">Remove<a class="headerlink" href="#remove" title="Permanent link">&para;</a></h3>
+<p>Removing an instance reverses install: the native server entry is dropped,
+its guidance block (if any) is removed by its marker key, and its entries
+are dropped from both <code>.skmcp.yml</code> and <code>.skmcp.params.yml</code>. Removal is
+safe to call even when one side is already gone (missing native server,
+guidance block, or ledger entry).</p>
+<h3 id="update-detection-hashing">Update detection (hashing)<a class="headerlink" href="#update-detection-hashing" title="Permanent link">&para;</a></h3>
+<p>Each definition is hashed for identity comparison: a deterministic JSON
+serialization of every field except <code>name</code> (so renaming a server in
+<code>mcp.yml</code> is not a content change) with all object keys sorted recursively
+(so key order in <code>headers</code>/<code>env</code> never affects the hash). The hash is
+<code>sha256:&lt;hex digest&gt;</code>. Parameter <strong>values</strong> are never part of the hash -
+they live only in <code>.skmcp.params.yml</code> - so filling in or changing a
+parameter value is not, by itself, an "update."</p>
+<h2 id="tracking-files">Tracking files<a class="headerlink" href="#tracking-files" title="Permanent link">&para;</a></h2>
+<p>Two files, kept per agent and scope, record what SkillKeeper has installed:</p>
+<ul>
+<li><strong><code>.skmcp.yml</code></strong> - the install ledger. One entry per installed instance:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">servers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">remote</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git@github.com:acme/mcps.git</span><span class="w">   </span><span class="c1"># omitted for manual presets</span>
+<span class="w">    </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tooling</span><span class="w">                          </span><span class="c1"># omitted when at the repo root</span>
+<span class="w">    </span><span class="nt">local</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;presetId&gt;</span><span class="w">                       </span><span class="c1"># present only for manual presets</span>
+<span class="w">    </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docs-http</span><span class="w">                       </span><span class="c1"># server name in mcp.yml/preset</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docs_http_1</span><span class="w">                       </span><span class="c1"># assigned instance name</span>
+<span class="w">    </span><span class="nt">hash</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sha256:...</span><span class="w">                        </span><span class="c1"># hash of the raw def at install</span>
+</code></pre></div>
+<p>The ledger identifies a preset by <strong>reference</strong>, not by a generated
+  install ID: <code>(remote, group, source)</code> for a repo preset, <code>(local,
+  source)</code> for a manual one. This is what lets update matching survive a
+  reinstall and lets the same file double as the ownership record - it is
+  the only place that says which native config entries SkillKeeper owns, so
+  updates and removals act on exact instance names instead of touching
+  anything unrecognized.</p>
+<ul>
+<li><strong><code>.skmcp.params.yml</code></strong> - the sibling parameter-values file, keyed by
+  instance name:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">docs_http_1</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mcp.example.com</span>
+<span class="w">  </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sk-...</span>
+</code></pre></div>
+<p>This file holds raw secrets and is never meant to be committed. The first
+  MCP install into a project appends both <code>.skmcp.params.yml</code> and
+  <code>.skmcp.params.yaml</code> to the project's <code>.gitignore</code> (creating the file if
+  it does not exist, or appending only the lines that are missing under a
+  <code># SkillKeeper MCP parameter values</code> comment).</p>
+<p>Both files live at the root of the agent's skills destination for the
+relevant scope - the same root the skills engine already resolves for that
+agent:</p>
+<table>
+<thead>
+<tr>
+<th>agent</th>
+<th>project scope</th>
+<th>global scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>claude</td>
+<td><code>&lt;project&gt;/.claude/skills/</code></td>
+<td><code>~/.claude/skills/</code></td>
+</tr>
+<tr>
+<td>cursor</td>
+<td><code>&lt;project&gt;/.cursor/skills/</code></td>
+<td><code>~/.cursor/skills/</code></td>
+</tr>
+<tr>
+<td>copilot</td>
+<td><code>&lt;project&gt;/.github/copilot/skills/</code></td>
+<td><code>~/.config/github-copilot/skills/</code></td>
+</tr>
+<tr>
+<td>opencode</td>
+<td><code>&lt;project&gt;/.opencode/skills/</code></td>
+<td><code>~/.config/opencode/skills/</code></td>
+</tr>
+<tr>
+<td>codex</td>
+<td>(not used for MCP)</td>
+<td><code>~/.codex/skills/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Codex MCP installs always use the global location, regardless of which
+project the install was started from (see "Codex" below).</p>
+<h2 id="per-agent-native-destinations">Per-agent native destinations<a class="headerlink" href="#per-agent-native-destinations" title="Permanent link">&para;</a></h2>
+<p>Each agent has its own native MCP config file and its own supported
+transports:</p>
+<table>
+<thead>
+<tr>
+<th>agent</th>
+<th>destination</th>
+<th>scope</th>
+<th>transports</th>
+<th>container key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>claude</td>
+<td><code>&lt;project&gt;/.mcp.json</code></td>
+<td>project</td>
+<td>stdio, http, sse</td>
+<td><code>mcpServers</code></td>
+</tr>
+<tr>
+<td>cursor</td>
+<td><code>&lt;project&gt;/.cursor/mcp.json</code></td>
+<td>project</td>
+<td>stdio, http, sse</td>
+<td><code>mcpServers</code></td>
+</tr>
+<tr>
+<td>copilot</td>
+<td><code>&lt;project&gt;/.vscode/mcp.json</code></td>
+<td>project</td>
+<td>stdio, http, sse</td>
+<td><code>servers</code></td>
+</tr>
+<tr>
+<td>opencode</td>
+<td><code>&lt;project&gt;/opencode.json</code></td>
+<td>project</td>
+<td>stdio, http, sse</td>
+<td><code>mcp</code></td>
+</tr>
+<tr>
+<td>codex</td>
+<td><code>~/.codex/config.toml</code></td>
+<td>global</td>
+<td>stdio only</td>
+<td><code>mcp_servers</code></td>
+</tr>
+</tbody>
+</table>
+<p>Writers only touch their own container key and the server entries they own;
+other keys and other servers already in the file are preserved. Output key
+order is sorted, so re-writing the same content is a no-op diff.</p>
+<p>Codex differs from the other four agents in two ways:</p>
+<ul>
+<li><strong>Global scope</strong>: an MCP install for Codex always writes to
+  <code>~/.codex/config.toml</code>, <code>~/.codex/skills/.skmcp.yml</code>, and
+  <code>~/.codex/skills/.skmcp.params.yml</code> - never into the project - regardless
+  of which project the install was started from. This is intentional and
+  applies to the guidance target too (<code>~/AGENTS.md</code>): Codex has only a single
+  global MCP config, so a Codex MCP server is shared across every project.
+  Keeping its ledger, parameter values, instance-name allocation, and rules
+  global is what keeps that one config coherent (for example, it lets
+  instance names stay unique in the single <code>config.toml</code>). Note this differs
+  from Codex <em>skill</em> guidance, which is project-scoped (<code>&lt;project&gt;/AGENTS.md</code>)
+  because skills are per-project files - MCP servers are not.</li>
+<li><strong>stdio only</strong>: Codex's native config cannot express <code>http</code> or <code>sse</code>
+  servers. Installing a non-stdio preset for Codex is skipped rather than
+  attempted, and is reported back as a skipped install.</li>
+</ul>
+<p>The Codex writer round-trips <code>~/.codex/config.toml</code> through a TOML
+parser/serializer. That preserves table structure and values but does
+<strong>not</strong> preserve hand-written comments or formatting in the file - a
+<code>config.toml</code> with comments loses them the first time SkillKeeper edits it.</p>
+<p>opencode's native shape differs from the other JSON-based agents: a stdio
+server becomes a <code>local</code> entry whose <code>command</code> array is the command
+followed by its args, with <code>env</code> under the key <code>environment</code>; an http/sse
+server becomes a <code>remote</code> entry (both transports use the same shape, since
+opencode does not distinguish them at this level).</p>
+<h2 id="rules-guidance">Rules (guidance)<a class="headerlink" href="#rules-guidance" title="Permanent link">&para;</a></h2>
+<p>A preset's <code>rules</code> field, if present, is installed into the target agent's
+guidance file using the same mechanism as skill guidance: a marked block</p>
+<div class="highlight"><pre><span></span><code>&lt;!-- SKILLKEEPER_START: &lt;key&gt; --&gt;
+... rendered rules body ...
+&lt;!-- SKILLKEEPER_END: &lt;key&gt; --&gt;
+</code></pre></div>
+<p>where <code>&lt;key&gt;</code> is built from the preset's identity (its source repository
+remote, or <code>local:&lt;presetId&gt;</code> for a manual preset) and the installed
+instance name, so the block can be found and replaced or removed later even
+if the source preset changes or disappears. The rules body is rendered
+(parameters substituted) before being written, and any literal
+<code>SKILLKEEPER_START</code>/<code>SKILLKEEPER_END</code> marker line inside the body is
+stripped first, so it cannot be mistaken for a block boundary.</p>
+<p>Guidance files are the same ones skills write to per agent: <code>CLAUDE.md</code> (or
+<code>.claude/CLAUDE.md</code>) for Claude, <code>AGENTS.md</code> for Codex and OpenCode,
+<code>.github/copilot-instructions.md</code> for Copilot, and <code>.cursorrules</code> (or
+<code>.cursor/rules/skillkeeper.mdc</code>) for Cursor. For Codex specifically, since
+its MCP installs are global, its guidance target is <code>~/AGENTS.md</code>, not a
+project file.</p>
+<p>Removing an instance removes exactly its own marked block; other
+SkillKeeper-owned blocks in the same guidance file (from skills or other
+MCP instances) are left untouched.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
