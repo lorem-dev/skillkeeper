@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.1.1-rc.1
+
 ### Features
 
 - Show a theme-aware app icon in the Windows/Linux title bar.
