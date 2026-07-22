@@ -77,6 +77,7 @@ fn load_keys() {
     cmd.env("SSH_ASKPASS_REQUIRE", "never")
         .env("SSH_ASKPASS", "")
         .env("DISPLAY", "");
+    crate::util::hide_console(&mut cmd);
     // Best-effort: no keys, tool missing, or a passphrase-protected key without
     // keychain -- leave the agent as-is; https clones still work.
     let _ = cmd.output();

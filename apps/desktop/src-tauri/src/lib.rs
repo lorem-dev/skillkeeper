@@ -4,6 +4,7 @@ mod app;
 mod commands;
 pub mod pty;
 mod state;
+mod util;
 
 use tauri::{Emitter, Manager};
 
