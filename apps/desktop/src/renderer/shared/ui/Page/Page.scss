@@ -184,7 +184,11 @@
 .sk-app--windows,
 .sk-app--linux {
   .sk-page__header::before {
-    background: linear-gradient(to bottom, var(--sk-color-bg), transparent);
+    // Fade from the actual page background color (--sk-color-bg-secondary, what
+    // the content sits on) to transparent -- NOT --sk-color-bg, which is pure
+    // white/black and read as a hard, too-dark band over the page. Matches the
+    // bottom fade below, so the header just blends into the page background.
+    background: linear-gradient(to bottom, var(--sk-color-bg-secondary), transparent);
   }
 
   .sk-page__fade {
