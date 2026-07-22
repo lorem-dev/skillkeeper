@@ -40,6 +40,9 @@ for updates. Supported agents: Claude, Codex, Copilot, Cursor, and OpenCode.
 Get the desktop app from the
 [latest release](https://github.com/lorem-dev/skillkeeper/releases/latest).
 
+Hitting an install problem (for example macOS reporting the app as "damaged")?
+See [Troubleshooting](https://lorem-dev.github.io/skillkeeper/latest/troubleshooting/).
+
 ---
 
 ## CLI quick start
