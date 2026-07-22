@@ -20,6 +20,7 @@ export {
   collapse,
 } from './transitions';
 export { getDisplacementFilter, supportsBackdropUrl } from './glassRefraction';
+export { supportsBackdropBlur } from './backdropSupport';
 export type { DisplacementOptions } from './glassRefraction';
 export { useGlassRefraction } from './useGlassRefraction';
 export type { GlassRefractionOptions } from './useGlassRefraction';

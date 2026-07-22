@@ -141,7 +141,7 @@
       background: color-mix(in srgb, var(--sk-color-label) 8%, var(--sk-glass-tint));
     }
 
-    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    @include glass.backdrop-fallback {
       background: var(--sk-color-bg-tertiary);
     }
   }
@@ -180,7 +180,7 @@
       box-shadow: none;
     }
 
-    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    @include glass.backdrop-fallback {
       background: var(--sk-color-bg-tertiary);
     }
   }
@@ -199,7 +199,7 @@
       background: var(--sk-color-accent);
     }
 
-    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    @include glass.backdrop-fallback {
       background: var(--sk-color-accent);
     }
 
@@ -212,7 +212,7 @@
         background: color-mix(in srgb, color-mix(in srgb, var(--sk-color-accent), #fff 20%) 88%, transparent);
       }
 
-      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      @include glass.backdrop-fallback {
         background: color-mix(in srgb, var(--sk-color-accent), #fff 20%);
       }
     }

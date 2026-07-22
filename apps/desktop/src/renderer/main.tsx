@@ -10,7 +10,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from '@/app/App';
 import { hostPlatform } from '@/app/hostPlatform';
 import { bridgeClient } from '@/services/bridge';
-import { setMacChrome } from '@/shared/lib';
+import { setMacChrome, supportsBackdropBlur } from '@/shared/lib';
 import '@/styles/index.scss';
 
 const container = document.getElementById('root');
@@ -31,6 +31,15 @@ void bridgeClient.init().finally(() => {
   // key off it even for portaled surfaces (menus, dropdowns) that mount to
   // document.body, outside the `.sk-app` platform class.
   document.documentElement.setAttribute('data-platform', platform);
+  // Flag machines whose engine parses backdrop-filter but does not paint it
+  // (Chromium/WebView2 under software compositing -- blocklisted/disabled GPU,
+  // Remote Desktop, VMs). The `@supports not` CSS fallbacks cannot catch this
+  // (the property still reports as supported), so styles key off this attribute
+  // instead. Set on documentElement so portaled surfaces (menus, modals) that
+  // mount to document.body reach it too, like data-platform above.
+  if (!supportsBackdropBlur()) {
+    document.documentElement.setAttribute('data-backdrop', 'unsupported');
+  }
   createRoot(container).render(
     <StrictMode>
       <App />
