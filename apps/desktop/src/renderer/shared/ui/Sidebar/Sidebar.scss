@@ -1,6 +1,8 @@
 // Sidebar styles. Co-located; tokens only (design-system.md 8.6). A glass panel
 // on the leading edge with icon + label items.
 
+@use '../../../styles/glass';
+
 .sk-sidebar {
   flex-shrink: 0;
   width: 200px;
@@ -11,7 +13,7 @@
   -webkit-backdrop-filter: blur(15px) saturate(180%);
   border-right: 0.5px solid var(--sk-color-separator);
 
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @include glass.backdrop-fallback {
     background: var(--sk-color-bg-secondary);
   }
 }

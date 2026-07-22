@@ -2,6 +2,8 @@
 // a pinned, blurred header and a matching blurred bottom fade. The shared blur
 // radius keeps both reading as one treatment.
 
+@use '../../../styles/glass';
+
 .sk-page {
   position: relative;
   display: flex;
@@ -58,7 +60,7 @@
     );
   }
 
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @include glass.backdrop-fallback {
     &::before {
       mask-image: none;
       -webkit-mask-image: none;
@@ -159,6 +161,12 @@
   padding-bottom: calc(var(--sk-control-height) + var(--sk-space-5) * 2);
 }
 
+// Engines that do not parse backdrop-filter at all: drop the fade. Deliberately
+// NOT switched to `glass.backdrop-fallback`: that mixin also fires under
+// `[data-backdrop='unsupported']` (software compositing), but on Windows/Linux
+// the fade already drops its blur for a plain gradient below and paints fine
+// without a GPU -- hiding it there would remove a working fade. Only the macOS
+// (WebKit) fade relies on backdrop-filter, and macOS does not hit that path.
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .sk-page__fade {
     display: none;

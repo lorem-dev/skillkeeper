@@ -152,9 +152,10 @@ impl SystemGit {
     /// Run a git subcommand in `cwd`, returning trimmed stdout on success.
     fn run(&self, args: &[String], cwd: &str) -> PortResult<String> {
         let git = (self.resolve_git_path)();
-        let output = Command::new(&git)
-            .args(args)
-            .current_dir(cwd)
+        let mut command = Command::new(&git);
+        command.args(args).current_dir(cwd);
+        hide_console(&mut command);
+        let output = command
             .output()
             .map_err(|e| PortError::Io(format!("failed to spawn {git}: {e}")))?;
         if output.status.success() {
@@ -169,6 +170,23 @@ impl SystemGit {
         }
     }
 }
+
+/// Prevent a console window from flashing when `git` is spawned from a GUI
+/// process (which has no console of its own). On Windows a spawned console
+/// program otherwise gets its own window for its lifetime; with the app polling
+/// git in the background (fetch/status/update checks), that reads as repeated
+/// flicker. Setting `CREATE_NO_WINDOW` suppresses it. No-op on other platforms,
+/// where child processes never create a console window. Output is still captured
+/// via `.output()`, so nothing else changes.
+#[cfg(windows)]
+fn hide_console(command: &mut Command) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    command.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(not(windows))]
+fn hide_console(_command: &mut Command) {}
 
 /// Directory portion of `path` as a string (`.` when there is no parent).
 fn dirname(path: &str) -> String {

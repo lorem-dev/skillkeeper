@@ -1,6 +1,6 @@
 {
   "name": "skillkeeper",
-  "version": "0.1.0",
+  "version": "0.1.1-rc.1",
   "private": true,
   "type": "module",
   "description": "Install and manage skills and hooks for AI coding agents",

@@ -31,7 +31,7 @@
 
   @include glass.border;
 
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @include glass.backdrop-fallback {
     background: var(--sk-color-bg-tertiary);
   }
 }

@@ -149,7 +149,10 @@ fn which_cli(cli: &str) -> Option<String> {
     } else {
         "which"
     };
-    let out = Command::new(cmd).arg(cli).output().ok()?;
+    let mut command = Command::new(cmd);
+    command.arg(cli);
+    crate::util::hide_console(&mut command);
+    let out = command.output().ok()?;
     if !out.status.success() {
         return None;
     }
@@ -315,13 +318,14 @@ pub fn list_editors(config_path: &str) -> Vec<EditorOption> {
 /// Spawn a command fully detached (no inherited stdio); the child keeps running
 /// after this process drops the handle.
 fn spawn_detached(program: &str, args: &[String]) -> std::io::Result<()> {
-    Command::new(program)
+    let mut command = Command::new(program);
+    command
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .map(|_child| ())
+        .stderr(Stdio::null());
+    crate::util::hide_console(&mut command);
+    command.spawn().map(|_child| ())
 }
 
 /// Open `target_path` in the given allowlisted editor id (or the OS default).

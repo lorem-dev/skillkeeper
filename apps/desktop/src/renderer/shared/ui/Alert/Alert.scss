@@ -6,6 +6,8 @@
 // tint so the frosting shows through, tinted by the tone. Each tone just sets
 // --sk-alert-tone; a solid fallback applies where backdrop-filter is absent.
 
+@use '../../../styles/glass';
+
 .sk-alert {
   overflow: hidden;
   border: 0.5px solid var(--sk-color-separator);
@@ -26,7 +28,7 @@
     border-width: var(--sk-glass-border-solid-width, 1.5px);
   }
 
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @include glass.backdrop-fallback {
     background: color-mix(in srgb, var(--sk-alert-tone) 14%, var(--sk-color-bg-secondary));
   }
 }

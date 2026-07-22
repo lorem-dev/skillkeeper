@@ -2,6 +2,8 @@
 // TreeView: muted header, hover rows, no cell borders. Columns share the grid
 // track template (--sk-table-cols) so header and rows line up.
 
+@use '../../../styles/glass';
+
 .sk-table {
   display: flex;
   flex-direction: column;
@@ -141,8 +143,8 @@
   opacity: 1;
 }
 
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .sk-table__fade {
+.sk-table__fade {
+  @include glass.backdrop-fallback {
     display: none;
   }
 }

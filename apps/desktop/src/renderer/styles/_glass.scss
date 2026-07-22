@@ -1,6 +1,31 @@
 // Shared glass treatments, included by the co-located glass component styles
 // via `@use '../../../styles/glass'`.
 
+// Emits the enclosed fallback declarations under BOTH conditions where a
+// backdrop-filter will not paint:
+//
+//   1. `@supports not (backdrop-filter)` -- the engine does not parse it.
+//   2. `:root[data-backdrop='unsupported']` -- the engine parses it but does not
+//      paint it (Chromium/WebView2 under software compositing: blocklisted or
+//      disabled GPU, Remote Desktop, VMs). `@supports` cannot catch this because
+//      the property still reports as supported; main.tsx detects the software
+//      renderer at startup and sets the attribute. See backdropSupport.ts.
+//
+// The `&` in the second selector expands against the including rule, so use this
+// from inside a component selector: `.sk-menu { @include glass.backdrop-fallback
+// { background: ...; } }`. The root attribute lives on documentElement so it
+// also reaches portaled surfaces (menus, dropdowns, modals) mounted to
+// document.body, outside the `.sk-app` tree.
+@mixin backdrop-fallback {
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    @content;
+  }
+
+  :root[data-backdrop='unsupported'] & {
+    @content;
+  }
+}
+
 // Thin gradient border (the --sk-glass-border ring), painted on an ::after and
 // masked to the padding ring so only the border shows. The including selector
 // must establish a positioning context (position: relative or isolate).
