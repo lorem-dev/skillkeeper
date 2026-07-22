@@ -53,7 +53,7 @@ pub enum SkillAction {
         /// a tracked repository.
         id: String,
         /// Agent to install for (claude|codex|copilot|cursor|opencode). Omit to
-        /// install for every agent enabled in the config.
+        /// install for every agent detected in the project directory.
         #[arg(long)]
         agent: Option<String>,
         /// Install globally (default: project scope).
