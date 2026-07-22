@@ -37,8 +37,29 @@ server presets. SkillKeeper clones a repository, resolves what it provides,
 installs the parts you choose into the agents you target, and tracks everything
 for updates. Supported agents: Claude, Codex, Copilot, Cursor, and OpenCode.
 
-Get the desktop app from the
+## Install
+
+**Desktop app** -- download the bundle for your platform from the
 [latest release](https://github.com/lorem-dev/skillkeeper/releases/latest).
+
+**CLI** (`skillkeeper`) -- one line, using only tools already on your system. The
+script detects your platform, downloads the matching CLI archive from the latest
+release, and adds the binary to your PATH.
+
+macOS / Linux:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install.sh | sh
+```
+
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install.ps1 | iex
+```
+
+See [Getting Started](https://lorem-dev.github.io/skillkeeper/latest/getting-started/)
+for other options.
 
 Hitting an install problem (for example macOS reporting the app as "damaged")?
 See [Troubleshooting](https://lorem-dev.github.io/skillkeeper/latest/troubleshooting/).

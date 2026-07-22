@@ -36,24 +36,32 @@ xattr -dr com.apple.quarantine /Applications/SkillKeeper.app
 
 ### The `skillkeeper` CLI is missing after installing the desktop app
 
-The desktop bundle (dmg/`.app`, deb/AppImage, nsis/msi) ships the GUI only. It
-does not place a `skillkeeper` command on your PATH, and the CLI is not
-published as a downloadable binary -- it is built from the workspace with cargo.
-This applies to every platform, macOS included.
+The desktop bundle (dmg/`.app`, deb/AppImage, nsis/msi) ships the GUI only -- it
+does not place a `skillkeeper` command on your PATH. The CLI is installed
+separately. This applies to every platform, macOS included.
 
-Build the binary:
+Use the install script -- it detects your platform, downloads the matching CLI
+archive from the latest release, and adds the binary to your PATH.
 
-```shell
-cargo build --release -p skillkeeper-cli
-# result: target/release/skillkeeper
-```
-
-Or install it onto your cargo bin path so `skillkeeper` is available everywhere:
+macOS / Linux:
 
 ```shell
-cargo install --path crates/skillkeeper-cli
+curl -fsSL https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install.sh | sh
 ```
 
-`cargo install` writes to `~/.cargo/bin`; make sure that directory is on your
-PATH. See the [CLI Reference](usage/cli.md) for the available commands, or
-verify the install with `skillkeeper version`.
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install.ps1 | iex
+```
+
+Or build it from the workspace with cargo:
+
+```shell
+cargo install --path crates/skillkeeper-cli   # installs to ~/.cargo/bin
+# or: cargo build --release -p skillkeeper-cli (binary at target/release/skillkeeper)
+```
+
+Make sure the install directory is on your PATH, then verify with
+`skillkeeper version`. See the [CLI Reference](usage/cli.md) for the available
+commands.

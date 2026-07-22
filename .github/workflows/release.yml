@@ -219,6 +219,32 @@ jobs:
           args: ${{ matrix.args }}
 
       # -----------------------------------------------------------------------
+      # Standalone CLI (skillkeeper): build and archive it for this target so it
+      # can be installed with the one-line install script (scripts/install.*),
+      # independent of the desktop bundle. The archive holds just the binary at
+      # its root and is named by target triple, so the script builds the
+      # download URL straight from the detected platform.
+      # -----------------------------------------------------------------------
+      - name: Build the CLI
+        shell: bash
+        run: cargo build --release -p skillkeeper-cli --target ${{ matrix.target }}
+
+      - name: Archive the CLI (tar.gz)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          mkdir -p dist-cli
+          tar -czf "dist-cli/skillkeeper-cli-${{ matrix.target }}.tar.gz" \
+            -C "target/${{ matrix.target }}/release" skillkeeper
+
+      - name: Archive the CLI (zip)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist-cli | Out-Null
+          Compress-Archive -Path "target/${{ matrix.target }}/release/skillkeeper.exe" -DestinationPath "dist-cli/skillkeeper-cli-${{ matrix.target }}.zip" -Force
+
+      # -----------------------------------------------------------------------
       # Windows MSIX (MakeAppx): package the built exe + tile assets into an
       # MSIX using the appx identity dev.lorem.SkillKeeper / CN=Lorem Dev.
       # Best-effort: authored manifest + MakeAppx pack; unsigned (Store signs
@@ -356,6 +382,7 @@ jobs:
             target/release/bundle/**/*
             target/*/release/bundle/**/*
             apps/desktop/dist-msix/*.msix
+            dist-cli/*
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
@@ -418,6 +445,7 @@ jobs:
               -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' \
               -o -name '*.AppImage' -o -name '*.msi' -o -name '*.exe' \
               -o -name '*.msix' \
+              -o -name 'skillkeeper-cli-*.tar.gz' -o -name 'skillkeeper-cli-*.zip' \
             \) -print0)
           echo "Staged $(find dist -type f | wc -l) files:"
           ls -1 dist

@@ -1,5 +1,14 @@
 # SkillKeeper Changelog
 
+## Development
+
+### Features
+
+- Publish the standalone `skillkeeper` CLI as a per-platform archive
+  (`skillkeeper-cli-<target>.tar.gz`/`.zip`) with each release, and add one-line
+  install scripts (`scripts/install.sh`, `scripts/install.ps1`) that detect the
+  platform, download the binary, and put it on the PATH.
+
 ## Version 0.1.1
 
 ### Features
