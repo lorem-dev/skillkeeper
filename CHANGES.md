@@ -1,5 +1,25 @@
 # SkillKeeper Changelog
 
+## Version 0.1.2-rc.1
+
+### Features
+
+- `skill install` without `--agent` installs for every agent detected in the
+  project directory (by marker files, the same detection the desktop app uses);
+  pass `--agent` to target a single one.
+- Accept a unique skill-id prefix wherever a skill id is taken
+  (install/info/uninstall/update/verify/repair), Docker-container-id style: a
+  prefix that matches exactly one skill resolves to it; an ambiguous prefix is
+  rejected with the candidates.
+- `repo add` now makes the local-path argument optional -- when omitted, the
+  repository is cloned into a per-repository directory under the app's
+  repositories folder (the same location the desktop app uses) -- and enables
+  Git LFS by default when `git-lfs` is installed (override with `--no-lfs`).
+- Publish the standalone `skillkeeper` CLI as a per-platform archive
+  (`skillkeeper-cli-<target>.tar.gz`/`.zip`) with each release, and add one-line
+  install scripts (`scripts/install.sh`, `scripts/install.ps1`) that detect the
+  platform, download the binary, and put it on the PATH.
+
 ## Version 0.1.1
 
 ### Features

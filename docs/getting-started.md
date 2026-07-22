@@ -13,11 +13,39 @@
 
 ## Installation
 
-The desktop app is distributed as a platform bundle (dmg/`.app`, deb/AppImage,
-nsis/msi) -- download it from the project's Releases.
+SkillKeeper ships two front ends over the same core:
 
-The `skillkeeper` CLI is a Rust binary built from this workspace. Build it with
-cargo:
+- **Desktop app** -- a platform bundle (dmg/`.app`, deb/AppImage, nsis/msi)
+  published with every
+  [release](https://github.com/lorem-dev/skillkeeper/releases/latest). Download
+  it and run the installer.
+- **CLI** (`skillkeeper`) -- a standalone binary. Install it with the one-line
+  script below (recommended), or build it from source.
+
+### CLI: install script
+
+The script detects your platform, downloads the matching `skillkeeper-cli`
+archive from the latest release, unpacks it, installs the binary, and adds it to
+your PATH. It uses only tools already on your system (nothing to install first).
+
+macOS and Linux:
+
+```
+curl -fsSL https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install.sh | sh
+```
+
+Windows (PowerShell):
+
+```
+irm https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install.ps1 | iex
+```
+
+Override the install directory with `SKILLKEEPER_INSTALL_DIR`, or pin a specific
+release with `SKILLKEEPER_VERSION` (for example `v0.1.1`).
+
+### CLI: build from source
+
+The `skillkeeper` CLI is a Rust binary in this workspace. Build it with cargo:
 
 ```
 cargo build --release -p skillkeeper-cli
@@ -68,16 +96,24 @@ skillkeeper skill info <id>
 
 ## Install a skill
 
-Install a skill for a specific agent into the current project:
+Install a skill into the current project. Without `--agent` it installs for
+every agent detected in the project directory (by its marker files, the same
+detection the desktop app uses); pass `--agent` to target just one:
 
 ```
+skillkeeper skill install <id>
 skillkeeper skill install <id> --agent claude
 ```
+
+`<id>` may be a full `group/name` (or bare `name`), or any unique prefix of one:
+`skillkeeper skill install ab` resolves to `abba` when it is the only skill whose
+id starts with `ab` (Docker-container-id style). The same shorthand works for
+every command that takes a skill id.
 
 Install globally (machine-wide, not tied to a project):
 
 ```
-skillkeeper skill install <id> --agent claude --global
+skillkeeper skill install <id> --global
 ```
 
 By default hooks are **not** installed. To install hooks alongside the skill
@@ -85,7 +121,7 @@ body you must opt in explicitly (see [Skills and Hooks](usage/skills-and-hooks.m
 for what hooks are and why they require a separate flag):
 
 ```
-skillkeeper skill install <id> --agent claude --allow-hooks
+skillkeeper skill install <id> --allow-hooks
 ```
 
 ## Track a project
@@ -105,16 +141,10 @@ skillkeeper project list
 
 ## Check for updates
 
-Run an on-demand update check across all repositories:
+Run an on-demand update check across every tracked repository:
 
 ```
 skillkeeper check
-```
-
-To check a specific repository:
-
-```
-skillkeeper check <repo-id>
 ```
 
 ## Verify and repair an installation

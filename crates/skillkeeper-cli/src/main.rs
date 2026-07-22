@@ -125,6 +125,7 @@ fn dispatch(
             &wiring.git,
             &wiring.clock,
             &paths.state_json,
+            &paths.repositories_dir,
             out,
             err,
         ),
@@ -300,12 +301,14 @@ mod tests {
                         local_path,
                         name,
                         lfs,
+                        no_lfs,
                     },
             } => {
                 assert_eq!(url, "https://example.com/r.git");
-                assert_eq!(local_path, "/tmp/r");
+                assert_eq!(local_path.as_deref(), Some("/tmp/r"));
                 assert_eq!(name.as_deref(), Some("mine"));
                 assert!(lfs);
+                assert!(!no_lfs);
             }
             _ => panic!("expected repo add"),
         }
@@ -337,8 +340,38 @@ mod tests {
     }
 
     #[test]
-    fn repo_add_requires_two_positionals() {
-        assert!(Cli::try_parse_from(["skillkeeper", "repo", "add", "only-url"]).is_err());
+    fn repo_add_local_path_is_optional() {
+        // The URL is required; the local path is optional (defaults to the
+        // app's repositories dir).
+        assert!(Cli::try_parse_from(["skillkeeper", "repo", "add"]).is_err());
+        let cli = Cli::try_parse_from(["skillkeeper", "repo", "add", "only-url"]).unwrap();
+        match cli.command {
+            Command::Repo {
+                action:
+                    commands::repo::RepoAction::Add {
+                        url, local_path, ..
+                    },
+            } => {
+                assert_eq!(url, "only-url");
+                assert!(local_path.is_none());
+            }
+            _ => panic!("expected repo add"),
+        }
+    }
+
+    #[test]
+    fn repo_add_rejects_lfs_and_no_lfs_resolution() {
+        // Both flags parse (last wins via overrides_with); just assert parsing.
+        let cli = Cli::try_parse_from(["skillkeeper", "repo", "add", "u", "--no-lfs"]).unwrap();
+        match cli.command {
+            Command::Repo {
+                action: commands::repo::RepoAction::Add { no_lfs, lfs, .. },
+            } => {
+                assert!(no_lfs);
+                assert!(!lfs);
+            }
+            _ => panic!("expected repo add"),
+        }
     }
 
     #[test]
@@ -381,7 +414,7 @@ mod tests {
                     },
             } => {
                 assert_eq!(id, "grp/sk");
-                assert_eq!(agent, "claude");
+                assert_eq!(agent.as_deref(), Some("claude"));
                 assert!(global);
                 assert!(project.is_none());
                 assert!(allow_hooks);

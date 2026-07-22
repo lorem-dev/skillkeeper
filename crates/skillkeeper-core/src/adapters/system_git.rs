@@ -252,6 +252,13 @@ impl GitPort for SystemGit {
         self.run(&build_set_remote_url_args(url), repo_path)
             .map(|_| ())
     }
+
+    fn lfs_available(&self) -> bool {
+        // `git lfs version` exits 0 only when the git-lfs extension is
+        // installed; it needs no repository, so run it in the current dir.
+        self.run(&["lfs".to_string(), "version".to_string()], ".")
+            .is_ok()
+    }
 }
 
 #[cfg(test)]

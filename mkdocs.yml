@@ -53,6 +53,7 @@ nav:
       - Localization: usage/localization.md
       - CLI Reference: usage/cli.md
       - Security: usage/security.md
+  - Troubleshooting: troubleshooting.md
   - Development:
       - Architecture: development/architecture.md
       - Development: development/development.md
