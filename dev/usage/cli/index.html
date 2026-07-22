@@ -892,6 +892,67 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#skillkeeper-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skillkeeper mcp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="skillkeeper mcp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mcp-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp remove
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp update
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#skillkeeper-version" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -952,6 +1013,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -966,10 +1054,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -987,8 +1075,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1382,6 +1470,67 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#skillkeeper-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skillkeeper mcp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="skillkeeper mcp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mcp-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp remove
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp update
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#skillkeeper-version" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1414,22 +1563,32 @@
 
 <h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
 <p>The SkillKeeper CLI is a Rust binary (<code>skillkeeper</code>) built with
-<a href="https://github.com/clap-rs/clap">clap</a>. All output is localizable. Commands
-exit with a non-zero code on failure.</p>
+<a href="https://github.com/clap-rs/clap">clap</a>. Output is English-only by design (a
+stable surface for scripting); localization applies to the desktop app only.
+Commands exit with a non-zero code on failure.</p>
 <p>A startup warning is printed when <code>config.yaml</code> has any invalid section.</p>
 <hr />
 <h2 id="skillkeeper-repo">skillkeeper repo<a class="headerlink" href="#skillkeeper-repo" title="Permanent link">&para;</a></h2>
 <p>Manage skill repositories.</p>
 <h3 id="repo-add">repo add<a class="headerlink" href="#repo-add" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper repo add &lt;url&gt;
+<div class="highlight"><pre><span></span><code>skillkeeper repo add &lt;url&gt; [local-path]
 </code></pre></div>
 <p>Clone a Git repository and register it as a skill source. Supports SSH and
-HTTPS transports. Runs preflight checks for <code>git</code> (and <code>git-lfs</code> when the
-repository declares LFS).</p>
+HTTPS transports.</p>
+<ul>
+<li><code>&lt;url&gt;</code> - the remote to clone.</li>
+<li><code>[local-path]</code> - optional clone destination. When omitted, the repository is
+  cloned into a per-repository directory under the app's repositories folder
+  (the same location the desktop app uses).</li>
+<li><code>--name &lt;name&gt;</code> - human-readable name (defaults to the repository name derived
+  from the URL).</li>
+<li><code>--lfs</code> / <code>--no-lfs</code> - force Git LFS on or off. By default LFS is enabled when
+  <code>git-lfs</code> is installed and off otherwise.</li>
+</ul>
 <h3 id="repo-remove">repo remove<a class="headerlink" href="#repo-remove" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>skillkeeper repo remove &lt;id&gt;
 </code></pre></div>
-<p>Remove a repository from the registry and delete its local clone.</p>
+<p>Remove a repository from the registry. Does not delete the local clone.</p>
 <h3 id="repo-list">repo list<a class="headerlink" href="#repo-list" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>skillkeeper repo list
 </code></pre></div>
@@ -1446,6 +1605,10 @@ installed skills.</p>
 <hr />
 <h2 id="skillkeeper-skill">skillkeeper skill<a class="headerlink" href="#skillkeeper-skill" title="Permanent link">&para;</a></h2>
 <p>Manage skills.</p>
+<p>Every <code>&lt;id&gt;</code> argument below accepts a full <code>group/name</code> (or bare <code>name</code>), or any
+unique prefix of one -- Docker-container-id style: <code>ab</code> resolves to <code>abba</code> when
+it is the only skill id starting with <code>ab</code>. An ambiguous prefix is rejected with
+the list of matches.</p>
 <h3 id="skill-list">skill list<a class="headerlink" href="#skill-list" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>skillkeeper skill list
 </code></pre></div>
@@ -1457,48 +1620,76 @@ source.</p>
 <p>Show details for a skill: name, version, description, source repository, and
 the agent targets it is currently installed for.</p>
 <h3 id="skill-install">skill install<a class="headerlink" href="#skill-install" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper skill install &lt;id&gt; --agent &lt;agent&gt; [--global] [--allow-hooks]
+<div class="highlight"><pre><span></span><code>skillkeeper skill install &lt;id&gt; [--agent &lt;agent&gt;] [--global] [--project &lt;dir&gt;] [--allow-hooks]
 </code></pre></div>
-<p>Install a skill for the specified agent.</p>
+<p>Install a skill for one or more agents.</p>
 <ul>
-<li><code>--agent &lt;agent&gt;</code> - required. One of <code>claude</code>, <code>codex</code>, <code>copilot</code>, <code>cursor</code>,
-  <code>opencode</code>.</li>
+<li><code>--agent &lt;agent&gt;</code> - optional. One of <code>claude</code>, <code>codex</code>, <code>copilot</code>, <code>cursor</code>,
+  <code>opencode</code>. When omitted, the skill is installed for every agent detected in
+  the project directory (by its marker files); if none are detected the command
+  asks you to pass <code>--agent</code>.</li>
 <li><code>--global</code> - install globally (machine-wide) instead of into the current
   project.</li>
+<li><code>--project &lt;dir&gt;</code> - project directory for project scope (default: the current
+  directory). Ignored with <code>--global</code>.</li>
 <li><code>--allow-hooks</code> - also install the skill's hooks. Without this flag, hooks
   are skipped and a notice is printed. Hooks are privileged; see
   <a href="../skills-and-hooks/">Skills and Hooks</a>.</li>
 </ul>
 <h3 id="skill-uninstall">skill uninstall<a class="headerlink" href="#skill-uninstall" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper skill uninstall &lt;id&gt;
+<div class="highlight"><pre><span></span><code>skillkeeper skill uninstall &lt;id&gt; [--agent &lt;agent&gt;]
 </code></pre></div>
 <p>Uninstall a skill. Removes all <code>ManagedFile</code> entries recorded in the manifest
 and all <code>ManagedHookEdit</code> regions (by <code>delimiterId</code> or <code>markerId</code>). Does not
 touch files or regions not owned by this installation.</p>
+<ul>
+<li><code>--agent &lt;agent&gt;</code> - limit to one agent; otherwise every agent the skill is
+  installed for is removed.</li>
+</ul>
 <h3 id="skill-update">skill update<a class="headerlink" href="#skill-update" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper skill update &lt;id&gt;
+<div class="highlight"><pre><span></span><code>skillkeeper skill update &lt;id&gt; [--agent &lt;agent&gt;] [--project &lt;dir&gt;] [--allow-hooks]
 </code></pre></div>
-<p>Update a skill to the latest version from its source repository (for every
-agent target where it is installed).</p>
+<p>Update a skill to the latest version from its source repository (by default for
+every agent target where it is installed).</p>
+<ul>
+<li><code>--agent &lt;agent&gt;</code> - limit the update to one agent.</li>
+<li><code>--project &lt;dir&gt;</code> - project directory for project-scope installs (default: the
+  recorded path, or the current directory).</li>
+<li><code>--allow-hooks</code> - re-apply the skill's hooks during the update (requires the
+  same explicit consent as install).</li>
+</ul>
 <h3 id="skill-verify">skill verify<a class="headerlink" href="#skill-verify" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper skill verify &lt;id&gt;
+<div class="highlight"><pre><span></span><code>skillkeeper skill verify &lt;id&gt; [--agent &lt;agent&gt;]
 </code></pre></div>
 <p>Recompute hashes for every managed file and hook edit region and compare them
 to the manifest. Reports per file: <code>ok</code>, <code>modified</code>, <code>missing</code>, or
 <code>extraneous</code>. Read-only; does not modify anything.</p>
+<ul>
+<li><code>--agent &lt;agent&gt;</code> - limit verification to one agent.</li>
+</ul>
 <h3 id="skill-repair">skill repair<a class="headerlink" href="#skill-repair" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper skill repair &lt;id&gt;
+<div class="highlight"><pre><span></span><code>skillkeeper skill repair &lt;id&gt; [--agent &lt;agent&gt;] [--project &lt;dir&gt;] [--allow-hooks]
 </code></pre></div>
 <p>Reinstall a skill's files (and hooks, only if originally installed and
 re-consented) to restore the state recorded in the manifest. Mutates the
 filesystem; always explicit.</p>
+<ul>
+<li><code>--agent &lt;agent&gt;</code> - limit the repair to one agent.</li>
+<li><code>--project &lt;dir&gt;</code> - project directory for project-scope installs (default: the
+  recorded path, or the current directory).</li>
+<li><code>--allow-hooks</code> - re-apply the skill's hooks during the repair (requires
+  consent).</li>
+</ul>
 <hr />
 <h2 id="skillkeeper-project">skillkeeper project<a class="headerlink" href="#skillkeeper-project" title="Permanent link">&para;</a></h2>
 <p>Manage tracked projects.</p>
 <h3 id="project-add">project add<a class="headerlink" href="#project-add" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper project add &lt;path&gt;
+<div class="highlight"><pre><span></span><code>skillkeeper project add &lt;path&gt; [--name &lt;name&gt;]
 </code></pre></div>
 <p>Register a directory as a tracked project. Use <code>.</code> for the current directory.</p>
+<ul>
+<li><code>--name &lt;name&gt;</code> - human-readable name (defaults to the folder's name).</li>
+</ul>
 <h3 id="project-remove">project remove<a class="headerlink" href="#project-remove" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>skillkeeper project remove &lt;id&gt;
 </code></pre></div>
@@ -1531,15 +1722,48 @@ non-zero if any section is invalid.</p>
 <p>Check for available updates across repositories and installed skills. Read-only;
 does not modify installs.</p>
 <ul>
-<li><code>--all</code> - check all registered repositories. Without this flag, checks the
-  repositories relevant to your tracked projects.</li>
+<li><code>--all</code> - accepted for compatibility; <code>check</code> always inspects every tracked
+  repository regardless of this flag.</li>
 </ul>
 <p>Output lists per-repository and per-skill update availability.</p>
+<hr />
+<h2 id="skillkeeper-mcp">skillkeeper mcp<a class="headerlink" href="#skillkeeper-mcp" title="Permanent link">&para;</a></h2>
+<p>Manage MCP server presets (see <a href="../mcp/">MCP Servers</a> for the preset format and
+behavior). Preset names accept the same unique-prefix shorthand as skill ids.</p>
+<h3 id="mcp-list">mcp list<a class="headerlink" href="#mcp-list" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>skillkeeper mcp list
+</code></pre></div>
+<p>List the available MCP presets: those defined manually in <code>config.yaml</code> plus
+those discovered in tracked repositories.</p>
+<h3 id="mcp-install">mcp install<a class="headerlink" href="#mcp-install" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>skillkeeper mcp install &lt;name&gt; [--agent &lt;agent&gt;]... [--param &lt;name=value&gt;]... [--project &lt;dir&gt;]
+</code></pre></div>
+<p>Install an MCP preset for one or more agents.</p>
+<ul>
+<li><code>--agent &lt;agent&gt;</code> - the agent(s) to install for; repeatable or
+  comma-separated.</li>
+<li><code>--param &lt;name=value&gt;</code> - repeatable; supplies values for the preset's
+  <code>{param}</code> placeholders.</li>
+<li><code>--project &lt;dir&gt;</code> - project directory (default: the current directory);
+  ignored for <code>codex</code>, which is installed globally.</li>
+</ul>
+<h3 id="mcp-remove">mcp remove<a class="headerlink" href="#mcp-remove" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>skillkeeper mcp remove &lt;instance-name&gt; --agent &lt;agent&gt; [--project &lt;dir&gt;]
+</code></pre></div>
+<p>Remove an installed MCP instance, identified by its assigned instance name (the
+native config key), for the given agent.</p>
+<h3 id="mcp-update">mcp update<a class="headerlink" href="#mcp-update" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>skillkeeper mcp update [&lt;name&gt;] [--agent &lt;agent&gt;]... [--all] [--param &lt;name=value&gt;]... [--project &lt;dir&gt;]
+</code></pre></div>
+<p>Reinstall MCP instances whose source definition changed. Limit to one preset by
+name (default: all project agents), or pass <code>--all</code> to check every tracked
+project and agent plus the global <code>codex</code> ledger. <code>--param</code> supplies values for
+any newly required placeholders.</p>
 <hr />
 <h2 id="skillkeeper-version">skillkeeper version<a class="headerlink" href="#skillkeeper-version" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>skillkeeper version
 </code></pre></div>
-<p>Print the version, for example <code>skillkeeper 0.1.1</code>. The same string is
+<p>Print the version, for example <code>skillkeeper 0.1.2-rc.1</code>. The same string is
 printed by the global <code>-V</code>, <code>-v</code>, and <code>--version</code> flags (e.g.
 <code>skillkeeper --version</code>).</p>
 

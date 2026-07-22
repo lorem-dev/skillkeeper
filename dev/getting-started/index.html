@@ -368,6 +368,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-install-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI: install script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-build-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI: build from source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -772,6 +800,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -786,10 +841,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -807,8 +862,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -955,6 +1010,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-install-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI: install script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-build-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI: build from source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1067,10 +1150,29 @@
   renderer, not the CLI.</li>
 </ul>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>The desktop app is distributed as a platform bundle (dmg/<code>.app</code>, deb/AppImage,
-nsis/msi) -- download it from the project's Releases.</p>
-<p>The <code>skillkeeper</code> CLI is a Rust binary built from this workspace. Build it with
-cargo:</p>
+<p>SkillKeeper ships two front ends over the same core:</p>
+<ul>
+<li><strong>Desktop app</strong> -- a platform bundle (dmg/<code>.app</code>, deb/AppImage, nsis/msi)
+  published with every
+  <a href="https://github.com/lorem-dev/skillkeeper/releases/latest">release</a>. Download
+  it and run the installer.</li>
+<li><strong>CLI</strong> (<code>skillkeeper</code>) -- a standalone binary. Install it with the one-line
+  script below (recommended), or build it from source.</li>
+</ul>
+<h3 id="cli-install-script">CLI: install script<a class="headerlink" href="#cli-install-script" title="Permanent link">&para;</a></h3>
+<p>The script detects your platform, downloads the matching <code>skillkeeper-cli</code>
+archive from the latest release, unpacks it, installs the binary, and adds it to
+your PATH. It uses only tools already on your system (nothing to install first).</p>
+<p>macOS and Linux:</p>
+<div class="highlight"><pre><span></span><code>curl -fsSL https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install.sh | sh
+</code></pre></div>
+<p>Windows (PowerShell):</p>
+<div class="highlight"><pre><span></span><code>irm https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install.ps1 | iex
+</code></pre></div>
+<p>Override the install directory with <code>SKILLKEEPER_INSTALL_DIR</code>, or pin a specific
+release with <code>SKILLKEEPER_VERSION</code> (for example <code>v0.1.1</code>).</p>
+<h3 id="cli-build-from-source">CLI: build from source<a class="headerlink" href="#cli-build-from-source" title="Permanent link">&para;</a></h3>
+<p>The <code>skillkeeper</code> CLI is a Rust binary in this workspace. Build it with cargo:</p>
 <div class="highlight"><pre><span></span><code>cargo build --release -p skillkeeper-cli
 </code></pre></div>
 <p>The binary is written to <code>target/release/skillkeeper</code>. Or run it directly during
@@ -1097,16 +1199,23 @@ List the repositories you have added:</p>
 <div class="highlight"><pre><span></span><code>skillkeeper skill info &lt;id&gt;
 </code></pre></div>
 <h2 id="install-a-skill">Install a skill<a class="headerlink" href="#install-a-skill" title="Permanent link">&para;</a></h2>
-<p>Install a skill for a specific agent into the current project:</p>
-<div class="highlight"><pre><span></span><code>skillkeeper skill install &lt;id&gt; --agent claude
+<p>Install a skill into the current project. Without <code>--agent</code> it installs for
+every agent detected in the project directory (by its marker files, the same
+detection the desktop app uses); pass <code>--agent</code> to target just one:</p>
+<div class="highlight"><pre><span></span><code>skillkeeper skill install &lt;id&gt;
+skillkeeper skill install &lt;id&gt; --agent claude
 </code></pre></div>
+<p><code>&lt;id&gt;</code> may be a full <code>group/name</code> (or bare <code>name</code>), or any unique prefix of one:
+<code>skillkeeper skill install ab</code> resolves to <code>abba</code> when it is the only skill whose
+id starts with <code>ab</code> (Docker-container-id style). The same shorthand works for
+every command that takes a skill id.</p>
 <p>Install globally (machine-wide, not tied to a project):</p>
-<div class="highlight"><pre><span></span><code>skillkeeper skill install &lt;id&gt; --agent claude --global
+<div class="highlight"><pre><span></span><code>skillkeeper skill install &lt;id&gt; --global
 </code></pre></div>
 <p>By default hooks are <strong>not</strong> installed. To install hooks alongside the skill
 body you must opt in explicitly (see <a href="../usage/skills-and-hooks/">Skills and Hooks</a>
 for what hooks are and why they require a separate flag):</p>
-<div class="highlight"><pre><span></span><code>skillkeeper skill install &lt;id&gt; --agent claude --allow-hooks
+<div class="highlight"><pre><span></span><code>skillkeeper skill install &lt;id&gt; --allow-hooks
 </code></pre></div>
 <h2 id="track-a-project">Track a project<a class="headerlink" href="#track-a-project" title="Permanent link">&para;</a></h2>
 <p>SkillKeeper can scope skill installs to a named project directory. Register
@@ -1117,11 +1226,8 @@ the current directory as a tracked project:</p>
 <div class="highlight"><pre><span></span><code>skillkeeper project list
 </code></pre></div>
 <h2 id="check-for-updates">Check for updates<a class="headerlink" href="#check-for-updates" title="Permanent link">&para;</a></h2>
-<p>Run an on-demand update check across all repositories:</p>
+<p>Run an on-demand update check across every tracked repository:</p>
 <div class="highlight"><pre><span></span><code>skillkeeper check
-</code></pre></div>
-<p>To check a specific repository:</p>
-<div class="highlight"><pre><span></span><code>skillkeeper check &lt;repo-id&gt;
 </code></pre></div>
 <h2 id="verify-and-repair-an-installation">Verify and repair an installation<a class="headerlink" href="#verify-and-repair-an-installation" title="Permanent link">&para;</a></h2>
 <p>Check whether all files of an installed skill still match their recorded
