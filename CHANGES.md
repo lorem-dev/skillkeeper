@@ -1,6 +1,6 @@
 # SkillKeeper Changelog
 
-## Development
+## Version 0.1.2-rc.1
 
 ### Features
 
