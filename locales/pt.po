@@ -1086,3 +1086,6 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "Nenhum projeto correspondente"
+
+msgid "projects.selectingFolder"
+msgstr "Selecionando uma pasta..."

@@ -1086,3 +1086,6 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "Няма адпаведнага праекта"
+
+msgid "projects.selectingFolder"
+msgstr "Выбар папкі..."

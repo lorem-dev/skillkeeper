@@ -951,3 +951,6 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "一致するプロジェクトがありません"
+
+msgid "projects.selectingFolder"
+msgstr "フォルダーを選択中..."

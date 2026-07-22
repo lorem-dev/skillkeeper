@@ -32,6 +32,7 @@ vi.mock('@/services/bridge', () => ({
     syncRepository: vi.fn(),
     repoHasUpdate: vi.fn(),
     describeRepository: vi.fn(),
+    selectFolder: vi.fn(),
   },
 }));
 
@@ -936,5 +937,35 @@ describe('useSkillkeeperStore', () => {
         await hashMcpDefInRenderer({ name: 'one', type: 'http', url: 'https://other.example.com' }),
       );
     });
+  });
+});
+
+describe('pickProjectFolder', () => {
+  it('shows the scrim during the pick and returns the chosen path', async () => {
+    vi.mocked(bridgeClient.selectFolder).mockResolvedValueOnce('/tmp/project');
+    const pending = useSkillkeeperStore.getState().pickProjectFolder();
+    expect(useSkillkeeperStore.getState().folderPickOpen).toBe(true);
+    const path = await pending;
+    expect(path).toBe('/tmp/project');
+    expect(useSkillkeeperStore.getState().folderPickOpen).toBe(false);
+  });
+
+  it('drops the result and hides the scrim when cancelled mid-pick', async () => {
+    let resolvePick: (value: string | null) => void = () => {};
+    vi.mocked(bridgeClient.selectFolder).mockReturnValueOnce(
+      new Promise<string | null>((resolve) => {
+        resolvePick = resolve;
+      }),
+    );
+    const pending = useSkillkeeperStore.getState().pickProjectFolder();
+    expect(useSkillkeeperStore.getState().folderPickOpen).toBe(true);
+
+    // A scrim click cancels: the overlay hides immediately.
+    useSkillkeeperStore.getState().cancelFolderPick();
+    expect(useSkillkeeperStore.getState().folderPickOpen).toBe(false);
+
+    // The native dialog still eventually returns a path, but it is ignored.
+    resolvePick('/tmp/ignored');
+    expect(await pending).toBeNull();
   });
 });

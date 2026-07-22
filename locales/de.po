@@ -996,3 +996,6 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "hooks.requireConsent"
 msgstr "Die Installation von Hooks erfordert eine ausdrückliche Zustimmung (--allow-hooks). Skill-Inhalt installiert; Hooks übersprungen."
+
+msgid "projects.selectingFolder"
+msgstr "Ordner wird ausgewählt..."

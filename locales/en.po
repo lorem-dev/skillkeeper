@@ -1086,3 +1086,6 @@ msgstr "Hook installation requires explicit consent (--allow-hooks). Skill body 
 
 msgid "skills.count"
 msgstr "{n} skill(s) installed"
+
+msgid "projects.selectingFolder"
+msgstr "Selecting a folder..."

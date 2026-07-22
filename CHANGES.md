@@ -2,6 +2,12 @@
 
 ## Development
 
+### Features
+
+- Show a modal overlay over the app while the folder picker for adding a project
+  is open; clicking the overlay cancels the pending add (the native dialog
+  cannot be closed programmatically, so its result is dropped).
+
 ### Fixes
 
 - Fall back to the name-keyed colour gradient on project cards that have an icon
