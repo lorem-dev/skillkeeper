@@ -141,16 +141,10 @@ skillkeeper project list
 
 ## Check for updates
 
-Run an on-demand update check across all repositories:
+Run an on-demand update check across every tracked repository:
 
 ```
 skillkeeper check
-```
-
-To check a specific repository:
-
-```
-skillkeeper check <repo-id>
 ```
 
 ## Verify and repair an installation
