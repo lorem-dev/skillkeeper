@@ -13,11 +13,18 @@ import { useEffect, useState } from 'react';
 import { TitleBar } from '@/shared/ui';
 import { bridgeClient } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
+import { useIsDark } from '@/systems/theme';
 import { hostPlatform } from './hostPlatform';
+// Brand mark for the Windows/Linux title bar. Two variants (dark-ink for light
+// backgrounds and light-ink for dark), swapped with the resolved theme -- the
+// same assets the About dialog uses.
+import logoLight from '../../../../../assets/icons/icon-default.png';
+import logoDark from '../../../../../assets/icons/icon-dark.png';
 
 export function WindowChrome() {
   const t = useTranslator();
   const platform = hostPlatform(bridgeClient.platform);
+  const dark = useIsDark();
   const [maximized, setMaximized] = useState(false);
 
   useEffect(() => {
@@ -41,6 +48,7 @@ export function WindowChrome() {
   return (
     <TitleBar
       platform={platform}
+      icon={<img src={dark ? logoDark : logoLight} alt="" width={16} height={16} />}
       title={t('app.title')}
       maximized={maximized}
       onMinimize={() => bridgeClient.minimizeWindow()}

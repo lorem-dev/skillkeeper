@@ -19,6 +19,29 @@
   -webkit-user-select: none;
 }
 
+// Leading brand mark. Sizes whatever node it is handed (an <img> logo or an
+// icon) to the bar's mark size, so the app layer that supplies it need not know
+// the dimensions.
+.sk-titlebar__icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding-left: var(--sk-space-4);
+
+  img,
+  svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// When the mark precedes the title, tighten the gap between them; a standalone
+// title keeps its full leading inset.
+.sk-titlebar__icon + .sk-titlebar__title {
+  padding-left: var(--sk-space-3);
+}
+
 .sk-titlebar__title {
   padding-inline: var(--sk-space-4);
   font-size: 13px;

@@ -19,6 +19,8 @@ import './TitleBar.scss';
 
 export interface TitleBarProps {
   readonly platform: 'windows' | 'linux';
+  /** Optional leading brand mark, shown before the title. Sized by the bar. */
+  readonly icon?: ReactNode;
   /** Optional leading bar title. */
   readonly title?: ReactNode;
   readonly maximized?: boolean;
@@ -30,6 +32,7 @@ export interface TitleBarProps {
 
 export function TitleBar({
   platform,
+  icon,
   title,
   maximized,
   onMinimize,
@@ -42,6 +45,11 @@ export function TitleBar({
     // the pressed element is tagged, so the controls (separate children) stay
     // clickable. WebKit ignores the old app-region CSS; this drives dragging.
     <div className={cx('sk-titlebar', `sk-titlebar--${platform}`)} data-tauri-drag-region>
+      {icon !== undefined && (
+        <span className="sk-titlebar__icon" data-tauri-drag-region>
+          {icon}
+        </span>
+      )}
       {title !== undefined && (
         <span className="sk-titlebar__title" data-tauri-drag-region>
           {title}
