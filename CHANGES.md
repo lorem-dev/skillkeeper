@@ -4,6 +4,9 @@
 
 ### Fixes
 
+- Fall back to the name-keyed colour gradient on project cards that have an icon
+  where blur is not painted (software compositing), matching the cards without
+  an icon.
 - Focus and raise the main window once the app finishes launching, so it is not
   left unfocused behind other windows when the launch completes in the
   background.

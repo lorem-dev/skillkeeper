@@ -104,13 +104,20 @@ export function ProjectCard({
     <Card className="sk-project-card">
       {/* Decorative left wash: a blurred, scaled copy of the project icon when
           there is one, else a soft colour field keyed to the project name. It
-          fades to transparent toward the centre. */}
+          fades to transparent toward the centre. The name-keyed gradient is
+          always rendered; for icon cards it is hidden while the blurred-icon
+          wash is used, and swapped back in where blur is not painted (software
+          compositing, `[data-backdrop='unsupported']`) -- see ProjectCard.scss. */}
       <span
-        className="sk-project-card__wash"
+        className={
+          iconUrl !== undefined
+            ? 'sk-project-card__wash sk-project-card__wash--icon'
+            : 'sk-project-card__wash'
+        }
         aria-hidden="true"
         style={{ '--sk-project-wash': `hsl(${washHue} 55% 58%)` } as CSSProperties}
       >
-        {iconUrl !== undefined ? (
+        {iconUrl !== undefined && (
           <>
             <img
               className="sk-project-card__wash-img"
@@ -129,13 +136,12 @@ export function ProjectCard({
               decoding="async"
             />
           </>
-        ) : (
-          <>
-            <span className="sk-project-card__wash-diag" />
-            {/* On hover, a flat colour flood tints the whole card. */}
-            <span className="sk-project-card__wash-flood" />
-          </>
         )}
+        {/* Name-keyed colour gradient (top-left -> transparent). Rest layer for
+            icon-less cards, and the blur-unavailable fallback for icon cards. */}
+        <span className="sk-project-card__wash-diag" />
+        {/* On hover, a flat colour flood tints the whole card. */}
+        <span className="sk-project-card__wash-flood" />
       </span>
       {/* Leading project icon, top-aligned to the title line; the text column
           (name / path / badges) starts to its right, so the space under the icon
