@@ -27,12 +27,19 @@
   display: flex;
   align-items: center;
   padding-left: var(--sk-space-4);
+  user-select: none;
+  -webkit-user-select: none;
 
   img,
   svg {
     display: block;
     width: 16px;
     height: 16px;
+    // Let a press on the mark fall through to the drag-region span so grabbing
+    // the icon still moves the window (Tauri drags only when the pressed element
+    // itself is tagged), and never start a native image drag.
+    pointer-events: none;
+    -webkit-user-drag: none;
   }
 }
 

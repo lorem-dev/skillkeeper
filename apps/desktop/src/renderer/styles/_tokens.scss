@@ -166,3 +166,23 @@ $themes: (
   --sk-shadow-3: 0 12px 40px rgba(0, 0, 0, 0.20);
   --sk-card-hover-bg: var(--sk-color-fill-3);
 }
+
+// Windows/Linux cannot rely on backdrop-filter painting: Chromium/WebView2 and
+// WebKitGTK drop it under software compositing (blocklisted/disabled GPU, Remote
+// Desktop, VMs), and the runtime software-renderer detection cannot catch every
+// such case. So the frosted surfaces there lean on a MORE OPAQUE glass tint --
+// legible whether or not the blur ever paints -- rather than the lighter,
+// frostier tint macOS (WebKit, which paints it reliably) keeps above. This is a
+// single knob feeding every glass surface (menus, popovers, cards, sidebar,
+// glass buttons, alerts); raise the alpha for more solid, lower for more frost.
+// Keyed on the document-element `data-platform` so it also reaches portaled
+// surfaces (menus, dropdowns) mounted outside the `.sk-app` tree.
+:root[data-platform='windows'],
+:root[data-platform='linux'] {
+  --sk-glass-tint: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme='dark']:root[data-platform='windows'],
+[data-theme='dark']:root[data-platform='linux'] {
+  --sk-glass-tint: rgba(30, 30, 32, 0.93);
+}

@@ -2,6 +2,15 @@
 
 ## Development
 
+## Version 0.1.1-rc.2
+
+### Fixes
+
+- Make the frosted surfaces more opaque on Windows/Linux so they stay legible
+  when backdrop-filter blur is not painted (e.g. under software compositing),
+  independent of the runtime software-renderer detection.
+- Keep the title-bar app icon unselectable and let dragging it move the window.
+
 ## Version 0.1.1-rc.1
 
 ### Features
