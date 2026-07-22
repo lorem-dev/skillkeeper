@@ -366,7 +366,10 @@ mod tests {
         let cli = Cli::try_parse_from(["skillkeeper", "repo", "add", "only-url"]).unwrap();
         match cli.command {
             Command::Repo {
-                action: commands::repo::RepoAction::Add { url, local_path, .. },
+                action:
+                    commands::repo::RepoAction::Add {
+                        url, local_path, ..
+                    },
             } => {
                 assert_eq!(url, "only-url");
                 assert!(local_path.is_none());
@@ -378,8 +381,7 @@ mod tests {
     #[test]
     fn repo_add_rejects_lfs_and_no_lfs_resolution() {
         // Both flags parse (last wins via overrides_with); just assert parsing.
-        let cli =
-            Cli::try_parse_from(["skillkeeper", "repo", "add", "u", "--no-lfs"]).unwrap();
+        let cli = Cli::try_parse_from(["skillkeeper", "repo", "add", "u", "--no-lfs"]).unwrap();
         match cli.command {
             Command::Repo {
                 action: commands::repo::RepoAction::Add { no_lfs, lfs, .. },
