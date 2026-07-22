@@ -139,6 +139,24 @@ fn dispatch(
         ),
         Command::Skill { action } => {
             let cwd = current_dir();
+            // Config and core each have their own `AgentKind`; map the enabled
+            // config kinds to the lowercase names `parse_agent` accepts.
+            let enabled_agents: Vec<String> = wiring
+                .config
+                .agents
+                .enabled
+                .iter()
+                .map(|a| {
+                    match a {
+                        skillkeeper_config::AgentKind::Claude => "claude",
+                        skillkeeper_config::AgentKind::Codex => "codex",
+                        skillkeeper_config::AgentKind::Copilot => "copilot",
+                        skillkeeper_config::AgentKind::Cursor => "cursor",
+                        skillkeeper_config::AgentKind::Opencode => "opencode",
+                    }
+                    .to_string()
+                })
+                .collect();
             let ctx = commands::skill::SkillCtx {
                 fs: &wiring.fs,
                 registry: &wiring.registry,
@@ -146,6 +164,7 @@ fn dispatch(
                 clock: &wiring.clock,
                 state_path: &paths.state_json,
                 executable_globs: &wiring.config.executables.globs,
+                enabled_agents: &enabled_agents,
                 cwd: &cwd,
             };
             commands::skill::run(action, &ctx, out, err)
@@ -412,7 +431,7 @@ mod tests {
                     },
             } => {
                 assert_eq!(id, "grp/sk");
-                assert_eq!(agent, "claude");
+                assert_eq!(agent.as_deref(), Some("claude"));
                 assert!(global);
                 assert!(project.is_none());
                 assert!(allow_hooks);

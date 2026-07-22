@@ -49,11 +49,13 @@ pub enum SkillAction {
     },
     /// Install a skill for an agent.
     Install {
-        /// Skill id (`group/name` or `name`) as found in a tracked repository.
+        /// Skill id (`group/name` or `name`, or a unique id prefix) as found in
+        /// a tracked repository.
         id: String,
-        /// Agent to install for (claude|codex|copilot|cursor|opencode).
+        /// Agent to install for (claude|codex|copilot|cursor|opencode). Omit to
+        /// install for every agent enabled in the config.
         #[arg(long)]
-        agent: String,
+        agent: Option<String>,
         /// Install globally (default: project scope).
         #[arg(long)]
         global: bool,
@@ -119,6 +121,9 @@ pub struct SkillCtx<'a> {
     pub clock: &'a dyn Clock,
     pub state_path: &'a str,
     pub executable_globs: &'a [String],
+    /// Names of the agents enabled in the config; the install target set when
+    /// `--agent` is omitted.
+    pub enabled_agents: &'a [String],
     /// The current working directory (project-scope default).
     pub cwd: &'a str,
 }
@@ -145,6 +150,45 @@ fn matches(m: &InstallManifest, id: &str, agent: Option<&str>) -> bool {
         Some(a) => m.target.agent.as_str() == a,
         None => true,
     }
+}
+
+/// Resolve a user-supplied skill id to a single canonical `group/name` (or bare
+/// `name`) among `candidates` -- each a `(full_id, name)` pair. An exact match on
+/// either form wins; otherwise a unique prefix match on either form resolves it,
+/// Docker-container-id style (`ab` -> `abba` when it is the only id starting with
+/// `ab`). Returns the canonical full id, or an error message when nothing matches
+/// or the prefix is ambiguous.
+fn resolve_skill_ref(input: &str, candidates: &[(String, String)]) -> Result<String, String> {
+    if let Some((full, _)) = candidates.iter().find(|(f, n)| f == input || n == input) {
+        return Ok(full.clone());
+    }
+    let mut hits: Vec<String> = candidates
+        .iter()
+        .filter(|(f, n)| f.starts_with(input) || n.starts_with(input))
+        .map(|(f, _)| f.clone())
+        .collect();
+    hits.sort();
+    hits.dedup();
+    match hits.len() {
+        0 => Err(format!("Skill not found: {input}")),
+        1 => Ok(hits.remove(0)),
+        _ => Err(format!(
+            "Ambiguous skill id '{input}'; matches: {}",
+            hits.join(", ")
+        )),
+    }
+}
+
+/// The distinct `(full_id, name)` pairs across installed manifests, for prefix
+/// resolution of a user-supplied id against what is installed.
+fn installed_id_candidates(installs: &[InstallManifest]) -> Vec<(String, String)> {
+    let mut v: Vec<(String, String)> = installs
+        .iter()
+        .map(|m| (full_id(&m.skill_id), m.skill_id.name.clone()))
+        .collect();
+    v.sort();
+    v.dedup();
+    v
 }
 
 /// `VerifyStatus` as its wire string.
@@ -327,15 +371,18 @@ pub fn info(
     err: &mut dyn Write,
 ) -> Result<i32, CliError> {
     let state = load_state(ctx.fs, ctx.state_path)?;
+    let canonical = match resolve_skill_ref(id, &installed_id_candidates(&state.installs)) {
+        Ok(c) => c,
+        Err(msg) => {
+            writeln!(err, "{msg}")?;
+            return Ok(1);
+        }
+    };
     let matches: Vec<&InstallManifest> = state
         .installs
         .iter()
-        .filter(|m| matches_id(m, id))
+        .filter(|m| matches_id(m, &canonical))
         .collect();
-    if matches.is_empty() {
-        writeln!(err, "Skill not found: {id}")?;
-        return Ok(1);
-    }
     for m in matches {
         writeln!(out, "Skill:    {}", m.skill_id.name)?;
         if let Some(group) = &m.skill_id.group {
@@ -372,28 +419,38 @@ pub fn install(
 ) -> Result<i32, CliError> {
     let mut state = load_state(ctx.fs, ctx.state_path)?;
 
-    // Find the skill in tracked repositories.
-    let mut found = None;
+    // Gather every skill across tracked repositories, then resolve the id
+    // (exact or unique prefix, Docker-style) against them.
+    let mut all = Vec::new();
     for repo in &state.repositories {
-        let resolved = resolve_skills(ctx.fs, &repo.local_path);
-        if let Some(skill) = resolved
-            .skills
-            .into_iter()
-            .find(|s| full_id(&s.id) == id || s.id.name == id)
-        {
-            found = Some((
+        for skill in resolve_skills(ctx.fs, &repo.local_path).skills {
+            all.push((
                 repo.local_path.clone(),
                 repo.id.clone(),
                 repo.url.clone(),
                 skill,
             ));
-            break;
         }
     }
-    let Some((source_root, source_repo_id, source_remote, skill)) = found else {
-        writeln!(err, "Skill not found in any tracked repository: {id}")?;
-        return Ok(1);
+    let candidates: Vec<(String, String)> = all
+        .iter()
+        .map(|(_, _, _, s)| (full_id(&s.id), s.id.name.clone()))
+        .collect();
+    let canonical = match resolve_skill_ref(id, &candidates) {
+        Ok(c) => c,
+        Err(msg) if msg.starts_with("Ambiguous") => {
+            writeln!(err, "{msg}")?;
+            return Ok(1);
+        }
+        Err(_) => {
+            writeln!(err, "Skill not found in any tracked repository: {id}")?;
+            return Ok(1);
+        }
     };
+    let (source_root, source_repo_id, source_remote, skill) = all
+        .into_iter()
+        .find(|(_, _, _, s)| full_id(&s.id) == canonical)
+        .expect("resolved id must be among the gathered skills");
 
     let agent_kind = parse_agent(agent)?;
     let adapter = ctx.registry.get(agent_kind)?;
@@ -453,10 +510,17 @@ pub fn uninstall(
     err: &mut dyn Write,
 ) -> Result<i32, CliError> {
     let state = load_state(ctx.fs, ctx.state_path)?;
+    let canonical = match resolve_skill_ref(id, &installed_id_candidates(&state.installs)) {
+        Ok(c) => c,
+        Err(msg) => {
+            writeln!(err, "{msg}")?;
+            return Ok(1);
+        }
+    };
     let matched: Vec<InstallManifest> = state
         .installs
         .iter()
-        .filter(|m| matches(m, id, agent))
+        .filter(|m| matches(m, &canonical, agent))
         .cloned()
         .collect();
     if matched.is_empty() {
@@ -545,10 +609,17 @@ pub fn update(
     err: &mut dyn Write,
 ) -> Result<i32, CliError> {
     let state = load_state(ctx.fs, ctx.state_path)?;
+    let canonical = match resolve_skill_ref(id, &installed_id_candidates(&state.installs)) {
+        Ok(c) => c,
+        Err(msg) => {
+            writeln!(err, "{msg}")?;
+            return Ok(1);
+        }
+    };
     let matched: Vec<InstallManifest> = state
         .installs
         .iter()
-        .filter(|m| matches(m, id, agent))
+        .filter(|m| matches(m, &canonical, agent))
         .cloned()
         .collect();
     if matched.is_empty() {
@@ -577,7 +648,7 @@ pub fn update(
         let resolved = resolve_skills(ctx.fs, &repo.local_path)
             .skills
             .into_iter()
-            .find(|s| full_id(&s.id) == id || s.id.name == id);
+            .find(|s| full_id(&s.id) == canonical);
         let Some(resolved) = resolved else {
             writeln!(err, "Skill not found in source: {id}")?;
             continue;
@@ -724,10 +795,17 @@ pub fn verify(
     err: &mut dyn Write,
 ) -> Result<i32, CliError> {
     let state = load_state(ctx.fs, ctx.state_path)?;
+    let canonical = match resolve_skill_ref(id, &installed_id_candidates(&state.installs)) {
+        Ok(c) => c,
+        Err(msg) => {
+            writeln!(err, "{msg}")?;
+            return Ok(1);
+        }
+    };
     let matched: Vec<&InstallManifest> = state
         .installs
         .iter()
-        .filter(|m| matches(m, id, agent))
+        .filter(|m| matches(m, &canonical, agent))
         .collect();
     if matched.is_empty() {
         writeln!(err, "Skill not found: {id}")?;
@@ -777,10 +855,17 @@ pub fn repair(
     err: &mut dyn Write,
 ) -> Result<i32, CliError> {
     let state = load_state(ctx.fs, ctx.state_path)?;
+    let canonical = match resolve_skill_ref(id, &installed_id_candidates(&state.installs)) {
+        Ok(c) => c,
+        Err(msg) => {
+            writeln!(err, "{msg}")?;
+            return Ok(1);
+        }
+    };
     let matched: Vec<InstallManifest> = state
         .installs
         .iter()
-        .filter(|m| matches(m, id, agent))
+        .filter(|m| matches(m, &canonical, agent))
         .cloned()
         .collect();
     if matched.is_empty() {
@@ -800,7 +885,7 @@ pub fn repair(
         let resolved = resolve_skills(ctx.fs, &repo.local_path)
             .skills
             .into_iter()
-            .find(|s| full_id(&s.id) == id || s.id.name == id);
+            .find(|s| full_id(&s.id) == canonical);
         let Some(resolved) = resolved else {
             writeln!(err, "Skill not found in source: {id}")?;
             continue;
@@ -861,16 +946,34 @@ pub fn run(
             global,
             project,
             allow_hooks,
-        } => install(
-            ctx,
-            id,
-            agent,
-            *global,
-            project.as_deref(),
-            *allow_hooks,
-            out,
-            err,
-        ),
+        } => {
+            // With an explicit --agent, install for just that one; without it,
+            // install for every agent enabled in the config.
+            let agents: Vec<String> = match agent {
+                Some(a) => vec![a.clone()],
+                None => ctx.enabled_agents.to_vec(),
+            };
+            if agents.is_empty() {
+                writeln!(err, "No agents are enabled to install for.")?;
+                return Ok(1);
+            }
+            for a in &agents {
+                let code = install(
+                    ctx,
+                    id,
+                    a,
+                    *global,
+                    project.as_deref(),
+                    *allow_hooks,
+                    out,
+                    err,
+                )?;
+                if code != 0 {
+                    return Ok(code);
+                }
+            }
+            Ok(0)
+        }
         SkillAction::Uninstall { id, agent } => uninstall(ctx, id, agent.as_deref(), out, err),
         SkillAction::Update {
             id,
@@ -947,6 +1050,7 @@ mod tests {
         env: FakeEnv,
         clock: FixedClock,
         globs: Vec<String>,
+        enabled: Vec<String>,
     }
 
     impl TestCtx {
@@ -957,6 +1061,7 @@ mod tests {
                 env: FakeEnv,
                 clock: FixedClock(FIXED_MS),
                 globs: Vec::new(),
+                enabled: vec!["claude".to_string(), "codex".to_string()],
             }
         }
 
@@ -968,6 +1073,7 @@ mod tests {
                 clock: &self.clock,
                 state_path: STATE_PATH,
                 executable_globs: &self.globs,
+                enabled_agents: &self.enabled,
                 cwd: PROJECT,
             }
         }
@@ -996,6 +1102,14 @@ mod tests {
             )
             .with_file("/repos/r1/skill-a/run.sh", "#!/bin/sh\necho hi\n")
             .with_file("/repos/r1/skill-a/GUIDE.md", "Do the thing.\n")
+    }
+
+    /// Two skills sharing the `skill-` prefix, for prefix-ambiguity tests.
+    fn seeded_fs_two() -> MemFs {
+        seeded_fs().with_file(
+            "/repos/r1/skill-b/SKILL.md",
+            "---\nname: skill-b\n---\nbody\n",
+        )
     }
 
     fn seed_state(fs: &MemFs, installs: Vec<InstallManifest>) {
@@ -1266,5 +1380,87 @@ mod tests {
         let installs = load_state(&app.fs, STATE_PATH).unwrap().installs;
         assert_eq!(installs.len(), 1);
         assert!(verify_install(&app.fs, &installs[0]).unwrap().ok);
+    }
+
+    #[test]
+    fn install_resolves_a_unique_id_prefix() {
+        let app = TestCtx::new(seeded_fs());
+        seed_state(&app.fs, vec![]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        // "sk" uniquely prefixes "skill-a".
+        let code = install(
+            &app.ctx(),
+            "sk",
+            "claude",
+            false,
+            Some(PROJECT),
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 0);
+        let installs = load_state(&app.fs, STATE_PATH).unwrap().installs;
+        assert_eq!(installs.len(), 1);
+        assert_eq!(installs[0].skill_id.name, "skill-a");
+    }
+
+    #[test]
+    fn install_reports_ambiguous_id_prefix() {
+        let app = TestCtx::new(seeded_fs_two());
+        seed_state(&app.fs, vec![]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        // "skill" prefixes both skill-a and skill-b.
+        let code = install(
+            &app.ctx(),
+            "skill",
+            "claude",
+            false,
+            Some(PROJECT),
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 1);
+        assert!(String::from_utf8(err).unwrap().contains("Ambiguous"));
+        assert!(load_state(&app.fs, STATE_PATH).unwrap().installs.is_empty());
+    }
+
+    #[test]
+    fn run_install_without_agent_targets_all_enabled_agents() {
+        let app = TestCtx::new(seeded_fs());
+        seed_state(&app.fs, vec![]);
+        let action = SkillAction::Install {
+            id: "skill-a".to_string(),
+            agent: None,
+            global: false,
+            project: Some(PROJECT.to_string()),
+            allow_hooks: false,
+        };
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = run(&action, &app.ctx(), &mut out, &mut err).unwrap();
+        assert_eq!(code, 0);
+        // The test ctx enables claude + codex, so both get an install.
+        let installs = load_state(&app.fs, STATE_PATH).unwrap().installs;
+        assert_eq!(installs.len(), 2);
+        let agents: Vec<&str> = installs.iter().map(|m| m.target.agent.as_str()).collect();
+        assert!(agents.contains(&"claude"));
+        assert!(agents.contains(&"codex"));
+    }
+
+    #[test]
+    fn uninstall_resolves_a_unique_id_prefix() {
+        let app = TestCtx::new(seeded_fs());
+        seed_state(&app.fs, vec![]);
+        install_a(&app);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = uninstall(&app.ctx(), "sk", None, &mut out, &mut err).unwrap();
+        assert_eq!(code, 0);
+        assert!(load_state(&app.fs, STATE_PATH).unwrap().installs.is_empty());
     }
 }

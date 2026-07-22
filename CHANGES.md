@@ -4,6 +4,12 @@
 
 ### Features
 
+- `skill install` installs for every enabled agent when `--agent` is omitted
+  (pass `--agent` to target a single one).
+- Accept a unique skill-id prefix wherever a skill id is taken
+  (install/info/uninstall/update/verify/repair), Docker-container-id style: a
+  prefix that matches exactly one skill resolves to it; an ambiguous prefix is
+  rejected with the candidates.
 - `repo add` now makes the local-path argument optional -- when omitted, the
   repository is cloned into a per-repository directory under the app's
   repositories folder (the same location the desktop app uses) -- and enables

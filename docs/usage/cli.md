@@ -64,6 +64,11 @@ installed skills.
 
 Manage skills.
 
+Every `<id>` argument below accepts a full `group/name` (or bare `name`), or any
+unique prefix of one -- Docker-container-id style: `ab` resolves to `abba` when
+it is the only skill id starting with `ab`. An ambiguous prefix is rejected with
+the list of matches.
+
 ### skill list
 
 ```
@@ -85,13 +90,14 @@ the agent targets it is currently installed for.
 ### skill install
 
 ```
-skillkeeper skill install <id> --agent <agent> [--global] [--allow-hooks]
+skillkeeper skill install <id> [--agent <agent>] [--global] [--allow-hooks]
 ```
 
-Install a skill for the specified agent.
+Install a skill for one or more agents.
 
-- `--agent <agent>` - required. One of `claude`, `codex`, `copilot`, `cursor`,
-  `opencode`.
+- `--agent <agent>` - optional. One of `claude`, `codex`, `copilot`, `cursor`,
+  `opencode`. When omitted, the skill is installed for every agent enabled in
+  the config.
 - `--global` - install globally (machine-wide) instead of into the current
   project.
 - `--allow-hooks` - also install the skill's hooks. Without this flag, hooks

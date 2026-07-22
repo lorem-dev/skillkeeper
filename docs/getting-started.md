@@ -96,16 +96,23 @@ skillkeeper skill info <id>
 
 ## Install a skill
 
-Install a skill for a specific agent into the current project:
+Install a skill into the current project. Without `--agent` it installs for
+every agent enabled in your config; pass `--agent` to target just one:
 
 ```
+skillkeeper skill install <id>
 skillkeeper skill install <id> --agent claude
 ```
+
+`<id>` may be a full `group/name` (or bare `name`), or any unique prefix of one:
+`skillkeeper skill install ab` resolves to `abba` when it is the only skill whose
+id starts with `ab` (Docker-container-id style). The same shorthand works for
+every command that takes a skill id.
 
 Install globally (machine-wide, not tied to a project):
 
 ```
-skillkeeper skill install <id> --agent claude --global
+skillkeeper skill install <id> --global
 ```
 
 By default hooks are **not** installed. To install hooks alongside the skill
@@ -113,7 +120,7 @@ body you must opt in explicitly (see [Skills and Hooks](usage/skills-and-hooks.m
 for what hooks are and why they require a separate flag):
 
 ```
-skillkeeper skill install <id> --agent claude --allow-hooks
+skillkeeper skill install <id> --allow-hooks
 ```
 
 ## Track a project
