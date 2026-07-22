@@ -4,8 +4,9 @@
 
 ### Features
 
-- `skill install` installs for every enabled agent when `--agent` is omitted
-  (pass `--agent` to target a single one).
+- `skill install` without `--agent` installs for every agent detected in the
+  project directory (by marker files, the same detection the desktop app uses);
+  pass `--agent` to target a single one.
 - Accept a unique skill-id prefix wherever a skill id is taken
   (install/info/uninstall/update/verify/repair), Docker-container-id style: a
   prefix that matches exactly one skill resolves to it; an ambiguous prefix is

@@ -96,8 +96,9 @@ skillkeeper skill install <id> [--agent <agent>] [--global] [--allow-hooks]
 Install a skill for one or more agents.
 
 - `--agent <agent>` - optional. One of `claude`, `codex`, `copilot`, `cursor`,
-  `opencode`. When omitted, the skill is installed for every agent enabled in
-  the config.
+  `opencode`. When omitted, the skill is installed for every agent detected in
+  the project directory (by its marker files); if none are detected the command
+  asks you to pass `--agent`.
 - `--global` - install globally (machine-wide) instead of into the current
   project.
 - `--allow-hooks` - also install the skill's hooks. Without this flag, hooks

@@ -97,7 +97,8 @@ skillkeeper skill info <id>
 ## Install a skill
 
 Install a skill into the current project. Without `--agent` it installs for
-every agent enabled in your config; pass `--agent` to target just one:
+every agent detected in the project directory (by its marker files, the same
+detection the desktop app uses); pass `--agent` to target just one:
 
 ```
 skillkeeper skill install <id>

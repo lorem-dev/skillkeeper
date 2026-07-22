@@ -19,7 +19,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::Write;
 
 use clap::Subcommand;
-use skillkeeper_agents::{AdapterRegistry, AgentAdapter};
+use skillkeeper_agents::{detect_project_agents, AdapterRegistry, AgentAdapter};
 use skillkeeper_core::hooks::guidance::{
     guidance_key, remove_guidance_block, skill_guidance_id, strip_guidance_markers,
     upsert_guidance_block,
@@ -121,9 +121,6 @@ pub struct SkillCtx<'a> {
     pub clock: &'a dyn Clock,
     pub state_path: &'a str,
     pub executable_globs: &'a [String],
-    /// Names of the agents enabled in the config; the install target set when
-    /// `--agent` is omitted.
-    pub enabled_agents: &'a [String],
     /// The current working directory (project-scope default).
     pub cwd: &'a str,
 }
@@ -948,15 +945,23 @@ pub fn run(
             allow_hooks,
         } => {
             // With an explicit --agent, install for just that one; without it,
-            // install for every agent enabled in the config.
+            // install for every agent detected in the project directory (the
+            // same marker-based detection the desktop app uses).
             let agents: Vec<String> = match agent {
                 Some(a) => vec![a.clone()],
-                None => ctx.enabled_agents.to_vec(),
+                None => {
+                    let dir = project.as_deref().unwrap_or(ctx.cwd);
+                    let detected = detect_project_agents(ctx.fs, dir);
+                    if detected.is_empty() {
+                        writeln!(
+                            err,
+                            "No agents detected in {dir}; pass --agent to choose one."
+                        )?;
+                        return Ok(1);
+                    }
+                    detected.iter().map(|k| k.as_str().to_string()).collect()
+                }
             };
-            if agents.is_empty() {
-                writeln!(err, "No agents are enabled to install for.")?;
-                return Ok(1);
-            }
             for a in &agents {
                 let code = install(
                     ctx,
@@ -1050,7 +1055,6 @@ mod tests {
         env: FakeEnv,
         clock: FixedClock,
         globs: Vec<String>,
-        enabled: Vec<String>,
     }
 
     impl TestCtx {
@@ -1061,7 +1065,6 @@ mod tests {
                 env: FakeEnv,
                 clock: FixedClock(FIXED_MS),
                 globs: Vec::new(),
-                enabled: vec!["claude".to_string(), "codex".to_string()],
             }
         }
 
@@ -1073,7 +1076,6 @@ mod tests {
                 clock: &self.clock,
                 state_path: STATE_PATH,
                 executable_globs: &self.globs,
-                enabled_agents: &self.enabled,
                 cwd: PROJECT,
             }
         }
@@ -1430,8 +1432,12 @@ mod tests {
     }
 
     #[test]
-    fn run_install_without_agent_targets_all_enabled_agents() {
-        let app = TestCtx::new(seeded_fs());
+    fn run_install_without_agent_targets_detected_agents() {
+        // Markers for claude + codex in the project dir drive the install set.
+        let fs = seeded_fs()
+            .with_file("/proj/CLAUDE.md", "x")
+            .with_file("/proj/AGENTS.md", "x");
+        let app = TestCtx::new(fs);
         seed_state(&app.fs, vec![]);
         let action = SkillAction::Install {
             id: "skill-a".to_string(),
@@ -1444,12 +1450,33 @@ mod tests {
         let mut err = Vec::new();
         let code = run(&action, &app.ctx(), &mut out, &mut err).unwrap();
         assert_eq!(code, 0);
-        // The test ctx enables claude + codex, so both get an install.
         let installs = load_state(&app.fs, STATE_PATH).unwrap().installs;
         assert_eq!(installs.len(), 2);
         let agents: Vec<&str> = installs.iter().map(|m| m.target.agent.as_str()).collect();
         assert!(agents.contains(&"claude"));
         assert!(agents.contains(&"codex"));
+    }
+
+    #[test]
+    fn run_install_without_agent_errors_when_none_detected() {
+        // The project dir has no agent markers.
+        let app = TestCtx::new(seeded_fs());
+        seed_state(&app.fs, vec![]);
+        let action = SkillAction::Install {
+            id: "skill-a".to_string(),
+            agent: None,
+            global: false,
+            project: Some(PROJECT.to_string()),
+            allow_hooks: false,
+        };
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = run(&action, &app.ctx(), &mut out, &mut err).unwrap();
+        assert_eq!(code, 1);
+        assert!(String::from_utf8(err)
+            .unwrap()
+            .contains("No agents detected"));
+        assert!(load_state(&app.fs, STATE_PATH).unwrap().installs.is_empty());
     }
 
     #[test]

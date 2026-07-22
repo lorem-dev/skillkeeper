@@ -19,12 +19,12 @@
 //! and the skill/agent summary the card badges show.
 
 use std::collections::HashSet;
-use std::path::Path;
 
 use serde::Serialize;
 use tauri::State;
 use uuid::Uuid;
 
+use skillkeeper_agents::detect_project_agents;
 use skillkeeper_core::models::{AgentKind, AppState, InstallManifest, Project};
 use skillkeeper_core::ports::{Clock, FsPort};
 use skillkeeper_core::state::state::{load_state, save_state};
@@ -108,16 +108,6 @@ pub struct ProjectInfo {
     pub icon_data_url: Option<String>,
 }
 
-/// Files/dirs whose presence in a project marks an agent as having been used.
-/// The tuple order mirrors the TypeScript `AGENT_MARKERS` key order.
-const AGENT_MARKERS: [(AgentKind, &[&str]); 5] = [
-    (AgentKind::Claude, &["CLAUDE.md", ".claude"]),
-    (AgentKind::Codex, &["AGENTS.md", ".codex"]),
-    (AgentKind::Copilot, &[".github/copilot-instructions.md"]),
-    (AgentKind::Cursor, &[".cursor", ".cursorrules"]),
-    (AgentKind::Opencode, &[".opencode", "opencode.json"]),
-];
-
 /// Acquire the state lock, recovering the guard if a prior holder panicked.
 fn lock(ctx: &AppContext) -> std::sync::MutexGuard<'_, ()> {
     ctx.state_lock.lock().unwrap_or_else(|e| e.into_inner())
@@ -126,25 +116,6 @@ fn lock(ctx: &AppContext) -> std::sync::MutexGuard<'_, ()> {
 /// Current wall-clock time as an ISO-8601 UTC timestamp (`new Date().toISOString()`).
 fn now_iso(ctx: &AppContext) -> String {
     iso_from_millis(ctx.clock.now())
-}
-
-/// Which agents appear to have been used in the project folder (by markers).
-/// Port of the TypeScript `detectProjectAgents`.
-pub fn detect_project_agents(fs: &dyn FsPort, project_path: &str) -> Vec<AgentKind> {
-    let mut found = Vec::new();
-    for (agent, markers) in AGENT_MARKERS {
-        for marker in markers {
-            let path = Path::new(project_path)
-                .join(marker)
-                .to_string_lossy()
-                .into_owned();
-            if fs.exists(&path).unwrap_or(false) {
-                found.push(agent);
-                break;
-            }
-        }
-    }
-    found
 }
 
 /// Distinct-skill counts for a project's installs, agents collapsed: a skill
