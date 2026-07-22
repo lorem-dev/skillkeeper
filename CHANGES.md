@@ -2,6 +2,12 @@
 
 ## Development
 
+### Fixes
+
+- Restore the Page toolbar shading wash on Windows/Linux as a gradient from the
+  standard page background color to transparent (instead of the dropped macOS
+  theme tint).
+
 ## Version 0.1.1-rc.2
 
 ### Fixes
