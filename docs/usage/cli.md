@@ -15,12 +15,20 @@ Manage skill repositories.
 ### repo add
 
 ```
-skillkeeper repo add <url>
+skillkeeper repo add <url> [local-path]
 ```
 
 Clone a Git repository and register it as a skill source. Supports SSH and
-HTTPS transports. Runs preflight checks for `git` (and `git-lfs` when the
-repository declares LFS).
+HTTPS transports.
+
+- `<url>` - the remote to clone.
+- `[local-path]` - optional clone destination. When omitted, the repository is
+  cloned into a per-repository directory under the app's repositories folder
+  (the same location the desktop app uses).
+- `--name <name>` - human-readable name (defaults to the repository name derived
+  from the URL).
+- `--lfs` / `--no-lfs` - force Git LFS on or off. By default LFS is enabled when
+  `git-lfs` is installed and off otherwise.
 
 ### repo remove
 

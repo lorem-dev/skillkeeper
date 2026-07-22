@@ -101,6 +101,8 @@ pub trait GitPort {
     fn lfs_pull(&self, repo_path: &str) -> PortResult<()>;
     /// Point the `origin` remote at a new URL.
     fn set_remote_url(&self, repo_path: &str, url: &str) -> PortResult<()>;
+    /// Whether Git LFS is available (the `git-lfs` extension is installed).
+    fn lfs_available(&self) -> bool;
 }
 
 /// Host environment values the adapters and ports need.

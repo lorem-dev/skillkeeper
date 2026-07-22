@@ -4,6 +4,7 @@
 //! the state store; git operations are delegated to the injected [`GitPort`].
 
 use std::io::Write;
+use std::path::Path;
 
 use clap::Subcommand;
 use skillkeeper_core::git_remote::parse_remote;
@@ -20,14 +21,20 @@ pub enum RepoAction {
     Add {
         /// Remote URL to clone.
         url: String,
-        /// Local destination path for the clone.
-        local_path: String,
+        /// Local destination path for the clone. Optional: defaults to a
+        /// per-repository directory under the app's repositories folder (the
+        /// same location the desktop app uses).
+        local_path: Option<String>,
         /// Human-readable name for the repository.
         #[arg(long)]
         name: Option<String>,
-        /// Enable Git LFS for this repository.
-        #[arg(long)]
+        /// Enable Git LFS for this repository. Default: on when git-lfs is
+        /// installed.
+        #[arg(long, overrides_with = "no_lfs")]
         lfs: bool,
+        /// Disable Git LFS even when git-lfs is installed.
+        #[arg(long, overrides_with = "lfs")]
+        no_lfs: bool,
     },
     /// Remove a tracked repository (does not delete the local clone).
     Remove {
@@ -55,15 +62,20 @@ fn default_repo_name(url: &str) -> String {
     last.strip_suffix(".git").unwrap_or(last).to_string()
 }
 
-/// `repo add <url> <localPath>`.
+/// `repo add <url> [localPath]`.
+///
+/// When `local_path` is omitted the clone goes to `<repositories_dir>/<id>` --
+/// the same per-repository scheme the desktop app uses -- and that directory is
+/// created if needed.
 #[allow(clippy::too_many_arguments)]
 pub fn add(
     fs: &dyn FsPort,
     git: &dyn GitPort,
     clock: &dyn Clock,
     state_path: &str,
+    repositories_dir: &str,
     url: &str,
-    local_path: &str,
+    local_path: Option<&str>,
     name: Option<&str>,
     lfs: bool,
     out: &mut dyn Write,
@@ -73,20 +85,33 @@ pub fn add(
     if let Some(existing) = state
         .repositories
         .iter()
-        .find(|r| r.url == url || r.local_path == local_path)
+        .find(|r| r.url == url || local_path.is_some_and(|p| r.local_path == p))
     {
         writeln!(err, "Repository already tracked (id: {})", existing.id)?;
         return Ok(1);
     }
 
+    let id = Uuid::new_v4().to_string();
+    let destination = match local_path {
+        Some(p) => p.to_string(),
+        None => {
+            // The clone runs in the parent dir (repositories_dir), so it must
+            // exist first. `mkdir` is a no-op when it already does.
+            fs.mkdir(repositories_dir)?;
+            Path::new(repositories_dir)
+                .join(&id)
+                .to_string_lossy()
+                .into_owned()
+        }
+    };
+
     git.clone(&CloneOptions {
         url: url.to_string(),
-        destination: local_path.to_string(),
+        destination: destination.clone(),
         lfs,
         filter: None,
     })?;
 
-    let id = Uuid::new_v4().to_string();
     let (kind, transport) = parse_remote(url);
     let name = name
         .map(str::to_string)
@@ -100,7 +125,7 @@ pub fn add(
         kind,
         transport,
         lfs,
-        local_path: local_path.to_string(),
+        local_path: destination,
         last_fetched: Some(last_fetched),
         branch: None,
     });
@@ -192,12 +217,14 @@ pub fn update(
 }
 
 /// Dispatch a `repo` subcommand.
+#[allow(clippy::too_many_arguments)]
 pub fn run(
     action: &RepoAction,
     fs: &dyn FsPort,
     git: &dyn GitPort,
     clock: &dyn Clock,
     state_path: &str,
+    repositories_dir: &str,
     out: &mut dyn Write,
     err: &mut dyn Write,
 ) -> Result<i32, CliError> {
@@ -207,18 +234,30 @@ pub fn run(
             local_path,
             name,
             lfs,
-        } => add(
-            fs,
-            git,
-            clock,
-            state_path,
-            url,
-            local_path,
-            name.as_deref(),
-            *lfs,
-            out,
-            err,
-        ),
+            no_lfs,
+        } => {
+            // Default LFS on when git-lfs is installed; explicit flags win.
+            let use_lfs = if *lfs {
+                true
+            } else if *no_lfs {
+                false
+            } else {
+                git.lfs_available()
+            };
+            add(
+                fs,
+                git,
+                clock,
+                state_path,
+                repositories_dir,
+                url,
+                local_path.as_deref(),
+                name.as_deref(),
+                use_lfs,
+                out,
+                err,
+            )
+        }
         RepoAction::Remove { id } => remove(fs, state_path, id, out, err),
         RepoAction::List => list(fs, state_path, out),
         RepoAction::Update { id, all } => {
@@ -234,6 +273,7 @@ mod tests {
     use skillkeeper_core::testing::MemFs;
 
     const STATE_PATH: &str = "/data/state.json";
+    const REPOS_DIR: &str = "/data/repos";
     // 2025-07-17T00:00:00.000Z
     const FIXED_MS: i64 = 1_752_710_400_000;
 
@@ -261,8 +301,9 @@ mod tests {
             &git,
             &clock(),
             STATE_PATH,
+            REPOS_DIR,
             "https://github.com/acme/skills.git",
-            "/repos/skills",
+            Some("/repos/skills"),
             None,
             false,
             &mut out,
@@ -300,8 +341,9 @@ mod tests {
             &git,
             &clock(),
             STATE_PATH,
+            REPOS_DIR,
             "https://github.com/acme/skills.git",
-            "/repos/skills",
+            Some("/repos/skills"),
             Some("my-skills"),
             true,
             &mut out,
@@ -324,8 +366,9 @@ mod tests {
             &git,
             &clock(),
             STATE_PATH,
+            REPOS_DIR,
             "https://github.com/acme/skills.git",
-            "/repos/skills",
+            Some("/repos/skills"),
             None,
             false,
             &mut out,
@@ -339,8 +382,9 @@ mod tests {
             &git,
             &clock(),
             STATE_PATH,
+            REPOS_DIR,
             "https://github.com/acme/skills.git",
-            "/repos/other",
+            Some("/repos/other"),
             None,
             false,
             &mut out2,
@@ -364,8 +408,9 @@ mod tests {
             &git,
             &clock(),
             STATE_PATH,
+            REPOS_DIR,
             "https://github.com/acme/skills.git",
-            "/repos/skills",
+            Some("/repos/skills"),
             None,
             false,
             &mut sink,
@@ -415,8 +460,9 @@ mod tests {
             &git,
             &clock(),
             STATE_PATH,
+            REPOS_DIR,
             "https://github.com/acme/skills.git",
-            "/repos/skills",
+            Some("/repos/skills"),
             None,
             false,
             &mut sink,
@@ -443,8 +489,9 @@ mod tests {
                 &git,
                 &clock(),
                 STATE_PATH,
+                REPOS_DIR,
                 url,
-                dest,
+                Some(dest),
                 None,
                 false,
                 &mut sink,
@@ -575,5 +622,91 @@ mod tests {
         assert!(String::from_utf8(err)
             .unwrap()
             .contains("No repositories tracked."));
+    }
+
+    #[test]
+    fn run_add_defaults_local_path_under_repositories_dir() {
+        let fs = MemFs::new();
+        let git = FakeGit::up_to_date();
+        let action = RepoAction::Add {
+            url: "https://github.com/acme/skills.git".to_string(),
+            local_path: None,
+            name: None,
+            lfs: false,
+            no_lfs: false,
+        };
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = run(
+            &action,
+            &fs,
+            &git,
+            &clock(),
+            STATE_PATH,
+            REPOS_DIR,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 0);
+        let repo = &load_state(&fs, STATE_PATH).unwrap().repositories[0];
+        let expected = Path::new(REPOS_DIR).join(&repo.id);
+        assert_eq!(repo.local_path, expected.to_string_lossy());
+    }
+
+    #[test]
+    fn run_add_enables_lfs_when_git_lfs_is_available() {
+        let fs = MemFs::new();
+        let mut git = FakeGit::up_to_date();
+        git.lfs_available = true;
+        let action = RepoAction::Add {
+            url: "https://github.com/acme/skills.git".to_string(),
+            local_path: Some("/repos/skills".to_string()),
+            name: None,
+            lfs: false,
+            no_lfs: false,
+        };
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        run(
+            &action,
+            &fs,
+            &git,
+            &clock(),
+            STATE_PATH,
+            REPOS_DIR,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert!(load_state(&fs, STATE_PATH).unwrap().repositories[0].lfs);
+    }
+
+    #[test]
+    fn run_add_no_lfs_overrides_autodetect() {
+        let fs = MemFs::new();
+        let mut git = FakeGit::up_to_date();
+        git.lfs_available = true;
+        let action = RepoAction::Add {
+            url: "https://github.com/acme/skills.git".to_string(),
+            local_path: Some("/repos/skills".to_string()),
+            name: None,
+            lfs: false,
+            no_lfs: true,
+        };
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        run(
+            &action,
+            &fs,
+            &git,
+            &clock(),
+            STATE_PATH,
+            REPOS_DIR,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert!(!load_state(&fs, STATE_PATH).unwrap().repositories[0].lfs);
     }
 }

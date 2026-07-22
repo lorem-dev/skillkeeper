@@ -4,6 +4,10 @@
 
 ### Features
 
+- `repo add` now makes the local-path argument optional -- when omitted, the
+  repository is cloned into a per-repository directory under the app's
+  repositories folder (the same location the desktop app uses) -- and enables
+  Git LFS by default when `git-lfs` is installed (override with `--no-lfs`).
 - Publish the standalone `skillkeeper` CLI as a per-platform archive
   (`skillkeeper-cli-<target>.tar.gz`/`.zip`) with each release, and add one-line
   install scripts (`scripts/install.sh`, `scripts/install.ps1`) that detect the

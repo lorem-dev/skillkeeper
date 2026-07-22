@@ -73,7 +73,7 @@ The CLI binary is `skillkeeper`. Every command exits non-zero on failure.
 Add a repository of skills, then see what it provides:
 
 ```shell
-skillkeeper repo add git@github.com:example/skills.git ~/skills/example
+skillkeeper repo add git@github.com:example/skills.git
 skillkeeper skill list
 ```
 

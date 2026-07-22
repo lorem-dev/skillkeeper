@@ -24,6 +24,8 @@ pub struct FakeGit {
     pub clone_fails: bool,
     /// Repo paths whose `pull` should fail.
     pub pull_fails: HashSet<String>,
+    /// Value returned by `lfs_available` (git-lfs installed?).
+    pub lfs_available: bool,
     /// Records human-readable call descriptions in order.
     pub calls: RefCell<Vec<String>>,
 }
@@ -37,6 +39,7 @@ impl FakeGit {
             fetch_fails: false,
             clone_fails: false,
             pull_fails: HashSet::new(),
+            lfs_available: false,
             calls: RefCell::new(Vec::new()),
         }
     }
@@ -113,6 +116,10 @@ impl GitPort for FakeGit {
 
     fn set_remote_url(&self, _repo_path: &str, _url: &str) -> PortResult<()> {
         Ok(())
+    }
+
+    fn lfs_available(&self) -> bool {
+        self.lfs_available
     }
 }
 
