@@ -156,7 +156,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let quit = MenuItemBuilder::with_id("app.quit", tr.t("menu.quit"))
         .accelerator("CmdOrCtrl+Q")
         .build(app)?;
-    let app_menu = SubmenuBuilder::new(app, "SkillKeeper")
+    let app_menu = SubmenuBuilder::new(app, tr.t("app.title"))
         .item(&about)
         .separator()
         .item(&settings)

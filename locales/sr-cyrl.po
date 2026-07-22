@@ -1023,3 +1023,21 @@ msgstr "Лиценца"
 
 msgid "about.openLicense"
 msgstr "Погледај лиценцу"
+
+msgid "titlebar.minimize"
+msgstr "Умањи"
+
+msgid "titlebar.maximize"
+msgstr "Увећај"
+
+msgid "titlebar.restore"
+msgstr "Врати"
+
+msgid "titlebar.close"
+msgstr "Затвори"
+
+msgid "about.copyright"
+msgstr "(c) {years} Lorem Dev"
+
+msgid "mcp.filterProjectsEmpty"
+msgstr "Нема одговарајућег пројекта"

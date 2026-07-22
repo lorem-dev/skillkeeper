@@ -7,6 +7,9 @@
 - Focus and raise the main window once the app finishes launching, so it is not
   left unfocused behind other windows when the launch completes in the
   background.
+- Localize the title-bar window controls, the About copyright line, the MCP
+  "no matching project" empty state, and the hook-consent notice across the
+  supported languages, and translate the macOS application menu title.
 - Restore the Page toolbar shading wash on Windows/Linux as a gradient from the
   standard page background color to transparent (instead of the dropped macOS
   theme tint).

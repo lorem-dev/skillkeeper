@@ -933,3 +933,21 @@ msgstr "ライセンス"
 
 msgid "about.openLicense"
 msgstr "ライセンスを表示"
+
+msgid "titlebar.minimize"
+msgstr "最小化"
+
+msgid "titlebar.maximize"
+msgstr "最大化"
+
+msgid "titlebar.restore"
+msgstr "元に戻す"
+
+msgid "titlebar.close"
+msgstr "閉じる"
+
+msgid "about.copyright"
+msgstr "(c) {years} Lorem Dev"
+
+msgid "mcp.filterProjectsEmpty"
+msgstr "一致するプロジェクトがありません"
