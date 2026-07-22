@@ -175,14 +175,20 @@
 
 // Windows/Linux depart from the macOS (WebKit) page chrome:
 //
-// - The toolbar backdrop keeps only its blur; its theme tint (the darkening/
-//   lightening wash) is dropped so it reads as clean frosted glass.
+// - The toolbar backdrop keeps its blur and gets a plain shading wash instead
+//   of the macOS theme tint: a gradient from the standard page background color
+//   at the top fading to transparent toward the content, so the header still
+//   reads as backed even where the blur does not paint.
 // - The bottom fade drops the blur entirely and becomes a plain shading
 //   gradient toward the page background (no backdrop-filter, no mask).
 .sk-app--windows,
 .sk-app--linux {
   .sk-page__header::before {
-    background: none;
+    // Fade from the actual page background color (--sk-color-bg-secondary, what
+    // the content sits on) to transparent -- NOT --sk-color-bg, which is pure
+    // white/black and read as a hard, too-dark band over the page. Matches the
+    // bottom fade below, so the header just blends into the page background.
+    background: linear-gradient(to bottom, var(--sk-color-bg-secondary), transparent);
   }
 
   .sk-page__fade {

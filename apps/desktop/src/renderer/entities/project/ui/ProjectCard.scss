@@ -79,6 +79,30 @@
   -webkit-user-drag: none;
 }
 
+// Icon cards render the name-keyed gradient layers too, but hide them while the
+// blurred-icon wash is in use. They are revealed only as the blur-unavailable
+// fallback below.
+.sk-project-card__wash--icon .sk-project-card__wash-diag,
+.sk-project-card__wash--icon .sk-project-card__wash-flood {
+  display: none;
+}
+
+// Blur is parsed but not painted (Chromium/WebView2 under software compositing;
+// flagged globally as `[data-backdrop='unsupported']` -- see main.tsx). The
+// blurred-icon wash would render as a hard, scaled-up icon, so drop it and fall
+// back to the same name-keyed colour gradient the icon-less cards use.
+[data-backdrop='unsupported'] {
+  .sk-project-card__wash--icon .sk-project-card__wash-img,
+  .sk-project-card__wash--icon .sk-project-card__wash-flood-img {
+    display: none;
+  }
+
+  .sk-project-card__wash--icon .sk-project-card__wash-diag,
+  .sk-project-card__wash--icon .sk-project-card__wash-flood {
+    display: block;
+  }
+}
+
 // Flat flood: transparent at rest, fades in on hover to colour the whole card.
 .sk-project-card__wash-flood {
   position: absolute;

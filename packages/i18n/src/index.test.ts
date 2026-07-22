@@ -34,19 +34,17 @@ describe('createTranslator', () => {
     expect(ru('skills.count', { n: '7' })).toContain('7');
   });
 
-  it('falls back to en when a key is missing in de', () => {
-    const t = createTranslator('de');
-    // 'hooks.requireConsent' is defined in en but NOT in de.
-    const result = t('hooks.requireConsent');
-    const enValue = createTranslator('en')('hooks.requireConsent');
-    expect(result).toBe(enValue);
-  });
-
-  it('falls back to en when a key is missing in ru', () => {
-    const t = createTranslator('ru');
-    const result = t('hooks.requireConsent');
-    const enValue = createTranslator('en')('hooks.requireConsent');
-    expect(result).toBe(enValue);
+  it('falls back to the English catalog when a key is missing in the active locale', () => {
+    // Exercised with synthetic catalogs rather than a real untranslated key: as
+    // locales reach full coverage there may be no genuinely missing key to rely
+    // on, so the fallback mechanism is tested independently of catalog state. A
+    // key absent from the primary (locale) catalog resolves from the fallback
+    // (English) catalog for every language.
+    const value = 'Hook installation requires explicit consent.';
+    const fallback = { 'hooks.requireConsent': value } as unknown as Partial<Catalog>;
+    const empty = {} as Partial<Catalog>;
+    expect(createTranslatorFrom(empty, fallback, 'de')('hooks.requireConsent')).toBe(value);
+    expect(createTranslatorFrom(empty, fallback, 'ru')('hooks.requireConsent')).toBe(value);
   });
 
   it('returns the key string itself when the key is unknown in all catalogs', () => {

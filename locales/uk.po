@@ -1068,3 +1068,21 @@ msgstr "Ліцензія"
 
 msgid "about.openLicense"
 msgstr "Переглянути ліцензію"
+
+msgid "titlebar.minimize"
+msgstr "Згорнути"
+
+msgid "titlebar.maximize"
+msgstr "Розгорнути"
+
+msgid "titlebar.restore"
+msgstr "Відновити"
+
+msgid "titlebar.close"
+msgstr "Закрити"
+
+msgid "about.copyright"
+msgstr "(c) {years} Lorem Dev"
+
+msgid "mcp.filterProjectsEmpty"
+msgstr "Немає відповідного проєкту"

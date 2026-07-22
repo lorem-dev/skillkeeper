@@ -933,3 +933,21 @@ msgstr "许可证"
 
 msgid "about.openLicense"
 msgstr "查看许可证"
+
+msgid "titlebar.minimize"
+msgstr "最小化"
+
+msgid "titlebar.maximize"
+msgstr "最大化"
+
+msgid "titlebar.restore"
+msgstr "还原"
+
+msgid "titlebar.close"
+msgstr "关闭"
+
+msgid "about.copyright"
+msgstr "(c) {years} Lorem Dev"
+
+msgid "mcp.filterProjectsEmpty"
+msgstr "没有匹配的项目"

@@ -933,3 +933,21 @@ msgstr "授權條款"
 
 msgid "about.openLicense"
 msgstr "檢視授權條款"
+
+msgid "titlebar.minimize"
+msgstr "最小化"
+
+msgid "titlebar.maximize"
+msgstr "最大化"
+
+msgid "titlebar.restore"
+msgstr "還原"
+
+msgid "titlebar.close"
+msgstr "關閉"
+
+msgid "about.copyright"
+msgstr "(c) {years} Lorem Dev"
+
+msgid "mcp.filterProjectsEmpty"
+msgstr "沒有符合的專案"

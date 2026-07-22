@@ -1,6 +1,29 @@
 # SkillKeeper Changelog
 
-## Development
+## Version 0.1.1
+
+### Features
+
+- Add a `skillkeeper version` CLI subcommand, and accept `-v` as an alias for the
+  existing `-V` / `--version` flags, all printing `skillkeeper <version>`.
+- Make the native folder picker for adding a project window-modal (parented to
+  the main window) so the app window cannot be used while it is open, and closes
+  with it.
+
+### Fixes
+
+- Fall back to the name-keyed colour gradient on project cards that have an icon
+  where blur is not painted (software compositing), matching the cards without
+  an icon.
+- Focus and raise the main window once the app finishes launching, so it is not
+  left unfocused behind other windows when the launch completes in the
+  background.
+- Localize the title-bar window controls, the About copyright line, the MCP
+  "no matching project" empty state, and the hook-consent notice across the
+  supported languages, and translate the macOS application menu title.
+- Restore the Page toolbar shading wash on Windows/Linux as a gradient from the
+  standard page background color to transparent (instead of the dropped macOS
+  theme tint).
 
 ## Version 0.1.1-rc.2
 

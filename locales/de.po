@@ -978,3 +978,21 @@ msgstr "Die Konfiguration enthält ungültige Abschnitte. Standardwerte werden v
 
 msgid "skills.count"
 msgstr "{n} Fähigkeit(en) installiert"
+
+msgid "titlebar.minimize"
+msgstr "Minimieren"
+
+msgid "titlebar.maximize"
+msgstr "Maximieren"
+
+msgid "titlebar.restore"
+msgstr "Wiederherstellen"
+
+msgid "titlebar.close"
+msgstr "Schließen"
+
+msgid "about.copyright"
+msgstr "(c) {years} Lorem Dev"
+
+msgid "hooks.requireConsent"
+msgstr "Die Installation von Hooks erfordert eine ausdrückliche Zustimmung (--allow-hooks). Skill-Inhalt installiert; Hooks übersprungen."

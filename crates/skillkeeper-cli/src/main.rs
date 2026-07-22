@@ -33,9 +33,21 @@ use crate::wiring::{AppPaths, Wiring};
 #[command(
     name = "skillkeeper",
     version,
-    about = "Manage skills for AI coding agents"
+    about = "Manage skills for AI coding agents",
+    // Replace clap's auto `-V/--version` flag with our own so `-v` is accepted
+    // as an alias too (the `version` subcommand below prints the same string).
+    disable_version_flag = true
 )]
 struct Cli {
+    /// Print version information and exit.
+    #[arg(
+        short = 'V',
+        visible_short_alias = 'v',
+        long = "version",
+        action = clap::ArgAction::Version
+    )]
+    version: Option<bool>,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -70,6 +82,8 @@ enum Command {
         #[command(subcommand)]
         action: commands::mcp::McpAction,
     },
+    /// Print the version.
+    Version,
 }
 
 /// The current working directory as a string (project-scope default), empty when
@@ -147,11 +161,21 @@ fn dispatch(
             };
             commands::mcp::run(action, &ctx, out, err)
         }
+        Command::Version => commands::version::run(out),
     }
 }
 
 /// Load config, wire ports, and run the parsed command; returns the exit code.
 fn run(cli: &Cli) -> Result<i32, CliError> {
+    // `version` needs neither config nor wiring: short-circuit before either so a
+    // version query never loads config, emits a config warning, or fails when
+    // wiring would (e.g. a bad git path). Matches the `-V`/`-v`/`--version` flags,
+    // which clap prints during parsing, before `run` is even reached.
+    if matches!(cli.command, Command::Version) {
+        let stdout = io::stdout();
+        return commands::version::run(&mut stdout.lock());
+    }
+
     // Load config with a bare fs before wiring (wiring itself needs the config).
     let boot_env = SystemHostEnv::new();
     let boot_paths = AppPaths::resolve(&boot_env);
@@ -190,6 +214,27 @@ mod tests {
     fn cli_definition_is_valid() {
         use clap::CommandFactory;
         Cli::command().debug_assert();
+    }
+
+    #[test]
+    fn parses_version_subcommand() {
+        assert!(matches!(
+            Cli::try_parse_from(["skillkeeper", "version"])
+                .unwrap()
+                .command,
+            Command::Version
+        ));
+    }
+
+    #[test]
+    fn version_flags_request_version_display() {
+        use clap::error::ErrorKind;
+        // `-V`, its `-v` alias, and `--version` all trigger clap's version
+        // display (surfaced as a non-error `DisplayVersion` during parsing).
+        for flag in ["-V", "-v", "--version"] {
+            let err = Cli::try_parse_from(["skillkeeper", flag]).unwrap_err();
+            assert_eq!(err.kind(), ErrorKind::DisplayVersion, "flag {flag}");
+        }
     }
 
     #[test]

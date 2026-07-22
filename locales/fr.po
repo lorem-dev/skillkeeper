@@ -978,3 +978,21 @@ msgstr "Licence"
 
 msgid "about.openLicense"
 msgstr "Voir la licence"
+
+msgid "titlebar.minimize"
+msgstr "Réduire"
+
+msgid "titlebar.maximize"
+msgstr "Agrandir"
+
+msgid "titlebar.restore"
+msgstr "Restaurer"
+
+msgid "titlebar.close"
+msgstr "Fermer"
+
+msgid "about.copyright"
+msgstr "(c) {years} Lorem Dev"
+
+msgid "mcp.filterProjectsEmpty"
+msgstr "Aucun projet correspondant"

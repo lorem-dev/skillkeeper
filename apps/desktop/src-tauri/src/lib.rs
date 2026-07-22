@@ -145,6 +145,15 @@ pub fn run() {
                         .general
                         .theme;
                     app::theme::refresh_dock_icon(&window, theme);
+                    // The window is revealed with `window.show()` during `setup`,
+                    // but showing alone does not activate the app or take the
+                    // keyboard focus: when the launch finishes in the background
+                    // (the user is in another app while it loads) the window comes
+                    // up behind, unfocused. `setup` runs before launch completes
+                    // (see the dock-icon note above), so raising/focusing there is
+                    // clobbered too -- do it here, once the app is ready, so the
+                    // finished window is brought to the front and focused.
+                    let _ = window.set_focus();
                 }
             }
             // Quit the whole app when the main window closes (macOS would

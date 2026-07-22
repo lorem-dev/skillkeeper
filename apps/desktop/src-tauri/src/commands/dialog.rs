@@ -8,7 +8,7 @@
 //! `capabilities/default.json`). Returns the chosen path, or `null` when the
 //! picker is cancelled -- matching the Electron `showOpenDialog` handler.
 
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
 
 /// `dialog:selectFolder` -- open a native folder picker; resolve to the chosen
@@ -16,8 +16,18 @@ use tauri_plugin_dialog::DialogExt;
 ///
 /// Runs as an async command so the blocking picker never stalls the main event
 /// loop.
+///
+/// The picker is parented to the main window so the OS makes it window-modal:
+/// while it is open the app window cannot be interacted with, and it closes with
+/// the dialog. Without a parent the picker is a free top-level window that leaves
+/// the app window clickable (notably on Windows), which is why an in-app scrim
+/// could never substitute for real modality.
 #[tauri::command]
 pub async fn dialog_select_folder(app: AppHandle) -> Result<Option<String>, String> {
-    let folder = app.dialog().file().blocking_pick_folder();
+    let mut dialog = app.dialog().file();
+    if let Some(window) = app.get_webview_window("main") {
+        dialog = dialog.set_parent(&window);
+    }
+    let folder = dialog.blocking_pick_folder();
     Ok(folder.map(|path| path.to_string()))
 }

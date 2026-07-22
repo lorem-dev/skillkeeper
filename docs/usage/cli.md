@@ -206,3 +206,15 @@ does not modify installs.
   repositories relevant to your tracked projects.
 
 Output lists per-repository and per-skill update availability.
+
+---
+
+## skillkeeper version
+
+```
+skillkeeper version
+```
+
+Print the version, for example `skillkeeper 0.1.1`. The same string is
+printed by the global `-V`, `-v`, and `--version` flags (e.g.
+`skillkeeper --version`).
