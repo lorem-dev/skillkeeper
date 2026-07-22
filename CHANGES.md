@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.1.1-rc.2
+
 ### Fixes
 
 - Make the frosted surfaces more opaque on Windows/Linux so they stay legible
