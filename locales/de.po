@@ -88,6 +88,12 @@ msgstr "Alle einblenden"
 msgid "menu.quit"
 msgstr "SkillKeeper beenden"
 
+msgid "menu.onboarding.start"
+msgstr "Tutorial starten"
+
+msgid "menu.onboarding.skip"
+msgstr "Tutorial überspringen"
+
 msgid "about.version"
 msgstr "Version {version}"
 
@@ -973,11 +979,89 @@ msgstr "Ausgewählt: {count}"
 msgid "settings.notifications.enabled"
 msgstr "Systembenachrichtigungen"
 
+msgid "settings.section.onboarding"
+msgstr "Tutorial"
+
+msgid "settings.onboarding.restartHint"
+msgstr "Das geführte Tutorial von vorne abspielen."
+
+msgid "settings.onboarding.restart.button"
+msgstr "Tutorial erneut starten"
+
 msgid "config.invalidBanner"
 msgstr "Die Konfiguration enthält ungültige Abschnitte. Standardwerte werden verwendet. Führen Sie \"skillkeeper config validate\" aus."
 
 msgid "skills.count"
 msgstr "{n} Fähigkeit(en) installiert"
+
+msgid "onboarding.next"
+msgstr "Weiter"
+
+msgid "onboarding.back"
+msgstr "Zurück"
+
+msgid "onboarding.finish"
+msgstr "Fertig"
+
+msgid "onboarding.skip"
+msgstr "Tutorial überspringen"
+
+msgid "onboarding.projects-tab.body"
+msgstr "Die Projektseite listet Ihre Projekte auf. Sie können ein Projekt als lokalen Ordner hinzufügen oder aus der Liste entfernen."
+
+msgid "onboarding.projects.body"
+msgstr "Fügen Sie ein Projekt hinzu, indem Sie auf diese Schaltfläche klicken."
+
+msgid "onboarding.projects.docs"
+msgstr "Projekt-Dokumentation"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "Die Repository-Seite listet Ihre Repositories auf. Sie können Git-Repositories hinzufügen, aktualisieren und aus der Liste entfernen."
+
+msgid "onboarding.repositories.body"
+msgstr "Fügen Sie ein Repository hinzu, indem Sie auf diese Schaltfläche klicken."
+
+msgid "onboarding.repositories.docs"
+msgstr "Repository-Dokumentation"
+
+msgid "onboarding.skills-tab.body"
+msgstr "Auf der Seite zur Skill-Verwaltung werden Skills aus Repositories in Projekten installiert sowie entfernt oder aktualisiert."
+
+msgid "onboarding.skills-intro.body"
+msgstr "Mit {installed} markierte Skills sind bereits im Projekt installiert."
+
+msgid "onboarding.skills-actions.body"
+msgstr "Schalten Sie Skills über die Kontrollkästchen um. Wenn Sie das Häkchen bei einem installierten Skill entfernen, wird er zum Entfernen markiert ({remove}); neu ausgewählte Skills werden zur Installation markiert ({install}). Klicken Sie anschließend auf Speichern."
+
+msgid "onboarding.agents.body"
+msgstr "Mit dieser Schaltfläche wird ausgewählt, auf welche Agenten das Projekt abzielt."
+
+msgid "onboarding.done.title"
+msgstr "Alles bereit"
+
+msgid "onboarding.done.body"
+msgstr "Danke, dass Sie sich für SkillKeeper entschieden haben. Viel Erfolg bei Ihrer Arbeit!"
+
+msgid "onboarding.done.hint"
+msgstr "Sie können das Tutorial jederzeit in den Einstellungen erneut abspielen."
+
+msgid "onboarding.tree.project"
+msgstr "Testprojekt"
+
+msgid "onboarding.tree.repository"
+msgstr "Test-Repository"
+
+msgid "onboarding.tree.skillset"
+msgstr "Beispiel-Skillset"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"
 
 msgid "titlebar.minimize"
 msgstr "Minimieren"

@@ -88,6 +88,12 @@ msgstr "Паказаць усё"
 msgid "menu.quit"
 msgstr "Выйсці з SkillKeeper"
 
+msgid "menu.onboarding.start"
+msgstr "Пачаць навучанне"
+
+msgid "menu.onboarding.skip"
+msgstr "Прапусціць навучанне"
+
 msgid "about.version"
 msgstr "Версія {version}"
 
@@ -1042,6 +1048,15 @@ msgstr "Выбрана: {count}"
 msgid "settings.notifications.enabled"
 msgstr "Сістэмныя апавяшчэнні"
 
+msgid "settings.section.onboarding"
+msgstr "Навучанне"
+
+msgid "settings.onboarding.restartHint"
+msgstr "Прайсці навучальны тур з самага пачатку."
+
+msgid "settings.onboarding.restart.button"
+msgstr "Пачаць навучанне зноўку"
+
 msgid "config.invalidBanner"
 msgstr "Канфігурацыя змяшчае недапушчальныя раздзелы. Выкарыстоўваюцца прадвызначаныя значэнні. Выканайце \"skillkeeper config validate\" для падрабязнасцей."
 
@@ -1050,6 +1065,75 @@ msgstr "Усталяванне хукаў патрабуе яўнай згоды
 
 msgid "skills.count"
 msgstr "Усталявана навыкаў: {n}"
+
+msgid "onboarding.next"
+msgstr "Далей"
+
+msgid "onboarding.back"
+msgstr "Назад"
+
+msgid "onboarding.finish"
+msgstr "Гатова"
+
+msgid "onboarding.skip"
+msgstr "Прапусціць навучанне"
+
+msgid "onboarding.projects-tab.body"
+msgstr "На старонцы праектаў прыведзены спіс вашых праектаў. Праект можна дадаць як лакальную папку або выдаліць са спісу."
+
+msgid "onboarding.projects.body"
+msgstr "Дадайце праект, націснуўшы гэтую кнопку."
+
+msgid "onboarding.projects.docs"
+msgstr "Дакументацыя па праектах"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "На старонцы рэпазіторыяў прыведзены спіс вашых рэпазіторыяў. Вы можаце дадаваць git-рэпазіторыі, абнаўляць іх і выдаляць са спісу."
+
+msgid "onboarding.repositories.body"
+msgstr "Дадайце рэпазіторый, націснуўшы гэтую кнопку."
+
+msgid "onboarding.repositories.docs"
+msgstr "Дакументацыя па рэпазіторыях"
+
+msgid "onboarding.skills-tab.body"
+msgstr "На старонцы кіравання навыкамі можна ўсталёўваць навыкі з рэпазіторыяў на праекты, а таксама выдаляць ці абнаўляць іх."
+
+msgid "onboarding.skills-intro.body"
+msgstr "Навыкі, пазначаныя {installed}, ужо ўсталяваны ў праекце."
+
+msgid "onboarding.skills-actions.body"
+msgstr "Пазначайце навыкі сцяжкамі. Калі зняць сцяжок з усталяванага навыку, ён будзе пазначаны да выдалення ({remove}); нанова абраныя навыкі пазначаюцца да ўсталявання ({install}). Затым націсніце «Захаваць»."
+
+msgid "onboarding.agents.body"
+msgstr "Гэтая кнопка выбірае, для якіх агентаў прызначаны праект."
+
+msgid "onboarding.done.title"
+msgstr "Усё гатова"
+
+msgid "onboarding.done.body"
+msgstr "Дзякуй, што абралі SkillKeeper. Поспехаў у працы!"
+
+msgid "onboarding.done.hint"
+msgstr "Прайсці навучанне зноўку можна ў любы час у наладах."
+
+msgid "onboarding.tree.project"
+msgstr "Тэставы праект"
+
+msgid "onboarding.tree.repository"
+msgstr "Тэставы рэпазіторый"
+
+msgid "onboarding.tree.skillset"
+msgstr "Прыклад набору навыкаў"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"
 
 msgid "about.docs"
 msgstr "Дакументацыя"

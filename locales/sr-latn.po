@@ -88,6 +88,12 @@ msgstr "Prikaži sve"
 msgid "menu.quit"
 msgstr "Izađi iz SkillKeeper"
 
+msgid "menu.onboarding.start"
+msgstr "Pokreni vodič"
+
+msgid "menu.onboarding.skip"
+msgstr "Preskoči vodič"
+
 msgid "about.version"
 msgstr "Verzija {version}"
 
@@ -997,6 +1003,15 @@ msgstr "Izabrano {count}"
 msgid "settings.notifications.enabled"
 msgstr "Sistemska obaveštenja"
 
+msgid "settings.section.onboarding"
+msgstr "Vodič"
+
+msgid "settings.onboarding.restartHint"
+msgstr "Ponovo pogledajte vođeni vodič od početka."
+
+msgid "settings.onboarding.restart.button"
+msgstr "Ponovo pokreni vodič"
+
 msgid "config.invalidBanner"
 msgstr "Konfiguracija ima neispravne sekcije. Koriste se podrazumevane vrednosti. Pokrenite \"skillkeeper config validate\" za detalje."
 
@@ -1005,6 +1020,75 @@ msgstr "Instalacija hookova zahteva izričitu saglasnost (--allow-hooks). Telo v
 
 msgid "skills.count"
 msgstr "{n} instaliranih veština"
+
+msgid "onboarding.next"
+msgstr "Dalje"
+
+msgid "onboarding.back"
+msgstr "Nazad"
+
+msgid "onboarding.finish"
+msgstr "Završi"
+
+msgid "onboarding.skip"
+msgstr "Preskoči vodič"
+
+msgid "onboarding.projects-tab.body"
+msgstr "Stranica projekata prikazuje vaše projekte. Projekat možete dodati kao lokalni folder ili ga ukloniti sa liste."
+
+msgid "onboarding.projects.body"
+msgstr "Dodajte projekat klikom na ovo dugme."
+
+msgid "onboarding.projects.docs"
+msgstr "Dokumentacija o projektima"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "Stranica repozitorijuma prikazuje vaše repozitorijume. Možete dodavati git repozitorijume, osvežavati ih i uklanjati sa liste."
+
+msgid "onboarding.repositories.body"
+msgstr "Dodajte repozitorijum klikom na ovo dugme."
+
+msgid "onboarding.repositories.docs"
+msgstr "Dokumentacija o repozitorijumima"
+
+msgid "onboarding.skills-tab.body"
+msgstr "Stranica za upravljanje veštinama instalira veštine iz repozitorijuma na projekte, te ih uklanja ili ažurira."
+
+msgid "onboarding.skills-intro.body"
+msgstr "Veštine označene sa {installed} već su instalirane u projektu."
+
+msgid "onboarding.skills-actions.body"
+msgstr "Uključujte i isključujte veštine pomoću polja za potvrdu. Opozivom instalirane veštine ona se označava za uklanjanje ({remove}); novooznačene veštine označavaju se za instalaciju ({install}). Zatim kliknite na Sačuvaj."
+
+msgid "onboarding.agents.body"
+msgstr "Ovo dugme bira na koje agente cilja projekat."
+
+msgid "onboarding.done.title"
+msgstr "Sve je spremno"
+
+msgid "onboarding.done.body"
+msgstr "Hvala što ste izabrali SkillKeeper. Srećno u radu!"
+
+msgid "onboarding.done.hint"
+msgstr "Vodič možete ponovo pogledati u bilo kom trenutku u podešavanjima."
+
+msgid "onboarding.tree.project"
+msgstr "Probni projekat"
+
+msgid "onboarding.tree.repository"
+msgstr "Probni repozitorijum"
+
+msgid "onboarding.tree.skillset"
+msgstr "Primer skupa veština"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"
 
 msgid "about.docs"
 msgstr "Dokumentacija"
