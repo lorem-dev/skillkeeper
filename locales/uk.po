@@ -88,6 +88,12 @@ msgstr "Показати все"
 msgid "menu.quit"
 msgstr "Завершити SkillKeeper"
 
+msgid "menu.onboarding.start"
+msgstr "Почати навчання"
+
+msgid "menu.onboarding.skip"
+msgstr "Пропустити навчання"
+
 msgid "about.version"
 msgstr "Версія {version}"
 
@@ -1042,6 +1048,15 @@ msgstr "Вибрано: {count}"
 msgid "settings.notifications.enabled"
 msgstr "Системні сповіщення"
 
+msgid "settings.section.onboarding"
+msgstr "Навчання"
+
+msgid "settings.onboarding.restartHint"
+msgstr "Пройти навчальний тур із самого початку."
+
+msgid "settings.onboarding.restart.button"
+msgstr "Почати навчання заново"
+
 msgid "config.invalidBanner"
 msgstr "Конфігурація містить недійсні розділи. Використовуються значення за замовчуванням. Виконайте \"skillkeeper config validate\" для деталей."
 
@@ -1050,6 +1065,75 @@ msgstr "Встановлення хуків потребує явної згод
 
 msgid "skills.count"
 msgstr "Встановлено навичок: {n}"
+
+msgid "onboarding.next"
+msgstr "Далі"
+
+msgid "onboarding.back"
+msgstr "Назад"
+
+msgid "onboarding.finish"
+msgstr "Готово"
+
+msgid "onboarding.skip"
+msgstr "Пропустити навчання"
+
+msgid "onboarding.projects-tab.body"
+msgstr "На сторінці проєктів наведено список ваших проєктів. Проєкт можна додати як локальну папку або видалити зі списку."
+
+msgid "onboarding.projects.body"
+msgstr "Додайте проєкт, натиснувши цю кнопку."
+
+msgid "onboarding.projects.docs"
+msgstr "Документація щодо проєктів"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "На сторінці репозиторіїв наведено список ваших репозиторіїв. Ви можете додавати git-репозиторії, оновлювати їх і видаляти зі списку."
+
+msgid "onboarding.repositories.body"
+msgstr "Додайте репозиторій, натиснувши цю кнопку."
+
+msgid "onboarding.repositories.docs"
+msgstr "Документація щодо репозиторіїв"
+
+msgid "onboarding.skills-tab.body"
+msgstr "На сторінці керування навичками можна встановлювати навички з репозиторіїв у проєкти, а також видаляти чи оновлювати їх."
+
+msgid "onboarding.skills-intro.body"
+msgstr "Навички, позначені {installed}, уже встановлені в проєкт."
+
+msgid "onboarding.skills-actions.body"
+msgstr "Позначайте навички прапорцями. Якщо зняти прапорець з установленої навички, її буде позначено до видалення ({remove}); нововибрані навички позначаються до встановлення ({install}). Потім натисніть «Зберегти»."
+
+msgid "onboarding.agents.body"
+msgstr "Ця кнопка вибирає, для яких агентів призначено проєкт."
+
+msgid "onboarding.done.title"
+msgstr "Усе готово"
+
+msgid "onboarding.done.body"
+msgstr "Дякуємо, що обрали SkillKeeper. Успіхів у роботі!"
+
+msgid "onboarding.done.hint"
+msgstr "Пройти навчання заново можна будь-коли в налаштуваннях."
+
+msgid "onboarding.tree.project"
+msgstr "Тестовий проєкт"
+
+msgid "onboarding.tree.repository"
+msgstr "Тестовий репозиторій"
+
+msgid "onboarding.tree.skillset"
+msgstr "Приклад набору навичок"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"
 
 msgid "about.docs"
 msgstr "Документація"

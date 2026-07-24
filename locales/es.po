@@ -88,6 +88,12 @@ msgstr "Mostrar todo"
 msgid "menu.quit"
 msgstr "Salir de SkillKeeper"
 
+msgid "menu.onboarding.start"
+msgstr "Iniciar el tutorial"
+
+msgid "menu.onboarding.skip"
+msgstr "Omitir el tutorial"
+
 msgid "about.version"
 msgstr "Versión {version}"
 
@@ -1042,6 +1048,15 @@ msgstr "Seleccionados {count}"
 msgid "settings.notifications.enabled"
 msgstr "Notificaciones del sistema"
 
+msgid "settings.section.onboarding"
+msgstr "Tutorial"
+
+msgid "settings.onboarding.restartHint"
+msgstr "Vuelve a reproducir el tutorial guiado desde el principio."
+
+msgid "settings.onboarding.restart.button"
+msgstr "Iniciar el tutorial de nuevo"
+
 msgid "config.invalidBanner"
 msgstr "La configuración tiene secciones no válidas. Se usan los valores predeterminados. Ejecuta \"skillkeeper config validate\" para más detalles."
 
@@ -1050,6 +1065,75 @@ msgstr "La instalación de hooks requiere consentimiento explícito (--allow-hoo
 
 msgid "skills.count"
 msgstr "{n} habilidad(es) instalada(s)"
+
+msgid "onboarding.next"
+msgstr "Siguiente"
+
+msgid "onboarding.back"
+msgstr "Atrás"
+
+msgid "onboarding.finish"
+msgstr "Finalizar"
+
+msgid "onboarding.skip"
+msgstr "Omitir el tutorial"
+
+msgid "onboarding.projects-tab.body"
+msgstr "La página de proyectos muestra tus proyectos. Puedes añadir uno como carpeta local o quitarlo de la lista."
+
+msgid "onboarding.projects.body"
+msgstr "Añade un proyecto haciendo clic en este botón."
+
+msgid "onboarding.projects.docs"
+msgstr "Documentación de proyectos"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "La página de repositorios muestra tus repositorios. Puedes añadir repositorios git, actualizarlos y quitarlos de la lista."
+
+msgid "onboarding.repositories.body"
+msgstr "Añade un repositorio haciendo clic en este botón."
+
+msgid "onboarding.repositories.docs"
+msgstr "Documentación de repositorios"
+
+msgid "onboarding.skills-tab.body"
+msgstr "La página de gestión de habilidades instala habilidades de los repositorios en los proyectos, y las elimina o actualiza."
+
+msgid "onboarding.skills-intro.body"
+msgstr "Las habilidades marcadas con {installed} ya están instaladas en el proyecto."
+
+msgid "onboarding.skills-actions.body"
+msgstr "Activa o desactiva habilidades con las casillas. Al desmarcar una habilidad instalada, se marca para eliminación ({remove}); las habilidades recién marcadas se marcan para instalación ({install}). Luego haz clic en Guardar."
+
+msgid "onboarding.agents.body"
+msgstr "Este botón selecciona a qué agentes se dirige el proyecto."
+
+msgid "onboarding.done.title"
+msgstr "Todo listo"
+
+msgid "onboarding.done.body"
+msgstr "Gracias por elegir SkillKeeper. ¡Mucho éxito en tu trabajo!"
+
+msgid "onboarding.done.hint"
+msgstr "Puedes volver a reproducir el tutorial cuando quieras desde Ajustes."
+
+msgid "onboarding.tree.project"
+msgstr "Proyecto de prueba"
+
+msgid "onboarding.tree.repository"
+msgstr "Repositorio de prueba"
+
+msgid "onboarding.tree.skillset"
+msgstr "Conjunto de habilidades de ejemplo"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"
 
 msgid "about.docs"
 msgstr "Documentación"

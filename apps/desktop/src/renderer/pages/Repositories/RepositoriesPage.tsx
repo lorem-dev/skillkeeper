@@ -12,6 +12,7 @@ import { RepoEditModal } from '@/features/repoEdit';
 import type { Repository } from '@/services/bridge';
 import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, Tooltip, Icon } from '@/shared/ui';
 import { fuzzyFilter, fade, cx, useAnimationsEnabled, useMotion } from '@/shared/lib';
+import { useOnboardingAnchor } from '@/systems/onboarding';
 import './RepositoriesPage.scss';
 
 /** How long the transient focus ring stays on a card scrolled into view by
@@ -38,6 +39,7 @@ export function RepositoriesPage() {
   const notify = useSkillkeeperStore((s) => s.notify);
   const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
   const t = useTranslator();
+  const addRepositoryAnchor = useOnboardingAnchor('add-repository');
   const [editing, setEditing] = useState<Repository | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
@@ -137,7 +139,11 @@ export function RepositoriesPage() {
   return (
     <Page
       toolbar={<Toolbar title={t('nav.repositories')} trailing={trailing} />}
-      dock={<RepoAddButton />}
+      dock={
+        <span ref={addRepositoryAnchor}>
+          <RepoAddButton />
+        </span>
+      }
     >
       {repositories.length === 0 ? (
         <p className="sk-empty">{t('repositories.empty')}</p>

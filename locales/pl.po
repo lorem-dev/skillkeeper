@@ -88,6 +88,12 @@ msgstr "Pokaż wszystko"
 msgid "menu.quit"
 msgstr "Zakończ SkillKeeper"
 
+msgid "menu.onboarding.start"
+msgstr "Rozpocznij samouczek"
+
+msgid "menu.onboarding.skip"
+msgstr "Pomiń samouczek"
+
 msgid "about.version"
 msgstr "Wersja {version}"
 
@@ -1042,6 +1048,15 @@ msgstr "Wybrano: {count}"
 msgid "settings.notifications.enabled"
 msgstr "Powiadomienia systemowe"
 
+msgid "settings.section.onboarding"
+msgstr "Samouczek"
+
+msgid "settings.onboarding.restartHint"
+msgstr "Odtwórz samouczek z przewodnikiem od początku."
+
+msgid "settings.onboarding.restart.button"
+msgstr "Rozpocznij samouczek ponownie"
+
 msgid "config.invalidBanner"
 msgstr "Konfiguracja zawiera niepoprawne sekcje. Uzywane sa wartosci domyslne. Uruchom \"skillkeeper config validate\", aby zobaczyc szczegoly."
 
@@ -1050,6 +1065,75 @@ msgstr "Instalacja hookow wymaga wyraznej zgody (--allow-hooks). Tresc umiejetno
 
 msgid "skills.count"
 msgstr "Zainstalowane umiejetnosci: {n}"
+
+msgid "onboarding.next"
+msgstr "Dalej"
+
+msgid "onboarding.back"
+msgstr "Wstecz"
+
+msgid "onboarding.finish"
+msgstr "Zakończ"
+
+msgid "onboarding.skip"
+msgstr "Pomiń samouczek"
+
+msgid "onboarding.projects-tab.body"
+msgstr "Strona projektów zawiera listę projektów. Możesz dodać projekt jako folder lokalny lub usunąć go z listy."
+
+msgid "onboarding.projects.body"
+msgstr "Dodaj projekt, klikając ten przycisk."
+
+msgid "onboarding.projects.docs"
+msgstr "Dokumentacja projektów"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "Strona repozytoriów zawiera listę repozytoriów. Możesz dodawać repozytoria git, odświeżać je i usuwać z listy."
+
+msgid "onboarding.repositories.body"
+msgstr "Dodaj repozytorium, klikając ten przycisk."
+
+msgid "onboarding.repositories.docs"
+msgstr "Dokumentacja repozytoriów"
+
+msgid "onboarding.skills-tab.body"
+msgstr "Strona zarządzania umiejętnościami instaluje umiejętności z repozytoriów w projektach oraz je usuwa lub aktualizuje."
+
+msgid "onboarding.skills-intro.body"
+msgstr "Umiejętności oznaczone symbolem {installed} są już zainstalowane w projekcie."
+
+msgid "onboarding.skills-actions.body"
+msgstr "Włączaj i wyłączaj umiejętności za pomocą pól wyboru. Odznaczenie zainstalowanej umiejętności oznacza ją do usunięcia ({remove}); nowo zaznaczone umiejętności są oznaczane do instalacji ({install}). Następnie kliknij Zapisz."
+
+msgid "onboarding.agents.body"
+msgstr "Ten przycisk wybiera, na jakich agentów jest ukierunkowany projekt."
+
+msgid "onboarding.done.title"
+msgstr "Wszystko gotowe"
+
+msgid "onboarding.done.body"
+msgstr "Dziękujemy za wybór SkillKeeper. Powodzenia w pracy!"
+
+msgid "onboarding.done.hint"
+msgstr "Samouczek możesz odtworzyć ponownie w dowolnej chwili w Ustawieniach."
+
+msgid "onboarding.tree.project"
+msgstr "Projekt testowy"
+
+msgid "onboarding.tree.repository"
+msgstr "Repozytorium testowe"
+
+msgid "onboarding.tree.skillset"
+msgstr "Przykładowy zestaw umiejętności"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"
 
 msgid "about.docs"
 msgstr "Dokumentacja"

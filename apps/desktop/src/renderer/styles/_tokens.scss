@@ -151,8 +151,10 @@ $themes: (
   --sk-z-overlay: 300; // full-screen panel (logs)
   --sk-z-overlay-raised: 310; // full-screen panel over the base one (tasks / terminal)
   --sk-z-statusbar: 320; // bottom status bar, above the full-screen panels
+  --sk-z-onboarding: 330; // onboarding overlay: above the status bar / panels, but BELOW popovers so a control's own dropdown (e.g. the welcome language picker) opens above it
+  --sk-z-titlebar-onboarding: 340; // Windows/Linux title bar lifted above the onboarding overlay (only while the tour is active) so its window controls stay usable
   --sk-z-modal: 350; // modal dialog + its dimming scrim, above the status bar
-  --sk-z-popover: 400; // anchored popovers (menu / combobox), above a modal
+  --sk-z-popover: 400; // anchored popovers (menu / combobox), above a modal and the onboarding overlay
   --sk-z-toast: 450; // toast / alert notification stack, above modals and popovers
   --sk-z-tooltip: 500; // tooltip bubble, topmost
 }

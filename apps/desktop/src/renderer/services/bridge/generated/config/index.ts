@@ -13,3 +13,4 @@ export type { AgentsConfig } from './AgentsConfig';
 export type { NotificationsConfig } from './NotificationsConfig';
 export type { RepositoriesConfig } from './RepositoriesConfig';
 export type { ProjectsConfig } from './ProjectsConfig';
+export type { OnboardingState } from './OnboardingState';
