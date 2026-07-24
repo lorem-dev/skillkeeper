@@ -11,6 +11,12 @@
   again" in Settings and (macOS) the Help menu, ESC/Skip to end, with
   progress persisted to onboarding.json.
 
+### Fixed
+
+- Desktop: the embedded terminal keeps its colors in sync with the active
+  theme -- previously it kept the theme it was created with, so switching
+  theme left it inverted until restart.
+
 ## Version 0.1.2-rc.1
 
 ### Features
