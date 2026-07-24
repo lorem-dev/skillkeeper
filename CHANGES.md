@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.2.0-rc.1
+
 ### Added
 
 - Desktop: a first-run tutorial (guided onboarding) - a welcome screen
