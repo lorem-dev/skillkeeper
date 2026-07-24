@@ -142,3 +142,15 @@
 // under the cursor natively. Because it drags only when the pressed element is
 // tagged (not its descendants), the control blocks stay interactive with no
 // no-drag opt-out. See Toolbar.tsx, Page.tsx, and the overlay pages.
+
+// While the onboarding tour is active, lift the Windows/Linux TitleBar strip
+// above the onboarding overlay so its window controls (minimize/maximize/close)
+// stay visible and clickable -- the overlay covers everything else, including
+// the bottom status bar. Scoped to the tour so other full-screen overlays keep
+// covering the title bar as before. (macOS renders no strip; the overlay
+// provides its own top drag handle instead -- see OnboardingOverlay.)
+.sk-app--onboarding .sk-titlebar {
+  position: relative;
+  z-index: var(--sk-z-titlebar-onboarding);
+}
+

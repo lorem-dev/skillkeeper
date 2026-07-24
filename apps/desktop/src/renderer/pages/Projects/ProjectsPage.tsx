@@ -13,6 +13,7 @@ import { OpenProjectButton } from '@/features/projectOpen';
 import type { Project } from '@/services/bridge';
 import { Page, Toolbar, Button, ExpandingSearch, SearchSummary, Tooltip, Icon } from '@/shared/ui';
 import { fuzzyFilter, fade, useAnimationsEnabled, useMotion } from '@/shared/lib';
+import { useOnboardingAnchor } from '@/systems/onboarding';
 import './ProjectsPage.scss';
 
 /** Minimum time the Refresh button stays in its loading state, so a refresh
@@ -34,6 +35,7 @@ export function ProjectsPage() {
   const mcpInstalls = useSkillkeeperStore((s) => s.mcpInstalls);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
+  const addProjectAnchor = useOnboardingAnchor('add-project');
   const [editing, setEditing] = useState<Project | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
@@ -116,7 +118,11 @@ export function ProjectsPage() {
   return (
     <Page
       toolbar={<Toolbar title={t('nav.projects')} trailing={trailing} />}
-      dock={<ProjectAddButton />}
+      dock={
+        <span ref={addProjectAnchor}>
+          <ProjectAddButton />
+        </span>
+      }
     >
       {projects.length === 0 ? (
         <p className="sk-empty">{t('projects.empty')}</p>

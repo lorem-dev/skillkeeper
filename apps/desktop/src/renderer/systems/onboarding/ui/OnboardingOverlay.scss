@@ -1,0 +1,151 @@
+// OnboardingOverlay: the guided tour's root layer. A full-screen scrim that
+// captures every pointer event (the app beneath is fully inert while a step is
+// active), plus the per-step content (welcome screen / spotlight ring +
+// coachmark / modal) and a persistent Skip control, bottom-left.
+//
+// Layering: `.sk-onboarding` sits at the TOP of the app-wide z-index ladder
+// (--sk-z-onboarding, above the status bar / full-screen panels / modals /
+// popovers / toasts -- see _tokens.scss) so the tour always covers the whole
+// window, including the bottom status bar. It establishes its OWN stacking
+// context (position + z-index), so every descendant's z-index below is a
+// small value compared LOCALLY within `.sk-onboarding`, not against the rest
+// of the app: the scrim sits at the bottom of that local stack (0) and every
+// piece of step content (spotlight ring, WelcomeScreen, Coachmark,
+// OnboardingModal, Skip) sits above it (1), with ties (e.g. Skip over a modal
+// step) resolved by DOM order since Skip always renders last.
+//
+// Separate, pre-existing note: the frameless-window title bar (TitleBar.tsx /
+// WindowChrome.tsx) has no `position`/`z-index` of its own, so it already
+// paints below any `position: fixed` layer regardless of z-index -- unrelated
+// to the status-bar fix above and out of this component's scope.
+.sk-onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sk-z-onboarding);
+}
+
+.sk-onboarding__scrim {
+  // No design token exists for the dim color (same reasoning as Modal.scss's
+  // --sk-modal-scrim-color) -- a bit heavier than the modal's, since this scrim
+  // is the ONLY thing between the user and a fully inert app.
+  --sk-onboarding-scrim-color: rgba(0, 0, 0, 0.55);
+
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--sk-onboarding-scrim-color);
+  // Captures every click so the app beneath is inert while the tour runs.
+  pointer-events: auto;
+}
+
+// A bright ring around the measured anchor rect (see useAnchorRect in
+// OnboardingOverlay.tsx), inflated a few px so it reads as a highlight rather
+// than a tight outline, plus a soft outer glow. Visual only -- the scrim
+// already blocks the anchored control underneath from being clicked.
+.sk-onboarding__spotlight {
+  position: fixed;
+  z-index: 1;
+  border-radius: var(--sk-radius-md);
+  // Crisp accent ring + soft translucent spread + a blurred outer glow.
+  box-shadow:
+    0 0 0 3px var(--sk-color-accent),
+    0 0 0 8px color-mix(in srgb, var(--sk-color-accent) 30%, transparent),
+    0 0 16px 2px color-mix(in srgb, var(--sk-color-accent) 45%, transparent);
+  pointer-events: none;
+  // Very gentle breathing of the outer glow so the highlight feels alive
+  // without being distracting.
+  animation: sk-onboarding-spotlight-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes sk-onboarding-spotlight-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px var(--sk-color-accent),
+      0 0 0 8px color-mix(in srgb, var(--sk-color-accent) 30%, transparent),
+      0 0 16px 2px color-mix(in srgb, var(--sk-color-accent) 45%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px var(--sk-color-accent),
+      0 0 0 12px color-mix(in srgb, var(--sk-color-accent) 16%, transparent),
+      0 0 22px 4px color-mix(in srgb, var(--sk-color-accent) 30%, transparent);
+  }
+}
+
+// Respect reduced motion: keep the spotlight ring static (no pulse).
+@media (prefers-reduced-motion: reduce) {
+  .sk-onboarding__spotlight {
+    animation: none;
+  }
+}
+
+// The skills-page description shown at the top of the skills modal (merged in
+// from the former separate step).
+.sk-onboarding__intro {
+  margin: 0 0 var(--sk-space-5);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sk-color-label);
+}
+
+// The legend paragraph under the static skill-tree illustration (skills-intro /
+// skills-actions steps).
+.sk-onboarding__legend {
+  margin: var(--sk-space-5) 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sk-color-label-2);
+}
+
+// Persistent Skip control, bottom-left, shown for every step except
+// welcome/done. Same local rung as the step content (tied with the modal /
+// coachmark, resolved by DOM order since this renders last) so it stays
+// reachable over a full-screen modal step, not just the spotlight steps.
+.sk-onboarding__skip {
+  position: fixed;
+  left: var(--sk-space-6);
+  bottom: var(--sk-space-6);
+  z-index: 1;
+}
+
+// macOS-only top window-drag handle (rendered by OnboardingOverlay.tsx): a thin
+// strip along the top edge so the frameless window stays movable while the
+// overlay covers the native drag region. Above the scrim within the onboarding
+// stacking context; the native traffic lights are drawn by the OS on top.
+.sk-onboarding__drag {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  z-index: 2;
+}
+
+// The done ("all set") window: a small gap after the title, tight body, and a
+// muted replay-from-settings hint just below the body (no large UA margins).
+.sk-onboarding__done-title {
+  margin: 0 0 var(--sk-space-3);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--sk-color-label);
+}
+
+.sk-onboarding__done-body {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.sk-onboarding__done-hint {
+  margin: var(--sk-space-2) 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sk-color-label-2);
+}
+
+// Inline status icon rendered inside the legend sentence (see interleaveIcons).
+.sk-onboarding__inline-badge {
+  display: inline-flex;
+  vertical-align: middle;
+  margin: 0 2px;
+}

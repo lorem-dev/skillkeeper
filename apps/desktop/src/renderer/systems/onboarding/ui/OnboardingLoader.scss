@@ -1,0 +1,37 @@
+// Full-screen onboarding preloader (see OnboardingLoader.tsx): a React port of
+// the index.html startup spinner. Renders as a child of `.sk-onboarding` (top
+// stacking context), so a small local z-index above the scrim is enough. Same
+// scene background as the welcome screen for a seamless hand-off.
+.sk-onboarding-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sk-color-bg-secondary);
+}
+
+.sk-onboarding-loader__spinner {
+  width: 48px;
+  height: 48px;
+  transform-origin: center;
+  animation: sk-onboarding-loader-spin 1s steps(12, end) infinite;
+}
+
+.sk-onboarding-loader__spoke {
+  fill: var(--sk-color-label);
+}
+
+@keyframes sk-onboarding-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Respect the OS reduced-motion setting: static spokes, no spin.
+@media (prefers-reduced-motion: reduce) {
+  .sk-onboarding-loader__spinner {
+    animation: none;
+  }
+}

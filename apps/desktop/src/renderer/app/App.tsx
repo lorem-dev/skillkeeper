@@ -24,7 +24,10 @@ import { Sidebar, SidebarItem, Icon, Spinner } from '@/shared/ui';
 import { Toasts, StatusBar, LogsPage } from '@/systems/notifications';
 import { TerminalPage } from '@/systems/terminal';
 import { TasksPage } from '@/systems/tasks';
-import { AboutDialog } from '@/features/about';
+import { AboutDialog, AboutIdentity, AboutFooter } from '@/features/about';
+import { OnboardingDemoTree } from '@/features/onboardingDemo';
+import { OnboardingOverlay, useOnboardingActive, useOnboardingStep } from '@/systems/onboarding';
+import { STEP_VIEW } from '@/app/config/onboarding';
 import './App.scss';
 
 const RepositoriesPage = lazy(() =>
@@ -74,6 +77,8 @@ export function App() {
   const skillsNav = useSkillkeeperStore((s) => s.skillsNav);
   const mcpNav = useSkillkeeperStore((s) => s.mcpNav);
   const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
+  const onboardingActive = useOnboardingActive();
+  const onboardingStep = useOnboardingStep();
   const t = useTranslator();
   // The Skills and MCP nav groups are pure expand/collapse toggles (local,
   // ephemeral): clicking a header opens/closes its sub-items; navigation
@@ -180,6 +185,32 @@ export function App() {
     return off;
   }, []);
 
+  // While onboarding is active, keep the backdrop on the step's view (and the
+  // Skills group open behind the scrim during its steps, so the sidebar stays
+  // consistent). The overlay swallows clicks, so the user cannot navigate away
+  // regardless.
+  useEffect(() => {
+    if (!onboardingActive) return;
+    const view = STEP_VIEW[onboardingStep];
+    goTo(view);
+    if (view === 'skills-management') setSkillsOpen(true);
+  }, [onboardingActive, onboardingStep, goTo]);
+
+  // macOS Help menu toggle: start or skip based on current mode.
+  useEffect(() => {
+    const off = bridgeClient.onMenuOnboardingToggle(() => {
+      const s = useSkillkeeperStore.getState();
+      if (s.onboarding.active) s.skipOnboarding();
+      else s.startOnboarding();
+    });
+    return off;
+  }, []);
+
+  // Keep the native menu's label + enabled state in sync with onboarding mode.
+  useEffect(() => {
+    bridgeClient.onboardingMenuSync(onboardingActive);
+  }, [onboardingActive]);
+
   function renderView() {
     switch (activeView) {
       case 'repositories':
@@ -203,7 +234,10 @@ export function App() {
 
   return (
     <AnimationProvider mode={animationMode}>
-    <div className={cx('sk-app', `sk-app--${platform}`)} data-anim={animationMode}>
+    <div
+      className={cx('sk-app', `sk-app--${platform}`, onboardingActive && 'sk-app--onboarding')}
+      data-anim={animationMode}
+    >
       <WindowChrome />
       <ConfigBanner />
       <div className="sk-shell">
@@ -333,6 +367,11 @@ export function App() {
       <TerminalPage />
       <TasksPage />
       <AboutDialog />
+      <OnboardingOverlay
+        aboutIdentity={<AboutIdentity showTagline={false} />}
+        aboutFooter={<AboutFooter />}
+        renderDemoTree={(variant) => <OnboardingDemoTree variant={variant} />}
+      />
     </div>
     </AnimationProvider>
   );
