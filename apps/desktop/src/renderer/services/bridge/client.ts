@@ -26,6 +26,7 @@ import type {
   UpdateMcpResult,
   McpUpdatePreflightArgs,
   McpUpdatePreflightResult,
+  OnboardingState,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the Rust backend. */
@@ -35,6 +36,10 @@ export interface BridgeClient {
   init(): Promise<void>;
   getConfig(): Promise<LoadConfigResult>;
   setConfig(config: SkillKeeperConfig): Promise<LoadConfigResult>;
+  /** Read the persisted onboarding progress (desktop-only onboarding.json). */
+  getOnboarding(): Promise<OnboardingState>;
+  /** Persist the onboarding progress. */
+  setOnboarding(state: OnboardingState): Promise<void>;
   listRepositories(): Promise<Repository[]>;
   listSkills(): Promise<InstallManifest[]>;
   listAvailableSkills(): Promise<AvailableSkill[]>;
@@ -58,6 +63,10 @@ export interface BridgeClient {
   onMenuNavigate(callback: (view: string) => void): () => void;
   /** Subscribe to the application menu's About item. Returns an unsubscribe fn. */
   onMenuAbout(callback: () => void): () => void;
+  /** Subscribe to the macOS Help menu's onboarding toggle. Returns an unsubscribe fn. */
+  onMenuOnboardingToggle(callback: () => void): () => void;
+  /** Reflect onboarding mode in the native menu (label + enabled state). */
+  onboardingMenuSync(active: boolean): void;
   /** The app version string. */
   getAppVersion(): Promise<string>;
   addRepository(url: string, name: string): Promise<RepoResult>;
@@ -124,6 +133,8 @@ export const bridgeClient: BridgeClient = {
   },
   getConfig: () => invoke<LoadConfigResult>('config_get'),
   setConfig: (config) => invoke<LoadConfigResult>('config_set', { config }),
+  getOnboarding: () => invoke<OnboardingState>('onboarding_get'),
+  setOnboarding: (state) => invoke<void>('onboarding_set', { state }),
   listRepositories: () => invoke<Repository[]>('repositories_list'),
   listSkills: () => invoke<InstallManifest[]>('skills_list'),
   listAvailableSkills: () => invoke<AvailableSkill[]>('skills_available'),
@@ -144,6 +155,11 @@ export const bridgeClient: BridgeClient = {
   onConfigChanged: (callback) => subscribe<LoadConfigResult>('config:changed', callback),
   onMenuNavigate: (callback) => subscribe<string>('menu:navigate', callback),
   onMenuAbout: (callback) => subscribe<void>('menu:about', () => callback()),
+  onMenuOnboardingToggle: (callback) =>
+    subscribe<void>('menu:onboarding-toggle', () => callback()),
+  onboardingMenuSync: (active) => {
+    void invoke('onboarding_menu_sync', { active });
+  },
   getAppVersion: () => invoke<string>('get_app_version'),
   addRepository: (url, name) => invoke<RepoResult>('repositories_add', { url, name }),
   cloneRepository: (id) => invoke<RepoResult>('repositories_clone', { id }),

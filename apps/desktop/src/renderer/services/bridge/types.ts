@@ -16,6 +16,7 @@ export type {
   NotificationsConfig,
   RepositoriesConfig,
   ProjectsConfig,
+  OnboardingState,
 } from './generated/config';
 export type { Lang } from '@skillkeeper/i18n/lazy';
 export type {

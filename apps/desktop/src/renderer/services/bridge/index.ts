@@ -15,6 +15,7 @@ export type {
   NotificationsConfig,
   RepositoriesConfig,
   ProjectsConfig,
+  OnboardingState,
   Lang,
   EditorOption,
   OpenResult,

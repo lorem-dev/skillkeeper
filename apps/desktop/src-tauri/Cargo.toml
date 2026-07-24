@@ -19,6 +19,7 @@ uuid = { workspace = true }
 skillkeeper-core = { path = "../../../crates/skillkeeper-core" }
 skillkeeper-config = { path = "../../../crates/skillkeeper-config" }
 skillkeeper-agents = { path = "../../../crates/skillkeeper-agents" }
+ts-rs = { workspace = true }
 opener = "0.8"
 tauri-plugin-dialog = "2"
 tauri-plugin-clipboard-manager = "2"

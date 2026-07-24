@@ -6,7 +6,7 @@
  * correctly without spinning up a browser or a Tauri runtime.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { McpServerDef } from '@/services/bridge';
+import type { McpServerDef, BridgeClient } from '@/services/bridge';
 import {
   useSkillkeeperStore,
   mcpInstallHasUpdate,
@@ -17,6 +17,7 @@ import {
 import type { SectionValidity, SkillKeeperConfig, Repository, Project, InstallManifest, McpPreset } from './store';
 import { bridgeClient } from '@/services/bridge';
 import type { RepoResult, RemoveResult, ProjectResult, AvailableMcp, McpInstall } from '@/services/bridge';
+import { ONBOARDING_ORDER } from '@/app/config/onboarding';
 
 // The store reaches the Rust backend through the `bridgeClient` singleton, whose
 // methods call Tauri `invoke` under the hood -- unavailable in the Node/vitest
@@ -32,6 +33,7 @@ vi.mock('@/services/bridge', () => ({
     syncRepository: vi.fn(),
     repoHasUpdate: vi.fn(),
     describeRepository: vi.fn(),
+    setOnboarding: vi.fn(),
   },
 }));
 
@@ -391,6 +393,8 @@ describe('useSkillkeeperStore', () => {
           validity: validValidity,
           warnings: [],
         }),
+        getOnboarding: async () => ({ version: 1, completed: false, step: 'welcome' }),
+        setOnboarding: async () => {},
         listRepositories: async () => [mockRepo],
         listSkills: async () => [],
         listAvailableSkills: async () => [],
@@ -411,6 +415,8 @@ describe('useSkillkeeperStore', () => {
         onConfigChanged: () => () => {},
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
+        onMenuOnboardingToggle: () => () => {},
+        onboardingMenuSync: () => {},
         getAppVersion: () => Promise.resolve('0.0.0-test'),
         addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
         cloneRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
@@ -462,6 +468,8 @@ describe('useSkillkeeperStore', () => {
         setConfig: async (): Promise<never> => {
           throw new Error('IPC failure');
         },
+        getOnboarding: async () => ({ version: 1, completed: false, step: 'welcome' }),
+        setOnboarding: async () => {},
         listRepositories: async () => [],
         listSkills: async () => [],
         listAvailableSkills: async () => [],
@@ -482,6 +490,8 @@ describe('useSkillkeeperStore', () => {
         onConfigChanged: () => () => {},
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
+        onMenuOnboardingToggle: () => () => {},
+        onboardingMenuSync: () => {},
         getAppVersion: () => Promise.resolve('0.0.0-test'),
         addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
         cloneRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
@@ -935,6 +945,81 @@ describe('useSkillkeeperStore', () => {
       expect(hashA).not.toBe(
         await hashMcpDefInRenderer({ name: 'one', type: 'http', url: 'https://other.example.com' }),
       );
+    });
+  });
+
+  describe('onboarding actions', () => {
+    beforeEach(() => {
+      useSkillkeeperStore.setState({ onboarding: { active: false, step: 'welcome', completed: false } });
+      vi.mocked(bridgeClient.setOnboarding).mockReset();
+    });
+
+    it('startOnboarding begins the tour at the first step', () => {
+      useSkillkeeperStore.getState().startOnboarding();
+      expect(useSkillkeeperStore.getState().onboarding).toEqual({ active: true, step: 'welcome', completed: false });
+    });
+
+    it('nextOnboardingStep advances one step in ONBOARDING_ORDER', () => {
+      useSkillkeeperStore.setState({ onboarding: { active: true, step: ONBOARDING_ORDER[0]!, completed: false } });
+      useSkillkeeperStore.getState().nextOnboardingStep();
+      expect(useSkillkeeperStore.getState().onboarding).toEqual({
+        active: true,
+        step: ONBOARDING_ORDER[1]!,
+        completed: false,
+      });
+    });
+
+    it('nextOnboardingStep from the last step delegates to finishOnboarding', () => {
+      const last = ONBOARDING_ORDER[ONBOARDING_ORDER.length - 1]!;
+      useSkillkeeperStore.setState({ onboarding: { active: true, step: last, completed: false } });
+      useSkillkeeperStore.getState().nextOnboardingStep();
+      expect(useSkillkeeperStore.getState().onboarding).toEqual({ active: false, step: last, completed: true });
+    });
+
+    it('prevOnboardingStep from welcome is a no-op', () => {
+      useSkillkeeperStore.setState({ onboarding: { active: true, step: 'welcome', completed: false } });
+      useSkillkeeperStore.getState().prevOnboardingStep();
+      expect(useSkillkeeperStore.getState().onboarding).toEqual({ active: true, step: 'welcome', completed: false });
+    });
+
+    it('skipOnboarding routes to the done step without completing the tour', () => {
+      useSkillkeeperStore.getState().skipOnboarding();
+      expect(useSkillkeeperStore.getState().onboarding).toEqual({ active: true, step: 'done', completed: false });
+    });
+
+    it('finishOnboarding marks the tour completed and inactive', () => {
+      useSkillkeeperStore.setState({ onboarding: { active: true, step: 'agents', completed: false } });
+      useSkillkeeperStore.getState().finishOnboarding();
+      expect(useSkillkeeperStore.getState().onboarding).toEqual({ active: false, step: 'agents', completed: true });
+    });
+
+    describe('loadOnboarding', () => {
+      // Only `getOnboarding` is exercised by the action; the rest of BridgeClient
+      // is irrelevant to this test, so a minimal stub is cast through `unknown`.
+      function stubBridge(step: string): BridgeClient {
+        return {
+          getOnboarding: vi.fn().mockResolvedValue({ version: 1, completed: false, step }),
+          setOnboarding: vi.fn().mockResolvedValue(undefined),
+        } as unknown as BridgeClient;
+      }
+
+      it('seeds onboarding from a valid persisted step', async () => {
+        await useSkillkeeperStore.getState().loadOnboarding(stubBridge('projects'));
+        expect(useSkillkeeperStore.getState().onboarding).toEqual({
+          active: true,
+          step: 'projects',
+          completed: false,
+        });
+      });
+
+      it('falls back to welcome when the persisted step is unknown', async () => {
+        await useSkillkeeperStore.getState().loadOnboarding(stubBridge('bogus'));
+        expect(useSkillkeeperStore.getState().onboarding).toEqual({
+          active: true,
+          step: 'welcome',
+          completed: false,
+        });
+      });
     });
   });
 });
