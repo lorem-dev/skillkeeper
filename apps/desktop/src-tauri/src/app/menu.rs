@@ -69,6 +69,19 @@ pub fn nav_target(id: &str) -> Option<&'static str> {
     }
 }
 
+/// Resolve the i18n key for the Help menu's onboarding toggle label, given
+/// whether onboarding is currently active.
+///
+/// Pure and unit-testable; kept separate from the `Translator` lookup so the
+/// selection logic can be verified without building a menu or a translator.
+fn onboarding_toggle_label_key(active: bool) -> &'static str {
+    if active {
+        "menu.onboarding.skip"
+    } else {
+        "menu.onboarding.start"
+    }
+}
+
 /// Build the macOS application menu.
 ///
 /// Order mirrors `menu.ts`: SkillKeeper, Edit, View, Settings, Window, Help.
@@ -246,7 +259,21 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&close_window)
         .build()?;
 
-    let help_menu = SubmenuBuilder::with_id(app, HELP_SUBMENU_ID, tr.t("menu.help")).build()?;
+    // The Help menu's onboarding toggle starts labeled for the current
+    // onboarding mode (read via the desktop `AppContext` state, defaulting to
+    // "start" if the state is unavailable at menu-build time).
+    let onboarding_active = {
+        use tauri::Manager;
+        app.try_state::<std::sync::Arc<crate::state::AppContext>>()
+            .map(|ctx| !crate::commands::onboarding::load(&ctx).completed)
+            .unwrap_or(false)
+    };
+    let onboarding_label = tr.t(onboarding_toggle_label_key(onboarding_active));
+    let onboarding_item =
+        MenuItemBuilder::with_id("onboarding.toggle", onboarding_label).build(app)?;
+    let help_menu = SubmenuBuilder::with_id(app, HELP_SUBMENU_ID, tr.t("menu.help"))
+        .item(&onboarding_item)
+        .build()?;
 
     MenuBuilder::new(app)
         .item(&app_menu)
@@ -279,6 +306,8 @@ pub fn handle_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
     }
     if id == "nav.about" {
         let _ = app.emit("menu:about", ());
+    } else if id == "onboarding.toggle" {
+        let _ = app.emit("menu:onboarding-toggle", ());
     } else if let Some(target) = nav_target(id) {
         let _ = app.emit("menu:navigate", target);
     }
@@ -316,6 +345,109 @@ fn send_native_menu_action(id: &str) {
     let ns_app = NSApplication::sharedApplication(mtm);
     unsafe {
         ns_app.sendAction_to_from(selector, None, None);
+    }
+}
+
+/// Recursively search a menu tree for the item with the given id.
+///
+/// `Menu::get`/`Submenu::get` only search their own direct children, but
+/// every id we care about (`nav.*`, `edit.*`, `app.*`, `window.*`,
+/// `onboarding.toggle`) lives one level down inside a submenu, so the top
+/// level alone is never enough.
+#[cfg(target_os = "macos")]
+fn find_menu_item<R: Runtime>(
+    items: &[tauri::menu::MenuItemKind<R>],
+    id: &str,
+) -> Option<tauri::menu::MenuItemKind<R>> {
+    use tauri::menu::MenuItemKind;
+
+    for item in items {
+        if item.id().0 == id {
+            return Some(item.clone());
+        }
+        if let MenuItemKind::Submenu(submenu) = item {
+            if let Ok(children) = submenu.items() {
+                if let Some(found) = find_menu_item(&children, id) {
+                    return Some(found);
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Set the enabled state of a menu item regardless of its concrete kind. The
+/// plain app/window items are `MenuItem`; the icon-decorated edit/nav items
+/// (built with `IconMenuItemBuilder`) are `IconMenuItem`.
+#[cfg(target_os = "macos")]
+fn set_item_enabled<R: Runtime>(item: &tauri::menu::MenuItemKind<R>, enabled: bool) {
+    use tauri::menu::MenuItemKind;
+
+    match item {
+        MenuItemKind::MenuItem(mi) => {
+            let _ = mi.set_enabled(enabled);
+        }
+        MenuItemKind::Icon(mi) => {
+            let _ = mi.set_enabled(enabled);
+        }
+        MenuItemKind::Submenu(mi) => {
+            let _ = mi.set_enabled(enabled);
+        }
+        MenuItemKind::Check(mi) => {
+            let _ = mi.set_enabled(enabled);
+        }
+        MenuItemKind::Predefined(_) => {}
+    }
+}
+
+/// Reflect onboarding mode in the macOS app menu: relabel the Help submenu's
+/// onboarding toggle and lock every other item (except Quit and the toggle
+/// itself) while onboarding is active, re-enabling all of them once it ends.
+#[cfg(target_os = "macos")]
+pub fn sync_onboarding<R: Runtime>(app: &AppHandle<R>, active: bool) {
+    use tauri::menu::MenuItemKind;
+
+    let Some(menu) = app.menu() else {
+        return;
+    };
+    let Ok(items) = menu.items() else {
+        return;
+    };
+
+    let tr = super::i18n::Translator::for_lang(&current_lang(app));
+    if let Some(MenuItemKind::MenuItem(toggle)) = find_menu_item(&items, "onboarding.toggle") {
+        let label = tr.t(onboarding_toggle_label_key(active));
+        let _ = toggle.set_text(label);
+        let _ = toggle.set_enabled(true);
+    }
+
+    const LOCKABLE: &[&str] = &[
+        "nav.about",
+        "nav.projects",
+        "nav.repositories",
+        "nav.skills-components",
+        "nav.skills-management",
+        "nav.mcp-components",
+        "nav.mcp-management",
+        "nav.settings",
+        "nav.openSettings",
+        "edit.undo",
+        "edit.redo",
+        "edit.cut",
+        "edit.copy",
+        "edit.paste",
+        "edit.selectAll",
+        "app.hide",
+        "app.hideOthers",
+        "app.showAll",
+        "window.minimize",
+        "window.zoom",
+        "window.close",
+    ];
+    for id in LOCKABLE {
+        if let Some(item) = find_menu_item(&items, id) {
+            set_item_enabled(&item, !active);
+        }
     }
 }
 
@@ -370,7 +502,7 @@ fn mark_menu_images_as_template() {
 
 #[cfg(test)]
 mod tests {
-    use super::nav_target;
+    use super::{nav_target, onboarding_toggle_label_key};
 
     #[test]
     fn resolves_every_navigation_id() {
@@ -399,5 +531,11 @@ mod tests {
         assert_eq!(nav_target("nav.about"), None);
         assert_eq!(nav_target("undo"), None);
         assert_eq!(nav_target(""), None);
+    }
+
+    #[test]
+    fn onboarding_toggle_label_key_reflects_the_active_flag() {
+        assert_eq!(onboarding_toggle_label_key(true), "menu.onboarding.skip");
+        assert_eq!(onboarding_toggle_label_key(false), "menu.onboarding.start");
     }
 }
