@@ -7,9 +7,11 @@
  */
 import { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
+import type { ITheme } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { bridgeClient } from '@/services/bridge';
+import { useIsDark } from '@/systems/theme';
 import '@xterm/xterm/css/xterm.css';
 import './TerminalView.scss';
 
@@ -18,8 +20,31 @@ function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+/** The xterm theme resolved from the current `--sk-*` tokens (theme-aware, so
+ *  it must be re-read whenever the app theme changes -- see the effect below). */
+function buildTheme(): ITheme {
+  return {
+    background: cssVar('--sk-color-bg') || '#000000',
+    foreground: cssVar('--sk-color-label') || '#ffffff',
+    // Subtle, theme-neutral scrollbar slider (visible on light and dark),
+    // in place of xterm's default near-invisible translucent white.
+    scrollbarSliderBackground: 'rgba(128, 128, 128, 0.28)',
+    scrollbarSliderHoverBackground: 'rgba(128, 128, 128, 0.45)',
+    scrollbarSliderActiveBackground: 'rgba(128, 128, 128, 0.6)',
+    // Explicit, theme-aware selection colors: xterm's default translucent
+    // white is invisible on the light theme, which reads as "selection does
+    // not work". Accent fill with the background as the text color stays
+    // legible in both themes.
+    selectionBackground: cssVar('--sk-color-accent') || '#3b82f6',
+    selectionInactiveBackground: cssVar('--sk-color-accent') || '#3b82f6',
+    selectionForeground: cssVar('--sk-color-bg') || '#000000',
+  };
+}
+
 export function TerminalView() {
   const host = useRef<HTMLDivElement>(null);
+  const termRef = useRef<Terminal | null>(null);
+  const isDark = useIsDark();
 
   useEffect(() => {
     const el = host.current;
@@ -36,23 +61,9 @@ export function TerminalView() {
       // itself only renders when decorations register for it (we register none),
       // so this just thins the scrollbar to match the app's 8px bars.
       overviewRuler: { width: 8 },
-      theme: {
-        background: cssVar('--sk-color-bg') || '#000000',
-        foreground: cssVar('--sk-color-label') || '#ffffff',
-        // Subtle, theme-neutral scrollbar slider (visible on light and dark),
-        // in place of xterm's default near-invisible translucent white.
-        scrollbarSliderBackground: 'rgba(128, 128, 128, 0.28)',
-        scrollbarSliderHoverBackground: 'rgba(128, 128, 128, 0.45)',
-        scrollbarSliderActiveBackground: 'rgba(128, 128, 128, 0.6)',
-        // Explicit, theme-aware selection colors: xterm's default translucent
-        // white is invisible on the light theme, which reads as "selection does
-        // not work". Accent fill with the background as the text color stays
-        // legible in both themes.
-        selectionBackground: cssVar('--sk-color-accent') || '#3b82f6',
-        selectionInactiveBackground: cssVar('--sk-color-accent') || '#3b82f6',
-        selectionForeground: cssVar('--sk-color-bg') || '#000000',
-      },
+      theme: buildTheme(),
     });
+    termRef.current = term;
     // xterm never copies/pastes on its own. Wire the platform shortcuts:
     // copy on Cmd+C (macOS) or Ctrl+Shift+C; paste on Cmd+V or Ctrl+Shift+V.
     // A bare Ctrl+C with no selection still falls through to send SIGINT.
@@ -127,8 +138,22 @@ export function TerminalView() {
       onInput.dispose();
       ro.disconnect();
       term.dispose();
+      termRef.current = null;
     };
   }, []);
+
+  // The terminal is created once and stays mounted for the app's lifetime, so
+  // re-apply the theme-aware colors whenever the app theme flips (otherwise the
+  // terminal keeps the theme it was born with, looking inverted after a switch).
+  // A rAF defers the token read until after `data-theme` is applied on <html>
+  // (that effect lives in the app root, which commits after this child effect).
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const term = termRef.current;
+      if (term !== null) term.options.theme = buildTheme();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [isDark]);
 
   return <div className="sk-terminal" ref={host} />;
 }

@@ -1,0 +1,22 @@
+// OnboardingDemoTree: the real TreeView, made read-only for the onboarding
+// tour by a transparent blocking layer -- not by disabling the tree's own
+// controls, so it renders (and looks) exactly like the live tree.
+
+.sk-onboarding-demo {
+  position: relative;
+}
+
+.sk-onboarding-demo__block {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: default;
+  pointer-events: auto;
+}
+
+// Agents step: a single top-level project row with no children, so the tree's
+// reserved chevron column adds a left gap before the project icon. Drop it so
+// the icon sits flush (scoped to this demo variant only).
+.sk-onboarding-demo--agents .sk-tree__chevron--spacer {
+  display: none;
+}

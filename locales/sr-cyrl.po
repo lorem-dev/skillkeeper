@@ -88,6 +88,12 @@ msgstr "Прикажи све"
 msgid "menu.quit"
 msgstr "Изађи из SkillKeeper"
 
+msgid "menu.onboarding.start"
+msgstr "Покрени водич"
+
+msgid "menu.onboarding.skip"
+msgstr "Прескочи водич"
+
 msgid "about.version"
 msgstr "Верзија {version}"
 
@@ -997,6 +1003,15 @@ msgstr "Изабрано {count}"
 msgid "settings.notifications.enabled"
 msgstr "Системска обавештења"
 
+msgid "settings.section.onboarding"
+msgstr "Водич"
+
+msgid "settings.onboarding.restartHint"
+msgstr "Поново погледајте вођени водич од почетка."
+
+msgid "settings.onboarding.restart.button"
+msgstr "Поново покрени водич"
+
 msgid "config.invalidBanner"
 msgstr "Конфигурација има неисправне секције. Користе се подразумеване вредности. Покрените \"skillkeeper config validate\" за детаље."
 
@@ -1005,6 +1020,75 @@ msgstr "Инсталација hookова захтева изричиту саг
 
 msgid "skills.count"
 msgstr "{n} инсталираних вештина"
+
+msgid "onboarding.next"
+msgstr "Даље"
+
+msgid "onboarding.back"
+msgstr "Назад"
+
+msgid "onboarding.finish"
+msgstr "Заврши"
+
+msgid "onboarding.skip"
+msgstr "Прескочи водич"
+
+msgid "onboarding.projects-tab.body"
+msgstr "Страница пројеката приказује ваше пројекте. Пројекат можете додати као локални фолдер или га уклонити са листе."
+
+msgid "onboarding.projects.body"
+msgstr "Додајте пројекат кликом на ово дугме."
+
+msgid "onboarding.projects.docs"
+msgstr "Документација о пројектима"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "Страница репозиторијума приказује ваше репозиторијуме. Можете додавати git репозиторијуме, освежавати их и уклањати са листе."
+
+msgid "onboarding.repositories.body"
+msgstr "Додајте репозиторијум кликом на ово дугме."
+
+msgid "onboarding.repositories.docs"
+msgstr "Документација о репозиторијумима"
+
+msgid "onboarding.skills-tab.body"
+msgstr "Страница за управљање вештинама инсталира вештине из репозиторијума на пројекте, те их уклања или ажурира."
+
+msgid "onboarding.skills-intro.body"
+msgstr "Вештине означене са {installed} већ су инсталиране у пројекту."
+
+msgid "onboarding.skills-actions.body"
+msgstr "Укључујте и искључујте вештине помоћу поља за потврду. Опозивом инсталиране вештине она се означава за уклањање ({remove}); новоозначене вештине означавају се за инсталацију ({install}). Затим кликните на Сачувај."
+
+msgid "onboarding.agents.body"
+msgstr "Ово дугме бира на које агенте циља пројекат."
+
+msgid "onboarding.done.title"
+msgstr "Све је спремно"
+
+msgid "onboarding.done.body"
+msgstr "Хвала што сте изабрали SkillKeeper. Срећно у раду!"
+
+msgid "onboarding.done.hint"
+msgstr "Водич можете поново погледати у било ком тренутку у подешавањима."
+
+msgid "onboarding.tree.project"
+msgstr "Пробни пројекат"
+
+msgid "onboarding.tree.repository"
+msgstr "Пробни репозиторијум"
+
+msgid "onboarding.tree.skillset"
+msgstr "Пример скупа вештина"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"
 
 msgid "about.docs"
 msgstr "Документација"

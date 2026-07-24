@@ -38,6 +38,9 @@ import { bridgeClient } from '@/services/bridge';
 import { installedLeafIds, installedAgentsByProject } from '@/entities/skill';
 import type { ProjectSkillUpdate } from '@/entities/skill';
 import { ensureCatalog, resolveLang } from '@/systems/i18n';
+import { ONBOARDING_ORDER } from '@/app/config/onboarding';
+import { nextStepId, prevStepId } from '@/systems/onboarding';
+import type { StepId } from '@/systems/onboarding';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
@@ -386,6 +389,8 @@ export interface SkillkeeperState {
   loading: boolean;
   /** Last error message, if any. */
   error: string | null;
+  /** Guided-tour progress (persisted via the bridge's onboarding store). */
+  onboarding: { active: boolean; step: StepId; completed: boolean };
 }
 
 // ---------------------------------------------------------------------------
@@ -517,6 +522,19 @@ export interface SkillkeeperActions {
   closeAbout(): void;
   /** Empty the notifications log. Leaves toasts and per-repo errors intact. */
   clearNotifications(): void;
+  /** Load the persisted onboarding state via the bridge and seed `onboarding`. */
+  loadOnboarding(bridge: BridgeClient): Promise<void>;
+  /** Start the guided tour from the first step. */
+  startOnboarding(): void;
+  /** Advance to the next step, or finish when the current step is the last one. */
+  nextOnboardingStep(): void;
+  /** Retreat to the previous step. No-op when the current step is the first one. */
+  prevOnboardingStep(): void;
+  /** Jump to the final "done" step so the thank-you always shows. Does NOT
+   *  complete the tour -- only finishOnboarding() does. */
+  skipOnboarding(): void;
+  /** Mark the guided tour completed and hide it. */
+  finishOnboarding(): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -595,6 +613,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   repoFocus: null,
   loading: false,
   error: null,
+  onboarding: { active: false, step: 'welcome', completed: false },
 
   // Actions
   setConfig(config, validity, warnings) {
@@ -771,6 +790,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         // Reconcile MCP ledgers with disk alongside the skill reconcile, and
         // seed `mcpInstalls` from the surviving list (mirrors reconcileSkills).
         client.reconcileMcp(),
+        get().loadOnboarding(client),
       ]);
       setConfig(configResult.config, configResult.validity, configResult.warnings);
       // Load the active locale catalog before the app is revealed, so the first
@@ -1386,5 +1406,51 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       if (!exists) get().notify({ key: 'projects.missing' }, 'error');
       return exists;
     })();
+  },
+
+  async loadOnboarding(bridge) {
+    const state = await bridge.getOnboarding();
+    const raw = state.step;
+    const step: StepId = (ONBOARDING_ORDER as readonly string[]).includes(raw) ? (raw as StepId) : 'welcome';
+    set({ onboarding: { active: !state.completed, step, completed: state.completed } });
+  },
+
+  startOnboarding() {
+    const next = { active: true, step: 'welcome' as StepId, completed: false };
+    set({ onboarding: next });
+    void bridgeClient.setOnboarding({ version: 1, completed: false, step: 'welcome' });
+  },
+
+  nextOnboardingStep() {
+    const { step } = get().onboarding;
+    const next = nextStepId(ONBOARDING_ORDER, step);
+    if (next === null) {
+      get().finishOnboarding();
+      return;
+    }
+    set({ onboarding: { active: true, step: next, completed: false } });
+    void bridgeClient.setOnboarding({ version: 1, completed: false, step: next });
+  },
+
+  prevOnboardingStep() {
+    const { step } = get().onboarding;
+    const prev = prevStepId(ONBOARDING_ORDER, step);
+    if (prev === null) return;
+    set({ onboarding: { active: true, step: prev, completed: false } });
+    void bridgeClient.setOnboarding({ version: 1, completed: false, step: prev });
+  },
+
+  skipOnboarding() {
+    // Skipping does not end the tour outright: jump to the final "done" window
+    // so the thank-you (and the "replay from Settings" hint) always shows. Only
+    // finishOnboarding() actually ends it.
+    set({ onboarding: { active: true, step: 'done', completed: false } });
+    void bridgeClient.setOnboarding({ version: 1, completed: false, step: 'done' });
+  },
+
+  finishOnboarding() {
+    const { step } = get().onboarding;
+    set({ onboarding: { active: false, step, completed: true } });
+    void bridgeClient.setOnboarding({ version: 1, completed: true, step });
   },
 }));

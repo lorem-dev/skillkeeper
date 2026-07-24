@@ -1,0 +1,54 @@
+// Coachmark: an opaque callout anchored below a target element (see
+// Coachmark.tsx for the fixed-position placement math). A solid elevated
+// surface -- no backdrop refraction -- so it stays legible over any part of
+// the app it points at. Renders as a child of `.sk-onboarding` (see
+// OnboardingOverlay.scss), which already establishes the top-of-app-stack
+// context (--sk-z-onboarding, above the status bar), so this only needs a
+// small z-index LOCAL to that context -- above the scrim (0), tied with the
+// other step content.
+.sk-coachmark {
+  z-index: 1;
+  max-width: 320px;
+  padding: var(--sk-space-6);
+  border-radius: var(--sk-radius-lg);
+  border: 0.5px solid var(--sk-color-separator);
+  box-shadow: var(--sk-shadow-3);
+  background: var(--sk-color-bg-tertiary);
+  color: var(--sk-color-label);
+}
+
+.sk-coachmark__title {
+  margin-bottom: var(--sk-space-3);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sk-coachmark__body {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sk-color-label-2);
+}
+
+.sk-coachmark__doc {
+  display: block;
+  margin-top: var(--sk-space-3);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  color: var(--sk-color-accent);
+  cursor: pointer;
+  text-align: left;
+}
+
+.sk-coachmark__doc:hover {
+  text-decoration: underline;
+}
+
+.sk-coachmark__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+  margin-top: var(--sk-space-5);
+}

@@ -1,5 +1,24 @@
 # SkillKeeper Changelog
 
+## Development
+
+## Version 0.2.0-rc.1
+
+### Added
+
+- Desktop: a first-run tutorial (guided onboarding) - a welcome screen
+  (language/theme) with preloader, guided steps that spotlight the
+  Add-project/Add-repository buttons and illustrate the skills-management
+  tree and per-project agent picker, a thank-you screen, "Start the tutorial
+  again" in Settings and (macOS) the Help menu, ESC/Skip to end, with
+  progress persisted to onboarding.json.
+
+### Fixed
+
+- Desktop: the embedded terminal keeps its colors in sync with the active
+  theme -- previously it kept the theme it was created with, so switching
+  theme left it inverted until restart.
+
 ## Version 0.1.2-rc.1
 
 ### Features

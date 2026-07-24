@@ -10,6 +10,7 @@ pub mod config;
 pub mod dialog;
 pub mod editors;
 pub mod mcp;
+pub mod onboarding;
 pub mod projects;
 pub mod repositories;
 pub mod skills;

@@ -1,0 +1,42 @@
+// OnboardingModal: a centered, full-screen overlay card for a tour step. No
+// scrim-click handling lives here (see OnboardingModal.tsx) -- only the
+// layout/visuals are styled. Renders as a child of `.sk-onboarding` (see
+// OnboardingOverlay.scss), which already establishes the top-of-app-stack
+// context (--sk-z-onboarding, above the status bar), so this only needs a
+// small z-index LOCAL to that context -- above the scrim (0), tied with the
+// other step content.
+.sk-onboarding-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sk-space-7);
+  // No own backdrop: the card floats over the onboarding overlay's dim scrim
+  // (`.sk-onboarding__scrim`) so the tour reads as one layer, not a plain fill.
+  background: transparent;
+}
+
+.sk-onboarding-modal__card {
+  width: 100%;
+  max-width: 440px;
+  padding: var(--sk-space-7);
+  border-radius: var(--sk-radius-2xl);
+  border: 0.5px solid var(--sk-color-separator);
+  box-shadow: var(--sk-shadow-3);
+  background: var(--sk-color-bg-tertiary);
+  color: var(--sk-color-label);
+}
+
+.sk-onboarding-modal__body {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.sk-onboarding-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+  margin-top: var(--sk-space-6);
+}

@@ -88,6 +88,12 @@ msgstr "Show All"
 msgid "menu.quit"
 msgstr "Quit SkillKeeper"
 
+msgid "menu.onboarding.start"
+msgstr "Start tutorial"
+
+msgid "menu.onboarding.skip"
+msgstr "Skip tutorial"
+
 msgid "about.version"
 msgstr "Version {version}"
 
@@ -1078,6 +1084,15 @@ msgstr "Selected {count}"
 msgid "settings.notifications.enabled"
 msgstr "System notifications"
 
+msgid "settings.section.onboarding"
+msgstr "Tutorial"
+
+msgid "settings.onboarding.restartHint"
+msgstr "Replay the guided tutorial from the beginning."
+
+msgid "settings.onboarding.restart.button"
+msgstr "Start the tutorial again"
+
 msgid "config.invalidBanner"
 msgstr "Configuration has invalid sections. Defaults are in use. Run \"skillkeeper config validate\" for details."
 
@@ -1086,3 +1101,72 @@ msgstr "Hook installation requires explicit consent (--allow-hooks). Skill body 
 
 msgid "skills.count"
 msgstr "{n} skill(s) installed"
+
+msgid "onboarding.next"
+msgstr "Next"
+
+msgid "onboarding.back"
+msgstr "Back"
+
+msgid "onboarding.finish"
+msgstr "Finish"
+
+msgid "onboarding.skip"
+msgstr "Skip tutorial"
+
+msgid "onboarding.projects-tab.body"
+msgstr "The projects page lists your projects. You can add one as a local folder or remove it from the list."
+
+msgid "onboarding.projects.body"
+msgstr "Add a project by clicking this button."
+
+msgid "onboarding.projects.docs"
+msgstr "Projects documentation"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "The repositories page lists your repositories. You can add git repositories, refresh them, and remove them from the list."
+
+msgid "onboarding.repositories.body"
+msgstr "Add a repository by clicking this button."
+
+msgid "onboarding.repositories.docs"
+msgstr "Repositories documentation"
+
+msgid "onboarding.skills-tab.body"
+msgstr "The skills management page installs skills from repositories onto projects, and removes or updates them."
+
+msgid "onboarding.skills-intro.body"
+msgstr "Skills marked with {installed} are already installed on the project."
+
+msgid "onboarding.skills-actions.body"
+msgstr "Toggle skills with the checkboxes. Unchecking an installed skill marks it for removal ({remove}); newly checked skills are marked for install ({install}). Then click Save."
+
+msgid "onboarding.agents.body"
+msgstr "This button selects which agents the project targets."
+
+msgid "onboarding.done.title"
+msgstr "You are all set"
+
+msgid "onboarding.done.body"
+msgstr "Thanks for choosing SkillKeeper. Good luck with your work!"
+
+msgid "onboarding.done.hint"
+msgstr "You can replay the tutorial anytime from Settings."
+
+msgid "onboarding.tree.project"
+msgstr "Test project"
+
+msgid "onboarding.tree.repository"
+msgstr "Test repository"
+
+msgid "onboarding.tree.skillset"
+msgstr "Example skillset"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"

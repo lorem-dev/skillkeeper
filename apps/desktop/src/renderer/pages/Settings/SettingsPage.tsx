@@ -1,22 +1,19 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
-import { useTranslator, ensureCatalog } from '@/systems/i18n';
+import { useTranslator } from '@/systems/i18n';
 import { useAnimationsEnabled, useAnimationScale, SK_DURATION, SK_EASE } from '@/shared/lib';
-import { useTheme, type ThemePref } from '@/systems/theme';
-import { buildLanguageOptions, AGENT_LABELS, ALL_AGENTS } from '@/domain';
-import type { Lang, AgentKind, UpdatesConfig } from '@/services/bridge';
+import { useOnboardingActions } from '@/systems/onboarding';
+import { LanguageThemeFields } from '@/systems/settings';
+import type { UpdatesConfig } from '@/services/bridge';
 import {
   Page,
   Toolbar,
   FormSection,
   FormRow,
-  Combobox,
   SegmentedControl,
   TextField,
   IntervalStepper,
-  Toggle,
-  MultiSelect,
   Button,
   Tooltip,
   Icon,
@@ -55,17 +52,10 @@ export function SettingsPage() {
   const animate = useAnimationsEnabled();
   const scale = useAnimationScale();
   const t = useTranslator();
-  const { pref, setPref } = useTheme();
+  const { start } = useOnboardingActions();
 
   if (config === null) return null;
 
-  const lang = config.general.language;
-  const languageOptions = buildLanguageOptions(lang);
-  const themeOptions = [
-    { value: 'system', label: t('settings.theme.system') },
-    { value: 'light', label: t('settings.theme.light') },
-    { value: 'dark', label: t('settings.theme.dark') },
-  ];
   const animationOptions = [
     { value: 'fast', label: t('settings.animations.fast') },
     { value: 'normal', label: t('settings.animations.normal') },
@@ -104,29 +94,7 @@ export function SettingsPage() {
         transition={{ duration: SK_DURATION.medium * scale, ease: SK_EASE }}
       >
         <FormSection title={t('settings.section.general')}>
-          <FormRow label={t('settings.language')}>
-            <Combobox
-              className="sk-settings-language"
-              options={languageOptions}
-              value={lang}
-              onChange={(v) =>
-                void ensureCatalog(v as Lang).then(() =>
-                  updateConfig({ general: { language: v as Lang } }),
-                )
-              }
-              ariaLabel={t('settings.language')}
-              placeholder={t('settings.language')}
-              emptyText={t('settings.languageEmpty')}
-            />
-          </FormRow>
-          <FormRow label={t('settings.theme')}>
-            <SegmentedControl
-              label={t('settings.theme')}
-              options={themeOptions}
-              value={pref}
-              onChange={(value) => setPref(value as ThemePref)}
-            />
-          </FormRow>
+          <LanguageThemeFields languageClassName="sk-settings-language" />
           <FormRow label={t('settings.animations')} description={t('settings.animationsHint')}>
             <SegmentedControl
               label={t('settings.animations')}
@@ -187,25 +155,11 @@ export function SettingsPage() {
           </FormRow>
         </FormSection>
 
-        <FormSection title={t('settings.section.agents')}>
-          <FormRow label={t('settings.agents.enabled')}>
-            <MultiSelect
-              options={ALL_AGENTS.map((a) => ({ value: a, label: AGENT_LABELS[a] }))}
-              value={config.agents.enabled}
-              onChange={(next) => void updateConfig({ agents: { enabled: next as AgentKind[] } })}
-              placeholder={t('settings.agents.placeholder')}
-              summary={(count) => t('settings.agents.selected', { count: String(count) })}
-              ariaLabel={t('settings.agents.enabled')}
-            />
-          </FormRow>
-        </FormSection>
-
-        <FormSection title={t('settings.section.notifications')}>
-          <FormRow label={t('settings.notifications.enabled')}>
-            <Toggle
-              checked={config.notifications.enabled}
-              onChange={(e) => void updateConfig({ notifications: { enabled: e.target.checked } })}
-            />
+        <FormSection title={t('settings.section.onboarding')}>
+          <FormRow description={t('settings.onboarding.restartHint')}>
+            <Button variant="secondary" onClick={start}>
+              {t('settings.onboarding.restart.button')}
+            </Button>
           </FormRow>
         </FormSection>
       </motion.div>
