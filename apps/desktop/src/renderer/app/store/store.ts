@@ -19,6 +19,7 @@ import type {
   Project,
   InstallManifest,
   AvailableSkill,
+  SkillResolveWarning,
   AgentKind,
   ApplyArgs,
   ApplyResult,
@@ -208,8 +209,14 @@ export function mcpInstallHasUpdate(install: McpInstall, presets: readonly McpPr
   return preset !== undefined && install.hash !== preset.hash;
 }
 
-/** Severity of a notification entry. */
-export type NotificationLevel = 'error' | 'info';
+/**
+ * Severity of a notification entry.
+ *
+ * `warning` sits between the two: something the user should see and may need to
+ * act on, but which did not fail the operation -- a skill-resolution warning, for
+ * example, where the rest of the repository still resolved.
+ */
+export type NotificationLevel = 'error' | 'warning' | 'info';
 
 /**
  * A notification's message: either raw text (e.g. a git error, which cannot be
@@ -496,10 +503,22 @@ export interface SkillkeeperActions {
   ensureProjectAvailable(id: string): Promise<boolean>;
   /**
    * Record a notification: append to the log + toasts. An `error` notification
-   * with a `repoId` also marks that repo's status (the red dot); `info` never
-   * touches repo status.
+   * with a `repoId` also marks that repo's status (the red dot); `warning` and
+   * `info` never touch repo status.
    */
   notify(message: NotificationMessage, level: NotificationLevel, repoId?: string): void;
+  /**
+   * Record skill-resolution warnings as `warning` entries in the notifications
+   * log. Unlike {@link notify} these raise **no toast**: a resolution warning is
+   * a standing condition of a repository rather than a reaction to a user
+   * action, so it waits to be read instead of interrupting.
+   *
+   * Warnings are recomputed on every catalog load, so an unchanged repository
+   * would re-log on each refresh. Entries whose exact text is already present are
+   * skipped, keeping a persistent warning (a permanently misplaced `SKILL.md`) to
+   * a single line.
+   */
+  notifyResolveWarnings(warnings: readonly SkillResolveWarning[]): void;
   /** Remove one toast (keeps the log and the repo dot). */
   dismissToast(id: string): void;
   /** Re-show the toast for a repo's current error (does not re-log). */
@@ -558,6 +577,34 @@ function enqueue(run: () => Promise<void>): Promise<void> {
   );
   return next;
 }
+
+/**
+ * Build a notification entry. Raw text is stored verbatim; a keyed message
+ * stores key (+ vars) and is translated at display time, so the log follows the
+ * current language.
+ */
+function makeNotificationEntry(
+  message: NotificationMessage,
+  level: NotificationLevel,
+  repoId?: string,
+): NotificationEntry {
+  const payload =
+    typeof message === 'string' ? { text: message } : { key: message.key, vars: message.vars };
+  return {
+    id: crypto.randomUUID(),
+    level,
+    ...payload,
+    repoId,
+    at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Cap the retained log so a long-running session (background update checks,
+ * per-op entries) cannot grow it without bound -- the LogsPage renders one DOM
+ * node per entry. Keeps the most recent.
+ */
+const NOTIFICATION_LOG_LIMIT = 500;
 
 /** The project-mode selection (checks + agents) that matches what is installed. */
 function installedBaseline(
@@ -685,24 +732,12 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   },
 
   notify(message, level, repoId) {
-    // Raw text is stored verbatim; a keyed message stores key (+ vars) and is
-    // translated at display time so the log follows the current language.
-    const payload =
-      typeof message === 'string' ? { text: message } : { key: message.key, vars: message.vars };
-    const entry: NotificationEntry = {
-      id: crypto.randomUUID(),
-      level,
-      ...payload,
-      repoId,
-      at: new Date().toISOString(),
-    };
+    const entry = makeNotificationEntry(message, level, repoId);
     set((s) => ({
-      // Cap the retained log so a long-running session (background update
-      // checks, per-op info entries) cannot grow it without bound -- the
-      // LogsPage renders one DOM node per entry. Keep the most recent.
-      notifications: [...s.notifications, entry].slice(-500),
+      notifications: [...s.notifications, entry].slice(-NOTIFICATION_LOG_LIMIT),
       toasts: [...s.toasts, entry],
-      // Only an error marks the repo's status (the red dot); info never does.
+      // Only an error marks the repo's status (the red dot); warning and info
+      // never do -- a resolution warning leaves the repository usable.
       // Repo errors are always raw text (a git error), so store that text.
       repoStatus:
         level !== 'error' || repoId === undefined
@@ -716,6 +751,38 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
               },
             },
     }));
+  },
+
+  notifyResolveWarnings(warnings) {
+    if (warnings.length === 0) return;
+    set((s) => {
+      // Keyed by (repoId, text), not text alone: repository names are not
+      // unique -- only the URL is -- and two forks both default to the same
+      // derived name, so a text-only key would silently swallow the second
+      // repository's identical warning and leave a row attributed to the first.
+      const key = (repoId: string | undefined, text: string) => `${repoId ?? ''} ${text}`;
+      const logged = new Set(
+        s.notifications
+          .filter((n) => n.level === 'warning' && n.text !== undefined)
+          .map((n) => key(n.repoId, n.text as string)),
+      );
+      const fresh: NotificationEntry[] = [];
+      for (const warning of warnings) {
+        const text = `[${warning.repoName}] ${warning.message}`;
+        // Dedupe against what is already logged (including entries added in this
+        // same pass), so a standing warning stays one line however often the
+        // catalog is refreshed. A warning evicted by the log cap can reappear;
+        // that is intended, since it is no longer in the log the user reads.
+        if (logged.has(key(warning.repoId, text))) continue;
+        logged.add(key(warning.repoId, text));
+        fresh.push(makeNotificationEntry(text, 'warning', warning.repoId));
+      }
+      if (fresh.length === 0) return {};
+      // Log only: no toast. A resolution warning is a standing condition of the
+      // repository, not a reaction to something the user just did, so it waits
+      // in the notifications window instead of interrupting.
+      return { notifications: [...s.notifications, ...fresh].slice(-NOTIFICATION_LOG_LIMIT) };
+    });
   },
 
   dismissToast(id) {
@@ -799,7 +866,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       await ensureCatalog(resolveLang(configResult.config.general.language));
       setRepositories(repos);
       setSkills(skills);
-      set({ availableSkills: available, mcpInstalls });
+      set({ availableSkills: available.skills, mcpInstalls });
+      get().notifyResolveWarnings(available.warnings);
       setProjects(projects);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -1050,7 +1118,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   refreshAvailableSkills() {
     return (async () => {
       const available = await bridgeClient.listAvailableSkills();
-      set({ availableSkills: available });
+      set({ availableSkills: available.skills });
+      get().notifyResolveWarnings(available.warnings);
     })();
   },
 

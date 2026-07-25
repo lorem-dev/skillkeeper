@@ -3,4 +3,4 @@
 /**
  * Display language. Mirrors the TS `language` enum.
  */
-export type Language = "en" | "de" | "ru" | "uk" | "be" | "fr" | "ja" | "zh-cn" | "pl" | "sr-cyrl" | "sr-latn" | "zh-tw" | "es" | "pt" | "ko" | "it";
+export type Language = "en" | "de" | "ru" | "uk" | "be" | "fr" | "ja" | "zh-cn" | "pl" | "sr-cyrl" | "sr-latn" | "zh-tw" | "es" | "pt" | "ko" | "it" | "hi" | "th";

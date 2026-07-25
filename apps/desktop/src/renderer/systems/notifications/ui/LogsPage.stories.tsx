@@ -22,6 +22,16 @@ export const Populated: Story = {
       const state = useSkillkeeperStore.getState();
       state.notify('Connection timeout to repository server', 'error');
       state.notify('Failed to parse configuration file', 'error', 'repo-1');
+      // A resolution warning: logged, never toasted, and shown by default
+      // alongside errors.
+      state.notifyResolveWarnings([
+        {
+          repoId: 'repo-1',
+          repoName: 'team-skills',
+          message:
+            'Unresolved SKILL.md at "group/sub/too-deep": nesting is deeper than a single group; declare it in skillkeeper.repo.yaml to install it.',
+        },
+      ]);
       state.notify('Branch name copied to the clipboard', 'info', 'repo-2');
       state.openLogs();
     }, []);

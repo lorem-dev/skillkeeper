@@ -4,8 +4,10 @@
  * Cross-cutting UI -> lives in systems/notifications.
  */
 import { useEffect, useRef } from 'react';
+import type { ComponentProps } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
+import type { NotificationLevel } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Alert } from '@/shared/ui';
 import { fadeRise } from '@/shared/lib';
@@ -14,6 +16,20 @@ import './Toasts.scss';
 
 /** How long a toast stays before it auto-dismisses (ms). */
 const TOAST_TTL = 5000;
+
+/** Alert tone per notification level. */
+const TOAST_TONE = {
+  error: 'danger',
+  warning: 'warning',
+  info: 'info',
+} as const satisfies Record<NotificationLevel, ComponentProps<typeof Alert>['tone']>;
+
+/** Toast title i18n key per notification level. */
+const TOAST_TITLE_KEY = {
+  error: 'notifications.error',
+  warning: 'notifications.warning',
+  info: 'notifications.info',
+} as const satisfies Record<NotificationLevel, string>;
 
 export function Toasts() {
   const toasts = useSkillkeeperStore((s) => s.toasts);
@@ -64,10 +80,7 @@ export function Toasts() {
             animate="animate"
             exit="exit"
           >
-            <Alert
-              tone={toast.level === 'error' ? 'danger' : 'info'}
-              title={toast.level === 'error' ? t('notifications.error') : t('notifications.info')}
-            >
+            <Alert tone={TOAST_TONE[toast.level]} title={t(TOAST_TITLE_KEY[toast.level])}>
               {resolveNotification(toast, t)}
             </Alert>
           </motion.button>

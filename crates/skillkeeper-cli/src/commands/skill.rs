@@ -34,6 +34,7 @@ use skillkeeper_core::skills::resolver::resolve_skills;
 use skillkeeper_core::state::state::{load_state, save_state};
 
 use crate::commands::agenthelpers::{parse_agent, scope_str, ProjectEnv};
+use crate::commands::resolvewarnings::print_resolve_warnings;
 use crate::error::CliError;
 use crate::messages::{HOOKS_REQUIRE_CONSENT, PROJECT_REQUIRED};
 
@@ -420,7 +421,11 @@ pub fn install(
     // (exact or unique prefix, Docker-style) against them.
     let mut all = Vec::new();
     for repo in &state.repositories {
-        for skill in resolve_skills(ctx.fs, &repo.local_path).skills {
+        let resolved = resolve_skills(ctx.fs, &repo.local_path);
+        // Report before the id lookup: a warning here often explains the
+        // "Skill not found" that is about to follow.
+        print_resolve_warnings(err, &repo.name, &resolved.warnings)?;
+        for skill in resolved.skills {
             all.push((
                 repo.local_path.clone(),
                 repo.id.clone(),
@@ -642,7 +647,9 @@ pub fn update(
             )?;
             continue;
         };
-        let resolved = resolve_skills(ctx.fs, &repo.local_path)
+        let resolve_result = resolve_skills(ctx.fs, &repo.local_path);
+        print_resolve_warnings(err, &repo.name, &resolve_result.warnings)?;
+        let resolved = resolve_result
             .skills
             .into_iter()
             .find(|s| full_id(&s.id) == canonical);
@@ -879,7 +886,9 @@ pub fn repair(
             writeln!(err, "Source repository not found for: {}", m.skill_id.name)?;
             continue;
         };
-        let resolved = resolve_skills(ctx.fs, &repo.local_path)
+        let resolve_result = resolve_skills(ctx.fs, &repo.local_path);
+        print_resolve_warnings(err, &repo.name, &resolve_result.warnings)?;
+        let resolved = resolve_result
             .skills
             .into_iter()
             .find(|s| full_id(&s.id) == canonical);
@@ -904,21 +913,32 @@ pub fn repair(
             source_remote: Some(repo.url.clone()),
             source_path: Some(resolved.root_path.clone()),
         };
-        let new_manifest = repair_install(
+        // Every other recorded install, so pruning cannot delete a co-located
+        // skill's files (a destination directory is named after the skill alone,
+        // so same-named skills from different groups or repos share one).
+        let others: Vec<InstallManifest> =
+            state.installs.iter().filter(|i| *i != m).cloned().collect();
+        let outcome = repair_install(
             ctx.fs,
             &opts,
             &dest_root,
             hook_support.as_ref(),
             ctx.clock.now(),
             m,
+            &others,
         )?;
         for i in installs.iter_mut() {
             if i == m {
-                *i = new_manifest.clone();
+                *i = outcome.manifest.clone();
             }
         }
         if !allow_hooks && !resolved.hooks.is_empty() {
             writeln!(out, "{HOOKS_REQUIRE_CONSENT}")?;
+        }
+        // Repair is the one operation that deletes files the user may have put
+        // there by hand, so name every one rather than removing it silently.
+        for rel in &outcome.removed {
+            writeln!(out, "  removed extraneous: {rel}")?;
         }
         writeln!(out, "Repaired: {} ({})", m.skill_id.name, m.target.agent)?;
     }

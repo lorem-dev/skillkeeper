@@ -55,6 +55,28 @@ export interface AvailableSkill {
   readonly hasGuidance: boolean;
 }
 
+/**
+ * A skill-resolution warning, attributed to the repository it came from.
+ *
+ * Resolution never fails: it reports warnings instead. A warning is the only
+ * signal that a `SKILL.md` exists but cannot be installed -- nested deeper than
+ * one group level, a malformed manifest, an unparsable `skillkeeper.repo.yaml`.
+ * Without surfacing it, such a skill is simply absent from the tree with no
+ * explanation.
+ */
+export interface SkillResolveWarning {
+  readonly repoId: string;
+  readonly repoName: string;
+  /** Already-composed English message from the core resolver (not a i18n key). */
+  readonly message: string;
+}
+
+/** The `skills_available` payload: the catalog plus any resolution warnings. */
+export interface AvailableSkillsResult {
+  readonly skills: AvailableSkill[];
+  readonly warnings: SkillResolveWarning[];
+}
+
 // -- projects ----------------------------------------------------------------
 
 export type ProjectResult = { ok: true; project: Project } | { ok: false; error: string };

@@ -31,6 +31,7 @@ use skillkeeper_core::skills::resolver::resolve_skills;
 use skillkeeper_core::state::state::load_state;
 
 use crate::commands::agenthelpers::ProjectEnv;
+use crate::commands::resolvewarnings::print_resolve_warnings;
 use crate::error::CliError;
 
 /// The four project-scoped MCP agents; codex is handled separately (global).
@@ -193,7 +194,11 @@ fn list_presets(ctx: &McpCtx, err: &mut dyn Write) -> Vec<PresetEntry> {
             });
         }
         // Group candidates: the on-disk directory holding each resolved skill.
+        // A skill that fails to resolve cannot contribute its directory as a
+        // group, so an unresolved path can also hide a group's `mcp.yml` --
+        // worth reporting here, not only from the skill commands.
         let resolved = resolve_skills(ctx.fs, &repo.local_path);
+        let _ = print_resolve_warnings(err, &repo.name, &resolved.warnings);
         let mut groups: Vec<String> = Vec::new();
         for skill in &resolved.skills {
             let parts: Vec<&str> = skill.root_path.split('/').collect();

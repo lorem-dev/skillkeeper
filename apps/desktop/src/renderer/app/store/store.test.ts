@@ -397,7 +397,7 @@ describe('useSkillkeeperStore', () => {
         setOnboarding: async () => {},
         listRepositories: async () => [mockRepo],
         listSkills: async () => [],
-        listAvailableSkills: async () => [],
+        listAvailableSkills: async () => ({ skills: [], warnings: [] }),
         reconcileSkills: async () => [],
         listAvailableMcp: async () => [],
         applyMcp: async () => ({ ok: true as const, installed: 0, removed: 0, skipped: [] }),
@@ -472,7 +472,7 @@ describe('useSkillkeeperStore', () => {
         setOnboarding: async () => {},
         listRepositories: async () => [],
         listSkills: async () => [],
-        listAvailableSkills: async () => [],
+        listAvailableSkills: async () => ({ skills: [], warnings: [] }),
         reconcileSkills: async () => [],
         listAvailableMcp: async () => [],
         applyMcp: async () => ({ ok: true as const, installed: 0, removed: 0, skipped: [] }),
@@ -580,6 +580,50 @@ describe('useSkillkeeperStore', () => {
       expect(state.notifications.map((n) => n.level)).toEqual(['error', 'info']);
       expect(state.repoStatus['repo-1']?.error).toBe('boom');
       expect(state.repoStatus['repo-2']).toBeUndefined();
+    });
+
+    it('notifyResolveWarnings logs warnings without raising a toast', () => {
+      const s = useSkillkeeperStore.getState();
+      s.notifyResolveWarnings([
+        { repoId: 'repo-1', repoName: 'fixture', message: 'Unresolved SKILL.md at "a/b/c"' },
+      ]);
+      const state = useSkillkeeperStore.getState();
+      expect(state.notifications).toHaveLength(1);
+      expect(state.notifications[0]?.level).toBe('warning');
+      expect(state.notifications[0]?.text).toBe('[fixture] Unresolved SKILL.md at "a/b/c"');
+      // Log only: warnings must not interrupt with a bottom toast.
+      expect(state.toasts).toHaveLength(0);
+      // A warning never marks the repo's status dot, even with a repoId.
+      expect(state.repoStatus['repo-1']).toBeUndefined();
+    });
+
+    it('notifyResolveWarnings skips warnings already in the log', () => {
+      const warning = { repoId: 'repo-1', repoName: 'fixture', message: 'same' };
+      const s = useSkillkeeperStore.getState();
+      s.notifyResolveWarnings([warning]);
+      // A second catalog refresh reports the identical standing warning.
+      useSkillkeeperStore.getState().notifyResolveWarnings([warning]);
+      expect(useSkillkeeperStore.getState().notifications).toHaveLength(1);
+    });
+
+    it('notifyResolveWarnings dedupes repeats inside a single call', () => {
+      const warning = { repoId: 'repo-1', repoName: 'fixture', message: 'same' };
+      useSkillkeeperStore.getState().notifyResolveWarnings([warning, warning]);
+      expect(useSkillkeeperStore.getState().notifications).toHaveLength(1);
+    });
+
+    it('notifyResolveWarnings keeps distinct warnings from the same repository', () => {
+      useSkillkeeperStore.getState().notifyResolveWarnings([
+        { repoId: 'repo-1', repoName: 'fixture', message: 'first' },
+        { repoId: 'repo-1', repoName: 'fixture', message: 'second' },
+      ]);
+      const { notifications } = useSkillkeeperStore.getState();
+      expect(notifications.map((n) => n.text)).toEqual(['[fixture] first', '[fixture] second']);
+    });
+
+    it('notifyResolveWarnings is a no-op for an empty list', () => {
+      useSkillkeeperStore.getState().notifyResolveWarnings([]);
+      expect(useSkillkeeperStore.getState().notifications).toHaveLength(0);
     });
 
     it('clearNotifications empties the log but leaves toasts and repo errors intact', () => {

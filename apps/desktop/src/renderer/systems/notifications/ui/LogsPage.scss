@@ -82,9 +82,14 @@
   word-break: break-word;
 }
 
-// Errors read in red; info messages stay in the default label color.
+// Errors read in red, warnings in orange (matching the Alert tones); info
+// messages stay in the default label color.
 .sk-logs__row--error .sk-logs__message {
   color: var(--sk-red);
+}
+
+.sk-logs__row--warning .sk-logs__message {
+  color: var(--sk-orange);
 }
 
 .sk-logs__copy {
