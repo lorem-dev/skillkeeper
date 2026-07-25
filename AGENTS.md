@@ -85,6 +85,19 @@ pnpm --filter @skillkeeper/desktop frontend:build   # vite build of the renderer
 
 All of these must pass before a pull request is ready.
 
+### End-to-end suite
+
+```bash
+pnpm test:e2e   # Jest, drives the built CLI against examples/test-repo
+```
+
+Separate from the gate above because it needs the fixture submodule and a
+`cargo build`. It covers what the in-memory fakes cannot: the real binary against
+a real working tree. Run it after touching resolution, install, hooks, guidance,
+or MCP. Specs live in `e2e/tests/`, the harness in `e2e/src/cli.ts`; the runner is
+Jest (not Vitest) and the suite is scoped to CommonJS -- see
+[docs/development/development.md](./docs/development/development.md#end-to-end-tests).
+
 ### Verification workflow
 
 Run the full gate (`cargo fmt --check`, `cargo clippy`, `cargo test`,

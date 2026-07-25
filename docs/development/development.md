@@ -16,10 +16,20 @@
 Clone the repository and install dependencies:
 
 ```
-git clone git@github.com:lorem-dev/skillkeeper.git
+git clone --recurse-submodules git@github.com:lorem-dev/skillkeeper.git
 cd skillkeeper
 pnpm install
 ```
+
+If you cloned without `--recurse-submodules`, fetch the one submodule
+(`examples/test-repo`, the end-to-end fixture) with:
+
+```
+git submodule update --init
+```
+
+Nothing compiles, lints, or unit-tests against it, so the ordinary commands below
+work without it -- only `pnpm test:e2e` needs it.
 
 ## Monorepo structure
 
@@ -51,6 +61,7 @@ TypeScript side (run from the repository root):
 |------------------|-------------------------------------------------|
 | `pnpm test`      | Run the TypeScript tests (`vitest run`).        |
 | `pnpm test:cov`  | Run tests with v8 coverage report.              |
+| `pnpm test:e2e`  | Run the end-to-end suite against the built CLI.  |
 | `pnpm lint`      | Run ESLint.                                      |
 | `pnpm typecheck` | Type-check the TypeScript packages.             |
 | `pnpm format`    | Run Prettier.                                    |
@@ -106,6 +117,56 @@ discovery independently.
 
 The TypeScript side uses Vitest. The **90% lines and branches** coverage gate
 (`pnpm test:cov`) applies to `packages/i18n`; CI fails below this threshold.
+
+### End-to-end tests
+
+In-memory fakes make the unit tests fast and deterministic, but they cannot catch
+a regression that lives in the wiring between the CLI, the agent adapters, and a
+real filesystem -- an adapter resolving the wrong destination root, say, or a
+skill that resolves under `MemFs` but not on disk. The end-to-end suite covers
+exactly that layer: it drives the real `skillkeeper` binary against a real Git
+working tree and asserts on the files it produces.
+
+```
+pnpm test:e2e
+```
+
+That script initializes the `examples/test-repo` submodule, force-pulls it to the
+tip of its branch, builds `target/debug/skillkeeper`, and then runs the specs.
+Set `SKILLKEEPER_E2E_PIN_FIXTURE=1` to run against the fixture commit this
+repository pins instead of pulling -- CI does that, so a build fails for reasons
+in the diff rather than because the fixture moved.
+
+Layout:
+
+```
+e2e/
+  package.json       scopes the directory to CommonJS (the repo root is ESM)
+  tsconfig.json      its own TypeScript scope; ts-jest type-checks as it transpiles
+  src/cli.ts         the Sandbox harness: the only way a spec invokes the CLI
+  tests/
+    fixture.spec.ts  the submodule is present and still the shape the suite assumes
+    skills.spec.ts   resolution schemes, executables, guidance, hooks
+    mcp.spec.ts      preset discovery, parameters, ledgers, the Codex skip
+    repair.spec.ts   verify -> repair -> verify, and the bounds on repair
+```
+
+Two things about the design are worth knowing before adding a spec:
+
+- **The runner is Jest, not Vitest.** The two cover different layers and never
+  overlap: Vitest runs pure logic in-process under the coverage gate, Jest drives
+  a subprocess against the filesystem. Jest's config is `jest.config.cjs`, and the
+  suite is deliberately CommonJS so no `--experimental-vm-modules` is needed.
+- **Isolation belongs to the harness.** `Sandbox` (in `e2e/src/cli.ts`) always
+  sets throwaway `HOME` *and* `XDG_CONFIG_HOME`. The first relocates the agents'
+  global roots (a Codex MCP install always writes to `~/.codex/config.toml`, and
+  global-scope skill installs write under `~`); the second relocates `state.json`
+  and `config.yaml`. Forgetting either would edit the real machine, so specs never
+  spawn the binary themselves -- always go through `Sandbox`.
+
+The `check-fixture-repo` local skill wraps this suite and explains how to read a
+failure: whether the fixture drifted, the product changed, or the harness leaked.
+It is part of `pre-release-check`.
 
 ## TypeScript
 

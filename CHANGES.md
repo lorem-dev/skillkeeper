@@ -16,6 +16,10 @@
   `--langs=ru,de`) instead of always regenerating all 18 catalogs.
 - `examples/test-repo`: a submodule tracking the fixture repository that covers
   every skill/group/hook/MCP-preset resolution path.
+- `pnpm test:e2e`: an end-to-end suite (Jest, in `e2e/`) that drives the built CLI
+  against that fixture and asserts on the files it writes -- the layer the
+  in-memory unit tests cannot reach. It runs in CI and via the new
+  `check-fixture-repo` skill, which `pre-release-check` now includes.
 
 ### Fixed
 

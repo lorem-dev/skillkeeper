@@ -274,6 +274,12 @@ skillkeeper mcp install <name> [--agent <agent>]... [--param <name=value>]... [-
 
 Install an MCP preset for one or more agents.
 
+An agent whose native config cannot express the preset's transport is skipped
+with a notice rather than attempted -- Codex, for example, supports `stdio` only.
+The command exits non-zero when it installed nothing at all, so a single-agent
+install that was skipped reports failure, while a multi-agent install that
+succeeded for at least one agent reports success.
+
 - `--agent <agent>` - the agent(s) to install for; repeatable or
   comma-separated.
 - `--param <name=value>` - repeatable; supplies values for the preset's
