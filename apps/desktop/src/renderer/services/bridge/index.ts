@@ -23,6 +23,8 @@ export type {
   RemoveResult,
   RepoInfo,
   AvailableSkill,
+  AvailableSkillsResult,
+  SkillResolveWarning,
   ProjectResult,
   ProjectInfo,
   SkillRef,

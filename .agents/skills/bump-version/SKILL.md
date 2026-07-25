@@ -47,5 +47,22 @@ git add -A
 git commit -m "release: <version>"
 ```
 
-Do NOT create a tag or push. Cutting the tag (`v<version>`) is a separate,
-explicit step performed only after the release gate passes.
+Do NOT create a tag or push. Cutting the tag is a separate, explicit step
+performed only after the release gate passes.
+
+Which branch the eventual tag belongs on depends on the version you just set:
+
+- A **release candidate** (`<version>-rc.<n>`) is tagged on **`develop`**. It
+  exists to exercise the release pipeline before the work reaches the release
+  branch, and it publishes as a GitHub pre-release, which the one-line installers
+  ignore.
+- A **final release** (no pre-release suffix) is tagged on **`main`**, after
+  `develop` merges there.
+
+`scripts/check-tag-branch.mjs` enforces this in the pipeline's first job, so a
+final tag pushed from `develop` fails before anything is built. Run it locally
+before pushing a tag to find out cheaply:
+
+```bash
+node scripts/check-tag-branch.mjs v<version>
+```

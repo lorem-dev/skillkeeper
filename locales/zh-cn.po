@@ -151,11 +151,17 @@ msgstr "重置筛选条件"
 msgid "notifications.error"
 msgstr "错误"
 
+msgid "notifications.warning"
+msgstr "警告"
+
 msgid "notifications.info"
 msgstr "通知"
 
 msgid "statusbar.notifications"
 msgstr "错误：{count}"
+
+msgid "statusbar.warnings"
+msgstr "警告：{count}"
 
 msgid "statusbar.terminal"
 msgstr "终端"
@@ -186,6 +192,9 @@ msgstr "显示"
 
 msgid "logs.level.error"
 msgstr "错误"
+
+msgid "logs.level.warning"
+msgstr "警告"
 
 msgid "logs.level.info"
 msgstr "消息"

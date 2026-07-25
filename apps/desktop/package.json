@@ -1,13 +1,20 @@
 {
   "name": "@skillkeeper/desktop",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Install and manage skills and hooks for AI coding agents",
   "author": {
     "name": "Lorem Dev",
     "email": "contact@lorem.dev"
   },
-  "homepage": "https://github.com/lorem-dev/skillkeeper",
+  "homepage": "https://lorem-dev.github.io/skillkeeper/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lorem-dev/skillkeeper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lorem-dev/skillkeeper/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "tauri dev",

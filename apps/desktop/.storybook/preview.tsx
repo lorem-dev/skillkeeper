@@ -64,6 +64,12 @@ const preview: Preview = {
       const backdrop = locked ? 'none' : String(context.globals['backdrop'] ?? 'none');
       document.body.style.background = BACKDROPS[backdrop] ?? 'var(--sk-color-bg)';
       document.body.style.color = 'var(--sk-color-label)';
+      // Full-screen chrome (overlays, the status bar) must span the canvas, so
+      // the breathing-room padding is skipped for `layout: 'fullscreen'` stories
+      // -- otherwise it insets them and they read as misaligned.
+      if (context.parameters['layout'] === 'fullscreen') {
+        return <Story />;
+      }
       return (
         <div style={{ padding: '2rem' }}>
           <Story />

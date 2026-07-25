@@ -158,6 +158,12 @@ Reinstall a skill's files (and hooks, only if originally installed and
 re-consented) to restore the state recorded in the manifest. Mutates the
 filesystem; always explicit.
 
+Repair also **deletes** files it finds in the skill's installed directory that
+the manifest does not record -- the ones `verify` reports as `extraneous` --
+because otherwise `verify` would still fail right after a successful repair. Each
+deleted path is printed. Files recorded by another skill installed into the same
+directory are never touched.
+
 - `--agent <agent>` - limit the repair to one agent.
 - `--project <dir>` - project directory for project-scope installs (default: the
   recorded path, or the current directory).
@@ -267,6 +273,12 @@ skillkeeper mcp install <name> [--agent <agent>]... [--param <name=value>]... [-
 ```
 
 Install an MCP preset for one or more agents.
+
+An agent whose native config cannot express the preset's transport is skipped
+with a notice rather than attempted -- Codex, for example, supports `stdio` only.
+The command exits non-zero when it installed nothing at all, so a single-agent
+install that was skipped reports failure, while a multi-agent install that
+succeeded for at least one agent reports success.
 
 - `--agent <agent>` - the agent(s) to install for; repeatable or
   comma-separated.

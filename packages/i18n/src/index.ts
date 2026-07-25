@@ -14,6 +14,8 @@ import { es } from './catalogs/es.js';
 import { pt } from './catalogs/pt.js';
 import { ko } from './catalogs/ko.js';
 import { it } from './catalogs/it.js';
+import { hi } from './catalogs/hi.js';
+import { th } from './catalogs/th.js';
 import type { MessageKey, Catalog } from './catalogs/en.js';
 import { type Lang, SUPPORTED_LANGS } from './langs.js';
 import { type Vars, type Translator, createTranslatorFrom } from './translator.js';
@@ -42,6 +44,8 @@ const catalogs: Record<Lang, Partial<Catalog>> = {
   pt,
   ko,
   it,
+  hi,
+  th,
 };
 
 // Native language names (the picker's primary label; non-ASCII i18n data).

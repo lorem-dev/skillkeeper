@@ -73,6 +73,14 @@ Example with an SSH remote:
 skillkeeper repo add git@github.com:example/my-skills.git
 ```
 
+To try it against a real repository, add the
+[skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo)
+fixture, which contains nine resolvable skills, hooks, and MCP presets:
+
+```
+skillkeeper repo add git@github.com:lorem-dev/skillkeeper-test-repo.git
+```
+
 SkillKeeper clones the repository locally and resolves the skills it contains.
 List the repositories you have added:
 

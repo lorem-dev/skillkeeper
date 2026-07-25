@@ -151,11 +151,17 @@ msgstr "Скінуць фільтры"
 msgid "notifications.error"
 msgstr "Памылка"
 
+msgid "notifications.warning"
+msgstr "Папярэджанне"
+
 msgid "notifications.info"
 msgstr "Апавяшчэнне"
 
 msgid "statusbar.notifications"
 msgstr "Памылкі: {count}"
+
+msgid "statusbar.warnings"
+msgstr "Папярэджанні: {count}"
 
 msgid "statusbar.terminal"
 msgstr "Тэрмінал"
@@ -186,6 +192,9 @@ msgstr "Паказваць"
 
 msgid "logs.level.error"
 msgstr "Памылкі"
+
+msgid "logs.level.warning"
+msgstr "Папярэджанні"
 
 msgid "logs.level.info"
 msgstr "Паведамленні"

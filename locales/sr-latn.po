@@ -151,11 +151,17 @@ msgstr "Resetuj filtere"
 msgid "notifications.error"
 msgstr "Greška"
 
+msgid "notifications.warning"
+msgstr "Upozorenje"
+
 msgid "notifications.info"
 msgstr "Obaveštenje"
 
 msgid "statusbar.notifications"
 msgstr "Greške: {count}"
+
+msgid "statusbar.warnings"
+msgstr "Upozorenja: {count}"
 
 msgid "statusbar.terminal"
 msgstr "Terminal"
@@ -186,6 +192,9 @@ msgstr "Prikaži"
 
 msgid "logs.level.error"
 msgstr "Greške"
+
+msgid "logs.level.warning"
+msgstr "Upozorenja"
 
 msgid "logs.level.info"
 msgstr "Poruke"

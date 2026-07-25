@@ -1,0 +1,1046 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: th\n"
+
+msgid "app.title"
+msgstr "SkillKeeper"
+
+msgid "nav.repositories"
+msgstr "ที่เก็บโค้ด"
+
+msgid "nav.skills"
+msgstr "สกิล"
+
+msgid "nav.projects"
+msgstr "โปรเจกต์"
+
+msgid "nav.mcp"
+msgstr "MCP"
+
+msgid "nav.settings"
+msgstr "การตั้งค่า"
+
+msgid "menu.view"
+msgstr "มุมมอง"
+
+msgid "menu.about"
+msgstr "เกี่ยวกับ SkillKeeper"
+
+msgid "menu.openSettings"
+msgstr "เปิดการตั้งค่า"
+
+msgid "menu.edit"
+msgstr "แก้ไข"
+
+msgid "menu.window"
+msgstr "หน้าต่าง"
+
+msgid "menu.help"
+msgstr "ช่วยเหลือ"
+
+msgid "menu.undo"
+msgstr "เลิกทำ"
+
+msgid "menu.redo"
+msgstr "ทำซ้ำ"
+
+msgid "menu.cut"
+msgstr "ตัด"
+
+msgid "menu.copy"
+msgstr "คัดลอก"
+
+msgid "menu.paste"
+msgstr "วาง"
+
+msgid "menu.pasteAndMatchStyle"
+msgstr "วางและใช้รูปแบบเดียวกัน"
+
+msgid "menu.delete"
+msgstr "ลบ"
+
+msgid "menu.selectAll"
+msgstr "เลือกทั้งหมด"
+
+msgid "menu.minimize"
+msgstr "ย่อ"
+
+msgid "menu.zoom"
+msgstr "ซูม"
+
+msgid "menu.close"
+msgstr "ปิด"
+
+msgid "menu.services"
+msgstr "บริการ"
+
+msgid "menu.hide"
+msgstr "ซ่อน SkillKeeper"
+
+msgid "menu.hideOthers"
+msgstr "ซ่อนอื่น ๆ"
+
+msgid "menu.showAll"
+msgstr "แสดงทั้งหมด"
+
+msgid "menu.quit"
+msgstr "ออกจาก SkillKeeper"
+
+msgid "menu.onboarding.start"
+msgstr "เริ่มบทแนะนำ"
+
+msgid "menu.onboarding.skip"
+msgstr "ข้ามบทแนะนำ"
+
+msgid "about.version"
+msgstr "เวอร์ชัน {version}"
+
+msgid "about.tagline"
+msgstr "ติดตั้งและจัดการสกิลสำหรับเอเจนต์ AI"
+
+msgid "about.copyright"
+msgstr "(c) {years} Lorem Dev"
+
+msgid "about.docs"
+msgstr "เอกสาร"
+
+msgid "about.openDocs"
+msgstr "เปิดเอกสาร"
+
+msgid "about.repo"
+msgstr "ที่เก็บโค้ด"
+
+msgid "about.openRepo"
+msgstr "ไปที่ที่เก็บโค้ด"
+
+msgid "about.license"
+msgstr "สัญญาอนุญาต"
+
+msgid "about.openLicense"
+msgstr "ดูสัญญาอนุญาต"
+
+msgid "common.loading"
+msgstr "กำลังโหลด"
+
+msgid "common.errorPrefix"
+msgstr "ข้อผิดพลาด: {message}"
+
+msgid "common.refresh"
+msgstr "รีเฟรช"
+
+msgid "common.comingSoon"
+msgstr "เร็ว ๆ นี้"
+
+msgid "common.close"
+msgstr "ปิด"
+
+msgid "common.clear"
+msgstr "ล้าง"
+
+msgid "common.goToSkills"
+msgstr "ไปที่สกิล"
+
+msgid "common.goToMcp"
+msgstr "ไปที่ MCP"
+
+msgid "skills.resetFilters"
+msgstr "รีเซ็ตตัวกรอง"
+
+msgid "skills.componentsTitle"
+msgstr "ส่วนประกอบ"
+
+msgid "skills.managementTitle"
+msgstr "การจัดการ"
+
+msgid "common.search"
+msgstr "ค้นหา"
+
+msgid "common.decrease"
+msgstr "ลด"
+
+msgid "common.increase"
+msgstr "เพิ่ม"
+
+msgid "common.filter"
+msgstr "ตัวกรอง"
+
+msgid "common.clearFilters"
+msgstr "รีเซ็ตตัวกรอง"
+
+msgid "notifications.error"
+msgstr "ข้อผิดพลาด"
+
+msgid "notifications.warning"
+msgstr "คำเตือน"
+
+msgid "notifications.info"
+msgstr "การแจ้งเตือน"
+
+msgid "statusbar.notifications"
+msgstr "ข้อผิดพลาด: {count}"
+
+msgid "statusbar.warnings"
+msgstr "คำเตือน: {count}"
+
+msgid "statusbar.terminal"
+msgstr "เทอร์มินัล"
+
+msgid "statusbar.tasks"
+msgstr "งาน"
+
+msgid "titlebar.minimize"
+msgstr "ย่อ"
+
+msgid "titlebar.maximize"
+msgstr "ขยายใหญ่สุด"
+
+msgid "titlebar.restore"
+msgstr "คืนค่า"
+
+msgid "titlebar.close"
+msgstr "ปิด"
+
+msgid "logs.title"
+msgstr "การแจ้งเตือน"
+
+msgid "terminal.title"
+msgstr "เทอร์มินัล"
+
+msgid "logs.empty"
+msgstr "ไม่มีอะไรแสดง"
+
+msgid "logs.copy"
+msgstr "คัดลอก"
+
+msgid "logs.copyAll"
+msgstr "คัดลอกทั้งหมด"
+
+msgid "logs.clear"
+msgstr "ล้าง"
+
+msgid "logs.filter"
+msgstr "แสดง"
+
+msgid "logs.level.error"
+msgstr "ข้อผิดพลาด"
+
+msgid "logs.level.warning"
+msgstr "คำเตือน"
+
+msgid "logs.level.info"
+msgstr "ข้อความ"
+
+msgid "tasks.title"
+msgstr "งาน"
+
+msgid "tasks.empty"
+msgstr "ไม่มีงาน"
+
+msgid "tasks.clear"
+msgstr "ล้างงานที่เสร็จแล้ว"
+
+msgid "tasks.kind.sync"
+msgstr "ซิงค์"
+
+msgid "tasks.kind.check"
+msgstr "ตรวจหาการอัปเดต"
+
+msgid "tasks.kind.update-skill"
+msgstr "อัปเดตสกิล"
+
+msgid "tasks.kind.refresh-projects"
+msgstr "รีเฟรชโปรเจกต์"
+
+msgid "tasks.status.queued"
+msgstr "อยู่ในคิว"
+
+msgid "tasks.status.running"
+msgstr "กำลังทำงาน"
+
+msgid "tasks.status.done"
+msgstr "เสร็จแล้ว"
+
+msgid "tasks.status.error"
+msgstr "ล้มเหลว"
+
+msgid "repositories.empty"
+msgstr "ยังไม่ได้เพิ่มที่เก็บโค้ด"
+
+msgid "repositories.add"
+msgstr "เพิ่มที่เก็บโค้ด"
+
+msgid "repositories.lfs"
+msgstr "LFS"
+
+msgid "repositories.lastFetched"
+msgstr "ดึงล่าสุด: {when}"
+
+msgid "repositories.neverFetched"
+msgstr "ยังไม่เคยดึง"
+
+msgid "repositories.addRemote"
+msgstr "URL ของรีโมต"
+
+msgid "repositories.invalidRemote"
+msgstr "กรอก URL ของรีโมตที่ถูกต้อง (https://... หรือ git@host:path)"
+
+msgid "repositories.addName"
+msgstr "ชื่อ"
+
+msgid "repositories.edit"
+msgstr "แก้ไขที่เก็บโค้ด"
+
+msgid "repositories.save"
+msgstr "บันทึก"
+
+msgid "repositories.sync"
+msgstr "ซิงค์"
+
+msgid "repositories.syncing"
+msgstr "กำลังซิงค์"
+
+msgid "repositories.delete"
+msgstr "ลบ"
+
+msgid "repositories.deleteConfirm"
+msgstr "ยืนยันการลบ"
+
+msgid "repositories.hasUpdate"
+msgstr "มีการอัปเดต"
+
+msgid "repositories.viewError"
+msgstr "คลิกเพื่อดูข้อผิดพลาด"
+
+msgid "repositories.copyBranch"
+msgstr "คัดลอกชื่อบรานช์"
+
+msgid "repositories.branchCopied"
+msgstr "คัดลอกชื่อบรานช์ไปยังคลิปบอร์ดแล้ว"
+
+msgid "repositories.copyRemote"
+msgstr "คัดลอกลิงก์"
+
+msgid "repositories.remoteCopied"
+msgstr "คัดลอก URL ของรีโมตไปยังคลิปบอร์ดแล้ว"
+
+msgid "repositories.branch"
+msgstr "บรานช์"
+
+msgid "repositories.branchSearch"
+msgstr "ค้นหาบรานช์"
+
+msgid "repositories.branchNone"
+msgstr "ไม่พบบรานช์ที่ตรงกัน"
+
+msgid "repositories.skillCount.other"
+msgstr "{count} สกิล"
+
+msgid "repositories.searchFound.other"
+msgstr "พบ {count} ที่เก็บโค้ด"
+
+msgid "repositories.searchTotal.other"
+msgstr "ทั้งหมด {count} ที่เก็บโค้ด"
+
+msgid "repositories.showAll"
+msgstr "แสดงที่เก็บโค้ดทั้งหมด"
+
+msgid "projects.empty"
+msgstr "ยังไม่มีโปรเจกต์ที่ติดตาม"
+
+msgid "projects.add"
+msgstr "เพิ่มโปรเจกต์"
+
+msgid "projects.addedAt"
+msgstr "เพิ่มเมื่อ {when}"
+
+msgid "projects.edit"
+msgstr "แก้ไขโปรเจกต์"
+
+msgid "projects.name"
+msgstr "ชื่อ"
+
+msgid "projects.remove"
+msgstr "ลบโปรเจกต์"
+
+msgid "projects.removeConfirm"
+msgstr "ยืนยันการลบ"
+
+msgid "projects.removeKeepsFolder"
+msgstr "ลบโปรเจกต์ออกจากรายการ โฟลเดอร์ยังอยู่บนดิสก์"
+
+msgid "projects.changeFolder"
+msgstr "เปลี่ยนโฟลเดอร์"
+
+msgid "projects.open"
+msgstr "เปิดโปรเจกต์"
+
+msgid "projects.openInFileManager"
+msgstr "เปิดในตัวจัดการไฟล์"
+
+msgid "projects.openFailed"
+msgstr "ไม่สามารถเปิดโปรเจกต์ได้"
+
+msgid "projects.missing"
+msgstr "โฟลเดอร์ถูกลบหรือย้ายไปแล้ว"
+
+msgid "projects.copyPath"
+msgstr "คัดลอกพาธเต็ม"
+
+msgid "projects.pathCopied"
+msgstr "คัดลอกพาธไปยังคลิปบอร์ดแล้ว"
+
+msgid "projects.skillCount.other"
+msgstr "{count} สกิล"
+
+msgid "projects.fromRepos"
+msgstr "{count} จากที่เก็บโค้ด"
+
+msgid "projects.agentCount.other"
+msgstr "{count} เอเจนต์"
+
+msgid "projects.fromReposHint.other"
+msgstr "ติดตั้ง {count} สกิลจากที่เก็บโค้ด"
+
+msgid "projects.skillCountHint.other"
+msgstr "มีสกิลทั้งหมด {count} รายการในโปรเจกต์"
+
+msgid "projects.agentsHint.other"
+msgstr "มีการตั้งค่าสำหรับ {count} เอเจนต์"
+
+msgid "projects.mcpCount"
+msgstr "{count} MCP"
+
+msgid "projects.mcpHint.other"
+msgstr "ติดตั้งเซิร์ฟเวอร์ MCP {count} รายการจากที่เก็บโค้ด"
+
+msgid "projects.searchFound.other"
+msgstr "พบ {count} โปรเจกต์"
+
+msgid "projects.searchTotal.other"
+msgstr "ทั้งหมด {count} โปรเจกต์"
+
+msgid "projects.showAll"
+msgstr "แสดงโปรเจกต์ทั้งหมด"
+
+msgid "skills.empty"
+msgstr "ยังไม่ได้ติดตั้งสกิล"
+
+msgid "skills.add"
+msgstr "ติดตั้งสกิล"
+
+msgid "skills.searchPlaceholder"
+msgstr "ค้นหาสกิล"
+
+msgid "skills.filterAgent"
+msgstr "เอเจนต์"
+
+msgid "skills.allAgents"
+msgstr "เอเจนต์ทั้งหมด"
+
+msgid "skills.noVersion"
+msgstr "ไม่มีเวอร์ชัน"
+
+msgid "skills.installedFor"
+msgstr "ติดตั้งสำหรับ"
+
+msgid "skills.scope.project"
+msgstr "โปรเจกต์"
+
+msgid "skills.scope.global"
+msgstr "ทั่วระบบ"
+
+msgid "skills.source.repo"
+msgstr "จากที่เก็บโค้ด"
+
+msgid "skills.source.local"
+msgstr "จากพาธในเครื่อง"
+
+msgid "skills.details.title"
+msgstr "รายละเอียดสกิล"
+
+msgid "skills.details.files"
+msgstr "{n} ไฟล์"
+
+msgid "skills.details.hooks"
+msgstr "{n} ฮุก"
+
+msgid "skills.details.installedAt"
+msgstr "ติดตั้ง: {when}"
+
+msgid "skills.details.destination"
+msgstr "ปลายทาง"
+
+msgid "skills.verify"
+msgstr "ตรวจสอบ"
+
+msgid "skills.update"
+msgstr "อัปเดต"
+
+msgid "skills.source"
+msgstr "โหมดการแสดง"
+
+msgid "skills.source.repositories"
+msgstr "ที่เก็บโค้ด"
+
+msgid "skills.source.projects"
+msgstr "โปรเจกต์"
+
+msgid "skills.filterRepositories"
+msgstr "ที่เก็บโค้ด"
+
+msgid "skills.filterRepositoriesPlaceholder"
+msgstr "ที่เก็บโค้ดทั้งหมด"
+
+msgid "skills.filterRepositoriesEmpty"
+msgstr "ไม่พบที่เก็บโค้ดที่ตรงกัน"
+
+msgid "skills.filterProjects"
+msgstr "โปรเจกต์"
+
+msgid "skills.filterProjectsPlaceholder"
+msgstr "โปรเจกต์ทั้งหมด"
+
+msgid "skills.filterProjectsEmpty"
+msgstr "ไม่พบโปรเจกต์ที่ตรงกัน"
+
+msgid "skills.action.add"
+msgstr "ติดตั้ง"
+
+msgid "skills.action.save"
+msgstr "บันทึก"
+
+msgid "skills.action.reset"
+msgstr "รีเซ็ต"
+
+msgid "skills.showAll"
+msgstr "แสดงสกิลทั้งหมด"
+
+msgid "skills.emptyRepositories"
+msgstr "ไม่พบสกิลในที่เก็บโค้ดของคุณ"
+
+msgid "skills.emptyProjects"
+msgstr "ยังไม่มีโปรเจกต์ที่ติดตาม"
+
+msgid "skills.status.add"
+msgstr "สกิลจะถูกเพิ่ม"
+
+msgid "skills.status.remove"
+msgstr "สกิลจะถูกลบ"
+
+msgid "skills.status.present"
+msgstr "ติดตั้งสกิลนี้แล้ว"
+
+msgid "skills.installPending"
+msgstr "การติดตั้งสกิลจะมาเร็ว ๆ นี้ (เลือกไว้ {count})"
+
+msgid "skills.savePending"
+msgstr "การบันทึกการเปลี่ยนแปลงจะมาเร็ว ๆ นี้ (+{add} / -{remove})"
+
+msgid "skills.install.title"
+msgstr "ติดตั้งสกิล"
+
+msgid "skills.install.chooseProject"
+msgstr "โปรเจกต์"
+
+msgid "skills.install.agents"
+msgstr "เอเจนต์ที่เลือก"
+
+msgid "skills.install.agentsPlaceholder"
+msgstr "เลือกเอเจนต์"
+
+msgid "skills.install.next"
+msgstr "ต่อไป"
+
+msgid "skills.install.back"
+msgstr "ย้อนกลับ"
+
+msgid "skills.install.confirm"
+msgstr "ยืนยันหรือไม่?"
+
+msgid "skills.install.installing"
+msgstr "กำลังใช้การเปลี่ยนแปลง"
+
+msgid "skills.install.summary"
+msgstr "+{add} / -{remove}"
+
+msgid "skills.save.title"
+msgstr "ตรวจดูการเปลี่ยนแปลง"
+
+msgid "skills.save.confirm"
+msgstr "ยืนยันหรือไม่?"
+
+msgid "skills.save.empty"
+msgstr "ไม่มีการเปลี่ยนแปลงที่จะใช้"
+
+msgid "skills.col.project"
+msgstr "โปรเจกต์"
+
+msgid "skills.col.repository"
+msgstr "ที่เก็บโค้ด"
+
+msgid "skills.col.skill"
+msgstr "สกิล"
+
+msgid "skills.col.action"
+msgstr "การดำเนินการ"
+
+msgid "skills.col.agents"
+msgstr "เอเจนต์"
+
+msgid "skills.change.install"
+msgstr "ติดตั้ง"
+
+msgid "skills.change.remove"
+msgstr "ลบ"
+
+msgid "skills.agentsLabel"
+msgstr "เอเจนต์"
+
+msgid "skills.agentsTooltip"
+msgstr "เอเจนต์ที่ใช้"
+
+msgid "skills.agentsChanged"
+msgstr "เอเจนต์เปลี่ยนแปลงแล้ว"
+
+msgid "skills.updateSkill"
+msgstr "อัปเดตสกิล"
+
+msgid "skills.updateRepo"
+msgstr "อัปเดตสกิลในที่เก็บโค้ด"
+
+msgid "skills.updateGroup"
+msgstr "อัปเดตสกิลในกลุ่ม"
+
+msgid "skills.updateBadge"
+msgstr "อัปเดต"
+
+msgid "skills.unlinked"
+msgstr "ไม่ได้เชื่อมโยง"
+
+msgid "skills.addRepo"
+msgstr "เพิ่มที่เก็บโค้ด"
+
+msgid "skills.local"
+msgstr "ในเครื่อง"
+
+msgid "skills.localHint"
+msgstr "สกิลในเครื่องที่เขียนด้วยมือ"
+
+msgid "skills.rulesBadge"
+msgstr "กฎ"
+
+msgid "skills.rulesHint"
+msgstr "สกิลนี้มีกฎ"
+
+msgid "skills.searchFound.other"
+msgstr "พบ {count} สกิล"
+
+msgid "skills.searchTotal.other"
+msgstr "ทั้งหมด {count} สกิล"
+
+msgid "mcp.empty"
+msgstr "ยังไม่มีเซิร์ฟเวอร์ MCP"
+
+msgid "mcp.searchFound.other"
+msgstr "พบเซิร์ฟเวอร์ MCP {count} รายการ"
+
+msgid "mcp.searchTotal.other"
+msgstr "เซิร์ฟเวอร์ MCP ทั้งหมด {count} รายการ"
+
+msgid "mcp.showAll"
+msgstr "แสดงเซิร์ฟเวอร์ MCP ทั้งหมด"
+
+msgid "mcp.add"
+msgstr "เพิ่ม MCP"
+
+msgid "mcp.addTitle"
+msgstr "เพิ่มเซิร์ฟเวอร์ MCP"
+
+msgid "mcp.editTitle"
+msgstr "แก้ไขเซิร์ฟเวอร์ MCP"
+
+msgid "mcp.edit"
+msgstr "แก้ไข"
+
+msgid "mcp.install"
+msgstr "ติดตั้ง"
+
+msgid "mcp.installMcp"
+msgstr "ติดตั้ง MCP"
+
+msgid "mcp.installTitle"
+msgstr "ติดตั้ง {name}"
+
+msgid "mcp.remove"
+msgstr "ลบ"
+
+msgid "mcp.update"
+msgstr "อัปเดต"
+
+msgid "mcp.cancel"
+msgstr "ยกเลิก"
+
+msgid "mcp.save"
+msgstr "บันทึก"
+
+msgid "mcp.copy"
+msgstr "คัดลอก"
+
+msgid "mcp.copiedToClipboard"
+msgstr "คัดลอกไปยังคลิปบอร์ดแล้ว"
+
+msgid "mcp.goToRepository"
+msgstr "ไปที่ที่เก็บโค้ด"
+
+msgid "mcp.rulesBadge"
+msgstr "กฎ"
+
+msgid "mcp.protocol.stdio"
+msgstr "stdio"
+
+msgid "mcp.protocol.http"
+msgstr "http"
+
+msgid "mcp.protocol.sse"
+msgstr "sse"
+
+msgid "mcp.paramsHelp"
+msgstr "รองรับพารามิเตอร์ {name} ใน URL, เฮดเดอร์, คำสั่ง, อาร์กิวเมนต์, env และกฎ"
+
+msgid "mcp.field.name"
+msgstr "ชื่อ"
+
+msgid "mcp.namePlaceholder"
+msgstr "เช่น GitHub MCP"
+
+msgid "mcp.field.type"
+msgstr "ประเภท"
+
+msgid "mcp.field.url"
+msgstr "URL"
+
+msgid "mcp.urlPlaceholder"
+msgstr "https://example.com/{token}"
+
+msgid "mcp.field.headers"
+msgstr "เฮดเดอร์"
+
+msgid "mcp.headerNamePlaceholder"
+msgstr "ชื่อเฮดเดอร์"
+
+msgid "mcp.headerValuePlaceholder"
+msgstr "ค่าเฮดเดอร์"
+
+msgid "mcp.addHeader"
+msgstr "เพิ่มเฮดเดอร์"
+
+msgid "mcp.field.command"
+msgstr "คำสั่ง"
+
+msgid "mcp.commandPlaceholder"
+msgstr "npx some-mcp-server"
+
+msgid "mcp.field.arguments"
+msgstr "อาร์กิวเมนต์"
+
+msgid "mcp.argumentPlaceholder"
+msgstr "อาร์กิวเมนต์"
+
+msgid "mcp.addArgument"
+msgstr "เพิ่มอาร์กิวเมนต์"
+
+msgid "mcp.field.env"
+msgstr "ตัวแปรสภาพแวดล้อม"
+
+msgid "mcp.varNamePlaceholder"
+msgstr "ชื่อตัวแปร"
+
+msgid "mcp.varValuePlaceholder"
+msgstr "ค่าตัวแปร"
+
+msgid "mcp.addVariable"
+msgstr "เพิ่มตัวแปร"
+
+msgid "mcp.field.rules"
+msgstr "กฎ"
+
+msgid "mcp.rulesPlaceholder"
+msgstr "คำแนะนำที่จะแทรกในไฟล์กฎ/คำแนะนำของเอเจนต์เมื่อติดตั้งเซิร์ฟเวอร์นี้"
+
+msgid "mcp.validation.nameRequired"
+msgstr "ต้องระบุชื่อ"
+
+msgid "mcp.validation.selectType"
+msgstr "เลือกประเภททรานสปอร์ต"
+
+msgid "mcp.validation.commandRequired"
+msgstr "เซิร์ฟเวอร์ stdio ต้องระบุคำสั่ง"
+
+msgid "mcp.validation.urlRequired"
+msgstr "เซิร์ฟเวอร์ http/sse ต้องระบุ URL"
+
+msgid "mcp.validation.invalidParam"
+msgstr "พารามิเตอร์ไม่ถูกต้อง ({reason}) ที่ตำแหน่ง {index}"
+
+msgid "mcp.field.project"
+msgstr "โปรเจกต์"
+
+msgid "mcp.chooseProject"
+msgstr "เลือกโปรเจกต์"
+
+msgid "mcp.filterProjectsEmpty"
+msgstr "ไม่พบโปรเจกต์ที่ตรงกัน"
+
+msgid "mcp.field.agents"
+msgstr "เอเจนต์"
+
+msgid "mcp.field.parameters"
+msgstr "พารามิเตอร์"
+
+msgid "mcp.codexGlobalNote"
+msgstr "Codex ติดตั้งแบบทั่วระบบ (ไม่จำกัดเฉพาะโปรเจกต์นี้)"
+
+msgid "mcp.transportUnsupported"
+msgstr "{agent} ไม่สามารถแสดงทรานสปอร์ต {transport} ในคอนฟิกดั้งเดิมได้"
+
+msgid "mcp.skippedAgents"
+msgstr "ข้ามเอเจนต์ {count} ตัว: ไม่รองรับทรานสปอร์ตของพรีเซ็ตนี้"
+
+msgid "mcp.needsParamsNotice"
+msgstr "การติดตั้ง MCP เหล่านี้ต้องมีพารามิเตอร์ก่อนจึงจะเพิ่มได้:"
+
+msgid "mcp.delete"
+msgstr "ลบ"
+
+msgid "mcp.deleteConfirmTitle"
+msgstr "ลบ {name} หรือไม่?"
+
+msgid "mcp.deleteConfirmBody"
+msgstr "การกระทำนี้ไม่สามารถย้อนกลับได้"
+
+msgid "mcp.detailsTitle"
+msgstr "รายละเอียดเซิร์ฟเวอร์ MCP"
+
+msgid "mcp.view.label"
+msgstr "แสดงเป็น"
+
+msgid "mcp.view.tiles"
+msgstr "ไทล์"
+
+msgid "mcp.view.tree"
+msgstr "แบบต้นไม้"
+
+msgid "mcp.componentsTitle"
+msgstr "ส่วนประกอบ"
+
+msgid "mcp.managementTitle"
+msgstr "การจัดการ"
+
+msgid "settings.comingSoon"
+msgstr "หน้าการตั้งค่าจะมาเร็ว ๆ นี้"
+
+msgid "settings.section.general"
+msgstr "ทั่วไป"
+
+msgid "settings.section.updates"
+msgstr "การอัปเดต"
+
+msgid "settings.section.agents"
+msgstr "เอเจนต์"
+
+msgid "settings.section.executables"
+msgstr "ไฟล์ปฏิบัติการ"
+
+msgid "settings.section.security"
+msgstr "ความปลอดภัย"
+
+msgid "settings.section.notifications"
+msgstr "การแจ้งเตือน"
+
+msgid "settings.valid"
+msgstr "ถูกต้อง"
+
+msgid "settings.invalid"
+msgstr "ไม่ถูกต้อง"
+
+msgid "settings.openConfig"
+msgstr "เปิดไฟล์คอนฟิก"
+
+msgid "settings.openConfigInEditor"
+msgstr "เปิดไฟล์คอนฟิกในโปรแกรมแก้ไข"
+
+msgid "settings.editor.defaultApp"
+msgstr "เปิดในแอปเริ่มต้น"
+
+msgid "settings.openConfigFailed"
+msgstr "ไม่สามารถเปิดไฟล์คอนฟิกได้"
+
+msgid "settings.theme"
+msgstr "ธีม"
+
+msgid "settings.animations"
+msgstr "แอนิเมชัน"
+
+msgid "settings.animationsHint"
+msgstr "ความเร็วแอนิเมชันเข้าและออกทั่วทั้ง UI"
+
+msgid "settings.animations.fast"
+msgstr "เร็ว"
+
+msgid "settings.animations.normal"
+msgstr "ปกติ"
+
+msgid "settings.animations.off"
+msgstr "ปิด"
+
+msgid "settings.theme.system"
+msgstr "ตามระบบ"
+
+msgid "settings.theme.light"
+msgstr "สว่าง"
+
+msgid "settings.theme.dark"
+msgstr "มืด"
+
+msgid "settings.language"
+msgstr "ภาษา"
+
+msgid "settings.languageEmpty"
+msgstr "ไม่พบภาษาที่ตรงกัน"
+
+msgid "settings.section.repositories"
+msgstr "ที่เก็บโค้ด"
+
+msgid "settings.section.projects"
+msgstr "โปรเจกต์"
+
+msgid "settings.git"
+msgstr "Git"
+
+msgid "settings.gitDescription"
+msgstr "พาธไปยังไฟล์ปฏิบัติการ git"
+
+msgid "settings.updates.mode"
+msgstr "การตรวจหาการอัปเดต"
+
+msgid "settings.updates.mode.manual"
+msgstr "ด้วยตนเอง"
+
+msgid "settings.updates.mode.onStartup"
+msgstr "เมื่อเริ่มโปรแกรม"
+
+msgid "settings.updates.mode.scheduled"
+msgstr "ตามกำหนดเวลา"
+
+msgid "settings.updates.interval"
+msgstr "ช่วงเวลาการอัปเดต"
+
+msgid "settings.projects.checkInterval"
+msgstr "ช่วงเวลาตรวจโฟลเดอร์"
+
+msgid "settings.interval.minutesUnit"
+msgstr "นาที"
+
+msgid "settings.interval.hoursUnit"
+msgstr "ชม."
+
+msgid "settings.agents.enabled"
+msgstr "เอเจนต์ที่เปิดใช้"
+
+msgid "settings.agents.placeholder"
+msgstr "เลือกเอเจนต์"
+
+msgid "settings.agents.selected"
+msgstr "เลือกแล้ว {count}"
+
+msgid "settings.notifications.enabled"
+msgstr "การแจ้งเตือนของระบบ"
+
+msgid "settings.section.onboarding"
+msgstr "บทแนะนำ"
+
+msgid "settings.onboarding.restartHint"
+msgstr "เล่นบทแนะนำตั้งแต่ต้นอีกครั้ง"
+
+msgid "settings.onboarding.restart.button"
+msgstr "เริ่มบทแนะนำอีกครั้ง"
+
+msgid "config.invalidBanner"
+msgstr "การตั้งค่ามีส่วนที่ไม่ถูกต้อง กำลังใช้ค่าเริ่มต้น เรียกใช้ \"skillkeeper config validate\" เพื่อดูรายละเอียด"
+
+msgid "hooks.requireConsent"
+msgstr "การติดตั้งฮุกต้องได้รับความยินยอมอย่างชัดเจน (--allow-hooks) ติดตั้งเนื้อหาสกิลแล้ว ข้ามฮุก"
+
+msgid "skills.count"
+msgstr "ติดตั้งสกิลแล้ว {n} รายการ"
+
+msgid "onboarding.next"
+msgstr "ต่อไป"
+
+msgid "onboarding.back"
+msgstr "ย้อนกลับ"
+
+msgid "onboarding.finish"
+msgstr "เสร็จสิ้น"
+
+msgid "onboarding.skip"
+msgstr "ข้ามบทแนะนำ"
+
+msgid "onboarding.projects-tab.body"
+msgstr "หน้าโปรเจกต์แสดงรายการโปรเจกต์ของคุณ คุณสามารถเพิ่มโฟลเดอร์ในเครื่องหรือลบออกจากรายการได้"
+
+msgid "onboarding.projects.body"
+msgstr "เพิ่มโปรเจกต์โดยคลิกปุ่มนี้"
+
+msgid "onboarding.projects.docs"
+msgstr "เอกสารเรื่องโปรเจกต์"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "หน้าที่เก็บโค้ดแสดงรายการที่เก็บโค้ดของคุณ คุณสามารถเพิ่มที่เก็บโค้ด git รีเฟรช และลบออกจากรายการได้"
+
+msgid "onboarding.repositories.body"
+msgstr "เพิ่มที่เก็บโค้ดโดยคลิกปุ่มนี้"
+
+msgid "onboarding.repositories.docs"
+msgstr "เอกสารเรื่องที่เก็บโค้ด"
+
+msgid "onboarding.skills-tab.body"
+msgstr "หน้าจัดการสกิลใช้ติดตั้งสกิลจากที่เก็บโค้ดไปยังโปรเจกต์ รวมถึงลบหรืออัปเดตสกิล"
+
+msgid "onboarding.skills-intro.body"
+msgstr "สกิลที่ทำเครื่องหมาย {installed} ถูกติดตั้งบนโปรเจกต์แล้ว"
+
+msgid "onboarding.skills-actions.body"
+msgstr "สลับสกิลด้วยช่องทำเครื่องหมาย การยกเลิกเลือกสกิลที่ติดตั้งไว้จะทำเครื่องหมายให้ลบ ({remove}) สกิลที่เลือกใหม่จะถูกทำเครื่องหมายให้ติดตั้ง ({install}) แล้วคลิกบันทึก"
+
+msgid "onboarding.agents.body"
+msgstr "ปุ่มนี้เลือกว่าโปรเจกต์กำหนดเป้าหมายเป็นเอเจนต์ใด"
+
+msgid "onboarding.done.title"
+msgstr "พร้อมใช้งานแล้ว"
+
+msgid "onboarding.done.body"
+msgstr "ขอบคุณที่เลือก SkillKeeper ขอให้ทำงานได้ราบรื่น!"
+
+msgid "onboarding.done.hint"
+msgstr "คุณสามารถเล่นบทแนะนำซ้ำได้ทุกเมื่อจากการตั้งค่า"
+
+msgid "onboarding.tree.project"
+msgstr "โปรเจกต์ทดสอบ"
+
+msgid "onboarding.tree.repository"
+msgstr "ที่เก็บโค้ดทดสอบ"
+
+msgid "onboarding.tree.skillset"
+msgstr "ชุดสกิลตัวอย่าง"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"

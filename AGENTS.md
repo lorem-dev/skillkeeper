@@ -31,7 +31,7 @@ skillkeeper/
     skillkeeper-agents/   adapter registry + Claude/Codex/Copilot/Cursor/OpenCode adapters
     skillkeeper-cli/      clap-based CLI (binary name `skillkeeper`)
   packages/
-    i18n/       message catalogs for all supported locales (16 languages),
+    i18n/       message catalogs for all supported locales (18 languages),
                 generated from locales/*.po (en.po canonical) + lookup fn
                 (the only remaining TypeScript package)
   apps/
@@ -39,6 +39,10 @@ skillkeeper/
       src-tauri/    Rust backend (a Cargo workspace member): commands, PTY, state
       src/renderer/ React + Zustand renderer
   docs/         mkdocs site (English-only; docs/ui/ = design-system reference)
+  examples/
+    test-repo/  git SUBMODULE -> github.com/lorem-dev/skillkeeper-test-repo,
+                a fixture repository covering every skill/group/hook/MCP-preset
+                resolution path (see "Git submodules" below)
   .agents/skills/   local development skills (see below)
   .github/workflows/  CI pipelines
   AGENTS.md  CLAUDE.md  CONTRIBUTING.md  README.md  CHANGES.md  LICENSE
@@ -63,6 +67,7 @@ GTK development libraries Tauri builds against (webkit2gtk 4.1, GTK 3, libsoup3
 and related `-dev` packages).
 
 ```bash
+git submodule update --init   # fetch examples/test-repo (see below)
 corepack enable
 pnpm install
 
@@ -80,6 +85,19 @@ pnpm --filter @skillkeeper/desktop frontend:build   # vite build of the renderer
 
 All of these must pass before a pull request is ready.
 
+### End-to-end suite
+
+```bash
+pnpm test:e2e   # Jest, drives the built CLI against examples/test-repo
+```
+
+Separate from the gate above because it needs the fixture submodule and a
+`cargo build`. It covers what the in-memory fakes cannot: the real binary against
+a real working tree. Run it after touching resolution, install, hooks, guidance,
+or MCP. Specs live in `e2e/tests/`, the harness in `e2e/src/cli.ts`; the runner is
+Jest (not Vitest) and the suite is scoped to CommonJS -- see
+[docs/development/development.md](./docs/development/development.md#end-to-end-tests).
+
 ### Verification workflow
 
 Run the full gate (`cargo fmt --check`, `cargo clippy`, `cargo test`,
@@ -89,6 +107,42 @@ write only the minimal tests needed to guarantee the code works, and run just th
 focused test for what you changed (at most a quick `cargo test -p <crate>` or a
 typecheck of the renderer). The comprehensive gate above is the single final
 check before a change is considered done or a pull request opened.
+
+---
+
+## Git Submodules
+
+The repository has one submodule: `examples/test-repo`, tracking
+[skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo) over
+SSH. It is a fixture repository, not a code dependency: nothing compiles, lints,
+or unit-tests against it, so the everyday gate in "Running the Gates" passes with
+it absent.
+
+It is required for one thing: the `check-fixture-repo` skill, which drives the
+built CLI against it end to end and is part of `pre-release-check`. A release
+must not skip that check, so initialize the submodule rather than working around
+it. Note the SSH remote needs a GitHub key with access.
+
+A fresh clone leaves it empty. Populate it with:
+
+```bash
+git submodule update --init          # after an existing clone
+git clone --recurse-submodules <url> # or clone with it in one step
+```
+
+What to know when working with it:
+
+- **A submodule is pinned to a commit, not a branch.** `git status` in the
+  superproject shows `modified: examples/test-repo (new commits)` once the
+  submodule's checkout moves. That is a real, intentional change to record - the
+  superproject commit stores which fixture commit it points at.
+- **Do not commit an accidental pointer bump.** If you did not mean to update the
+  fixture, restore the recorded commit with
+  `git submodule update -- examples/test-repo`.
+- **Edit the fixture in its own repository**, not through this checkout, and push
+  it there first. Only then bump the pointer here, in a commit of its own.
+- The project's ASCII-only rule applies inside the fixture too; it carries its
+  own LICENSE.
 
 ---
 
@@ -192,6 +246,18 @@ Follow CONTRIBUTING.md exactly:
 
 `feature/*` -> `develop` -> `main` via Merge Request. Direct commits to `main`
 are allowed only until the first release.
+
+Tagging follows the same split:
+
+- **Release-candidate tags** (`v<version>-rc.<n>`) are cut from **`develop`**. An
+  RC exists to exercise the release pipeline and the installers before the work
+  reaches the release branch, so requiring a merge to `main` first would defeat
+  its purpose and fill `main` with candidates.
+- **Final release tags** (`v<version>`, no pre-release suffix) are cut from
+  **`main`**, after `develop` has merged there.
+
+Only RC tags may come from `develop`. The release workflow enforces this, so a
+final tag pushed from `develop` fails before anything is built or published.
 
 ---
 
@@ -298,7 +364,7 @@ backend events via `listen`. It imports the ts-rs-generated types under
 
 ## Local Development Skills
 
-Five skills live under `.agents/skills/`. Invoke them when the situation calls
+Six skills live under `.agents/skills/`. Invoke them when the situation calls
 for it:
 
 | Skill | When to use |
@@ -306,8 +372,9 @@ for it:
 | `check-changes` | After a batch of commits -- verify CHANGES.md (Development section) reflects every change. |
 | `check-docs` | Before a release or after updating commands/options -- verify docs/ and README.md are current. |
 | `run-tests-and-linters` | Before marking any task done -- run the full gate (lint, typecheck, test:cov at 90%). |
+| `check-fixture-repo` | After touching resolution, install, hooks, guidance, or MCP -- drive the built CLI against the `examples/test-repo` fixture end to end, in a throwaway state dir. The only check that exercises the real binary against a real working tree. |
 | `check-licenses` | After editing any `package.json` or `Cargo.toml` -- verify all npm and cargo dependencies are license-compliant and update LICENSE. |
-| `pre-release-check` | Before cutting a release -- runs all four skills above plus version-bump and commit-format checks. |
+| `pre-release-check` | Before cutting a release -- runs all five skills above plus version-bump and commit-format checks. |
 
 ---
 

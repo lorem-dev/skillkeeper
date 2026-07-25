@@ -11,7 +11,7 @@ import type {
   RepoResult,
   RemoveResult,
   RepoInfo,
-  AvailableSkill,
+  AvailableSkillsResult,
   ProjectResult,
   ProjectInfo,
   ApplyArgs,
@@ -42,7 +42,7 @@ export interface BridgeClient {
   setOnboarding(state: OnboardingState): Promise<void>;
   listRepositories(): Promise<Repository[]>;
   listSkills(): Promise<InstallManifest[]>;
-  listAvailableSkills(): Promise<AvailableSkill[]>;
+  listAvailableSkills(): Promise<AvailableSkillsResult>;
   reconcileSkills(): Promise<InstallManifest[]>;
   listAvailableMcp(): Promise<AvailableMcp[]>;
   applyMcp(args: ApplyMcpArgs): Promise<ApplyMcpResult>;
@@ -137,7 +137,7 @@ export const bridgeClient: BridgeClient = {
   setOnboarding: (state) => invoke<void>('onboarding_set', { state }),
   listRepositories: () => invoke<Repository[]>('repositories_list'),
   listSkills: () => invoke<InstallManifest[]>('skills_list'),
-  listAvailableSkills: () => invoke<AvailableSkill[]>('skills_available'),
+  listAvailableSkills: () => invoke<AvailableSkillsResult>('skills_available'),
   reconcileSkills: () => invoke<InstallManifest[]>('skills_reconcile'),
   listAvailableMcp: () => invoke<AvailableMcp[]>('mcp_list_available'),
   applyMcp: (args) => invoke<ApplyMcpResult>('mcp_apply', { args }),

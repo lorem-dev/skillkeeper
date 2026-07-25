@@ -151,11 +151,17 @@ msgstr "Zresetuj filtry"
 msgid "notifications.error"
 msgstr "Blad"
 
+msgid "notifications.warning"
+msgstr "Ostrzezenie"
+
 msgid "notifications.info"
 msgstr "Powiadomienie"
 
 msgid "statusbar.notifications"
 msgstr "Bledy: {count}"
+
+msgid "statusbar.warnings"
+msgstr "Ostrzezenia: {count}"
 
 msgid "statusbar.terminal"
 msgstr "Terminal"
@@ -186,6 +192,9 @@ msgstr "Pokaz"
 
 msgid "logs.level.error"
 msgstr "Bledy"
+
+msgid "logs.level.warning"
+msgstr "Ostrzezenia"
 
 msgid "logs.level.info"
 msgstr "Wiadomosci"

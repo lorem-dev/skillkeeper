@@ -16,7 +16,9 @@ export type Lang =
   | 'es'
   | 'pt'
   | 'ko'
-  | 'it';
+  | 'it'
+  | 'hi'
+  | 'th';
 
 /** All selectable locale codes, in the catalog-map order. Kept as a literal
  *  (not `Object.keys(catalogs)`) so importing it does not pull every catalog. */
@@ -37,4 +39,6 @@ export const SUPPORTED_LANGS: Lang[] = [
   'pt',
   'ko',
   'it',
+  'hi',
+  'th',
 ];

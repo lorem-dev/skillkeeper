@@ -321,7 +321,7 @@ fn dir_of(rel: &str) -> &str {
 }
 
 /// Remove a file, then prune now-empty ancestor directories up to `dest_root`.
-fn remove_and_prune(fs: &dyn FsPort, dest_root: &str, rel_path: &str) -> PortResult<()> {
+pub(crate) fn remove_and_prune(fs: &dyn FsPort, dest_root: &str, rel_path: &str) -> PortResult<()> {
     fs.remove(&format!("{dest_root}/{rel_path}"))?;
     let mut dir = dir_of(rel_path).to_string();
     while !dir.is_empty() {

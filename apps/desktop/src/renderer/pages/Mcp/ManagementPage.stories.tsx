@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useSkillkeeperStore } from '@/app/store';
+import { seedStore } from '@/app/store/storyState';
 import type { SkillKeeperConfig } from '@/app/store';
 import type { AvailableMcp, McpInstall, Project, Repository } from '@/services/bridge';
 import { ManagementPage } from './ManagementPage';
@@ -132,7 +133,9 @@ function seedMcp(
     listMcpInstalls: async () => installs,
     describeProject: async () => ({ skillCount: 0, fromReposCount: 0, agentCount: 0 }),
   };
-  useSkillkeeperStore.setState({ repositories: REPOSITORIES, projects: [...projects], config });
+  seedStore(() => {
+    useSkillkeeperStore.setState({ repositories: REPOSITORIES, projects: [...projects], config });
+  });
 }
 
 // Two projects: one with an installed instance (Update badge), a matched

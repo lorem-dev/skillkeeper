@@ -109,6 +109,16 @@ git rebase "$LAST_SIGNED" --exec "git commit --amend --no-edit -S"
 A release commit prepares the version bump, then `develop` merges to `main`
 via Merge Request.
 
+Tags:
+
+- `v<version>-rc.<n>` -- a release candidate, tagged on `develop`. It builds and
+  publishes as a GitHub pre-release, which the one-line installers ignore
+  (`releases/latest` never resolves to a pre-release).
+- `v<version>` -- a final release, tagged on `main` only.
+
+Only release-candidate tags may be cut from `develop`; the release workflow
+rejects a final tag that is not on `main`.
+
 ---
 
 ## Release signing (CI)

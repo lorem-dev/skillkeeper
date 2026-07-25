@@ -1,0 +1,6 @@
+{
+  "//": "Scopes e2e/ to CommonJS. The repository root is \"type\": \"module\", but this suite runs under Jest, whose module registry is CJS by default. Declaring the type here lets the tsconfig use a current moduleResolution (node16) that emits require() rather than the deprecated node10. Not a workspace package: pnpm-workspace.yaml globs only packages/* and apps/*.",
+  "name": "@skillkeeper/e2e",
+  "private": true,
+  "type": "commonjs"
+}

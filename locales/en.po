@@ -172,11 +172,17 @@ msgstr "Reset filters"
 msgid "notifications.error"
 msgstr "Error"
 
+msgid "notifications.warning"
+msgstr "Warning"
+
 msgid "notifications.info"
 msgstr "Notification"
 
 msgid "statusbar.notifications"
 msgstr "Errors: {count}"
+
+msgid "statusbar.warnings"
+msgstr "Warnings: {count}"
 
 msgid "statusbar.terminal"
 msgstr "Terminal"
@@ -219,6 +225,9 @@ msgstr "Show"
 
 msgid "logs.level.error"
 msgstr "Errors"
+
+msgid "logs.level.warning"
+msgstr "Warnings"
 
 msgid "logs.level.info"
 msgstr "Messages"

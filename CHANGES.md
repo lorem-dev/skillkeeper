@@ -2,6 +2,58 @@
 
 ## Development
 
+## Version 0.2.1
+
+### Added
+
+- Skill-resolution warnings are surfaced instead of discarded, so a `SKILL.md`
+  that cannot be installed no longer goes missing without explanation. The CLI
+  prints them to stderr per repository; the desktop app logs them under a new
+  `warning` level, shown by default alongside errors and deliberately without a
+  toast. The bell badge counts warnings in orange, or errors in red -- errors
+  only, whenever there are any -- and clamps to `9+`.
+- Hindi (`hi`) and Thai (`th`), bringing the total to 18 languages. Hindi carries
+  the `one`/`other` plural categories, Thai only `other`, per CLDR.
+- `pnpm run i18n` takes an optional language list (`-- ru de`, or
+  `--langs=ru,de`) instead of always regenerating all 18 catalogs.
+- `examples/test-repo`: a submodule tracking the fixture repository that covers
+  every skill/group/hook/MCP-preset resolution path.
+- `pnpm test:e2e`: an end-to-end suite (Jest, in `e2e/`) that drives the built CLI
+  against that fixture and asserts on the files it writes -- the layer the
+  in-memory unit tests cannot reach. It runs in CI and via the new
+  `check-fixture-repo` skill, which `pre-release-check` now includes.
+- Release pages now group their assets: a Downloads section lists the Desktop App
+  first, then the CLI App, each entry labelled by platform and format ("Desktop
+  Windows x64 (msi)") instead of showing only bundler-generated file names. The
+  section is generated from the assets actually staged, and nothing is renamed, so
+  the one-line installers are unaffected.
+- Release-candidate tags are cut from `develop` and final tags from `main`;
+  `scripts/check-tag-branch.mjs` enforces that in the release pipeline's first
+  job, before anything is built or published.
+
+### Fixed
+
+- `skill repair` removes the `extraneous` files it used to leave behind, so a
+  repaired install finally verifies clean, and reports each deleted path. The
+  deletion is bounded: files recorded by another install sharing the destination
+  directory are protected, and a recorded path that could resolve outside that
+  directory disables pruning rather than being followed.
+- Skill resolution skips hidden directories and dependency or build trees
+  (`node_modules`, `vendor`, `target`, `dist`) entirely. Every agent keeps its
+  *installed* skills under a hidden directory, so a repository that itself uses
+  SkillKeeper warned about skills it consumes rather than publishes. An explicit
+  `path` in `skillkeeper.repo.yaml` still reaches them.
+- A pre-release tag no longer publishes documentation at all. The bare docs URL
+  redirects to the `latest` alias, so tagging a release candidate used to make it
+  the documentation every visitor landed on; and a candidate's docs are
+  in-progress docs, already served under `dev`. Publishing them only added
+  throwaway entries to the version switcher that had to be deleted by hand.
+
+### Changed
+
+- `homepage` in all three workspace manifests points at the documentation site,
+  alongside new `repository` and `bugs` entries.
+
 ## Version 0.2.0
 
 ### Added

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useSkillkeeperStore } from '@/app/store';
+import { seedStore } from '@/app/store/storyState';
 import type { McpPreset } from '@/app/store';
 import { McpInstallModal } from './McpInstallModal';
 
@@ -22,7 +23,9 @@ const PROJECTS = [
 /** Seeds the store's `projects` list so the Select has real options. */
 function useSeedProjects(): void {
   useEffect(() => {
-    useSkillkeeperStore.setState({ projects: PROJECTS });
+    seedStore(() => {
+      useSkillkeeperStore.setState({ projects: PROJECTS });
+    });
   }, []);
 }
 

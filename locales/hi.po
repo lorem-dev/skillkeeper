@@ -1,0 +1,1091 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: hi\n"
+
+msgid "app.title"
+msgstr "SkillKeeper"
+
+msgid "nav.repositories"
+msgstr "रिपॉज़िटरी"
+
+msgid "nav.skills"
+msgstr "स्किल"
+
+msgid "nav.projects"
+msgstr "प्रोजेक्ट"
+
+msgid "nav.mcp"
+msgstr "MCP"
+
+msgid "nav.settings"
+msgstr "सेटिंग्स"
+
+msgid "menu.view"
+msgstr "देखें"
+
+msgid "menu.about"
+msgstr "SkillKeeper के बारे में"
+
+msgid "menu.openSettings"
+msgstr "सेटिंग्स खोलें"
+
+msgid "menu.edit"
+msgstr "संपादन"
+
+msgid "menu.window"
+msgstr "विंडो"
+
+msgid "menu.help"
+msgstr "सहायता"
+
+msgid "menu.undo"
+msgstr "पूर्ववत करें"
+
+msgid "menu.redo"
+msgstr "दोबारा करें"
+
+msgid "menu.cut"
+msgstr "काटें"
+
+msgid "menu.copy"
+msgstr "कॉपी करें"
+
+msgid "menu.paste"
+msgstr "पेस्ट करें"
+
+msgid "menu.pasteAndMatchStyle"
+msgstr "पेस्ट करें और शैली मिलाएँ"
+
+msgid "menu.delete"
+msgstr "हटाएँ"
+
+msgid "menu.selectAll"
+msgstr "सभी चुनें"
+
+msgid "menu.minimize"
+msgstr "छोटा करें"
+
+msgid "menu.zoom"
+msgstr "ज़ूम"
+
+msgid "menu.close"
+msgstr "बंद करें"
+
+msgid "menu.services"
+msgstr "सेवाएँ"
+
+msgid "menu.hide"
+msgstr "SkillKeeper छिपाएँ"
+
+msgid "menu.hideOthers"
+msgstr "अन्य छिपाएँ"
+
+msgid "menu.showAll"
+msgstr "सभी दिखाएँ"
+
+msgid "menu.quit"
+msgstr "SkillKeeper से बाहर निकलें"
+
+msgid "menu.onboarding.start"
+msgstr "ट्यूटोरियल शुरू करें"
+
+msgid "menu.onboarding.skip"
+msgstr "ट्यूटोरियल छोड़ें"
+
+msgid "about.version"
+msgstr "संस्करण {version}"
+
+msgid "about.tagline"
+msgstr "AI एजेंट के लिए स्किल इंस्टॉल और प्रबंधित करें"
+
+msgid "about.copyright"
+msgstr "(c) {years} Lorem Dev"
+
+msgid "about.docs"
+msgstr "दस्तावेज़ीकरण"
+
+msgid "about.openDocs"
+msgstr "दस्तावेज़ीकरण खोलें"
+
+msgid "about.repo"
+msgstr "रिपॉज़िटरी"
+
+msgid "about.openRepo"
+msgstr "रिपॉज़िटरी पर जाएँ"
+
+msgid "about.license"
+msgstr "लाइसेंस"
+
+msgid "about.openLicense"
+msgstr "लाइसेंस देखें"
+
+msgid "common.loading"
+msgstr "लोड हो रहा है"
+
+msgid "common.errorPrefix"
+msgstr "त्रुटि: {message}"
+
+msgid "common.refresh"
+msgstr "रिफ़्रेश करें"
+
+msgid "common.comingSoon"
+msgstr "जल्द आ रहा है"
+
+msgid "common.close"
+msgstr "बंद करें"
+
+msgid "common.clear"
+msgstr "साफ़ करें"
+
+msgid "common.goToSkills"
+msgstr "स्किल पर जाएँ"
+
+msgid "common.goToMcp"
+msgstr "MCP पर जाएँ"
+
+msgid "skills.resetFilters"
+msgstr "फ़िल्टर रीसेट करें"
+
+msgid "skills.componentsTitle"
+msgstr "घटक"
+
+msgid "skills.managementTitle"
+msgstr "प्रबंधन"
+
+msgid "common.search"
+msgstr "खोजें"
+
+msgid "common.decrease"
+msgstr "घटाएँ"
+
+msgid "common.increase"
+msgstr "बढ़ाएँ"
+
+msgid "common.filter"
+msgstr "फ़िल्टर"
+
+msgid "common.clearFilters"
+msgstr "फ़िल्टर रीसेट करें"
+
+msgid "notifications.error"
+msgstr "त्रुटि"
+
+msgid "notifications.warning"
+msgstr "चेतावनी"
+
+msgid "notifications.info"
+msgstr "सूचना"
+
+msgid "statusbar.notifications"
+msgstr "त्रुटियाँ: {count}"
+
+msgid "statusbar.warnings"
+msgstr "चेतावनियाँ: {count}"
+
+msgid "statusbar.terminal"
+msgstr "टर्मिनल"
+
+msgid "statusbar.tasks"
+msgstr "कार्य"
+
+msgid "titlebar.minimize"
+msgstr "छोटा करें"
+
+msgid "titlebar.maximize"
+msgstr "बड़ा करें"
+
+msgid "titlebar.restore"
+msgstr "पुनर्स्थापित करें"
+
+msgid "titlebar.close"
+msgstr "बंद करें"
+
+msgid "logs.title"
+msgstr "सूचनाएँ"
+
+msgid "terminal.title"
+msgstr "टर्मिनल"
+
+msgid "logs.empty"
+msgstr "दिखाने के लिए कुछ नहीं।"
+
+msgid "logs.copy"
+msgstr "कॉपी करें"
+
+msgid "logs.copyAll"
+msgstr "सभी कॉपी करें"
+
+msgid "logs.clear"
+msgstr "साफ़ करें"
+
+msgid "logs.filter"
+msgstr "दिखाएँ"
+
+msgid "logs.level.error"
+msgstr "त्रुटियाँ"
+
+msgid "logs.level.warning"
+msgstr "चेतावनियाँ"
+
+msgid "logs.level.info"
+msgstr "संदेश"
+
+msgid "tasks.title"
+msgstr "कार्य"
+
+msgid "tasks.empty"
+msgstr "कोई कार्य नहीं।"
+
+msgid "tasks.clear"
+msgstr "पूर्ण हुए साफ़ करें"
+
+msgid "tasks.kind.sync"
+msgstr "सिंक"
+
+msgid "tasks.kind.check"
+msgstr "अपडेट जाँचें"
+
+msgid "tasks.kind.update-skill"
+msgstr "स्किल अपडेट करें"
+
+msgid "tasks.kind.refresh-projects"
+msgstr "प्रोजेक्ट रिफ़्रेश करें"
+
+msgid "tasks.status.queued"
+msgstr "कतार में"
+
+msgid "tasks.status.running"
+msgstr "चल रहा है"
+
+msgid "tasks.status.done"
+msgstr "पूर्ण"
+
+msgid "tasks.status.error"
+msgstr "विफल"
+
+msgid "repositories.empty"
+msgstr "अभी कोई रिपॉज़िटरी नहीं जोड़ी गई।"
+
+msgid "repositories.add"
+msgstr "रिपॉज़िटरी जोड़ें"
+
+msgid "repositories.lfs"
+msgstr "LFS"
+
+msgid "repositories.lastFetched"
+msgstr "अंतिम फ़ेच: {when}"
+
+msgid "repositories.neverFetched"
+msgstr "कभी फ़ेच नहीं किया"
+
+msgid "repositories.addRemote"
+msgstr "रिमोट URL"
+
+msgid "repositories.invalidRemote"
+msgstr "मान्य रिमोट URL दर्ज करें (https://... या git@host:path)।"
+
+msgid "repositories.addName"
+msgstr "नाम"
+
+msgid "repositories.edit"
+msgstr "रिपॉज़िटरी संपादित करें"
+
+msgid "repositories.save"
+msgstr "सहेजें"
+
+msgid "repositories.sync"
+msgstr "सिंक"
+
+msgid "repositories.syncing"
+msgstr "सिंक हो रहा है"
+
+msgid "repositories.delete"
+msgstr "हटाएँ"
+
+msgid "repositories.deleteConfirm"
+msgstr "हटाने की पुष्टि करें"
+
+msgid "repositories.hasUpdate"
+msgstr "अपडेट उपलब्ध"
+
+msgid "repositories.viewError"
+msgstr "त्रुटि देखने के लिए क्लिक करें"
+
+msgid "repositories.copyBranch"
+msgstr "ब्रांच का नाम कॉपी करें"
+
+msgid "repositories.branchCopied"
+msgstr "ब्रांच का नाम क्लिपबोर्ड पर कॉपी हुआ"
+
+msgid "repositories.copyRemote"
+msgstr "लिंक कॉपी करें"
+
+msgid "repositories.remoteCopied"
+msgstr "रिमोट URL क्लिपबोर्ड पर कॉपी हुआ"
+
+msgid "repositories.branch"
+msgstr "ब्रांच"
+
+msgid "repositories.branchSearch"
+msgstr "ब्रांच खोजें"
+
+msgid "repositories.branchNone"
+msgstr "कोई मिलती ब्रांच नहीं"
+
+msgid "repositories.skillCount.one"
+msgstr "{count} स्किल"
+
+msgid "repositories.skillCount.other"
+msgstr "{count} स्किल"
+
+msgid "repositories.searchFound.one"
+msgstr "{count} रिपॉज़िटरी मिली"
+
+msgid "repositories.searchFound.other"
+msgstr "{count} रिपॉज़िटरी मिलीं"
+
+msgid "repositories.searchTotal.one"
+msgstr "कुल {count} रिपॉज़िटरी"
+
+msgid "repositories.searchTotal.other"
+msgstr "कुल {count} रिपॉज़िटरी"
+
+msgid "repositories.showAll"
+msgstr "सभी रिपॉज़िटरी दिखाएँ"
+
+msgid "projects.empty"
+msgstr "अभी कोई प्रोजेक्ट ट्रैक नहीं किया गया।"
+
+msgid "projects.add"
+msgstr "प्रोजेक्ट जोड़ें"
+
+msgid "projects.addedAt"
+msgstr "{when} जोड़ा गया"
+
+msgid "projects.edit"
+msgstr "प्रोजेक्ट संपादित करें"
+
+msgid "projects.name"
+msgstr "नाम"
+
+msgid "projects.remove"
+msgstr "प्रोजेक्ट हटाएँ"
+
+msgid "projects.removeConfirm"
+msgstr "हटाने की पुष्टि करें"
+
+msgid "projects.removeKeepsFolder"
+msgstr "प्रोजेक्ट सूची से हट जाएगा। फ़ोल्डर डिस्क पर रहेगा।"
+
+msgid "projects.changeFolder"
+msgstr "फ़ोल्डर बदलें"
+
+msgid "projects.open"
+msgstr "प्रोजेक्ट खोलें"
+
+msgid "projects.openInFileManager"
+msgstr "फ़ाइल मैनेजर में खोलें"
+
+msgid "projects.openFailed"
+msgstr "प्रोजेक्ट खोला नहीं जा सका"
+
+msgid "projects.missing"
+msgstr "फ़ोल्डर हटा दिया गया या स्थानांतरित कर दिया गया"
+
+msgid "projects.copyPath"
+msgstr "पूरा पथ कॉपी करें"
+
+msgid "projects.pathCopied"
+msgstr "पथ क्लिपबोर्ड पर कॉपी हुआ"
+
+msgid "projects.skillCount.one"
+msgstr "{count} स्किल"
+
+msgid "projects.skillCount.other"
+msgstr "{count} स्किल"
+
+msgid "projects.fromRepos"
+msgstr "रिपो से {count}"
+
+msgid "projects.agentCount.one"
+msgstr "{count} एजेंट"
+
+msgid "projects.agentCount.other"
+msgstr "{count} एजेंट"
+
+msgid "projects.fromReposHint.one"
+msgstr "रिपॉज़िटरी से {count} स्किल इंस्टॉल"
+
+msgid "projects.fromReposHint.other"
+msgstr "रिपॉज़िटरी से {count} स्किल इंस्टॉल"
+
+msgid "projects.skillCountHint.one"
+msgstr "प्रोजेक्ट में कुल {count} स्किल"
+
+msgid "projects.skillCountHint.other"
+msgstr "प्रोजेक्ट में कुल {count} स्किल"
+
+msgid "projects.agentsHint.one"
+msgstr "{count} एजेंट के लिए कॉन्फ़िगरेशन मौजूद"
+
+msgid "projects.agentsHint.other"
+msgstr "{count} एजेंट के लिए कॉन्फ़िगरेशन मौजूद"
+
+msgid "projects.mcpCount"
+msgstr "{count} MCP"
+
+msgid "projects.mcpHint.one"
+msgstr "रिपॉज़िटरी से {count} MCP सर्वर इंस्टॉल"
+
+msgid "projects.mcpHint.other"
+msgstr "रिपॉज़िटरी से {count} MCP सर्वर इंस्टॉल"
+
+msgid "projects.searchFound.one"
+msgstr "{count} प्रोजेक्ट मिला"
+
+msgid "projects.searchFound.other"
+msgstr "{count} प्रोजेक्ट मिले"
+
+msgid "projects.searchTotal.one"
+msgstr "कुल {count} प्रोजेक्ट"
+
+msgid "projects.searchTotal.other"
+msgstr "कुल {count} प्रोजेक्ट"
+
+msgid "projects.showAll"
+msgstr "सभी प्रोजेक्ट दिखाएँ"
+
+msgid "skills.empty"
+msgstr "अभी कोई स्किल इंस्टॉल नहीं है।"
+
+msgid "skills.add"
+msgstr "स्किल इंस्टॉल करें"
+
+msgid "skills.searchPlaceholder"
+msgstr "स्किल खोजें"
+
+msgid "skills.filterAgent"
+msgstr "एजेंट"
+
+msgid "skills.allAgents"
+msgstr "सभी एजेंट"
+
+msgid "skills.noVersion"
+msgstr "कोई संस्करण नहीं"
+
+msgid "skills.installedFor"
+msgstr "इनके लिए इंस्टॉल"
+
+msgid "skills.scope.project"
+msgstr "प्रोजेक्ट"
+
+msgid "skills.scope.global"
+msgstr "वैश्विक"
+
+msgid "skills.source.repo"
+msgstr "रिपॉज़िटरी से"
+
+msgid "skills.source.local"
+msgstr "स्थानीय पथ से"
+
+msgid "skills.details.title"
+msgstr "स्किल विवरण"
+
+msgid "skills.details.files"
+msgstr "{n} फ़ाइलें"
+
+msgid "skills.details.hooks"
+msgstr "{n} हुक"
+
+msgid "skills.details.installedAt"
+msgstr "इंस्टॉल: {when}"
+
+msgid "skills.details.destination"
+msgstr "गंतव्य"
+
+msgid "skills.verify"
+msgstr "सत्यापित करें"
+
+msgid "skills.update"
+msgstr "अपडेट करें"
+
+msgid "skills.source"
+msgstr "प्रदर्शन मोड"
+
+msgid "skills.source.repositories"
+msgstr "रिपॉज़िटरी"
+
+msgid "skills.source.projects"
+msgstr "प्रोजेक्ट"
+
+msgid "skills.filterRepositories"
+msgstr "रिपॉज़िटरी"
+
+msgid "skills.filterRepositoriesPlaceholder"
+msgstr "सभी रिपॉज़िटरी"
+
+msgid "skills.filterRepositoriesEmpty"
+msgstr "कोई मिलती रिपॉज़िटरी नहीं"
+
+msgid "skills.filterProjects"
+msgstr "प्रोजेक्ट"
+
+msgid "skills.filterProjectsPlaceholder"
+msgstr "सभी प्रोजेक्ट"
+
+msgid "skills.filterProjectsEmpty"
+msgstr "कोई मिलता प्रोजेक्ट नहीं"
+
+msgid "skills.action.add"
+msgstr "इंस्टॉल करें"
+
+msgid "skills.action.save"
+msgstr "सहेजें"
+
+msgid "skills.action.reset"
+msgstr "रीसेट करें"
+
+msgid "skills.showAll"
+msgstr "सभी स्किल दिखाएँ"
+
+msgid "skills.emptyRepositories"
+msgstr "आपकी रिपॉज़िटरी में कोई स्किल नहीं मिली।"
+
+msgid "skills.emptyProjects"
+msgstr "अभी कोई प्रोजेक्ट ट्रैक नहीं किया गया।"
+
+msgid "skills.status.add"
+msgstr "स्किल जोड़ी जाएगी"
+
+msgid "skills.status.remove"
+msgstr "स्किल हटाई जाएगी"
+
+msgid "skills.status.present"
+msgstr "स्किल पहले से इंस्टॉल है"
+
+msgid "skills.installPending"
+msgstr "स्किल इंस्टॉल करना जल्द आ रहा है ({count} चुनी गईं)"
+
+msgid "skills.savePending"
+msgstr "परिवर्तन सहेजना जल्द आ रहा है (+{add} / -{remove})"
+
+msgid "skills.install.title"
+msgstr "स्किल इंस्टॉल करें"
+
+msgid "skills.install.chooseProject"
+msgstr "प्रोजेक्ट"
+
+msgid "skills.install.agents"
+msgstr "चुने गए एजेंट"
+
+msgid "skills.install.agentsPlaceholder"
+msgstr "एजेंट चुनें"
+
+msgid "skills.install.next"
+msgstr "आगे"
+
+msgid "skills.install.back"
+msgstr "पीछे"
+
+msgid "skills.install.confirm"
+msgstr "पुष्टि करें?"
+
+msgid "skills.install.installing"
+msgstr "परिवर्तन लागू हो रहे हैं"
+
+msgid "skills.install.summary"
+msgstr "+{add} / -{remove}"
+
+msgid "skills.save.title"
+msgstr "परिवर्तन देखें"
+
+msgid "skills.save.confirm"
+msgstr "पुष्टि करें?"
+
+msgid "skills.save.empty"
+msgstr "लागू करने के लिए कोई परिवर्तन नहीं"
+
+msgid "skills.col.project"
+msgstr "प्रोजेक्ट"
+
+msgid "skills.col.repository"
+msgstr "रिपॉज़िटरी"
+
+msgid "skills.col.skill"
+msgstr "स्किल"
+
+msgid "skills.col.action"
+msgstr "क्रिया"
+
+msgid "skills.col.agents"
+msgstr "एजेंट"
+
+msgid "skills.change.install"
+msgstr "इंस्टॉल करें"
+
+msgid "skills.change.remove"
+msgstr "हटाएँ"
+
+msgid "skills.agentsLabel"
+msgstr "एजेंट"
+
+msgid "skills.agentsTooltip"
+msgstr "उपयोग किए गए एजेंट"
+
+msgid "skills.agentsChanged"
+msgstr "एजेंट बदले गए"
+
+msgid "skills.updateSkill"
+msgstr "स्किल अपडेट करें"
+
+msgid "skills.updateRepo"
+msgstr "रिपॉज़िटरी की स्किल अपडेट करें"
+
+msgid "skills.updateGroup"
+msgstr "समूह की स्किल अपडेट करें"
+
+msgid "skills.updateBadge"
+msgstr "अपडेट"
+
+msgid "skills.unlinked"
+msgstr "असंबद्ध"
+
+msgid "skills.addRepo"
+msgstr "रिपॉज़िटरी जोड़ें"
+
+msgid "skills.local"
+msgstr "स्थानीय"
+
+msgid "skills.localHint"
+msgstr "स्थानीय, हाथ से लिखी स्किल"
+
+msgid "skills.rulesBadge"
+msgstr "नियम"
+
+msgid "skills.rulesHint"
+msgstr "स्किल में नियम हैं"
+
+msgid "skills.searchFound.one"
+msgstr "{count} स्किल मिली"
+
+msgid "skills.searchFound.other"
+msgstr "{count} स्किल मिलीं"
+
+msgid "skills.searchTotal.one"
+msgstr "कुल {count} स्किल"
+
+msgid "skills.searchTotal.other"
+msgstr "कुल {count} स्किल"
+
+msgid "mcp.empty"
+msgstr "अभी कोई MCP सर्वर नहीं।"
+
+msgid "mcp.searchFound.one"
+msgstr "{count} MCP सर्वर मिला"
+
+msgid "mcp.searchFound.other"
+msgstr "{count} MCP सर्वर मिले"
+
+msgid "mcp.searchTotal.one"
+msgstr "कुल {count} MCP सर्वर"
+
+msgid "mcp.searchTotal.other"
+msgstr "कुल {count} MCP सर्वर"
+
+msgid "mcp.showAll"
+msgstr "सभी MCP सर्वर दिखाएँ"
+
+msgid "mcp.add"
+msgstr "MCP जोड़ें"
+
+msgid "mcp.addTitle"
+msgstr "MCP सर्वर जोड़ें"
+
+msgid "mcp.editTitle"
+msgstr "MCP सर्वर संपादित करें"
+
+msgid "mcp.edit"
+msgstr "संपादित करें"
+
+msgid "mcp.install"
+msgstr "इंस्टॉल करें"
+
+msgid "mcp.installMcp"
+msgstr "MCP इंस्टॉल करें"
+
+msgid "mcp.installTitle"
+msgstr "{name} इंस्टॉल करें"
+
+msgid "mcp.remove"
+msgstr "हटाएँ"
+
+msgid "mcp.update"
+msgstr "अपडेट करें"
+
+msgid "mcp.cancel"
+msgstr "रद्द करें"
+
+msgid "mcp.save"
+msgstr "सहेजें"
+
+msgid "mcp.copy"
+msgstr "कॉपी करें"
+
+msgid "mcp.copiedToClipboard"
+msgstr "क्लिपबोर्ड पर कॉपी हुआ"
+
+msgid "mcp.goToRepository"
+msgstr "रिपॉज़िटरी पर जाएँ"
+
+msgid "mcp.rulesBadge"
+msgstr "नियम"
+
+msgid "mcp.protocol.stdio"
+msgstr "stdio"
+
+msgid "mcp.protocol.http"
+msgstr "http"
+
+msgid "mcp.protocol.sse"
+msgstr "sse"
+
+msgid "mcp.paramsHelp"
+msgstr "पैरामीटर {name} URL, हेडर, कमांड, आर्ग्युमेंट, env और नियमों में समर्थित हैं।"
+
+msgid "mcp.field.name"
+msgstr "नाम"
+
+msgid "mcp.namePlaceholder"
+msgstr "उदाहरण: GitHub MCP"
+
+msgid "mcp.field.type"
+msgstr "प्रकार"
+
+msgid "mcp.field.url"
+msgstr "URL"
+
+msgid "mcp.urlPlaceholder"
+msgstr "https://example.com/{token}"
+
+msgid "mcp.field.headers"
+msgstr "हेडर"
+
+msgid "mcp.headerNamePlaceholder"
+msgstr "हेडर का नाम"
+
+msgid "mcp.headerValuePlaceholder"
+msgstr "हेडर का मान"
+
+msgid "mcp.addHeader"
+msgstr "हेडर जोड़ें"
+
+msgid "mcp.field.command"
+msgstr "कमांड"
+
+msgid "mcp.commandPlaceholder"
+msgstr "npx some-mcp-server"
+
+msgid "mcp.field.arguments"
+msgstr "आर्ग्युमेंट"
+
+msgid "mcp.argumentPlaceholder"
+msgstr "आर्ग्युमेंट"
+
+msgid "mcp.addArgument"
+msgstr "आर्ग्युमेंट जोड़ें"
+
+msgid "mcp.field.env"
+msgstr "पर्यावरण चर"
+
+msgid "mcp.varNamePlaceholder"
+msgstr "चर का नाम"
+
+msgid "mcp.varValuePlaceholder"
+msgstr "चर का मान"
+
+msgid "mcp.addVariable"
+msgstr "चर जोड़ें"
+
+msgid "mcp.field.rules"
+msgstr "नियम"
+
+msgid "mcp.rulesPlaceholder"
+msgstr "यह सर्वर इंस्टॉल होने पर एजेंट की नियम/मार्गदर्शन फ़ाइल में जोड़ा जाने वाला मार्गदर्शन।"
+
+msgid "mcp.validation.nameRequired"
+msgstr "नाम आवश्यक है।"
+
+msgid "mcp.validation.selectType"
+msgstr "ट्रांसपोर्ट प्रकार चुनें।"
+
+msgid "mcp.validation.commandRequired"
+msgstr "stdio सर्वर के लिए कमांड आवश्यक है।"
+
+msgid "mcp.validation.urlRequired"
+msgstr "http/sse सर्वर के लिए URL आवश्यक है।"
+
+msgid "mcp.validation.invalidParam"
+msgstr "स्थिति {index} पर अमान्य पैरामीटर ({reason})।"
+
+msgid "mcp.field.project"
+msgstr "प्रोजेक्ट"
+
+msgid "mcp.chooseProject"
+msgstr "प्रोजेक्ट चुनें"
+
+msgid "mcp.filterProjectsEmpty"
+msgstr "कोई मिलता प्रोजेक्ट नहीं"
+
+msgid "mcp.field.agents"
+msgstr "एजेंट"
+
+msgid "mcp.field.parameters"
+msgstr "पैरामीटर"
+
+msgid "mcp.codexGlobalNote"
+msgstr "Codex वैश्विक रूप से इंस्टॉल होता है (इस प्रोजेक्ट तक सीमित नहीं)।"
+
+msgid "mcp.transportUnsupported"
+msgstr "{agent} अपने मूल कॉन्फ़िग में {transport} ट्रांसपोर्ट व्यक्त नहीं कर सकता।"
+
+msgid "mcp.skippedAgents"
+msgstr "{count} एजेंट छोड़े गए: प्रीसेट का ट्रांसपोर्ट समर्थित नहीं है।"
+
+msgid "mcp.needsParamsNotice"
+msgstr "इन MCP इंस्टॉल के लिए जोड़ने से पहले पैरामीटर आवश्यक हैं:"
+
+msgid "mcp.delete"
+msgstr "हटाएँ"
+
+msgid "mcp.deleteConfirmTitle"
+msgstr "{name} हटाएँ?"
+
+msgid "mcp.deleteConfirmBody"
+msgstr "इसे पूर्ववत नहीं किया जा सकता।"
+
+msgid "mcp.detailsTitle"
+msgstr "MCP सर्वर विवरण"
+
+msgid "mcp.view.label"
+msgstr "इस रूप में दिखाएँ"
+
+msgid "mcp.view.tiles"
+msgstr "टाइल"
+
+msgid "mcp.view.tree"
+msgstr "ट्री"
+
+msgid "mcp.componentsTitle"
+msgstr "घटक"
+
+msgid "mcp.managementTitle"
+msgstr "प्रबंधन"
+
+msgid "settings.comingSoon"
+msgstr "सेटिंग्स स्क्रीन जल्द आ रही है।"
+
+msgid "settings.section.general"
+msgstr "सामान्य"
+
+msgid "settings.section.updates"
+msgstr "अपडेट"
+
+msgid "settings.section.agents"
+msgstr "एजेंट"
+
+msgid "settings.section.executables"
+msgstr "निष्पादन योग्य फ़ाइलें"
+
+msgid "settings.section.security"
+msgstr "सुरक्षा"
+
+msgid "settings.section.notifications"
+msgstr "सूचनाएँ"
+
+msgid "settings.valid"
+msgstr "मान्य"
+
+msgid "settings.invalid"
+msgstr "अमान्य"
+
+msgid "settings.openConfig"
+msgstr "कॉन्फ़िग फ़ाइल खोलें"
+
+msgid "settings.openConfigInEditor"
+msgstr "कॉन्फ़िग फ़ाइल संपादक में खोलें"
+
+msgid "settings.editor.defaultApp"
+msgstr "डिफ़ॉल्ट ऐप में खोलें"
+
+msgid "settings.openConfigFailed"
+msgstr "कॉन्फ़िग फ़ाइल खोली नहीं जा सकी"
+
+msgid "settings.theme"
+msgstr "थीम"
+
+msgid "settings.animations"
+msgstr "एनिमेशन"
+
+msgid "settings.animationsHint"
+msgstr "पूरे UI में प्रवेश और निकास एनिमेशन की गति"
+
+msgid "settings.animations.fast"
+msgstr "तेज़"
+
+msgid "settings.animations.normal"
+msgstr "सामान्य"
+
+msgid "settings.animations.off"
+msgstr "बंद"
+
+msgid "settings.theme.system"
+msgstr "सिस्टम"
+
+msgid "settings.theme.light"
+msgstr "हल्का"
+
+msgid "settings.theme.dark"
+msgstr "गहरा"
+
+msgid "settings.language"
+msgstr "भाषा"
+
+msgid "settings.languageEmpty"
+msgstr "कोई मिलती भाषा नहीं"
+
+msgid "settings.section.repositories"
+msgstr "रिपॉज़िटरी"
+
+msgid "settings.section.projects"
+msgstr "प्रोजेक्ट"
+
+msgid "settings.git"
+msgstr "Git"
+
+msgid "settings.gitDescription"
+msgstr "git निष्पादन योग्य का पथ"
+
+msgid "settings.updates.mode"
+msgstr "अपडेट जाँच"
+
+msgid "settings.updates.mode.manual"
+msgstr "मैनुअल"
+
+msgid "settings.updates.mode.onStartup"
+msgstr "शुरू होने पर"
+
+msgid "settings.updates.mode.scheduled"
+msgstr "निर्धारित"
+
+msgid "settings.updates.interval"
+msgstr "अपडेट अंतराल"
+
+msgid "settings.projects.checkInterval"
+msgstr "फ़ोल्डर जाँच अंतराल"
+
+msgid "settings.interval.minutesUnit"
+msgstr "मि"
+
+msgid "settings.interval.hoursUnit"
+msgstr "घं"
+
+msgid "settings.agents.enabled"
+msgstr "सक्रिय एजेंट"
+
+msgid "settings.agents.placeholder"
+msgstr "एजेंट चुनें"
+
+msgid "settings.agents.selected"
+msgstr "{count} चुने गए"
+
+msgid "settings.notifications.enabled"
+msgstr "सिस्टम सूचनाएँ"
+
+msgid "settings.section.onboarding"
+msgstr "ट्यूटोरियल"
+
+msgid "settings.onboarding.restartHint"
+msgstr "निर्देशित ट्यूटोरियल शुरुआत से दोबारा चलाएँ।"
+
+msgid "settings.onboarding.restart.button"
+msgstr "ट्यूटोरियल दोबारा शुरू करें"
+
+msgid "config.invalidBanner"
+msgstr "कॉन्फ़िगरेशन में अमान्य अनुभाग हैं। डिफ़ॉल्ट उपयोग में हैं। विवरण के लिए \"skillkeeper config validate\" चलाएँ।"
+
+msgid "hooks.requireConsent"
+msgstr "हुक इंस्टॉल करने के लिए स्पष्ट सहमति आवश्यक है (--allow-hooks)। स्किल बॉडी इंस्टॉल हुई; हुक छोड़े गए।"
+
+msgid "skills.count"
+msgstr "{n} स्किल इंस्टॉल"
+
+msgid "onboarding.next"
+msgstr "आगे"
+
+msgid "onboarding.back"
+msgstr "पीछे"
+
+msgid "onboarding.finish"
+msgstr "समाप्त"
+
+msgid "onboarding.skip"
+msgstr "ट्यूटोरियल छोड़ें"
+
+msgid "onboarding.projects-tab.body"
+msgstr "प्रोजेक्ट पृष्ठ आपके प्रोजेक्ट दिखाता है। आप स्थानीय फ़ोल्डर जोड़ सकते हैं या सूची से हटा सकते हैं।"
+
+msgid "onboarding.projects.body"
+msgstr "इस बटन पर क्लिक करके प्रोजेक्ट जोड़ें।"
+
+msgid "onboarding.projects.docs"
+msgstr "प्रोजेक्ट दस्तावेज़ीकरण"
+
+msgid "onboarding.repositories-tab.body"
+msgstr "रिपॉज़िटरी पृष्ठ आपकी रिपॉज़िटरी दिखाता है। आप git रिपॉज़िटरी जोड़ सकते हैं, रिफ़्रेश कर सकते हैं और सूची से हटा सकते हैं।"
+
+msgid "onboarding.repositories.body"
+msgstr "इस बटन पर क्लिक करके रिपॉज़िटरी जोड़ें।"
+
+msgid "onboarding.repositories.docs"
+msgstr "रिपॉज़िटरी दस्तावेज़ीकरण"
+
+msgid "onboarding.skills-tab.body"
+msgstr "स्किल प्रबंधन पृष्ठ रिपॉज़िटरी से स्किल प्रोजेक्ट पर इंस्टॉल करता है, तथा उन्हें हटाता या अपडेट करता है।"
+
+msgid "onboarding.skills-intro.body"
+msgstr "{installed} से चिह्नित स्किल प्रोजेक्ट पर पहले से इंस्टॉल हैं।"
+
+msgid "onboarding.skills-actions.body"
+msgstr "चेकबॉक्स से स्किल टॉगल करें। इंस्टॉल स्किल का चेक हटाने पर वह हटाने के लिए चिह्नित होती है ({remove}); नई चेक की गई स्किल इंस्टॉल के लिए चिह्नित होती हैं ({install})। फिर सहेजें पर क्लिक करें।"
+
+msgid "onboarding.agents.body"
+msgstr "यह बटन चुनता है कि प्रोजेक्ट किन एजेंट को लक्षित करता है।"
+
+msgid "onboarding.done.title"
+msgstr "सब तैयार है"
+
+msgid "onboarding.done.body"
+msgstr "SkillKeeper चुनने के लिए धन्यवाद। आपके काम के लिए शुभकामनाएँ!"
+
+msgid "onboarding.done.hint"
+msgstr "आप ट्यूटोरियल कभी भी सेटिंग्स से दोबारा चला सकते हैं।"
+
+msgid "onboarding.tree.project"
+msgstr "परीक्षण प्रोजेक्ट"
+
+msgid "onboarding.tree.repository"
+msgstr "परीक्षण रिपॉज़िटरी"
+
+msgid "onboarding.tree.skillset"
+msgstr "उदाहरण स्किलसेट"
+
+msgid "onboarding.tree.skillA"
+msgstr "code-review"
+
+msgid "onboarding.tree.skillB"
+msgstr "commit-helper"
+
+msgid "onboarding.tree.skillC"
+msgstr "changelog"

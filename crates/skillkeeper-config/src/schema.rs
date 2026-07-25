@@ -52,6 +52,8 @@ pub enum Language {
     Pt,
     Ko,
     It,
+    Hi,
+    Th,
 }
 
 /// UI theme preference.

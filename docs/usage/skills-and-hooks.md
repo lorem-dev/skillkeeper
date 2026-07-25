@@ -82,6 +82,29 @@ Schemes 1 and 2 are auto-detected by scanning up to two directory levels deep
 for `SKILL.md` files; anything nested deeper produces the unresolved-path
 warning mentioned above instead of a guessed install.
 
+The scan skips two families of directory outright, resolving nothing from them
+and raising no warning: **hidden** directories (any name starting with `.`) and
+dependency or build trees (`node_modules`, `vendor`, `target`, `dist`). Hidden
+directories are where every agent keeps its *installed* skills
+(`.claude/skills/`, `.codex/skills/`, `.cursor/skills/`, `.opencode/skills/`,
+`.github/copilot/skills/`), so a repository that itself uses SkillKeeper holds
+skills it consumes rather than publishes; treating those as candidates reported a
+nesting warning for perfectly normal projects. An explicit `path` in
+`skillkeeper.repo.yaml` still reaches a skipped directory, which is the way to
+publish a skill from one deliberately.
+
+All three schemes have worked examples in the
+[skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo)
+fixture repository: a flat skill at
+[`minimal-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/minimal-skill/SKILL.md),
+a grouped one at
+[`tooling/lint-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/lint-skill/SKILL.md),
+an inert scheme-3 sample at
+[`skillkeeper.repo.yaml.example`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/skillkeeper.repo.yaml.example),
+and a too-deeply-nested skill at
+[`deep-nesting/level-two/too-deep-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/deep-nesting/level-two/too-deep-skill/SKILL.md)
+that must not resolve.
+
 ---
 
 ## What is a hook?
@@ -153,6 +176,12 @@ diff. Claude, Codex, Copilot, and Cursor all use this strategy.
 Hook-owned standalone files, tracked as `ManagedFile` entries flagged as
 hook-owned. Removed by path on uninstall, like any other managed file.
 
+Both hook layouts are shown in the fixture repository:
+[`json-hooks-skill/hooks/pre-tool-use/HOOK.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/json-hooks-skill/hooks/pre-tool-use/HOOK.md)
+is a named hook directory declaring `json-merge` with a `keyPath`, and
+[`text-hook-skill/hooks/HOOK.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/text-hook-skill/hooks/HOOK.md)
+is the single-hook layout declaring `delimited-text`.
+
 ### Per-agent skills, hooks, and guidance
 
 | agent    | skills root (project)                 | skills root (global)               | hook strategy -> target file                                                    | guidance file |
@@ -174,7 +203,10 @@ callers.
 
 A skill may optionally ship a `GUIDE.md` or `RULES.md` file containing
 guidance for the agent that installs it. `GUIDE.md` takes precedence when
-both files are present. If neither exists, no guidance is installed.
+both files are present. If neither exists, no guidance is installed. The
+fixture repository's
+[`documented-skill`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/documented-skill/SKILL.md)
+ships both files, so it installs only its `GUIDE.md`.
 
 On install, the guide body is written as a marked block into each target
 agent's guidance file (from the table above). The block uses delimiters:
@@ -329,8 +361,16 @@ region and compares them to the manifest, reporting per file: `ok`,
 directory that is not recorded in the manifest).
 
 `repair` reinstalls the affected skill (and, only if originally installed and
-re-consented, its hooks) to restore the recorded state. Verify is read-only;
-repair mutates and is always explicit.
+re-consented, its hooks) to restore the recorded state, then removes the
+`extraneous` files, so the install verifies clean afterwards. Every deleted path
+is reported. Verify is read-only; repair mutates and is always explicit.
+
+Two things bound that deletion. A skill's installed directory is named after the
+skill alone, so two skills with the same name from different groups or
+repositories share one directory; files recorded by any other install under the
+same root are protected. And a recorded path that could resolve outside the
+destination root (a skill whose declared name is `..`, say) disables pruning for
+that install rather than being followed.
 
 ---
 

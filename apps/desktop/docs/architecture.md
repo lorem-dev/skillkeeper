@@ -458,9 +458,9 @@ How to add and use a string:
    <div>{t('common.errorPrefix', { message })}</div>
    ```
    `useTranslator` binds to the active language from config and falls back to `en`.
-3. **Translations.** SkillKeeper ships 16 locales (`en`, `de`, `ru`, `uk`, `be`,
+3. **Translations.** SkillKeeper ships 18 locales (`en`, `de`, `ru`, `uk`, `be`,
    `fr`, `ja`, `zh-cn`, `pl`, `sr-cyrl`, `sr-latn`, `zh-tw`, `es`, `pt`, `ko`,
-   `it`), each a `locales/<lang>.po`. A key missing from a non-English `.po`
+   `it`, `hi`, `th`), each a `locales/<lang>.po`. A key missing from a non-English `.po`
    falls back to English per key at runtime. By default a new string goes into
    `en.po` only; translating the rest is a dedicated pass (see
    docs/localization.md). Non-English `.po` values MAY use non-ASCII (umlauts,

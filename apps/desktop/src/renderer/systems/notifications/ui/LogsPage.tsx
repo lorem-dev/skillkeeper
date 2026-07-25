@@ -1,20 +1,29 @@
 /**
  * Full-screen notifications log overlay. Lists notification entries (newest
  * first) with per-entry and copy-all clipboard actions, a level filter
- * (errors/messages; errors only by default), and a clear action. Open state
- * lives in the store (logsOpen); Escape or the close button dismisses it.
+ * (errors/warnings/messages; errors and warnings by default), and a clear
+ * action. Open state lives in the store (logsOpen); Escape or the close button
+ * dismisses it.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
-import type { NotificationEntry } from '@/app/store';
+import type { NotificationEntry, NotificationLevel } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon, MultiSelect } from '@/shared/ui';
 import type { Translator } from '@/systems/i18n';
 import { cx, dragRegion, fade } from '@/shared/lib';
 import { resolveNotification } from '../resolveNotification';
 import './LogsPage.scss';
+
+/** The levels the filter can select, in display order. */
+const LEVEL_ORDER: readonly NotificationLevel[] = ['error', 'warning', 'info'];
+
+/** Narrow `MultiSelect`'s untyped `string[]` back to notification levels. */
+function isLevel(value: string): value is NotificationLevel {
+  return (LEVEL_ORDER as readonly string[]).includes(value);
+}
 
 /** Serialize one entry for the clipboard: "<at> [<repoId>] <message>". */
 function formatEntry(entry: NotificationEntry, t: Translator): string {
@@ -29,8 +38,9 @@ export function LogsPage() {
   const clearNotifications = useSkillkeeperStore((s) => s.clearNotifications);
   const t = useTranslator();
 
-  // Which levels to show. Errors only by default.
-  const [levels, setLevels] = useState<string[]>(['error']);
+  // Which levels to show. Errors and warnings by default: both are things the
+  // user may need to act on. `info` is opt-in, being mostly per-operation noise.
+  const [levels, setLevels] = useState<NotificationLevel[]>(['error', 'warning']);
 
   // Newest first, filtered by the selected levels; never mutates store state.
   const entries = useMemo(
@@ -38,10 +48,12 @@ export function LogsPage() {
     [notifications, levels],
   );
 
-  const levelOptions = [
-    { value: 'error', label: t('logs.level.error') },
-    { value: 'info', label: t('logs.level.info') },
-  ];
+  const levelLabels: Record<NotificationLevel, string> = {
+    error: t('logs.level.error'),
+    warning: t('logs.level.warning'),
+    info: t('logs.level.info'),
+  };
+  const levelOptions = LEVEL_ORDER.map((value) => ({ value, label: levelLabels[value] }));
 
   // Focus the overlay once when it opens (not on every re-render -- a background
   // notify() re-renders this component and must not yank focus back).
@@ -82,7 +94,7 @@ export function LogsPage() {
               <MultiSelect
                 options={levelOptions}
                 value={levels}
-                onChange={setLevels}
+                onChange={(next) => setLevels(next.filter(isLevel))}
                 ariaLabel={t('logs.filter')}
                 placeholder={t('logs.filter')}
               />

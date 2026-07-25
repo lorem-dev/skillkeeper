@@ -23,6 +23,8 @@ const LANGS: readonly Lang[] = [
   'pt',
   'ko',
   'it',
+  'hi',
+  'th',
 ];
 
 function capitalize(s: string): string {

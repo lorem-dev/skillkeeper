@@ -29,6 +29,8 @@ export const LANGUAGE_NATIVE_NAMES: Record<Lang, string> = {
   pt: 'português',
   ko: '한국어',
   it: 'italiano',
+  hi: 'हिन्दी',
+  th: 'ไทย',
 };
 
 /**
@@ -54,4 +56,6 @@ export const LANGUAGE_CHINESE_QUALIFIERS: Record<Lang, { mainland: string; tradi
   pt: { mainland: 'Continental', traditional: 'Tradicional' },
   ko: { mainland: '본토', traditional: '번체' },
   it: { mainland: 'Continentale', traditional: 'Tradizionale' },
+  hi: { mainland: 'मुख्य भूमि', traditional: 'पारंपरिक' },
+  th: { mainland: 'แผ่นดินใหญ่', traditional: 'ดั้งเดิม' },
 };

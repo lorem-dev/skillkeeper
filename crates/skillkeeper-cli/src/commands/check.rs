@@ -8,6 +8,7 @@ use skillkeeper_core::ports::{FsPort, GitPort};
 use skillkeeper_core::skills::resolver::resolve_skills;
 use skillkeeper_core::state::state::load_state;
 
+use crate::commands::resolvewarnings::print_resolve_warnings;
 use crate::error::CliError;
 use crate::updates::{repo_has_update, skill_has_update};
 
@@ -63,6 +64,7 @@ pub fn run(
         // (it returns a `ResolveResult` with warnings rather than throwing), so
         // the TypeScript resolve `try/catch` has no counterpart here.
         let resolve_result = resolve_skills(fs, &repo.local_path);
+        print_resolve_warnings(err, &repo.name, &resolve_result.warnings)?;
 
         for resolved in &resolve_result.skills {
             let related = state.installs.iter().filter(|m| {

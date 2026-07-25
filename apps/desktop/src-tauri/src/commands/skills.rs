@@ -152,15 +152,46 @@ pub struct AvailableSkill {
     pub has_guidance: bool,
 }
 
-/// `skills:available` -- every skill resolved across all cloned repositories.
-/// Repos whose clone is missing or fails to resolve are skipped.
-pub fn available(ctx: &AppContext) -> Vec<AvailableSkill> {
+/// One skill-resolution warning, attributed to the repository it came from.
+///
+/// `resolve_skills` is infallible: it returns warnings rather than failing. A
+/// warning is the only signal that a `SKILL.md` was found but cannot be
+/// installed (nested deeper than one group, a malformed manifest, an unparsable
+/// `skillkeeper.repo.yaml`). Dropping the list makes such a skill silently
+/// invisible, so it is carried to the renderer and surfaced as a notification.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillResolveWarning {
+    pub repo_id: String,
+    pub repo_name: String,
+    pub message: String,
+}
+
+/// The `skills:available` payload: the resolved catalog plus any warnings raised
+/// while resolving it.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AvailableSkillsResult {
+    pub skills: Vec<AvailableSkill>,
+    pub warnings: Vec<SkillResolveWarning>,
+}
+
+/// `skills:available` -- every skill resolved across all cloned repositories,
+/// plus the warnings raised while resolving them. Repos whose clone is missing
+/// are skipped.
+pub fn available(ctx: &AppContext) -> AvailableSkillsResult {
     let mut out = Vec::new();
+    let mut warnings = Vec::new();
     let repos = {
         let _guard = lock(ctx);
         match load_state(&ctx.fs, &ctx.paths.state_json) {
             Ok(state) => state.repositories,
-            Err(_) => return out,
+            Err(_) => {
+                return AvailableSkillsResult {
+                    skills: out,
+                    warnings,
+                }
+            }
         }
     };
     for repo in repos {
@@ -168,6 +199,13 @@ pub fn available(ctx: &AppContext) -> Vec<AvailableSkill> {
             continue;
         }
         let resolved = resolve_skills(&ctx.fs, &repo.local_path);
+        for message in &resolved.warnings {
+            warnings.push(SkillResolveWarning {
+                repo_id: repo.id.clone(),
+                repo_name: repo.name.clone(),
+                message: message.clone(),
+            });
+        }
         for skill in &resolved.skills {
             // A read failure aborts the rest of this repo, keeping any already
             // pushed (mirrors the per-repo try/catch in the TS source).
@@ -191,7 +229,10 @@ pub fn available(ctx: &AppContext) -> Vec<AvailableSkill> {
             });
         }
     }
-    out
+    AvailableSkillsResult {
+        skills: out,
+        warnings,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -748,7 +789,7 @@ fn apply_inner(
 #[tauri::command]
 pub async fn skills_available(
     ctx: State<'_, Arc<AppContext>>,
-) -> Result<Vec<AvailableSkill>, String> {
+) -> Result<AvailableSkillsResult, String> {
     blocking(&ctx, available).await
 }
 
@@ -951,20 +992,63 @@ mod tests {
         seed_state(&app, &src, &proj);
 
         let listed = available(&app.ctx);
-        assert_eq!(listed.len(), 1);
-        let s = &listed[0];
+        assert_eq!(listed.skills.len(), 1);
+        let s = &listed.skills[0];
         assert_eq!(s.name, "skill-a");
         assert_eq!(s.repo_id, "repo-1");
         assert_eq!(s.remote, src.url());
         assert!(s.group.is_none());
         assert!(!s.content_hash.is_empty());
         assert!(s.has_guidance);
+        // A cleanly-resolving repository reports nothing.
+        assert!(listed.warnings.is_empty());
     }
 
     #[test]
     fn available_is_empty_when_no_repositories() {
         let app = TempAppData::new();
-        assert!(available(&app.ctx).is_empty());
+        let listed = available(&app.ctx);
+        assert!(listed.skills.is_empty());
+        assert!(listed.warnings.is_empty());
+    }
+
+    #[test]
+    fn available_reports_a_resolve_warning_attributed_to_its_repository() {
+        let app = TempAppData::new();
+        let src = SkillRepo::new();
+        let proj = ProjectDir::new();
+        seed_state(&app, &src, &proj);
+        // A SKILL.md nested deeper than one group level resolves to nothing and
+        // raises a warning; the rest of the repository still resolves.
+        let deep = src.path.join("group").join("sub").join("too-deep");
+        std::fs::create_dir_all(&deep).unwrap();
+        std::fs::write(deep.join("SKILL.md"), "---\nname: too-deep\n---\n").unwrap();
+
+        let listed = available(&app.ctx);
+        assert_eq!(listed.skills.len(), 1, "the valid skill still resolves");
+        assert_eq!(listed.warnings.len(), 1);
+        let w = &listed.warnings[0];
+        assert_eq!(w.repo_id, "repo-1");
+        assert_eq!(w.repo_name, "skills");
+        assert!(w.message.contains("group/sub/too-deep"), "{}", w.message);
+    }
+
+    #[test]
+    fn available_reports_nothing_for_skills_installed_in_the_working_tree() {
+        let app = TempAppData::new();
+        let src = SkillRepo::new();
+        let proj = ProjectDir::new();
+        seed_state(&app, &src, &proj);
+        // A repository that itself uses SkillKeeper carries installed skills
+        // under an agent directory. Those must not warn -- this is the case that
+        // produced a spurious warning for ordinary projects.
+        let installed = src.path.join(".claude").join("skills").join("release-prep");
+        std::fs::create_dir_all(&installed).unwrap();
+        std::fs::write(installed.join("SKILL.md"), "---\nname: release-prep\n---\n").unwrap();
+
+        let listed = available(&app.ctx);
+        assert_eq!(listed.skills.len(), 1, "only the published skill resolves");
+        assert!(listed.warnings.is_empty(), "{:?}", listed.warnings);
     }
 
     // ---- apply ----

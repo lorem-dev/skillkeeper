@@ -169,11 +169,17 @@ msgstr "Сбросить фильтры"
 msgid "notifications.error"
 msgstr "Ошибка"
 
+msgid "notifications.warning"
+msgstr "Предупреждение"
+
 msgid "notifications.info"
 msgstr "Уведомление"
 
 msgid "statusbar.notifications"
 msgstr "Ошибки: {count}"
+
+msgid "statusbar.warnings"
+msgstr "Предупреждения: {count}"
 
 msgid "statusbar.terminal"
 msgstr "Терминал"
@@ -204,6 +210,9 @@ msgstr "Показывать"
 
 msgid "logs.level.error"
 msgstr "Ошибки"
+
+msgid "logs.level.warning"
+msgstr "Предупреждения"
 
 msgid "logs.level.info"
 msgstr "Сообщения"
