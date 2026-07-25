@@ -2,26 +2,7 @@
 
 ## Development
 
-### Added
-
-- Release pages now group their assets: a Downloads section lists the Desktop App
-  first, then the CLI App, each entry labelled by platform and format ("Desktop
-  Windows x64 (msi)") instead of showing only bundler-generated file names. The
-  section is generated from the assets actually staged, and nothing is renamed, so
-  the one-line installers are unaffected.
-- Release-candidate tags are cut from `develop` and final tags from `main`;
-  `scripts/check-tag-branch.mjs` enforces that in the release pipeline's first
-  job, before anything is built or published.
-
-### Fixed
-
-- A pre-release tag no longer publishes documentation at all. The bare docs URL
-  redirects to the `latest` alias, so tagging a release candidate used to make it
-  the documentation every visitor landed on; and a candidate's docs are
-  in-progress docs, already served under `dev`. Publishing them only added
-  throwaway entries to the version switcher that had to be deleted by hand.
-
-## Version 0.2.1-rc.1
+## Version 0.2.1
 
 ### Added
 
@@ -41,6 +22,14 @@
   against that fixture and asserts on the files it writes -- the layer the
   in-memory unit tests cannot reach. It runs in CI and via the new
   `check-fixture-repo` skill, which `pre-release-check` now includes.
+- Release pages now group their assets: a Downloads section lists the Desktop App
+  first, then the CLI App, each entry labelled by platform and format ("Desktop
+  Windows x64 (msi)") instead of showing only bundler-generated file names. The
+  section is generated from the assets actually staged, and nothing is renamed, so
+  the one-line installers are unaffected.
+- Release-candidate tags are cut from `develop` and final tags from `main`;
+  `scripts/check-tag-branch.mjs` enforces that in the release pipeline's first
+  job, before anything is built or published.
 
 ### Fixed
 
@@ -54,6 +43,11 @@
   *installed* skills under a hidden directory, so a repository that itself uses
   SkillKeeper warned about skills it consumes rather than publishes. An explicit
   `path` in `skillkeeper.repo.yaml` still reaches them.
+- A pre-release tag no longer publishes documentation at all. The bare docs URL
+  redirects to the `latest` alias, so tagging a release candidate used to make it
+  the documentation every visitor landed on; and a candidate's docs are
+  in-progress docs, already served under `dev`. Publishing them only added
+  throwaway entries to the version switcher that had to be deleted by hand.
 
 ### Changed
 
