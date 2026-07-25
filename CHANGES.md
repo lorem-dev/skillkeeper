@@ -13,6 +13,13 @@
   `scripts/check-tag-branch.mjs` enforces that in the release pipeline's first
   job, before anything is built or published.
 
+### Fixed
+
+- A pre-release tag no longer takes the `latest` documentation alias. The bare
+  docs URL redirects to `latest`, so publishing a release candidate used to make
+  it the documentation every visitor landed on. Pre-release docs are still
+  published under their own version, just without the alias.
+
 ## Version 0.2.1-rc.1
 
 ### Added

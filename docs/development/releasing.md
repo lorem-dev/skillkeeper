@@ -81,11 +81,14 @@ Only RC tags may come from `develop`. `scripts/check-tag-branch.mjs` runs in the
 pipeline's first job and fails a final tag that is not on `main`, before anything
 is built or published.
 
-Two properties make an RC safe to publish from `develop`:
+Three properties make an RC safe to publish from `develop`:
 
 - The workflow marks any tag containing `-` as a pre-release, and
   `releases/latest/download/...` -- the URL both one-line installers use -- never
   resolves to a pre-release. Users on `install.sh` will not pick up an RC.
+- The docs workflow publishes a pre-release under its own version but does not
+  move the `latest` alias, so the bare documentation URL keeps pointing at the
+  last final release.
 - Nothing else consumes the release except by explicit tag.
 
 Cutting an RC therefore looks like:

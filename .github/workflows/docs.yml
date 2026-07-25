@@ -61,11 +61,24 @@ jobs:
           set -euo pipefail
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             version="${GITHUB_REF_NAME#v}"
-            echo "Publishing release docs ${version} (alias: latest)"
-            uv run --with mkdocs-material --with mike \
-              mike deploy --push --update-aliases "${version}" latest
-            uv run --with mkdocs-material --with mike \
-              mike set-default --push latest
+            # A pre-release (any tag with a `-` qualifier, e.g. 0.3.0-rc.1) is
+            # published under its own version but must NOT take the `latest`
+            # alias: the bare site URL redirects to `latest`, so moving it would
+            # make a release candidate the documentation everyone lands on.
+            case "${version}" in
+              *-*)
+                echo "Publishing pre-release docs ${version} (no alias)"
+                uv run --with mkdocs-material --with mike \
+                  mike deploy --push "${version}"
+                ;;
+              *)
+                echo "Publishing release docs ${version} (alias: latest)"
+                uv run --with mkdocs-material --with mike \
+                  mike deploy --push --update-aliases "${version}" latest
+                uv run --with mkdocs-material --with mike \
+                  mike set-default --push latest
+                ;;
+            esac
           else
             echo "Publishing development docs (alias: dev)"
             uv run --with mkdocs-material --with mike \
