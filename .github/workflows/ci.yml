@@ -141,3 +141,49 @@ jobs:
 
       - name: Test workspace
         run: cargo test --workspace
+
+  e2e:
+    name: End-to-end (CLI against the fixture)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          # Nothing this job reads is LFS-tracked today, but fetch the blobs
+          # anyway: if a fixture or an asset the CLI touches ever becomes
+          # LFS-tracked, the suite would otherwise assert against ~130-byte
+          # pointer files and fail in a thoroughly confusing way.
+          lfs: true
+          # The fixture submodule IS the subject here, so it must be present.
+          # actions/checkout rewrites github.com SSH remotes to authenticated
+          # HTTPS, so the submodule's SSH URL resolves without a deploy key.
+          submodules: true
+
+      - name: Set up Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Set up Node.js 22 with pnpm cache
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # The suite drives only the CLI crate, which does not link the webview, so
+      # the Tauri system libraries the `rust` job installs are not needed here.
+      - name: Run the end-to-end suite
+        # Pin the fixture to the commit this repository records: a CI run must be
+        # reproducible and fail for reasons in the diff, not because the fixture
+        # moved. Locally the same script force-pulls instead.
+        env:
+          SKILLKEEPER_E2E_PIN_FIXTURE: "1"
+        run: pnpm test:e2e
