@@ -15,10 +15,11 @@
 
 ### Fixed
 
-- A pre-release tag no longer takes the `latest` documentation alias. The bare
-  docs URL redirects to `latest`, so publishing a release candidate used to make
-  it the documentation every visitor landed on. Pre-release docs are still
-  published under their own version, just without the alias.
+- A pre-release tag no longer publishes documentation at all. The bare docs URL
+  redirects to the `latest` alias, so tagging a release candidate used to make it
+  the documentation every visitor landed on; and a candidate's docs are
+  in-progress docs, already served under `dev`. Publishing them only added
+  throwaway entries to the version switcher that had to be deleted by hand.
 
 ## Version 0.2.1-rc.1
 

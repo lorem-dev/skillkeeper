@@ -5,8 +5,13 @@
 #   Source: "Deploy from a branch" -> branch `gh-pages`, folder `/ (root)`.
 #
 # Versioning (the switcher in the site header reads mike's versions.json):
-#   - A `v*` tag publishes that release under its version (e.g. 0.1.0-rc.1)
-#     and moves the `latest` alias, which the bare site URL redirects to.
+#   - A final release tag (`v1.2.3`) publishes that release under its version and
+#     moves the `latest` alias, which the bare site URL redirects to.
+#   - A PRE-RELEASE tag (`v1.2.3-rc.1`, or any tag with a `-` qualifier) publishes
+#     nothing. Release candidates are cut from `develop` to exercise the release
+#     pipeline; their docs are in-progress docs, already covered by the `dev`
+#     alias, and publishing them only adds throwaway entries to the version
+#     switcher that then have to be deleted by hand.
 #   - A push to `main` publishes the in-progress docs under the `dev` alias.
 #   - `workflow_dispatch` re-runs the current ref manually.
 
@@ -17,7 +22,10 @@ on:
     branches:
       - main
     tags:
+      # Final releases only: the negative pattern excludes any pre-release tag
+      # (a `-` qualifier), so an RC never starts this workflow at all.
       - "v*"
+      - "!v*-*"
   workflow_dispatch:
 
 # mike pushes commits to the gh-pages branch.
@@ -61,24 +69,20 @@ jobs:
           set -euo pipefail
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             version="${GITHUB_REF_NAME#v}"
-            # A pre-release (any tag with a `-` qualifier, e.g. 0.3.0-rc.1) is
-            # published under its own version but must NOT take the `latest`
-            # alias: the bare site URL redirects to `latest`, so moving it would
-            # make a release candidate the documentation everyone lands on.
+            # The tag filter already keeps pre-releases out, but workflow_dispatch
+            # can be pointed at any ref -- so refuse here too rather than relying
+            # on the trigger alone.
             case "${version}" in
               *-*)
-                echo "Publishing pre-release docs ${version} (no alias)"
-                uv run --with mkdocs-material --with mike \
-                  mike deploy --push "${version}"
-                ;;
-              *)
-                echo "Publishing release docs ${version} (alias: latest)"
-                uv run --with mkdocs-material --with mike \
-                  mike deploy --push --update-aliases "${version}" latest
-                uv run --with mkdocs-material --with mike \
-                  mike set-default --push latest
+                echo "${version} is a pre-release; skipping docs publication."
+                exit 0
                 ;;
             esac
+            echo "Publishing release docs ${version} (alias: latest)"
+            uv run --with mkdocs-material --with mike \
+              mike deploy --push --update-aliases "${version}" latest
+            uv run --with mkdocs-material --with mike \
+              mike set-default --push latest
           else
             echo "Publishing development docs (alias: dev)"
             uv run --with mkdocs-material --with mike \

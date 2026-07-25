@@ -86,9 +86,10 @@ Three properties make an RC safe to publish from `develop`:
 - The workflow marks any tag containing `-` as a pre-release, and
   `releases/latest/download/...` -- the URL both one-line installers use -- never
   resolves to a pre-release. Users on `install.sh` will not pick up an RC.
-- The docs workflow publishes a pre-release under its own version but does not
-  move the `latest` alias, so the bare documentation URL keeps pointing at the
-  last final release.
+- The docs workflow ignores pre-release tags entirely, so an RC neither becomes
+  the site's `latest` (which the bare documentation URL redirects to) nor adds a
+  throwaway entry to the version switcher. A candidate's docs are in-progress
+  docs, already published under the `dev` alias from `main`.
 - Nothing else consumes the release except by explicit tag.
 
 Cutting an RC therefore looks like:
