@@ -101,8 +101,14 @@ check before a change is considered done or a pull request opened.
 
 The repository has one submodule: `examples/test-repo`, tracking
 [skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo) over
-SSH. It is a fixture repository, not a dependency: nothing builds, tests, or
-lints against it, so a missing checkout never breaks a gate.
+SSH. It is a fixture repository, not a code dependency: nothing compiles, lints,
+or unit-tests against it, so the everyday gate in "Running the Gates" passes with
+it absent.
+
+It is required for one thing: the `check-fixture-repo` skill, which drives the
+built CLI against it end to end and is part of `pre-release-check`. A release
+must not skip that check, so initialize the submodule rather than working around
+it. Note the SSH remote needs a GitHub key with access.
 
 A fresh clone leaves it empty. Populate it with:
 
@@ -333,7 +339,7 @@ backend events via `listen`. It imports the ts-rs-generated types under
 
 ## Local Development Skills
 
-Five skills live under `.agents/skills/`. Invoke them when the situation calls
+Six skills live under `.agents/skills/`. Invoke them when the situation calls
 for it:
 
 | Skill | When to use |
@@ -341,8 +347,9 @@ for it:
 | `check-changes` | After a batch of commits -- verify CHANGES.md (Development section) reflects every change. |
 | `check-docs` | Before a release or after updating commands/options -- verify docs/ and README.md are current. |
 | `run-tests-and-linters` | Before marking any task done -- run the full gate (lint, typecheck, test:cov at 90%). |
+| `check-fixture-repo` | After touching resolution, install, hooks, guidance, or MCP -- drive the built CLI against the `examples/test-repo` fixture end to end, in a throwaway state dir. The only check that exercises the real binary against a real working tree. |
 | `check-licenses` | After editing any `package.json` or `Cargo.toml` -- verify all npm and cargo dependencies are license-compliant and update LICENSE. |
-| `pre-release-check` | Before cutting a release -- runs all four skills above plus version-bump and commit-format checks. |
+| `pre-release-check` | Before cutting a release -- runs all five skills above plus version-bump and commit-format checks. |
 
 ---
 

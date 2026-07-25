@@ -2,8 +2,9 @@
 name: pre-release-check
 description: >
   Gate a release by running check-changes, check-docs, run-tests-and-linters,
-  and check-licenses, plus verifying the version bump and that all commits
-  since the last release follow the conventional-commits format.
+  check-licenses, and check-fixture-repo, plus verifying the version bump and
+  that all commits since the last release follow the conventional-commits
+  format.
 ---
 
 # pre-release-check
@@ -12,19 +13,28 @@ Run the full release gate. All checks must pass before tagging a release.
 
 ## Steps
 
-### 1. Run the four component skills
+### 1. Run the five component skills
 
 Run each skill in order and collect its result (PASS or FAIL with details):
 
 1. **check-licenses** -- must run first because a license failure is the most
    fundamental blocker.
 2. **run-tests-and-linters** -- lint, typecheck, and coverage at 90%.
-3. **check-docs** -- README.md, docs/ nav, command accuracy, version refs.
-4. **check-changes** -- CHANGES.md Development section vs. commit history.
+3. **check-fixture-repo** -- drive the built CLI against the `examples/test-repo`
+   fixture end to end. This is the only check that exercises the real binary
+   against a real working tree, so it catches wiring regressions the unit tests
+   (which run against an in-memory filesystem) cannot see.
+4. **check-docs** -- README.md, docs/ nav, command accuracy, version refs.
+5. **check-changes** -- CHANGES.md Development section vs. commit history.
 
-If check-licenses or run-tests-and-linters fails, report the failure and stop.
-The remaining checks can still be reported for completeness, but a release must
-not proceed while tests or licenses are failing.
+If check-licenses, run-tests-and-linters, or check-fixture-repo fails, report the
+failure and stop. The remaining checks can still be reported for completeness,
+but a release must not proceed while tests, licenses, or the end-to-end run are
+failing.
+
+If the fixture submodule is not checked out, `check-fixture-repo` cannot run.
+Initialize it (`git submodule update --init`) rather than skipping the check --
+a release must not ship without an end-to-end pass.
 
 ### 2. Verify the version bump
 
@@ -59,6 +69,7 @@ Produce a release-readiness summary:
 ```
 check-licenses:            PASS / FAIL
 run-tests-and-linters:     PASS / FAIL
+check-fixture-repo:        PASS / FAIL
 check-docs:                PASS / FAIL
 check-changes:             PASS / FAIL
 version bump consistent:   PASS / FAIL

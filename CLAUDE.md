@@ -18,9 +18,11 @@ isolation (`pnpm --filter @skillkeeper/desktop run storybook`); see AGENTS.md.
 
 One git submodule: `examples/test-repo`, a fixture repository covering every
 skill/group/hook/MCP-preset resolution path. Run `git submodule update --init`
-after a fresh clone. It is a fixture, not a dependency -- no gate builds or
-tests against it -- so an empty checkout never breaks anything. See the
-"Git submodules" section of AGENTS.md before bumping its pointer.
+after a fresh clone (CI checks it out via `submodules: true`). Nothing compiles,
+lints, or unit-tests against it, so the everyday gate passes with it absent --
+but the `check-fixture-repo` skill needs it, and that skill is part of
+`pre-release-check`. See the "Git submodules" section of AGENTS.md before
+bumping its pointer.
 
 ---
 

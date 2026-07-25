@@ -24,6 +24,13 @@ jobs:
           # Fetch LFS blobs (png/ttf/woff2): the icon generator and the font
           # assets read real bytes, not the LFS pointer text.
           lfs: true
+          # Check out examples/test-repo, the end-to-end fixture. Nothing here
+          # compiles or lints against it, but keeping it present means any job
+          # can drive the CLI against a real working tree without a separate
+          # fetch step. Its remote is an SSH URL; actions/checkout rewrites
+          # github.com SSH to authenticated HTTPS, so no deploy key is needed
+          # for this public repository.
+          submodules: true
 
       - name: Enable pnpm via corepack
         run: corepack enable
@@ -69,6 +76,13 @@ jobs:
           # Fetch LFS blobs (png/ttf/woff2): the icon generator and the font
           # assets read real bytes, not the LFS pointer text.
           lfs: true
+          # Check out examples/test-repo, the end-to-end fixture. Nothing here
+          # compiles or lints against it, but keeping it present means any job
+          # can drive the CLI against a real working tree without a separate
+          # fetch step. Its remote is an SSH URL; actions/checkout rewrites
+          # github.com SSH to authenticated HTTPS, so no deploy key is needed
+          # for this public repository.
+          submodules: true
 
       # The Cargo workspace includes the `skillkeeper` Tauri app crate, which
       # links against the system WebKitGTK/libsoup stack. These packages must
