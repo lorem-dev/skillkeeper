@@ -3,6 +3,7 @@ import { en } from './catalogs/en.js';
 import { be } from './catalogs/be.js';
 import { de } from './catalogs/de.js';
 import { es } from './catalogs/es.js';
+import { hi } from './catalogs/hi.js';
 import { fr } from './catalogs/fr.js';
 import { it as itCat } from './catalogs/it.js';
 import { ja } from './catalogs/ja.js';
@@ -12,6 +13,7 @@ import { pt } from './catalogs/pt.js';
 import { ru } from './catalogs/ru.js';
 import { srCyrl } from './catalogs/sr-cyrl.js';
 import { srLatn } from './catalogs/sr-latn.js';
+import { th } from './catalogs/th.js';
 import { uk } from './catalogs/uk.js';
 import { zhCn } from './catalogs/zh-cn.js';
 import { zhTw } from './catalogs/zh-tw.js';
@@ -20,8 +22,8 @@ import type { Catalog } from './catalogs/en.js';
 const NEW_KEYS = ['menu.view', 'menu.about', 'menu.openSettings'] as const;
 
 const LOCALES: Record<string, Partial<Catalog>> = {
-  be, de, es, fr, it: itCat, ja, ko, pl, pt, ru,
-  'sr-cyrl': srCyrl, 'sr-latn': srLatn, uk, 'zh-cn': zhCn, 'zh-tw': zhTw,
+  be, de, es, fr, hi, it: itCat, ja, ko, pl, pt, ru,
+  'sr-cyrl': srCyrl, 'sr-latn': srLatn, th, uk, 'zh-cn': zhCn, 'zh-tw': zhTw,
 };
 
 describe('menu.* keys', () => {

@@ -40,6 +40,8 @@ const loaders: Record<Lang, () => Promise<Partial<Catalog>>> = {
   pt: () => import('./catalogs/pt.js').then((m) => m.pt),
   ko: () => import('./catalogs/ko.js').then((m) => m.ko),
   it: () => import('./catalogs/it.js').then((m) => m.it),
+  hi: () => import('./catalogs/hi.js').then((m) => m.hi),
+  th: () => import('./catalogs/th.js').then((m) => m.th),
 };
 
 /** Load a language's catalog (English is synchronous; others are code-split). */

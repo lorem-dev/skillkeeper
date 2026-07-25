@@ -33,6 +33,8 @@ fn catalog_bytes(lang: &str) -> Option<&'static [u8]> {
         "pt" => mo!("pt"),
         "ko" => mo!("ko"),
         "it" => mo!("it"),
+        "hi" => mo!("hi"),
+        "th" => mo!("th"),
         _ => return None,
     })
 }

@@ -1,6 +1,6 @@
 # Localization (i18n)
 
-SkillKeeper ships in 16 languages. Every user-facing string flows from a
+SkillKeeper ships in 18 languages. Every user-facing string flows from a
 **single source of truth** -- the gettext `.po` catalogs under `locales/` -- into
 both the desktop renderer (TypeScript) and the native macOS menu (Rust). This
 page describes that pipeline and how to add or change translations.
@@ -18,12 +18,24 @@ catalogs: the `msgid` is a **dotted message key** (e.g. `nav.repositories`,
   runtime (per key), in every consumer.
 
 Supported codes (canonical order): `en, de, ru, uk, be, fr, ja, zh-cn, pl,
-sr-cyrl, sr-latn, zh-tw, es, pt, ko, it`.
+sr-cyrl, sr-latn, zh-tw, es, pt, ko, it, hi, th`.
 
 ## The generation pipeline
 
 `scripts/gen-i18n.mjs` (run with `pnpm run i18n`) compiles the `.po` sources
-into the artifacts each consumer needs:
+into the artifacts each consumer needs. It regenerates every language by
+default; pass codes to limit it while iterating on one translation:
+
+```bash
+pnpm run i18n                    # all languages (the default)
+pnpm run i18n -- ru de           # only these
+pnpm run i18n -- --langs=ru,de   # same, comma-separated
+```
+
+An unknown code fails with the supported list. English is always regenerated,
+even when a subset does not name it: `catalogs/en.ts` defines the
+`MessageKey`/`Catalog` types every other catalog imports, so regenerating one
+language against a stale English catalog would emit keys the type does not have.
 
 ```
 locales/<lang>.po                                 (SOURCE -- hand-edited)
@@ -143,7 +155,7 @@ dedicated translation pass (before a release, or when explicitly asked).
 Adding code `xx` (BCP-47 form `Xx` where it differs, e.g. `zh-cn` -> `zh-Hans`):
 
 1. `locales/xx.po` -- create (copy `en.po`, translate).
-2. `scripts/gen-i18n.mjs` -- add `xx` to `LANGS`.
+2. `scripts/gen-i18n.mjs` -- add `xx` to `ALL_LANGS`.
 3. `packages/i18n/src/langs.ts` -- add to the `Lang` union and `SUPPORTED_LANGS`.
 4. `packages/i18n/src/index.ts` -- import the catalog and add it to `catalogs`.
 5. `packages/i18n/src/lazy.ts` -- add a dynamic-`import()` loader.

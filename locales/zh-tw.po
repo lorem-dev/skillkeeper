@@ -151,6 +151,9 @@ msgstr "重置篩選條件"
 msgid "notifications.error"
 msgstr "錯誤"
 
+msgid "notifications.warning"
+msgstr "警告"
+
 msgid "notifications.info"
 msgstr "通知"
 
@@ -186,6 +189,9 @@ msgstr "顯示"
 
 msgid "logs.level.error"
 msgstr "錯誤"
+
+msgid "logs.level.warning"
+msgstr "警告"
 
 msgid "logs.level.info"
 msgstr "訊息"

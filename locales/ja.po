@@ -151,6 +151,9 @@ msgstr "フィルターをリセット"
 msgid "notifications.error"
 msgstr "エラー"
 
+msgid "notifications.warning"
+msgstr "警告"
+
 msgid "notifications.info"
 msgstr "通知"
 
@@ -186,6 +189,9 @@ msgstr "表示"
 
 msgid "logs.level.error"
 msgstr "エラー"
+
+msgid "logs.level.warning"
+msgstr "警告"
 
 msgid "logs.level.info"
 msgstr "メッセージ"

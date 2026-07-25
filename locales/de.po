@@ -169,6 +169,9 @@ msgstr "Filter zurücksetzen"
 msgid "notifications.error"
 msgstr "Fehler"
 
+msgid "notifications.warning"
+msgstr "Warnung"
+
 msgid "notifications.info"
 msgstr "Benachrichtigung"
 
@@ -204,6 +207,9 @@ msgstr "Anzeigen"
 
 msgid "logs.level.error"
 msgstr "Fehler"
+
+msgid "logs.level.warning"
+msgstr "Warnungen"
 
 msgid "logs.level.info"
 msgstr "Meldungen"

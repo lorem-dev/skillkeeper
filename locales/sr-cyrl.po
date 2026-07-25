@@ -151,6 +151,9 @@ msgstr "Ресетуј филтере"
 msgid "notifications.error"
 msgstr "Грешка"
 
+msgid "notifications.warning"
+msgstr "Упозорење"
+
 msgid "notifications.info"
 msgstr "Обавештење"
 
@@ -186,6 +189,9 @@ msgstr "Прикажи"
 
 msgid "logs.level.error"
 msgstr "Грешке"
+
+msgid "logs.level.warning"
+msgstr "Упозорења"
 
 msgid "logs.level.info"
 msgstr "Поруке"

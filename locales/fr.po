@@ -151,6 +151,9 @@ msgstr "Reinitialiser les filtres"
 msgid "notifications.error"
 msgstr "Erreur"
 
+msgid "notifications.warning"
+msgstr "Avertissement"
+
 msgid "notifications.info"
 msgstr "Notification"
 
@@ -186,6 +189,9 @@ msgstr "Afficher"
 
 msgid "logs.level.error"
 msgstr "Erreurs"
+
+msgid "logs.level.warning"
+msgstr "Avertissements"
 
 msgid "logs.level.info"
 msgstr "Messages"

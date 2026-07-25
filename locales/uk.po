@@ -151,6 +151,9 @@ msgstr "Скинути фільтри"
 msgid "notifications.error"
 msgstr "Помилка"
 
+msgid "notifications.warning"
+msgstr "Попередження"
+
 msgid "notifications.info"
 msgstr "Сповіщення"
 
@@ -186,6 +189,9 @@ msgstr "Показувати"
 
 msgid "logs.level.error"
 msgstr "Помилки"
+
+msgid "logs.level.warning"
+msgstr "Попередження"
 
 msgid "logs.level.info"
 msgstr "Повідомлення"
