@@ -859,6 +859,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#end-to-end-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End-to-end tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1072,6 +1089,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#end-to-end-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End-to-end tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1185,10 +1219,16 @@
 </ul>
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
 <p>Clone the repository and install dependencies:</p>
-<div class="highlight"><pre><span></span><code>git clone git@github.com:lorem-dev/skillkeeper.git
+<div class="highlight"><pre><span></span><code>git clone --recurse-submodules git@github.com:lorem-dev/skillkeeper.git
 cd skillkeeper
 pnpm install
 </code></pre></div>
+<p>If you cloned without <code>--recurse-submodules</code>, fetch the one submodule
+(<code>examples/test-repo</code>, the end-to-end fixture) with:</p>
+<div class="highlight"><pre><span></span><code>git submodule update --init
+</code></pre></div>
+<p>Nothing compiles, lints, or unit-tests against it, so the ordinary commands below
+work without it -- only <code>pnpm test:e2e</code> needs it.</p>
 <h2 id="monorepo-structure">Monorepo structure<a class="headerlink" href="#monorepo-structure" title="Permanent link">&para;</a></h2>
 <p>SkillKeeper has two workspaces. A Cargo (Rust) workspace holds the domain crates
 under <code>crates/</code> (<code>skillkeeper-core</code>, <code>skillkeeper-config</code>, <code>skillkeeper-agents</code>,
@@ -1248,6 +1288,10 @@ resolves the Rust dependencies on first build.</p>
 <td>Run tests with v8 coverage report.</td>
 </tr>
 <tr>
+<td><code>pnpm test:e2e</code></td>
+<td>Run the end-to-end suite against the built CLI.</td>
+</tr>
+<tr>
 <td><code>pnpm lint</code></td>
 <td>Run ESLint.</td>
 </tr>
@@ -1302,6 +1346,47 @@ network access or external tools.</p>
 discovery independently.</p>
 <p>The TypeScript side uses Vitest. The <strong>90% lines and branches</strong> coverage gate
 (<code>pnpm test:cov</code>) applies to <code>packages/i18n</code>; CI fails below this threshold.</p>
+<h3 id="end-to-end-tests">End-to-end tests<a class="headerlink" href="#end-to-end-tests" title="Permanent link">&para;</a></h3>
+<p>In-memory fakes make the unit tests fast and deterministic, but they cannot catch
+a regression that lives in the wiring between the CLI, the agent adapters, and a
+real filesystem -- an adapter resolving the wrong destination root, say, or a
+skill that resolves under <code>MemFs</code> but not on disk. The end-to-end suite covers
+exactly that layer: it drives the real <code>skillkeeper</code> binary against a real Git
+working tree and asserts on the files it produces.</p>
+<div class="highlight"><pre><span></span><code>pnpm test:e2e
+</code></pre></div>
+<p>That script initializes the <code>examples/test-repo</code> submodule, force-pulls it to the
+tip of its branch, builds <code>target/debug/skillkeeper</code>, and then runs the specs.
+Set <code>SKILLKEEPER_E2E_PIN_FIXTURE=1</code> to run against the fixture commit this
+repository pins instead of pulling -- CI does that, so a build fails for reasons
+in the diff rather than because the fixture moved.</p>
+<p>Layout:</p>
+<div class="highlight"><pre><span></span><code>e2e/
+  package.json       scopes the directory to CommonJS (the repo root is ESM)
+  tsconfig.json      its own TypeScript scope; ts-jest type-checks as it transpiles
+  src/cli.ts         the Sandbox harness: the only way a spec invokes the CLI
+  tests/
+    fixture.spec.ts  the submodule is present and still the shape the suite assumes
+    skills.spec.ts   resolution schemes, executables, guidance, hooks
+    mcp.spec.ts      preset discovery, parameters, ledgers, the Codex skip
+    repair.spec.ts   verify -&gt; repair -&gt; verify, and the bounds on repair
+</code></pre></div>
+<p>Two things about the design are worth knowing before adding a spec:</p>
+<ul>
+<li><strong>The runner is Jest, not Vitest.</strong> The two cover different layers and never
+  overlap: Vitest runs pure logic in-process under the coverage gate, Jest drives
+  a subprocess against the filesystem. Jest's config is <code>jest.config.cjs</code>, and the
+  suite is deliberately CommonJS so no <code>--experimental-vm-modules</code> is needed.</li>
+<li><strong>Isolation belongs to the harness.</strong> <code>Sandbox</code> (in <code>e2e/src/cli.ts</code>) always
+  sets throwaway <code>HOME</code> <em>and</em> <code>XDG_CONFIG_HOME</code>. The first relocates the agents'
+  global roots (a Codex MCP install always writes to <code>~/.codex/config.toml</code>, and
+  global-scope skill installs write under <code>~</code>); the second relocates <code>state.json</code>
+  and <code>config.yaml</code>. Forgetting either would edit the real machine, so specs never
+  spawn the binary themselves -- always go through <code>Sandbox</code>.</li>
+</ul>
+<p>The <code>check-fixture-repo</code> local skill wraps this suite and explains how to read a
+failure: whether the fixture drifted, the product changed, or the harness leaked.
+It is part of <code>pre-release-check</code>.</p>
 <h2 id="typescript">TypeScript<a class="headerlink" href="#typescript" title="Permanent link">&para;</a></h2>
 <p>The renderer and <code>packages/i18n</code> use TypeScript in strict mode with
 <code>noUncheckedIndexedAccess: true</code>. The renderer's backend types are generated
@@ -1332,6 +1417,10 @@ git checkout -b feature/my-feature
 <li>At release: open a Merge Request from <code>develop</code> to <code>main</code>.</li>
 </ol>
 <p>Direct commits to <code>main</code> are allowed only until the first release.</p>
+<p>Tagging: a release candidate (<code>v&lt;version&gt;-rc.&lt;n&gt;</code>) is tagged on <code>develop</code>, so the
+pipeline and the installers can be exercised before the work reaches the release
+branch. A final release (<code>v&lt;version&gt;</code>) is tagged on <code>main</code> only. Only RC tags may
+come from <code>develop</code>, and the release workflow enforces that.</p>
 <h2 id="commit-conventions">Commit conventions<a class="headerlink" href="#commit-conventions" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Conventional Commits format.</li>

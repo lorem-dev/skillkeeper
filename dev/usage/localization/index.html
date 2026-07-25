@@ -1196,7 +1196,7 @@
 
 
 <h1 id="localization-i18n">Localization (i18n)<a class="headerlink" href="#localization-i18n" title="Permanent link">&para;</a></h1>
-<p>SkillKeeper ships in 16 languages. Every user-facing string flows from a
+<p>SkillKeeper ships in 18 languages. Every user-facing string flows from a
 <strong>single source of truth</strong> -- the gettext <code>.po</code> catalogs under <code>locales/</code> -- into
 both the desktop renderer (TypeScript) and the native macOS menu (Rust). This
 page describes that pipeline and how to add or change translations.</p>
@@ -1212,10 +1212,19 @@ catalogs: the <code>msgid</code> is a <strong>dotted message key</strong> (e.g. 
   runtime (per key), in every consumer.</li>
 </ul>
 <p>Supported codes (canonical order): <code>en, de, ru, uk, be, fr, ja, zh-cn, pl,
-sr-cyrl, sr-latn, zh-tw, es, pt, ko, it</code>.</p>
+sr-cyrl, sr-latn, zh-tw, es, pt, ko, it, hi, th</code>.</p>
 <h2 id="the-generation-pipeline">The generation pipeline<a class="headerlink" href="#the-generation-pipeline" title="Permanent link">&para;</a></h2>
 <p><code>scripts/gen-i18n.mjs</code> (run with <code>pnpm run i18n</code>) compiles the <code>.po</code> sources
-into the artifacts each consumer needs:</p>
+into the artifacts each consumer needs. It regenerates every language by
+default; pass codes to limit it while iterating on one translation:</p>
+<div class="highlight"><pre><span></span><code>pnpm<span class="w"> </span>run<span class="w"> </span>i18n<span class="w">                    </span><span class="c1"># all languages (the default)</span>
+pnpm<span class="w"> </span>run<span class="w"> </span>i18n<span class="w"> </span>--<span class="w"> </span>ru<span class="w"> </span>de<span class="w">           </span><span class="c1"># only these</span>
+pnpm<span class="w"> </span>run<span class="w"> </span>i18n<span class="w"> </span>--<span class="w"> </span>--langs<span class="o">=</span>ru,de<span class="w">   </span><span class="c1"># same, comma-separated</span>
+</code></pre></div>
+<p>An unknown code fails with the supported list. English is always regenerated,
+even when a subset does not name it: <code>catalogs/en.ts</code> defines the
+<code>MessageKey</code>/<code>Catalog</code> types every other catalog imports, so regenerating one
+language against a stale English catalog would emit keys the type does not have.</p>
 <div class="highlight"><pre><span></span><code>locales/&lt;lang&gt;.po                                 (SOURCE -- hand-edited)
         |
         |  pnpm run i18n   (scripts/gen-i18n.mjs, uses gettext-parser)
@@ -1316,7 +1325,7 @@ dedicated translation pass (before a release, or when explicitly asked).</p>
 <p>Adding code <code>xx</code> (BCP-47 form <code>Xx</code> where it differs, e.g. <code>zh-cn</code> -&gt; <code>zh-Hans</code>):</p>
 <ol>
 <li><code>locales/xx.po</code> -- create (copy <code>en.po</code>, translate).</li>
-<li><code>scripts/gen-i18n.mjs</code> -- add <code>xx</code> to <code>LANGS</code>.</li>
+<li><code>scripts/gen-i18n.mjs</code> -- add <code>xx</code> to <code>ALL_LANGS</code>.</li>
 <li><code>packages/i18n/src/langs.ts</code> -- add to the <code>Lang</code> union and <code>SUPPORTED_LANGS</code>.</li>
 <li><code>packages/i18n/src/index.ts</code> -- import the catalog and add it to <code>catalogs</code>.</li>
 <li><code>packages/i18n/src/lazy.ts</code> -- add a dynamic-<code>import()</code> loader.</li>

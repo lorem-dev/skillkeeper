@@ -1144,12 +1144,15 @@ likewise detected), <code>lfs</code> (whether Git LFS is required), <code>localP
 instead of the clone's default.</p>
 <h2 id="adding-and-managing-repositories">Adding and managing repositories<a class="headerlink" href="#adding-and-managing-repositories" title="Permanent link">&para;</a></h2>
 <p>CLI:</p>
-<div class="highlight"><pre><span></span><code>skillkeeper repo add &lt;url&gt; &lt;local-path&gt; [--name &lt;name&gt;] [--lfs]
+<div class="highlight"><pre><span></span><code>skillkeeper repo add &lt;url&gt; [&lt;local-path&gt;] [--name &lt;name&gt;] [--lfs | --no-lfs]
 skillkeeper repo remove &lt;id&gt;
 skillkeeper repo list
 skillkeeper repo update [id] [--all]
 </code></pre></div>
-<p><code>repo add</code> clones immediately and requires an explicit local path. The
+<p><code>repo add</code> clones immediately. The local path is optional: omit it and the
+clone lands in a per-repository directory under the app's own repositories folder
+(the same location the desktop app uses). Git LFS is enabled by default when the
+<code>git-lfs</code> client is installed; <code>--no-lfs</code> opts out. The
 desktop app splits this in two: adding a repository first records it (so its
 card can appear right away) at an app-managed path under its own
 repositories directory, then clones it as a second step; a repository whose

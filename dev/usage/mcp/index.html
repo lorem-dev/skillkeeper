@@ -1275,6 +1275,14 @@ the field its transport needs fails validation for the whole file.</p>
 <span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">X-Api-Key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{api_key}&quot;</span>
 </code></pre></div>
+<p>Both files exist for real in the
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo">skillkeeper-test-repo</a>
+fixture repository:
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/mcp.yml"><code>mcp.yml</code></a>
+declares five ungrouped presets covering all three transports, with and without
+parameters, headers, and <code>rules</code>;
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/mcp.yml"><code>tooling/mcp.yml</code></a>
+declares one preset in the <code>tooling</code> group.</p>
 <h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
 <p>A server definition may reference <code>{name}</code> placeholders in <code>url</code>, header
 values, <code>command</code>, <code>args</code>, <code>env</code> values, and <code>rules</code>. Parameters are <strong>not</strong>

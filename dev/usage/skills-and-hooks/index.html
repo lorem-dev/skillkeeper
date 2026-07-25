@@ -1499,6 +1499,27 @@ under <code>&lt;SKILL_GROUP&gt;/&lt;SKILL_NAME&gt;/hooks/</code>.</p>
 <p>Schemes 1 and 2 are auto-detected by scanning up to two directory levels deep
 for <code>SKILL.md</code> files; anything nested deeper produces the unresolved-path
 warning mentioned above instead of a guessed install.</p>
+<p>The scan skips two families of directory outright, resolving nothing from them
+and raising no warning: <strong>hidden</strong> directories (any name starting with <code>.</code>) and
+dependency or build trees (<code>node_modules</code>, <code>vendor</code>, <code>target</code>, <code>dist</code>). Hidden
+directories are where every agent keeps its <em>installed</em> skills
+(<code>.claude/skills/</code>, <code>.codex/skills/</code>, <code>.cursor/skills/</code>, <code>.opencode/skills/</code>,
+<code>.github/copilot/skills/</code>), so a repository that itself uses SkillKeeper holds
+skills it consumes rather than publishes; treating those as candidates reported a
+nesting warning for perfectly normal projects. An explicit <code>path</code> in
+<code>skillkeeper.repo.yaml</code> still reaches a skipped directory, which is the way to
+publish a skill from one deliberately.</p>
+<p>All three schemes have worked examples in the
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo">skillkeeper-test-repo</a>
+fixture repository: a flat skill at
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/minimal-skill/SKILL.md"><code>minimal-skill/SKILL.md</code></a>,
+a grouped one at
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/lint-skill/SKILL.md"><code>tooling/lint-skill/SKILL.md</code></a>,
+an inert scheme-3 sample at
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/skillkeeper.repo.yaml.example"><code>skillkeeper.repo.yaml.example</code></a>,
+and a too-deeply-nested skill at
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/deep-nesting/level-two/too-deep-skill/SKILL.md"><code>deep-nesting/level-two/too-deep-skill/SKILL.md</code></a>
+that must not resolve.</p>
 <hr />
 <h2 id="what-is-a-hook">What is a hook?<a class="headerlink" href="#what-is-a-hook" title="Permanent link">&para;</a></h2>
 <p>A hook is an optional unit inside a skill (<code>hooks/HOOK.md</code> plus files) that
@@ -1549,6 +1570,11 @@ diff. Claude, Codex, Copilot, and Cursor all use this strategy.</p>
 <h3 id="file">file<a class="headerlink" href="#file" title="Permanent link">&para;</a></h3>
 <p>Hook-owned standalone files, tracked as <code>ManagedFile</code> entries flagged as
 hook-owned. Removed by path on uninstall, like any other managed file.</p>
+<p>Both hook layouts are shown in the fixture repository:
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/json-hooks-skill/hooks/pre-tool-use/HOOK.md"><code>json-hooks-skill/hooks/pre-tool-use/HOOK.md</code></a>
+is a named hook directory declaring <code>json-merge</code> with a <code>keyPath</code>, and
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/text-hook-skill/hooks/HOOK.md"><code>text-hook-skill/hooks/HOOK.md</code></a>
+is the single-hook layout declaring <code>delimited-text</code>.</p>
 <h3 id="per-agent-skills-hooks-and-guidance">Per-agent skills, hooks, and guidance<a class="headerlink" href="#per-agent-skills-hooks-and-guidance" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1607,7 +1633,10 @@ callers.</p>
 <h2 id="skill-guidance-guidemd-rulesmd">Skill guidance (GUIDE.md / RULES.md)<a class="headerlink" href="#skill-guidance-guidemd-rulesmd" title="Permanent link">&para;</a></h2>
 <p>A skill may optionally ship a <code>GUIDE.md</code> or <code>RULES.md</code> file containing
 guidance for the agent that installs it. <code>GUIDE.md</code> takes precedence when
-both files are present. If neither exists, no guidance is installed.</p>
+both files are present. If neither exists, no guidance is installed. The
+fixture repository's
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/documented-skill/SKILL.md"><code>documented-skill</code></a>
+ships both files, so it installs only its <code>GUIDE.md</code>.</p>
 <p>On install, the guide body is written as a marked block into each target
 agent's guidance file (from the table above). The block uses delimiters:</p>
 <div class="highlight"><pre><span></span><code>&lt;!-- SKILLKEEPER_START: &lt;remote&gt;; &lt;id&gt; --&gt;
@@ -1733,8 +1762,15 @@ region and compares them to the manifest, reporting per file: <code>ok</code>,
 <code>modified</code>, <code>missing</code>, or <code>extraneous</code> (a file present in a managed
 directory that is not recorded in the manifest).</p>
 <p><code>repair</code> reinstalls the affected skill (and, only if originally installed and
-re-consented, its hooks) to restore the recorded state. Verify is read-only;
-repair mutates and is always explicit.</p>
+re-consented, its hooks) to restore the recorded state, then removes the
+<code>extraneous</code> files, so the install verifies clean afterwards. Every deleted path
+is reported. Verify is read-only; repair mutates and is always explicit.</p>
+<p>Two things bound that deletion. A skill's installed directory is named after the
+skill alone, so two skills with the same name from different groups or
+repositories share one directory; files recorded by any other install under the
+same root are protected. And a recorded path that could resolve outside the
+destination root (a skill whose declared name is <code>..</code>, say) disables pruning for
+that install rather than being followed.</p>
 <hr />
 <h2 id="encapsulation">Encapsulation<a class="headerlink" href="#encapsulation" title="Permanent link">&para;</a></h2>
 <p>Skill or hook content that itself contains SkillKeeper delimiter comments or

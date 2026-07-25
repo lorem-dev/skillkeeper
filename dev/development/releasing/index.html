@@ -863,6 +863,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Branching and release flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#release-candidates-are-tagged-on-develop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release candidates are tagged on develop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1003,6 +1020,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Branching and release flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#release-candidates-are-tagged-on-develop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release candidates are tagged on develop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1153,6 +1187,54 @@ other artifacts and is unsigned (the Store signs it on ingest).</p>
 </ol>
 <p>Direct commits to <code>main</code> are allowed only until the first release. After v1,
 all changes enter <code>main</code> only via Merge Request.</p>
+<h3 id="release-candidates-are-tagged-on-develop">Release candidates are tagged on develop<a class="headerlink" href="#release-candidates-are-tagged-on-develop" title="Permanent link">&para;</a></h3>
+<p>A release candidate exists to exercise this pipeline -- the four-platform build,
+the asset names, the generated notes, the installers -- <em>before</em> the work reaches
+the release branch. Requiring a merge to <code>main</code> first would defeat that and fill
+<code>main</code> with candidates, so:</p>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th>Cut from</th>
+<th>Published as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>v&lt;version&gt;-rc.&lt;n&gt;</code></td>
+<td><code>develop</code></td>
+<td>GitHub pre-release</td>
+</tr>
+<tr>
+<td><code>v&lt;version&gt;</code></td>
+<td><code>main</code></td>
+<td>full release</td>
+</tr>
+</tbody>
+</table>
+<p>Only RC tags may come from <code>develop</code>. <code>scripts/check-tag-branch.mjs</code> runs in the
+pipeline's first job and fails a final tag that is not on <code>main</code>, before anything
+is built or published.</p>
+<p>Three properties make an RC safe to publish from <code>develop</code>:</p>
+<ul>
+<li>The workflow marks any tag containing <code>-</code> as a pre-release, and
+  <code>releases/latest/download/...</code> -- the URL both one-line installers use -- never
+  resolves to a pre-release. Users on <code>install.sh</code> will not pick up an RC.</li>
+<li>The docs workflow ignores pre-release tags entirely, so an RC neither becomes
+  the site's <code>latest</code> (which the bare documentation URL redirects to) nor adds a
+  throwaway entry to the version switcher. A candidate's docs are in-progress
+  docs, already published under the <code>dev</code> alias from <code>main</code>.</li>
+<li>Nothing else consumes the release except by explicit tag.</li>
+</ul>
+<p>Cutting an RC therefore looks like:</p>
+<div class="highlight"><pre><span></span><code>git checkout develop
+node scripts/bump-version.mjs 1.0.0-rc.1
+git commit -am &quot;release: 1.0.0-rc.1&quot;
+git tag -a v1.0.0-rc.1 -m &quot;SkillKeeper 1.0.0-rc.1&quot;
+git push origin develop
+git push origin v1.0.0-rc.1
+</code></pre></div>
 <h2 id="changesmd">CHANGES.md<a class="headerlink" href="#changesmd" title="Permanent link">&para;</a></h2>
 <p><code>CHANGES.md</code> is a per-version list of short bullet points grouped into:</p>
 <ul>
