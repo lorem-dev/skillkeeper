@@ -46,7 +46,22 @@ a release must not ship without an end-to-end pass.
   `## Development` and it is ready to be promoted.
 - If versions are inconsistent across packages, list the discrepancies.
 
-### 3. Verify conventional-commits format for commits since the last release
+### 3. Verify the tag will be accepted from this branch
+
+```bash
+git branch --show-current
+node scripts/check-tag-branch.mjs v<version>
+```
+
+A release candidate (`v<version>-rc.<n>`) is cut from `develop`; a final release
+(`v<version>`) is cut from `main`. Only RC tags may come from `develop`. The
+release pipeline enforces this in its first job, so checking here turns a failed
+release run into a one-second local answer.
+
+If the intended tag is final and the current branch is `develop`, the release is
+not ready: merge to `main` first, or cut an RC instead.
+
+### 4. Verify conventional-commits format for commits since the last release
 
 ```bash
 git log --oneline <last-release-boundary>..HEAD
@@ -62,7 +77,7 @@ For each commit subject, verify:
 
 Report each non-conforming commit with its hash and the specific violation.
 
-### 4. Report
+### 5. Report
 
 Produce a release-readiness summary:
 
@@ -72,6 +87,7 @@ run-tests-and-linters:     PASS / FAIL
 check-fixture-repo:        PASS / FAIL
 check-docs:                PASS / FAIL
 check-changes:             PASS / FAIL
+tag provenance (branch):   PASS / FAIL
 version bump consistent:   PASS / FAIL
 conventional commits:      PASS / FAIL (N non-conforming commits)
 

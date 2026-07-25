@@ -247,6 +247,18 @@ Follow CONTRIBUTING.md exactly:
 `feature/*` -> `develop` -> `main` via Merge Request. Direct commits to `main`
 are allowed only until the first release.
 
+Tagging follows the same split:
+
+- **Release-candidate tags** (`v<version>-rc.<n>`) are cut from **`develop`**. An
+  RC exists to exercise the release pipeline and the installers before the work
+  reaches the release branch, so requiring a merge to `main` first would defeat
+  its purpose and fill `main` with candidates.
+- **Final release tags** (`v<version>`, no pre-release suffix) are cut from
+  **`main`**, after `develop` has merged there.
+
+Only RC tags may come from `develop`. The release workflow enforces this, so a
+final tag pushed from `develop` fails before anything is built or published.
+
 ---
 
 ## CodeGraph

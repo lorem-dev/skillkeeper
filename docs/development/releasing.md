@@ -65,6 +65,40 @@ feature/* -> develop -> main (Merge Request)
 Direct commits to `main` are allowed only until the first release. After v1,
 all changes enter `main` only via Merge Request.
 
+### Release candidates are tagged on develop
+
+A release candidate exists to exercise this pipeline -- the four-platform build,
+the asset names, the generated notes, the installers -- *before* the work reaches
+the release branch. Requiring a merge to `main` first would defeat that and fill
+`main` with candidates, so:
+
+| Tag | Cut from | Published as |
+|---|---|---|
+| `v<version>-rc.<n>` | `develop` | GitHub pre-release |
+| `v<version>` | `main` | full release |
+
+Only RC tags may come from `develop`. `scripts/check-tag-branch.mjs` runs in the
+pipeline's first job and fails a final tag that is not on `main`, before anything
+is built or published.
+
+Two properties make an RC safe to publish from `develop`:
+
+- The workflow marks any tag containing `-` as a pre-release, and
+  `releases/latest/download/...` -- the URL both one-line installers use -- never
+  resolves to a pre-release. Users on `install.sh` will not pick up an RC.
+- Nothing else consumes the release except by explicit tag.
+
+Cutting an RC therefore looks like:
+
+```
+git checkout develop
+node scripts/bump-version.mjs 1.0.0-rc.1
+git commit -am "release: 1.0.0-rc.1"
+git tag -a v1.0.0-rc.1 -m "SkillKeeper 1.0.0-rc.1"
+git push origin develop
+git push origin v1.0.0-rc.1
+```
+
 ## CHANGES.md
 
 `CHANGES.md` is a per-version list of short bullet points grouped into:

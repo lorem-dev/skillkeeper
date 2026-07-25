@@ -34,12 +34,17 @@ jobs:
   # Cargo workspace version. Fails the whole release early on a mismatch.
   # ---------------------------------------------------------------------------
   verify-version:
-    name: Verify tag matches version
+    name: Verify tag provenance and version
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          # check-tag-branch.mjs asks whether the tag is reachable from main or
+          # develop, which needs the full history and those branch refs -- a
+          # shallow, tag-only checkout cannot answer it.
+          fetch-depth: 0
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v5
@@ -50,6 +55,13 @@ jobs:
           # auto-detects the pnpm packageManager field and fails locating pnpm
           # before corepack is enabled.
           package-manager-cache: false
+
+      # Cheapest possible gate, and it runs before anything is built: a final
+      # release tag must be on main, a release candidate on develop.
+      - name: Check the tag was cut from the right branch
+        run: |
+          git fetch --no-tags origin main develop
+          node scripts/check-tag-branch.mjs
 
       - name: Check the tag matches every package, tauri, and crate version
         run: node scripts/check-version.mjs

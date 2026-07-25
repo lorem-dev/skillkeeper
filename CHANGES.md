@@ -2,6 +2,17 @@
 
 ## Development
 
+### Added
+
+- Release pages now group their assets: a Downloads section lists the Desktop App
+  first, then the CLI App, each entry labelled by platform and format ("Desktop
+  Windows x64 (msi)") instead of showing only bundler-generated file names. The
+  section is generated from the assets actually staged, and nothing is renamed, so
+  the one-line installers are unaffected.
+- Release-candidate tags are cut from `develop` and final tags from `main`;
+  `scripts/check-tag-branch.mjs` enforces that in the release pipeline's first
+  job, before anything is built or published.
+
 ## Version 0.2.1-rc.1
 
 ### Added

@@ -209,6 +209,11 @@ Workflow:
 
 Direct commits to `main` are allowed only until the first release.
 
+Tagging: a release candidate (`v<version>-rc.<n>`) is tagged on `develop`, so the
+pipeline and the installers can be exercised before the work reaches the release
+branch. A final release (`v<version>`) is tagged on `main` only. Only RC tags may
+come from `develop`, and the release workflow enforces that.
+
 ## Commit conventions
 
 - Conventional Commits format.
