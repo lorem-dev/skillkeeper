@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.2.1-rc.1
+
 ### Added
 
 - Skill-resolution warnings are surfaced instead of discarded, so a `SKILL.md`
