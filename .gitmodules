@@ -1,0 +1,3 @@
+[submodule "examples/test-repo"]
+	path = examples/test-repo
+	url = git@github.com:lorem-dev/skillkeeper-test-repo.git

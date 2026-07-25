@@ -31,7 +31,7 @@ skillkeeper/
     skillkeeper-agents/   adapter registry + Claude/Codex/Copilot/Cursor/OpenCode adapters
     skillkeeper-cli/      clap-based CLI (binary name `skillkeeper`)
   packages/
-    i18n/       message catalogs for all supported locales (16 languages),
+    i18n/       message catalogs for all supported locales (18 languages),
                 generated from locales/*.po (en.po canonical) + lookup fn
                 (the only remaining TypeScript package)
   apps/
@@ -39,6 +39,10 @@ skillkeeper/
       src-tauri/    Rust backend (a Cargo workspace member): commands, PTY, state
       src/renderer/ React + Zustand renderer
   docs/         mkdocs site (English-only; docs/ui/ = design-system reference)
+  examples/
+    test-repo/  git SUBMODULE -> github.com/lorem-dev/skillkeeper-test-repo,
+                a fixture repository covering every skill/group/hook/MCP-preset
+                resolution path (see "Git submodules" below)
   .agents/skills/   local development skills (see below)
   .github/workflows/  CI pipelines
   AGENTS.md  CLAUDE.md  CONTRIBUTING.md  README.md  CHANGES.md  LICENSE
@@ -63,6 +67,7 @@ GTK development libraries Tauri builds against (webkit2gtk 4.1, GTK 3, libsoup3
 and related `-dev` packages).
 
 ```bash
+git submodule update --init   # fetch examples/test-repo (see below)
 corepack enable
 pnpm install
 
@@ -89,6 +94,36 @@ write only the minimal tests needed to guarantee the code works, and run just th
 focused test for what you changed (at most a quick `cargo test -p <crate>` or a
 typecheck of the renderer). The comprehensive gate above is the single final
 check before a change is considered done or a pull request opened.
+
+---
+
+## Git Submodules
+
+The repository has one submodule: `examples/test-repo`, tracking
+[skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo) over
+SSH. It is a fixture repository, not a dependency: nothing builds, tests, or
+lints against it, so a missing checkout never breaks a gate.
+
+A fresh clone leaves it empty. Populate it with:
+
+```bash
+git submodule update --init          # after an existing clone
+git clone --recurse-submodules <url> # or clone with it in one step
+```
+
+What to know when working with it:
+
+- **A submodule is pinned to a commit, not a branch.** `git status` in the
+  superproject shows `modified: examples/test-repo (new commits)` once the
+  submodule's checkout moves. That is a real, intentional change to record - the
+  superproject commit stores which fixture commit it points at.
+- **Do not commit an accidental pointer bump.** If you did not mean to update the
+  fixture, restore the recorded commit with
+  `git submodule update -- examples/test-repo`.
+- **Edit the fixture in its own repository**, not through this checkout, and push
+  it there first. Only then bump the pointer here, in a commit of its own.
+- The project's ASCII-only rule applies inside the fixture too; it carries its
+  own LICENSE.
 
 ---
 
