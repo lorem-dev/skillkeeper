@@ -2,6 +2,44 @@
 
 ## Development
 
+### Added
+
+- Skill-resolution warnings are now surfaced instead of discarded. The CLI
+  prints them to stderr, attributed to the repository, from `skill
+  install`/`update`/`repair`, `mcp list`, and `check`; the desktop app records
+  them in the notifications log under a new `warning` level (shown by default
+  alongside errors, and deliberately without a toast, since a warning is a
+  standing condition rather than a reaction to a user action).
+- Hindi (`hi`) and Thai (`th`) as selectable languages, bringing the total to 18.
+- `scripts/gen-i18n.mjs` takes an optional language list (`pnpm run i18n -- ru
+  de`, or `--langs=ru,de`) and regenerates every language when omitted.
+- `examples/test-repo`: a git submodule pointing at the fixture repository that
+  exercises every skill/group/hook/MCP-preset resolution path.
+
+### Fixed
+
+- `skill repair` now removes `extraneous` files, so a repaired install verifies
+  clean. Reinstalling overwrote recorded files but never deleted unrecorded
+  ones, leaving `verify` failing right after a successful repair. Every deleted
+  path is printed. The deletion is bounded twice over: files recorded by another
+  install sharing the same destination directory are protected (a directory is
+  named after the skill alone, so same-named skills from different groups share
+  one), and a recorded path that could resolve outside the destination root
+  disables pruning for that install instead of being followed.
+- Skill resolution no longer descends into **any** hidden directory (a name
+  starting with `.`, which covers every agent's own skills root -- `.claude/`,
+  `.codex/`, `.cursor/`, `.opencode/`, `.github/` -- plus `.git/`) or into
+  dependency and build trees (`node_modules/`, `vendor/`, `target/`, `dist/`).
+  A repository that itself uses SkillKeeper holds *installed* skills in its own
+  working tree, and those produced a spurious "nesting is deeper than a single
+  group" warning. Such a directory now resolves nothing and warns about nothing;
+  an explicit `path` in `skillkeeper.repo.yaml` still reaches it.
+
+### Changed
+
+- `package.json` metadata in all three workspace manifests: `homepage` now
+  points at the documentation site, plus `repository` and `bugs` entries.
+
 ## Version 0.2.0
 
 ### Added
