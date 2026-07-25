@@ -14,7 +14,9 @@ export default tseslint.config(
       '**/coverage/**',
       '**/node_modules/**',
       '**/storybook-static/**',
-      '**/*.config.{js,mjs,ts}',
+      // Tool configuration files, including CommonJS ones (jest.config.cjs):
+      // they run under their tool's own loader, not the app's module system.
+      '**/*.config.{js,cjs,mjs,ts}',
       'scripts/**',
       // mkdocs: any local docs virtualenv and the rendered static site.
       '.venv/**',
