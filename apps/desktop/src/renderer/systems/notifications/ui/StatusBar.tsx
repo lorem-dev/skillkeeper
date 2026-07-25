@@ -1,16 +1,18 @@
 /**
  * Bottom status bar. Holds a tasks button, a terminal button, and a bell
- * button. The tasks badge counts active (queued/running) sync tasks; the
- * bell badge counts ERRORS only (info notifications are not counted).
- * Clicking the tasks button opens the full-screen sync task list, the bell
- * opens the full-screen notifications log, the terminal button opens the
- * embedded terminal. Cross-cutting chrome -> systems/notifications.
+ * button. The tasks badge counts active (queued/running) sync tasks. The bell
+ * badge shows errors in red, or -- only when there are no errors at all --
+ * warnings in orange; `info` entries are never counted. Clicking the tasks
+ * button opens the full-screen sync task list, the bell opens the full-screen
+ * notifications log, the terminal button opens the embedded terminal.
+ * Cross-cutting chrome -> systems/notifications.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon } from '@/shared/ui';
 import { cx } from '@/shared/lib';
+import { resolveBellBadge } from '../bellBadge';
 import './StatusBar.scss';
 
 /**
@@ -61,8 +63,11 @@ function useThrottledCallback(fn: () => void, ms: number): () => void {
 }
 
 export function StatusBar() {
-  const count = useSkillkeeperStore(
+  const errorCount = useSkillkeeperStore(
     (s) => s.notifications.filter((n) => n.level === 'error').length,
+  );
+  const warningCount = useSkillkeeperStore(
+    (s) => s.notifications.filter((n) => n.level === 'warning').length,
   );
   const rawActiveTaskCount = useSkillkeeperStore(
     (s) => s.tasks.filter((task) => task.status === 'queued' || task.status === 'running').length,
@@ -86,7 +91,10 @@ export function StatusBar() {
     else openTasks();
   }, 500);
   const t = useTranslator();
-  const label = t('statusbar.notifications', { count: String(count) });
+
+  // Errors outrank warnings; see resolveBellBadge for the rule and its tests.
+  const badge = resolveBellBadge(errorCount, warningCount);
+  const label = t(badge.labelKey, { count: badge.labelCount });
   return (
     <footer className="sk-statusbar">
       <Button
@@ -114,12 +122,25 @@ export function StatusBar() {
       </Button>
       <Button
         variant="plain"
-        className={cx('sk-statusbar__btn', 'sk-statusbar__bell', count === 0 && 'sk-statusbar__bell--empty')}
+        className={cx(
+          'sk-statusbar__btn',
+          'sk-statusbar__bell',
+          badge.tone === null && 'sk-statusbar__bell--empty',
+        )}
         onClick={logsOpen ? closeLogs : openLogs}
         aria-label={label}
       >
         <Icon name="bell" size={18} />
-        {count > 0 && <span className="sk-statusbar__badge">{count}</span>}
+        {badge.tone !== null && (
+          <span
+            className={cx(
+              'sk-statusbar__badge',
+              badge.tone === 'warning' && 'sk-statusbar__badge--warning',
+            )}
+          >
+            {badge.text}
+          </span>
+        )}
       </Button>
     </footer>
   );

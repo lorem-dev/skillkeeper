@@ -160,6 +160,9 @@ msgstr "Сповіщення"
 msgid "statusbar.notifications"
 msgstr "Помилки: {count}"
 
+msgid "statusbar.warnings"
+msgstr "Попередження: {count}"
+
 msgid "statusbar.terminal"
 msgstr "Термінал"
 

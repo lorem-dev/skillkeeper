@@ -160,6 +160,9 @@ msgstr "알림"
 msgid "statusbar.notifications"
 msgstr "오류: {count}"
 
+msgid "statusbar.warnings"
+msgstr "경고: {count}"
+
 msgid "statusbar.terminal"
 msgstr "터미널"
 

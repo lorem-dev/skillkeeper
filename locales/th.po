@@ -181,6 +181,9 @@ msgstr "การแจ้งเตือน"
 msgid "statusbar.notifications"
 msgstr "ข้อผิดพลาด: {count}"
 
+msgid "statusbar.warnings"
+msgstr "คำเตือน: {count}"
+
 msgid "statusbar.terminal"
 msgstr "เทอร์มินัล"
 

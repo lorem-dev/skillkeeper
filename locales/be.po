@@ -160,6 +160,9 @@ msgstr "Апавяшчэнне"
 msgid "statusbar.notifications"
 msgstr "Памылкі: {count}"
 
+msgid "statusbar.warnings"
+msgstr "Папярэджанні: {count}"
+
 msgid "statusbar.terminal"
 msgstr "Тэрмінал"
 

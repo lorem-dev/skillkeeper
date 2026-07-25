@@ -181,6 +181,9 @@ msgstr "सूचना"
 msgid "statusbar.notifications"
 msgstr "त्रुटियाँ: {count}"
 
+msgid "statusbar.warnings"
+msgstr "चेतावनियाँ: {count}"
+
 msgid "statusbar.terminal"
 msgstr "टर्मिनल"
 

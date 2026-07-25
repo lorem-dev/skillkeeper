@@ -160,6 +160,9 @@ msgstr "Obaveštenje"
 msgid "statusbar.notifications"
 msgstr "Greške: {count}"
 
+msgid "statusbar.warnings"
+msgstr "Upozorenja: {count}"
+
 msgid "statusbar.terminal"
 msgstr "Terminal"
 

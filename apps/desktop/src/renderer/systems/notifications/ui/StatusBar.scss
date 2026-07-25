@@ -66,3 +66,14 @@
 .sk-statusbar__badge--accent {
   background: var(--sk-color-accent);
 }
+
+// Warning count, shown only when there are no errors. Orange matches the warning
+// Alert tone and the warning row in the log.
+.sk-statusbar__badge--warning {
+  background: var(--sk-orange);
+  // Dark text, not the white used on red: orange is a light fill, and white on it
+  // is unreadable at this size. A literal for the same reason the red badge uses
+  // one -- there is no on-warning token -- and fixed rather than themed, since
+  // the fill does not change between light and dark.
+  color: #1c1c1e;
+}

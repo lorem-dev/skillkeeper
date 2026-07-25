@@ -160,6 +160,9 @@ msgstr "Notification"
 msgid "statusbar.notifications"
 msgstr "Erreurs : {count}"
 
+msgid "statusbar.warnings"
+msgstr "Avertissements : {count}"
+
 msgid "statusbar.terminal"
 msgstr "Terminal"
 
