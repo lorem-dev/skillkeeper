@@ -12,38 +12,13 @@
     ]
   },
   {
-    "version": "0.2.0-rc.1",
-    "title": "0.2.0-rc.1",
-    "aliases": []
-  },
-  {
-    "version": "0.1.2-rc.1",
-    "title": "0.1.2-rc.1",
-    "aliases": []
-  },
-  {
     "version": "0.1.1",
     "title": "0.1.1",
     "aliases": []
   },
   {
-    "version": "0.1.1-rc.2",
-    "title": "0.1.1-rc.2",
-    "aliases": []
-  },
-  {
-    "version": "0.1.1-rc.1",
-    "title": "0.1.1-rc.1",
-    "aliases": []
-  },
-  {
     "version": "0.1.0",
     "title": "0.1.0",
-    "aliases": []
-  },
-  {
-    "version": "0.1.0-rc.2",
-    "title": "0.1.0-rc.2",
     "aliases": []
   }
 ]
