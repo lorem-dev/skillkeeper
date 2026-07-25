@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useSkillkeeperStore } from '@/app/store';
+import { seedStore } from '@/app/store/storyState';
 import type { SkillKeeperConfig } from '@/app/store';
 import type { AvailableMcp, Repository } from '@/services/bridge';
 import { ComponentsPage } from './ComponentsPage';
@@ -86,19 +87,27 @@ const AVAILABLE: AvailableMcp[] = [
  * `ComponentsPage` mounts -- its own mount effect calls `refreshMcpPresets`
  * immediately, and effects fire child-before-parent.
  */
-function seedMcp(config: SkillKeeperConfig, available: readonly AvailableMcp[]): void {
+function seedMcp(
+  config: SkillKeeperConfig,
+  available: readonly AvailableMcp[],
+  componentsView: 'tiles' | 'tree',
+): void {
   (window as unknown as { skillkeeper: unknown }).skillkeeper = {
     listAvailableMcp: async () => available,
   };
-  useSkillkeeperStore.setState({ repositories: REPOSITORIES, config });
+  seedStore(() => {
+    useSkillkeeperStore.setState({ repositories: REPOSITORIES, config });
+    // Applied inside the seed: seedStore resets the store first, so a view set
+    // before it would be discarded.
+    useSkillkeeperStore.getState().setMcpUi({ componentsView });
+  });
 }
 
 // Tiles view (the default): manual (stdio + http-with-rules) and
 // repo-discovered (http + sse) presets, as a card grid.
 export const TilesView: Story = {
   render: () => {
-    useSkillkeeperStore.getState().setMcpUi({ componentsView: 'tiles' });
-    seedMcp(CONFIG_WITH_MANUAL, AVAILABLE);
+    seedMcp(CONFIG_WITH_MANUAL, AVAILABLE, 'tiles');
     return <ComponentsPage />;
   },
 };
@@ -106,8 +115,7 @@ export const TilesView: Story = {
 // Tree view: the same presets, nested under their repository (and group).
 export const TreeView: Story = {
   render: () => {
-    useSkillkeeperStore.getState().setMcpUi({ componentsView: 'tree' });
-    seedMcp(CONFIG_WITH_MANUAL, AVAILABLE);
+    seedMcp(CONFIG_WITH_MANUAL, AVAILABLE, 'tree');
     return <ComponentsPage />;
   },
 };
@@ -115,8 +123,7 @@ export const TreeView: Story = {
 // No presets at all: the empty-state message instead of a grid/tree.
 export const Empty: Story = {
   render: () => {
-    useSkillkeeperStore.getState().setMcpUi({ componentsView: 'tiles' });
-    seedMcp(BASE_CONFIG, []);
+    seedMcp(BASE_CONFIG, [], 'tiles');
     return <ComponentsPage />;
   },
 };

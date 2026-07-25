@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useSkillkeeperStore } from '@/app/store';
+import { seedStore } from '@/app/store/storyState';
 import type { SkillKeeperConfig } from '@/app/store';
 import { WelcomeScreen } from './WelcomeScreen';
 
@@ -32,7 +33,9 @@ const ABOUT_FOOTER = <div>(c) 2026 Lorem Dev</div>;
 // .storybook/preview.tsx) drives light/dark -- no separate Dark story needed.
 export const Default: Story = {
   render: () => {
-    useSkillkeeperStore.setState({ config: BASE_CONFIG });
+    seedStore(() => {
+      useSkillkeeperStore.setState({ config: BASE_CONFIG });
+    });
     return <WelcomeScreen aboutIdentity={ABOUT_IDENTITY} aboutFooter={ABOUT_FOOTER} />;
   },
 };
