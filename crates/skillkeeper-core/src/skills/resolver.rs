@@ -38,6 +38,37 @@ const HOOK_FILE: &str = "HOOK.md";
 const HOOKS_DIR: &str = "hooks";
 const REPO_CONFIG: &str = "skillkeeper.repo.yaml";
 
+/// Non-hidden directories the walk never descends into. Dependency and build
+/// trees can legitimately vendor a package that ships a `SKILL.md`, which is that
+/// package's business and not a skill this repository publishes.
+const SKIPPED_DIRS: [&str; 4] = ["node_modules", "vendor", "target", "dist"];
+
+/// Whether the walk should skip a directory entry outright.
+///
+/// Two families are excluded:
+///
+/// - **Hidden directories** (a leading `.`). Every agent keeps its installed
+///   skills under one: `.claude/skills/`, `.codex/skills/`, `.cursor/skills/`,
+///   `.opencode/skills/`, `.github/copilot/skills/`. A repository that itself
+///   uses SkillKeeper therefore has *installed* skills inside its own working
+///   tree. Those are consumed, not published: treating them as resolution
+///   candidates produced a spurious "nesting is deeper than a single group"
+///   warning for perfectly normal projects. `.git` is skipped by the same rule.
+/// - **Dependency and build trees** ([`SKIPPED_DIRS`]).
+///
+/// This is a walk-level decision, so it suppresses both bogus resolutions and the
+/// too-deep warning.
+///
+/// An explicit `path` in `skillkeeper.repo.yaml` still reaches a skipped
+/// directory: that branch of scheme 3 probes the declared path directly and never
+/// walks, so a repository that really does publish a skill from one can declare
+/// it. Scheme 3's *auto-detect* branch (no `skills:` list, only
+/// `include`/`exclude`) does walk, and is filtered like schemes 1 and 2 - an
+/// `include` glob cannot reach into a skipped tree.
+fn is_skipped_dir(name: &str) -> bool {
+    name.starts_with('.') || SKIPPED_DIRS.contains(&name)
+}
+
 /// Directories that hold a direct `SKILL.md`, plus those nested too deep.
 struct SkillDirs {
     dirs: Vec<String>,
@@ -120,6 +151,10 @@ fn walk(
             if s.is_directory {
                 // hooks/ is reserved and never scanned for skill bodies.
                 if entry == HOOKS_DIR {
+                    continue;
+                }
+                // Agent state, dependency, and build trees are not candidates.
+                if is_skipped_dir(&entry) {
                     continue;
                 }
                 walk(fs, repo_root, &child_rel, depth + 1, max_depth, acc);
@@ -675,6 +710,69 @@ mod tests {
         assert_eq!(result.skills.len(), 1);
         assert_eq!(result.skills[0].hooks.len(), 0);
         assert!(result.warnings.iter().any(|w| w.contains("HOOK.md")));
+    }
+
+    // --- skipped directories ---
+
+    #[test]
+    fn ignores_skills_installed_under_an_agent_directory() {
+        // A repository that itself uses SkillKeeper has installed skills in its
+        // own working tree. They are consumed, not published: no resolution and,
+        // crucially, no too-deep warning either.
+        let fs = MemFs::new()
+            .with_file("repo/published/SKILL.md", &skill_md("published"))
+            .with_file(
+                "repo/.claude/skills/release-prep/SKILL.md",
+                &skill_md("release-prep"),
+            )
+            .with_file("repo/.codex/skills/other/SKILL.md", &skill_md("other"))
+            .with_file(
+                "repo/.github/copilot/skills/third/SKILL.md",
+                &skill_md("third"),
+            );
+        let result = resolve_skills(&fs, "repo");
+        let names: Vec<String> = result.skills.iter().map(|s| s.id.name.clone()).collect();
+        assert_eq!(names, vec!["published".to_string()]);
+        assert_eq!(result.warnings, Vec::<String>::new());
+    }
+
+    #[test]
+    fn never_treats_a_hidden_directory_as_a_group() {
+        // At depth 2 a hidden directory would otherwise resolve as a group named
+        // ".claude", which is never a real group.
+        let fs = MemFs::new().with_file("repo/.claude/inner/SKILL.md", &skill_md("inner"));
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(result.skills.len(), 0);
+        assert_eq!(result.warnings, Vec::<String>::new());
+    }
+
+    #[test]
+    fn ignores_a_skill_vendored_in_a_dependency_tree() {
+        let fs = MemFs::new()
+            .with_file("repo/mine/SKILL.md", &skill_md("mine"))
+            .with_file("repo/node_modules/pkg/SKILL.md", &skill_md("vendored"))
+            .with_file("repo/target/debug/gen/SKILL.md", &skill_md("built"));
+        let result = resolve_skills(&fs, "repo");
+        let names: Vec<String> = result.skills.iter().map(|s| s.id.name.clone()).collect();
+        assert_eq!(names, vec!["mine".to_string()]);
+        assert_eq!(result.warnings, Vec::<String>::new());
+    }
+
+    #[test]
+    fn a_declared_path_still_reaches_a_skipped_directory() {
+        // Scheme 3 bypasses the walk, so an explicit declaration wins.
+        let fs = MemFs::new()
+            .with_file(
+                "repo/skillkeeper.repo.yaml",
+                "version: 1\nskills:\n  - path: .claude/skills/release-prep\n",
+            )
+            .with_file(
+                "repo/.claude/skills/release-prep/SKILL.md",
+                &skill_md("release-prep"),
+            );
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(result.skills[0].id.name, "release-prep");
     }
 
     #[test]
