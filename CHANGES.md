@@ -2,7 +2,7 @@
 
 ## Development
 
-## Version 0.2.0-rc.1
+## Version 0.2.0
 
 ### Added
 
