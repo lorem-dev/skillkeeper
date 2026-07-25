@@ -4,41 +4,36 @@
 
 ### Added
 
-- Skill-resolution warnings are now surfaced instead of discarded. The CLI
-  prints them to stderr, attributed to the repository, from `skill
-  install`/`update`/`repair`, `mcp list`, and `check`; the desktop app records
-  them in the notifications log under a new `warning` level (shown by default
-  alongside errors, and deliberately without a toast, since a warning is a
-  standing condition rather than a reaction to a user action).
-- Hindi (`hi`) and Thai (`th`) as selectable languages, bringing the total to 18.
-- `scripts/gen-i18n.mjs` takes an optional language list (`pnpm run i18n -- ru
-  de`, or `--langs=ru,de`) and regenerates every language when omitted.
-- `examples/test-repo`: a git submodule pointing at the fixture repository that
-  exercises every skill/group/hook/MCP-preset resolution path.
+- Skill-resolution warnings are surfaced instead of discarded, so a `SKILL.md`
+  that cannot be installed no longer goes missing without explanation. The CLI
+  prints them to stderr per repository; the desktop app logs them under a new
+  `warning` level, shown by default alongside errors and deliberately without a
+  toast. The bell badge counts warnings in orange, or errors in red -- errors
+  only, whenever there are any -- and clamps to `9+`.
+- Hindi (`hi`) and Thai (`th`), bringing the total to 18 languages. Hindi carries
+  the `one`/`other` plural categories, Thai only `other`, per CLDR.
+- `pnpm run i18n` takes an optional language list (`-- ru de`, or
+  `--langs=ru,de`) instead of always regenerating all 18 catalogs.
+- `examples/test-repo`: a submodule tracking the fixture repository that covers
+  every skill/group/hook/MCP-preset resolution path.
 
 ### Fixed
 
-- `skill repair` now removes `extraneous` files, so a repaired install verifies
-  clean. Reinstalling overwrote recorded files but never deleted unrecorded
-  ones, leaving `verify` failing right after a successful repair. Every deleted
-  path is printed. The deletion is bounded twice over: files recorded by another
-  install sharing the same destination directory are protected (a directory is
-  named after the skill alone, so same-named skills from different groups share
-  one), and a recorded path that could resolve outside the destination root
-  disables pruning for that install instead of being followed.
-- Skill resolution no longer descends into **any** hidden directory (a name
-  starting with `.`, which covers every agent's own skills root -- `.claude/`,
-  `.codex/`, `.cursor/`, `.opencode/`, `.github/` -- plus `.git/`) or into
-  dependency and build trees (`node_modules/`, `vendor/`, `target/`, `dist/`).
-  A repository that itself uses SkillKeeper holds *installed* skills in its own
-  working tree, and those produced a spurious "nesting is deeper than a single
-  group" warning. Such a directory now resolves nothing and warns about nothing;
-  an explicit `path` in `skillkeeper.repo.yaml` still reaches it.
+- `skill repair` removes the `extraneous` files it used to leave behind, so a
+  repaired install finally verifies clean, and reports each deleted path. The
+  deletion is bounded: files recorded by another install sharing the destination
+  directory are protected, and a recorded path that could resolve outside that
+  directory disables pruning rather than being followed.
+- Skill resolution skips hidden directories and dependency or build trees
+  (`node_modules`, `vendor`, `target`, `dist`) entirely. Every agent keeps its
+  *installed* skills under a hidden directory, so a repository that itself uses
+  SkillKeeper warned about skills it consumes rather than publishes. An explicit
+  `path` in `skillkeeper.repo.yaml` still reaches them.
 
 ### Changed
 
-- `package.json` metadata in all three workspace manifests: `homepage` now
-  points at the documentation site, plus `repository` and `bugs` entries.
+- `homepage` in all three workspace manifests points at the documentation site,
+  alongside new `repository` and `bugs` entries.
 
 ## Version 0.2.0
 
