@@ -484,6 +484,14 @@ jobs:
         if: env.HAS_GPG != 'true'
         run: echo "::warning::SKILLKEEPER_RELEASE_GPG_KEY is not set; publishing checksums.txt without a GPG signature."
 
+      # Append the download sections LAST: it lists whatever is actually staged in
+      # dist/, so it must run after checksums.txt and its signature exist. The
+      # script only reads file names -- it never renames an asset, so the
+      # one-line installers (which build their URL from a fixed asset-name
+      # pattern) are unaffected by anything it emits.
+      - name: Append the downloads section to the release notes
+        run: node scripts/release-downloads.mjs "$GITHUB_REF_NAME" dist
+
       - name: Create GitHub release and attach artifacts
         uses: softprops/action-gh-release@v2
         with:
