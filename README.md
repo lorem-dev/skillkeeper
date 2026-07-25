@@ -122,6 +122,34 @@ for the repository format and authoring guide.
 
 ---
 
+## Example repository
+
+[skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo) is a
+fixture repository that exercises every documented resolution path: flat and
+grouped skills, both hook layouts, guidance-file precedence, MCP presets at the
+repository root and inside a group, and a deliberately unresolvable skill. It is
+wired into this repository as a Git submodule at `examples/test-repo`. Fetch it
+with `git submodule update --init` (the submodule uses an SSH remote, so this
+needs a GitHub SSH key; the fixture is not required by any build or test).
+
+Entry points -- the links go to GitHub, the paths are where the files land once
+the submodule is checked out:
+
+- [`minimal-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/minimal-skill/SKILL.md)
+  -- the smallest valid skill manifest.
+- [`json-hooks-skill/hooks/pre-tool-use/HOOK.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/json-hooks-skill/hooks/pre-tool-use/HOOK.md)
+  -- a hook that merges into an agent's JSON config.
+- [`mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/mcp.yml)
+  and
+  [`tooling/mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/mcp.yml)
+  -- root and group-scoped MCP presets.
+
+Links into a submodule cannot be relative: this repository's tree stores
+`examples/test-repo` as a commit pointer, not as files, so a relative path would
+404 on GitHub.
+
+---
+
 ## Development
 
 SkillKeeper is a Rust + pnpm monorepo: a Cargo workspace of domain crates

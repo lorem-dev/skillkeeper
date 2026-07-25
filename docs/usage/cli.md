@@ -158,6 +158,12 @@ Reinstall a skill's files (and hooks, only if originally installed and
 re-consented) to restore the state recorded in the manifest. Mutates the
 filesystem; always explicit.
 
+Repair also **deletes** files it finds in the skill's installed directory that
+the manifest does not record -- the ones `verify` reports as `extraneous` --
+because otherwise `verify` would still fail right after a successful repair. Each
+deleted path is printed. Files recorded by another skill installed into the same
+directory are never touched.
+
 - `--agent <agent>` - limit the repair to one agent.
 - `--project <dir>` - project directory for project-scope installs (default: the
   recorded path, or the current directory).

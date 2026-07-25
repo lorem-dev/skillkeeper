@@ -23,13 +23,16 @@ instead of the clone's default.
 CLI:
 
 ```
-skillkeeper repo add <url> <local-path> [--name <name>] [--lfs]
+skillkeeper repo add <url> [<local-path>] [--name <name>] [--lfs | --no-lfs]
 skillkeeper repo remove <id>
 skillkeeper repo list
 skillkeeper repo update [id] [--all]
 ```
 
-`repo add` clones immediately and requires an explicit local path. The
+`repo add` clones immediately. The local path is optional: omit it and the
+clone lands in a per-repository directory under the app's own repositories folder
+(the same location the desktop app uses). Git LFS is enabled by default when the
+`git-lfs` client is installed; `--no-lfs` opts out. The
 desktop app splits this in two: adding a repository first records it (so its
 card can appear right away) at an app-managed path under its own
 repositories directory, then clones it as a second step; a repository whose
