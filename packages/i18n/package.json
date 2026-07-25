@@ -3,7 +3,14 @@
   "version": "0.2.0",
   "private": true,
   "author": "Lorem Dev",
-  "homepage": "https://github.com/lorem-dev/skillkeeper",
+  "homepage": "https://lorem-dev.github.io/skillkeeper/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lorem-dev/skillkeeper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lorem-dev/skillkeeper/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

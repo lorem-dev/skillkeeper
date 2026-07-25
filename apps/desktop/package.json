@@ -7,7 +7,14 @@
     "name": "Lorem Dev",
     "email": "contact@lorem.dev"
   },
-  "homepage": "https://github.com/lorem-dev/skillkeeper",
+  "homepage": "https://lorem-dev.github.io/skillkeeper/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lorem-dev/skillkeeper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lorem-dev/skillkeeper/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "tauri dev",
