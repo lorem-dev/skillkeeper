@@ -4,6 +4,12 @@ packages:
 allowBuilds:
   esbuild: true
   '@parcel/watcher': false
+  # Pulled in by jest-resolve. Its install script only builds a native resolver
+  # from source as a fallback; the prebuilt @unrs/resolver-binding-* package for
+  # the platform is what actually gets used, and the e2e suite runs fine without
+  # the build. Left off so `pnpm install --frozen-lockfile` does not need to
+  # compile anything -- an unanswered entry here fails the install outright.
+  unrs-resolver: false
 minimumReleaseAgeExclude:
   - eslint@10.6.0
   - prettier@3.9.0
