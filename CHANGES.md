@@ -6,6 +6,16 @@
 
 ### Fixed
 
+- Windows: the first repository operation that ran git in the terminal never
+  finished, and every later one silently did nothing. After git exited, the app
+  waited for the output reader to reach end-of-file while still holding the
+  command's pseudo-terminal open -- and Windows keeps a copy of the write handle
+  alive for exactly that long, so the end-of-file could never arrive. The call
+  never returned, its slot in the git queue was never released, and each
+  following clone, sync or update check blocked before it could print anything:
+  the terminal accepted typing but showed no git, an update check sat unfinished,
+  and adding a repository looked like nothing happened. The pseudo-terminal is
+  now released before the wait, and the wait itself is bounded.
 - A terminal that cannot start now says so instead of staying blank. The
   renderer used to issue the start as a floating promise, so a failed shell
   spawn produced no error anywhere -- and because repository git only runs

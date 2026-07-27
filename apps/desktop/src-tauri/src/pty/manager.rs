@@ -56,6 +56,13 @@ use super::{Scrollback, ShellSpec, TerminalEvent, MAX_BUFFER};
 /// Read buffer size for the reader thread.
 const READ_CHUNK: usize = 8 * 1024;
 
+/// How long to wait for a finished git command's reader thread to drain.
+///
+/// Reaching EOF is near-instant once the pty is closed; this only bounds the
+/// pathological case, so that a reader which somehow cannot finish stalls one
+/// thread instead of wedging the git queue for the rest of the session.
+const READER_JOIN_TIMEOUT: Duration = Duration::from_secs(5);
+
 /// Default terminal geometry when the caller passes zero (mirrors `terminal.ts`
 /// `cols = 80`, `rows = 24`).
 const DEFAULT_COLS: u16 = 80;
@@ -521,14 +528,33 @@ impl TerminalManager {
         }
 
         // Stream git output to the view (and raise the input signal on a prompt).
+        // The thread reports its own completion on a channel rather than through
+        // a `JoinHandle`, because the wait below has to be bounded and `join`
+        // cannot be.
+        let (drained_tx, drained) = channel::<()>();
         let arc = Arc::clone(&self.shared);
-        let reader_handle = std::thread::spawn(move || git_process_reader(arc, reader));
+        std::thread::spawn(move || {
+            git_process_reader(arc, reader);
+            let _ = drained_tx.send(());
+        });
 
         // Block until git exits: that is its exit code.
         let code = child.wait().map(|s| s.exit_code() as i64).unwrap_or(1);
-        let _ = reader_handle.join();
 
-        // Clear the active-command routing and emit a trailing newline.
+        // Release the command PTY BEFORE joining the reader, and emit the
+        // trailing newline.
+        //
+        // The reader thread ends at EOF, and EOF needs every writer on the pty
+        // to be closed. On Windows the pseudo-console holds its own duplicate
+        // of that write handle for as long as the master lives -- and the
+        // master is exactly what `active_cmd_master` is holding. Joining first
+        // therefore waits for an EOF that cannot arrive: `run_git` never
+        // returns, its `GitQueue` slot is never released, and every later git
+        // operation blocks before it can print anything. Dropping the master
+        // here closes the console, so the reader sees EOF and finishes.
+        //
+        // On POSIX this changes nothing: the reader holds an independent dup of
+        // the master, and its EOF comes from the child's slave closing on exit.
         {
             let mut guard = self.shared.inner.lock().expect("terminal lock poisoned");
             guard.active_cmd_writer = None;
@@ -536,7 +562,20 @@ impl TerminalManager {
             guard.scrollback.append(b"\r\n");
             let _ = guard.output.send(TerminalEvent::Data("\r\n".to_string()));
         }
+        // Bounded: a reader that still cannot reach EOF must not be able to
+        // hang the git queue again. It owns nothing but its own pty handle, so
+        // leaving it to exit on its own is safe.
+        if drained.recv_timeout(READER_JOIN_TIMEOUT).is_err() {
+            self.note_git("terminal: gave up waiting for git output to drain");
+        }
         code
+    }
+
+    /// Append a diagnostic note to the terminal without marking a failure.
+    fn note_git(&self, message: &str) {
+        if let Ok(mut shared) = self.shared.inner.lock() {
+            emit(&mut shared, error_line(message));
+        }
     }
 
     /// Report a git launch failure: show it in the terminal, retain it for
@@ -1014,6 +1053,63 @@ mod tests {
             }
         }
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// The standalone git path must RETURN, and must hand input routing back.
+    ///
+    /// Regression test for a deadlock that only fires where a closed child does
+    /// not by itself produce EOF on the pty (Windows, whose pseudo-console keeps
+    /// its own copy of the write handle for as long as the master is held):
+    /// waiting for the reader before releasing the master waited for an EOF that
+    /// could not arrive, so `run_git` never returned, its queue slot was never
+    /// freed, and every later git operation blocked before printing anything.
+    ///
+    /// Unlike the in-shell test above, a timeout here FAILS rather than skips --
+    /// not completing is exactly the bug. Only an unusable environment skips.
+    #[test]
+    fn the_standalone_git_path_returns_and_restores_input_routing() {
+        let has_git = std::process::Command::new("git")
+            .arg("--version")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+        if !has_git {
+            eprintln!("skipping standalone git test: git not available");
+            return;
+        }
+
+        let cwd = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .unwrap_or_default();
+        let env: Vec<(String, String)> = std::env::vars().collect();
+        let manager = Arc::new(TerminalManager::new(host_shell(), cwd.clone(), env));
+        let rx = manager.take_events().expect("events available once");
+        std::thread::spawn(move || while rx.recv().is_ok() {});
+
+        if manager.start(80, 24).is_err() {
+            eprintln!("skipping standalone git test: shell spawn failed");
+            return;
+        }
+
+        let (tx, done) = channel();
+        let worker = Arc::clone(&manager);
+        std::thread::spawn(move || {
+            let _ = tx.send(worker.run_git_process(&cwd, &["--version".to_string()]));
+        });
+
+        let code = done
+            .recv_timeout(Duration::from_secs(30))
+            .expect("run_git_process must return; a timeout here is the deadlock");
+        assert_eq!(code, 0, "git --version should succeed");
+
+        // The command PTY has to be released, or every keystroke would keep
+        // going to the finished git instead of the shell.
+        let shared = manager.shared.inner.lock().expect("lock");
+        assert!(
+            shared.active_cmd_writer.is_none(),
+            "input still routed to git"
+        );
+        assert!(shared.active_cmd_master.is_none(), "command pty still held");
     }
 
     /// Writing before start is a harmless no-op (no shell to receive input).
