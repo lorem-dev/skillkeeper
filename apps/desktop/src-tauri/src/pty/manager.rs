@@ -37,6 +37,12 @@
 //! clone/sync/update/hasUpdate commands to [`run_git`](TerminalManager::run_git)
 //! (see `commands::repositories`), falling back to the direct `SystemGit` port
 //! when no session has started (headless/tests).
+//!
+//! [`TerminalManager::run_git_with_env`] is the same operation with extra
+//! environment variables layered on top -- the chosen SSH key and, once
+//! unlocked, its askpass token (`app::ssh_git::git_env`). A non-empty `env`
+//! always takes the standalone process path rather than either in-shell one:
+//! askpass leaves no prompt for a human to answer at the terminal.
 
 use std::any::Any;
 use std::io::{Read, Write};

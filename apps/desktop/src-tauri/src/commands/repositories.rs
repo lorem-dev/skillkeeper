@@ -42,19 +42,26 @@ use crate::state::AppContext;
 // Git routing: PTY session when live, direct SystemGit otherwise.
 //
 // User-initiated clone/sync/update-checkout and the hasUpdate fetch run IN the
-// interactive terminal session (`ctx.terminal.run_git`) so their output streams
-// to the terminal view and an ssh-key passphrase prompt reads the terminal's
-// input -- faithfully porting Electron's `terminalGit`. When no session has
-// started (headless contexts and the repository unit tests) they fall back to
-// the direct, silent `ctx.git` (`SystemGit`) so operations still work.
+// interactive terminal session (`ctx.terminal.run_git_with_env`) so their
+// output streams to the terminal view and an ssh-key passphrase prompt reads
+// the terminal's input -- faithfully porting Electron's `terminalGit`. When no
+// session has started (headless contexts and the repository unit tests) they
+// fall back to the direct, silent `ctx.git` (`SystemGit`) so operations still
+// work.
+//
+// Every PTY call is threaded with `app::ssh_git::git_env(ctx)`: empty when no
+// SSH key is chosen (today's behaviour, unchanged), the key alone when it is
+// locked or needs no passphrase, or the key plus a fresh askpass token when it
+// is unlocked for this session.
 //
 // The PTY steps reuse the same argument builders as `SystemGit`, decomposed to
 // match `terminal.ts` exactly: a force-pull is fetch + `reset --hard @{u}` +
-// `clean -fd` as three separate `run_git` invocations, and an lfs clone is the
-// clone followed by a separate `lfs pull`.
+// `clean -fd` as three separate `run_git_with_env` invocations, and an lfs
+// clone is the clone followed by a separate `lfs pull`.
 //
-// Configured git path: the PTY `run_git` invokes `git` from PATH (Wave 3 built
-// it that way), and the Tauri `AppContext` wires `ctx.git` as `SystemGit::new()`
+// Configured git path: the PTY `run_git_with_env` invokes `git` from PATH
+// (Wave 3 built it that way), and the Tauri `AppContext` wires `ctx.git` as
+// `SystemGit::new()`
 // -- which also resolves `git` on PATH -- so both routes agree. The Electron
 // `repositories.gitPath` config is not threaded into either Rust git route yet
 // (a pre-existing gap in the Tauri port, unchanged here).
