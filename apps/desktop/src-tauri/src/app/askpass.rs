@@ -11,14 +11,14 @@
 //! or any log, since the helper runs as a plain subprocess with no window.
 
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use interprocess::local_socket::{prelude::*, Listener, ListenerOptions, Stream};
-#[cfg(target_os = "macos")]
+#[cfg(unix)]
 use interprocess::local_socket::{GenericFilePath, ToFsName};
-#[cfg(not(target_os = "macos"))]
+#[cfg(windows)]
 use interprocess::local_socket::{GenericNamespaced, ToNsName};
 
 pub use skillkeeper_core::ssh_env::{ASKPASS_ENDPOINT_ENV, ASKPASS_TOKEN_ENV};
@@ -36,15 +36,40 @@ pub const HELPER_FLAG: &str = "--skillkeeper-askpass";
 /// token leaked or left lying around cannot be replayed much later.
 const TOKEN_TTL: Duration = Duration::from_secs(120);
 
+/// Upper bound on one request's bytes (`GET <token> <prompt>\n`). Far more
+/// than any real token or prompt needs; caps `read_line` so a peer that never
+/// sends a newline cannot grow the buffer without limit.
+const MAX_REQUEST_BYTES: u64 = 8192;
+
+/// How long a connection may sit with no data before it is given up on.
+///
+/// Only takes effect on unix: `interprocess` returns "unsupported" for
+/// `set_recv_timeout` on Windows named pipes (checked in its own source), so
+/// this is best-effort there and the per-connection thread below is what
+/// actually keeps a stuck peer from affecting anyone else.
+const READ_TIMEOUT: Duration = Duration::from_secs(5);
+
 /// True when `prompt` is asking for an SSH key passphrase, as opposed to any
 /// other confirmation routed to this helper.
 ///
 /// `SSH_ASKPASS_REQUIRE=force` also sends the unknown-host-key confirmation
 /// here (verified against OpenSSH 10.2); answering that would mean silently
 /// trusting an unknown host, so it is deliberately excluded.
+///
+/// A plain `contains("passphrase")` is not enough: with `force`, OpenSSH also
+/// routes server-supplied keyboard-interactive prompts through this same
+/// helper, and that text comes verbatim from the remote host. A malicious
+/// server could offer a keyboard-interactive prompt that merely mentions the
+/// word to fish the stored passphrase out and relay it onward. Anchoring on
+/// OpenSSH's own local wording -- "Enter passphrase for ..." or exactly
+/// "Enter passphrase: " -- narrows this to the prompts the local client
+/// itself generates when unlocking a key file.
 pub fn is_passphrase_prompt(prompt: &str) -> bool {
-    let lower = prompt.to_lowercase();
-    lower.contains("passphrase") && !lower.contains("continue connecting")
+    let lower = prompt.trim().to_lowercase();
+    if lower.contains("continue connecting") {
+        return false;
+    }
+    lower.starts_with("enter passphrase for") || lower.starts_with("enter passphrase:")
 }
 
 /// True when `args` is how `ssh` (or a manual test) invokes this binary as its
@@ -84,14 +109,15 @@ pub fn helper_main(args: &[String]) -> i32 {
 }
 
 /// Server side of the askpass transport: one local socket, one accept-loop
-/// thread for the process's lifetime, single-use tokens with a TTL.
+/// thread for the process's lifetime that hands each connection off to its
+/// own short-lived thread, single-use tokens with a TTL.
 pub struct AskpassServer {
     endpoint: String,
     tokens: Arc<Mutex<HashMap<String, Instant>>>,
     declined_prompt: Arc<Mutex<Option<String>>>,
-    /// Owns the private socket directory on platforms that fall back to a
-    /// filesystem path (macOS); removed on drop. `None` where the platform's
-    /// namespaced socket needs no directory of ours.
+    /// Owns the private socket directory on platforms that use a filesystem
+    /// path (unix); removed on drop. `None` on Windows, whose namespaced named
+    /// pipe needs no directory of ours.
     _socket_dir: Option<SocketDirGuard>,
 }
 
@@ -102,19 +128,32 @@ impl AskpassServer {
     /// well-formed `GET` for a passphrase prompt; returning `None` (no
     /// passphrase currently held) closes the connection without an answer,
     /// same as an unknown token or a declined prompt.
+    ///
+    /// Each accepted connection is handed to its own short-lived thread
+    /// rather than handled inline on the accept loop: a peer that connects
+    /// and never sends a line (or never disconnects) would otherwise block
+    /// `accept()` forever, wedging every later legitimate request for the
+    /// rest of the app session with no way to recover short of a restart.
+    /// With per-connection threads, a stuck peer only ever blocks its own
+    /// thread.
     pub fn start(secret: Arc<dyn Fn() -> Option<String> + Send + Sync>) -> Result<Self, String> {
         let (listener, endpoint, socket_dir) = make_listener()?;
         let tokens: Arc<Mutex<HashMap<String, Instant>>> = Arc::new(Mutex::new(HashMap::new()));
         let declined_prompt: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
 
-        let thread_tokens = Arc::clone(&tokens);
-        let thread_declined = Arc::clone(&declined_prompt);
+        let accept_tokens = Arc::clone(&tokens);
+        let accept_declined = Arc::clone(&declined_prompt);
         std::thread::spawn(move || {
             for connection in listener.incoming() {
                 let Ok(stream) = connection else {
                     continue;
                 };
-                handle_connection(stream, &thread_tokens, &thread_declined, &secret);
+                let tokens = Arc::clone(&accept_tokens);
+                let declined = Arc::clone(&accept_declined);
+                let secret = Arc::clone(&secret);
+                std::thread::spawn(move || {
+                    handle_connection(stream, &tokens, &declined, &secret);
+                });
             }
         });
 
@@ -155,9 +194,10 @@ fn prune_expired(tokens: &mut HashMap<String, Instant>) {
     tokens.retain(|_, minted| now.duration_since(*minted) < TOKEN_TTL);
 }
 
-/// Handle one connection: read one `GET <token> <prompt...>` line and, when
-/// the token is live, the prompt is a passphrase prompt, and a secret is
-/// held, write `<passphrase>\n` back. Otherwise close without writing.
+/// Handle one connection (on its own thread -- see [`AskpassServer::start`]):
+/// read one `GET <token> <prompt...>` line and, when the token is live, the
+/// prompt is a passphrase prompt, and a secret is held, write
+/// `<passphrase>\n` back. Otherwise close without writing.
 ///
 /// The token is consumed (removed) as soon as it is found live, regardless of
 /// what happens next, so a retry -- with a wrong passphrase, say -- gets
@@ -168,9 +208,17 @@ fn handle_connection(
     declined_prompt: &Mutex<Option<String>>,
     secret: &Arc<dyn Fn() -> Option<String> + Send + Sync>,
 ) {
+    // Best-effort: bounds how long this connection's own thread can be stuck
+    // on unix (unsupported on Windows named pipes, where the per-connection
+    // thread above is the actual safeguard).
+    let _ = stream.set_recv_timeout(Some(READ_TIMEOUT));
+
     let mut line = String::new();
     {
-        let mut reader = BufReader::new(&mut stream);
+        // `.take()` caps total bytes read so a peer that never sends a
+        // newline cannot grow `line` without bound; combined with the
+        // timeout above, this connection gives up instead of hanging.
+        let mut reader = BufReader::new((&mut stream).take(MAX_REQUEST_BYTES));
         if reader.read_line(&mut line).is_err() {
             return;
         }
@@ -246,13 +294,13 @@ impl Drop for SocketDirGuard {
 
 /// Connect to `endpoint` using the same name mapping [`make_listener`] used to
 /// bind it.
-#[cfg(not(target_os = "macos"))]
+#[cfg(windows)]
 fn connect(endpoint: &str) -> std::io::Result<Stream> {
     let name = endpoint.to_string().to_ns_name::<GenericNamespaced>()?;
     Stream::connect(name)
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(unix)]
 fn connect(endpoint: &str) -> std::io::Result<Stream> {
     let name = std::path::Path::new(endpoint).to_fs_name::<GenericFilePath>()?;
     Stream::connect(name)
@@ -262,13 +310,17 @@ fn connect(endpoint: &str) -> std::io::Result<Stream> {
 /// client uses to reach it, and (on platforms that need one) the directory
 /// guard that cleans up after it.
 ///
-/// A namespaced name keeps Windows on a named pipe and Linux on an abstract
-/// socket, needing no filesystem entry at all. macOS has no abstract
-/// namespace, so it gets a socket file instead, inside a directory created
-/// with mode `0o700` under [`std::env::temp_dir`] so only this user can reach
-/// it; the directory (and the socket file in it) is removed when the
+/// Windows gets a namespaced name, which resolves to a named pipe with no
+/// filesystem entry at all; the pipe's ACL is the OS's own, tied to the
+/// creating process. Unix -- both macOS and Linux -- gets a filesystem-path
+/// socket instead, deliberately *not* a namespaced one: on Linux, `interprocess`
+/// maps a namespaced name to the abstract socket namespace, which carries no
+/// access control of its own (any local process, any uid, can connect). The
+/// filesystem socket is placed inside a directory created with mode `0o700`
+/// under [`std::env::temp_dir`], so only this uid can even resolve the path to
+/// reach it; the directory (and the socket file in it) is removed when the
 /// returned guard drops.
-#[cfg(not(target_os = "macos"))]
+#[cfg(windows)]
 fn make_listener() -> Result<(Listener, String, Option<SocketDirGuard>), String> {
     let name = format!("skillkeeper-askpass-{}", uuid::Uuid::new_v4());
     let ns_name = name
@@ -282,14 +334,15 @@ fn make_listener() -> Result<(Listener, String, Option<SocketDirGuard>), String>
     Ok((listener, name, None))
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(unix)]
 fn make_listener() -> Result<(Listener, String, Option<SocketDirGuard>), String> {
     use std::os::unix::fs::PermissionsExt;
 
-    // `sockaddr_un.sun_path` is only 104 bytes on Darwin, and `TMPDIR` there is
-    // already a long per-user path (`/var/folders/.../T/`), so both the
-    // directory name and the socket file name are kept short: a full UUID
-    // (with or without hyphens) would not leave enough room.
+    // `sockaddr_un.sun_path` is only 104 bytes on Darwin (108 on Linux), and a
+    // real `$TMPDIR` on macOS is already a long per-user path
+    // (`/var/folders/.../T/`), so both the directory name and the socket file
+    // name are kept short: a full UUID (with or without hyphens) would not
+    // leave enough room there.
     let unique = uuid::Uuid::new_v4().simple().to_string();
     let dir = std::env::temp_dir().join(format!("sk-ap-{}", &unique[..12]));
     std::fs::create_dir(&dir).map_err(|e| e.to_string())?;
@@ -319,6 +372,7 @@ mod tests {
         assert!(is_passphrase_prompt(
             "Enter passphrase for key '/home/u/.ssh/id': "
         ));
+        assert!(is_passphrase_prompt("Enter passphrase: "));
         // Verified against OpenSSH 10.2: with SSH_ASKPASS_REQUIRE=force the
         // host-key confirmation is routed to the helper too, and answering it
         // would mean trusting an unknown host silently.
@@ -329,6 +383,19 @@ mod tests {
         assert!(!is_passphrase_prompt(
             "Password for 'https://example.com': "
         ));
+    }
+
+    #[test]
+    fn a_prompt_that_only_mentions_passphrase_is_rejected() {
+        // With SSH_ASKPASS_REQUIRE=force, a remote server's own
+        // keyboard-interactive prompt text also reaches this helper verbatim.
+        // A prompt must match OpenSSH's own local "unlocking a key" wording,
+        // not merely contain the word, or a hostile server could fish the
+        // stored passphrase out through a crafted prompt and relay it onward.
+        assert!(!is_passphrase_prompt(
+            "Please enter your passphrase to continue: "
+        ));
+        assert!(!is_passphrase_prompt("passphrase required for access"));
     }
 
     #[test]
@@ -381,6 +448,66 @@ mod tests {
         let server = AskpassServer::start(Arc::new(|| None)).expect("server");
         let token = server.mint_token();
         assert_eq!(fetch(server.endpoint(), &token, "Enter passphrase: "), None);
+    }
+
+    #[test]
+    fn an_oversized_request_gets_no_answer_instead_of_hanging() {
+        let server =
+            AskpassServer::start(Arc::new(|| Some("topsecret".to_string()))).expect("server");
+
+        let mut stream = connect(server.endpoint()).expect("connect");
+        // No trailing newline: without a cap on the read, `read_line` would
+        // keep growing its buffer waiting for a newline that never comes.
+        let oversized = "x".repeat(MAX_REQUEST_BYTES as usize * 2);
+        stream.write_all(oversized.as_bytes()).expect("write");
+
+        // Do the read on another thread with a bounded wait so that, if the
+        // cap regresses, this test fails instead of hanging the whole suite.
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let mut response = String::new();
+            let read = BufReader::new(&mut stream).read_line(&mut response);
+            let _ = tx.send(read.ok());
+        });
+        let read = rx
+            .recv_timeout(Duration::from_secs(2))
+            .expect("the bounded read must finish, not hang");
+        assert_eq!(read, Some(0), "malformed, oversized request gets no answer");
+    }
+
+    #[test]
+    fn a_stuck_connection_does_not_block_other_requests() {
+        let server =
+            AskpassServer::start(Arc::new(|| Some("topsecret".to_string()))).expect("server");
+        let token = server.mint_token();
+
+        std::thread::scope(|scope| {
+            // A peer that connects and never sends a line (and never
+            // disconnects) must not block the accept loop: each connection
+            // now gets its own thread instead of being handled inline (see
+            // AskpassServer::start). Held well past the assertion's own wait
+            // budget below, so this test can only pass if the second request
+            // truly is not waiting on this connection at all.
+            let endpoint_for_stuck_peer = server.endpoint().to_string();
+            scope.spawn(move || {
+                let stuck = connect(&endpoint_for_stuck_peer).expect("connect");
+                std::thread::sleep(Duration::from_secs(3));
+                drop(stuck);
+            });
+            // Give the stuck connection a head start so it is the one the
+            // accept loop sees first.
+            std::thread::sleep(Duration::from_millis(100));
+
+            let endpoint = server.endpoint().to_string();
+            let (tx, rx) = std::sync::mpsc::channel();
+            scope.spawn(move || {
+                let _ = tx.send(fetch(&endpoint, &token, "Enter passphrase: "));
+            });
+            let answer = rx
+                .recv_timeout(Duration::from_secs(1))
+                .expect("a concurrent request must not be blocked by a stuck connection");
+            assert_eq!(answer, Some("topsecret".to_string()));
+        });
     }
 
     #[test]
