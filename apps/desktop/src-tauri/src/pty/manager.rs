@@ -401,15 +401,42 @@ impl TerminalManager {
     ///
     /// Returns an error message when git exits non-zero.
     pub fn run_git(&self, repo_path: &str, args: &[String]) -> Result<String, String> {
+        self.run_git_with_env(repo_path, args, &[])
+    }
+
+    /// Run the app's git in the session, with extra environment variables
+    /// applied on top of the inherited session env (an injected variable
+    /// wins) -- used to point git at a chosen SSH key and, when unlocked, its
+    /// askpass helper (see `app::ssh_git::git_env`).
+    ///
+    /// A non-empty `env` always takes the standalone process path
+    /// ([`run_git_process_env`](Self::run_git_process_env)), never an in-shell
+    /// one: the in-shell paths exist so a human can answer a passphrase prompt
+    /// typed at the terminal, and with askpass there is nothing for them to
+    /// answer -- routing through the private pseudo-terminal instead also
+    /// avoids quoting an env prefix for three different shells.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error message when git exits non-zero.
+    pub fn run_git_with_env(
+        &self,
+        repo_path: &str,
+        args: &[String],
+        env: &[(String, String)],
+    ) -> Result<String, String> {
         let code = self.git_queue.run(|| {
             // Decide inside the queued slot. Both in-shell paths run git at the
             // terminal the user is already looking at, which is what lets an SSH
             // key passphrase prompt be answered: POSIX shells report the exit
             // code through the prompt hook, Windows shells through a sentinel
             // their command line prints. Only a POSIX shell we could not hook
-            // (or whose hook was abandoned) falls back to a private
-            // pseudo-terminal, where a prompt would have nobody to answer it.
-            if self.use_integration() {
+            // (or whose hook was abandoned), or a caller carrying its own git
+            // environment (askpass -- nobody is there to answer a prompt),
+            // falls back to a private pseudo-terminal.
+            if !env.is_empty() {
+                self.run_git_process_env(repo_path, args, env)
+            } else if self.use_integration() {
                 self.run_git_in_shell(repo_path, args)
             } else if cfg!(windows) {
                 self.run_git_in_shell_sentinel(repo_path, args)
@@ -584,6 +611,18 @@ impl TerminalManager {
     /// so no POSIX quoting applies). Output streams to the view and input routes
     /// to it until it exits (port of `runGitProcess`).
     fn run_git_process(&self, dir: &str, args: &[String]) -> i64 {
+        self.run_git_process_env(dir, args, &[])
+    }
+
+    /// [`run_git_process`](Self::run_git_process) with `extra_env` applied on
+    /// top of the inherited session environment, after it, so an injected
+    /// variable wins over an inherited one of the same name.
+    fn run_git_process_env(
+        &self,
+        dir: &str,
+        args: &[String],
+        extra_env: &[(String, String)],
+    ) -> i64 {
         let _ = self.start(0, 0);
 
         // Echo a command header, then read geometry + env for the git PTY.
@@ -604,6 +643,9 @@ impl TerminalManager {
             cmd.arg(arg);
         }
         for (key, value) in &env {
+            cmd.env(key, value);
+        }
+        for (key, value) in extra_env {
             cmd.env(key, value);
         }
         cmd.env("TERM", "xterm-256color");

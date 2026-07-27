@@ -6,7 +6,7 @@
 //! adapter registry into a single value that becomes Tauri managed state.
 
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use skillkeeper_agents::{register_builtin_agents, AdapterRegistry};
 use skillkeeper_core::adapters::{StdFs, SystemClock, SystemGit, SystemHostEnv};
@@ -90,6 +90,13 @@ pub struct AppContext {
     /// here directly; the reader thread's output is pumped to the frontend in
     /// `lib.rs` setup via its event receiver.
     pub terminal: TerminalManager,
+    /// The SSH key chosen in Settings and, for this session, its passphrase.
+    /// Shared with the `git` resolver below so `git`'s environment always
+    /// reflects the current choice without rebuilding the port.
+    pub ssh_key: Arc<crate::app::ssh_key::SshKeyStore>,
+    /// The askpass local-socket server, started at most once per app session
+    /// on first use (its accept thread runs for the process lifetime).
+    pub askpass: Arc<OnceLock<crate::app::askpass::AskpassServer>>,
 }
 
 impl AppContext {
@@ -127,9 +134,18 @@ impl AppContext {
             env.home_dir().to_string(),
             std::env::vars().collect(),
         );
+        // Built before `git` so its resolver can capture cheap clones of both
+        // rather than a whole `AppContext` (which does not exist yet here).
+        let ssh_key = Arc::new(crate::app::ssh_key::SshKeyStore::new());
+        let askpass: Arc<OnceLock<crate::app::askpass::AskpassServer>> = Arc::new(OnceLock::new());
+        let git = {
+            let ssh_key = Arc::clone(&ssh_key);
+            let askpass = Arc::clone(&askpass);
+            SystemGit::new().with_env(move || crate::app::ssh_git::env_from(&ssh_key, &askpass))
+        };
         Ok(Self {
             fs: StdFs::new(),
-            git: SystemGit::new(),
+            git,
             clock: SystemClock::new(),
             env,
             paths,
@@ -137,6 +153,8 @@ impl AppContext {
             registry,
             config_watcher,
             terminal,
+            ssh_key,
+            askpass,
         })
     }
 }
