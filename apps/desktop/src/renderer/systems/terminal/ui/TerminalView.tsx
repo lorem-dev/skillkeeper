@@ -101,7 +101,16 @@ export function TerminalView() {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(el);
-    fit.fit();
+    // Only ever fit against a REAL box. The fit addon derives the grid from
+    // `parseInt(getComputedStyle(host).width/height)`, and a host with no
+    // layout box (any hidden ancestor) reports the computed string "100%",
+    // which parses to a 100x100 phantom box -- the PTY would then start a dozen
+    // columns wide and the shell would hard-wrap its banner to that width, for
+    // good (the wrap is baked into the bytes; no later resize can reflow it).
+    // Skipping leaves xterm's 80x24 default, which the observer below corrects
+    // as soon as the host has a size. The overlay is kept laid out while closed
+    // (TerminalPage.scss hides it with `visibility`), so this normally passes.
+    if (el.clientWidth > 0 && el.clientHeight > 0) fit.fit();
 
     // Subscribe before starting the PTY so no live chunk lands in the gap
     // between the start() call and the promise resolving with the buffer.

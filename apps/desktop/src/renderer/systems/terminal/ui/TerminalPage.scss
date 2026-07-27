@@ -13,23 +13,25 @@
   color: var(--sk-color-label);
   outline: none;
   opacity: 1;
-  // Fully hidden (display:none) when closed -- unlike opacity alone, it then
-  // takes no layout, so its draggable header (App.scss) projects no drag region
-  // over the app. The overlay stays MOUNTED (the PTY lives on), so display is
-  // toggled by `--hidden` rather than unmounting. Opening flips display first,
-  // then fades in (@starting-style); closing fades out, then flips to
-  // display:none after the fade (transition-behavior: allow-discrete).
+  visibility: visible;
+  // Hidden with `visibility`, NOT `display: none`. The overlay stays MOUNTED so
+  // the PTY lives on, and the terminal must keep a REAL layout box the whole
+  // time: xterm's fit addon sizes the grid from
+  // `parseInt(getComputedStyle(host).width)`, and a display:none host reports
+  // the computed string "100%" -- which parses to 100, so the PTY would start
+  // at a ~100x100 phantom box and the shell would hard-wrap its output to a
+  // dozen columns. `visibility` keeps the box (correct size from the first
+  // fit) while still removing the overlay from hit-testing, so its draggable
+  // header (App.scss) projects no drag region over the app -- the reason
+  // opacity alone was not enough. Opening shows the box at once and fades in;
+  // closing fades out, then hides at the end of the transition.
   transition:
     opacity var(--sk-duration-medium) var(--sk-ease-standard),
-    display var(--sk-duration-medium) allow-discrete;
-
-  @starting-style {
-    opacity: 0;
-  }
+    visibility var(--sk-duration-medium);
 }
 
 .sk-terminal-page--hidden {
-  display: none;
+  visibility: hidden;
   opacity: 0;
 }
 
@@ -72,10 +74,10 @@
   // never fires to refit it. The grid then outgrows the visible slot.
   min-height: 0;
   // `clip`, not `hidden`: an overflow:hidden box is still a SCROLL container,
-  // and the browser scrolls it on its own to reveal a focused descendant --
-  // xterm's off-screen helper textarea (xterm.css positions it absolutely).
-  // That left the first rows scrolled up behind the header with no scrollbar to
-  // bring them back. `clip` is not scrollable, so nothing can shift the grid.
+  // so the browser may scroll it on its own to reveal a focused descendant --
+  // and xterm keeps one off-screen (its helper textarea, absolutely positioned
+  // by xterm.css). Such a scroll would push the top rows out of sight with no
+  // scrollbar to bring them back. `clip` is not scrollable at all.
   overflow: clip;
   // No right padding so the terminal (and its scrollbar) sit flush against the
   // window edge; a small inset on the left. Vertical padding unchanged.
