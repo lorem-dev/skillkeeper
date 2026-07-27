@@ -30,9 +30,14 @@ import { OnboardingOverlay, useOnboardingActive, useOnboardingStep } from '@/sys
 import { STEP_VIEW } from '@/app/config/onboarding';
 import './App.scss';
 
-/** Documentation section explaining how to set an ssh-agent up per platform. */
+/**
+ * Documentation section explaining how to set an ssh-agent up per platform.
+ *
+ * The `latest` segment is required: the site is versioned by mike, so only the
+ * bare root redirects to a version -- a deep path without it is a 404.
+ */
 const SSH_AGENT_DOCS =
-  'https://lorem-dev.github.io/skillkeeper/usage/repositories/#setting-up-an-ssh-agent';
+  'https://lorem-dev.github.io/skillkeeper/latest/usage/repositories/#setting-up-an-ssh-agent';
 
 const RepositoriesPage = lazy(() =>
   import('@/pages/Repositories').then((m) => ({ default: m.RepositoriesPage })),
