@@ -2,6 +2,27 @@
 
 ## Development
 
+### Fixed
+
+- A terminal that cannot start now says so instead of staying blank. The
+  renderer used to issue the start as a floating promise, so a failed shell
+  spawn produced no error anywhere -- and because repository git only runs
+  through the terminal while a session is live, the same dead session silently
+  reverted clone/sync to a headless git that prints nothing. The failure is now
+  shown in the terminal view, logged as a warning that explains git is still
+  running without visible output, and reported by a new `terminal_status`
+  command. Starting is retried up to three times before it is reported.
+- A pseudo-terminal backend that panics rather than returning an error -- Windows
+  hosts older than Windows 10 1809, where `CreatePseudoConsole` is not exported --
+  no longer unwinds through the command's worker task into an opaque join error.
+  The panic is caught and its message kept, so the terminal is unavailable with a
+  readable reason instead of failing anonymously.
+- Git launch failures on the standalone-process path (Windows and unintegrated
+  shells) are printed to the terminal instead of being swallowed into a bare
+  exit code, and a `git` that cannot be spawned names the likely cause: it is not
+  on the PATH this application inherited. Shell spawn errors likewise name the
+  shell and working directory they tried.
+
 ## Version 0.2.1
 
 ### Added

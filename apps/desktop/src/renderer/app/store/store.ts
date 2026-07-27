@@ -347,6 +347,15 @@ export interface SkillkeeperState {
   logsOpen: boolean;
   /** Whether the full-screen terminal page is open. */
   terminalOpen: boolean;
+  /**
+   * Why the embedded terminal is unavailable, or null while it is healthy.
+   *
+   * The backend runs repository git through the terminal only while a shell
+   * session is live, falling back to a silent headless git otherwise. Without
+   * this, that fallback is indistinguishable from "nothing happened": the
+   * terminal stays blank during a clone and no error is raised anywhere.
+   */
+  terminalError: string | null;
   /** Whether the full-screen sync task-list page is open. */
   tasksOpen: boolean;
   /** Whether the About dialog is open. */
@@ -531,6 +540,12 @@ export interface SkillkeeperActions {
   openTerminal(): void;
   /** Close the full-screen terminal page. */
   closeTerminal(): void;
+  /**
+   * Record (or clear, with null) why the terminal is unavailable. Setting a new
+   * reason also logs it once, so the user learns that git is running without
+   * visible output instead of only seeing a blank terminal.
+   */
+  setTerminalError(error: string | null): void;
   /** Open the full-screen sync task-list page. */
   openTasks(): void;
   /** Close the full-screen sync task-list page. */
@@ -628,6 +643,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   tasks: [],
   logsOpen: false,
   terminalOpen: false,
+  terminalError: null,
   tasksOpen: false,
   aboutOpen: false,
   skills: [],
@@ -819,6 +835,15 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   closeTerminal() {
     set({ terminalOpen: false });
+  },
+
+  setTerminalError(error) {
+    // Log only on a change: the terminal re-checks its status on every shell
+    // exit, and a standing failure would otherwise re-log on each one.
+    if (get().terminalError === error) return;
+    set({ terminalError: error });
+    if (error === null) return;
+    get().notify({ key: 'terminal.unavailable', vars: { error } }, 'warning');
   },
 
   openTasks() {

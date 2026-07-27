@@ -27,6 +27,7 @@ import type {
   McpUpdatePreflightArgs,
   McpUpdatePreflightResult,
   OnboardingState,
+  TerminalStatus,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the Rust backend. */
@@ -85,6 +86,10 @@ export interface BridgeClient {
   projectExists(id: string): Promise<boolean>;
   openProject(path: string, editorId: string): Promise<OpenResult>;
   startTerminal(cols: number, rows: number): Promise<string>;
+  /** Whether a shell session is live, and why not when it is not. Repository git
+   *  runs through the terminal only while a session exists, so this is what
+   *  distinguishes "the clone printed nothing" from "the clone ran headless". */
+  terminalStatus(): Promise<TerminalStatus>;
   writeTerminal(data: string): void;
   resizeTerminal(cols: number, rows: number): void;
   clearTerminalBuffer(): void;
@@ -178,6 +183,7 @@ export const bridgeClient: BridgeClient = {
   projectExists: (id) => invoke<boolean>('projects_exists', { id }),
   openProject: (path, editorId) => invoke<OpenResult>('open_project', { path, editorId }),
   startTerminal: (cols, rows) => invoke<string>('terminal_start', { cols, rows }),
+  terminalStatus: () => invoke<TerminalStatus>('terminal_status'),
   writeTerminal: (data) => {
     void invoke('terminal_input', { data });
   },

@@ -38,12 +38,14 @@
 //! (see `commands::repositories`), falling back to the direct `SystemGit` port
 //! when no session has started (headless/tests).
 
+use std::any::Any;
 use std::io::{Read, Write};
+use std::panic::AssertUnwindSafe;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
-use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize};
+use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtyPair, PtySize};
 
 use super::git_in_shell::{git_command_line, ssh_add_command, wrap_bracketed_paste, GitQueue};
 use super::shell_integration::{
@@ -114,6 +116,11 @@ struct Shared {
     quiet_gen: u64,
     /// Generation counter invalidating superseded/cancelled confirm timers.
     confirm_gen: u64,
+    /// Why the last session (or git command) failed to start, if it did. Kept so
+    /// the failure survives the call that produced it: a spawn error is otherwise
+    /// invisible once `start` has returned, and the repository commands silently
+    /// fall back to the headless git port whenever no session is live.
+    last_error: Option<String>,
 }
 
 /// The `Mutex`-guarded [`Shared`] state paired with the `Condvar` that wakes a
@@ -170,6 +177,7 @@ impl TerminalManager {
             exit_gen: 0,
             quiet_gen: 0,
             confirm_gen: 0,
+            last_error: None,
         };
         let (input_tx, input_rx) = channel::<String>();
         let shared = Arc::new(SharedState {
@@ -219,8 +227,16 @@ impl TerminalManager {
                 let _ = master.resize(size);
             }
         } else {
-            spawn_session(&mut shared, &self.shared)?;
+            // Record the reason before returning it: the renderer surfaces the
+            // rejected promise, but every later caller (notably the repository
+            // commands' `is_started` check) can only see that there is no
+            // session, not why -- which is what made this failure mode silent.
+            if let Err(e) = spawn_session(&mut shared, &self.shared) {
+                shared.last_error = Some(e.clone());
+                return Err(e);
+            }
             shared.started = true;
+            shared.last_error = None;
         }
         Ok(shared.scrollback.snapshot())
     }
@@ -297,6 +313,20 @@ impl TerminalManager {
             .lock()
             .map(|shared| shared.started)
             .unwrap_or(false)
+    }
+
+    /// Why the terminal is unavailable, when it is: the message from the last
+    /// failed shell spawn or git launch. `None` once a session starts.
+    ///
+    /// Surfaced through `terminal_status` so the renderer can tell the user that
+    /// git is running headless (no visible output) rather than leaving the
+    /// fallback in [`is_started`](Self::is_started) unexplained.
+    pub fn last_error(&self) -> Option<String> {
+        self.shared
+            .inner
+            .lock()
+            .ok()
+            .and_then(|shared| shared.last_error.clone())
     }
 
     /// Tear the shell down for app exit: stop the reader thread from
@@ -446,10 +476,9 @@ impl TerminalManager {
             (guard.cols, guard.rows, guard.env.clone())
         };
 
-        let pty_system = native_pty_system();
-        let pair = match pty_system.openpty(pty_size(cols, rows)) {
+        let pair = match open_pty(cols, rows) {
             Ok(pair) => pair,
-            Err(_) => return 1,
+            Err(e) => return self.fail_git(format!("cannot open a pseudo-terminal for git: {e}")),
         };
         let mut cmd = CommandBuilder::new("git");
         for arg in args {
@@ -464,16 +493,24 @@ impl TerminalManager {
         }
         let mut child = match pair.slave.spawn_command(cmd) {
             Ok(child) => child,
-            Err(_) => return 1,
+            // Overwhelmingly this is "git is not on the PATH this app inherited"
+            // -- a GUI process started from the desktop does not see a shell's
+            // PATH edits -- so say that rather than only echoing the OS error.
+            Err(e) => {
+                return self.fail_git(format!(
+                    "cannot run git: {e}. Check that git is installed and on the PATH \
+                     available to this application."
+                ))
+            }
         };
         drop(pair.slave);
         let reader = match pair.master.try_clone_reader() {
             Ok(reader) => reader,
-            Err(_) => return 1,
+            Err(e) => return self.fail_git(format!("cannot read git output: {e}")),
         };
         let writer = match pair.master.take_writer() {
             Ok(writer) => writer,
-            Err(_) => return 1,
+            Err(e) => return self.fail_git(format!("cannot write to git: {e}")),
         };
 
         // Route interactive input to this git PTY and let resizes reach it.
@@ -501,6 +538,60 @@ impl TerminalManager {
         }
         code
     }
+
+    /// Report a git launch failure: show it in the terminal, retain it for
+    /// [`last_error`](Self::last_error), and return the exit code a failed
+    /// command gets. Every early return in [`run_git_process`] goes through
+    /// here, so a git that never started is never silent.
+    fn fail_git(&self, message: String) -> i64 {
+        if let Ok(mut shared) = self.shared.inner.lock() {
+            emit(&mut shared, error_line(&message));
+            shared.last_error = Some(message);
+        }
+        1
+    }
+}
+
+/// Open a pseudo-terminal, turning a panicking backend into an ordinary error.
+///
+/// `portable-pty` resolves the platform backend lazily on the first `openpty`
+/// and *panics* when it is missing -- on Windows, `CreatePseudoConsole` is only
+/// exported by Windows 10 1809 and newer, and the panic message says so. Left
+/// uncaught it unwinds through the `spawn_blocking` task behind the terminal
+/// command, which reaches the renderer as an opaque join error. Catching it here
+/// keeps the message, and keeps the rest of the app running without a terminal.
+fn open_pty(cols: u16, rows: u16) -> Result<PtyPair, String> {
+    let size = pty_size(cols, rows);
+    let opened = std::panic::catch_unwind(AssertUnwindSafe(|| native_pty_system().openpty(size)));
+    match opened {
+        Ok(Ok(pair)) => Ok(pair),
+        Ok(Err(e)) => Err(e.to_string()),
+        Err(payload) => Err(panic_message(payload.as_ref())),
+    }
+}
+
+/// The human-readable text of a caught panic payload (`&str` and `String`
+/// payloads cover everything `panic!`/`expect` produce).
+fn panic_message(payload: &(dyn Any + Send)) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        return (*s).to_string();
+    }
+    if let Some(s) = payload.downcast_ref::<String>() {
+        return s.clone();
+    }
+    "the pseudo-terminal backend panicked".to_string()
+}
+
+/// Append `text` to the retained scrollback and stream it to the view, so a
+/// message is there both live and for a renderer that attaches later.
+fn emit(shared: &mut Shared, text: String) {
+    shared.scrollback.append(text.as_bytes());
+    let _ = shared.output.send(TerminalEvent::Data(text));
+}
+
+/// Frame `message` as a standalone red terminal line.
+fn error_line(message: &str) -> String {
+    format!("\r\n\x1b[31m{message}\x1b[0m\r\n")
 }
 
 /// Build a [`PtySize`] with no pixel geometry (unused by xterm.js).
@@ -552,10 +643,8 @@ fn drain_write(state: &SharedState, data: &str) {
 /// `Arc`, cloned into the reader thread so it can append output and respawn on
 /// exit.
 fn spawn_session(shared: &mut Shared, state: &Arc<SharedState>) -> Result<(), String> {
-    let pty_system = native_pty_system();
-    let pair = pty_system
-        .openpty(pty_size(shared.cols, shared.rows))
-        .map_err(|e| format!("openpty failed: {e}"))?;
+    let pair = open_pty(shared.cols, shared.rows)
+        .map_err(|e| format!("cannot open a pseudo-terminal: {e}"))?;
 
     let mut cmd = CommandBuilder::new(&shared.shell.program);
     for arg in &shared.shell.args {
@@ -571,10 +660,14 @@ fn spawn_session(shared: &mut Shared, state: &Arc<SharedState>) -> Result<(), St
         cmd.cwd(&shared.cwd);
     }
 
-    let child = pair
-        .slave
-        .spawn_command(cmd)
-        .map_err(|e| format!("shell spawn failed: {e}"))?;
+    // Name the shell and its working directory: the two things that differ
+    // between a machine where this works and one where it does not.
+    let child = pair.slave.spawn_command(cmd).map_err(|e| {
+        format!(
+            "cannot start the shell {:?} in {:?}: {e}",
+            shared.shell.program, shared.cwd
+        )
+    })?;
     // Close the slave in the parent so the master read returns EOF once the
     // child exits (otherwise the reader thread would block forever).
     drop(pair.slave);
@@ -746,7 +839,13 @@ fn reader_loop(state: Arc<SharedState>, mut reader: Box<dyn Read + Send>) {
     let _ = shared
         .output
         .send(TerminalEvent::Data(RESTART_NOTICE.to_string()));
-    let _ = spawn_session(&mut shared, &state);
+    // A restart that fails leaves no session at all, which silently reverts the
+    // repository commands to headless git -- so say so instead of dropping it.
+    if let Err(e) = spawn_session(&mut shared, &state) {
+        shared.started = false;
+        emit(&mut shared, error_line(&e));
+        shared.last_error = Some(e);
+    }
     state.cvar.notify_all();
 }
 
@@ -943,5 +1042,65 @@ mod tests {
             Vec::new(),
         );
         manager.clear_buffer();
+    }
+
+    // ---- failure reporting ----------------------------------------------
+
+    /// Nothing has failed before the first start, so there is nothing to report.
+    #[test]
+    fn last_error_is_absent_before_any_start() {
+        let manager = TerminalManager::new(
+            ShellSpec {
+                program: "/bin/sh".to_string(),
+                args: Vec::new(),
+            },
+            String::new(),
+            Vec::new(),
+        );
+        assert_eq!(manager.last_error(), None);
+    }
+
+    /// A shell that cannot be launched leaves the session un-started AND records
+    /// why, so the headless-git fallback can be explained rather than guessed at.
+    #[test]
+    fn a_failed_start_records_its_reason() {
+        let manager = TerminalManager::new(
+            ShellSpec {
+                program: "skillkeeper-no-such-shell".to_string(),
+                args: Vec::new(),
+            },
+            String::new(),
+            Vec::new(),
+        );
+        let err = manager
+            .start(80, 24)
+            .expect_err("a missing shell cannot start");
+        assert!(!manager.is_started());
+        assert_eq!(manager.last_error().as_deref(), Some(err.as_str()));
+        // The message has to name the shell, or it does not help on the machine
+        // where it fires.
+        assert!(
+            err.contains("skillkeeper-no-such-shell"),
+            "error should name the shell it tried, got: {err:?}"
+        );
+    }
+
+    /// A panicking backend (Windows without ConPTY) comes back as an error whose
+    /// text is the panic message, not as an unwind through the calling task.
+    #[test]
+    fn a_panicking_backend_becomes_an_error_message() {
+        let caught =
+            std::panic::catch_unwind(|| panic!("no conpty here")).expect_err("the closure panics");
+        assert_eq!(panic_message(caught.as_ref()), "no conpty here");
+    }
+
+    /// An error line stands alone and is colored, so it is legible wherever the
+    /// shell left the cursor.
+    #[test]
+    fn error_lines_are_framed_and_colored() {
+        let line = error_line("cannot run git");
+        assert!(line.starts_with("\r\n\x1b[31m"));
+        assert!(line.ends_with("\x1b[0m\r\n"));
+        assert!(line.contains("cannot run git"));
     }
 }

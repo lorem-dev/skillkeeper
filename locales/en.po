@@ -208,6 +208,11 @@ msgstr "Notifications"
 msgid "terminal.title"
 msgstr "Terminal"
 
+msgid "terminal.unavailable"
+msgstr ""
+"Terminal unavailable: {error}. Git commands still run, but their output is "
+"not shown here."
+
 msgid "logs.empty"
 msgstr "Nothing to show."
 

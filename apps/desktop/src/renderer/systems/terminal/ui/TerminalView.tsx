@@ -11,7 +11,9 @@ import type { ITheme } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { bridgeClient } from '@/services/bridge';
+import { useSkillkeeperStore } from '@/app/store';
 import { useIsDark } from '@/systems/theme';
+import { errorLine, errorText, startWithRetry } from '../startShell.js';
 import '@xterm/xterm/css/xterm.css';
 import './TerminalView.scss';
 
@@ -104,11 +106,36 @@ export function TerminalView() {
     // Subscribe before starting the PTY so no live chunk lands in the gap
     // between the start() call and the promise resolving with the buffer.
     let disposed = false;
+    const { setTerminalError } = useSkillkeeperStore.getState();
     const offData = bridgeClient.onTerminalData((chunk) => term.write(chunk));
-    const offExit = bridgeClient.onTerminalExit(() => term.write('\r\n[process exited]\r\n'));
-    void bridgeClient.startTerminal(term.cols, term.rows).then((buffer) => {
-      if (!disposed && buffer) term.write(buffer);
+    const offExit = bridgeClient.onTerminalExit(() => {
+      term.write('\r\n[process exited]\r\n');
+      // The backend respawns the shell on exit. If that respawn failed there is
+      // no session left -- and repository git silently reverts to running
+      // headless -- so re-read the status rather than assume it came back.
+      void bridgeClient
+        .terminalStatus()
+        .then((status) => {
+          if (!disposed) setTerminalError(status.started ? null : (status.error ?? null));
+        })
+        .catch(() => undefined);
     });
+    void startWithRetry(() => bridgeClient.startTerminal(term.cols, term.rows)).then(
+      (buffer) => {
+        if (disposed) return;
+        if (buffer) term.write(buffer);
+        setTerminalError(null);
+      },
+      (err: unknown) => {
+        if (disposed) return;
+        // Without this the failure is invisible: the view stays blank and the
+        // rejected promise goes nowhere. Show it here AND log it, because the
+        // same dead session is why a clone prints nothing in this terminal.
+        const message = errorText(err);
+        term.write(errorLine(`Terminal unavailable: ${message}`));
+        setTerminalError(message);
+      },
+    );
 
     const onInput = term.onData((data) => bridgeClient.writeTerminal(data));
     let prevCols = term.cols;

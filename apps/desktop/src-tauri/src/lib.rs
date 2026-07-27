@@ -129,6 +129,7 @@ pub fn run() {
             commands::projects::projects_detect_agents,
             commands::dialog::dialog_select_folder,
             commands::terminal::terminal_start,
+            commands::terminal::terminal_status,
             commands::terminal::terminal_input,
             commands::terminal::terminal_resize,
             commands::terminal::terminal_clear_buffer,

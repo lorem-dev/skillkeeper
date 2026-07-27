@@ -15,12 +15,38 @@
 //! setup. In-shell git (`run_git`) is exposed on the manager for Wave 4 to call
 //! and is not yet surfaced as a command.
 
+use serde::Serialize;
 use tauri::State;
 
 use std::sync::Arc;
 
 use super::blocking;
 use crate::state::AppContext;
+
+/// Whether a live shell session exists, and why not when it does not.
+///
+/// The repository commands run git through the PTY only while a session is
+/// live, falling back to the silent headless port otherwise. The renderer reads
+/// this to explain that fallback instead of leaving the user with a terminal
+/// that shows nothing during a clone.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalStatus {
+    /// True once the shell has started (git output streams to the view).
+    pub started: bool,
+    /// The last shell/git launch failure, when there is one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+/// `terminal:status` -- is the shell live, and if not, why not.
+#[tauri::command]
+pub fn terminal_status(state: State<'_, Arc<AppContext>>) -> TerminalStatus {
+    TerminalStatus {
+        started: state.terminal.is_started(),
+        error: state.terminal.last_error(),
+    }
+}
 
 /// `terminal:start` -- (re)ensure the shell is running at `cols` x `rows` and
 /// return its retained scrollback for the renderer to replay.
