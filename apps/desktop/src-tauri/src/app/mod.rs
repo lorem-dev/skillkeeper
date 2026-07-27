@@ -9,6 +9,7 @@
 //! method, so icon reads use `std::fs` -- the same shape the TypeScript used
 //! (`fs.readFileSync`).
 
+pub mod askpass;
 pub mod editor_launch;
 pub mod i18n;
 pub mod icon_sanitize;

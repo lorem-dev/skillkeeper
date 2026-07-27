@@ -1,6 +1,6 @@
 //! SkillKeeper desktop (Tauri) entry point and command registration.
 
-mod app;
+pub mod app;
 mod commands;
 pub mod pty;
 mod state;
