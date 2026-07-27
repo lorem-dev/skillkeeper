@@ -273,6 +273,17 @@ impl SshKeyStore {
     /// An unencrypted key or a legacy PEM key (see [`inspect`]) accepts
     /// whatever is given, since neither can be locally verified; a modern
     /// OpenSSH-format encrypted key is actually decrypted here.
+    ///
+    /// The path is snapshotted at the start and the actual verification (a
+    /// file read, a parse, and for an encrypted key a full bcrypt-pbkdf
+    /// derivation -- on the order of 100ms) runs with the lock released, so
+    /// the chosen key can change mid-call. If it has by the time this is
+    /// ready to record the result, the verified passphrase belongs to a key
+    /// that is no longer the current one: recording it anyway would let it
+    /// leak to the *new* key's askpass requests, and would break the promise
+    /// (see the module doc) that a key change always drops the held
+    /// passphrase. So the record (and the notification) is skipped in that
+    /// case -- this unlock simply no longer applies to anything.
     pub fn unlock(&self, passphrase: &str) -> Result<(), UnlockError> {
         let Some(path) = self.path() else {
             return Err(UnlockError::Missing);
@@ -287,10 +298,12 @@ impl SshKeyStore {
 
         if result.is_ok() {
             let mut inner = self.inner.lock().expect("ssh key store lock poisoned");
-            inner.passphrase = Some(Zeroizing::new(passphrase.to_string()));
-            inner.unlocked_for = Some(path);
-            drop(inner);
-            self.notify_unlock_result(true);
+            if inner.path.as_deref() == Some(path.as_str()) {
+                inner.passphrase = Some(Zeroizing::new(passphrase.to_string()));
+                inner.unlocked_for = Some(path);
+                drop(inner);
+                self.notify_unlock_result(true);
+            }
         }
 
         result
@@ -310,14 +323,19 @@ impl SshKeyStore {
     ///
     /// Wired into a live askpass secret closure in a later task; only tests
     /// call it so far.
+    ///
+    /// Re-checks `unlocked_for` against the current `path` here too, not just
+    /// in [`state`](Self::state): this is the one accessor that actually
+    /// hands the passphrase out, so the invariant "never serve a passphrase
+    /// for a key that isn't the current one" has to hold here regardless of
+    /// how a mismatch could arise (see [`unlock`](Self::unlock)'s doc).
     #[allow(dead_code)]
     pub(crate) fn passphrase(&self) -> Option<String> {
-        self.inner
-            .lock()
-            .expect("ssh key store lock poisoned")
-            .passphrase
-            .as_ref()
-            .map(|p| p.as_str().to_owned())
+        let inner = self.inner.lock().expect("ssh key store lock poisoned");
+        if inner.unlocked_for != inner.path {
+            return None;
+        }
+        inner.passphrase.as_ref().map(|p| p.as_str().to_owned())
     }
 
     /// Block until an unlock attempt resolves or `timeout` elapses.
@@ -453,6 +471,24 @@ mod tests {
     }
 
     #[test]
+    fn passphrase_is_withheld_when_held_for_a_different_path_than_the_current_one() {
+        // Pins the accessor-level guard directly, regardless of how a
+        // mismatch between `unlocked_for` and `path` could ever arise (e.g.
+        // the chosen key changing while an `unlock` verification was still
+        // in flight -- see `unlock`'s doc comment): `passphrase()` must
+        // never hand out a value that was verified against a key that is no
+        // longer the current one.
+        let store = SshKeyStore::new();
+        {
+            let mut inner = store.inner.lock().unwrap();
+            inner.path = Some("current".to_string());
+            inner.unlocked_for = Some("previous".to_string());
+            inner.passphrase = Some(Zeroizing::new("stale".to_string()));
+        }
+        assert!(store.passphrase().is_none());
+    }
+
+    #[test]
     fn a_vanished_or_bogus_file_is_reported_as_such() {
         let dir = tmp();
         let store = SshKeyStore::new();
@@ -526,8 +562,17 @@ mod tests {
         std::thread::sleep(Duration::from_millis(100));
         store.notify_unlock_result(false);
 
+        // `Err(KEY_LOCKED_ERROR)` is also what a plain 5s timeout would
+        // return, so the join is timed too: the assertion below only passes
+        // if the waiter was actually woken by the notify, not merely
+        // outlasted by this test's patience.
+        let before_join = Instant::now();
         let result = handle.join().expect("waiter thread must not panic");
         assert_eq!(result, Err(KEY_LOCKED_ERROR.to_string()));
+        assert!(
+            before_join.elapsed() < Duration::from_secs(1),
+            "the waiter must be woken by the notify, not by the 5s timeout"
+        );
     }
 
     #[test]
@@ -562,13 +607,18 @@ mod tests {
         // A "late" notify, arriving only after the above already gave up.
         store.notify_unlock_result(true);
 
-        // A fresh wait must react to a *new* generation, not treat the stale
-        // bump above as its own signal by accident.
-        let store = std::sync::Arc::new(store);
-        let waiter = std::sync::Arc::clone(&store);
-        let handle = std::thread::spawn(move || waiter.wait_for_unlock(Duration::from_secs(5)));
-        std::thread::sleep(Duration::from_millis(100));
-        store.notify_unlock_result(true);
-        assert_eq!(handle.join().expect("waiter thread must not panic"), Ok(()));
+        // A fresh wait must react to a *new* generation only. If it instead
+        // treated the stale bump above as its own signal, it would resolve
+        // immediately with `Ok(())` (matching that bump's `true`) instead of
+        // genuinely waiting out its own timeout with `Err`; nothing notifies
+        // this second wait at all, so only a correct, generation-scoped
+        // implementation gets this right.
+        let start = Instant::now();
+        let result = store.wait_for_unlock(Duration::from_millis(100));
+        assert_eq!(result, Err(KEY_LOCKED_ERROR.to_string()));
+        assert!(
+            start.elapsed() >= Duration::from_millis(90),
+            "a fresh wait must not resolve instantly from a stale generation bump"
+        );
     }
 }
