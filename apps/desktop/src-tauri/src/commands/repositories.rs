@@ -507,6 +507,14 @@ pub fn has_update(ctx: &AppContext, id: String) -> bool {
         Ok(Some(repo)) => repo,
         _ => return false,
     };
+    // A repository that was never cloned (its clone failed, or the directory was
+    // deleted) has no local commit to compare against, so there is nothing this
+    // can report. Checking first also keeps the update sweep from running
+    // `git -C <missing dir> fetch` -- which prints a `fatal:` into the terminal
+    // on every startup, once per such repository. Matches `list_branches`.
+    if !ctx.fs.exists(&repo.local_path).unwrap_or(false) {
+        return false;
+    }
     // Fetch in the terminal (visible, ssh-capable) like a pull; the rev-parse
     // comparisons below stay on the silent port.
     if fetch_op(ctx, &repo.local_path).is_err() {
@@ -885,6 +893,29 @@ mod tests {
         assert!(!has_update(&app.ctx, repo.id.clone()));
         src.advance("extra.txt");
         assert!(has_update(&app.ctx, repo.id.clone()));
+    }
+
+    /// A tracked repository that was never cloned must not be fetched: there is
+    /// nothing to compare against, and running git in a directory that does not
+    /// exist only reports a fatal error into the terminal on every sweep.
+    #[test]
+    fn has_update_is_false_without_touching_git_when_the_clone_is_missing() {
+        if !git_available() {
+            eprintln!("skipping: git not available");
+            return;
+        }
+        let app = TempAppData::new();
+        let src = SourceRepo::new();
+        let repo = add_repo(&app, &src);
+        // Added but never cloned, so the recorded local path does not exist.
+        assert!(!Path::new(&repo.local_path).exists());
+        assert!(!has_update(&app.ctx, repo.id.clone()));
+
+        // And once it IS cloned, the same call reports normally again.
+        assert!(clone(&app.ctx, repo.id.clone()).ok);
+        assert!(!has_update(&app.ctx, repo.id.clone()));
+        src.advance("extra.txt");
+        assert!(has_update(&app.ctx, repo.id));
     }
 
     #[test]

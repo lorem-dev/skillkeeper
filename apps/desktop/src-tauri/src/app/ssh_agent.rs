@@ -64,6 +64,32 @@ fn has_inherited_agent() -> bool {
         .unwrap_or(false)
 }
 
+/// The named pipe the Windows OpenSSH agent service listens on. Windows sets no
+/// `SSH_AUTH_SOCK`, so its presence is the only way to tell the service is up.
+#[cfg(windows)]
+const WINDOWS_AGENT_PIPE: &str = r"\\.\pipe\openssh-ssh-agent";
+
+/// Whether an ssh-agent is available to hold a key for this session.
+///
+/// Consumed by the `ssh_agent_available` command: with no agent, every SSH
+/// operation has to ask for the key passphrase, so the app points the user at
+/// the setup documentation instead of leaving the repeated prompts unexplained.
+///
+/// This reports only that an agent EXISTS, not that it holds the right key --
+/// listing keys would mean running `ssh-add -l` on a path where a hung agent
+/// could block, and a false "available" only costs the hint, not correctness.
+pub fn is_available() -> bool {
+    if has_inherited_agent() {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        return std::path::Path::new(WINDOWS_AGENT_PIPE).exists();
+    }
+    #[cfg(not(windows))]
+    false
+}
+
 /// Load the default ssh keys once, best-effort, without ever blocking on a
 /// passphrase. No TTY (not a shell) plus `SSH_ASKPASS_REQUIRE=never` / empty
 /// `SSH_ASKPASS` / `DISPLAY` means an encrypted key absent from the keychain

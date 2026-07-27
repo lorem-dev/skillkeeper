@@ -15,12 +15,38 @@
 //! setup. In-shell git (`run_git`) is exposed on the manager for Wave 4 to call
 //! and is not yet surfaced as a command.
 
+use serde::Serialize;
 use tauri::State;
 
 use std::sync::Arc;
 
 use super::blocking;
 use crate::state::AppContext;
+
+/// Whether a live shell session exists, and why not when it does not.
+///
+/// The repository commands run git through the PTY only while a session is
+/// live, falling back to the silent headless port otherwise. The renderer reads
+/// this to explain that fallback instead of leaving the user with a terminal
+/// that shows nothing during a clone.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalStatus {
+    /// True once the shell has started (git output streams to the view).
+    pub started: bool,
+    /// The last shell/git launch failure, when there is one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+/// `terminal:status` -- is the shell live, and if not, why not.
+#[tauri::command]
+pub fn terminal_status(state: State<'_, Arc<AppContext>>) -> TerminalStatus {
+    TerminalStatus {
+        started: state.terminal.is_started(),
+        error: state.terminal.last_error(),
+    }
+}
 
 /// `terminal:start` -- (re)ensure the shell is running at `cols` x `rows` and
 /// return its retained scrollback for the renderer to replay.
@@ -55,6 +81,16 @@ pub fn terminal_resize(
 pub fn terminal_clear_buffer(state: State<'_, Arc<AppContext>>) -> Result<(), String> {
     state.terminal.clear_buffer();
     Ok(())
+}
+
+/// `ssh:agentAvailable` -- whether an ssh-agent exists to hold a key.
+///
+/// Without one, every SSH operation has to ask for the passphrase again, so the
+/// renderer uses this to explain the repeated prompts and point at the setup
+/// documentation rather than leaving them unexplained.
+#[tauri::command]
+pub fn ssh_agent_available() -> bool {
+    crate::app::ssh_agent::is_available()
 }
 
 /// `terminal:runSshAdd` -- type `ssh-add` into the interactive shell so its key

@@ -5,13 +5,19 @@
  * overlay's visibility), so the PTY is always sized to the window and receives
  * live output continuously.
  */
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { Terminal } from '@xterm/xterm';
 import type { ITheme } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { bridgeClient } from '@/services/bridge';
+import { useSkillkeeperStore } from '@/app/store';
 import { useIsDark } from '@/systems/theme';
+import { useTranslator } from '@/systems/i18n';
+import { Menu } from '@/shared/ui';
+import type { MenuItem } from '@/shared/ui';
+import { errorLine, errorText, startWithRetry } from '../startShell.js';
 import '@xterm/xterm/css/xterm.css';
 import './TerminalView.scss';
 
@@ -45,6 +51,17 @@ export function TerminalView() {
   const host = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const isDark = useIsDark();
+  const t = useTranslator();
+  const terminalOpen = useSkillkeeperStore((s) => s.terminalOpen);
+  // Where the context menu was opened, and whether anything was selected at
+  // that moment (checked once, on open, so the entry cannot go stale while the
+  // menu is up). `null` means closed.
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number; hasSelection: boolean } | null>(
+    null,
+  );
+  // A zero-size element placed at the click point: Menu positions against an
+  // anchor's rect, and this is what turns a cursor position into one.
+  const menuAnchor = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = host.current;
@@ -99,16 +116,50 @@ export function TerminalView() {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(el);
-    fit.fit();
+    // Only ever fit against a REAL box. The fit addon derives the grid from
+    // `parseInt(getComputedStyle(host).width/height)`, and a host with no
+    // layout box (any hidden ancestor) reports the computed string "100%",
+    // which parses to a 100x100 phantom box -- the PTY would then start a dozen
+    // columns wide and the shell would hard-wrap its banner to that width, for
+    // good (the wrap is baked into the bytes; no later resize can reflow it).
+    // Skipping leaves xterm's 80x24 default, which the observer below corrects
+    // as soon as the host has a size. The overlay is kept laid out while closed
+    // (TerminalPage.scss hides it with `visibility`), so this normally passes.
+    if (el.clientWidth > 0 && el.clientHeight > 0) fit.fit();
 
     // Subscribe before starting the PTY so no live chunk lands in the gap
     // between the start() call and the promise resolving with the buffer.
     let disposed = false;
+    const { setTerminalError } = useSkillkeeperStore.getState();
     const offData = bridgeClient.onTerminalData((chunk) => term.write(chunk));
-    const offExit = bridgeClient.onTerminalExit(() => term.write('\r\n[process exited]\r\n'));
-    void bridgeClient.startTerminal(term.cols, term.rows).then((buffer) => {
-      if (!disposed && buffer) term.write(buffer);
+    const offExit = bridgeClient.onTerminalExit(() => {
+      term.write('\r\n[process exited]\r\n');
+      // The backend respawns the shell on exit. If that respawn failed there is
+      // no session left -- and repository git silently reverts to running
+      // headless -- so re-read the status rather than assume it came back.
+      void bridgeClient
+        .terminalStatus()
+        .then((status) => {
+          if (!disposed) setTerminalError(status.started ? null : (status.error ?? null));
+        })
+        .catch(() => undefined);
     });
+    void startWithRetry(() => bridgeClient.startTerminal(term.cols, term.rows)).then(
+      (buffer) => {
+        if (disposed) return;
+        if (buffer) term.write(buffer);
+        setTerminalError(null);
+      },
+      (err: unknown) => {
+        if (disposed) return;
+        // Without this the failure is invisible: the view stays blank and the
+        // rejected promise goes nowhere. Show it here AND log it, because the
+        // same dead session is why a clone prints nothing in this terminal.
+        const message = errorText(err);
+        term.write(errorLine(`Terminal unavailable: ${message}`));
+        setTerminalError(message);
+      },
+    );
 
     const onInput = term.onData((data) => bridgeClient.writeTerminal(data));
     let prevCols = term.cols;
@@ -155,5 +206,79 @@ export function TerminalView() {
     return () => cancelAnimationFrame(raf);
   }, [isDark]);
 
-  return <div className="sk-terminal" ref={host} />;
+  // Put the caret in the terminal whenever the overlay opens. The overlay is
+  // raised on its own when a command blocks on a prompt (an SSH key passphrase,
+  // a credential request), and in that case the user needs to type an answer
+  // immediately -- landing the focus on the container instead would cost them a
+  // click they have no reason to expect. A rAF waits out the reveal, since
+  // focusing a still-hidden element does nothing.
+  useEffect(() => {
+    if (!terminalOpen) return undefined;
+    const raf = requestAnimationFrame(() => termRef.current?.focus());
+    return () => cancelAnimationFrame(raf);
+  }, [terminalOpen]);
+
+  const openMenu = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    const term = termRef.current;
+    if (term === null) return;
+    // Replace the webview's own menu, which offers nothing useful over a canvas
+    // of terminal output.
+    e.preventDefault();
+    setMenuAt({ x: e.clientX, y: e.clientY, hasSelection: term.hasSelection() });
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setMenuAt(null);
+    termRef.current?.focus();
+  }, []);
+
+  // Copy/paste/select-all as menu entries, not only as shortcuts: the keyboard
+  // combination for a terminal differs per platform and is easy to miss, and
+  // "Select all" gets output out even when a full-screen program has taken over
+  // the mouse and drag-selection is unavailable.
+  const items: MenuItem[] = [
+    {
+      id: 'copy',
+      label: t('terminal.copy'),
+      disabled: menuAt?.hasSelection !== true,
+      onSelect: () => {
+        const selection = termRef.current?.getSelection() ?? '';
+        if (selection.length > 0) void writeText(selection);
+      },
+    },
+    {
+      id: 'paste',
+      label: t('terminal.paste'),
+      onSelect: () => {
+        void readText().then((text) => {
+          if (text.length > 0) termRef.current?.paste(text);
+        });
+      },
+    },
+    {
+      id: 'select-all',
+      label: t('terminal.selectAll'),
+      onSelect: () => termRef.current?.selectAll(),
+    },
+  ];
+
+  return (
+    <>
+      <div className="sk-terminal" ref={host} onContextMenu={openMenu} />
+      {menuAt !== null && (
+        <div
+          className="sk-terminal__menu-anchor"
+          ref={menuAnchor}
+          style={{ top: menuAt.y, left: menuAt.x }}
+        />
+      )}
+      <Menu
+        open={menuAt !== null}
+        onClose={closeMenu}
+        anchorRef={menuAnchor}
+        items={items}
+        ariaLabel={t('terminal.title')}
+      />
+    </>
+  );
 }

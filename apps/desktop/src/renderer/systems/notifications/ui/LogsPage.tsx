@@ -10,6 +10,7 @@ import type { KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { NotificationEntry, NotificationLevel } from '@/app/store';
+import { bridgeClient } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon, MultiSelect } from '@/shared/ui';
 import type { Translator } from '@/systems/i18n';
@@ -137,7 +138,23 @@ export function LogsPage() {
                       <span className="sk-logs__repo">{entry.repoId}</span>
                     )}
                   </div>
-                  <p className="sk-logs__message">{resolveNotification(entry, t)}</p>
+                  <p className="sk-logs__message">
+                    {resolveNotification(entry, t)}
+                    {entry.href !== undefined && (
+                      <>
+                        {' '}
+                        <Button
+                          variant="plain"
+                          className="sk-logs__link"
+                          onClick={() => {
+                            void bridgeClient.openExternal(entry.href as string);
+                          }}
+                        >
+                          {t('logs.readMore')}
+                        </Button>
+                      </>
+                    )}
+                  </p>
                   <Button
                     variant="plain"
                     className="sk-logs__copy"

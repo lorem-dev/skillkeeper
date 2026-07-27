@@ -234,3 +234,18 @@ export interface McpUpdatePreflightArgs {
 export type McpUpdatePreflightResult =
   | { readonly ok: true; readonly missingParams: string[] }
   | { readonly ok: false; readonly error: string };
+
+// -- terminal -----------------------------------------------------------------
+
+/**
+ * Whether a shell session is live, and why not when it is not.
+ *
+ * Repository git runs through the terminal only while a session exists and
+ * falls back to a silent headless port otherwise, so `error` is what separates
+ * "the clone printed nothing" from "the clone never reached the terminal".
+ */
+export interface TerminalStatus {
+  readonly started: boolean;
+  /** The last shell/git launch failure; absent while the terminal is healthy. */
+  readonly error?: string;
+}

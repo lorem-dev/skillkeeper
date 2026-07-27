@@ -46,5 +46,6 @@ export type {
   UpdateMcpResult,
   McpUpdatePreflightArgs,
   McpUpdatePreflightResult,
+  TerminalStatus,
 } from './contracts';
 export type { McpServerDef, McpTransport, McpIdentity, McpPresetOrigin } from './generated/core';

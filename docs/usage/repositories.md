@@ -78,6 +78,108 @@ Make sure your ssh-agent has the relevant key loaded before running this
 command; the CLI has no embedded terminal, so an interactive passphrase
 prompt there depends entirely on your own shell's ssh-agent integration.
 
+## Setting up an ssh-agent
+
+An ssh-agent holds your unlocked private key in memory, so Git can
+authenticate without asking for the passphrase again. SkillKeeper works
+without one -- the desktop app opens its terminal and you type the passphrase
+each time -- but with an agent, clone and sync run without interruption.
+
+SkillKeeper never reads or stores your key or passphrase. It reuses whatever
+agent your system already provides.
+
+### macOS
+
+An agent runs by default. Add your key once and store the passphrase in the
+system keychain:
+
+```
+ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+```
+
+To have it loaded automatically on every login, add this to `~/.ssh/config`:
+
+```
+Host *
+  AddKeysToAgent yes
+  UseKeychain yes
+  IdentityFile ~/.ssh/id_ed25519
+```
+
+### Linux
+
+Most desktop environments start an agent at login (GNOME Keyring, KDE Wallet).
+Check with:
+
+```
+echo "$SSH_AUTH_SOCK"
+```
+
+If it prints nothing, start one for the session:
+
+```
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+```
+
+To make that permanent, enable the user service shipped with OpenSSH:
+
+```
+systemctl --user enable --now ssh-agent.service
+```
+
+and add `AddKeysToAgent yes` under `Host *` in `~/.ssh/config`.
+
+### Windows
+
+Windows ships an OpenSSH agent as a service. Enable it once, from an elevated
+PowerShell:
+
+```
+Set-Service ssh-agent -StartupType Automatic
+Start-Service ssh-agent
+ssh-add $env:USERPROFILE\.ssh\id_ed25519
+```
+
+**Important:** Git for Windows uses its own bundled `ssh` by default, and that
+one does not talk to the Windows agent service. Point Git at the system client
+so the key you just added is actually used:
+
+```
+git config --global core.sshCommand "C:/Windows/System32/OpenSSH/ssh.exe"
+```
+
+Without this, the agent holds your key but Git keeps asking for the
+passphrase.
+
+### Passphrase prompts and pinentry
+
+When no agent holds the key, `ssh` has to ask for the passphrase. It reads it
+from the terminal it is attached to -- which is why the desktop app runs Git
+inside its embedded terminal and brings that terminal to the front when input
+is needed.
+
+A pinentry program replaces that in-terminal prompt with a small dialog. It is
+only involved if you route SSH through `gpg-agent` instead of `ssh-agent`,
+which is worth doing when your key lives on a smartcard or a YubiKey. Enable
+SSH support in `~/.gnupg/gpg-agent.conf`:
+
+```
+enable-ssh-support
+pinentry-program /usr/bin/pinentry-gtk-2
+```
+
+Use `pinentry-mac` on macOS (`brew install pinentry-mac`) and
+`pinentry-gtk-2`, `pinentry-qt` or `pinentry-curses` on Linux, then point
+`SSH_AUTH_SOCK` at the gpg-agent socket:
+
+```
+export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
+```
+
+If you are not using GnuPG, you do not need pinentry at all -- a plain
+ssh-agent is enough.
+
 ## Git LFS
 
 If a repository declares Git LFS usage, SkillKeeper runs `git lfs` steps

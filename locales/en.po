@@ -208,6 +208,28 @@ msgstr "Notifications"
 msgid "terminal.title"
 msgstr "Terminal"
 
+msgid "ssh.noAgent"
+msgstr ""
+"No ssh-agent is running, so Git asks for your key passphrase every time. Set "
+"one up to be asked only once."
+
+msgid "logs.readMore"
+msgstr "Learn more"
+
+msgid "terminal.copy"
+msgstr "Copy"
+
+msgid "terminal.paste"
+msgstr "Paste"
+
+msgid "terminal.selectAll"
+msgstr "Select all"
+
+msgid "terminal.unavailable"
+msgstr ""
+"Terminal unavailable: {error}. Git commands still run, but their output is "
+"not shown here."
+
 msgid "logs.empty"
 msgstr "Nothing to show."
 

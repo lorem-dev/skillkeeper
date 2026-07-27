@@ -27,6 +27,7 @@ import type {
   McpUpdatePreflightArgs,
   McpUpdatePreflightResult,
   OnboardingState,
+  TerminalStatus,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the Rust backend. */
@@ -85,10 +86,17 @@ export interface BridgeClient {
   projectExists(id: string): Promise<boolean>;
   openProject(path: string, editorId: string): Promise<OpenResult>;
   startTerminal(cols: number, rows: number): Promise<string>;
+  /** Whether a shell session is live, and why not when it is not. Repository git
+   *  runs through the terminal only while a session exists, so this is what
+   *  distinguishes "the clone printed nothing" from "the clone ran headless". */
+  terminalStatus(): Promise<TerminalStatus>;
   writeTerminal(data: string): void;
   resizeTerminal(cols: number, rows: number): void;
   clearTerminalBuffer(): void;
   runSshAdd(): Promise<void>;
+  /** Whether an ssh-agent exists to hold a key. Without one, every SSH
+   *  operation has to ask for the passphrase again. */
+  sshAgentAvailable(): Promise<boolean>;
   onTerminalData(callback: (chunk: string) => void): () => void;
   onTerminalExit(callback: () => void): () => void;
   onTerminalRequestOpen(callback: () => void): () => void;
@@ -178,6 +186,7 @@ export const bridgeClient: BridgeClient = {
   projectExists: (id) => invoke<boolean>('projects_exists', { id }),
   openProject: (path, editorId) => invoke<OpenResult>('open_project', { path, editorId }),
   startTerminal: (cols, rows) => invoke<string>('terminal_start', { cols, rows }),
+  terminalStatus: () => invoke<TerminalStatus>('terminal_status'),
   writeTerminal: (data) => {
     void invoke('terminal_input', { data });
   },
@@ -188,6 +197,7 @@ export const bridgeClient: BridgeClient = {
     void invoke('terminal_clear_buffer');
   },
   runSshAdd: () => invoke<void>('terminal_run_ssh_add'),
+  sshAgentAvailable: () => invoke<boolean>('ssh_agent_available'),
   onTerminalData: (callback) => subscribe<string>('terminal:data', callback),
   onTerminalExit: (callback) => subscribe<void>('terminal:exit', () => callback()),
   onTerminalRequestOpen: (callback) => subscribe<void>('terminal:requestOpen', () => callback()),

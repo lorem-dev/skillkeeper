@@ -13,27 +13,32 @@
   color: var(--sk-color-label);
   outline: none;
   opacity: 1;
-  // Fully hidden (display:none) when closed -- unlike opacity alone, it then
-  // takes no layout, so its draggable header (App.scss) projects no drag region
-  // over the app. The overlay stays MOUNTED (the PTY lives on), so display is
-  // toggled by `--hidden` rather than unmounting. Opening flips display first,
-  // then fades in (@starting-style); closing fades out, then flips to
-  // display:none after the fade (transition-behavior: allow-discrete).
+  visibility: visible;
+  // Hidden with `visibility`, NOT `display: none`. The overlay stays MOUNTED so
+  // the PTY lives on, and the terminal must keep a REAL layout box the whole
+  // time: xterm's fit addon sizes the grid from
+  // `parseInt(getComputedStyle(host).width)`, and a display:none host reports
+  // the computed string "100%" -- which parses to 100, so the PTY would start
+  // at a ~100x100 phantom box and the shell would hard-wrap its output to a
+  // dozen columns. `visibility` keeps the box (correct size from the first
+  // fit) while still removing the overlay from hit-testing, so its draggable
+  // header (App.scss) projects no drag region over the app -- the reason
+  // opacity alone was not enough. Opening shows the box at once and fades in;
+  // closing fades out, then hides at the end of the transition.
   transition:
     opacity var(--sk-duration-medium) var(--sk-ease-standard),
-    display var(--sk-duration-medium) allow-discrete;
-
-  @starting-style {
-    opacity: 0;
-  }
+    visibility var(--sk-duration-medium);
 }
 
 .sk-terminal-page--hidden {
-  display: none;
+  visibility: hidden;
   opacity: 0;
 }
 
 .sk-terminal-page__header {
+  // Never shrink: the body below is the only flexible row, so the title bar
+  // keeps its full height whatever the terminal grid measures.
+  flex: none;
   display: flex;
   align-items: center;
   gap: var(--sk-space-4);
@@ -62,7 +67,18 @@
 
 .sk-terminal-page__body {
   flex: 1;
-  overflow: hidden;
+  // A flex item's automatic minimum size is its CONTENT size, and the content
+  // here is the xterm grid -- so without this the body can grow but never
+  // shrink: on a smaller window the grid keeps its old row count, the host
+  // element's size never changes, and the view's ResizeObserver (TerminalView)
+  // never fires to refit it. The grid then outgrows the visible slot.
+  min-height: 0;
+  // `clip`, not `hidden`: an overflow:hidden box is still a SCROLL container,
+  // so the browser may scroll it on its own to reveal a focused descendant --
+  // and xterm keeps one off-screen (its helper textarea, absolutely positioned
+  // by xterm.css). Such a scroll would push the top rows out of sight with no
+  // scrollbar to bring them back. `clip` is not scrollable at all.
+  overflow: clip;
   // No right padding so the terminal (and its scrollbar) sit flush against the
   // window edge; a small inset on the left. Vertical padding unchanged.
   padding: var(--sk-space-3) 0 var(--sk-space-3) var(--sk-space-3);

@@ -129,10 +129,12 @@ pub fn run() {
             commands::projects::projects_detect_agents,
             commands::dialog::dialog_select_folder,
             commands::terminal::terminal_start,
+            commands::terminal::terminal_status,
             commands::terminal::terminal_input,
             commands::terminal::terminal_resize,
             commands::terminal::terminal_clear_buffer,
             commands::terminal::terminal_run_ssh_add,
+            commands::terminal::ssh_agent_available,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

@@ -21,3 +21,13 @@
     overflow-y: auto;
   }
 }
+
+// Zero-size, non-interactive marker parked at the point the context menu was
+// opened, purely so Menu (which positions against an element's rect) has a rect
+// to work from. It paints nothing and takes no hits.
+.sk-terminal__menu-anchor {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}

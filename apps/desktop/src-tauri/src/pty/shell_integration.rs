@@ -28,8 +28,15 @@
 //! * **Input-prompt detection.** Output matching [`needs_input`] raises the
 //!   `needsInput` signal so the UI can surface the terminal for a passphrase.
 //!
+//! * **Completion without a hook.** Windows shells take no hook, so a command
+//!   run there ends by printing a `__skk_done_<exit>__` sentinel, which
+//!   [`scan_sentinels`] strips exactly as markers are stripped; a lull in output
+//!   stands in for the readiness signal bracketed paste would otherwise give.
+//!
 //! In-shell git execution, `ssh-add`, and the per-command promise plumbing from
 //! `terminal.ts` are deliberately NOT ported here -- they land in Wave 3.
+
+use super::git_in_shell::{SENTINEL_PREFIX, SENTINEL_SUFFIX};
 
 /// Fallback (shells without bracketed paste): silence this long => "at prompt".
 /// Mirrors `HOOK_QUIET_MS` in `terminal.ts`.
@@ -59,15 +66,22 @@ pub fn is_ready(chunk: &str) -> bool {
 
 /// git/ssh output that means the command is blocked waiting for user input.
 ///
-/// Port of `NEEDS_INPUT = /enter passphrase|password:|\(yes\/no|continue
+/// Grown from `NEEDS_INPUT = /enter passphrase|password:|\(yes\/no|continue
 /// connecting/i` in `terminal.ts` -- a case-insensitive substring match against
 /// each alternative (no regex crate needed as the alternatives are literals).
+///
+/// The last two cover git over HTTPS, which asks `Username for 'https://...':`
+/// and `Password for 'https://...':` -- neither of which ends in a bare
+/// `password:`, so the original set walked straight past them and the terminal
+/// was never raised for a credential prompt.
 pub fn needs_input(text: &str) -> bool {
     let lower = text.to_ascii_lowercase();
     lower.contains("enter passphrase")
         || lower.contains("password:")
         || lower.contains("(yes/no")
         || lower.contains("continue connecting")
+        || lower.contains("username for")
+        || lower.contains("password for")
 }
 
 /// The one-line hook that makes the shell emit the invisible exit-code marker
@@ -254,6 +268,93 @@ pub fn scan_markers(carry: &str, chunk: &str) -> ScanResult {
     }
 }
 
+/// Strip completion sentinels (`__skk_done_<exit>__`) from `carry + chunk`.
+///
+/// The unintegrated-shell counterpart of [`scan_markers`], with the same
+/// contract: ordered [`StreamPiece`]s plus the tail that might be the start of a
+/// sentinel still arriving, so one split across two reads is never shown or
+/// split. A sentinel is plain text rather than an escape sequence, so the search
+/// keys on its literal prefix instead of `ESC`.
+///
+/// Requiring at least one digit is what makes the shell's ECHO of the typed
+/// command safe: it still holds the unexpanded `%^ERRORLEVEL%`, which cannot
+/// match, so only the line the shell actually printed is taken as completion.
+pub fn scan_sentinels(carry: &str, chunk: &str) -> ScanResult {
+    let stream = format!("{carry}{chunk}");
+    let mut pieces = Vec::new();
+    let mut cursor = 0usize;
+
+    // Every COMPLETE sentinel: prefix, one-or-more digits, then the suffix.
+    while let Some(rel) = stream[cursor..].find(SENTINEL_PREFIX) {
+        let start = cursor + rel;
+        let after = start + SENTINEL_PREFIX.len();
+        let digits_end = after
+            + stream[after..]
+                .bytes()
+                .take_while(u8::is_ascii_digit)
+                .count();
+        if digits_end > after && stream[digits_end..].starts_with(SENTINEL_SUFFIX) {
+            if cursor < start {
+                pieces.push(StreamPiece::Text(stream[cursor..start].to_string()));
+            }
+            let code = stream[after..digits_end].parse::<i64>().unwrap_or(0);
+            pieces.push(StreamPiece::Marker(code));
+            cursor = digits_end + SENTINEL_SUFFIX.len();
+            continue;
+        }
+        // Not (yet) a sentinel: keep the prefix as ordinary text and move past
+        // its first byte, so an overlapping later start is still found.
+        if start < stream.len() {
+            pieces.push(StreamPiece::Text(stream[cursor..start + 1].to_string()));
+            cursor = start + 1;
+        } else {
+            break;
+        }
+    }
+
+    // Hold back a trailing fragment that could still grow into a sentinel.
+    let mut rest_end = stream.len();
+    let mut carry_out = String::new();
+    let tail_start = sentinel_carry_start(&stream[cursor..]).map(|rel| cursor + rel);
+    if let Some(start) = tail_start {
+        carry_out = stream[start..].to_string();
+        rest_end = start;
+    }
+    if cursor < rest_end {
+        pieces.push(StreamPiece::Text(stream[cursor..rest_end].to_string()));
+    }
+
+    ScanResult {
+        pieces,
+        carry: carry_out,
+    }
+}
+
+/// Offset in `rest` where an incomplete sentinel begins, if one does: either a
+/// truncated prefix at the very end, or a full prefix whose digits/suffix have
+/// not all arrived. Returns `None` when nothing needs holding back.
+fn sentinel_carry_start(rest: &str) -> Option<usize> {
+    // A complete prefix whose digits (and suffix) are still incomplete.
+    if let Some(rel) = rest.rfind(SENTINEL_PREFIX) {
+        let after = rel + SENTINEL_PREFIX.len();
+        if rest[after..].bytes().all(|b| b.is_ascii_digit()) {
+            return Some(rel);
+        }
+        // Digits then a partial suffix (the suffix is "__", so one char of it).
+        let digits_end = after + rest[after..].bytes().take_while(u8::is_ascii_digit).count();
+        if digits_end > after && SENTINEL_SUFFIX.starts_with(&rest[digits_end..]) {
+            return Some(rel);
+        }
+    }
+    // A truncated prefix at the very end (e.g. the chunk ends with "__skk").
+    for len in (1..SENTINEL_PREFIX.len()).rev() {
+        if rest.len() >= len && SENTINEL_PREFIX.starts_with(&rest[rest.len() - len..]) {
+            return Some(rest.len() - len);
+        }
+    }
+    None
+}
+
 /// Side effects the protocol asks the owning manager to perform for one input
 /// event (a data chunk or a fired timer). Applying it is the manager's job; the
 /// state machine itself performs no I/O, so it stays pure and testable.
@@ -367,12 +468,31 @@ impl ShellIntegration {
         // 3. Strip markers (carrying a partial across the chunk boundary) and
         //    replay the surviving pieces in order so a mid-chunk marker reveals
         //    hidden output only for the text that follows it.
-        let scan = scan_markers(&self.carry, chunk);
+        //
+        //    An unintegrated shell (Windows cmd/PowerShell) takes no hook, so it
+        //    announces completion with the printed sentinel its command line
+        //    ends in; the pieces mean the same thing either way.
+        let scan = if self.use_integration {
+            scan_markers(&self.carry, chunk)
+        } else {
+            scan_sentinels(&self.carry, chunk)
+        };
         self.carry = scan.carry;
         for piece in scan.pieces {
             match piece {
                 StreamPiece::Text(t) => self.show(&t, &mut r),
                 StreamPiece::Marker(code) => self.on_marker(code, &mut r),
+            }
+        }
+        if !self.use_integration {
+            // No bracketed paste to key readiness off, so a lull in output is
+            // the proxy: re-arm on every chunk, and the timer fires once the
+            // shell has finished printing its banner/prompt and gone quiet.
+            r.arm_quiet_timer = true;
+            // A sentinel means the command finished, which is also the moment
+            // the next one may be typed.
+            if r.exit_code.is_some() {
+                self.mark_ready(&mut r);
             }
         }
 
@@ -390,8 +510,14 @@ impl ShellIntegration {
     /// appeared (fallback for shells without a line editor).
     pub fn on_quiet_timeout(&mut self) -> Reaction {
         let mut r = Reaction::default();
-        if self.use_integration && !self.hook_sent {
-            self.install_hook(&mut r);
+        if self.use_integration {
+            if !self.hook_sent {
+                self.install_hook(&mut r);
+            }
+        } else {
+            // Unintegrated shell: the lull IS the readiness signal, since there
+            // is no bracketed paste to wait for.
+            self.mark_ready(&mut r);
         }
         r
     }
@@ -454,6 +580,12 @@ impl ShellIntegration {
     /// manager releases the next queued in-shell git command.
     fn mark_ready(&mut self, r: &mut Reaction) {
         self.ready = true;
+        // A fresh prompt re-arms the `needsInput` debounce so the NEXT command
+        // that blocks can raise the signal again. On a hooked shell the
+        // bracketed-paste check in `on_data` already did this; an unhooked shell
+        // never sends bracketed paste, so without this the debounce would latch
+        // after the first prompt and every later passphrase would go unnoticed.
+        self.input_signaled = false;
         r.mark_ready = true;
     }
 }
@@ -752,9 +884,15 @@ mod tests {
         let mut si = ShellIntegration::new("powershell.exe");
         assert!(!si.use_integration());
         let r = si.on_data("PS C:\\> ");
-        assert!(r.writes.is_empty());
-        assert!(!r.arm_quiet_timer);
+        assert!(
+            r.writes.is_empty(),
+            "no hook is typed into an unhooked shell"
+        );
         assert_eq!(r.display, "PS C:\\> ");
+        // The timer is armed for a different purpose than in the hooked case:
+        // with no bracketed paste to key off, a lull in output is the only
+        // readiness signal such a shell gives.
+        assert!(r.arm_quiet_timer);
     }
 
     #[test]
@@ -827,21 +965,209 @@ mod tests {
         assert!(ready.mark_ready, "release on the prompt after the hook");
     }
 
+    /// An unhooked shell takes its readiness from a lull, not from bracketed
+    /// paste -- so the escape alone must not release a queued command.
     #[test]
-    fn unintegrated_shell_never_marks_ready() {
+    fn unintegrated_shell_does_not_take_bracketed_paste_as_ready() {
         let mut si = ShellIntegration::new("powershell.exe");
         let r = si.on_data("\x1b[?2004h");
-        assert!(!r.mark_ready, "no in-shell command gating without a hook");
+        assert!(
+            !r.mark_ready,
+            "only the lull or a sentinel means ready here"
+        );
     }
 
+    /// The marker carry spans reads: a hooked shell's marker split across two
+    /// chunks reassembles instead of leaking half of itself to the view.
     #[test]
     fn carry_persists_across_on_data_calls() {
-        let mut si = ShellIntegration::new("powershell.exe");
+        let mut si = ShellIntegration::new("/bin/zsh");
         let first = si.on_data("done\x1b]777;skk;3");
         assert_eq!(first.display, "done");
         assert_eq!(first.exit_code, None);
         let second = si.on_data("\x07");
         assert_eq!(second.exit_code, Some(3));
         assert_eq!(second.display, "");
+    }
+
+    // ---- unintegrated shells: the printed completion sentinel --------------
+
+    /// Text around a sentinel survives; the sentinel itself never reaches the
+    /// view, and its exit code is extracted.
+    #[test]
+    fn a_sentinel_is_stripped_and_its_code_extracted() {
+        let scan = scan_sentinels("", "before\r\n__skk_done_0__\r\nafter");
+        assert_eq!(scan.exit_codes(), vec![0]);
+        assert_eq!(scan.carry, "");
+        let text: String = scan
+            .pieces
+            .iter()
+            .filter_map(|p| match p {
+                StreamPiece::Text(t) => Some(t.as_str()),
+                StreamPiece::Marker(_) => None,
+            })
+            .collect();
+        assert_eq!(text, "before\r\n\r\nafter");
+    }
+
+    #[test]
+    fn a_nonzero_sentinel_code_is_extracted() {
+        let scan = scan_sentinels("", "__skk_done_128__");
+        assert_eq!(scan.exit_codes(), vec![128]);
+    }
+
+    /// A sentinel split across two reads must reassemble rather than leak half
+    /// of itself to the view.
+    #[test]
+    fn a_sentinel_split_across_chunks_reassembles() {
+        let first = scan_sentinels("", "done\r\n__skk_do");
+        assert_eq!(first.exit_codes(), Vec::<i64>::new());
+        assert_eq!(first.carry, "__skk_do");
+        let shown: String = first
+            .pieces
+            .iter()
+            .filter_map(|p| match p {
+                StreamPiece::Text(t) => Some(t.as_str()),
+                StreamPiece::Marker(_) => None,
+            })
+            .collect();
+        assert_eq!(shown, "done\r\n", "half a sentinel must not be displayed");
+
+        let second = scan_sentinels(&first.carry, "ne_7__tail");
+        assert_eq!(second.exit_codes(), vec![7]);
+        assert_eq!(second.carry, "");
+    }
+
+    /// The digits are what separate the real sentinel from the shell echoing the
+    /// command line that will later print it.
+    #[test]
+    fn the_unexpanded_echo_of_the_command_is_not_a_sentinel() {
+        let echo =
+            "C:\\r>\"git\" -C \"C:\\r\" \"status\" & call echo __skk_done_%^ERRORLEVEL%__\r\n";
+        let scan = scan_sentinels("", echo);
+        assert_eq!(scan.exit_codes(), Vec::<i64>::new());
+        let shown: String = scan
+            .pieces
+            .iter()
+            .filter_map(|p| match p {
+                StreamPiece::Text(t) => Some(t.as_str()),
+                StreamPiece::Marker(_) => None,
+            })
+            .collect();
+        assert_eq!(shown, echo, "the echoed line must be shown verbatim");
+    }
+
+    #[test]
+    fn plain_output_passes_through_a_sentinel_scan_untouched() {
+        let scan = scan_sentinels("", "Microsoft Windows [Version 10.0]\r\nC:\\Users\\x>");
+        assert_eq!(scan.exit_codes(), Vec::<i64>::new());
+        assert_eq!(scan.carry, "");
+    }
+
+    /// End-to-end through the state machine: an unintegrated shell installs no
+    /// hook, shows its output, and reports a command's completion from the
+    /// sentinel -- which is also when the next command may be typed.
+    #[test]
+    fn an_unintegrated_shell_completes_a_command_via_the_sentinel() {
+        let mut si = ShellIntegration::new("C:\\Windows\\System32\\cmd.exe");
+        assert!(!si.use_integration());
+
+        let banner = si.on_data("Microsoft Windows [Version 10.0]\r\nC:\\Users\\x>");
+        assert!(banner.writes.is_empty(), "no hook is typed into cmd");
+        assert!(banner.display.contains("Microsoft Windows"));
+        assert!(
+            banner.arm_quiet_timer,
+            "a lull is the only readiness signal cmd gives"
+        );
+        assert!(!banner.mark_ready, "still printing is not ready");
+
+        // The lull fires: the shell is at a prompt and can take a command.
+        assert!(si.on_quiet_timeout().mark_ready);
+
+        let done = si.on_data("Fetching origin\r\n__skk_done_0__\r\n");
+        assert_eq!(done.exit_code, Some(0));
+        assert!(
+            done.mark_ready,
+            "completion frees the shell for the next one"
+        );
+        assert!(done.display.contains("Fetching origin"));
+        assert!(
+            !done.display.contains("__skk_done_"),
+            "the sentinel must not be shown, got {:?}",
+            done.display
+        );
+    }
+
+    // ---- raising the terminal for a prompt --------------------------------
+
+    #[test]
+    fn credential_prompts_over_https_are_recognised() {
+        // Neither of these ends in a bare "password:", which is why they used
+        // to slip past and leave the terminal unraised.
+        assert!(needs_input("Username for 'https://github.com': "));
+        assert!(needs_input("Password for 'https://x@github.com': "));
+        // The originals still hold.
+        assert!(needs_input(
+            "Enter passphrase for key '/home/u/.ssh/id_ed25519': "
+        ));
+        assert!(needs_input(
+            "Are you sure you want to continue connecting (yes/no)? "
+        ));
+        assert!(!needs_input("Cloning into 'repo'..."));
+    }
+
+    /// The signal is debounced to once per prompt, but must re-arm -- otherwise
+    /// only the FIRST passphrase of a session ever raises the terminal. An
+    /// unhooked shell has no bracketed paste to re-arm on, so its completion
+    /// sentinel has to do it.
+    #[test]
+    fn an_unintegrated_shell_re_arms_the_input_signal_for_the_next_command() {
+        let mut si = ShellIntegration::new("C:\\Windows\\System32\\cmd.exe");
+
+        let first = si.on_data("Enter passphrase for key 'x': ");
+        assert!(first.request_open, "the first prompt raises the terminal");
+        // Debounced within the same command.
+        assert!(!si.on_data("Enter passphrase for key 'x': ").request_open);
+
+        // The command finishes; the next one must be able to raise it again.
+        assert_eq!(si.on_data("__skk_done_0__").exit_code, Some(0));
+        let second = si.on_data("Enter passphrase for key 'x': ");
+        assert!(
+            second.request_open,
+            "a later command's prompt must raise the terminal too"
+        );
+    }
+
+    /// The same re-arming on a hooked shell, where a ready prompt does it.
+    #[test]
+    fn an_integrated_shell_re_arms_the_input_signal_at_the_next_prompt() {
+        let mut si = ShellIntegration::new("/bin/zsh");
+        // Reach a working hook first: the ready prompt installs it (hiding
+        // output), and a marker confirms it and reveals output again.
+        si.on_data("\x1b[?2004h");
+        si.on_data("\x1b]777;skk;0\x07");
+        assert!(si.on_data("\x1b[?2004h").mark_ready);
+
+        assert!(si.on_data("Enter passphrase for key 'x': ").request_open);
+        // Debounced within the same command.
+        assert!(!si.on_data("Enter passphrase for key 'x': ").request_open);
+
+        // The next ready prompt re-arms it.
+        si.on_data("\x1b[?2004h");
+        assert!(
+            si.on_data("Enter passphrase for key 'x': ").request_open,
+            "a later command's prompt must raise the terminal too"
+        );
+    }
+
+    /// An integrated shell must be unaffected: its completion still comes from
+    /// the OSC marker, and sentinel-looking text is just text.
+    #[test]
+    fn an_integrated_shell_ignores_sentinel_shaped_text() {
+        let mut si = ShellIntegration::new("/bin/zsh");
+        assert!(si.use_integration());
+        let r = si.on_data("echo __skk_done_0__\r\n");
+        assert_eq!(r.exit_code, None);
+        assert!(r.display.contains("__skk_done_0__"));
     }
 }

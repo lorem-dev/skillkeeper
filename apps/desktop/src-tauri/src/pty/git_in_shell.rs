@@ -91,6 +91,130 @@ pub fn ssh_add_command(is_macos: bool) -> &'static str {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Windows: running git in the interactive shell without a prompt hook.
+//
+// Windows shells take no `precmd`/`PROMPT_COMMAND` hook, so there is no
+// invisible marker to read a command's exit code from. Instead the command
+// line itself ends with an `echo` of a sentinel carrying the exit code, which
+// the output scanner strips exactly as it strips a marker.
+//
+// Running git IN the shell (rather than as its own pseudo-terminal) is what
+// makes an SSH key passphrase prompt work: it appears at the same terminal the
+// user is already typing into, instead of in a private pseudo-terminal whose
+// prompt never surfaces on Windows.
+// ---------------------------------------------------------------------------
+
+/// The Windows shell being typed into. The two differ in how a just-finished
+/// command's exit code is named, and in how a string literal is quoted.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WinShell {
+    /// `cmd.exe` -- the `%COMSPEC%` default.
+    Cmd,
+    /// `powershell.exe` / `pwsh.exe`.
+    PowerShell,
+}
+
+/// Classify a Windows shell from its executable path or bare name.
+pub fn win_shell_kind(program: &str) -> WinShell {
+    let lower = program.to_ascii_lowercase();
+    let base = lower.rsplit(['\\', '/']).next().unwrap_or(lower.as_str());
+    if base.starts_with("powershell") || base.starts_with("pwsh") {
+        WinShell::PowerShell
+    } else {
+        WinShell::Cmd
+    }
+}
+
+/// Opening text of the completion sentinel. A full sentinel is this, one or
+/// more decimal digits (the exit code), then [`SENTINEL_SUFFIX`].
+///
+/// Requiring DIGITS is what keeps the shell's own echo of the typed line from
+/// being mistaken for the real thing: the echo still contains the unexpanded
+/// `%^ERRORLEVEL%` / `$($LASTEXITCODE)`, which cannot match.
+pub const SENTINEL_PREFIX: &str = "__skk_done_";
+/// Closing text of the completion sentinel.
+pub const SENTINEL_SUFFIX: &str = "__";
+
+/// Quote a value for `cmd.exe`.
+///
+/// Wrapping in double quotes makes `&`, `|`, `<`, `>` and whitespace literal.
+/// An embedded double quote is DOUBLED, which leaves cmd's quoting state
+/// unchanged and so cannot let a metacharacter escape the quotes.
+///
+/// Caveat: `cmd.exe` still expands `%VAR%` inside double quotes and offers no
+/// interactive escape for it, so a value containing `%NAME%` where `NAME` is a
+/// set variable is substituted. Remote URLs and Windows paths do not carry that
+/// form in practice; nothing here can turn it into command injection.
+pub fn cmdq(value: &str) -> String {
+    let mut out = String::with_capacity(value.len() + 2);
+    out.push('"');
+    for ch in value.chars() {
+        if ch == '"' {
+            out.push('"');
+        }
+        out.push(ch);
+    }
+    out.push('"');
+    out
+}
+
+/// Quote a value for PowerShell: a single-quoted literal, in which nothing is
+/// expanded and only `'` needs escaping (by doubling).
+pub fn psq(value: &str) -> String {
+    let mut out = String::with_capacity(value.len() + 2);
+    out.push('\'');
+    for ch in value.chars() {
+        if ch == '\'' {
+            out.push('\'');
+        }
+        out.push(ch);
+    }
+    out.push('\'');
+    out
+}
+
+/// Assemble `git -C <dir> <args...>` followed by the sentinel echo, quoted for
+/// `shell` and terminated with a CR so typing it runs it.
+///
+/// `cmd.exe` needs `call echo %^ERRORLEVEL%`: at an interactive prompt the whole
+/// line is expanded BEFORE any of it runs, so a plain `%ERRORLEVEL%` would
+/// report the PREVIOUS command's code. The `^` defers the expansion past that
+/// first pass and `call` performs it afterwards, once git has finished.
+pub fn sentinel_command_line(shell: WinShell, git: &str, dir: &str, args: &[String]) -> String {
+    match shell {
+        WinShell::Cmd => {
+            let mut parts = Vec::with_capacity(args.len() + 3);
+            parts.push(cmdq(git));
+            parts.push("-C".to_string());
+            parts.push(cmdq(dir));
+            for arg in args {
+                parts.push(cmdq(arg));
+            }
+            format!(
+                "{} & call echo {SENTINEL_PREFIX}%^ERRORLEVEL%{SENTINEL_SUFFIX}\r",
+                parts.join(" ")
+            )
+        }
+        WinShell::PowerShell => {
+            let mut parts = Vec::with_capacity(args.len() + 3);
+            parts.push(format!("& {}", psq(git)));
+            parts.push("-C".to_string());
+            parts.push(psq(dir));
+            for arg in args {
+                parts.push(psq(arg));
+            }
+            // `[int]$LASTEXITCODE` keeps the sentinel matchable when the variable
+            // is still unset (a command that never ran), which would otherwise
+            // print no digits at all and leave the waiter with nothing to match.
+            format!(
+                "{}; Write-Host \"{SENTINEL_PREFIX}$([int]$LASTEXITCODE){SENTINEL_SUFFIX}\"\r",
+                parts.join(" ")
+            )
+        }
+    }
+}
+
 /// Serialises git operations so concurrent `run_git` calls never interleave
 /// (port of the `queue`/`whenIdle` promise chain in `terminal.ts`, which ran
 /// each git command strictly after the previous one settled).
@@ -323,6 +447,89 @@ mod tests {
             let enter = pair[0].strip_prefix("enter ").expect("enter first");
             let leave = pair[1].strip_prefix("leave ").expect("leave second");
             assert_eq!(enter, leave, "op {enter} was interleaved by another op");
+        }
+    }
+
+    // ---- Windows in-shell git --------------------------------------------
+
+    #[test]
+    fn shell_kind_recognises_powershell_by_path_or_name() {
+        assert_eq!(win_shell_kind("powershell.exe"), WinShell::PowerShell);
+        assert_eq!(win_shell_kind("pwsh"), WinShell::PowerShell);
+        assert_eq!(
+            win_shell_kind("C:\\Program Files\\PowerShell\\7\\pwsh.exe"),
+            WinShell::PowerShell
+        );
+        assert_eq!(
+            win_shell_kind("C:\\Windows\\System32\\cmd.exe"),
+            WinShell::Cmd
+        );
+        // Anything unrecognised is treated as cmd, matching the COMSPEC default.
+        assert_eq!(win_shell_kind("somethingelse.exe"), WinShell::Cmd);
+    }
+
+    #[test]
+    fn cmd_quoting_neutralises_metacharacters() {
+        assert_eq!(cmdq("plain"), "\"plain\"");
+        // The whole value stays inside one quoted run, so `&` cannot start a
+        // second command.
+        assert_eq!(cmdq("a & b"), "\"a & b\"");
+        // A doubled quote leaves cmd's quoting state unchanged, so what follows
+        // is still quoted rather than escaping into command position.
+        assert_eq!(cmdq("a\"&calc"), "\"a\"\"&calc\"");
+    }
+
+    #[test]
+    fn powershell_quoting_uses_a_non_expanding_literal() {
+        assert_eq!(psq("plain"), "'plain'");
+        // Single quotes expand nothing, so a variable reference stays literal.
+        assert_eq!(psq("$env:PATH"), "'$env:PATH'");
+        assert_eq!(psq("it's"), "'it''s'");
+    }
+
+    #[test]
+    fn cmd_command_line_defers_the_exit_code_expansion() {
+        let line = sentinel_command_line(
+            WinShell::Cmd,
+            "git",
+            "C:\\repos\\x",
+            &["fetch".to_string(), "--prune".to_string()],
+        );
+        assert!(line.starts_with("\"git\" -C \"C:\\repos\\x\" \"fetch\" \"--prune\""));
+        // `call` plus the escaped `%` is what makes the code git's own rather
+        // than the previous command's.
+        assert!(line.contains("& call echo __skk_done_%^ERRORLEVEL%__"));
+        assert!(line.ends_with('\r'), "the line must run when typed");
+    }
+
+    #[test]
+    fn powershell_command_line_reports_its_own_exit_code() {
+        let line = sentinel_command_line(
+            WinShell::PowerShell,
+            "git",
+            "C:\\repos\\x",
+            &["status".to_string()],
+        );
+        assert!(line.starts_with("& 'git' -C 'C:\\repos\\x' 'status'"));
+        assert!(line.contains("__skk_done_$([int]$LASTEXITCODE)__"));
+        assert!(line.ends_with('\r'));
+    }
+
+    /// The echoed command line must NOT look like a finished command: the shell
+    /// prints the typed text back before running it, and taking that as the
+    /// completion signal would report success the instant the command started.
+    #[test]
+    fn the_typed_line_cannot_be_mistaken_for_the_sentinel_it_prints() {
+        for shell in [WinShell::Cmd, WinShell::PowerShell] {
+            let line = sentinel_command_line(shell, "git", "C:\\r", &["status".to_string()]);
+            let after = line
+                .split(SENTINEL_PREFIX)
+                .nth(1)
+                .expect("the line carries the sentinel prefix");
+            assert!(
+                !after.starts_with(|c: char| c.is_ascii_digit()),
+                "{shell:?}: the unexpanded line must have no digits after the prefix, got {after:?}"
+            );
         }
     }
 }

@@ -97,6 +97,17 @@
   grid-row: 1 / span 2;
 }
 
+// Reads as a link inside the message, not as another button competing with the
+// row's copy action: accent-colored, inline, with no padding of its own.
+.sk-logs__link {
+  display: inline;
+  padding: 0;
+  height: auto;
+  min-height: 0;
+  color: var(--sk-color-accent);
+  text-decoration: underline;
+}
+
 .sk-logs__empty {
   flex: 1;
   display: flex;

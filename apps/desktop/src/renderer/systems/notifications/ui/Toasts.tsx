@@ -8,6 +8,7 @@ import type { ComponentProps } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { NotificationLevel } from '@/app/store';
+import { bridgeClient } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { Alert } from '@/shared/ui';
 import { fadeRise } from '@/shared/lib';
@@ -74,7 +75,13 @@ export function Toasts() {
             key={toast.id}
             type="button"
             className="sk-toasts__item"
-            onClick={() => dismissToast(toast.id)}
+            // A toast that carries documentation opens it, since the toast is
+            // gone in five seconds and the log entry behind it is easy to miss.
+            // Without one, clicking just dismisses, as before.
+            onClick={() => {
+              if (toast.href !== undefined) void bridgeClient.openExternal(toast.href);
+              dismissToast(toast.id);
+            }}
             variants={fadeRise}
             initial="initial"
             animate="animate"

@@ -2,6 +2,83 @@
 
 ## Development
 
+## Version 0.2.2
+
+### Added
+
+- A documentation section on setting up an ssh-agent, with per-platform
+  instructions and a note on pinentry. When the terminal is raised for a
+  passphrase and no agent is running, the app now says so once per session and
+  links to it -- otherwise being asked on every single operation reads as the
+  app being broken rather than as a machine that needs setting up. The Windows
+  instructions call out that Git for Windows uses its own bundled `ssh`, which
+  ignores the Windows agent service until `core.sshCommand` points at the system
+  client.
+- A right-click menu in the terminal with Copy, Paste and Select all. Copying
+  was previously reachable only through a keyboard shortcut that differs per
+  platform (and where a bare Ctrl+C sends an interrupt instead), so getting text
+  out was easy to miss. Select all also covers the case where a full-screen
+  program has taken over the mouse and dragging cannot select.
+
+### Fixed
+
+- The terminal is raised for every prompt that needs an answer, not just the
+  first one of a session, and the caret lands in it so the answer can be typed
+  straight away instead of after a click nobody expects. Credential prompts over
+  HTTPS (`Username for ...`, `Password for ...`) now count as prompts too; only
+  an SSH passphrase and a host-key confirmation did before.
+- The update check skips a repository that was never cloned instead of fetching
+  in a directory that does not exist. Such a repository has no local commit to
+  compare against, so the check could only ever answer "no update" -- but it
+  answered it by running git first, which reported a fatal error into the
+  terminal on every startup, once per uncloned repository.
+- Windows: an SSH key passphrase can finally be entered, so cloning a repository
+  that needs one works. Git used to run in a pseudo-terminal of its own there,
+  and the passphrase prompt never surfaced in it -- git simply waited forever,
+  printing nothing. It now runs in the interactive terminal the user is already
+  looking at, exactly as it does on macOS and Linux: the prompt appears in the
+  terminal and can be answered. Because Windows shells take no prompt hook, the
+  command reports its exit code by printing a sentinel that is stripped from the
+  output before it is shown. An ssh-agent is still used when one holds the key,
+  in which case nothing is asked at all.
+- A git command that blocks on a prompt no longer wedges every later one. Git
+  runs in the terminal through its own pseudo-terminal, and the app waited for
+  it to exit without any bound -- so a clone stuck on an SSH key passphrase (a
+  prompt that does not reach that pseudo-terminal on Windows) held the git queue
+  for the rest of the session, and each following clone, sync or update check
+  blocked silently before it could print anything. The wait is now bounded by
+  SILENCE rather than runtime -- a large clone reports progress throughout, so
+  it is never affected -- and a command that produces nothing at all while still
+  running is stopped, with a message naming the likely cause.
+- Windows: the first repository operation that ran git in the terminal never
+  finished, and every later one silently did nothing. After git exited, the app
+  waited for the output reader to reach end-of-file while still holding the
+  command's pseudo-terminal open -- and Windows keeps a copy of the write handle
+  alive for exactly that long, so the end-of-file could never arrive. The call
+  never returned, its slot in the git queue was never released, and each
+  following clone, sync or update check blocked before it could print anything:
+  the terminal accepted typing but showed no git, an update check sat unfinished,
+  and adding a repository looked like nothing happened. The pseudo-terminal is
+  now released before the wait, and the wait itself is bounded.
+- A terminal that cannot start now says so instead of staying blank. The
+  renderer used to issue the start as a floating promise, so a failed shell
+  spawn produced no error anywhere -- and because repository git only runs
+  through the terminal while a session is live, the same dead session silently
+  reverted clone/sync to a headless git that prints nothing. The failure is now
+  shown in the terminal view, logged as a warning that explains git is still
+  running without visible output, and reported by a new `terminal_status`
+  command. Starting is retried up to three times before it is reported.
+- A pseudo-terminal backend that panics rather than returning an error -- Windows
+  hosts older than Windows 10 1809, where `CreatePseudoConsole` is not exported --
+  no longer unwinds through the command's worker task into an opaque join error.
+  The panic is caught and its message kept, so the terminal is unavailable with a
+  readable reason instead of failing anonymously.
+- Git launch failures on the standalone-process path (Windows and unintegrated
+  shells) are printed to the terminal instead of being swallowed into a bare
+  exit code, and a `git` that cannot be spawned names the likely cause: it is not
+  on the PATH this application inherited. Shell spawn errors likewise name the
+  shell and working directory they tried.
+
 ## Version 0.2.1
 
 ### Added

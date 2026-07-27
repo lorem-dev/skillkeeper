@@ -38,14 +38,19 @@
 //! (see `commands::repositories`), falling back to the direct `SystemGit` port
 //! when no session has started (headless/tests).
 
+use std::any::Any;
 use std::io::{Read, Write};
+use std::panic::AssertUnwindSafe;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize};
+use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtyPair, PtySize};
 
-use super::git_in_shell::{git_command_line, ssh_add_command, wrap_bracketed_paste, GitQueue};
+use super::git_in_shell::{
+    git_command_line, sentinel_command_line, ssh_add_command, win_shell_kind, wrap_bracketed_paste,
+    GitQueue,
+};
 use super::shell_integration::{
     needs_input, Reaction, ShellIntegration, HOOK_CONFIRM_MS, HOOK_QUIET_MS,
 };
@@ -53,6 +58,28 @@ use super::{Scrollback, ShellSpec, TerminalEvent, MAX_BUFFER};
 
 /// Read buffer size for the reader thread.
 const READ_CHUNK: usize = 8 * 1024;
+
+/// How long to wait for a finished git command's reader thread to drain.
+///
+/// Reaching EOF is near-instant once the pty is closed; this only bounds the
+/// pathological case, so that a reader which somehow cannot finish stalls one
+/// thread instead of wedging the git queue for the rest of the session.
+const READER_JOIN_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// How long a still-running git command may produce NO output before it is
+/// treated as stuck on a prompt, killed, and reported.
+///
+/// Bounding silence rather than total runtime is what makes this safe: a big
+/// clone runs for minutes but prints progress throughout, so it never trips.
+const GIT_SILENCE_TIMEOUT: Duration = Duration::from_secs(120);
+
+/// How often to check whether a git command has exited while waiting on it.
+const GIT_POLL_INTERVAL: Duration = Duration::from_millis(200);
+
+/// How long to wait for a freshly spawned shell to reach a prompt before typing
+/// a command anyway. The console buffers early input, so this only orders the
+/// command after the shell's banner in the common case.
+const SHELL_READY_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Default terminal geometry when the caller passes zero (mirrors `terminal.ts`
 /// `cols = 80`, `rows = 24`).
@@ -114,6 +141,17 @@ struct Shared {
     quiet_gen: u64,
     /// Generation counter invalidating superseded/cancelled confirm timers.
     confirm_gen: u64,
+    /// Why the last session (or git command) failed to start, if it did. Kept so
+    /// the failure survives the call that produced it: a spawn error is otherwise
+    /// invisible once `start` has returned, and the repository commands silently
+    /// fall back to the headless git port whenever no session is live.
+    last_error: Option<String>,
+    /// When the session last saw output OR user input. An in-shell git command
+    /// is bounded against THIS rather than against wall-clock, because the case
+    /// worth waiting for -- a passphrase prompt the user is answering -- is
+    /// silent on both counts while they read it, but their keystrokes count as
+    /// activity the moment they start typing.
+    last_activity: Instant,
 }
 
 /// The `Mutex`-guarded [`Shared`] state paired with the `Condvar` that wakes a
@@ -170,6 +208,8 @@ impl TerminalManager {
             exit_gen: 0,
             quiet_gen: 0,
             confirm_gen: 0,
+            last_error: None,
+            last_activity: Instant::now(),
         };
         let (input_tx, input_rx) = channel::<String>();
         let shared = Arc::new(SharedState {
@@ -219,8 +259,16 @@ impl TerminalManager {
                 let _ = master.resize(size);
             }
         } else {
-            spawn_session(&mut shared, &self.shared)?;
+            // Record the reason before returning it: the renderer surfaces the
+            // rejected promise, but every later caller (notably the repository
+            // commands' `is_started` check) can only see that there is no
+            // session, not why -- which is what made this failure mode silent.
+            if let Err(e) = spawn_session(&mut shared, &self.shared) {
+                shared.last_error = Some(e.clone());
+                return Err(e);
+            }
             shared.started = true;
+            shared.last_error = None;
         }
         Ok(shared.scrollback.snapshot())
     }
@@ -299,6 +347,20 @@ impl TerminalManager {
             .unwrap_or(false)
     }
 
+    /// Why the terminal is unavailable, when it is: the message from the last
+    /// failed shell spawn or git launch. `None` once a session starts.
+    ///
+    /// Surfaced through `terminal_status` so the renderer can tell the user that
+    /// git is running headless (no visible output) rather than leaving the
+    /// fallback in [`is_started`](Self::is_started) unexplained.
+    pub fn last_error(&self) -> Option<String> {
+        self.shared
+            .inner
+            .lock()
+            .ok()
+            .and_then(|shared| shared.last_error.clone())
+    }
+
     /// Tear the shell down for app exit: stop the reader thread from
     /// auto-respawning, kill the shell (and any running git command) and drop
     /// their PTY handles so their reader threads hit EOF, and wake any in-shell
@@ -340,11 +402,17 @@ impl TerminalManager {
     /// Returns an error message when git exits non-zero.
     pub fn run_git(&self, repo_path: &str, args: &[String]) -> Result<String, String> {
         let code = self.git_queue.run(|| {
-            // Decide inside the queued slot, matching `terminal.ts`: Windows or an
-            // unintegrated/abandoned shell runs git as its own process.
-            let integrated = !cfg!(windows) && self.use_integration();
-            if integrated {
+            // Decide inside the queued slot. Both in-shell paths run git at the
+            // terminal the user is already looking at, which is what lets an SSH
+            // key passphrase prompt be answered: POSIX shells report the exit
+            // code through the prompt hook, Windows shells through a sentinel
+            // their command line prints. Only a POSIX shell we could not hook
+            // (or whose hook was abandoned) falls back to a private
+            // pseudo-terminal, where a prompt would have nobody to answer it.
+            if self.use_integration() {
                 self.run_git_in_shell(repo_path, args)
+            } else if cfg!(windows) {
+                self.run_git_in_shell_sentinel(repo_path, args)
             } else {
                 self.run_git_process(repo_path, args)
             }
@@ -431,7 +499,88 @@ impl TerminalManager {
         }
     }
 
-    /// Windows / unintegrated shells: run git as its own arg-array PTY (no shell,
+    /// Windows: type `git -C <dir> <args>` into the interactive shell, followed
+    /// by the echo of a sentinel carrying the exit code, and wait for that
+    /// sentinel.
+    ///
+    /// The POSIX counterpart above reads the exit code from the prompt hook;
+    /// Windows shells take no hook, so the command line reports it itself. What
+    /// matters is that git runs at the terminal the user is already typing into:
+    /// an SSH key passphrase prompt appears there and can be answered, which it
+    /// cannot in the private pseudo-terminal
+    /// [`run_git_process`](Self::run_git_process) would give it.
+    fn run_git_in_shell_sentinel(&self, dir: &str, args: &[String]) -> i64 {
+        let _ = self.start(0, 0);
+
+        let mut guard = self.shared.inner.lock().expect("terminal lock poisoned");
+
+        // Wait for the shell to settle (a lull in output marks the prompt), but
+        // only briefly: the console buffers anything typed early, so proceeding
+        // is better than refusing to run.
+        let ready_by = Instant::now() + SHELL_READY_TIMEOUT;
+        while !guard.idle {
+            let left = ready_by.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                break;
+            }
+            let (next, _) = self
+                .shared
+                .cvar
+                .wait_timeout(guard, left)
+                .expect("terminal lock poisoned");
+            guard = next;
+        }
+
+        // Capture completion baselines before typing, so the sentinel we then
+        // wait for cannot be confused with a previous command's.
+        let seq0 = guard.marker_seq;
+        let exit0 = guard.exit_gen;
+        guard.idle = false;
+        guard.last_activity = Instant::now();
+        let shell = win_shell_kind(&guard.shell.program);
+        let command = sentinel_command_line(shell, "git", dir, args);
+        if let Some(writer) = guard.writer.as_mut() {
+            let _ = writer.write_all(command.as_bytes());
+            let _ = writer.flush();
+        }
+
+        // Await our sentinel, the shell dying, or a stretch in which nothing at
+        // all happened -- no output AND no typing. Waiting indefinitely is what
+        // let one stuck command block every later one.
+        loop {
+            if guard.marker_seq != seq0 {
+                return guard.last_exit_code.unwrap_or(0);
+            }
+            if guard.exit_gen != exit0 {
+                return 1; // the shell died mid-command
+            }
+            if guard.last_activity.elapsed() >= GIT_SILENCE_TIMEOUT {
+                // Interrupt whatever is sitting at the prompt so the shell is
+                // usable again, and free the queue.
+                if let Some(writer) = guard.writer.as_mut() {
+                    let _ = writer.write_all(b"\x03");
+                    let _ = writer.flush();
+                }
+                let message = format!(
+                    "git produced no output for {}s and nothing was typed, so it was \
+                     interrupted. If it was waiting for an SSH key passphrase, unlock \
+                     the key first (Settings -> ssh-add) or answer the prompt here.",
+                    GIT_SILENCE_TIMEOUT.as_secs()
+                );
+                emit(&mut guard, error_line(&message));
+                guard.last_error = Some(message);
+                return 1;
+            }
+            let (next, _) = self
+                .shared
+                .cvar
+                .wait_timeout(guard, GIT_POLL_INTERVAL)
+                .expect("terminal lock poisoned");
+            guard = next;
+        }
+    }
+
+    /// POSIX unintegrated shells: run git as its own arg-array PTY (no shell,
     /// so no POSIX quoting applies). Output streams to the view and input routes
     /// to it until it exits (port of `runGitProcess`).
     fn run_git_process(&self, dir: &str, args: &[String]) -> i64 {
@@ -446,10 +595,9 @@ impl TerminalManager {
             (guard.cols, guard.rows, guard.env.clone())
         };
 
-        let pty_system = native_pty_system();
-        let pair = match pty_system.openpty(pty_size(cols, rows)) {
+        let pair = match open_pty(cols, rows) {
             Ok(pair) => pair,
-            Err(_) => return 1,
+            Err(e) => return self.fail_git(format!("cannot open a pseudo-terminal for git: {e}")),
         };
         let mut cmd = CommandBuilder::new("git");
         for arg in args {
@@ -464,16 +612,24 @@ impl TerminalManager {
         }
         let mut child = match pair.slave.spawn_command(cmd) {
             Ok(child) => child,
-            Err(_) => return 1,
+            // Overwhelmingly this is "git is not on the PATH this app inherited"
+            // -- a GUI process started from the desktop does not see a shell's
+            // PATH edits -- so say that rather than only echoing the OS error.
+            Err(e) => {
+                return self.fail_git(format!(
+                    "cannot run git: {e}. Check that git is installed and on the PATH \
+                     available to this application."
+                ))
+            }
         };
         drop(pair.slave);
         let reader = match pair.master.try_clone_reader() {
             Ok(reader) => reader,
-            Err(_) => return 1,
+            Err(e) => return self.fail_git(format!("cannot read git output: {e}")),
         };
         let writer = match pair.master.take_writer() {
             Ok(writer) => writer,
-            Err(_) => return 1,
+            Err(e) => return self.fail_git(format!("cannot write to git: {e}")),
         };
 
         // Route interactive input to this git PTY and let resizes reach it.
@@ -484,14 +640,66 @@ impl TerminalManager {
         }
 
         // Stream git output to the view (and raise the input signal on a prompt).
+        // The thread reports its own completion on a channel rather than through
+        // a `JoinHandle`, because the wait below has to be bounded and `join`
+        // cannot be.
+        let (drained_tx, drained) = channel::<()>();
         let arc = Arc::clone(&self.shared);
-        let reader_handle = std::thread::spawn(move || git_process_reader(arc, reader));
+        let activity = Arc::new(Mutex::new(Instant::now()));
+        let reader_activity = Arc::clone(&activity);
+        std::thread::spawn(move || {
+            git_process_reader(arc, reader, reader_activity);
+            let _ = drained_tx.send(());
+        });
 
-        // Block until git exits: that is its exit code.
-        let code = child.wait().map(|s| s.exit_code() as i64).unwrap_or(1);
-        let _ = reader_handle.join();
+        // Wait for git to exit, but never unconditionally: a git that is blocked
+        // on input it can never receive would otherwise hold this call -- and
+        // with it the whole `GitQueue` -- for the rest of the session, so every
+        // later clone/sync/update silently does nothing.
+        //
+        // The bound is on SILENCE, not on total runtime: a large clone may run
+        // for many minutes, but it reports progress the whole time, so its
+        // activity clock keeps moving. Producing nothing at all for this long
+        // while still running is the signature of a stuck prompt.
+        let code = loop {
+            match child.try_wait() {
+                Ok(Some(status)) => break status.exit_code() as i64,
+                Err(_) => break 1,
+                Ok(None) => {}
+            }
+            let silent_for = activity
+                .lock()
+                .map(|since| since.elapsed())
+                .unwrap_or_default();
+            if silent_for >= GIT_SILENCE_TIMEOUT {
+                let _ = child.kill();
+                let _ = child.wait();
+                break self.fail_git(format!(
+                    "git produced no output for {}s and did not finish, so it was \
+                     stopped. This usually means it is waiting for input that \
+                     cannot reach it here -- an SSH key passphrase or a credential \
+                     prompt. Unlock the key first (Settings -> ssh-add), or use a \
+                     key without a passphrase.",
+                    GIT_SILENCE_TIMEOUT.as_secs()
+                ));
+            }
+            std::thread::sleep(GIT_POLL_INTERVAL);
+        };
 
-        // Clear the active-command routing and emit a trailing newline.
+        // Release the command PTY BEFORE joining the reader, and emit the
+        // trailing newline.
+        //
+        // The reader thread ends at EOF, and EOF needs every writer on the pty
+        // to be closed. On Windows the pseudo-console holds its own duplicate
+        // of that write handle for as long as the master lives -- and the
+        // master is exactly what `active_cmd_master` is holding. Joining first
+        // therefore waits for an EOF that cannot arrive: `run_git` never
+        // returns, its `GitQueue` slot is never released, and every later git
+        // operation blocks before it can print anything. Dropping the master
+        // here closes the console, so the reader sees EOF and finishes.
+        //
+        // On POSIX this changes nothing: the reader holds an independent dup of
+        // the master, and its EOF comes from the child's slave closing on exit.
         {
             let mut guard = self.shared.inner.lock().expect("terminal lock poisoned");
             guard.active_cmd_writer = None;
@@ -499,8 +707,75 @@ impl TerminalManager {
             guard.scrollback.append(b"\r\n");
             let _ = guard.output.send(TerminalEvent::Data("\r\n".to_string()));
         }
+        // Bounded: a reader that still cannot reach EOF must not be able to
+        // hang the git queue again. It owns nothing but its own pty handle, so
+        // leaving it to exit on its own is safe.
+        if drained.recv_timeout(READER_JOIN_TIMEOUT).is_err() {
+            self.note_git("terminal: gave up waiting for git output to drain");
+        }
         code
     }
+
+    /// Append a diagnostic note to the terminal without marking a failure.
+    fn note_git(&self, message: &str) {
+        if let Ok(mut shared) = self.shared.inner.lock() {
+            emit(&mut shared, error_line(message));
+        }
+    }
+
+    /// Report a git launch failure: show it in the terminal, retain it for
+    /// [`last_error`](Self::last_error), and return the exit code a failed
+    /// command gets. Every early return in [`run_git_process`] goes through
+    /// here, so a git that never started is never silent.
+    fn fail_git(&self, message: String) -> i64 {
+        if let Ok(mut shared) = self.shared.inner.lock() {
+            emit(&mut shared, error_line(&message));
+            shared.last_error = Some(message);
+        }
+        1
+    }
+}
+
+/// Open a pseudo-terminal, turning a panicking backend into an ordinary error.
+///
+/// `portable-pty` resolves the platform backend lazily on the first `openpty`
+/// and *panics* when it is missing -- on Windows, `CreatePseudoConsole` is only
+/// exported by Windows 10 1809 and newer, and the panic message says so. Left
+/// uncaught it unwinds through the `spawn_blocking` task behind the terminal
+/// command, which reaches the renderer as an opaque join error. Catching it here
+/// keeps the message, and keeps the rest of the app running without a terminal.
+fn open_pty(cols: u16, rows: u16) -> Result<PtyPair, String> {
+    let size = pty_size(cols, rows);
+    let opened = std::panic::catch_unwind(AssertUnwindSafe(|| native_pty_system().openpty(size)));
+    match opened {
+        Ok(Ok(pair)) => Ok(pair),
+        Ok(Err(e)) => Err(e.to_string()),
+        Err(payload) => Err(panic_message(payload.as_ref())),
+    }
+}
+
+/// The human-readable text of a caught panic payload (`&str` and `String`
+/// payloads cover everything `panic!`/`expect` produce).
+fn panic_message(payload: &(dyn Any + Send)) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        return (*s).to_string();
+    }
+    if let Some(s) = payload.downcast_ref::<String>() {
+        return s.clone();
+    }
+    "the pseudo-terminal backend panicked".to_string()
+}
+
+/// Append `text` to the retained scrollback and stream it to the view, so a
+/// message is there both live and for a renderer that attaches later.
+fn emit(shared: &mut Shared, text: String) {
+    shared.scrollback.append(text.as_bytes());
+    let _ = shared.output.send(TerminalEvent::Data(text));
+}
+
+/// Frame `message` as a standalone red terminal line.
+fn error_line(message: &str) -> String {
+    format!("\r\n\x1b[31m{message}\x1b[0m\r\n")
 }
 
 /// Build a [`PtySize`] with no pixel geometry (unused by xterm.js).
@@ -535,6 +810,9 @@ fn drain_write(state: &SharedState, data: &str) {
         Ok(guard) => guard,
         Err(_) => return,
     };
+    // Typing counts as activity: it is how a user answers the passphrase prompt
+    // an in-shell git command is waiting on, and that prompt echoes nothing.
+    shared.last_activity = Instant::now();
     let sink = if shared.active_cmd_writer.is_some() {
         shared.active_cmd_writer.as_mut()
     } else {
@@ -552,10 +830,8 @@ fn drain_write(state: &SharedState, data: &str) {
 /// `Arc`, cloned into the reader thread so it can append output and respawn on
 /// exit.
 fn spawn_session(shared: &mut Shared, state: &Arc<SharedState>) -> Result<(), String> {
-    let pty_system = native_pty_system();
-    let pair = pty_system
-        .openpty(pty_size(shared.cols, shared.rows))
-        .map_err(|e| format!("openpty failed: {e}"))?;
+    let pair = open_pty(shared.cols, shared.rows)
+        .map_err(|e| format!("cannot open a pseudo-terminal: {e}"))?;
 
     let mut cmd = CommandBuilder::new(&shared.shell.program);
     for arg in &shared.shell.args {
@@ -571,10 +847,14 @@ fn spawn_session(shared: &mut Shared, state: &Arc<SharedState>) -> Result<(), St
         cmd.cwd(&shared.cwd);
     }
 
-    let child = pair
-        .slave
-        .spawn_command(cmd)
-        .map_err(|e| format!("shell spawn failed: {e}"))?;
+    // Name the shell and its working directory: the two things that differ
+    // between a machine where this works and one where it does not.
+    let child = pair.slave.spawn_command(cmd).map_err(|e| {
+        format!(
+            "cannot start the shell {:?} in {:?}: {e}",
+            shared.shell.program, shared.cwd
+        )
+    })?;
     // Close the slave in the parent so the master read returns EOF once the
     // child exits (otherwise the reader thread would block forever).
     drop(pair.slave);
@@ -719,6 +999,7 @@ fn reader_loop(state: Arc<SharedState>, mut reader: Box<dyn Read + Send>) {
                     Ok(guard) => guard,
                     Err(_) => return,
                 };
+                shared.last_activity = Instant::now();
                 let reaction = shared.integration.on_data(&text);
                 apply_reaction(reaction, &mut shared, &state);
             }
@@ -746,7 +1027,13 @@ fn reader_loop(state: Arc<SharedState>, mut reader: Box<dyn Read + Send>) {
     let _ = shared
         .output
         .send(TerminalEvent::Data(RESTART_NOTICE.to_string()));
-    let _ = spawn_session(&mut shared, &state);
+    // A restart that fails leaves no session at all, which silently reverts the
+    // repository commands to headless git -- so say so instead of dropping it.
+    if let Err(e) = spawn_session(&mut shared, &state) {
+        shared.started = false;
+        emit(&mut shared, error_line(&e));
+        shared.last_error = Some(e);
+    }
     state.cvar.notify_all();
 }
 
@@ -755,13 +1042,22 @@ fn reader_loop(state: Arc<SharedState>, mut reader: Box<dyn Read + Send>) {
 /// emitting [`TerminalEvent::Data`], and raise [`TerminalEvent::RequestOpen`]
 /// once per command when a blocking input prompt (passphrase/password/confirm)
 /// is detected (port of the `runGitProcess` `onData` handler).
-fn git_process_reader(state: Arc<SharedState>, mut reader: Box<dyn Read + Send>) {
+fn git_process_reader(
+    state: Arc<SharedState>,
+    mut reader: Box<dyn Read + Send>,
+    activity: Arc<Mutex<Instant>>,
+) {
     let mut buf = [0u8; READ_CHUNK];
     let mut prompted = false;
     loop {
         match reader.read(&mut buf) {
             Ok(0) => break,
             Ok(n) => {
+                // Any byte counts as progress: it is what tells the waiter that
+                // git is working rather than blocked on a prompt.
+                if let Ok(mut since) = activity.lock() {
+                    *since = Instant::now();
+                }
                 let text = String::from_utf8_lossy(&buf[..n]).into_owned();
                 let mut shared = match state.inner.lock() {
                     Ok(guard) => guard,
@@ -917,6 +1213,63 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    /// The standalone git path must RETURN, and must hand input routing back.
+    ///
+    /// Regression test for a deadlock that only fires where a closed child does
+    /// not by itself produce EOF on the pty (Windows, whose pseudo-console keeps
+    /// its own copy of the write handle for as long as the master is held):
+    /// waiting for the reader before releasing the master waited for an EOF that
+    /// could not arrive, so `run_git` never returned, its queue slot was never
+    /// freed, and every later git operation blocked before printing anything.
+    ///
+    /// Unlike the in-shell test above, a timeout here FAILS rather than skips --
+    /// not completing is exactly the bug. Only an unusable environment skips.
+    #[test]
+    fn the_standalone_git_path_returns_and_restores_input_routing() {
+        let has_git = std::process::Command::new("git")
+            .arg("--version")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+        if !has_git {
+            eprintln!("skipping standalone git test: git not available");
+            return;
+        }
+
+        let cwd = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .unwrap_or_default();
+        let env: Vec<(String, String)> = std::env::vars().collect();
+        let manager = Arc::new(TerminalManager::new(host_shell(), cwd.clone(), env));
+        let rx = manager.take_events().expect("events available once");
+        std::thread::spawn(move || while rx.recv().is_ok() {});
+
+        if manager.start(80, 24).is_err() {
+            eprintln!("skipping standalone git test: shell spawn failed");
+            return;
+        }
+
+        let (tx, done) = channel();
+        let worker = Arc::clone(&manager);
+        std::thread::spawn(move || {
+            let _ = tx.send(worker.run_git_process(&cwd, &["--version".to_string()]));
+        });
+
+        let code = done
+            .recv_timeout(Duration::from_secs(30))
+            .expect("run_git_process must return; a timeout here is the deadlock");
+        assert_eq!(code, 0, "git --version should succeed");
+
+        // The command PTY has to be released, or every keystroke would keep
+        // going to the finished git instead of the shell.
+        let shared = manager.shared.inner.lock().expect("lock");
+        assert!(
+            shared.active_cmd_writer.is_none(),
+            "input still routed to git"
+        );
+        assert!(shared.active_cmd_master.is_none(), "command pty still held");
+    }
+
     /// Writing before start is a harmless no-op (no shell to receive input).
     #[test]
     fn write_before_start_is_a_noop() {
@@ -943,5 +1296,65 @@ mod tests {
             Vec::new(),
         );
         manager.clear_buffer();
+    }
+
+    // ---- failure reporting ----------------------------------------------
+
+    /// Nothing has failed before the first start, so there is nothing to report.
+    #[test]
+    fn last_error_is_absent_before_any_start() {
+        let manager = TerminalManager::new(
+            ShellSpec {
+                program: "/bin/sh".to_string(),
+                args: Vec::new(),
+            },
+            String::new(),
+            Vec::new(),
+        );
+        assert_eq!(manager.last_error(), None);
+    }
+
+    /// A shell that cannot be launched leaves the session un-started AND records
+    /// why, so the headless-git fallback can be explained rather than guessed at.
+    #[test]
+    fn a_failed_start_records_its_reason() {
+        let manager = TerminalManager::new(
+            ShellSpec {
+                program: "skillkeeper-no-such-shell".to_string(),
+                args: Vec::new(),
+            },
+            String::new(),
+            Vec::new(),
+        );
+        let err = manager
+            .start(80, 24)
+            .expect_err("a missing shell cannot start");
+        assert!(!manager.is_started());
+        assert_eq!(manager.last_error().as_deref(), Some(err.as_str()));
+        // The message has to name the shell, or it does not help on the machine
+        // where it fires.
+        assert!(
+            err.contains("skillkeeper-no-such-shell"),
+            "error should name the shell it tried, got: {err:?}"
+        );
+    }
+
+    /// A panicking backend (Windows without ConPTY) comes back as an error whose
+    /// text is the panic message, not as an unwind through the calling task.
+    #[test]
+    fn a_panicking_backend_becomes_an_error_message() {
+        let caught =
+            std::panic::catch_unwind(|| panic!("no conpty here")).expect_err("the closure panics");
+        assert_eq!(panic_message(caught.as_ref()), "no conpty here");
+    }
+
+    /// An error line stands alone and is colored, so it is legible wherever the
+    /// shell left the cursor.
+    #[test]
+    fn error_lines_are_framed_and_colored() {
+        let line = error_line("cannot run git");
+        assert!(line.starts_with("\r\n\x1b[31m"));
+        assert!(line.ends_with("\x1b[0m\r\n"));
+        assert!(line.contains("cannot run git"));
     }
 }
