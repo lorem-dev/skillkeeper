@@ -52,6 +52,7 @@ export function TerminalView() {
   const termRef = useRef<Terminal | null>(null);
   const isDark = useIsDark();
   const t = useTranslator();
+  const terminalOpen = useSkillkeeperStore((s) => s.terminalOpen);
   // Where the context menu was opened, and whether anything was selected at
   // that moment (checked once, on open, so the entry cannot go stale while the
   // menu is up). `null` means closed.
@@ -204,6 +205,18 @@ export function TerminalView() {
     });
     return () => cancelAnimationFrame(raf);
   }, [isDark]);
+
+  // Put the caret in the terminal whenever the overlay opens. The overlay is
+  // raised on its own when a command blocks on a prompt (an SSH key passphrase,
+  // a credential request), and in that case the user needs to type an answer
+  // immediately -- landing the focus on the container instead would cost them a
+  // click they have no reason to expect. A rAF waits out the reveal, since
+  // focusing a still-hidden element does nothing.
+  useEffect(() => {
+    if (!terminalOpen) return undefined;
+    const raf = requestAnimationFrame(() => termRef.current?.focus());
+    return () => cancelAnimationFrame(raf);
+  }, [terminalOpen]);
 
   const openMenu = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
     const term = termRef.current;

@@ -12,6 +12,11 @@
 
 ### Fixed
 
+- The terminal is raised for every prompt that needs an answer, not just the
+  first one of a session, and the caret lands in it so the answer can be typed
+  straight away instead of after a click nobody expects. Credential prompts over
+  HTTPS (`Username for ...`, `Password for ...`) now count as prompts too; only
+  an SSH passphrase and a host-key confirmation did before.
 - The update check skips a repository that was never cloned instead of fetching
   in a directory that does not exist. Such a repository has no local commit to
   compare against, so the check could only ever answer "no update" -- but it

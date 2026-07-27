@@ -66,15 +66,22 @@ pub fn is_ready(chunk: &str) -> bool {
 
 /// git/ssh output that means the command is blocked waiting for user input.
 ///
-/// Port of `NEEDS_INPUT = /enter passphrase|password:|\(yes\/no|continue
+/// Grown from `NEEDS_INPUT = /enter passphrase|password:|\(yes\/no|continue
 /// connecting/i` in `terminal.ts` -- a case-insensitive substring match against
 /// each alternative (no regex crate needed as the alternatives are literals).
+///
+/// The last two cover git over HTTPS, which asks `Username for 'https://...':`
+/// and `Password for 'https://...':` -- neither of which ends in a bare
+/// `password:`, so the original set walked straight past them and the terminal
+/// was never raised for a credential prompt.
 pub fn needs_input(text: &str) -> bool {
     let lower = text.to_ascii_lowercase();
     lower.contains("enter passphrase")
         || lower.contains("password:")
         || lower.contains("(yes/no")
         || lower.contains("continue connecting")
+        || lower.contains("username for")
+        || lower.contains("password for")
 }
 
 /// The one-line hook that makes the shell emit the invisible exit-code marker
@@ -573,6 +580,12 @@ impl ShellIntegration {
     /// manager releases the next queued in-shell git command.
     fn mark_ready(&mut self, r: &mut Reaction) {
         self.ready = true;
+        // A fresh prompt re-arms the `needsInput` debounce so the NEXT command
+        // that blocks can raise the signal again. On a hooked shell the
+        // bracketed-paste check in `on_data` already did this; an unhooked shell
+        // never sends bracketed paste, so without this the debounce would latch
+        // after the first prompt and every later passphrase would go unnoticed.
+        self.input_signaled = false;
         r.mark_ready = true;
     }
 }
@@ -1082,6 +1095,68 @@ mod tests {
             !done.display.contains("__skk_done_"),
             "the sentinel must not be shown, got {:?}",
             done.display
+        );
+    }
+
+    // ---- raising the terminal for a prompt --------------------------------
+
+    #[test]
+    fn credential_prompts_over_https_are_recognised() {
+        // Neither of these ends in a bare "password:", which is why they used
+        // to slip past and leave the terminal unraised.
+        assert!(needs_input("Username for 'https://github.com': "));
+        assert!(needs_input("Password for 'https://x@github.com': "));
+        // The originals still hold.
+        assert!(needs_input(
+            "Enter passphrase for key '/home/u/.ssh/id_ed25519': "
+        ));
+        assert!(needs_input(
+            "Are you sure you want to continue connecting (yes/no)? "
+        ));
+        assert!(!needs_input("Cloning into 'repo'..."));
+    }
+
+    /// The signal is debounced to once per prompt, but must re-arm -- otherwise
+    /// only the FIRST passphrase of a session ever raises the terminal. An
+    /// unhooked shell has no bracketed paste to re-arm on, so its completion
+    /// sentinel has to do it.
+    #[test]
+    fn an_unintegrated_shell_re_arms_the_input_signal_for_the_next_command() {
+        let mut si = ShellIntegration::new("C:\\Windows\\System32\\cmd.exe");
+
+        let first = si.on_data("Enter passphrase for key 'x': ");
+        assert!(first.request_open, "the first prompt raises the terminal");
+        // Debounced within the same command.
+        assert!(!si.on_data("Enter passphrase for key 'x': ").request_open);
+
+        // The command finishes; the next one must be able to raise it again.
+        assert_eq!(si.on_data("__skk_done_0__").exit_code, Some(0));
+        let second = si.on_data("Enter passphrase for key 'x': ");
+        assert!(
+            second.request_open,
+            "a later command's prompt must raise the terminal too"
+        );
+    }
+
+    /// The same re-arming on a hooked shell, where a ready prompt does it.
+    #[test]
+    fn an_integrated_shell_re_arms_the_input_signal_at_the_next_prompt() {
+        let mut si = ShellIntegration::new("/bin/zsh");
+        // Reach a working hook first: the ready prompt installs it (hiding
+        // output), and a marker confirms it and reveals output again.
+        si.on_data("\x1b[?2004h");
+        si.on_data("\x1b]777;skk;0\x07");
+        assert!(si.on_data("\x1b[?2004h").mark_ready);
+
+        assert!(si.on_data("Enter passphrase for key 'x': ").request_open);
+        // Debounced within the same command.
+        assert!(!si.on_data("Enter passphrase for key 'x': ").request_open);
+
+        // The next ready prompt re-arms it.
+        si.on_data("\x1b[?2004h");
+        assert!(
+            si.on_data("Enter passphrase for key 'x': ").request_open,
+            "a later command's prompt must raise the terminal too"
         );
     }
 
