@@ -2,6 +2,18 @@
 
 ## Development
 
+### Fixed
+
+- A git command that blocks on a prompt no longer wedges every later one. Git
+  runs in the terminal through its own pseudo-terminal, and the app waited for
+  it to exit without any bound -- so a clone stuck on an SSH key passphrase (a
+  prompt that does not reach that pseudo-terminal on Windows) held the git queue
+  for the rest of the session, and each following clone, sync or update check
+  blocked silently before it could print anything. The wait is now bounded by
+  SILENCE rather than runtime -- a large clone reports progress throughout, so
+  it is never affected -- and a command that produces nothing at all while still
+  running is stopped, with a message naming the likely cause.
+
 ## Version 0.2.2-rc.1
 
 ### Fixed

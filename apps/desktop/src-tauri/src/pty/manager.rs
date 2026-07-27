@@ -43,7 +43,7 @@ use std::io::{Read, Write};
 use std::panic::AssertUnwindSafe;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtyPair, PtySize};
 
@@ -62,6 +62,16 @@ const READ_CHUNK: usize = 8 * 1024;
 /// pathological case, so that a reader which somehow cannot finish stalls one
 /// thread instead of wedging the git queue for the rest of the session.
 const READER_JOIN_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// How long a still-running git command may produce NO output before it is
+/// treated as stuck on a prompt, killed, and reported.
+///
+/// Bounding silence rather than total runtime is what makes this safe: a big
+/// clone runs for minutes but prints progress throughout, so it never trips.
+const GIT_SILENCE_TIMEOUT: Duration = Duration::from_secs(120);
+
+/// How often to check whether a git command has exited while waiting on it.
+const GIT_POLL_INTERVAL: Duration = Duration::from_millis(200);
 
 /// Default terminal geometry when the caller passes zero (mirrors `terminal.ts`
 /// `cols = 80`, `rows = 24`).
@@ -533,13 +543,46 @@ impl TerminalManager {
         // cannot be.
         let (drained_tx, drained) = channel::<()>();
         let arc = Arc::clone(&self.shared);
+        let activity = Arc::new(Mutex::new(Instant::now()));
+        let reader_activity = Arc::clone(&activity);
         std::thread::spawn(move || {
-            git_process_reader(arc, reader);
+            git_process_reader(arc, reader, reader_activity);
             let _ = drained_tx.send(());
         });
 
-        // Block until git exits: that is its exit code.
-        let code = child.wait().map(|s| s.exit_code() as i64).unwrap_or(1);
+        // Wait for git to exit, but never unconditionally: a git that is blocked
+        // on input it can never receive would otherwise hold this call -- and
+        // with it the whole `GitQueue` -- for the rest of the session, so every
+        // later clone/sync/update silently does nothing.
+        //
+        // The bound is on SILENCE, not on total runtime: a large clone may run
+        // for many minutes, but it reports progress the whole time, so its
+        // activity clock keeps moving. Producing nothing at all for this long
+        // while still running is the signature of a stuck prompt.
+        let code = loop {
+            match child.try_wait() {
+                Ok(Some(status)) => break status.exit_code() as i64,
+                Err(_) => break 1,
+                Ok(None) => {}
+            }
+            let silent_for = activity
+                .lock()
+                .map(|since| since.elapsed())
+                .unwrap_or_default();
+            if silent_for >= GIT_SILENCE_TIMEOUT {
+                let _ = child.kill();
+                let _ = child.wait();
+                break self.fail_git(format!(
+                    "git produced no output for {}s and did not finish, so it was \
+                     stopped. This usually means it is waiting for input that \
+                     cannot reach it here -- an SSH key passphrase or a credential \
+                     prompt. Unlock the key first (Settings -> ssh-add), or use a \
+                     key without a passphrase.",
+                    GIT_SILENCE_TIMEOUT.as_secs()
+                ));
+            }
+            std::thread::sleep(GIT_POLL_INTERVAL);
+        };
 
         // Release the command PTY BEFORE joining the reader, and emit the
         // trailing newline.
@@ -893,13 +936,22 @@ fn reader_loop(state: Arc<SharedState>, mut reader: Box<dyn Read + Send>) {
 /// emitting [`TerminalEvent::Data`], and raise [`TerminalEvent::RequestOpen`]
 /// once per command when a blocking input prompt (passphrase/password/confirm)
 /// is detected (port of the `runGitProcess` `onData` handler).
-fn git_process_reader(state: Arc<SharedState>, mut reader: Box<dyn Read + Send>) {
+fn git_process_reader(
+    state: Arc<SharedState>,
+    mut reader: Box<dyn Read + Send>,
+    activity: Arc<Mutex<Instant>>,
+) {
     let mut buf = [0u8; READ_CHUNK];
     let mut prompted = false;
     loop {
         match reader.read(&mut buf) {
             Ok(0) => break,
             Ok(n) => {
+                // Any byte counts as progress: it is what tells the waiter that
+                // git is working rather than blocked on a prompt.
+                if let Ok(mut since) = activity.lock() {
+                    *since = Instant::now();
+                }
                 let text = String::from_utf8_lossy(&buf[..n]).into_owned();
                 let mut shared = match state.inner.lock() {
                     Ok(guard) => guard,
