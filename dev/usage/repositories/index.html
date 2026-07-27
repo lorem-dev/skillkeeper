@@ -502,6 +502,67 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#setting-up-an-ssh-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up an ssh-agent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting up an ssh-agent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#passphrase-prompts-and-pinentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Passphrase prompts and pinentry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#git-lfs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1031,6 +1092,67 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#setting-up-an-ssh-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up an ssh-agent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting up an ssh-agent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#passphrase-prompts-and-pinentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Passphrase prompts and pinentry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#git-lfs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1188,6 +1310,70 @@ follow the fetch run through the silent Git invocation.</p>
 <p>Make sure your ssh-agent has the relevant key loaded before running this
 command; the CLI has no embedded terminal, so an interactive passphrase
 prompt there depends entirely on your own shell's ssh-agent integration.</p>
+<h2 id="setting-up-an-ssh-agent">Setting up an ssh-agent<a class="headerlink" href="#setting-up-an-ssh-agent" title="Permanent link">&para;</a></h2>
+<p>An ssh-agent holds your unlocked private key in memory, so Git can
+authenticate without asking for the passphrase again. SkillKeeper works
+without one -- the desktop app opens its terminal and you type the passphrase
+each time -- but with an agent, clone and sync run without interruption.</p>
+<p>SkillKeeper never reads or stores your key or passphrase. It reuses whatever
+agent your system already provides.</p>
+<h3 id="macos">macOS<a class="headerlink" href="#macos" title="Permanent link">&para;</a></h3>
+<p>An agent runs by default. Add your key once and store the passphrase in the
+system keychain:</p>
+<div class="highlight"><pre><span></span><code>ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+</code></pre></div>
+<p>To have it loaded automatically on every login, add this to <code>~/.ssh/config</code>:</p>
+<div class="highlight"><pre><span></span><code>Host *
+  AddKeysToAgent yes
+  UseKeychain yes
+  IdentityFile ~/.ssh/id_ed25519
+</code></pre></div>
+<h3 id="linux">Linux<a class="headerlink" href="#linux" title="Permanent link">&para;</a></h3>
+<p>Most desktop environments start an agent at login (GNOME Keyring, KDE Wallet).
+Check with:</p>
+<div class="highlight"><pre><span></span><code>echo &quot;$SSH_AUTH_SOCK&quot;
+</code></pre></div>
+<p>If it prints nothing, start one for the session:</p>
+<div class="highlight"><pre><span></span><code>eval &quot;$(ssh-agent -s)&quot;
+ssh-add ~/.ssh/id_ed25519
+</code></pre></div>
+<p>To make that permanent, enable the user service shipped with OpenSSH:</p>
+<div class="highlight"><pre><span></span><code>systemctl --user enable --now ssh-agent.service
+</code></pre></div>
+<p>and add <code>AddKeysToAgent yes</code> under <code>Host *</code> in <code>~/.ssh/config</code>.</p>
+<h3 id="windows">Windows<a class="headerlink" href="#windows" title="Permanent link">&para;</a></h3>
+<p>Windows ships an OpenSSH agent as a service. Enable it once, from an elevated
+PowerShell:</p>
+<div class="highlight"><pre><span></span><code>Set-Service ssh-agent -StartupType Automatic
+Start-Service ssh-agent
+ssh-add $env:USERPROFILE\.ssh\id_ed25519
+</code></pre></div>
+<p><strong>Important:</strong> Git for Windows uses its own bundled <code>ssh</code> by default, and that
+one does not talk to the Windows agent service. Point Git at the system client
+so the key you just added is actually used:</p>
+<div class="highlight"><pre><span></span><code>git config --global core.sshCommand &quot;C:/Windows/System32/OpenSSH/ssh.exe&quot;
+</code></pre></div>
+<p>Without this, the agent holds your key but Git keeps asking for the
+passphrase.</p>
+<h3 id="passphrase-prompts-and-pinentry">Passphrase prompts and pinentry<a class="headerlink" href="#passphrase-prompts-and-pinentry" title="Permanent link">&para;</a></h3>
+<p>When no agent holds the key, <code>ssh</code> has to ask for the passphrase. It reads it
+from the terminal it is attached to -- which is why the desktop app runs Git
+inside its embedded terminal and brings that terminal to the front when input
+is needed.</p>
+<p>A pinentry program replaces that in-terminal prompt with a small dialog. It is
+only involved if you route SSH through <code>gpg-agent</code> instead of <code>ssh-agent</code>,
+which is worth doing when your key lives on a smartcard or a YubiKey. Enable
+SSH support in <code>~/.gnupg/gpg-agent.conf</code>:</p>
+<div class="highlight"><pre><span></span><code>enable-ssh-support
+pinentry-program /usr/bin/pinentry-gtk-2
+</code></pre></div>
+<p>Use <code>pinentry-mac</code> on macOS (<code>brew install pinentry-mac</code>) and
+<code>pinentry-gtk-2</code>, <code>pinentry-qt</code> or <code>pinentry-curses</code> on Linux, then point
+<code>SSH_AUTH_SOCK</code> at the gpg-agent socket:</p>
+<div class="highlight"><pre><span></span><code>export SSH_AUTH_SOCK=&quot;$(gpgconf --list-dirs agent-ssh-socket)&quot;
+</code></pre></div>
+<p>If you are not using GnuPG, you do not need pinentry at all -- a plain
+ssh-agent is enough.</p>
 <h2 id="git-lfs">Git LFS<a class="headerlink" href="#git-lfs" title="Permanent link">&para;</a></h2>
 <p>If a repository declares Git LFS usage, SkillKeeper runs <code>git lfs</code> steps
 during clone and sync. If the <code>git-lfs</code> client is absent, SkillKeeper reports
