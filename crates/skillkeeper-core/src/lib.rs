@@ -15,6 +15,7 @@ pub mod mcp;
 pub mod models;
 pub mod ports;
 pub mod skills;
+pub mod ssh_env;
 pub mod state;
 pub mod testing;
 pub mod time;

@@ -117,6 +117,10 @@ pub struct SystemGit {
     /// Resolves the git executable to spawn, evaluated per run so a configured
     /// path can change without rebuilding the port. Defaults to `"git"`.
     resolve_git_path: Box<dyn Fn() -> String + Send + Sync>,
+    /// Extra environment for every git invocation, evaluated per run so the SSH
+    /// key (and whether its passphrase is held) can change without rebuilding
+    /// the port. Defaults to none.
+    resolve_env: Box<dyn Fn() -> Vec<(String, String)> + Send + Sync>,
 }
 
 impl std::fmt::Debug for SystemGit {
@@ -136,6 +140,7 @@ impl SystemGit {
     pub fn new() -> Self {
         Self {
             resolve_git_path: Box::new(|| "git".to_string()),
+            resolve_env: Box::new(Vec::new),
         }
     }
 
@@ -146,7 +151,17 @@ impl SystemGit {
     {
         Self {
             resolve_git_path: Box::new(resolve),
+            resolve_env: Box::new(Vec::new),
         }
+    }
+
+    /// Add a resolver for extra environment variables, evaluated per invocation.
+    pub fn with_env<F>(mut self, resolve: F) -> Self
+    where
+        F: Fn() -> Vec<(String, String)> + Send + Sync + 'static,
+    {
+        self.resolve_env = Box::new(resolve);
+        self
     }
 
     /// Run a git subcommand in `cwd`, returning trimmed stdout on success.
@@ -154,6 +169,9 @@ impl SystemGit {
         let git = (self.resolve_git_path)();
         let mut command = Command::new(&git);
         command.args(args).current_dir(cwd);
+        for (key, value) in (self.resolve_env)() {
+            command.env(key, value);
+        }
         hide_console(&mut command);
         let output = command
             .output()
@@ -456,6 +474,30 @@ mod tests {
 
         git.checkout(&repo.cwd(), "feature").unwrap();
         assert_eq!(git.current_branch(&repo.cwd()).unwrap(), "feature");
+    }
+
+    #[test]
+    fn injected_env_reaches_the_git_process() {
+        let repo = TempRepo::new();
+        // GIT_CONFIG_COUNT/KEY/VALUE is git's own env-only config channel: if the
+        // injected environment did not reach the child, the value is absent.
+        let git = SystemGit::new().with_env(|| {
+            vec![
+                ("GIT_CONFIG_COUNT".to_string(), "1".to_string()),
+                (
+                    "GIT_CONFIG_KEY_0".to_string(),
+                    "skillkeeper.probe".to_string(),
+                ),
+                ("GIT_CONFIG_VALUE_0".to_string(), "present".to_string()),
+            ]
+        });
+        let out = git
+            .run(
+                &["config".to_string(), "skillkeeper.probe".to_string()],
+                &repo.cwd(),
+            )
+            .expect("config read");
+        assert_eq!(out.trim(), "present");
     }
 
     #[test]
