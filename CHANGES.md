@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.2.2-rc.1
+
 ### Fixed
 
 - A terminal that cannot start now says so instead of staying blank. The
