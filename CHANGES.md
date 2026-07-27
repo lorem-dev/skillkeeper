@@ -4,6 +4,15 @@
 
 ### Fixed
 
+- Windows: an SSH key passphrase can finally be entered, so cloning a repository
+  that needs one works. Git used to run in a pseudo-terminal of its own there,
+  and the passphrase prompt never surfaced in it -- git simply waited forever,
+  printing nothing. It now runs in the interactive terminal the user is already
+  looking at, exactly as it does on macOS and Linux: the prompt appears in the
+  terminal and can be answered. Because Windows shells take no prompt hook, the
+  command reports its exit code by printing a sentinel that is stripped from the
+  output before it is shown. An ssh-agent is still used when one holds the key,
+  in which case nothing is asked at all.
 - A git command that blocks on a prompt no longer wedges every later one. Git
   runs in the terminal through its own pseudo-terminal, and the app waited for
   it to exit without any bound -- so a clone stuck on an SSH key passphrase (a

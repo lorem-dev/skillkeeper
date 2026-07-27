@@ -47,7 +47,10 @@ use std::time::{Duration, Instant};
 
 use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtyPair, PtySize};
 
-use super::git_in_shell::{git_command_line, ssh_add_command, wrap_bracketed_paste, GitQueue};
+use super::git_in_shell::{
+    git_command_line, sentinel_command_line, ssh_add_command, win_shell_kind, wrap_bracketed_paste,
+    GitQueue,
+};
 use super::shell_integration::{
     needs_input, Reaction, ShellIntegration, HOOK_CONFIRM_MS, HOOK_QUIET_MS,
 };
@@ -72,6 +75,11 @@ const GIT_SILENCE_TIMEOUT: Duration = Duration::from_secs(120);
 
 /// How often to check whether a git command has exited while waiting on it.
 const GIT_POLL_INTERVAL: Duration = Duration::from_millis(200);
+
+/// How long to wait for a freshly spawned shell to reach a prompt before typing
+/// a command anyway. The console buffers early input, so this only orders the
+/// command after the shell's banner in the common case.
+const SHELL_READY_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Default terminal geometry when the caller passes zero (mirrors `terminal.ts`
 /// `cols = 80`, `rows = 24`).
@@ -138,6 +146,12 @@ struct Shared {
     /// invisible once `start` has returned, and the repository commands silently
     /// fall back to the headless git port whenever no session is live.
     last_error: Option<String>,
+    /// When the session last saw output OR user input. An in-shell git command
+    /// is bounded against THIS rather than against wall-clock, because the case
+    /// worth waiting for -- a passphrase prompt the user is answering -- is
+    /// silent on both counts while they read it, but their keystrokes count as
+    /// activity the moment they start typing.
+    last_activity: Instant,
 }
 
 /// The `Mutex`-guarded [`Shared`] state paired with the `Condvar` that wakes a
@@ -195,6 +209,7 @@ impl TerminalManager {
             quiet_gen: 0,
             confirm_gen: 0,
             last_error: None,
+            last_activity: Instant::now(),
         };
         let (input_tx, input_rx) = channel::<String>();
         let shared = Arc::new(SharedState {
@@ -387,11 +402,17 @@ impl TerminalManager {
     /// Returns an error message when git exits non-zero.
     pub fn run_git(&self, repo_path: &str, args: &[String]) -> Result<String, String> {
         let code = self.git_queue.run(|| {
-            // Decide inside the queued slot, matching `terminal.ts`: Windows or an
-            // unintegrated/abandoned shell runs git as its own process.
-            let integrated = !cfg!(windows) && self.use_integration();
-            if integrated {
+            // Decide inside the queued slot. Both in-shell paths run git at the
+            // terminal the user is already looking at, which is what lets an SSH
+            // key passphrase prompt be answered: POSIX shells report the exit
+            // code through the prompt hook, Windows shells through a sentinel
+            // their command line prints. Only a POSIX shell we could not hook
+            // (or whose hook was abandoned) falls back to a private
+            // pseudo-terminal, where a prompt would have nobody to answer it.
+            if self.use_integration() {
                 self.run_git_in_shell(repo_path, args)
+            } else if cfg!(windows) {
+                self.run_git_in_shell_sentinel(repo_path, args)
             } else {
                 self.run_git_process(repo_path, args)
             }
@@ -478,7 +499,88 @@ impl TerminalManager {
         }
     }
 
-    /// Windows / unintegrated shells: run git as its own arg-array PTY (no shell,
+    /// Windows: type `git -C <dir> <args>` into the interactive shell, followed
+    /// by the echo of a sentinel carrying the exit code, and wait for that
+    /// sentinel.
+    ///
+    /// The POSIX counterpart above reads the exit code from the prompt hook;
+    /// Windows shells take no hook, so the command line reports it itself. What
+    /// matters is that git runs at the terminal the user is already typing into:
+    /// an SSH key passphrase prompt appears there and can be answered, which it
+    /// cannot in the private pseudo-terminal
+    /// [`run_git_process`](Self::run_git_process) would give it.
+    fn run_git_in_shell_sentinel(&self, dir: &str, args: &[String]) -> i64 {
+        let _ = self.start(0, 0);
+
+        let mut guard = self.shared.inner.lock().expect("terminal lock poisoned");
+
+        // Wait for the shell to settle (a lull in output marks the prompt), but
+        // only briefly: the console buffers anything typed early, so proceeding
+        // is better than refusing to run.
+        let ready_by = Instant::now() + SHELL_READY_TIMEOUT;
+        while !guard.idle {
+            let left = ready_by.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                break;
+            }
+            let (next, _) = self
+                .shared
+                .cvar
+                .wait_timeout(guard, left)
+                .expect("terminal lock poisoned");
+            guard = next;
+        }
+
+        // Capture completion baselines before typing, so the sentinel we then
+        // wait for cannot be confused with a previous command's.
+        let seq0 = guard.marker_seq;
+        let exit0 = guard.exit_gen;
+        guard.idle = false;
+        guard.last_activity = Instant::now();
+        let shell = win_shell_kind(&guard.shell.program);
+        let command = sentinel_command_line(shell, "git", dir, args);
+        if let Some(writer) = guard.writer.as_mut() {
+            let _ = writer.write_all(command.as_bytes());
+            let _ = writer.flush();
+        }
+
+        // Await our sentinel, the shell dying, or a stretch in which nothing at
+        // all happened -- no output AND no typing. Waiting indefinitely is what
+        // let one stuck command block every later one.
+        loop {
+            if guard.marker_seq != seq0 {
+                return guard.last_exit_code.unwrap_or(0);
+            }
+            if guard.exit_gen != exit0 {
+                return 1; // the shell died mid-command
+            }
+            if guard.last_activity.elapsed() >= GIT_SILENCE_TIMEOUT {
+                // Interrupt whatever is sitting at the prompt so the shell is
+                // usable again, and free the queue.
+                if let Some(writer) = guard.writer.as_mut() {
+                    let _ = writer.write_all(b"\x03");
+                    let _ = writer.flush();
+                }
+                let message = format!(
+                    "git produced no output for {}s and nothing was typed, so it was \
+                     interrupted. If it was waiting for an SSH key passphrase, unlock \
+                     the key first (Settings -> ssh-add) or answer the prompt here.",
+                    GIT_SILENCE_TIMEOUT.as_secs()
+                );
+                emit(&mut guard, error_line(&message));
+                guard.last_error = Some(message);
+                return 1;
+            }
+            let (next, _) = self
+                .shared
+                .cvar
+                .wait_timeout(guard, GIT_POLL_INTERVAL)
+                .expect("terminal lock poisoned");
+            guard = next;
+        }
+    }
+
+    /// POSIX unintegrated shells: run git as its own arg-array PTY (no shell,
     /// so no POSIX quoting applies). Output streams to the view and input routes
     /// to it until it exits (port of `runGitProcess`).
     fn run_git_process(&self, dir: &str, args: &[String]) -> i64 {
@@ -708,6 +810,9 @@ fn drain_write(state: &SharedState, data: &str) {
         Ok(guard) => guard,
         Err(_) => return,
     };
+    // Typing counts as activity: it is how a user answers the passphrase prompt
+    // an in-shell git command is waiting on, and that prompt echoes nothing.
+    shared.last_activity = Instant::now();
     let sink = if shared.active_cmd_writer.is_some() {
         shared.active_cmd_writer.as_mut()
     } else {
@@ -894,6 +999,7 @@ fn reader_loop(state: Arc<SharedState>, mut reader: Box<dyn Read + Send>) {
                     Ok(guard) => guard,
                     Err(_) => return,
                 };
+                shared.last_activity = Instant::now();
                 let reaction = shared.integration.on_data(&text);
                 apply_reaction(reaction, &mut shared, &state);
             }
