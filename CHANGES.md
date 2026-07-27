@@ -2,6 +2,14 @@
 
 ## Development
 
+### Added
+
+- A right-click menu in the terminal with Copy, Paste and Select all. Copying
+  was previously reachable only through a keyboard shortcut that differs per
+  platform (and where a bare Ctrl+C sends an interrupt instead), so getting text
+  out was easy to miss. Select all also covers the case where a full-screen
+  program has taken over the mouse and dragging cannot select.
+
 ### Fixed
 
 - The update check skips a repository that was never cloned instead of fetching

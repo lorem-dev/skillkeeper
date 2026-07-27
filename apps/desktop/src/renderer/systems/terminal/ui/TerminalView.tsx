@@ -5,7 +5,8 @@
  * overlay's visibility), so the PTY is always sized to the window and receives
  * live output continuously.
  */
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { Terminal } from '@xterm/xterm';
 import type { ITheme } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -13,6 +14,9 @@ import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { bridgeClient } from '@/services/bridge';
 import { useSkillkeeperStore } from '@/app/store';
 import { useIsDark } from '@/systems/theme';
+import { useTranslator } from '@/systems/i18n';
+import { Menu } from '@/shared/ui';
+import type { MenuItem } from '@/shared/ui';
 import { errorLine, errorText, startWithRetry } from '../startShell.js';
 import '@xterm/xterm/css/xterm.css';
 import './TerminalView.scss';
@@ -47,6 +51,16 @@ export function TerminalView() {
   const host = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const isDark = useIsDark();
+  const t = useTranslator();
+  // Where the context menu was opened, and whether anything was selected at
+  // that moment (checked once, on open, so the entry cannot go stale while the
+  // menu is up). `null` means closed.
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number; hasSelection: boolean } | null>(
+    null,
+  );
+  // A zero-size element placed at the click point: Menu positions against an
+  // anchor's rect, and this is what turns a cursor position into one.
+  const menuAnchor = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = host.current;
@@ -191,5 +205,67 @@ export function TerminalView() {
     return () => cancelAnimationFrame(raf);
   }, [isDark]);
 
-  return <div className="sk-terminal" ref={host} />;
+  const openMenu = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    const term = termRef.current;
+    if (term === null) return;
+    // Replace the webview's own menu, which offers nothing useful over a canvas
+    // of terminal output.
+    e.preventDefault();
+    setMenuAt({ x: e.clientX, y: e.clientY, hasSelection: term.hasSelection() });
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setMenuAt(null);
+    termRef.current?.focus();
+  }, []);
+
+  // Copy/paste/select-all as menu entries, not only as shortcuts: the keyboard
+  // combination for a terminal differs per platform and is easy to miss, and
+  // "Select all" gets output out even when a full-screen program has taken over
+  // the mouse and drag-selection is unavailable.
+  const items: MenuItem[] = [
+    {
+      id: 'copy',
+      label: t('terminal.copy'),
+      disabled: menuAt?.hasSelection !== true,
+      onSelect: () => {
+        const selection = termRef.current?.getSelection() ?? '';
+        if (selection.length > 0) void writeText(selection);
+      },
+    },
+    {
+      id: 'paste',
+      label: t('terminal.paste'),
+      onSelect: () => {
+        void readText().then((text) => {
+          if (text.length > 0) termRef.current?.paste(text);
+        });
+      },
+    },
+    {
+      id: 'select-all',
+      label: t('terminal.selectAll'),
+      onSelect: () => termRef.current?.selectAll(),
+    },
+  ];
+
+  return (
+    <>
+      <div className="sk-terminal" ref={host} onContextMenu={openMenu} />
+      {menuAt !== null && (
+        <div
+          className="sk-terminal__menu-anchor"
+          ref={menuAnchor}
+          style={{ top: menuAt.y, left: menuAt.x }}
+        />
+      )}
+      <Menu
+        open={menuAt !== null}
+        onClose={closeMenu}
+        anchorRef={menuAnchor}
+        items={items}
+        ariaLabel={t('terminal.title')}
+      />
+    </>
+  );
 }

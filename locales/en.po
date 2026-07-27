@@ -208,6 +208,15 @@ msgstr "Notifications"
 msgid "terminal.title"
 msgstr "Terminal"
 
+msgid "terminal.copy"
+msgstr "Copy"
+
+msgid "terminal.paste"
+msgstr "Paste"
+
+msgid "terminal.selectAll"
+msgstr "Select all"
+
 msgid "terminal.unavailable"
 msgstr ""
 "Terminal unavailable: {error}. Git commands still run, but their output is "
