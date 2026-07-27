@@ -15,6 +15,7 @@ pub mod i18n;
 pub mod icon_sanitize;
 pub mod menu;
 pub mod ssh_agent;
+pub mod ssh_key;
 pub mod theme;
 pub mod watcher;
 
