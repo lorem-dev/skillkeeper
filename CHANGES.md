@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.2.2
+
 ### Added
 
 - A documentation section on setting up an ssh-agent, with per-platform
@@ -48,11 +50,6 @@
   SILENCE rather than runtime -- a large clone reports progress throughout, so
   it is never affected -- and a command that produces nothing at all while still
   running is stopped, with a message naming the likely cause.
-
-## Version 0.2.2-rc.1
-
-### Fixed
-
 - Windows: the first repository operation that ran git in the terminal never
   finished, and every later one silently did nothing. After git exited, the app
   waited for the output reader to reach end-of-file while still holding the
