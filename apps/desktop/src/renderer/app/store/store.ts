@@ -240,6 +240,12 @@ export interface NotificationEntry {
   readonly key?: string;
   readonly vars?: Record<string, string>;
   readonly repoId?: string;
+  /**
+   * Documentation URL this entry points at, opened in the browser. Set when the
+   * message describes something the user has to set up outside the app, where
+   * the text alone cannot carry the instructions.
+   */
+  readonly href?: string;
   /** ISO timestamp. */
   readonly at: string;
 }
@@ -515,7 +521,13 @@ export interface SkillkeeperActions {
    * with a `repoId` also marks that repo's status (the red dot); `warning` and
    * `info` never touch repo status.
    */
-  notify(message: NotificationMessage, level: NotificationLevel, repoId?: string): void;
+  notify(
+    message: NotificationMessage,
+    level: NotificationLevel,
+    repoId?: string,
+    /** Documentation URL the entry links to, for something set up outside the app. */
+    href?: string,
+  ): void;
   /**
    * Record skill-resolution warnings as `warning` entries in the notifications
    * log. Unlike {@link notify} these raise **no toast**: a resolution warning is
@@ -602,6 +614,7 @@ function makeNotificationEntry(
   message: NotificationMessage,
   level: NotificationLevel,
   repoId?: string,
+  href?: string,
 ): NotificationEntry {
   const payload =
     typeof message === 'string' ? { text: message } : { key: message.key, vars: message.vars };
@@ -610,6 +623,7 @@ function makeNotificationEntry(
     level,
     ...payload,
     repoId,
+    href,
     at: new Date().toISOString(),
   };
 }
@@ -747,8 +761,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set({ error });
   },
 
-  notify(message, level, repoId) {
-    const entry = makeNotificationEntry(message, level, repoId);
+  notify(message, level, repoId, href) {
+    const entry = makeNotificationEntry(message, level, repoId, href);
     set((s) => ({
       notifications: [...s.notifications, entry].slice(-NOTIFICATION_LOG_LIMIT),
       toasts: [...s.toasts, entry],

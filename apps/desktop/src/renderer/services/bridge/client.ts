@@ -94,6 +94,9 @@ export interface BridgeClient {
   resizeTerminal(cols: number, rows: number): void;
   clearTerminalBuffer(): void;
   runSshAdd(): Promise<void>;
+  /** Whether an ssh-agent exists to hold a key. Without one, every SSH
+   *  operation has to ask for the passphrase again. */
+  sshAgentAvailable(): Promise<boolean>;
   onTerminalData(callback: (chunk: string) => void): () => void;
   onTerminalExit(callback: () => void): () => void;
   onTerminalRequestOpen(callback: () => void): () => void;
@@ -194,6 +197,7 @@ export const bridgeClient: BridgeClient = {
     void invoke('terminal_clear_buffer');
   },
   runSshAdd: () => invoke<void>('terminal_run_ssh_add'),
+  sshAgentAvailable: () => invoke<boolean>('ssh_agent_available'),
   onTerminalData: (callback) => subscribe<string>('terminal:data', callback),
   onTerminalExit: (callback) => subscribe<void>('terminal:exit', () => callback()),
   onTerminalRequestOpen: (callback) => subscribe<void>('terminal:requestOpen', () => callback()),

@@ -4,6 +4,14 @@
 
 ### Added
 
+- A documentation section on setting up an ssh-agent, with per-platform
+  instructions and a note on pinentry. When the terminal is raised for a
+  passphrase and no agent is running, the app now says so once per session and
+  links to it -- otherwise being asked on every single operation reads as the
+  app being broken rather than as a machine that needs setting up. The Windows
+  instructions call out that Git for Windows uses its own bundled `ssh`, which
+  ignores the Windows agent service until `core.sshCommand` points at the system
+  client.
 - A right-click menu in the terminal with Copy, Paste and Select all. Copying
   was previously reachable only through a keyboard shortcut that differs per
   platform (and where a bare Ctrl+C sends an interrupt instead), so getting text

@@ -134,6 +134,7 @@ pub fn run() {
             commands::terminal::terminal_resize,
             commands::terminal::terminal_clear_buffer,
             commands::terminal::terminal_run_ssh_add,
+            commands::terminal::ssh_agent_available,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

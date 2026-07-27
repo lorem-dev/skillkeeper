@@ -30,6 +30,10 @@ import { OnboardingOverlay, useOnboardingActive, useOnboardingStep } from '@/sys
 import { STEP_VIEW } from '@/app/config/onboarding';
 import './App.scss';
 
+/** Documentation section explaining how to set an ssh-agent up per platform. */
+const SSH_AGENT_DOCS =
+  'https://lorem-dev.github.io/skillkeeper/usage/repositories/#setting-up-an-ssh-agent';
+
 const RepositoriesPage = lazy(() =>
   import('@/pages/Repositories').then((m) => ({ default: m.RepositoriesPage })),
 );
@@ -155,9 +159,23 @@ export function App() {
 
   // A background ssh auth failure requests the terminal (for the passphrase
   // prompt); subscribed once for the app's lifetime.
+  //
+  // With no ssh-agent to hold the key, that prompt returns on every single
+  // operation, which reads as the app being broken rather than as a machine
+  // that needs setting up. Say so once per session, with a link to the
+  // instructions -- checked here rather than at startup because an agent can be
+  // started (or a key added) while the app is running.
+  const sshAgentWarned = useRef(false);
   useEffect(() => {
     const off = bridgeClient.onTerminalRequestOpen(() => {
-      useSkillkeeperStore.getState().openTerminal();
+      const store = useSkillkeeperStore.getState();
+      store.openTerminal();
+      if (sshAgentWarned.current) return;
+      void bridgeClient.sshAgentAvailable().then((available) => {
+        if (available || sshAgentWarned.current) return;
+        sshAgentWarned.current = true;
+        store.notify({ key: 'ssh.noAgent' }, 'info', undefined, SSH_AGENT_DOCS);
+      });
     });
     return off;
   }, []);

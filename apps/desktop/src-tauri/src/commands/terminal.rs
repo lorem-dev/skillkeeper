@@ -83,6 +83,16 @@ pub fn terminal_clear_buffer(state: State<'_, Arc<AppContext>>) -> Result<(), St
     Ok(())
 }
 
+/// `ssh:agentAvailable` -- whether an ssh-agent exists to hold a key.
+///
+/// Without one, every SSH operation has to ask for the passphrase again, so the
+/// renderer uses this to explain the repeated prompts and point at the setup
+/// documentation rather than leaving them unexplained.
+#[tauri::command]
+pub fn ssh_agent_available() -> bool {
+    crate::app::ssh_agent::is_available()
+}
+
 /// `terminal:runSshAdd` -- type `ssh-add` into the interactive shell so its key
 /// passphrase prompt appears in the terminal view (macOS adds
 /// `--apple-use-keychain`).

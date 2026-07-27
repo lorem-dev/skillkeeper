@@ -208,6 +208,14 @@ msgstr "Notifications"
 msgid "terminal.title"
 msgstr "Terminal"
 
+msgid "ssh.noAgent"
+msgstr ""
+"No ssh-agent is running, so Git asks for your key passphrase every time. Set "
+"one up to be asked only once."
+
+msgid "logs.readMore"
+msgstr "Learn more"
+
 msgid "terminal.copy"
 msgstr "Copy"
 
