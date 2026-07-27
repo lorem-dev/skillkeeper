@@ -387,7 +387,7 @@ jobs:
       # dir (linux/windows) and the cross-target dir (macOS --target).
       # -----------------------------------------------------------------------
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: skillkeeper-${{ github.ref_name }}-${{ matrix.target }}
           path: |
@@ -436,7 +436,7 @@ jobs:
         run: node scripts/release-notes.mjs
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: dist-all
 
@@ -505,7 +505,7 @@ jobs:
         run: node scripts/release-downloads.mjs "$GITHUB_REF_NAME" dist
 
       - name: Create GitHub release and attach artifacts
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/*
           body_path: RELEASE_NOTES.md
