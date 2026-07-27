@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- The update check skips a repository that was never cloned instead of fetching
+  in a directory that does not exist. Such a repository has no local commit to
+  compare against, so the check could only ever answer "no update" -- but it
+  answered it by running git first, which reported a fatal error into the
+  terminal on every startup, once per uncloned repository.
 - Windows: an SSH key passphrase can finally be entered, so cloning a repository
   that needs one works. Git used to run in a pseudo-terminal of its own there,
   and the passphrase prompt never surfaced in it -- git simply waited forever,
