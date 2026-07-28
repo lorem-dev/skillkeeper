@@ -1,0 +1,45 @@
+// SSH key settings row. Co-located; tokens only.
+
+.sk-ssh-key {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+}
+
+// Both rows keep a control's height whether or not they currently hold a
+// button, so choosing a key, unlocking it or forgetting the passphrase never
+// changes the block's height and never shifts the settings below it.
+.sk-ssh-key__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+  min-height: var(--sk-control-height);
+}
+
+// Bounded so a long path can never widen the form. The text itself is clipped
+// at its head in the component (see clipHead); `text-overflow` stays as a
+// backstop for the moment before that measurement lands. The full path is
+// always available via the element's `title`.
+.sk-ssh-key__path {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: var(--sk-color-label);
+}
+
+// Takes the row's free space so the action beside it lands on the trailing
+// edge, in line with the buttons of the row above. `flex-basis: 0` keeps the
+// text out of the container's intrinsic width, so the path row above still
+// decides how wide the control is; `min-width: 0` lets it ellipsize instead of
+// pushing that action out of view.
+.sk-ssh-key__state {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}

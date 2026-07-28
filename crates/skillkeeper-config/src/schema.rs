@@ -416,6 +416,10 @@ pub struct RepositoriesConfig {
     /// Path to the git executable used for repository operations.
     #[serde(default = "default_git_path")]
     pub git_path: String,
+    /// Private key file to use for SSH remotes. Absent means the system
+    /// default: whatever `ssh` and the system agent would pick on their own.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ssh_key_path: Option<String>,
 }
 
 fn default_git_path() -> String {
@@ -426,6 +430,7 @@ impl Default for RepositoriesConfig {
     fn default() -> Self {
         Self {
             git_path: default_git_path(),
+            ssh_key_path: None,
         }
     }
 }
@@ -579,3 +584,35 @@ pub const SECTIONS: [Section; 9] = [
     Section::Projects,
     Section::Mcp,
 ];
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ssh_key_path_defaults_to_none_and_is_omitted_when_unset() {
+        let section = RepositoriesConfig::default();
+        assert_eq!(section.ssh_key_path, None);
+        let yaml = serde_yaml_ng::to_string(&section).unwrap();
+        assert!(
+            !yaml.contains("sshKeyPath"),
+            "unset key must not be written: {yaml}"
+        );
+    }
+
+    #[test]
+    fn ssh_key_path_round_trips_in_camel_case() {
+        let parsed: RepositoriesConfig =
+            serde_yaml_ng::from_str("gitPath: git\nsshKeyPath: /home/u/.ssh/id_ed25519\n").unwrap();
+        assert_eq!(
+            parsed.ssh_key_path.as_deref(),
+            Some("/home/u/.ssh/id_ed25519")
+        );
+        let yaml = serde_yaml_ng::to_string(&parsed).unwrap();
+        assert!(yaml.contains("sshKeyPath: /home/u/.ssh/id_ed25519"));
+    }
+}

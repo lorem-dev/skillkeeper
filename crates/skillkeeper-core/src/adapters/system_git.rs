@@ -112,11 +112,38 @@ pub fn parse_branch_list(stdout: &str) -> Vec<String> {
     names.into_iter().collect()
 }
 
+/// Extra environment for one git invocation that also owns a resource to be
+/// released once that invocation's subprocess has exited -- whichever way
+/// (success, failure, or a timeout kill by the caller).
+///
+/// This crate has, and should keep, no concept of an SSH key or an askpass
+/// token: it only needs the variables. The desktop app's `GitEnvLease`
+/// implements this trait so `Drop` on the concrete type revokes whatever it
+/// minted (an askpass token) at exactly the right moment -- see
+/// [`SystemGit::with_env_lease`] for where that moment is.
+pub trait GitEnv: Send {
+    /// The environment variables to apply to this one invocation.
+    fn vars(&self) -> &[(String, String)];
+}
+
+/// How [`SystemGit`] resolves its extra environment: either a plain
+/// `Vec` with nothing to release ([`SystemGit::with_env`]), or a
+/// [`GitEnv`] lease held for the duration of one subprocess and dropped
+/// right after ([`SystemGit::with_env_lease`]).
+enum EnvResolver {
+    Plain(Box<dyn Fn() -> Vec<(String, String)> + Send + Sync>),
+    Lease(Box<dyn Fn() -> Box<dyn GitEnv> + Send + Sync>),
+}
+
 /// A [`GitPort`] backed by the system `git` binary.
 pub struct SystemGit {
     /// Resolves the git executable to spawn, evaluated per run so a configured
     /// path can change without rebuilding the port. Defaults to `"git"`.
     resolve_git_path: Box<dyn Fn() -> String + Send + Sync>,
+    /// Extra environment for every git invocation, evaluated per run so the SSH
+    /// key (and whether its passphrase is held) can change without rebuilding
+    /// the port. Defaults to none.
+    resolve_env: EnvResolver,
 }
 
 impl std::fmt::Debug for SystemGit {
@@ -136,6 +163,7 @@ impl SystemGit {
     pub fn new() -> Self {
         Self {
             resolve_git_path: Box::new(|| "git".to_string()),
+            resolve_env: EnvResolver::Plain(Box::new(Vec::new)),
         }
     }
 
@@ -146,7 +174,36 @@ impl SystemGit {
     {
         Self {
             resolve_git_path: Box::new(resolve),
+            resolve_env: EnvResolver::Plain(Box::new(Vec::new)),
         }
+    }
+
+    /// Add a resolver for extra environment variables, evaluated per
+    /// invocation. Nothing here is released afterwards -- use
+    /// [`with_env_lease`](Self::with_env_lease) when the environment owns a
+    /// resource (e.g. an askpass token) that must be revoked once the
+    /// invocation's subprocess has exited.
+    pub fn with_env<F>(mut self, resolve: F) -> Self
+    where
+        F: Fn() -> Vec<(String, String)> + Send + Sync + 'static,
+    {
+        self.resolve_env = EnvResolver::Plain(Box::new(resolve));
+        self
+    }
+
+    /// Add a resolver for a [`GitEnv`] lease, evaluated per invocation.
+    ///
+    /// The returned lease is held for exactly the duration of the one
+    /// subprocess it was built for and dropped immediately after -- see
+    /// [`run`](Self::run) -- so a concrete `GitEnv` that releases a resource
+    /// on `Drop` never releases it before that subprocess could use it, and
+    /// never holds it any longer than that one invocation.
+    pub fn with_env_lease<F>(mut self, resolve: F) -> Self
+    where
+        F: Fn() -> Box<dyn GitEnv> + Send + Sync + 'static,
+    {
+        self.resolve_env = EnvResolver::Lease(Box::new(resolve));
+        self
     }
 
     /// Run a git subcommand in `cwd`, returning trimmed stdout on success.
@@ -154,10 +211,32 @@ impl SystemGit {
         let git = (self.resolve_git_path)();
         let mut command = Command::new(&git);
         command.args(args).current_dir(cwd);
+        let lease = match &self.resolve_env {
+            EnvResolver::Plain(resolve) => {
+                for (key, value) in resolve() {
+                    command.env(key, value);
+                }
+                None
+            }
+            EnvResolver::Lease(resolve) => {
+                let lease = resolve();
+                for (key, value) in lease.vars() {
+                    command.env(key, value);
+                }
+                Some(lease)
+            }
+        };
         hide_console(&mut command);
         let output = command
             .output()
             .map_err(|e| PortError::Io(format!("failed to spawn {git}: {e}")))?;
+        // `lease`, when present, is dropped here -- only now that `output()`
+        // above has returned, i.e. only after the subprocess it was built for
+        // has fully exited. Whatever a concrete `GitEnv` releases on `Drop`
+        // (the desktop app's askpass token) is therefore held for exactly
+        // this one invocation: never released before `ssh` could use it,
+        // never leaked past it.
+        drop(lease);
         if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).into_owned())
         } else {
@@ -456,6 +535,91 @@ mod tests {
 
         git.checkout(&repo.cwd(), "feature").unwrap();
         assert_eq!(git.current_branch(&repo.cwd()).unwrap(), "feature");
+    }
+
+    #[test]
+    fn injected_env_reaches_the_git_process() {
+        let repo = TempRepo::new();
+        // GIT_CONFIG_COUNT/KEY/VALUE is git's own env-only config channel: if the
+        // injected environment did not reach the child, the value is absent.
+        let git = SystemGit::new().with_env(|| {
+            vec![
+                ("GIT_CONFIG_COUNT".to_string(), "1".to_string()),
+                (
+                    "GIT_CONFIG_KEY_0".to_string(),
+                    "skillkeeper.probe".to_string(),
+                ),
+                ("GIT_CONFIG_VALUE_0".to_string(), "present".to_string()),
+            ]
+        });
+        let out = git
+            .run(
+                &["config".to_string(), "skillkeeper.probe".to_string()],
+                &repo.cwd(),
+            )
+            .expect("config read");
+        assert_eq!(out.trim(), "present");
+    }
+
+    /// A `GitEnv` lease built for `with_env_lease`: reports whether it has
+    /// been released (dropped) via a shared flag, so a test can assert that
+    /// happens only once its subprocess has exited.
+    struct RecordingEnv {
+        vars: Vec<(String, String)>,
+        released: std::sync::Arc<std::sync::Mutex<bool>>,
+    }
+
+    impl GitEnv for RecordingEnv {
+        fn vars(&self) -> &[(String, String)] {
+            &self.vars
+        }
+    }
+
+    impl Drop for RecordingEnv {
+        fn drop(&mut self) {
+            *self.released.lock().unwrap() = true;
+        }
+    }
+
+    #[test]
+    fn a_lease_envs_vars_reach_the_process_and_it_is_released_after_the_process_exits() {
+        let repo = TempRepo::new();
+        let released = std::sync::Arc::new(std::sync::Mutex::new(false));
+        let released_for_resolver = std::sync::Arc::clone(&released);
+        let git = SystemGit::new().with_env_lease(move || -> Box<dyn GitEnv> {
+            assert!(
+                !*released_for_resolver.lock().unwrap(),
+                "a fresh lease is minted for each invocation, only after the \
+                 previous one was released"
+            );
+            Box::new(RecordingEnv {
+                vars: vec![
+                    ("GIT_CONFIG_COUNT".to_string(), "1".to_string()),
+                    (
+                        "GIT_CONFIG_KEY_0".to_string(),
+                        "skillkeeper.probe".to_string(),
+                    ),
+                    ("GIT_CONFIG_VALUE_0".to_string(), "present".to_string()),
+                ],
+                released: std::sync::Arc::clone(&released_for_resolver),
+            })
+        });
+
+        assert!(
+            !*released.lock().unwrap(),
+            "nothing was minted or released before the first call"
+        );
+        let out = git
+            .run(
+                &["config".to_string(), "skillkeeper.probe".to_string()],
+                &repo.cwd(),
+            )
+            .expect("config read");
+        assert_eq!(out.trim(), "present");
+        assert!(
+            *released.lock().unwrap(),
+            "the lease must be released once its subprocess has exited"
+        );
     }
 
     #[test]

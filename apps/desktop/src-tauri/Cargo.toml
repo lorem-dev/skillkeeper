@@ -25,6 +25,9 @@ tauri-plugin-dialog = "2"
 tauri-plugin-clipboard-manager = "2"
 portable-pty = "0.9"
 gettext = "0.4"
+interprocess = "2.4"
+ssh-key = { version = "0.6", features = ["encryption", "crypto", "getrandom"] }
+zeroize = "1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"

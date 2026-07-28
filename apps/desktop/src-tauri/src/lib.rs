@@ -1,6 +1,6 @@
 //! SkillKeeper desktop (Tauri) entry point and command registration.
 
-mod app;
+pub mod app;
 mod commands;
 pub mod pty;
 mod state;
@@ -55,6 +55,16 @@ pub fn run() {
             // Publish an ssh-agent to the process env before any git command may
             // run, so git subprocesses inherit SSH_AUTH_SOCK.
             app::ssh_agent::ensure_ssh_agent();
+            // Seed the SSH key store from the config: the chosen key survives a
+            // restart, the passphrase deliberately does not.
+            {
+                let ctx = app.state::<Arc<AppContext>>();
+                let path = commands::config::load(&ctx)
+                    .config
+                    .repositories
+                    .ssh_key_path;
+                commands::ssh_key::seed_store(&ctx, path);
+            }
             // macOS-only application menu (no-op elsewhere).
             app::menu::install(app.handle())?;
             // macOS: make Cmd+Q / Dock-Quit / the Quit menu item exit fast
@@ -128,6 +138,14 @@ pub fn run() {
             commands::projects::projects_describe,
             commands::projects::projects_detect_agents,
             commands::dialog::dialog_select_folder,
+            commands::dialog::dialog_select_ssh_key,
+            commands::ssh_key::ssh_key_state,
+            commands::ssh_key::ssh_key_select,
+            commands::ssh_key::ssh_key_clear,
+            commands::ssh_key::ssh_key_prompt,
+            commands::ssh_key::ssh_key_unlock,
+            commands::ssh_key::ssh_key_forget,
+            commands::ssh_key::ssh_key_cancel_unlock,
             commands::terminal::terminal_start,
             commands::terminal::terminal_status,
             commands::terminal::terminal_input,
