@@ -846,15 +846,18 @@ mod tests {
         assert_eq!(fresh.state(), KeyState::Locked);
     }
 
-    /// A prompt that is answered, from a test's point of view: hand
-    /// [`wait_for_usable_key`] a flag instead of a window.
-    fn fake_prompt(answered: &Arc<AtomicBool>) -> impl FnMut() -> Result<Arc<AtomicBool>, String> {
-        let prompt = Arc::clone(answered);
-        move || Ok(Arc::clone(&prompt))
-    }
+    /// A deadline the poll-loop tests below must never actually reach.
+    ///
+    /// Each of them proves the wait ends on a signal of its own; running out
+    /// of time is the failure they exist to rule out. So the deadline is set
+    /// far past any plausible scheduling delay and the assertion is "ended
+    /// before its deadline", not "ended within N seconds of wall clock" -- the
+    /// latter competes with the test runner for CPU and fails on a loaded
+    /// machine while the behaviour is perfectly correct.
+    const NEVER_REACHED: Duration = Duration::from_secs(20);
 
-    fn in_a_moment() -> Instant {
-        Instant::now() + Duration::from_secs(5)
+    fn far_off_deadline() -> Instant {
+        Instant::now() + NEVER_REACHED
     }
 
     /// The reason the wait polls instead of parking once: an unlock that lands
@@ -868,50 +871,85 @@ mod tests {
         app.ctx
             .ssh_key
             .set_path(Some(write_encrypted_key(&app, "topsecret")));
-        let answered = Arc::new(AtomicBool::new(false));
+        let plain = crate::commands::test_support::write_key(app.dir(), "plain_key", None);
+        let prompt = Arc::new(AtomicBool::new(false));
 
         let ctx = &app.ctx;
-        let plain = crate::commands::test_support::write_key(app.dir(), "plain_key", None);
-        std::thread::scope(|scope| {
-            scope.spawn(|| {
-                std::thread::sleep(Duration::from_millis(50));
-                // No notification of any kind: just a key that is now usable.
-                ctx.ssh_key.set_path(Some(plain));
-            });
-            let started = Instant::now();
-            let result = wait_for_usable_key(ctx, in_a_moment(), fake_prompt(&answered));
-            assert_eq!(result, Ok(()));
-            assert!(
-                started.elapsed() < Duration::from_secs(2),
-                "the poll must notice the state change, not wait out the deadline"
-            );
-        });
+        // The key becomes usable AFTER the wait's first look at it, with no
+        // notification of any kind -- so only a later round re-reading the
+        // state for itself can ever see it. Driven from the join hook, which
+        // the loop calls at a known point, rather than from a sleeping thread
+        // whose ordering would be a bet.
+        let swap_in_a_key_that_needs_no_passphrase = || {
+            ctx.ssh_key.set_path(Some(plain.clone()));
+            Ok(Arc::clone(&prompt))
+        };
+
+        assert_eq!(
+            wait_for_usable_key(
+                ctx,
+                far_off_deadline(),
+                swap_in_a_key_that_needs_no_passphrase
+            ),
+            Ok(()),
+            "a single park would still be waiting: nothing notified it"
+        );
     }
 
     /// The other half: a dismissal changes no key state, so only the prompt's
     /// flag carries it -- and it too may land in the gap before the park.
+    ///
+    /// The one test here that genuinely needs a second thread: the flag has to
+    /// be set *after* the wait has adopted the prompt, and adoption happens
+    /// inside the loop with no hook after it. What the thread must NOT do is
+    /// bet on winning a race -- see the fresh-prompt-per-ask note below.
     #[test]
     fn the_wait_ends_when_the_prompt_it_joined_is_dismissed() {
         let app = TempAppData::new();
         app.ctx
             .ssh_key
             .set_path(Some(write_encrypted_key(&app, "topsecret")));
-        let answered = Arc::new(AtomicBool::new(false));
+
+        // Every ask hands out a fresh, live prompt and records it -- exactly
+        // what `open_unlock_window` does once the previous window has gone.
+        // A single shared flag would instead trap the wait: dismissed before
+        // it could be adopted, it would be re-asked for and re-rejected every
+        // round until the deadline, which is precisely how this test used to
+        // fail under load.
+        let handed_out: Arc<std::sync::Mutex<Option<Arc<AtomicBool>>>> = Arc::default();
+        let latest = Arc::clone(&handed_out);
+        let join_prompt = move || {
+            let prompt = Arc::new(AtomicBool::new(false));
+            *latest.lock().unwrap() = Some(Arc::clone(&prompt));
+            Ok(prompt)
+        };
 
         let ctx = &app.ctx;
-        let flag = Arc::clone(&answered);
+        let finished = Arc::new(AtomicBool::new(false));
+        let done = Arc::clone(&finished);
+        let dismisser = Arc::clone(&handed_out);
         std::thread::scope(|scope| {
             scope.spawn(move || {
-                std::thread::sleep(Duration::from_millis(50));
-                // A dismissal whose notification this waiter never sees.
-                flag.store(true, Ordering::Release);
+                // Keep dismissing the most recently handed-out prompt until
+                // the wait returns. Whichever one it ends up adopting is
+                // dismissed within a poll round, whatever the interleaving.
+                while !done.load(Ordering::Acquire) {
+                    if let Some(prompt) = dismisser.lock().unwrap().as_ref() {
+                        prompt.store(true, Ordering::Release);
+                    }
+                    std::thread::sleep(Duration::from_millis(5));
+                }
             });
-            let started = Instant::now();
-            let result = wait_for_usable_key(ctx, in_a_moment(), fake_prompt(&answered));
+
+            let deadline = far_off_deadline();
+            let result = wait_for_usable_key(ctx, deadline, join_prompt);
+            finished.store(true, Ordering::Release);
+
             assert_eq!(result, Err("ssh.keyLocked".to_string()));
             assert!(
-                started.elapsed() < Duration::from_secs(2),
-                "the poll must notice the dismissal, not wait out the deadline"
+                Instant::now() < deadline,
+                "the dismissal must end the wait; reaching the deadline means \
+                 the answered flag was never looked at again"
             );
         });
     }
@@ -919,52 +957,47 @@ mod tests {
     /// Joining a window that is already tearing down must not park behind it:
     /// the operation asks again once the teardown is done and gets its own
     /// prompt.
+    ///
+    /// No thread and no clock: the second ask is the hook, and the outcome
+    /// alone separates the two behaviours. Adopting the dying prompt would end
+    /// the wait at the next answered check with `ssh.keyLocked`, and there
+    /// would never be a second ask at all.
     #[test]
     fn a_prompt_already_dismissed_is_not_joined_but_asked_for_again() {
         let app = TempAppData::new();
         app.ctx
             .ssh_key
             .set_path(Some(write_encrypted_key(&app, "topsecret")));
+        let plain = crate::commands::test_support::write_key(app.dir(), "plain_key", None);
 
         let asks = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let counter = Arc::clone(&asks);
         let dying = Arc::new(AtomicBool::new(true));
         let fresh = Arc::new(AtomicBool::new(false));
-        let fresh_for_prompt = Arc::clone(&fresh);
+
+        let ctx = &app.ctx;
         let join_prompt = move || {
             if counter.fetch_add(1, Ordering::AcqRel) == 0 {
                 // The first ask lands on a window mid-teardown.
                 Ok(Arc::clone(&dying))
             } else {
-                // By the second, the teardown is over: a live prompt.
-                Ok(Arc::clone(&fresh_for_prompt))
+                // By the second, the teardown is over. Let the wait finish
+                // from here by making the key usable, so the test ends on a
+                // signal rather than on elapsed time.
+                ctx.ssh_key.set_path(Some(plain.clone()));
+                Ok(Arc::clone(&fresh))
             }
         };
 
-        let ctx = &app.ctx;
-        std::thread::scope(|scope| {
-            scope.spawn(|| {
-                std::thread::sleep(Duration::from_millis(400));
-                // Dismissing the FRESH prompt is what ends the wait; the dying
-                // one must never have been adopted, or this would still be
-                // parked behind it.
-                fresh.store(true, Ordering::Release);
-            });
-            let started = Instant::now();
-            assert_eq!(
-                wait_for_usable_key(ctx, in_a_moment(), join_prompt),
-                Err("ssh.keyLocked".to_string())
-            );
-            assert!(
-                started.elapsed() < Duration::from_secs(2),
-                "the fresh prompt's dismissal must end the wait, not the deadline"
-            );
-        });
-        assert!(
-            asks.load(Ordering::Acquire) >= 2,
-            "the operation must ask for a prompt again after joining a dismissed one, \
-             asked {} time(s)",
-            asks.load(Ordering::Acquire)
+        assert_eq!(
+            wait_for_usable_key(ctx, far_off_deadline(), join_prompt),
+            Ok(()),
+            "adopting the dying prompt would have failed with ssh.keyLocked"
+        );
+        assert_eq!(
+            asks.load(Ordering::Acquire),
+            2,
+            "the operation must ask for a prompt again after being handed a dismissed one"
         );
     }
 
@@ -975,7 +1008,6 @@ mod tests {
         let raises = std::sync::atomic::AtomicUsize::new(0);
         let fresh = Arc::new(AtomicBool::new(false));
 
-        let started = Instant::now();
         let result = raise_prompt(KeyState::Locked, || {
             raises.fetch_add(1, Ordering::AcqRel);
             Ok(Arc::clone(&fresh))
@@ -983,10 +1015,10 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(raises.load(Ordering::Acquire), 1);
-        assert!(
-            started.elapsed() < Duration::from_millis(500),
-            "Settings must not be parked behind the answer"
-        );
+        // No elapsed-time assertion: `raise_prompt` is handed nothing it could
+        // wait on, so "does not park" is a property of its signature, not of
+        // the clock. A wall-clock bound here could only ever misfire under
+        // load.
     }
 
     /// A prompt an operation is already waiting behind must be joined, not
@@ -1110,7 +1142,9 @@ mod tests {
             .ssh_key
             .set_path(Some(write_encrypted_key(&app, "topsecret")));
 
-        // Answered already, and the window it belongs to has not gone yet.
+        let plain = crate::commands::test_support::write_key(app.dir(), "plain_key", None);
+        // Answered already, and the window it belongs to has not gone yet, so
+        // it is asked for again on every round and adopted on none.
         let lingering = Arc::new(AtomicBool::new(true));
         let asks = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let announcements = Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -1118,8 +1152,14 @@ mod tests {
         let asked = Arc::clone(&asks);
         let announced = Arc::clone(&announcements);
         let prompt = Arc::clone(&lingering);
+        let ctx = &app.ctx;
+        let rounds_to_observe = 3;
         let join_prompt = move || {
-            asked.fetch_add(1, Ordering::AcqRel);
+            if asked.fetch_add(1, Ordering::AcqRel) + 1 == rounds_to_observe {
+                // Enough rounds observed; end the wait on a signal rather than
+                // on elapsed time by making the key usable.
+                ctx.ssh_key.set_path(Some(plain.clone()));
+            }
             let announced = Arc::clone(&announced);
             join_and_announce(
                 || Ok(Arc::clone(&prompt)),
@@ -1129,17 +1169,14 @@ mod tests {
             )
         };
 
-        // Several poll rounds, then give up: the answered prompt is never
-        // adopted, so the wait ends on the deadline.
-        let deadline = Instant::now() + Duration::from_millis(900);
         assert_eq!(
-            wait_for_usable_key(&app.ctx, deadline, join_prompt),
-            Err("ssh.keyLocked".to_string())
+            wait_for_usable_key(ctx, far_off_deadline(), join_prompt),
+            Ok(())
         );
-        assert!(
-            asks.load(Ordering::Acquire) >= 3,
-            "the wait must have polled several times, asked {} time(s)",
-            asks.load(Ordering::Acquire)
+        assert_eq!(
+            asks.load(Ordering::Acquire),
+            rounds_to_observe,
+            "the answered prompt must be asked for again on every round"
         );
         assert_eq!(
             announcements.load(Ordering::Acquire),
