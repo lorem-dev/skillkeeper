@@ -16,8 +16,10 @@
   min-height: var(--sk-control-height);
 }
 
-// Bounded and ellipsized so a long path can never widen the form; the full
-// path is still available via the element's `title`.
+// Bounded so a long path can never widen the form. The text itself is clipped
+// at its head in the component (see clipHead); `text-overflow` stays as a
+// backstop for the moment before that measurement lands. The full path is
+// always available via the element's `title`.
 .sk-ssh-key__path {
   max-width: 220px;
   overflow: hidden;
@@ -25,16 +27,6 @@
   white-space: nowrap;
   font-size: 14px;
   color: var(--sk-color-label);
-}
-
-// A clipped path loses its head, not its tail: the file name is what identifies
-// the key, the directories above it are the same for every key. Right-to-left
-// flow puts the ellipsis at the start, and the left alignment keeps the text
-// where it was. Applied only while the path actually overflows, because a path
-// that fits would otherwise have its leading slash flow to the far end.
-.sk-ssh-key__path--clipped {
-  direction: rtl;
-  text-align: left;
 }
 
 // Takes the row's free space so the action beside it lands on the trailing

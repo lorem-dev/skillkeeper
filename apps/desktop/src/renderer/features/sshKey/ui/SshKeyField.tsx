@@ -14,6 +14,7 @@ import { FormRow, Button } from '@/shared/ui';
 import { sshErrorKey } from '../lib/sshErrors';
 import { shouldPromptOnSelect } from '../lib/sshPrompt';
 import { createLatestRequestGuard } from '../lib/latestRequest';
+import { clipHead } from '../lib/clipHead';
 import './SshKeyField.scss';
 
 /** The msgid describing a chosen key's state, or null for `notConfigured` --
@@ -52,12 +53,11 @@ export function SshKeyField() {
   // discarded), so the guard is constructed once despite the plain argument.
   const requestGuard = useRef(createLatestRequestGuard());
   // A path too long for the control is cut at its head rather than its tail
-  // (the file name identifies the key, the directories above it do not). The
-  // flip is conditional: a path that fits must keep its natural order, or its
-  // leading slash would flow to the far end. Only a new path can change the
-  // answer, since the control's width is fixed.
+  // (the file name identifies the key, the directories above it do not), which
+  // takes measuring the rendered text. Only a new path can change the answer,
+  // since the control's width is fixed.
   const pathRef = useRef<HTMLSpanElement>(null);
-  const [pathClipped, setPathClipped] = useState(false);
+  const [shownPath, setShownPath] = useState<string | null>(null);
 
   // ssh_key_select/clear/forget/prompt reject with a raw backend error string
   // (unlike the RepoResult-shaped calls) -- map through sshErrorKey so a
@@ -95,13 +95,25 @@ export function SshKeyField() {
     refreshState();
   }, [refreshState]);
 
+  const path = dto?.path;
   useEffect(() => {
     const el = pathRef.current;
-    if (el === null) return;
-    // Measured with the flip already applied when it is: right-to-left flow
-    // does not change how wide the text is, so this cannot oscillate.
-    setPathClipped(el.scrollWidth > el.clientWidth);
-  }, [dto?.path]);
+    if (el === null || path === undefined) {
+      setShownPath(null);
+      return;
+    }
+    // Measured against the element's own font, so the result matches what the
+    // control will actually render. Measuring rather than mutating the DOM keeps
+    // this off React's rendering path.
+    const style = window.getComputedStyle(el);
+    const context = document.createElement('canvas').getContext('2d');
+    if (context === null) {
+      setShownPath(null);
+      return;
+    }
+    context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    setShownPath(clipHead(path, el.clientWidth, (text) => context.measureText(text).width));
+  }, [path]);
 
   // A blocked git operation elsewhere (e.g. a repository sync) can raise the
   // unlock window while this page happens to be open; refresh so the state
@@ -178,7 +190,7 @@ export function SshKeyField() {
 
   if (dto === null) return null;
 
-  const displayPath = dto.path ?? t('settings.ssh.notSet');
+  const displayPath = shownPath ?? dto.path ?? t('settings.ssh.notSet');
   const stateKey = stateMessageKey(dto.state);
 
   return (
@@ -197,11 +209,7 @@ export function SshKeyField() {
     >
       <div className="sk-ssh-key">
         <div className="sk-ssh-key__row">
-          <span
-            ref={pathRef}
-            className={pathClipped ? 'sk-ssh-key__path sk-ssh-key__path--clipped' : 'sk-ssh-key__path'}
-            title={dto.path}
-          >
+          <span ref={pathRef} className="sk-ssh-key__path" title={dto.path}>
             {displayPath}
           </span>
           <Button variant="secondary" loading={busy} onClick={() => void choose()}>
