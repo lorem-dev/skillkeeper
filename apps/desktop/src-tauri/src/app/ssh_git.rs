@@ -187,38 +187,20 @@ fn get_or_start_askpass<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::commands::test_support::TempAppData;
-    use ssh_key::{rand_core::OsRng, Algorithm, LineEnding, PrivateKey};
-    use std::path::Path;
+    use crate::commands::test_support::{write_key, TempAppData};
     use std::sync::mpsc;
     use std::sync::Mutex;
     use std::time::Duration;
 
     /// Write a fresh, unencrypted ed25519 key inside the app's temp data dir.
-    /// Generated per test run: no private key material is committed.
     fn write_plain_key(app: &TempAppData) -> String {
-        write_key(app, "plain_key", None)
+        write_key(app.dir(), "plain_key", None)
     }
 
     /// Write a fresh ed25519 key encrypted with `passphrase` inside the app's
     /// temp data dir.
     fn write_encrypted_key(app: &TempAppData, passphrase: &str) -> String {
-        write_key(app, "encrypted_key", Some(passphrase))
-    }
-
-    fn write_key(app: &TempAppData, file_name: &str, passphrase: Option<&str>) -> String {
-        let dir = Path::new(&app.ctx.paths.config_yaml)
-            .parent()
-            .expect("config_yaml has a parent")
-            .to_path_buf();
-        let path = dir.join(file_name);
-        let key = PrivateKey::random(&mut OsRng, Algorithm::Ed25519).unwrap();
-        let key = match passphrase {
-            Some(p) => key.encrypt(&mut OsRng, p).unwrap(),
-            None => key,
-        };
-        std::fs::write(&path, key.to_openssh(LineEnding::LF).unwrap().as_bytes()).unwrap();
-        path.to_string_lossy().into_owned()
+        write_key(app.dir(), "encrypted_key", Some(passphrase))
     }
 
     /// The askpass token carried by a lease's vars.

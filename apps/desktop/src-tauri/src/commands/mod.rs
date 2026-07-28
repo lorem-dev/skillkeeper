@@ -14,6 +14,7 @@ pub mod onboarding;
 pub mod projects;
 pub mod repositories;
 pub mod skills;
+pub mod ssh_key;
 pub mod state_read;
 pub mod terminal;
 pub mod window;
@@ -57,12 +58,14 @@ mod integration;
 #[cfg(test)]
 pub(crate) mod test_support {
     //! Shared test fixtures: a throwaway app-data directory wired into an
-    //! [`AppContext`], removed on drop.
+    //! [`AppContext`], removed on drop, plus a generator for the private SSH
+    //! keys the ssh-key tests need.
 
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::sync::atomic::{AtomicU64, Ordering};
 
     use skillkeeper_core::adapters::SystemHostEnv;
+    use ssh_key::{rand_core::OsRng, Algorithm, LineEnding, PrivateKey};
 
     use crate::state::{AppContext, AppPaths};
 
@@ -102,6 +105,27 @@ pub(crate) mod test_support {
             let ctx = AppContext::with_paths(env, paths).unwrap();
             Self { dir, ctx }
         }
+
+        /// The throwaway app-data directory itself, for tests that need to put
+        /// a file next to the config (see [`write_key`]).
+        pub fn dir(&self) -> &Path {
+            &self.dir
+        }
+    }
+
+    /// Write a fresh ed25519 private key to `dir/name`, encrypted when a
+    /// passphrase is given, and return its absolute path.
+    ///
+    /// Generated per test run, so no private key material is committed.
+    pub fn write_key(dir: &Path, name: &str, passphrase: Option<&str>) -> String {
+        let path = dir.join(name);
+        let key = PrivateKey::random(&mut OsRng, Algorithm::Ed25519).unwrap();
+        let key = match passphrase {
+            Some(p) => key.encrypt(&mut OsRng, p).unwrap(),
+            None => key,
+        };
+        std::fs::write(&path, key.to_openssh(LineEnding::LF).unwrap().as_bytes()).unwrap();
+        path.to_string_lossy().into_owned()
     }
 
     impl Drop for TempAppData {

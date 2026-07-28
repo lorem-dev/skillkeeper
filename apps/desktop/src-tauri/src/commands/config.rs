@@ -77,6 +77,11 @@ pub async fn config_get(ctx: State<'_, Arc<AppContext>>) -> Result<Value, String
 /// not echoed back to the renderer as an external `config:changed` event, and
 /// re-applies the native window theme so an in-app theme switch updates the
 /// window background/source immediately (mirrors the Electron `rememberTheme`).
+///
+/// Also re-seeds the SSH key store from the saved `repositories.sshKeyPath`, so
+/// changing the key through this route -- rather than through
+/// `ssh_key_select` -- leaves the store, and therefore every git invocation,
+/// pointing at the same key the config now names.
 #[tauri::command]
 pub async fn config_set(
     ctx: State<'_, Arc<AppContext>>,
@@ -88,6 +93,7 @@ pub async fn config_set(
     let result = blocking(&ctx, move |c| {
         let saved = save(c, &config)?;
         c.config_watcher.note_written(&c.fs);
+        super::ssh_key::seed_store(c, saved.config.repositories.ssh_key_path.clone());
         Ok::<_, String>(saved)
     })
     .await??;

@@ -1,9 +1,10 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Base capability for the main window.",
+  "description": "Base capability for the main window and the SSH unlock window.",
   "windows": [
-    "main"
+    "main",
+    "ssh-unlock"
   ],
   "permissions": [
     "core:default",
