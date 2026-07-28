@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use skillkeeper_agents::{register_builtin_agents, AdapterRegistry};
-use skillkeeper_core::adapters::{StdFs, SystemClock, SystemGit, SystemHostEnv};
+use skillkeeper_core::adapters::{GitEnv, StdFs, SystemClock, SystemGit, SystemHostEnv};
 use skillkeeper_core::ports::HostEnv;
 
 use crate::app::watcher::ConfigWatcher;
@@ -141,7 +141,9 @@ impl AppContext {
         let git = {
             let ssh_key = Arc::clone(&ssh_key);
             let askpass = Arc::clone(&askpass);
-            SystemGit::new().with_env(move || crate::app::ssh_git::vars_from(&ssh_key, &askpass))
+            SystemGit::new().with_env_lease(move || -> Box<dyn GitEnv> {
+                Box::new(crate::app::ssh_git::lease_from(&ssh_key, &askpass))
+            })
         };
         Ok(Self {
             fs: StdFs::new(),

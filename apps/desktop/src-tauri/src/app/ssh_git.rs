@@ -11,11 +11,19 @@
 //! smudge filter opens its own `ssh`, which asks askpass again with the same
 //! token, so the token must still answer. [`GitEnvLease`] is what makes that
 //! lifetime concrete: it owns the token alongside the environment variables
-//! that name it, and revokes the token when dropped. The PTY layer
-//! (`TerminalManager::run_git_with_env`) is responsible for minting the lease
-//! only once an invocation has actually entered its queued slot, and for
-//! holding it until that invocation's git subprocess has exited -- see that
-//! function's doc for why the ordering matters.
+//! that name it, and revokes the token when dropped. `GitEnvLease` implements
+//! `skillkeeper_core::adapters::GitEnv`, so BOTH git routes share one rule for
+//! when that drop happens, without `skillkeeper-core` ever learning what an
+//! askpass token is:
+//! - The PTY layer (`TerminalManager::run_git_with_env`) takes a `make_env`
+//!   closure, calls it only once an invocation has actually entered its
+//!   queued slot (see that function's doc for why the ordering matters), and
+//!   holds the returned lease until that invocation's git subprocess exits.
+//! - The headless `SystemGit` fallback (`ctx.git`, wired in `state.rs` via
+//!   `SystemGit::with_env_lease`) resolves and holds the lease inside
+//!   `SystemGit::run` itself, dropping it right after its one synchronous
+//!   subprocess call returns -- so this route revokes its token too, not just
+//!   the queued PTY route.
 
 use std::sync::{Arc, OnceLock};
 
@@ -67,6 +75,12 @@ impl Drop for GitEnvLease {
     }
 }
 
+impl skillkeeper_core::adapters::GitEnv for GitEnvLease {
+    fn vars(&self) -> &[(String, String)] {
+        &self.vars
+    }
+}
+
 /// The lease for the chosen key's current state, ready to hand to
 /// `TerminalManager::run_git_with_env`'s `make_env` parameter.
 ///
@@ -75,49 +89,6 @@ impl Drop for GitEnvLease {
 /// capture anything beyond the `AppContext` it already borrows.
 pub fn git_env_lease(ctx: &AppContext) -> GitEnvLease {
     lease_from(&ctx.ssh_key, &ctx.askpass)
-}
-
-/// Plain-`Vec` environment for the headless `SystemGit` fallback (used before
-/// the terminal has ever started, and in tests): built in `state.rs` from the
-/// bare `ssh_key`/`askpass` handles, since `AppContext` does not exist yet at
-/// that point, and consumed by
-/// `skillkeeper_core::adapters::SystemGit::with_env`'s resolver, which only
-/// knows `Vec<(String, String)>` -- `skillkeeper-core` has, and should have,
-/// no concept of a lease or of askpass.
-///
-/// Deliberately does NOT revoke the token an unlocked key's environment
-/// carries. `SystemGit::run` is one synchronous call: the resolver returns
-/// its `Vec` and control returns to `skillkeeper-core` *before* the
-/// subprocess that will actually hand the token to `ssh` is even spawned, so
-/// there is no point after which this function could revoke without doing so
-/// too early -- before `ssh` ever gets to use it, which would be worse than
-/// not revoking at all. Instead:
-/// - An invocation that never actually asks askpass for the passphrase leaves
-///   its token to expire on the ordinary TTL backstop, same as an abandoned
-///   queued-path token.
-/// - An invocation that DOES use it keeps that one token alive in memory for
-///   the rest of the process (the "used" exemption in `prune_expired`), a
-///   bounded, same-process leak the queued PTY path does not have.
-///
-/// This is an acceptable trade because the path is narrow: it only runs
-/// before the terminal's first `terminal:start` (a brief app-startup window)
-/// or in headless/test contexts. Every later, interactive git operation goes
-/// through the queued PTY path instead (see `commands::repositories`'s
-/// `run_git_op`/`clone_op`/`force_pull_op`, gated on `ctx.terminal.is_started()`,
-/// which -- once the terminal has started -- stays true for the rest of that
-/// session), so the leak cannot accumulate per operation the way an
-/// un-revoked queued-path token could; at most a handful of entries persist
-/// for one process's lifetime.
-pub(crate) fn vars_from(
-    ssh_key: &Arc<SshKeyStore>,
-    askpass: &Arc<OnceLock<AskpassServer>>,
-) -> Vec<(String, String)> {
-    let lease = lease_from(ssh_key, askpass);
-    let vars = lease.vars().to_vec();
-    // See the doc comment above: revoking on drop here would revoke before
-    // the subprocess that needs the token has even been spawned.
-    std::mem::forget(lease);
-    vars
 }
 
 /// The real decision, taking only what it needs so callers can hold just
@@ -358,14 +329,28 @@ mod tests {
     }
 
     /// Proves the ordering the PTY layer relies on: a second, queued
-    /// invocation's environment (and thus its token) is not minted until the
-    /// first invocation -- make_env, dispatch, and subprocess included -- has
-    /// fully finished and released the queue. Regression test for the token-
+    /// invocation's `make_env` does not run until the first invocation --
+    /// its own `make_env`, dispatch, and subprocess included -- has fully
+    /// finished and released the queue. Regression test for the token-
     /// expiring-before-use failure: minting ahead of the queue would let a
     /// long-running first invocation age out a second invocation's token
-    /// before it ever reached `ssh`.
+    /// before it ever reached `ssh`. (Which invocation's token is which is
+    /// already covered by `an_unlocked_key_adds_askpass_and_a_fresh_token_each_time`;
+    /// this test is purely about ordering, so it logs plain markers instead.)
+    ///
+    /// Two checks, not one, because a single post-hoc ordering assertion is
+    /// vacuous here: the test's own `entered_rx` hand-off already guarantees
+    /// the first thread's marker is pushed before the second thread is even
+    /// spawned, so `["first:...", "second:..."]` would result even if
+    /// `make_env` were hoisted outside `git_queue.run` entirely (the second
+    /// invocation's own `make_env` has nothing to block on, so it would just
+    /// run moments after being spawned, well before anything is released).
+    /// The first check below closes that gap: it inspects the log BEFORE
+    /// releasing the first invocation, so seeing only the first invocation's
+    /// marker there is possible only if the second is genuinely still
+    /// blocked -- on the queue, since nothing else could hold it back.
     #[test]
-    fn a_second_queued_invocations_env_is_minted_only_after_the_first_finishes() {
+    fn a_second_queued_invocations_make_env_waits_for_the_first_to_finish() {
         if !git_available() {
             eprintln!("skipping: git not available");
             return;
@@ -391,7 +376,7 @@ mod tests {
             .or_else(|_| std::env::var("USERPROFILE"))
             .unwrap_or_default();
 
-        let order: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+        let order: Arc<Mutex<Vec<&'static str>>> = Arc::new(Mutex::new(Vec::new()));
         let (release_tx, release_rx) = mpsc::channel::<()>();
         let (entered_tx, entered_rx) = mpsc::channel::<()>();
 
@@ -401,10 +386,7 @@ mod tests {
         let first = std::thread::spawn(move || {
             let make_env = || {
                 let lease = git_env_lease(&app1.ctx);
-                order1
-                    .lock()
-                    .unwrap()
-                    .push(format!("first:{}", token_of(&lease)));
+                order1.lock().unwrap().push("first:make_env");
                 let _ = entered_tx.send(());
                 // Stand in for a long-running git subprocess: held here until
                 // the test explicitly releases it, well past when the second
@@ -416,6 +398,10 @@ mod tests {
                 app1.ctx
                     .terminal
                     .run_git_with_env(&cwd1, &["--version".to_string()], &make_env);
+            // Pushed only once this WHOLE invocation -- make_env, the actual
+            // dispatched `git --version`, and the queue's own bookkeeping --
+            // has returned, i.e. after the queue's mutex has been released.
+            order1.lock().unwrap().push("first:returned");
         });
 
         entered_rx
@@ -428,10 +414,7 @@ mod tests {
         let second = std::thread::spawn(move || {
             let make_env = || {
                 let lease = git_env_lease(&app2.ctx);
-                order2
-                    .lock()
-                    .unwrap()
-                    .push(format!("second:{}", token_of(&lease)));
+                order2.lock().unwrap().push("second:make_env");
                 lease
             };
             let _ =
@@ -441,10 +424,18 @@ mod tests {
         });
 
         // Give the second call time to actually reach (and block on) the
-        // queue's mutex before releasing the first -- otherwise a fast second
-        // call could slip in before the first even blocks, and the ordering
-        // assertion below would pass for the wrong reason.
+        // queue's mutex before releasing the first.
         std::thread::sleep(Duration::from_millis(200));
+
+        // The non-vacuous check: taken BEFORE the first invocation is
+        // released, so the second invocation's make_env has had a full
+        // 200ms to run if nothing were gating it.
+        assert_eq!(
+            *order.lock().unwrap(),
+            vec!["first:make_env"],
+            "the second invocation's make_env must not run before the first is released"
+        );
+
         let _ = release_tx.send(());
 
         first
@@ -454,15 +445,12 @@ mod tests {
             .join()
             .expect("second invocation thread must not panic");
 
-        let seen = order.lock().unwrap();
-        assert_eq!(seen.len(), 2, "both invocations must have minted an env");
-        assert!(seen[0].starts_with("first:"), "seen: {seen:?}");
-        assert!(seen[1].starts_with("second:"), "seen: {seen:?}");
-        let first_token = seen[0].strip_prefix("first:").unwrap();
-        let second_token = seen[1].strip_prefix("second:").unwrap();
-        assert_ne!(
-            first_token, second_token,
-            "each queued invocation mints its own token"
+        assert_eq!(
+            *order.lock().unwrap(),
+            vec!["first:make_env", "first:returned", "second:make_env"],
+            "the second invocation's make_env must run only after the \
+             first invocation's whole queued turn -- including its own \
+             dispatched git subprocess -- has finished"
         );
     }
 }

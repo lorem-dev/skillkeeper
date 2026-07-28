@@ -512,6 +512,26 @@ mod tests {
         assert_eq!(fetch(server.endpoint(), &token, "Enter passphrase: "), None);
     }
 
+    /// Pins the other half of the exemption rule: once a token HAS answered
+    /// a live read, backdating it past the TTL must have no effect at all --
+    /// only an explicit `revoke_token` call retires it from then on.
+    #[test]
+    fn a_used_token_survives_past_the_ttl() {
+        let server =
+            AskpassServer::start(Arc::new(|| Some("topsecret".to_string()))).expect("server");
+        let token = server.mint_token();
+        assert_eq!(
+            fetch(server.endpoint(), &token, "Enter passphrase: "),
+            Some("topsecret".to_string())
+        );
+        server.force_stale_for_test(&token);
+        assert_eq!(
+            fetch(server.endpoint(), &token, "Enter passphrase: "),
+            Some("topsecret".to_string()),
+            "a used token is exempt from the TTL; only revoke_token retires it"
+        );
+    }
+
     #[test]
     fn an_unknown_token_gets_nothing() {
         let server =

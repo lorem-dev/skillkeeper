@@ -15,4 +15,4 @@ pub mod system_git;
 pub use host_env::SystemHostEnv;
 pub use real_clock::SystemClock;
 pub use std_fs::StdFs;
-pub use system_git::SystemGit;
+pub use system_git::{GitEnv, SystemGit};
