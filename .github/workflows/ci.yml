@@ -16,6 +16,9 @@ jobs:
   ci:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
+    # These jobs take one to three minutes; anything near this bound is stuck,
+    # and failing then beats holding a runner for the six-hour default.
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -68,6 +71,7 @@ jobs:
   rust:
     name: Rust fmt, clippy, test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -85,17 +89,50 @@ jobs:
           submodules: true
 
       # The Cargo workspace includes the `skillkeeper` Tauri app crate, which
-      # links against the system WebKitGTK/libsoup stack. These packages must
-      # be present for `cargo clippy`/`cargo test` to compile the app crate on
-      # ubuntu. libwebkit2gtk-4.1 matches Tauri v2's default webview backend.
+      # links against the system WebKitGTK/libsoup stack, so that stack must be
+      # present for `cargo clippy`/`cargo test` to compile it on ubuntu.
+      # libwebkit2gtk-4.1-dev matches Tauri v2's default webview backend and
+      # pulls the javascriptcoregtk-4.1 and libsoup-3.0 dev packages with it.
+      #
+      # This job compiles and tests; it never bundles. The rest of Tauri's
+      # documented Linux list is therefore not needed here: librsvg2-dev and
+      # patchelf are used by the deb/AppImage bundlers (and patchelf ships in
+      # the runner image anyway), and the appindicator package is for a system
+      # tray this app does not have (no tray in the source, and the `tauri`
+      # dependency enables only `image-png`). The release workflow, which does
+      # bundle, keeps the full set.
+      #
+      # The .deb files are cached in a workspace directory rather than
+      # re-downloaded: /var/cache/apt is root-owned, which actions/cache cannot
+      # read, so the download is redirected somewhere it can.
+      - name: Cache the Tauri apt packages
+        uses: actions/cache@v4
+        with:
+          path: .apt-cache
+          key: apt-tauri-${{ runner.os }}-libwebkit2gtk-4.1-dev-v1
+
       - name: Install Tauri Linux system dependencies
+        env:
+          # A prompt would hang the step; the runner's unattended-upgrades can
+          # hold the dpkg lock, so wait for it with a bound instead of forever
+          # (which is how the release job's identical step hung for 19 minutes).
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf
+          mkdir -p .apt-cache
+          sudo apt-get update -qq -o DPkg::Lock::Timeout=300
+          # Download into the cached directory (or confirm it is already there),
+          # then install strictly from it -- `--no-download` fails rather than
+          # silently reaching for the network.
+          sudo apt-get install -y --no-install-recommends \
+            -o Dir::Cache::archives="$(pwd)/.apt-cache" \
+            -o DPkg::Lock::Timeout=300 \
+            --download-only libwebkit2gtk-4.1-dev
+          sudo apt-get install -y --no-install-recommends \
+            -o Dir::Cache::archives="$(pwd)/.apt-cache" \
+            -o DPkg::Lock::Timeout=300 \
+            --no-download libwebkit2gtk-4.1-dev
+          # actions/cache runs as the unprivileged runner user.
+          sudo chown -R "$(id -u):$(id -g)" .apt-cache
 
       - name: Set up Rust toolchain (stable + rustfmt + clippy)
         uses: dtolnay/rust-toolchain@stable
@@ -104,6 +141,10 @@ jobs:
 
       - name: Cache cargo registry and target
         uses: Swatinem/rust-cache@v2
+        with:
+          # Without this a failing run saves nothing, so the retry after a red
+          # build recompiles the whole dependency graph from scratch.
+          cache-on-failure: true
 
       # The Tauri app crate reads the git-ignored icon set at compile time
       # (include_bytes! + generate_context! + the resources glob). It is
@@ -145,6 +186,7 @@ jobs:
   e2e:
     name: End-to-end (CLI against the fixture)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -165,6 +207,8 @@ jobs:
 
       - name: Cache cargo registry and target
         uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       - name: Enable pnpm via corepack
         run: corepack enable

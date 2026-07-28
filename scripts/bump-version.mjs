@@ -51,6 +51,61 @@ for (const rel of PACKAGE_FILES) {
   console.log(`updated Cargo.toml -> ${version}`);
 }
 
+// 1c. Update Cargo.lock's entries for the workspace members. The lock records
+//      each member's version alongside the registry crates, so leaving it alone
+//      makes it drift a release behind: cargo rewrites it on the next build,
+//      which either shows up as a dirty tree after tagging or, with `--locked`,
+//      fails the build outright. Only the members' own `version` lines are
+//      touched -- dependency resolution is not, so this needs no network and no
+//      cargo toolchain.
+{
+  const path = join(root, "Cargo.lock");
+  const lock = readFileSync(path, "utf8");
+  // Member names come from the members' own manifests, so a crate added or
+  // renamed later needs no edit here.
+  const memberManifests = [
+    "Cargo.toml",
+    "apps/desktop/src-tauri/Cargo.toml",
+    ...readFileSync(join(root, "Cargo.toml"), "utf8")
+      .split("\n")
+      .map((line) => line.match(/^\s*"([^"]+)",?\s*$/))
+      .filter(Boolean)
+      .map((m) => join(m[1], "Cargo.toml")),
+  ];
+  const names = new Set();
+  for (const rel of memberManifests) {
+    let text;
+    try {
+      text = readFileSync(join(root, rel), "utf8");
+    } catch {
+      continue; // a glob entry in [workspace].members, not a directory
+    }
+    const m = text.match(/^\s*name\s*=\s*"([^"]+)"/m);
+    if (m) names.add(m[1]);
+  }
+  if (names.size === 0) fail("found no workspace member names for Cargo.lock");
+
+  // Rewrite the `version` line of each `[[package]]` block whose name is a
+  // member. Blocks are separated by a blank line, so each is edited in place
+  // without reformatting the rest of the file.
+  let updated = 0;
+  const blocks = lock.split("\n\n").map((block) => {
+    const name = block.match(/^name\s*=\s*"([^"]+)"/m);
+    if (!name || !names.has(name[1])) return block;
+    const next = block.replace(/^(version\s*=\s*)"[^"]*"/m, `$1"${version}"`);
+    if (next !== block) updated += 1;
+    return next;
+  });
+  if (updated !== names.size) {
+    fail(
+      `Cargo.lock: updated ${updated} of ${names.size} workspace members ` +
+        `(${[...names].join(", ")}) -- is the lock stale? run a cargo command first`,
+    );
+  }
+  writeFileSync(path, blocks.join("\n\n"));
+  console.log(`updated Cargo.lock -> ${version} (${updated} workspace members)`);
+}
+
 // 2. Promote CHANGES.md: move the current `## Development` entries into a new
 //    `## Version <v>` section and leave a fresh, empty `## Development`
 //    heading above it. Empty sections are omitted entirely (no "- None."
