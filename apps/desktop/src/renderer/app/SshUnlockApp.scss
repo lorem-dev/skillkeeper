@@ -1,0 +1,50 @@
+// Root layout for the SSH-unlock window (see SshUnlockApp.tsx). Fills the
+// window's #root (see _base.scss); the window itself is fixed-size and
+// non-resizable (460x300, set by the backend), so nothing here needs a
+// max-width guard beyond the ellipsis rule on the hint line.
+
+.sk-ssh-unlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+  padding: var(--sk-space-7);
+  height: 100%;
+}
+
+.sk-ssh-unlock__title {
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-label);
+}
+
+// Single line, ellipsized: the path is caller-controlled length and the
+// window never widens to fit it. The full path is on the `title` attribute
+// (native tooltip) rather than in this truncated text.
+.sk-ssh-unlock__hint {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--sk-color-label-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sk-ssh-unlock__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4);
+}
+
+.sk-ssh-unlock__error {
+  font-size: 12px;
+  color: var(--sk-red);
+}
+
+.sk-ssh-unlock__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+  margin-top: var(--sk-space-3);
+}
