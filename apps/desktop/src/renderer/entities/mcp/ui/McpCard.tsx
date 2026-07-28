@@ -46,8 +46,6 @@ export interface McpCardProps {
 
 /** Longest repo name shown on the badge before it is truncated with "...". */
 const REPO_MAX = 25;
-/** Hard cap on the url/command string length (CSS also ellipsizes to the card). */
-const CONN_MAX = 80;
 
 function truncate(value: string, max: number): string {
   return value.length > max ? `${value.slice(0, max)}...` : value;
@@ -88,7 +86,7 @@ export function McpCard({
               onClick={onCopyUrl}
               aria-label={copyLabel}
             >
-              {truncate(url, CONN_MAX)}
+              {url}
             </button>
           </Tooltip>
         ) : (
@@ -100,7 +98,7 @@ export function McpCard({
                 onClick={onCopyCommand}
                 aria-label={copyLabel}
               >
-                <pre className="sk-mcp-card__command-pre">{truncate(command, CONN_MAX)}</pre>
+                <pre className="sk-mcp-card__command-pre">{command}</pre>
               </button>
             </Tooltip>
           )
