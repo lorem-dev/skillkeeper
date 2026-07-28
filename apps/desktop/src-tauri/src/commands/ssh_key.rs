@@ -57,6 +57,16 @@ pub const UNLOCK_WINDOW_LABEL: &str = "ssh-unlock";
 /// key path so the prompt can show which key it is asking about.
 pub const UNLOCK_REQUIRED_EVENT: &str = "ssh:unlockRequired";
 
+/// Event emitted once each time the unlock prompt resolves -- by a successful
+/// unlock, a Cancel, or the window closing.
+///
+/// The counterpart to [`UNLOCK_REQUIRED_EVENT`], and the only way a view that
+/// is not the prompt itself can learn that the prompt is over: the answer is
+/// given in the prompt's own window, and window lifecycle events do not cross
+/// windows. Carries a single boolean and nothing else -- a listener that wants
+/// detail re-reads [`ssh_key_state`].
+pub const UNLOCK_RESOLVED_EVENT: &str = "ssh:unlockResolved";
+
 /// Error key surfaced when the passphrase given to [`unlock`] does not decrypt
 /// the chosen key.
 ///
@@ -116,6 +126,25 @@ struct UnlockRequired {
     /// The key the prompt is asking about; empty only in the impossible case
     /// of the key being cleared between the gate and the emit.
     path: String,
+}
+
+/// Payload of [`UNLOCK_RESOLVED_EVENT`].
+///
+/// Deliberately just the boolean: no path, and certainly no key material. A
+/// resolution is a cue to re-read, not a carrier of state.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UnlockResolved {
+    /// Whether the chosen key came out of this usable.
+    unlocked: bool,
+}
+
+/// Tell every window that the unlock prompt has resolved.
+///
+/// Non-fatal like the announce: a listener that misses it is one re-read
+/// behind, which is not worth failing an operation over.
+fn emit_resolved(app: &AppHandle, unlocked: bool) {
+    let _ = app.emit(UNLOCK_RESOLVED_EVENT, UnlockResolved { unlocked });
 }
 
 /// Expand a leading `~` against `home`, so a hand-edited config value of
@@ -213,13 +242,19 @@ fn write_path(ctx: &AppContext, path: Option<String>) -> Result<(), String> {
 
 /// Verify `passphrase` against the chosen key and hold it for this session.
 ///
+/// One of the two points a prompt resolves at: on success `resolved(true)`
+/// runs, which in the app emits [`UNLOCK_RESOLVED_EVENT`]. It is a parameter
+/// so the rule can be tested without a window system, and so the emit stays
+/// where the `AppHandle` naturally is.
+///
 /// # Errors
 ///
 /// Returns [`WRONG_PASSPHRASE_ERROR`], [`KEY_MISSING_ERROR`],
 /// [`NOT_A_KEY_ERROR`], or [`KEY_LOCKED_ERROR`] when the passphrase verified
-/// but the chosen key changed underneath it (see the body). The passphrase
-/// itself never appears in the error.
-pub fn unlock(ctx: &AppContext, passphrase: String) -> Result<(), String> {
+/// but the chosen key changed underneath it (see the body). Nothing is
+/// announced on any of those paths. The passphrase itself never appears in
+/// the error.
+pub fn unlock(ctx: &AppContext, passphrase: String, resolved: impl Fn(bool)) -> Result<(), String> {
     // Scrubbed when this call returns: the store keeps its own zeroizing copy,
     // and this one -- the last hop of the value that came over the bridge --
     // must not outlive the call that used it.
@@ -233,10 +268,13 @@ pub fn unlock(ctx: &AppContext, passphrase: String) -> Result<(), String> {
     // `Ok` alone does not mean the key is usable now. Report what the store
     // actually ended up in, or the renderer would close the prompt on a
     // success that never happened.
-    match state_error_key(ctx.ssh_key.state()) {
-        Some(code) => Err(code.to_string()),
-        None => Ok(()),
+    if let Some(code) = state_error_key(ctx.ssh_key.state()) {
+        return Err(code.to_string());
     }
+    // Only here, past that re-read: the key really is usable, so this is a
+    // resolution worth telling every view about.
+    resolved(true);
+    Ok(())
 }
 
 /// Drop the held passphrase, re-locking the key for the rest of the session.
@@ -249,15 +287,17 @@ pub fn forget(ctx: &AppContext) {
 ///
 /// Marks the prompt spent through the same [`dismiss_prompt`] the window's
 /// close handler uses, so a Cancel followed (as the renderer does) by closing
-/// the window dismisses once, not twice.
-pub fn cancel_unlock(ctx: &AppContext) {
+/// the window dismisses once, announces once, and notifies once.
+pub fn cancel_unlock(ctx: &AppContext, resolved: impl Fn(bool)) {
     let live = live_prompt();
     match live.as_deref() {
         Some(answered) => {
-            dismiss_prompt(answered, &ctx.ssh_key);
+            dismiss_prompt(answered, &ctx.ssh_key, resolved);
         }
         // No prompt on record -- a defensive call from the renderer, or one
-        // racing the very first build. Release any waiter anyway.
+        // racing the very first build. Release any waiter anyway, but announce
+        // nothing: there is no prompt here that resolved, and announcing
+        // outside the answered-flag guard is the one way to say it twice.
         None => ctx.ssh_key.notify_unlock_result(false),
     }
 }
@@ -304,15 +344,28 @@ fn key_is_usable(state: KeyState) -> bool {
 /// Idempotent by design: Cancel and the window's `Destroyed` event both land
 /// here for a cancelled prompt, and a second dismissal would be a live round
 /// fired into whatever started waiting in the meantime.
-fn dismiss_prompt(answered: &AtomicBool, store: &crate::app::ssh_key::SshKeyStore) -> bool {
+///
+/// The other point a prompt resolves at, so `resolved` runs here too -- inside
+/// the answered-flag guard, which is what makes "once per resolution" true for
+/// the announcement as well as for the notification. It is told what the key
+/// actually came out as rather than a flat `false`, since a window closed
+/// after a successful unlock is still a resolution and the truth about it is
+/// what a listener wants.
+fn dismiss_prompt(
+    answered: &AtomicBool,
+    store: &crate::app::ssh_key::SshKeyStore,
+    resolved: impl Fn(bool),
+) -> bool {
     if answered.swap(true, Ordering::AcqRel) {
         return false;
     }
+    let usable = key_is_usable(store.state());
     // Nothing to release when the prompt did its job: the successful unlock
     // has already woken everyone waiting.
-    if !key_is_usable(store.state()) {
+    if !usable {
         store.notify_unlock_result(false);
     }
+    resolved(usable);
     true
 }
 
@@ -630,9 +683,12 @@ fn build_unlock_window(app: &AppHandle, ctx: &AppContext) -> Result<Arc<AtomicBo
     // app tearing it down). `dismiss_prompt` makes the two idempotent.
     let store = Arc::clone(&ctx.ssh_key);
     let answered_on_close = Arc::clone(&answered);
+    let handle = app.clone();
     window.on_window_event(move |event| {
         if matches!(event, WindowEvent::Destroyed) {
-            dismiss_prompt(&answered_on_close, &store);
+            dismiss_prompt(&answered_on_close, &store, |unlocked| {
+                emit_resolved(&handle, unlocked)
+            });
         }
     });
     Ok(answered)
@@ -671,8 +727,8 @@ pub async fn ssh_key_clear(ctx: State<'_, Arc<AppContext>>) -> Result<SshKeyDto,
 /// For Settings: choosing an encrypted key, or pressing Unlock on a locked
 /// one, gets the passphrase verified while the user is still there. Resolves
 /// as soon as the window is up -- the answer arrives through
-/// [`ssh_key_unlock`] from that window, after which Settings re-reads
-/// [`ssh_key_state`].
+/// [`ssh_key_unlock`] from that window, and [`UNLOCK_RESOLVED_EVENT`] is what
+/// tells Settings to re-read [`ssh_key_state`].
 ///
 /// Joins the prompt an operation may already be waiting behind rather than
 /// opening a second one.
@@ -683,13 +739,19 @@ pub async fn ssh_key_prompt(app: AppHandle, ctx: State<'_, Arc<AppContext>>) -> 
 
 /// `sshKey:unlock` -- verify `passphrase` and hold it for this session.
 ///
-/// The one place a passphrase crosses the bridge, and only inbound.
+/// The one place a passphrase crosses the bridge, and only inbound. A success
+/// emits [`UNLOCK_RESOLVED_EVENT`] app-wide, so views other than the prompt
+/// itself learn the prompt is over.
 #[tauri::command]
 pub async fn ssh_key_unlock(
+    app: AppHandle,
     ctx: State<'_, Arc<AppContext>>,
     passphrase: String,
 ) -> Result<(), String> {
-    blocking(&ctx, move |c| unlock(c, passphrase)).await?
+    blocking(&ctx, move |c| {
+        unlock(c, passphrase, |unlocked| emit_resolved(&app, unlocked))
+    })
+    .await?
 }
 
 /// `sshKey:forget` -- drop the held passphrase without unchoosing the key.
@@ -700,9 +762,18 @@ pub async fn ssh_key_forget(ctx: State<'_, Arc<AppContext>>) -> Result<(), Strin
 
 /// `sshKey:cancelUnlock` -- the unlock window's Cancel: fail whatever is
 /// waiting on it rather than leaving it to time out.
+///
+/// Emits [`UNLOCK_RESOLVED_EVENT`] app-wide, once, however the window then
+/// goes away.
 #[tauri::command]
-pub async fn ssh_key_cancel_unlock(ctx: State<'_, Arc<AppContext>>) -> Result<(), String> {
-    blocking(&ctx, cancel_unlock).await
+pub async fn ssh_key_cancel_unlock(
+    app: AppHandle,
+    ctx: State<'_, Arc<AppContext>>,
+) -> Result<(), String> {
+    blocking(&ctx, move |c| {
+        cancel_unlock(c, |unlocked| emit_resolved(&app, unlocked))
+    })
+    .await
 }
 
 #[cfg(test)]
@@ -751,10 +822,10 @@ mod tests {
         let path = write_encrypted_key(&app, "topsecret");
         select(&app.ctx, path).unwrap();
         assert_eq!(
-            unlock(&app.ctx, "nope".to_string()),
+            unlock(&app.ctx, "nope".to_string(), |_| {}),
             Err("ssh.wrongPassphrase".to_string())
         );
-        assert_eq!(unlock(&app.ctx, "topsecret".to_string()), Ok(()));
+        assert_eq!(unlock(&app.ctx, "topsecret".to_string(), |_| {}), Ok(()));
         assert_eq!(state(&app.ctx).state, KeyState::Unlocked);
     }
 
@@ -1095,6 +1166,110 @@ mod tests {
         assert_eq!(announcements.load(Ordering::Acquire), 1);
     }
 
+    /// Collects what the resolution points announce, standing in for the
+    /// app-wide `ssh:unlockResolved` emit.
+    #[derive(Default)]
+    struct Announcements(std::sync::Mutex<Vec<bool>>);
+
+    impl Announcements {
+        fn record(&self) -> impl Fn(bool) + '_ {
+            |unlocked| self.0.lock().unwrap().push(unlocked)
+        }
+
+        fn seen(&self) -> Vec<bool> {
+            self.0.lock().unwrap().clone()
+        }
+    }
+
+    /// Settings is in a different window from the prompt, so a successful
+    /// unlock has to say so out loud.
+    #[test]
+    fn a_successful_unlock_announces_that_the_key_is_usable() {
+        let app = TempAppData::new();
+        let path = write_encrypted_key(&app, "topsecret");
+        select(&app.ctx, path).unwrap();
+
+        let announced = Announcements::default();
+        assert_eq!(
+            unlock(&app.ctx, "topsecret".to_string(), announced.record()),
+            Ok(())
+        );
+        assert_eq!(announced.seen(), vec![true]);
+    }
+
+    /// A rejected passphrase is not a resolution: the prompt stays up for
+    /// another try, and nothing should tell Settings otherwise.
+    #[test]
+    fn a_wrong_passphrase_announces_nothing() {
+        let app = TempAppData::new();
+        let path = write_encrypted_key(&app, "topsecret");
+        select(&app.ctx, path).unwrap();
+
+        let announced = Announcements::default();
+        assert_eq!(
+            unlock(&app.ctx, "nope".to_string(), announced.record()).unwrap_err(),
+            "ssh.wrongPassphrase"
+        );
+        assert!(announced.seen().is_empty());
+    }
+
+    /// A cancelled prompt announces that the key is still not usable.
+    #[test]
+    fn a_cancelled_prompt_announces_that_the_key_is_still_locked() {
+        let app = TempAppData::new();
+        app.ctx
+            .ssh_key
+            .set_path(Some(write_encrypted_key(&app, "topsecret")));
+        let answered = Arc::new(AtomicBool::new(false));
+
+        let announced = Announcements::default();
+        assert!(dismiss_prompt(
+            &answered,
+            &app.ctx.ssh_key,
+            announced.record()
+        ));
+        assert_eq!(announced.seen(), vec![false]);
+    }
+
+    /// Cancel and then the window closing are two exits from one resolution.
+    /// The announcement rides inside the same answered-flag guard as the
+    /// notification, so both happen exactly once.
+    #[test]
+    fn cancel_followed_by_a_close_announces_exactly_once() {
+        let app = TempAppData::new();
+        app.ctx
+            .ssh_key
+            .set_path(Some(write_encrypted_key(&app, "topsecret")));
+        let answered = Arc::new(AtomicBool::new(false));
+
+        let announced = Announcements::default();
+        // The Cancel button.
+        dismiss_prompt(&answered, &app.ctx.ssh_key, announced.record());
+        // The renderer closing the window straight after it.
+        dismiss_prompt(&answered, &app.ctx.ssh_key, announced.record());
+        assert_eq!(
+            announced.seen(),
+            vec![false],
+            "one resolution, one announcement"
+        );
+    }
+
+    /// Closing the window after the passphrase was accepted is still a
+    /// resolution, and it tells the truth about the key rather than a flat
+    /// `false`.
+    #[test]
+    fn closing_after_a_successful_unlock_announces_the_key_as_usable() {
+        let app = TempAppData::new();
+        let path = write_encrypted_key(&app, "topsecret");
+        select(&app.ctx, path).unwrap();
+        unlock(&app.ctx, "topsecret".to_string(), |_| {}).unwrap();
+        let answered = Arc::new(AtomicBool::new(false));
+
+        let announced = Announcements::default();
+        dismiss_prompt(&answered, &app.ctx.ssh_key, announced.record());
+        assert_eq!(announced.seen(), vec![true]);
+    }
+
     /// Cancel and the window's own close both dismiss; the second must be a
     /// no-op, or it would fire a stale failure at whatever started waiting in
     /// the meantime.
@@ -1107,15 +1282,15 @@ mod tests {
         let answered = Arc::new(AtomicBool::new(false));
 
         assert!(
-            dismiss_prompt(&answered, &app.ctx.ssh_key),
+            dismiss_prompt(&answered, &app.ctx.ssh_key, |_| {}),
             "the first exit answers the prompt"
         );
         assert!(
-            !dismiss_prompt(&answered, &app.ctx.ssh_key),
+            !dismiss_prompt(&answered, &app.ctx.ssh_key, |_| {}),
             "the window closing after a Cancel must not dismiss a second time"
         );
         assert!(
-            !dismiss_prompt(&answered, &app.ctx.ssh_key),
+            !dismiss_prompt(&answered, &app.ctx.ssh_key, |_| {}),
             "and neither must anything else"
         );
     }
@@ -1235,7 +1410,7 @@ mod tests {
         crate::commands::test_support::write_key(&ssh_dir, "id_ed25519", Some("topsecret"));
 
         seed_store(&app.ctx, Some("~/.ssh/id_ed25519".to_string()));
-        unlock(&app.ctx, "topsecret".to_string()).unwrap();
+        unlock(&app.ctx, "topsecret".to_string(), |_| {}).unwrap();
         seed_store(&app.ctx, Some("~/.ssh/id_ed25519".to_string()));
         assert_eq!(app.ctx.ssh_key.state(), KeyState::Unlocked);
     }
@@ -1303,7 +1478,7 @@ mod tests {
         let app = TempAppData::new();
         let path = write_encrypted_key(&app, "topsecret");
         select(&app.ctx, path.clone()).unwrap();
-        unlock(&app.ctx, "topsecret".to_string()).unwrap();
+        unlock(&app.ctx, "topsecret".to_string(), |_| {}).unwrap();
         forget(&app.ctx);
         let after = state(&app.ctx);
         assert_eq!(after.path.as_deref(), Some(path.as_str()));
