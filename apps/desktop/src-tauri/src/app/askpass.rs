@@ -576,8 +576,24 @@ mod tests {
         let mut stream = connect(server.endpoint()).expect("connect");
         // No trailing newline: without a cap on the read, `read_line` would
         // keep growing its buffer waiting for a newline that never comes.
+        // This deliberately writes more than MAX_REQUEST_BYTES, so the server
+        // is entitled to stop reading and close the connection as soon as its
+        // bounded read hits the cap -- possibly before this write finishes
+        // landing. Under contention that surfaces here as BrokenPipe (or,
+        // depending on the platform/timing, ConnectionReset) on our own
+        // write: that is a valid outcome of the very behaviour under test,
+        // not a bug in the test, so it must not panic. Anything else is
+        // unexpected and still fails the test.
         let oversized = "x".repeat(MAX_REQUEST_BYTES as usize * 2);
-        stream.write_all(oversized.as_bytes()).expect("write");
+        match stream.write_all(oversized.as_bytes()) {
+            Ok(()) => {}
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
+                ) => {}
+            Err(e) => panic!("unexpected write error: {e}"),
+        }
 
         // Do the read on another thread with a bounded wait so that, if the
         // cap regresses, this test fails instead of hanging the whole suite.
