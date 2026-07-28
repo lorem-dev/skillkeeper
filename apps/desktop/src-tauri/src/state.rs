@@ -141,7 +141,7 @@ impl AppContext {
         let git = {
             let ssh_key = Arc::clone(&ssh_key);
             let askpass = Arc::clone(&askpass);
-            SystemGit::new().with_env(move || crate::app::ssh_git::env_from(&ssh_key, &askpass))
+            SystemGit::new().with_env(move || crate::app::ssh_git::vars_from(&ssh_key, &askpass))
         };
         Ok(Self {
             fs: StdFs::new(),

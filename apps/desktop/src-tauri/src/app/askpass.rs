@@ -108,12 +108,29 @@ pub fn helper_main(args: &[String]) -> i32 {
     }
 }
 
+/// Bookkeeping for one minted token: when it was minted, and whether it has
+/// ever answered a live request.
+///
+/// A token's lifetime is one git invocation, not one prompt: an LFS clone's
+/// smudge filter opens its own `ssh`, which asks again with the same token,
+/// so the token must go on answering after its first use. `used` is what lets
+/// [`prune_expired`] tell an abandoned token (never used, subject to the TTL)
+/// from a working one (used at least once, exempt from the TTL, retired only
+/// by an explicit [`AskpassServer::revoke_token`] call once its invocation's
+/// git subprocess has exited).
+struct TokenState {
+    minted: Instant,
+    used: bool,
+}
+
 /// Server side of the askpass transport: one local socket, one accept-loop
 /// thread for the process's lifetime that hands each connection off to its
-/// own short-lived thread, single-use tokens with a TTL.
+/// own short-lived thread. Tokens live for one git invocation (see
+/// [`TokenState`]), each with a TTL backstop against an invocation that never
+/// actually asks.
 pub struct AskpassServer {
     endpoint: String,
-    tokens: Arc<Mutex<HashMap<String, Instant>>>,
+    tokens: Arc<Mutex<HashMap<String, TokenState>>>,
     declined_prompt: Arc<Mutex<Option<String>>>,
     /// Owns the private socket directory on platforms that use a filesystem
     /// path (unix); removed on drop. `None` on Windows, whose namespaced named
@@ -138,7 +155,7 @@ impl AskpassServer {
     /// thread.
     pub fn start(secret: Arc<dyn Fn() -> Option<String> + Send + Sync>) -> Result<Self, String> {
         let (listener, endpoint, socket_dir) = make_listener()?;
-        let tokens: Arc<Mutex<HashMap<String, Instant>>> = Arc::new(Mutex::new(HashMap::new()));
+        let tokens: Arc<Mutex<HashMap<String, TokenState>>> = Arc::new(Mutex::new(HashMap::new()));
         let declined_prompt: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
 
         let accept_tokens = Arc::clone(&tokens);
@@ -170,13 +187,31 @@ impl AskpassServer {
         &self.endpoint
     }
 
-    /// Mint a fresh single-use token, valid for [`TOKEN_TTL`].
+    /// Mint a fresh token for one git invocation, valid for [`TOKEN_TTL`]
+    /// until it is first used.
     pub fn mint_token(&self) -> String {
         let mut tokens = self.tokens.lock().unwrap();
         prune_expired(&mut tokens);
         let token = uuid::Uuid::new_v4().to_string();
-        tokens.insert(token.clone(), Instant::now());
+        tokens.insert(
+            token.clone(),
+            TokenState {
+                minted: Instant::now(),
+                used: false,
+            },
+        );
         token
+    }
+
+    /// Explicitly invalidate `token`, whether or not it was ever used.
+    ///
+    /// The lease that owns a token (`app::ssh_git::GitEnvLease`) calls this
+    /// once its git invocation's subprocess has exited -- on every exit path,
+    /// including an error or the silence-timeout kill -- so a token never
+    /// outlives the one invocation it was minted for and can never answer a
+    /// later, unrelated one.
+    pub fn revoke_token(&self, token: &str) {
+        self.tokens.lock().unwrap().remove(token);
     }
 
     /// The most recent prompt the server declined to answer (because it was
@@ -187,11 +222,19 @@ impl AskpassServer {
     }
 }
 
-/// Drop tokens whose TTL has elapsed, so the map never grows unbounded and an
-/// expired token is treated the same as an unknown one.
-fn prune_expired(tokens: &mut HashMap<String, Instant>) {
+/// Drop tokens that were minted and never used, once [`TOKEN_TTL`] has
+/// elapsed.
+///
+/// A token that HAS answered at least one prompt is exempt from this sweep:
+/// it is meant to live for the whole git invocation it was minted for (which
+/// may run for many minutes and open more than one `ssh` connection -- an
+/// LFS clone's smudge filter runs its own), and is retired only by an
+/// explicit [`AskpassServer::revoke_token`] call. The TTL here is only the
+/// backstop for a token that was minted and then abandoned -- the invocation
+/// never actually reached `ssh`, or crashed before it could.
+fn prune_expired(tokens: &mut HashMap<String, TokenState>) {
     let now = Instant::now();
-    tokens.retain(|_, minted| now.duration_since(*minted) < TOKEN_TTL);
+    tokens.retain(|_, state| state.used || now.duration_since(state.minted) < TOKEN_TTL);
 }
 
 /// Handle one connection (on its own thread -- see [`AskpassServer::start`]):
@@ -199,12 +242,13 @@ fn prune_expired(tokens: &mut HashMap<String, Instant>) {
 /// prompt is a passphrase prompt, and a secret is held, write
 /// `<passphrase>\n` back. Otherwise close without writing.
 ///
-/// The token is consumed (removed) as soon as it is found live, regardless of
-/// what happens next, so a retry -- with a wrong passphrase, say -- gets
-/// nothing and `ssh` fails fast instead of allowing another guess.
+/// A live token is marked used but NOT removed here: it stays valid for
+/// repeated reads -- covering an invocation that opens more than one `ssh` --
+/// until its owner explicitly calls [`AskpassServer::revoke_token`], or (if
+/// it was never used at all) its TTL backstop elapses.
 fn handle_connection(
     mut stream: Stream,
-    tokens: &Mutex<HashMap<String, Instant>>,
+    tokens: &Mutex<HashMap<String, TokenState>>,
     declined_prompt: &Mutex<Option<String>>,
     secret: &Arc<dyn Fn() -> Option<String> + Send + Sync>,
 ) {
@@ -233,7 +277,13 @@ fn handle_connection(
     let is_live = {
         let mut tokens = tokens.lock().unwrap();
         prune_expired(&mut tokens);
-        tokens.remove(token).is_some()
+        match tokens.get_mut(token) {
+            Some(state) => {
+                state.used = true;
+                true
+            }
+            None => false,
+        }
     };
     if !is_live {
         return;
@@ -363,6 +413,26 @@ fn make_listener() -> Result<(Listener, String, Option<SocketDirGuard>), String>
 }
 
 #[cfg(test)]
+impl AskpassServer {
+    /// Test-only entry point for `app::ssh_git`'s own tests, which need to
+    /// prove that dropping its `GitEnvLease` revokes the token it minted --
+    /// without duplicating the wire protocol outside this module. Just
+    /// `fetch`, exposed crate-internally.
+    pub(crate) fn debug_fetch(endpoint: &str, token: &str, prompt: &str) -> Option<String> {
+        fetch(endpoint, token, prompt)
+    }
+
+    /// Make a minted-but-never-used token look expired, without an actual
+    /// multi-minute sleep, so the TTL backstop can be exercised directly.
+    fn force_stale_for_test(&self, token: &str) {
+        let mut tokens = self.tokens.lock().unwrap();
+        if let Some(state) = tokens.get_mut(token) {
+            state.minted = Instant::now() - TOKEN_TTL - Duration::from_secs(1);
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -399,7 +469,10 @@ mod tests {
     }
 
     #[test]
-    fn a_minted_token_yields_the_secret_exactly_once() {
+    fn a_token_read_twice_still_answers_the_second_time() {
+        // A token's lifetime is one git invocation, not one prompt: an LFS
+        // clone's smudge filter opens its own `ssh`, which presents the same
+        // token again, so a second live read must still get an answer.
         let server =
             AskpassServer::start(Arc::new(|| Some("topsecret".to_string()))).expect("server");
         let token = server.mint_token();
@@ -409,9 +482,34 @@ mod tests {
         );
         assert_eq!(
             fetch(server.endpoint(), &token, "Enter passphrase for \"k\": "),
-            None,
-            "a token must not be reusable"
+            Some("topsecret".to_string()),
+            "a token stays valid across repeated reads until revoked"
         );
+    }
+
+    #[test]
+    fn a_revoked_token_stops_answering() {
+        let server =
+            AskpassServer::start(Arc::new(|| Some("topsecret".to_string()))).expect("server");
+        let token = server.mint_token();
+        assert_eq!(
+            fetch(server.endpoint(), &token, "Enter passphrase: "),
+            Some("topsecret".to_string())
+        );
+        server.revoke_token(&token);
+        assert_eq!(fetch(server.endpoint(), &token, "Enter passphrase: "), None);
+    }
+
+    #[test]
+    fn an_unused_token_still_expires_on_the_ttl() {
+        // The TTL is only the backstop for a token minted and then abandoned
+        // (the invocation never reached ssh); a used token is exempt (see the
+        // read-twice test above), so this must mint one and never read it.
+        let server =
+            AskpassServer::start(Arc::new(|| Some("topsecret".to_string()))).expect("server");
+        let token = server.mint_token();
+        server.force_stale_for_test(&token);
+        assert_eq!(fetch(server.endpoint(), &token, "Enter passphrase: "), None);
     }
 
     #[test]

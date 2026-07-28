@@ -49,10 +49,13 @@ use crate::state::AppContext;
 // fall back to the direct, silent `ctx.git` (`SystemGit`) so operations still
 // work.
 //
-// Every PTY call is threaded with `app::ssh_git::git_env(ctx)`: empty when no
-// SSH key is chosen (today's behaviour, unchanged), the key alone when it is
-// locked or needs no passphrase, or the key plus a fresh askpass token when it
-// is unlocked for this session.
+// Every PTY call is threaded with a `make_env` closure over
+// `app::ssh_git::git_env_lease(ctx)`, evaluated by the PTY layer only once it
+// has actually entered its queued slot: empty when no SSH key is chosen
+// (today's behaviour, unchanged), the key alone when it is locked or needs no
+// passphrase, or the key plus a token minted (and, once the invocation's git
+// subprocess exits, revoked) fresh for that one invocation when it is
+// unlocked for this session.
 //
 // The PTY steps reuse the same argument builders as `SystemGit`, decomposed to
 // match `terminal.ts` exactly: a force-pull is fetch + `reset --hard @{u}` +
@@ -75,8 +78,9 @@ where
     F: FnOnce() -> PortResult<()>,
 {
     if ctx.terminal.is_started() {
-        let env = crate::app::ssh_git::git_env(ctx);
-        ctx.terminal.run_git_with_env(cwd, args, &env).map(|_| ())
+        ctx.terminal
+            .run_git_with_env(cwd, args, &|| crate::app::ssh_git::git_env_lease(ctx))
+            .map(|_| ())
     } else {
         direct().map_err(|e| e.to_string())
     }
@@ -92,17 +96,15 @@ fn clone_op(ctx: &AppContext, options: &CloneOptions) -> Result<(), String> {
             .map(|p| p.to_string_lossy().into_owned())
             .filter(|p| !p.is_empty())
             .unwrap_or_else(|| ".".to_string());
-        ctx.terminal.run_git_with_env(
-            &parent,
-            &build_clone_args(options),
-            &crate::app::ssh_git::git_env(ctx),
-        )?;
+        ctx.terminal
+            .run_git_with_env(&parent, &build_clone_args(options), &|| {
+                crate::app::ssh_git::git_env_lease(ctx)
+            })?;
         if options.lfs {
-            ctx.terminal.run_git_with_env(
-                &options.destination,
-                &build_lfs_pull_args(),
-                &crate::app::ssh_git::git_env(ctx),
-            )?;
+            ctx.terminal
+                .run_git_with_env(&options.destination, &build_lfs_pull_args(), &|| {
+                    crate::app::ssh_git::git_env_lease(ctx)
+                })?;
         }
         Ok(())
     } else {
@@ -114,21 +116,18 @@ fn clone_op(ctx: &AppContext, options: &CloneOptions) -> Result<(), String> {
 /// `clean -fd`, each a separate PTY invocation (matching `terminal.ts`).
 fn force_pull_op(ctx: &AppContext, path: &str) -> Result<(), String> {
     if ctx.terminal.is_started() {
-        ctx.terminal.run_git_with_env(
-            path,
-            &build_fetch_args(),
-            &crate::app::ssh_git::git_env(ctx),
-        )?;
-        ctx.terminal.run_git_with_env(
-            path,
-            &build_reset_hard_args(),
-            &crate::app::ssh_git::git_env(ctx),
-        )?;
-        ctx.terminal.run_git_with_env(
-            path,
-            &build_clean_args(),
-            &crate::app::ssh_git::git_env(ctx),
-        )?;
+        ctx.terminal
+            .run_git_with_env(path, &build_fetch_args(), &|| {
+                crate::app::ssh_git::git_env_lease(ctx)
+            })?;
+        ctx.terminal
+            .run_git_with_env(path, &build_reset_hard_args(), &|| {
+                crate::app::ssh_git::git_env_lease(ctx)
+            })?;
+        ctx.terminal
+            .run_git_with_env(path, &build_clean_args(), &|| {
+                crate::app::ssh_git::git_env_lease(ctx)
+            })?;
         Ok(())
     } else {
         ctx.git.force_pull(path).map_err(|e| e.to_string())
