@@ -6,10 +6,14 @@
   gap: var(--sk-space-2);
 }
 
+// Both rows keep a control's height whether or not they currently hold a
+// button, so choosing a key, unlocking it or forgetting the passphrase never
+// changes the block's height and never shifts the settings below it.
 .sk-ssh-key__row {
   display: flex;
   align-items: center;
   gap: var(--sk-space-3);
+  min-height: var(--sk-control-height);
 }
 
 // Bounded and ellipsized so a long path can never widen the form; the full
@@ -21,6 +25,16 @@
   white-space: nowrap;
   font-size: 14px;
   color: var(--sk-color-label);
+}
+
+// A clipped path loses its head, not its tail: the file name is what identifies
+// the key, the directories above it are the same for every key. Right-to-left
+// flow puts the ellipsis at the start, and the left alignment keeps the text
+// where it was. Applied only while the path actually overflows, because a path
+// that fits would otherwise have its leading slash flow to the far end.
+.sk-ssh-key__path--clipped {
+  direction: rtl;
+  text-align: left;
 }
 
 // Takes the row's free space so the action beside it lands on the trailing

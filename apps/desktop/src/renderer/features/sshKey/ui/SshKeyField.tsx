@@ -51,6 +51,13 @@ export function SshKeyField() {
   // `useRef`'s initializer only matters on the first render (later calls are
   // discarded), so the guard is constructed once despite the plain argument.
   const requestGuard = useRef(createLatestRequestGuard());
+  // A path too long for the control is cut at its head rather than its tail
+  // (the file name identifies the key, the directories above it do not). The
+  // flip is conditional: a path that fits must keep its natural order, or its
+  // leading slash would flow to the far end. Only a new path can change the
+  // answer, since the control's width is fixed.
+  const pathRef = useRef<HTMLSpanElement>(null);
+  const [pathClipped, setPathClipped] = useState(false);
 
   // ssh_key_select/clear/forget/prompt reject with a raw backend error string
   // (unlike the RepoResult-shaped calls) -- map through sshErrorKey so a
@@ -87,6 +94,14 @@ export function SshKeyField() {
   useEffect(() => {
     refreshState();
   }, [refreshState]);
+
+  useEffect(() => {
+    const el = pathRef.current;
+    if (el === null) return;
+    // Measured with the flip already applied when it is: right-to-left flow
+    // does not change how wide the text is, so this cannot oscillate.
+    setPathClipped(el.scrollWidth > el.clientWidth);
+  }, [dto?.path]);
 
   // A blocked git operation elsewhere (e.g. a repository sync) can raise the
   // unlock window while this page happens to be open; refresh so the state
@@ -182,7 +197,11 @@ export function SshKeyField() {
     >
       <div className="sk-ssh-key">
         <div className="sk-ssh-key__row">
-          <span className="sk-ssh-key__path" title={dto.path}>
+          <span
+            ref={pathRef}
+            className={pathClipped ? 'sk-ssh-key__path sk-ssh-key__path--clipped' : 'sk-ssh-key__path'}
+            title={dto.path}
+          >
             {displayPath}
           </span>
           <Button variant="secondary" loading={busy} onClick={() => void choose()}>
@@ -194,21 +213,22 @@ export function SshKeyField() {
             </Button>
           )}
         </div>
-        {stateKey !== null && (
-          <div className="sk-ssh-key__row">
-            <span className="sk-ssh-key__state">{t(stateKey)}</span>
-            {dto.state === 'locked' && (
-              <Button variant="secondary" loading={busy} onClick={() => void unlock()}>
-                {t('settings.ssh.unlock')}
-              </Button>
-            )}
-            {dto.state === 'unlocked' && (
-              <Button variant="secondary" onClick={() => void forget()}>
-                {t('settings.ssh.forget')}
-              </Button>
-            )}
-          </div>
-        )}
+        {/* Always rendered, even with nothing to say: the row holds its height
+            so the rest of Settings does not move when a state line or its
+            action appears. */}
+        <div className="sk-ssh-key__row">
+          <span className="sk-ssh-key__state">{stateKey !== null ? t(stateKey) : ''}</span>
+          {dto.state === 'locked' && (
+            <Button variant="secondary" loading={busy} onClick={() => void unlock()}>
+              {t('settings.ssh.unlock')}
+            </Button>
+          )}
+          {dto.state === 'unlocked' && (
+            <Button variant="secondary" onClick={() => void forget()}>
+              {t('settings.ssh.forget')}
+            </Button>
+          )}
+        </div>
       </div>
     </FormRow>
   );
