@@ -152,10 +152,19 @@ struct Shared {
     /// True when the shell is back at a ready prompt (bracketed paste re-enabled)
     /// and can accept the next in-shell command (port of `terminal.ts` `idle`).
     idle: bool,
-    /// Monotonic count of exit-code markers applied. An in-shell git command
-    /// captures this before typing, then waits for it to advance -- the advance
-    /// is its own command's completion marker (port of `pendingResolve`).
+    /// Monotonic count of exit-code markers applied. An in-shell git command on
+    /// the POSIX hook path captures this before typing, then waits for it to
+    /// advance -- the advance is its own command's completion marker (port of
+    /// `pendingResolve`).
     marker_seq: u64,
+    /// The nonce of the last Windows sentinel seen, and the next nonce to hand
+    /// out. On that path an invocation waits for ITS OWN nonce rather than for
+    /// any marker: a sentinel printed late by a previous, interrupted command
+    /// used to end the wait of whichever invocation happened to be running,
+    /// which revoked that invocation's askpass token while its `ssh` was still
+    /// starting -- `Permission denied (publickey)` from then on.
+    last_sentinel_nonce: Option<u64>,
+    next_sentinel_nonce: u64,
     /// Monotonic count of shell-process exits. A waiting in-shell command watches
     /// this so a shell that dies mid-command unblocks with a failure code.
     exit_gen: u64,
@@ -227,6 +236,8 @@ impl TerminalManager {
             last_exit_code: None,
             idle: false,
             marker_seq: 0,
+            last_sentinel_nonce: None,
+            next_sentinel_nonce: 1,
             exit_gen: 0,
             quiet_gen: 0,
             confirm_gen: 0,
@@ -481,12 +492,19 @@ impl TerminalManager {
             // it runs. A POSIX shell we could not hook (or whose hook was
             // abandoned) falls back to the same private pseudo-terminal for a
             // plain (env-less) invocation too.
-            let result = if !env.vars().is_empty() {
-                self.run_git_process_env(repo_path, args, env.vars())
+            // Windows keeps its in-shell path even with an environment to set.
+            // Giving git a pseudo-terminal of its own is what the non-empty-env
+            // branch does everywhere else, but on Windows that is the
+            // configuration where a git command never finishes (0.2.2 release
+            // notes), so the variables are typed alongside the command there
+            // (`env_prefix`) instead of being set on a process nobody can see.
+            let vars = env.vars();
+            let result = if cfg!(windows) {
+                self.run_git_in_shell_sentinel(repo_path, args, vars)
+            } else if !vars.is_empty() {
+                self.run_git_process_env(repo_path, args, vars)
             } else if self.use_integration() {
                 self.run_git_in_shell(repo_path, args)
-            } else if cfg!(windows) {
-                self.run_git_in_shell_sentinel(repo_path, args)
             } else {
                 self.run_git_process(repo_path, args)
             };
@@ -592,7 +610,12 @@ impl TerminalManager {
     /// otherwise be unanswerable: `run_git_process` wires its private
     /// pseudo-terminal into the same terminal view's input and output (see
     /// its doc), so an SSH passphrase prompt is answerable there too.
-    fn run_git_in_shell_sentinel(&self, dir: &str, args: &[String]) -> i64 {
+    fn run_git_in_shell_sentinel(
+        &self,
+        dir: &str,
+        args: &[String],
+        vars: &[(String, String)],
+    ) -> i64 {
         let _ = self.start(0, 0);
 
         let mut guard = self.shared.inner.lock().expect("terminal lock poisoned");
@@ -614,24 +637,25 @@ impl TerminalManager {
             guard = next;
         }
 
-        // Capture completion baselines before typing, so the sentinel we then
-        // wait for cannot be confused with a previous command's.
-        let seq0 = guard.marker_seq;
+        // Name this invocation, so the sentinel it waits for cannot be a
+        // previous command's however late that one prints.
+        let nonce = guard.next_sentinel_nonce;
+        guard.next_sentinel_nonce = guard.next_sentinel_nonce.wrapping_add(1);
         let exit0 = guard.exit_gen;
         guard.idle = false;
         guard.last_activity = Instant::now();
         let shell = win_shell_kind(&guard.shell.program);
-        let command = sentinel_command_line(shell, "git", dir, args);
+        let command = sentinel_command_line(shell, "git", dir, args, vars, nonce);
         if let Some(writer) = guard.writer.as_mut() {
             let _ = writer.write_all(command.as_bytes());
             let _ = writer.flush();
         }
 
-        // Await our sentinel, the shell dying, or a stretch in which nothing at
+        // Await OUR sentinel, the shell dying, or a stretch in which nothing at
         // all happened -- no output AND no typing. Waiting indefinitely is what
         // let one stuck command block every later one.
         loop {
-            if guard.marker_seq != seq0 {
+            if sentinel_completes(nonce, guard.last_sentinel_nonce) {
                 return guard.last_exit_code.unwrap_or(0);
             }
             if guard.exit_gen != exit0 {
@@ -988,6 +1012,21 @@ fn spawn_session(shared: &mut Shared, state: &Arc<SharedState>) -> Result<(), St
     Ok(())
 }
 
+/// Whether a sentinel that has arrived completes the wait of the invocation
+/// that minted `awaited`.
+///
+/// Only its own does. The bug this rules out: an invocation abandoned by the
+/// silence timeout stops waiting but leaves the shell to print its sentinel
+/// whenever git finally dies, and that late sentinel used to satisfy whichever
+/// invocation was waiting by then. That invocation returned before its git had
+/// really run, its askpass token was revoked with it, and the `ssh` it had just
+/// started asked for the passphrase with a dead token -- reported as
+/// `Permission denied (publickey)`, and permanent, because every later
+/// invocation inherited the same one-command drift.
+fn sentinel_completes(awaited: u64, seen: Option<u64>) -> bool {
+    seen == Some(awaited)
+}
+
 /// Which fallback timer to arm.
 #[derive(Debug, Clone, Copy)]
 enum TimerKind {
@@ -1007,6 +1046,13 @@ fn apply_reaction(reaction: Reaction, shared: &mut Shared, state: &Arc<SharedSta
         // A marker: an in-shell command just finished. Advance the sequence so a
         // waiter distinguishes it from the previous command's marker.
         shared.marker_seq = shared.marker_seq.wrapping_add(1);
+        // A Windows sentinel also says WHICH invocation finished. Recorded only
+        // when it does: the POSIX hook reports the shell's last exit code, with
+        // no invocation attached, and overwriting this with `None` there would
+        // lose a nonce a waiter is still looking for.
+        if reaction.sentinel_nonce.is_some() {
+            shared.last_sentinel_nonce = reaction.sentinel_nonce;
+        }
     }
     if reaction.mark_ready {
         shared.idle = true;
@@ -1181,9 +1227,31 @@ fn git_process_reader(
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use std::sync::mpsc::RecvTimeoutError;
     use std::time::{Duration, Instant};
+
+    /// Only an invocation's OWN sentinel ends its wait.
+    ///
+    /// The regression this pins: an invocation abandoned by the silence timeout
+    /// leaves the shell to print its sentinel whenever git finally dies, and that
+    /// late sentinel used to satisfy whichever invocation was waiting by then --
+    /// which returned before its git had run, revoked its askpass token with
+    /// itself, and left the `ssh` it had just started asking for the passphrase
+    /// with a dead token.
+    #[test]
+    fn only_an_invocations_own_sentinel_completes_its_wait() {
+        assert!(sentinel_completes(7, Some(7)));
+        assert!(
+            !sentinel_completes(7, Some(6)),
+            "a previous command's late sentinel must not end this wait"
+        );
+        assert!(
+            !sentinel_completes(7, None),
+            "nothing has finished yet, so nothing completes it"
+        );
+    }
 
     /// The shell spec for the current host, from the real environment.
     fn host_shell() -> ShellSpec {

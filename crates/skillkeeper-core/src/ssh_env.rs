@@ -34,12 +34,22 @@ pub fn ssh_env_vars(key_path: &str, askpass: Option<AskpassRef<'_>>) -> Vec<(Str
     if key_path.contains('"') {
         return Vec::new();
     }
-    // git splits GIT_SSH_COMMAND shell-style, so the path is quoted. Backslashes
-    // are separators on Windows but escapes to that splitter, so normalise them.
-    let quoted = key_path.replace('\\', "/");
+    // git splits this value shell-style, so a path with whitespace needs quoting.
+    // A path without any is left bare: the quotes are pure cost there, and on
+    // Windows they are worse than that -- `cmd.exe` doubles an embedded double
+    // quote, and git's argument parser then splits the value at that point, which
+    // turned `-o IdentitiesOnly=yes` into an unknown git option.
+    // Backslashes are separators on Windows but escapes to the shell-style
+    // splitter, so normalise them either way.
+    let path = key_path.replace('\\', "/");
+    let path = if path.chars().any(char::is_whitespace) {
+        format!("\"{path}\"")
+    } else {
+        path
+    };
     let mut vars = vec![(
         "GIT_SSH_COMMAND".to_string(),
-        format!("ssh -i \"{quoted}\" -o IdentitiesOnly=yes"),
+        format!("ssh -i {path} -o IdentitiesOnly=yes"),
     )];
     if let Some(a) = askpass {
         vars.push(("SSH_ASKPASS".to_string(), a.helper.to_string()));
@@ -103,7 +113,20 @@ mod tests {
         let vars = ssh_env_vars(r"C:\Users\u\.ssh\id_ed25519", None);
         assert_eq!(
             get(&vars, "GIT_SSH_COMMAND"),
-            Some("ssh -i \"C:/Users/u/.ssh/id_ed25519\" -o IdentitiesOnly=yes")
+            Some("ssh -i C:/Users/u/.ssh/id_ed25519 -o IdentitiesOnly=yes")
+        );
+    }
+
+    #[test]
+    fn a_path_without_whitespace_is_left_unquoted() {
+        // Quoting it would be pure cost on unix and actively broken on Windows:
+        // `cmd.exe` doubles an embedded double quote and git's argument parser
+        // then splits the value there, so `-o IdentitiesOnly=yes` arrived as an
+        // unknown git option instead of part of the ssh command.
+        let vars = ssh_env_vars("C:/Users/u/.ssh/id_rsa", None);
+        assert_eq!(
+            get(&vars, "GIT_SSH_COMMAND"),
+            Some("ssh -i C:/Users/u/.ssh/id_rsa -o IdentitiesOnly=yes")
         );
     }
 

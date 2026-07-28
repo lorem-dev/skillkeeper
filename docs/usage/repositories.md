@@ -195,7 +195,12 @@ never written to the config or to disk, and asked again after a restart, the
 first time an operation actually needs it. A scheduled update check never
 blocks on it -- it raises the same window and resumes once the key is unlocked.
 
-Three things worth knowing:
+On Windows the passphrase is asked in the terminal on every operation, not held
+in memory: the `ssh` that ships with Git for Windows does not consult the helper
+the app answers with. The chosen key is still used. Load the key into the
+Windows agent (see above) if you would rather not be asked each time.
+
+A few things worth knowing:
 
 - The chosen key is offered first, but an `IdentityFile` in your own
   `~/.ssh/config` still applies to the hosts it matches.

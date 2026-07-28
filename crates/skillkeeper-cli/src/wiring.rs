@@ -231,7 +231,7 @@ mod tests {
             vars.iter()
                 .find(|(k, _)| k == "GIT_SSH_COMMAND")
                 .map(|(_, v)| v.as_str()),
-            Some("ssh -i \"/home/u/.ssh/id_ed25519\" -o IdentitiesOnly=yes")
+            Some("ssh -i /home/u/.ssh/id_ed25519 -o IdentitiesOnly=yes")
         );
         // The CLI never has a passphrase to give; ssh asks in its own terminal.
         assert!(vars.iter().all(|(k, _)| k != "SSH_ASKPASS"));

@@ -99,13 +99,168 @@ pub fn helper_main(args: &[String]) -> i32 {
     ) else {
         return 1;
     };
-    match fetch(&endpoint, &token, prompt) {
+    match fetch_bounded(&endpoint, &token, prompt, HELPER_TIMEOUT) {
         Some(passphrase) => {
             println!("{passphrase}");
             0
         }
         None => 1,
     }
+}
+
+/// How long the helper waits for the app to answer before giving up.
+///
+/// The app is local and holds the passphrase in memory, so an answer takes
+/// microseconds; this bound exists for the cases where there is no answer at
+/// all. Generous enough that a loaded machine cannot trip it.
+const HELPER_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// [`fetch`], but incapable of hanging.
+///
+/// Neither connecting to the endpoint nor reading from it has a timeout of its
+/// own, and on Windows a named-pipe connect blocks while it waits for an
+/// instance -- so a helper whose endpoint is gone, or whose server never
+/// answers, would wait forever. `ssh` waits on its askpass program with no
+/// bound of its own, and git waits on `ssh`, so that one blocked read stalled a
+/// repository operation until the terminal's silence timeout killed it, with
+/// nothing printed and no prompt to answer. Bounding it here turns that into a
+/// fast, ordinary authentication failure.
+///
+/// The worker thread is left to its fate: it holds nothing the process needs,
+/// and the process exits as soon as this returns.
+fn fetch_bounded(endpoint: &str, token: &str, prompt: &str, wait: Duration) -> Option<String> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let (endpoint, token, prompt) = (endpoint.to_string(), token.to_string(), prompt.to_string());
+    std::thread::spawn(move || {
+        let _ = tx.send(fetch(&endpoint, &token, &prompt));
+    });
+    rx.recv_timeout(wait).ok().flatten()
+}
+
+/// Flag selecting the round-trip self-check, for verifying this transport on a
+/// machine the developer cannot run tests on (Windows, in practice).
+pub const SELFTEST_FLAG: &str = "--skillkeeper-askpass-selftest";
+
+/// Drive the whole askpass path in one process and report what happened.
+///
+/// Starts a server holding a known secret, mints a token, runs THIS binary the
+/// way `ssh` would (one prompt argument, endpoint and token in the
+/// environment), and compares what the helper printed with what the server
+/// holds. Every step's outcome is printed, so a failure says which link broke
+/// rather than only that the feature does not work.
+///
+/// Exists because the transport's Windows behaviour cannot be exercised from a
+/// unix development machine: whether `ssh` calls the helper, whether a
+/// GUI-subsystem binary can write to a captured stdout, and whether a
+/// named-pipe connect succeeds are all platform answers.
+pub fn selftest_main() -> i32 {
+    let mut report = Report::new();
+    let code = selftest_run(&mut report);
+    report.flush();
+    code
+}
+
+/// Where the self-check's own output goes.
+///
+/// The release build is a GUI-subsystem binary on Windows
+/// (`windows_subsystem = "windows"`), so when it is started from a command
+/// prompt it has no console and `println!` is discarded -- the first run of this
+/// check printed nothing at all. Every line is therefore collected and written
+/// BOTH to stdout (which works wherever a console or a redirect exists) and to a
+/// file, whose path is fixed so it can be opened without having seen any output.
+struct Report {
+    lines: Vec<String>,
+}
+
+impl Report {
+    fn new() -> Self {
+        #[cfg(windows)]
+        {
+            // Borrow the console of whatever started us, so a GUI-subsystem
+            // build can still print into an interactive terminal. Harmless when
+            // stdout is already a pipe: this attaches a console, it does not
+            // reassign the standard handles.
+            extern "system" {
+                fn AttachConsole(process_id: u32) -> i32;
+            }
+            const ATTACH_PARENT_PROCESS: u32 = u32::MAX;
+            unsafe { AttachConsole(ATTACH_PARENT_PROCESS) };
+        }
+        Self { lines: Vec::new() }
+    }
+
+    fn say(&mut self, line: String) {
+        println!("{line}");
+        self.lines.push(line);
+    }
+
+    /// The file the report is also written to.
+    fn path() -> std::path::PathBuf {
+        std::env::temp_dir().join("skillkeeper-askpass-selftest.log")
+    }
+
+    fn flush(&self) {
+        let body = format!("{}\n", self.lines.join("\n"));
+        let path = Self::path();
+        match std::fs::write(&path, body) {
+            Ok(()) => println!("report written to {}", path.display()),
+            Err(e) => println!("could not write {}: {e}", path.display()),
+        }
+    }
+}
+
+fn selftest_run(report: &mut Report) -> i32 {
+    const SECRET: &str = "selftest-passphrase";
+    let server = match AskpassServer::start(Arc::new(|| Some(SECRET.to_string()))) {
+        Ok(server) => server,
+        Err(e) => {
+            report.say(format!("FAIL: the askpass server did not start: {e}"));
+            return 1;
+        }
+    };
+    report.say(format!("ok: server listening on {}", server.endpoint()));
+
+    let exe = match std::env::current_exe() {
+        Ok(exe) => exe,
+        Err(e) => {
+            report.say(format!("FAIL: cannot find this executable's own path: {e}"));
+            return 1;
+        }
+    };
+    report.say(format!("ok: helper is {}", exe.display()));
+
+    let token = server.mint_token();
+    let output = std::process::Command::new(&exe)
+        .arg("Enter passphrase for key 'selftest': ")
+        .env(ASKPASS_ENDPOINT_ENV, server.endpoint())
+        .env(ASKPASS_TOKEN_ENV, &token)
+        .output();
+    let output = match output {
+        Ok(output) => output,
+        Err(e) => {
+            report.say(format!("FAIL: cannot run the helper: {e}"));
+            return 1;
+        }
+    };
+    let printed = String::from_utf8_lossy(&output.stdout);
+    let answer = printed.trim_end_matches(['\n', '\r']);
+    if answer == SECRET {
+        report.say("PASS: the helper answered the prompt from memory".to_string());
+        return 0;
+    }
+    report.say("FAIL: the helper did not answer with the held secret".to_string());
+    report.say(format!("  exit status : {:?}", output.status.code()));
+    report.say(format!("  stdout      : {printed:?}"));
+    println!(
+        "  stderr      : {:?}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    if answer.is_empty() {
+        report.say("  nothing was printed: either the helper never reached the".to_string());
+        report.say("  server (endpoint or token), or this binary cannot write to a".to_string());
+        report.say("  captured stdout (a GUI-subsystem build on Windows).".to_string());
+    }
+    1
 }
 
 /// Bookkeeping for one minted token: when it was minted, and whether it has
@@ -600,13 +755,26 @@ mod tests {
         let (tx, rx) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let mut response = String::new();
-            let read = BufReader::new(&mut stream).read_line(&mut response);
-            let _ = tx.send(read.ok());
+            let read = BufReader::new(&mut stream)
+                .read_line(&mut response)
+                .map_err(|e| e.kind());
+            let _ = tx.send((read, response));
         });
-        let read = rx
+        let (read, response) = rx
             .recv_timeout(Duration::from_secs(2))
             .expect("the bounded read must finish, not hang");
-        assert_eq!(read, Some(0), "malformed, oversized request gets no answer");
+        // The property is "no answer", not the mechanism by which the peer went
+        // away. A server that closes on an oversized request leaves the client
+        // with a clean end of stream on some platforms and a reset on others:
+        // Linux resets when it closes while our unread bytes are still queued,
+        // macOS reports the clean end. Both are silence. Only bytes coming back
+        // would be a leaked passphrase, and only a stall would be a missing cap.
+        match read {
+            Ok(0) => {}
+            Err(std::io::ErrorKind::ConnectionReset | std::io::ErrorKind::BrokenPipe) => {}
+            Ok(n) => panic!("oversized request was answered with {n} bytes: {response:?}"),
+            Err(kind) => panic!("unexpected read error: {kind:?}"),
+        }
     }
 
     #[test]
@@ -642,6 +810,28 @@ mod tests {
                 .expect("a concurrent request must not be blocked by a stuck connection");
             assert_eq!(answer, Some("topsecret".to_string()));
         });
+    }
+
+    #[test]
+    fn a_dead_endpoint_gives_up_instead_of_waiting() {
+        // The bug this guards: `fetch` has no timeout of its own, and on Windows
+        // a named-pipe connect blocks waiting for an instance -- so a helper
+        // whose server is gone waited forever, `ssh` waited on the helper, git
+        // waited on `ssh`, and the operation hung with nothing printed and no
+        // prompt to answer.
+        let started = Instant::now();
+        let answer = fetch_bounded(
+            "sk-askpass-nothing-is-listening-here",
+            "token",
+            "Enter passphrase for key 'k': ",
+            Duration::from_millis(300),
+        );
+        assert_eq!(answer, None);
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "gave up after {:?}, so the wait is not bounded",
+            started.elapsed()
+        );
     }
 
     #[test]

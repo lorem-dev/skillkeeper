@@ -12,6 +12,8 @@
 
 use std::sync::Mutex;
 
+use skillkeeper_core::ssh_env::{ASKPASS_ENDPOINT_ENV, ASKPASS_TOKEN_ENV};
+
 /// Bracketed-paste-enable prefix. Inserting a command between this and
 /// [`PASTE_END`] makes the shell take the whole line at once (no char-by-char
 /// echo / syntax-highlight redraw that can drop a glyph under rapid queuing).
@@ -126,8 +128,19 @@ pub fn win_shell_kind(program: &str) -> WinShell {
     }
 }
 
-/// Opening text of the completion sentinel. A full sentinel is this, one or
-/// more decimal digits (the exit code), then [`SENTINEL_SUFFIX`].
+/// Opening text of the completion sentinel. A full sentinel is this, the
+/// invocation's nonce in decimal digits, `_`, the exit code in decimal digits,
+/// then [`SENTINEL_SUFFIX`].
+///
+/// The NONCE is what makes a sentinel belong to one invocation. Without it, an
+/// invocation waiting for completion accepted any sentinel that arrived after it
+/// started waiting -- including one printed late by a PREVIOUS command that had
+/// been interrupted (the silence timeout sends Ctrl+C and stops waiting, but the
+/// shell still runs the `echo` at the end of that command line). It would then
+/// finish instantly, its askpass token would be revoked with it, and the `ssh`
+/// it had only just started would ask for the passphrase with a dead token:
+/// `Permission denied (publickey)`, permanently, since every later invocation
+/// inherited the same one-command drift.
 ///
 /// Requiring DIGITS is what keeps the shell's own echo of the typed line from
 /// being mistaken for the real thing: the echo still contains the unexpanded
@@ -174,6 +187,63 @@ pub fn psq(value: &str) -> String {
     out
 }
 
+/// Set `vars` for one command line, in the syntax of `shell`, and clear every
+/// other variable this app manages.
+///
+/// The askpass variables have to reach `ssh` on Windows, and the process
+/// environment cannot carry them: the interactive shell was spawned long before,
+/// with whatever environment it inherited then. Giving git a pseudo-terminal of
+/// its own would allow a real environment, but on Windows that is precisely the
+/// configuration where a git command never finishes (see the 0.2.2 release
+/// notes), so the values are typed alongside the command instead.
+///
+/// Clearing matters as much as setting. `set` in `cmd.exe` (and an assignment in
+/// PowerShell) changes the SESSION, not one command: a value typed for one
+/// invocation stays behind for every later one. An invocation that needs no
+/// askpass -- a locked key, a key that cannot be read, no key at all -- would
+/// then inherit the previous invocation's token, which was revoked the moment
+/// that invocation finished. `ssh` calls the helper, the helper presents a dead
+/// token, and the operation fails with `Permission denied (publickey)`; every
+/// operation after it fails the same way, until something mints a live token
+/// again (which is why forgetting the passphrase and entering it once more
+/// appeared to repair the app). So each command line states the value of every
+/// managed variable, present or absent.
+///
+/// `cmd.exe` deletes a variable when assigned an empty value; PowerShell deletes
+/// one assigned `$null`.
+pub fn env_prefix(shell: WinShell, vars: &[(String, String)]) -> String {
+    MANAGED_ENV
+        .iter()
+        .map(|key| {
+            let value = vars
+                .iter()
+                .find(|(name, _)| name == key)
+                .map(|(_, value)| value.as_str());
+            match (shell, value) {
+                (WinShell::Cmd, Some(value)) => {
+                    format!("set {}&& ", cmdq(&format!("{key}={value}")))
+                }
+                (WinShell::Cmd, None) => format!("set {}&& ", cmdq(&format!("{key}="))),
+                (WinShell::PowerShell, Some(value)) => format!("$env:{key}={}; ", psq(value)),
+                (WinShell::PowerShell, None) => format!("$env:{key}=$null; "),
+            }
+        })
+        .collect()
+}
+
+/// Every environment variable this app sets for a git invocation.
+///
+/// Fixed rather than derived from the values being set, because clearing the
+/// ones NOT being set is the whole point (see [`env_prefix`]): a list built from
+/// the current invocation could never name what a previous one left behind.
+const MANAGED_ENV: [&str; 5] = [
+    "GIT_SSH_COMMAND",
+    "SSH_ASKPASS",
+    "SSH_ASKPASS_REQUIRE",
+    ASKPASS_ENDPOINT_ENV,
+    ASKPASS_TOKEN_ENV,
+];
+
 /// Assemble `git -C <dir> <args...>` followed by the sentinel echo, quoted for
 /// `shell` and terminated with a CR so typing it runs it.
 ///
@@ -181,7 +251,14 @@ pub fn psq(value: &str) -> String {
 /// line is expanded BEFORE any of it runs, so a plain `%ERRORLEVEL%` would
 /// report the PREVIOUS command's code. The `^` defers the expansion past that
 /// first pass and `call` performs it afterwards, once git has finished.
-pub fn sentinel_command_line(shell: WinShell, git: &str, dir: &str, args: &[String]) -> String {
+pub fn sentinel_command_line(
+    shell: WinShell,
+    git: &str,
+    dir: &str,
+    args: &[String],
+    vars: &[(String, String)],
+    nonce: u64,
+) -> String {
     match shell {
         WinShell::Cmd => {
             let mut parts = Vec::with_capacity(args.len() + 3);
@@ -192,7 +269,8 @@ pub fn sentinel_command_line(shell: WinShell, git: &str, dir: &str, args: &[Stri
                 parts.push(cmdq(arg));
             }
             format!(
-                "{} & call echo {SENTINEL_PREFIX}%^ERRORLEVEL%{SENTINEL_SUFFIX}\r",
+                "{}{} & call echo {SENTINEL_PREFIX}{nonce}_%^ERRORLEVEL%{SENTINEL_SUFFIX}\r",
+                env_prefix(shell, vars),
                 parts.join(" ")
             )
         }
@@ -208,7 +286,8 @@ pub fn sentinel_command_line(shell: WinShell, git: &str, dir: &str, args: &[Stri
             // is still unset (a command that never ran), which would otherwise
             // print no digits at all and leave the waiter with nothing to match.
             format!(
-                "{}; Write-Host \"{SENTINEL_PREFIX}$([int]$LASTEXITCODE){SENTINEL_SUFFIX}\"\r",
+                "{}{}; Write-Host \"{SENTINEL_PREFIX}{nonce}_$([int]$LASTEXITCODE){SENTINEL_SUFFIX}\"\r",
+                env_prefix(shell, vars),
                 parts.join(" ")
             )
         }
@@ -488,17 +567,87 @@ mod tests {
     }
 
     #[test]
+    fn cmd_states_every_managed_variable() {
+        let vars = vec![
+            ("GIT_SSH_COMMAND".to_string(), "ssh -i C:/k".to_string()),
+            (
+                "SSH_ASKPASS".to_string(),
+                "C:/Program Files/SK/sk.exe".to_string(),
+            ),
+        ];
+        let prefix = env_prefix(WinShell::Cmd, &vars);
+        assert!(prefix.contains("set \"GIT_SSH_COMMAND=ssh -i C:/k\"&& "));
+        assert!(prefix.contains("set \"SSH_ASKPASS=C:/Program Files/SK/sk.exe\"&& "));
+        // The ones this invocation does not use are cleared, not left behind:
+        // `set` changes the session, and a stale askpass token is a revoked one.
+        assert!(prefix.contains("set \"SSH_ASKPASS_REQUIRE=\"&& "));
+        assert!(prefix.contains("set \"SKILLKEEPER_ASKPASS_TOKEN=\"&& "));
+    }
+
+    #[test]
+    fn an_invocation_with_no_environment_clears_all_of_it() {
+        // This is the case that broke a session for good: a locked or unreadable
+        // key needs no askpass, and the previous invocation's token -- revoked
+        // when it finished -- would otherwise still be set in the shell.
+        for shell in [WinShell::Cmd, WinShell::PowerShell] {
+            let prefix = env_prefix(shell, &[]);
+            for key in MANAGED_ENV {
+                assert!(
+                    prefix.contains(key),
+                    "{shell:?}: {key} must be cleared, got {prefix:?}"
+                );
+            }
+            assert!(!prefix.contains("ssh -i"), "{shell:?}: nothing may be set");
+        }
+    }
+
+    #[test]
+    fn powershell_deletes_a_variable_it_does_not_set() {
+        let vars = vec![("SSH_ASKPASS".to_string(), "C:/it's/sk.exe".to_string())];
+        let prefix = env_prefix(WinShell::PowerShell, &vars);
+        assert!(prefix.contains("$env:SSH_ASKPASS='C:/it''s/sk.exe'; "));
+        assert!(prefix.contains("$env:GIT_SSH_COMMAND=$null; "));
+    }
+
+    #[test]
+    fn the_environment_is_set_before_the_command_runs() {
+        // The values must precede git on the same line: the interactive shell was
+        // spawned long before this call, so its own environment cannot carry them.
+        let vars = vec![("SSH_ASKPASS_REQUIRE".to_string(), "force".to_string())];
+        let line = sentinel_command_line(
+            WinShell::Cmd,
+            "git",
+            "C:\\repos\\x",
+            &["fetch".to_string()],
+            &vars,
+            7,
+        );
+        let set_at = line
+            .find("set \"SSH_ASKPASS_REQUIRE=force\"&& ")
+            .expect("the value is set on this line");
+        let git_at = line.find("\"git\"").expect("git runs on this line");
+        assert!(
+            set_at < git_at,
+            "the value must be set before git runs: {line:?}"
+        );
+    }
+
+    #[test]
     fn cmd_command_line_defers_the_exit_code_expansion() {
         let line = sentinel_command_line(
             WinShell::Cmd,
             "git",
             "C:\\repos\\x",
             &["fetch".to_string(), "--prune".to_string()],
+            &[],
+            7,
         );
-        assert!(line.starts_with("\"git\" -C \"C:\\repos\\x\" \"fetch\" \"--prune\""));
+        // Preceded by the managed-environment prefix, which every invocation
+        // states in full (see `env_prefix`).
+        assert!(line.contains("\"git\" -C \"C:\\repos\\x\" \"fetch\" \"--prune\""));
         // `call` plus the escaped `%` is what makes the code git's own rather
         // than the previous command's.
-        assert!(line.contains("& call echo __skk_done_%^ERRORLEVEL%__"));
+        assert!(line.contains("& call echo __skk_done_7_%^ERRORLEVEL%__"));
         assert!(line.ends_with('\r'), "the line must run when typed");
     }
 
@@ -509,26 +658,38 @@ mod tests {
             "git",
             "C:\\repos\\x",
             &["status".to_string()],
+            &[],
+            7,
         );
-        assert!(line.starts_with("& 'git' -C 'C:\\repos\\x' 'status'"));
-        assert!(line.contains("__skk_done_$([int]$LASTEXITCODE)__"));
+        assert!(line.contains("& 'git' -C 'C:\\repos\\x' 'status'"));
+        assert!(line.contains("__skk_done_7_$([int]$LASTEXITCODE)__"));
         assert!(line.ends_with('\r'));
     }
 
     /// The echoed command line must NOT look like a finished command: the shell
     /// prints the typed text back before running it, and taking that as the
     /// completion signal would report success the instant the command started.
+    ///
+    /// Asserted through the scanner that actually decides this, rather than
+    /// through a property of the text: the line DOES now carry digits right after
+    /// the prefix (the nonce), and what keeps it safe is that the exit code after
+    /// them is still unexpanded.
     #[test]
     fn the_typed_line_cannot_be_mistaken_for_the_sentinel_it_prints() {
         for shell in [WinShell::Cmd, WinShell::PowerShell] {
-            let line = sentinel_command_line(shell, "git", "C:\\r", &["status".to_string()]);
-            let after = line
-                .split(SENTINEL_PREFIX)
-                .nth(1)
-                .expect("the line carries the sentinel prefix");
+            let line =
+                sentinel_command_line(shell, "git", "C:\\r", &["status".to_string()], &[], 7);
             assert!(
-                !after.starts_with(|c: char| c.is_ascii_digit()),
-                "{shell:?}: the unexpanded line must have no digits after the prefix, got {after:?}"
+                line.contains(SENTINEL_PREFIX),
+                "{shell:?}: the line must carry the sentinel it will print"
+            );
+            let scan = crate::pty::shell_integration::scan_sentinels("", &line);
+            assert!(
+                scan.pieces.iter().all(|p| !matches!(
+                    p,
+                    crate::pty::shell_integration::StreamPiece::Marker { .. }
+                )),
+                "{shell:?}: the echoed line must not scan as a completion: {line:?}"
             );
         }
     }

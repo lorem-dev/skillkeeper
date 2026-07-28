@@ -240,7 +240,7 @@ mod tests {
             vars.iter()
                 .find(|(k, _)| k == "GIT_SSH_COMMAND")
                 .map(|(_, v)| v.as_str()),
-            Some(format!("ssh -i \"{path}\" -o IdentitiesOnly=yes").as_str())
+            Some(format!("ssh -i {path} -o IdentitiesOnly=yes").as_str())
         );
         assert!(vars.iter().all(|(k, _)| k != "SSH_ASKPASS"));
     }

@@ -2,6 +2,20 @@
 
 ## Development
 
+### Fixed
+
+- A repository operation on Windows could start failing part-way through a
+  session and then fail every time, with `Permission denied (publickey)`, until
+  the passphrase was forgotten and entered again. The variables that carry the
+  chosen key and the askpass token are typed alongside the command there, and
+  `set` in a shell changes the SESSION, not one command -- so they stayed behind
+  afterwards. An operation that needs no askpass (a locked key, a key that
+  cannot be read, no key at all) inherited the previous operation's token, which
+  had been revoked the moment that operation finished: `ssh` asked the helper,
+  the helper presented a dead token, and nothing recovered on its own. Every
+  command now states the value of every variable the app manages, so nothing an
+  earlier one set can leak into a later one.
+
 ### Added
 
 - A private key can be chosen in Settings for SSH remotes, with its passphrase
