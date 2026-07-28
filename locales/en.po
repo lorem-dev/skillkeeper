@@ -1083,7 +1083,10 @@ msgid "settings.ssh.key"
 msgstr "SSH key"
 
 msgid "settings.ssh.keyDescription"
-msgstr "Private key used for SSH remotes. Without one, the system ssh setup is used."
+msgstr "Private key used for SSH remotes."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Without one, the system ssh setup is used."
 
 msgid "settings.ssh.notSet"
 msgstr "Not set"

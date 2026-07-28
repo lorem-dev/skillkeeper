@@ -167,7 +167,19 @@ export function SshKeyField() {
   const stateKey = stateMessageKey(dto.state);
 
   return (
-    <FormRow label={t('settings.ssh.key')} description={t('settings.ssh.keyDescription')} align="top">
+    <FormRow
+      label={t('settings.ssh.key')}
+      // Two sentences, one per line: left to wrap on its own the hint breaks
+      // mid-sentence at this column, which reads as an accident.
+      description={
+        <>
+          {t('settings.ssh.keyDescription')}
+          <br />
+          {t('settings.ssh.keyDescriptionFallback')}
+        </>
+      }
+      align="top"
+    >
       <div className="sk-ssh-key">
         <div className="sk-ssh-key__row">
           <span className="sk-ssh-key__path" title={dto.path}>
