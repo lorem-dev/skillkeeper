@@ -186,8 +186,10 @@ The desktop app can use one specific private key for SSH remotes instead of
 whatever `ssh` would pick. Choose it in Settings, under Repositories; the path
 is stored as `repositories.sshKeyPath` and the CLI honours it too.
 
-With a key chosen, Git runs as `ssh -i <key> -o IdentitiesOnly=yes`. With none
-chosen, nothing changes.
+With a key chosen, Git runs as `ssh -i <key>`. The key is offered, not enforced:
+if a host does not accept it, `ssh` falls back to your own `~/.ssh/config`
+identities and your agent, so a repository on a host this key has no access to
+keeps working. With no key chosen, nothing changes.
 
 If the key has a passphrase, the app asks for it in a separate window and
 verifies it immediately. It is held in memory for that run of the app only:
@@ -195,15 +197,11 @@ never written to the config or to disk, and asked again after a restart, the
 first time an operation actually needs it. A scheduled update check never
 blocks on it -- it raises the same window and resumes once the key is unlocked.
 
-On Windows the passphrase is asked in the terminal on every operation, not held
-in memory: the `ssh` that ships with Git for Windows does not consult the helper
-the app answers with. The chosen key is still used. Load the key into the
-Windows agent (see above) if you would rather not be asked each time.
-
 A few things worth knowing:
 
-- The chosen key is offered first, but an `IdentityFile` in your own
-  `~/.ssh/config` still applies to the hosts it matches.
+- The chosen key is one identity among the ones `ssh` may try, so on a host that
+  accepts several of your keys it is not guaranteed to be the one used. If you
+  need a specific identity for a specific host, say so in `~/.ssh/config`.
 - An unknown host key must be confirmed once in the app's terminal. While the
   app answers passphrase prompts itself, `ssh` cannot ask anything else there.
 - The CLI reads the same setting but keeps no passphrase, so `ssh` asks in the

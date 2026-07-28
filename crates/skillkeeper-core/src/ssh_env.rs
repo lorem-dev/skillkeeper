@@ -21,11 +21,18 @@ pub const ASKPASS_ENDPOINT_ENV: &str = "SKILLKEEPER_ASKPASS_ENDPOINT";
 /// Name of the environment variable carrying the single-use askpass token.
 pub const ASKPASS_TOKEN_ENV: &str = "SKILLKEEPER_ASKPASS_TOKEN";
 
-/// Build the environment that makes git use `key_path` and nothing else.
+/// Build the environment that points git at `key_path`.
 ///
-/// `IdentitiesOnly=yes` keeps an agent identity from winning over the chosen
-/// key. Note that an `IdentityFile` from the user's own `~/.ssh/config` still
-/// applies to hosts it matches; the command-line key is simply offered first.
+/// The key is offered, not enforced: `IdentitiesOnly=yes` used to be set here,
+/// and per ssh_config(5) it makes `ssh` "only use the configured authentication
+/// identity and certificate files ... even if ssh-agent ... offers more
+/// identities". One global key with that restriction breaks the moment a
+/// repository lives on a host the key has no access to: a corporate host and a
+/// public forge usually mean two different identities, and the restriction turned
+/// the second one into `Permission denied (publickey)` with no way to recover.
+/// Without it, the chosen key is tried and everything the user already
+/// configured -- their `~/.ssh/config` identities and their agent -- still works
+/// as a fallback.
 ///
 /// Returns an empty vector for a path that cannot be expressed safely (one
 /// containing a double quote), so a caller falls back to the system default
@@ -47,10 +54,7 @@ pub fn ssh_env_vars(key_path: &str, askpass: Option<AskpassRef<'_>>) -> Vec<(Str
     } else {
         path
     };
-    let mut vars = vec![(
-        "GIT_SSH_COMMAND".to_string(),
-        format!("ssh -i {path} -o IdentitiesOnly=yes"),
-    )];
+    let mut vars = vec![("GIT_SSH_COMMAND".to_string(), format!("ssh -i {path}"))];
     if let Some(a) = askpass {
         vars.push(("SSH_ASKPASS".to_string(), a.helper.to_string()));
         // `force` is required: with `prefer` OpenSSH only consults the helper
@@ -71,11 +75,11 @@ mod tests {
     }
 
     #[test]
-    fn quotes_the_key_path_and_pins_the_identity() {
+    fn quotes_the_key_path_and_offers_the_identity() {
         let vars = ssh_env_vars("/home/u/.ssh/my key", None);
         assert_eq!(
             get(&vars, "GIT_SSH_COMMAND"),
-            Some("ssh -i \"/home/u/.ssh/my key\" -o IdentitiesOnly=yes")
+            Some("ssh -i \"/home/u/.ssh/my key\"")
         );
     }
 
@@ -113,7 +117,7 @@ mod tests {
         let vars = ssh_env_vars(r"C:\Users\u\.ssh\id_ed25519", None);
         assert_eq!(
             get(&vars, "GIT_SSH_COMMAND"),
-            Some("ssh -i C:/Users/u/.ssh/id_ed25519 -o IdentitiesOnly=yes")
+            Some("ssh -i C:/Users/u/.ssh/id_ed25519")
         );
     }
 
@@ -126,7 +130,7 @@ mod tests {
         let vars = ssh_env_vars("C:/Users/u/.ssh/id_rsa", None);
         assert_eq!(
             get(&vars, "GIT_SSH_COMMAND"),
-            Some("ssh -i C:/Users/u/.ssh/id_rsa -o IdentitiesOnly=yes")
+            Some("ssh -i C:/Users/u/.ssh/id_rsa")
         );
     }
 

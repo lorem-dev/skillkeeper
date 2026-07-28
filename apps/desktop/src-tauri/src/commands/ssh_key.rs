@@ -450,6 +450,15 @@ fn raise_prompt(
     state: KeyState,
     raise: impl FnOnce() -> Result<Arc<AtomicBool>, String>,
 ) -> Result<(), String> {
+    // A git operation over a key it cannot read carries on without one (the key
+    // is offered, not enforced), but a user pressing Unlock is asking about the
+    // key itself, and answering that with silence would be wrong -- so an
+    // unreadable file is reported here even though the gate lets git through.
+    match state {
+        KeyState::Missing => return Err(KEY_MISSING_ERROR.to_string()),
+        KeyState::NotAKey => return Err(NOT_A_KEY_ERROR.to_string()),
+        _ => {}
+    }
     // `true, true`: this IS the user asking about the SSH key, so the decision
     // is the ssh-transport, interactive one -- the same row of the table a
     // user-initiated clone over SSH would take.

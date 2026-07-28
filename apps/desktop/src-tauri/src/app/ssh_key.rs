@@ -83,12 +83,22 @@ pub enum Gate {
 /// | ssh       | `Unlocked`      | any         | `Proceed`                 |
 /// | ssh       | `Locked`        | `true`      | `Prompt`                  |
 /// | ssh       | `Locked`        | `false`     | `Fail(KEY_LOCKED_ERROR)`  |
-/// | ssh       | `Missing`       | any         | `Fail(KEY_MISSING_ERROR)` |
+/// | ssh       | `Missing`       | any         | `Proceed`                 |
 /// | ssh       | `NotAKey`       | any         | `Fail(NOT_A_KEY_ERROR)`   |
 ///
 /// A scheduled (non-interactive) operation never resolves to `Prompt`: it
 /// either proceeds or fails outright, so a background check can never pop a
 /// passphrase window with nobody there to answer it.
+///
+/// `Missing` proceeds rather than failing, because the key is offered and not
+/// enforced (see `ssh_env_vars`): with no key to offer, the right behaviour is
+/// the behaviour without this feature -- `ssh` picks an identity as it always
+/// did. Refusing instead breaks a repository for a reason that is often
+/// temporary: a key on a removable disk, a network share, or inside a WSL
+/// distribution whose virtual machine has shut itself down after a few idle
+/// minutes. The lease builder leaves the environment empty for this state, so
+/// nothing points `ssh` at a path that is not there, and the settings row still
+/// reports the key as missing.
 pub fn gate_for(transport_is_ssh: bool, state: KeyState, interactive: bool) -> Gate {
     if !transport_is_ssh {
         return Gate::Proceed;
@@ -97,7 +107,7 @@ pub fn gate_for(transport_is_ssh: bool, state: KeyState, interactive: bool) -> G
         KeyState::NotConfigured | KeyState::Unencrypted | KeyState::Unlocked => Gate::Proceed,
         KeyState::Locked if interactive => Gate::Prompt,
         KeyState::Locked => Gate::Fail(KEY_LOCKED_ERROR),
-        KeyState::Missing => Gate::Fail(KEY_MISSING_ERROR),
+        KeyState::Missing => Gate::Proceed,
         KeyState::NotAKey => Gate::Fail(NOT_A_KEY_ERROR),
     }
 }
@@ -540,11 +550,11 @@ mod tests {
             gate_for(true, KeyState::Locked, false),
             Gate::Fail("ssh.keyLocked")
         );
-        // A configured key that is gone is a configuration error, not a prompt.
-        assert_eq!(
-            gate_for(true, KeyState::Missing, true),
-            Gate::Fail("ssh.keyMissing")
-        );
+        // A key that cannot be read right now (a network share, a stopped WSL
+        // distribution) must not break the repository: with nothing to offer,
+        // ssh chooses an identity exactly as it would without this feature.
+        assert_eq!(gate_for(true, KeyState::Missing, true), Gate::Proceed);
+        assert_eq!(gate_for(true, KeyState::Missing, false), Gate::Proceed);
         assert_eq!(
             gate_for(true, KeyState::NotAKey, true),
             Gate::Fail("ssh.notAPrivateKey")
