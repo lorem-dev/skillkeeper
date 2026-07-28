@@ -669,6 +669,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        repositories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#projects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        projects
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1081,6 +1114,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        repositories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#projects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        projects
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1144,26 +1210,31 @@ Both front ends expose a per-section validity indicator and can open <code>confi
 in your editor.</p>
 <h2 id="sections">Sections<a class="headerlink" href="#sections" title="Permanent link">&para;</a></h2>
 <h3 id="general">general<a class="headerlink" href="#general" title="Permanent link">&para;</a></h3>
-<p>Language, theme (placeholder for future use), and default editor command.</p>
+<p>Display language, theme, animation speed, and the editor command used by
+"open in editor".</p>
 <div class="highlight"><pre><span></span><code><span class="nt">general</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">en</span><span class="w">          </span><span class="c1"># en | de | ru</span>
-<span class="w">  </span><span class="nt">theme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span><span class="w">        </span><span class="c1"># placeholder; not functional in v1</span>
-<span class="w">  </span><span class="nt">editor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">code</span><span class="w">          </span><span class="c1"># default editor command for &quot;open in IDE&quot;</span>
+<span class="w">  </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">en</span><span class="w">          </span><span class="c1"># see the list below</span>
+<span class="w">  </span><span class="nt">theme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system</span><span class="w">         </span><span class="c1"># system | light | dark</span>
+<span class="w">  </span><span class="nt">animations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">normal</span><span class="w">    </span><span class="c1"># fast | normal | off</span>
+<span class="w">  </span><span class="nt">defaultEditor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">code</span><span class="w">   </span><span class="c1"># editor command; omitted means the platform default</span>
 </code></pre></div>
-<p>Default: language <code>en</code>, editor <code>code</code>.</p>
+<p>Default: language <code>en</code>, theme <code>system</code>, animations <code>normal</code>, no
+<code>defaultEditor</code>. For the list of languages see
+<a href="../localization/">Localization</a>.</p>
 <h3 id="updates">updates<a class="headerlink" href="#updates" title="Permanent link">&para;</a></h3>
-<p>Controls when SkillKeeper checks for updates.</p>
+<p>Controls when SkillKeeper checks for skill and repository updates.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">updates</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">manual</span><span class="w">          </span><span class="c1"># manual | on-startup | scheduled</span>
-<span class="w">  </span><span class="nt">intervalHours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24</span><span class="w">     </span><span class="c1"># used when mode is &quot;scheduled&quot;</span>
-<span class="w">  </span><span class="nt">checkOnStartup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"> </span><span class="c1"># extra check on app/CLI start regardless of mode</span>
+<span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">on-startup</span><span class="w">      </span><span class="c1"># manual | on-startup | scheduled</span>
+<span class="w">  </span><span class="nt">intervalMinutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">720</span><span class="w">  </span><span class="c1"># used when mode is &quot;scheduled&quot;; 1 minute .. 23 hours</span>
+<span class="w">  </span><span class="nt">checkOnStartup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"> </span><span class="c1"># for &quot;scheduled&quot; mode: also check at startup</span>
 </code></pre></div>
-<p>Default: <code>mode: manual</code>, <code>intervalHours: 24</code>, <code>checkOnStartup: false</code>.</p>
+<p>Default: <code>mode: on-startup</code>, <code>intervalMinutes: 720</code> (12 hours),
+<code>checkOnStartup: false</code>.</p>
 <ul>
-<li><code>manual</code> - updates are only checked when you run <code>skillkeeper check</code>.</li>
+<li><code>manual</code> - updates are only checked when you ask for them.</li>
 <li><code>on-startup</code> - a check runs each time the CLI or desktop app starts.</li>
-<li><code>scheduled</code> - a check runs every <code>intervalHours</code> hours in the background
-  (desktop app only).</li>
+<li><code>scheduled</code> - a check runs every <code>intervalMinutes</code> minutes in the background
+  (desktop app only), plus one at startup when <code>checkOnStartup</code> is true.</li>
 </ul>
 <h3 id="agents">agents<a class="headerlink" href="#agents" title="Permanent link">&para;</a></h3>
 <p>Enabled agent kinds and per-agent overrides.</p>
@@ -1186,27 +1257,47 @@ install, in addition to files declared executable in the skill manifest.</p>
 </code></pre></div>
 <p>Default: empty list (only manifest-declared executables are marked <code>+x</code>).</p>
 <h3 id="security">security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
-<p>Hook-consent policy. <code>always-ask</code> is the default and recommended setting.</p>
+<p>Hook-consent policy.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">security</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">hookConsent</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always-ask</span><span class="w">   </span><span class="c1"># always-ask | per-repository | per-skill</span>
+<span class="w">  </span><span class="nt">hookConsentPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always-ask</span><span class="w">   </span><span class="c1"># always-ask</span>
 </code></pre></div>
 <p><code>always-ask</code> means every hook install or update prompts for explicit
-confirmation, regardless of the source repository. Changing this to a less
-strict policy is possible but not recommended.</p>
+confirmation, regardless of the source repository. It is currently the only
+policy: hooks run code on your machine, so consent is never implicit.</p>
 <h3 id="notifications">notifications<a class="headerlink" href="#notifications" title="Permanent link">&para;</a></h3>
 <p>Enable or disable system notifications (desktop app).</p>
 <div class="highlight"><pre><span></span><code><span class="nt">notifications</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 <p>Default: <code>true</code>.</p>
+<h3 id="repositories">repositories<a class="headerlink" href="#repositories" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">repositories</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">gitPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git</span><span class="w">                            </span><span class="c1"># git executable to run</span>
+<span class="w">  </span><span class="nt">sshKeyPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/home/you/.ssh/id_ed25519</span><span class="w">   </span><span class="c1"># optional private key for SSH remotes</span>
+</code></pre></div>
+<p>Default: <code>gitPath: git</code>, no <code>sshKeyPath</code> (the system ssh setup decides). The
+passphrase is never stored in the config; see
+<a href="../repositories/">Using a dedicated SSH key</a>.</p>
+<h3 id="projects">projects<a class="headerlink" href="#projects" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">projects</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">checkIntervalMinutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w">   </span><span class="c1"># how often tracked folders are re-checked; 1 minute .. 23 hours</span>
+</code></pre></div>
+<p>Default: <code>checkIntervalMinutes: 1</code>.</p>
+<h3 id="mcp">mcp<a class="headerlink" href="#mcp" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">mcp</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">servers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">   </span><span class="c1"># manually-defined presets; format in MCP servers</span>
+</code></pre></div>
+<p>Default: empty list. See <a href="../mcp/">MCP servers</a>.</p>
 <h2 id="example-configyaml">Example config.yaml<a class="headerlink" href="#example-configyaml" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="nt">general</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">en</span>
-<span class="w">  </span><span class="nt">editor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">code</span>
+<span class="w">  </span><span class="nt">theme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system</span>
+<span class="w">  </span><span class="nt">animations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">normal</span>
+<span class="w">  </span><span class="nt">defaultEditor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">code</span>
 
 <span class="nt">updates</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">manual</span>
-<span class="w">  </span><span class="nt">intervalHours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24</span>
+<span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">on-startup</span>
+<span class="w">  </span><span class="nt">intervalMinutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">720</span>
 <span class="w">  </span><span class="nt">checkOnStartup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 
 <span class="nt">agents</span><span class="p">:</span>
@@ -1221,10 +1312,19 @@ strict policy is possible but not recommended.</p>
 <span class="w">  </span><span class="nt">globs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
 
 <span class="nt">security</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">hookConsent</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always-ask</span>
+<span class="w">  </span><span class="nt">hookConsentPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always-ask</span>
 
 <span class="nt">notifications</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">repositories</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">gitPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git</span>
+
+<span class="nt">projects</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">checkIntervalMinutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="nt">mcp</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">servers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
 </code></pre></div>
 
 
