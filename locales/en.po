@@ -1079,6 +1079,75 @@ msgstr "Git"
 msgid "settings.gitDescription"
 msgstr "Path to the git executable"
 
+msgid "settings.ssh.key"
+msgstr "SSH key"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Private key used for SSH remotes. Without one, the system ssh setup is used."
+
+msgid "settings.ssh.notSet"
+msgstr "Not set"
+
+msgid "settings.ssh.choose"
+msgstr "Choose..."
+
+msgid "settings.ssh.clear"
+msgstr "Clear"
+
+msgid "settings.ssh.unlock"
+msgstr "Unlock"
+
+msgid "settings.ssh.forget"
+msgstr "Forget passphrase"
+
+msgid "settings.ssh.state.missing"
+msgstr "The chosen key file no longer exists."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "That file is not a private key."
+
+msgid "settings.ssh.state.plain"
+msgstr "Ready (no passphrase)."
+
+msgid "settings.ssh.state.locked"
+msgstr "Locked -- the passphrase is asked when it is first needed."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Unlocked for this session."
+
+msgid "ssh.unlock.title"
+msgstr "Unlock SSH key"
+
+msgid "ssh.unlock.hint"
+msgstr "Enter the passphrase for {path}. It is kept only until SkillKeeper quits."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Passphrase"
+
+msgid "ssh.unlock.submit"
+msgstr "Unlock"
+
+msgid "ssh.unlock.cancel"
+msgstr "Cancel"
+
+msgid "ssh.wrongPassphrase"
+msgstr "Wrong passphrase."
+
+msgid "ssh.keyLocked"
+msgstr "The SSH key is locked. Unlock it to continue."
+
+msgid "ssh.keyMissing"
+msgstr "The configured SSH key file was not found."
+
+msgid "ssh.notAPrivateKey"
+msgstr "The configured SSH key file is not a private key."
+
+msgid "ssh.hostKeyPrompt"
+msgstr "The host key is not known yet. Confirm it in the terminal once."
+
+msgid "ssh.askpassUnavailable"
+msgstr "The passphrase helper could not be started; ssh will ask in the terminal."
+
 msgid "settings.updates.mode"
 msgstr "Update checks"
 

@@ -1,0 +1,33 @@
+// SSH key settings row. Co-located; tokens only.
+
+.sk-ssh-key {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2);
+}
+
+.sk-ssh-key__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+}
+
+// Bounded and ellipsized so a long path can never widen the form; the full
+// path is still available via the element's `title`.
+.sk-ssh-key__path {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: var(--sk-color-label);
+}
+
+.sk-ssh-key__state {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}

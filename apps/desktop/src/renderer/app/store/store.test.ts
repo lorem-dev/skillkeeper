@@ -443,6 +443,14 @@ describe('useSkillkeeperStore', () => {
         onTerminalData: () => () => {},
         onTerminalExit: () => () => {},
         onTerminalRequestOpen: () => () => {},
+        sshKeyState: async () => ({ state: 'notConfigured' as const }),
+        selectSshKey: async () => ({ state: 'notConfigured' as const }),
+        clearSshKey: async () => ({ state: 'notConfigured' as const }),
+        unlockSshKey: async () => {},
+        forgetSshKey: async () => {},
+        cancelSshKeyUnlock: async () => {},
+        pickSshKeyFile: async () => null,
+        onSshUnlockRequired: () => () => {},
         platform: 'darwin',
         minimizeWindow: () => {},
         toggleMaximizeWindow: () => {},
@@ -520,6 +528,14 @@ describe('useSkillkeeperStore', () => {
         onTerminalData: () => () => {},
         onTerminalExit: () => () => {},
         onTerminalRequestOpen: () => () => {},
+        sshKeyState: async () => ({ state: 'notConfigured' as const }),
+        selectSshKey: async () => ({ state: 'notConfigured' as const }),
+        clearSshKey: async () => ({ state: 'notConfigured' as const }),
+        unlockSshKey: async () => {},
+        forgetSshKey: async () => {},
+        cancelSshKeyUnlock: async () => {},
+        pickSshKeyFile: async () => null,
+        onSshUnlockRequired: () => () => {},
         platform: 'darwin',
         minimizeWindow: () => {},
         toggleMaximizeWindow: () => {},
@@ -639,6 +655,21 @@ describe('useSkillkeeperStore', () => {
       expect(useSkillkeeperStore.getState().notifications).toHaveLength(0);
       expect(useSkillkeeperStore.getState().toasts).toHaveLength(1);
       expect(useSkillkeeperStore.getState().repoStatus['repo-1']?.error).toBe('boom');
+    });
+
+    it('showRepoError translates a known ssh.* code but re-shows raw git text verbatim', () => {
+      const s = useSkillkeeperStore.getState();
+      s.notify('ssh.keyLocked', 'error', 'repo-1');
+      s.notify('fatal: could not read from remote repository', 'error', 'repo-2');
+      useSkillkeeperStore.getState().showRepoError('repo-1');
+      useSkillkeeperStore.getState().showRepoError('repo-2');
+      const toasts = useSkillkeeperStore.getState().toasts;
+      // Two from `notify` plus two re-shown by `showRepoError`.
+      expect(toasts).toHaveLength(4);
+      expect(toasts[2]?.key).toBe('ssh.keyLocked');
+      expect(toasts[2]?.text).toBeUndefined();
+      expect(toasts[3]?.text).toBe('fatal: could not read from remote repository');
+      expect(toasts[3]?.key).toBeUndefined();
     });
   });
 

@@ -42,6 +42,7 @@ import { ensureCatalog, resolveLang } from '@/systems/i18n';
 import { ONBOARDING_ORDER } from '@/app/config/onboarding';
 import { nextStepId, prevStepId } from '@/systems/onboarding';
 import type { StepId } from '@/systems/onboarding';
+import { sshErrorKey } from '@/features/sshKey';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
@@ -633,6 +634,18 @@ function makeNotificationEntry(
 }
 
 /**
+ * Repository errors are raw git text today, with one exception: a refusal from
+ * the SSH gate (`require_unlocked` in the Rust backend) is one of the stable
+ * `ssh.*` codes, not git output. Route through {@link sshErrorKey} so a known
+ * code still translates while everything else (real git text) passes through
+ * untouched, exactly as it always has.
+ */
+function repoErrorMessage(error: string): NotificationMessage {
+  const key = sshErrorKey(error);
+  return key !== null ? { key } : error;
+}
+
+/**
  * Cap the retained log so a long-running session (background update checks,
  * per-op entries) cannot grow it without bound -- the LogsPage renders one DOM
  * node per entry. Keeps the most recent.
@@ -826,11 +839,15 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   showRepoError(repoId) {
     const message = get().repoStatus[repoId]?.error;
     if (message === undefined) return;
-    // Repo errors are raw git text (untranslatable), stored as `text`.
+    // Repo errors are raw git text, with the same ssh.* exception `notify`
+    // handles at the call site: re-derive it here too, since `repoStatus`
+    // only ever stores the plain string (the key, with `vars` already
+    // dropped -- these codes never carry any).
+    const key = sshErrorKey(message);
     const entry: NotificationEntry = {
       id: crypto.randomUUID(),
       level: 'error',
-      text: message,
+      ...(key !== null ? { key } : { text: message }),
       repoId,
       at: new Date().toISOString(),
     };
@@ -962,7 +979,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         set((s) => ({
           repoStatus: { ...s.repoStatus, [repo.id]: { phase: 'idle', hasUpdate: false } },
         }));
-        get().notify(cloned.error, 'error', repo.id);
+        get().notify(repoErrorMessage(cloned.error), 'error', repo.id);
         return;
       }
       // Populate the branch + skill-count info so the card's badges appear right
@@ -1084,7 +1101,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           await get().reconcileMcp();
           setTaskStatus('done');
         } else {
-          get().notify(res.error, 'error', id);
+          get().notify(repoErrorMessage(res.error), 'error', id);
           set((s) => idle(s, {}));
           setTaskStatus('error');
         }

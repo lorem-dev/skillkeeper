@@ -176,11 +176,17 @@ export function App() {
       const store = useSkillkeeperStore.getState();
       store.openTerminal();
       if (sshAgentWarned.current) return;
-      void bridgeClient.sshAgentAvailable().then((available) => {
-        if (available || sshAgentWarned.current) return;
-        sshAgentWarned.current = true;
-        store.notify({ key: 'ssh.noAgent' }, 'info', undefined, SSH_AGENT_DOCS);
-      });
+      // A held (unlocked) or unencrypted key already answers passphrase
+      // prompts on the app's behalf, so the agent advice would be wrong --
+      // check the key's state alongside the agent before deciding to warn.
+      void Promise.all([bridgeClient.sshAgentAvailable(), bridgeClient.sshKeyState()]).then(
+        ([available, keyState]) => {
+          if (available || sshAgentWarned.current) return;
+          if (keyState.state === 'unlocked' || keyState.state === 'unencrypted') return;
+          sshAgentWarned.current = true;
+          store.notify({ key: 'ssh.noAgent' }, 'info', undefined, SSH_AGENT_DOCS);
+        },
+      );
     });
     return off;
   }, []);

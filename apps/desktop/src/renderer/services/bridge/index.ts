@@ -46,4 +46,5 @@ export type {
   McpTransport,
   McpIdentity,
   McpPresetOrigin,
+  SshKeyDto,
 } from './types';

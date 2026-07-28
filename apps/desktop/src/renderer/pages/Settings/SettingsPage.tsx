@@ -5,6 +5,7 @@ import { useTranslator } from '@/systems/i18n';
 import { useAnimationsEnabled, useAnimationScale, SK_DURATION, SK_EASE } from '@/shared/lib';
 import { useOnboardingActions } from '@/systems/onboarding';
 import { LanguageThemeFields } from '@/systems/settings';
+import { SshKeyField } from '@/features/sshKey';
 import type { UpdatesConfig } from '@/services/bridge';
 import {
   Page,
@@ -114,6 +115,7 @@ export function SettingsPage() {
             description={t('settings.gitDescription')}
             onCommit={(gitPath) => void updateConfig({ repositories: { gitPath } })}
           />
+          <SshKeyField />
           <FormRow label={t('settings.updates.mode')}>
             <SegmentedControl
               label={t('settings.updates.mode')}

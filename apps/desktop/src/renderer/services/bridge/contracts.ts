@@ -249,3 +249,21 @@ export interface TerminalStatus {
   /** The last shell/git launch failure; absent while the terminal is healthy. */
   readonly error?: string;
 }
+
+// -- ssh key -------------------------------------------------------------
+
+/**
+ * The configured SSH key's path and usability, as reported by the backend's
+ * in-memory key store. Not a ts-rs type: `commands/ssh_key.rs` returns a plain
+ * `Serialize` DTO, same as `RepoResult` and friends.
+ */
+export interface SshKeyDto {
+  readonly path?: string;
+  readonly state:
+    | 'notConfigured'
+    | 'missing'
+    | 'notAKey'
+    | 'unencrypted'
+    | 'locked'
+    | 'unlocked';
+}

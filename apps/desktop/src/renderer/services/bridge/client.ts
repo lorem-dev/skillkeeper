@@ -28,6 +28,7 @@ import type {
   McpUpdatePreflightResult,
   OnboardingState,
   TerminalStatus,
+  SshKeyDto,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the Rust backend. */
@@ -104,6 +105,26 @@ export interface BridgeClient {
   onTerminalData(callback: (chunk: string) => void): () => void;
   onTerminalExit(callback: () => void): () => void;
   onTerminalRequestOpen(callback: () => void): () => void;
+  /** Read the configured SSH key's path and usability. */
+  sshKeyState(): Promise<SshKeyDto>;
+  /** Choose a new SSH key file (persists the path). */
+  selectSshKey(path: string): Promise<SshKeyDto>;
+  /** Stop using an SSH key (clears the path and any held passphrase). */
+  clearSshKey(): Promise<SshKeyDto>;
+  /** Verify the passphrase for the configured key and hold it for the session.
+   *  Rejects with a stable `ssh.*` code on failure. */
+  unlockSshKey(passphrase: string): Promise<void>;
+  /** Forget the held passphrase without unchoosing the key (relocks it). */
+  forgetSshKey(): Promise<void>;
+  /** Cancel an in-progress unlock prompt, releasing any operation waiting on it. */
+  cancelSshKeyUnlock(): Promise<void>;
+  /** Native file picker for choosing a private key file. */
+  pickSshKeyFile(): Promise<string | null>;
+  /** Subscribe to the backend requesting the unlock prompt for `path`. Returns
+   *  an unsubscribe fn. Fires only while a further operation is waiting -- the
+   *  first paint of a freshly opened unlock window must call `sshKeyState()`
+   *  instead, since the webview is not listening yet when this first fires. */
+  onSshUnlockRequired(callback: (path: string) => void): () => void;
   /** The host platform (`process.platform`), for choosing the window-control chrome. */
   readonly platform: string;
   /** Minimize the window (frameless title bar). */
@@ -206,6 +227,30 @@ export const bridgeClient: BridgeClient = {
   onTerminalData: (callback) => subscribe<string>('terminal:data', callback),
   onTerminalExit: (callback) => subscribe<void>('terminal:exit', () => callback()),
   onTerminalRequestOpen: (callback) => subscribe<void>('terminal:requestOpen', () => callback()),
+  sshKeyState: () => invoke<SshKeyDto>('ssh_key_state'),
+  selectSshKey: (path) => invoke<SshKeyDto>('ssh_key_select', { path }),
+  clearSshKey: () => invoke<SshKeyDto>('ssh_key_clear'),
+  unlockSshKey: (passphrase) => invoke<void>('ssh_key_unlock', { passphrase }),
+  forgetSshKey: () => invoke<void>('ssh_key_forget'),
+  cancelSshKeyUnlock: () => invoke<void>('ssh_key_cancel_unlock'),
+  pickSshKeyFile: () => invoke<string | null>('dialog_select_ssh_key'),
+  onSshUnlockRequired: (callback) => {
+    // Same shape as onTerminalRequestOpen: start the listen(), keep the
+    // promised unlisten, and return a synchronous off() that works even if
+    // called before listen() resolves.
+    let off: (() => void) | null = null;
+    let cancelled = false;
+    void listen<{ path: string }>('ssh:unlockRequired', (e) => callback(e.payload.path)).then(
+      (un) => {
+        if (cancelled) un();
+        else off = un;
+      },
+    );
+    return () => {
+      cancelled = true;
+      off?.();
+    };
+  },
   // Resolved once by `init()` at startup and cached; read synchronously here so
   // the public interface stays sync (the App reads it during the first render).
   get platform() {
