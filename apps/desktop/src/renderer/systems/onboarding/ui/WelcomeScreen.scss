@@ -38,12 +38,20 @@
   text-align: center;
 }
 
-// Language/theme as a vertical, labelled list, exactly like the Settings page:
-// labels left-aligned (reset the block's centering, which would otherwise
+// The settings list as a vertical, labelled column, exactly like the Settings
+// page: labels left-aligned (reset the block's centering, which would otherwise
 // center the row labels), controls at the trailing edge.
+//
+// Wide enough for the widest row rather than for the narrowest: at 420px the SSH
+// key row had no space for its label, its description and a path beside two
+// buttons, so the label wrapped one word per line and the description ran down
+// the screen. Its label, description and state line are now short enough in
+// every language to lay out in one line each well below the 700px this used to
+// need, so the list stays as narrow as those rows allow -- capped by the
+// viewport so a small window still fits.
 .sk-onboarding-welcome__form {
   width: 100%;
-  max-width: 420px;
+  max-width: min(560px, 100%);
   text-align: left;
 }
 
@@ -59,4 +67,22 @@
   align-items: center;
   gap: var(--sk-space-2);
   padding: var(--sk-space-5) var(--sk-space-8);
+}
+
+// One line under the form, saying the choices are not final. Muted so it reads
+// as a note rather than as another control.
+.sk-onboarding-welcome__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+  text-align: center;
+}
+
+// Skip beside Continue: the tour can be left from its first screen, not only
+// from the steps that follow it.
+.sk-onboarding-welcome__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sk-space-3);
 }

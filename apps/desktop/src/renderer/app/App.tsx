@@ -27,6 +27,7 @@ import { TasksPage } from '@/systems/tasks';
 import { AboutDialog, AboutIdentity, AboutFooter } from '@/features/about';
 import { OnboardingDemoTree } from '@/features/onboardingDemo';
 import { OnboardingOverlay, useOnboardingActive, useOnboardingStep } from '@/systems/onboarding';
+import { SshKeyField } from '@/features/sshKey';
 import { STEP_VIEW } from '@/app/config/onboarding';
 import './App.scss';
 
@@ -406,6 +407,7 @@ export function App() {
         aboutIdentity={<AboutIdentity showTagline={false} />}
         aboutFooter={<AboutFooter />}
         renderDemoTree={(variant) => <OnboardingDemoTree variant={variant} />}
+        sshKeyField={<SshKeyField />}
       />
     </div>
     </AnimationProvider>

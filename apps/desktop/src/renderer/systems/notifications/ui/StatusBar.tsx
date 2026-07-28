@@ -1,6 +1,6 @@
 /**
- * Bottom status bar. Holds a tasks button, a terminal button, and a bell
- * button. The tasks badge counts active (queued/running) sync tasks. The bell
+ * Bottom status bar. Shows the app version on the leading edge, and holds a
+ * tasks button, a terminal button, and a bell button on the trailing one. The tasks badge counts active (queued/running) sync tasks. The bell
  * badge shows errors in red, or -- only when there are no errors at all --
  * warnings in orange; `info` entries are never counted. Clicking the tasks
  * button opens the full-screen sync task list, the bell opens the full-screen
@@ -9,11 +9,38 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
+import { bridgeClient } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon } from '@/shared/ui';
 import { cx } from '@/shared/lib';
 import { resolveBellBadge } from '../bellBadge';
 import './StatusBar.scss';
+
+/**
+ * The running app's version, fetched once over the bridge.
+ *
+ * Read here rather than taken from the About feature, which owns its own copy:
+ * this is chrome, and a system must not import a feature. Empty until the round
+ * trip lands, which renders nothing rather than a placeholder.
+ */
+function useAppVersion(): string {
+  const [version, setVersion] = useState('');
+  useEffect(() => {
+    let cancelled = false;
+    void bridgeClient.getAppVersion().then(
+      (value) => {
+        if (!cancelled) setVersion(value);
+      },
+      // A version nobody can read is not worth a notification: the bar simply
+      // stays without one.
+      () => undefined,
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return version;
+}
 
 /**
  * A value that updates at most once per `ms`, on the trailing edge. A change
@@ -90,6 +117,7 @@ export function StatusBar() {
     if (tasksOpen) closeTasks();
     else openTasks();
   }, 500);
+  const version = useAppVersion();
   const t = useTranslator();
 
   // Errors outrank warnings; see resolveBellBadge for the rule and its tests.
@@ -97,6 +125,11 @@ export function StatusBar() {
   const label = t(badge.labelKey, { count: badge.labelCount });
   return (
     <footer className="sk-statusbar">
+      {version !== '' && (
+        <span className="sk-statusbar__version" title={t('about.version', { version })}>
+          {version}
+        </span>
+      )}
       <Button
         variant="plain"
         className={cx(

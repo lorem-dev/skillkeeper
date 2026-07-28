@@ -15,18 +15,22 @@ export interface WelcomeScreenProps {
   readonly aboutIdentity: ReactNode;
   /** The About footer (links + copyright), pinned to the bottom of the layer. */
   readonly aboutFooter: ReactNode;
+  /** The Settings row for choosing the SSH key, injected by the caller for the
+   *  same reason as the About blocks: this system never imports `features/`. */
+  readonly sshKeyField: ReactNode;
 }
 
 /**
  * Onboarding step 1: an opaque full-screen layer. The identity block and a
- * compact, labelled language/theme list sit centered; the About footer is
- * pinned to the bottom. The controls write straight to config, same as
- * `pages/Settings/SettingsPage.tsx`.
+ * compact, labelled list of the settings worth having before anything else
+ * (language, theme, and the SSH key private repositories need) sit centered;
+ * the About footer is pinned to the bottom. The controls write straight to
+ * config, same as `pages/Settings/SettingsPage.tsx`, and a hint says so.
  */
-export function WelcomeScreen({ aboutIdentity, aboutFooter }: WelcomeScreenProps) {
+export function WelcomeScreen({ aboutIdentity, aboutFooter, sshKeyField }: WelcomeScreenProps) {
   const t = useTranslator();
   const config = useSkillkeeperStore((s) => s.config);
-  const { next } = useOnboardingActions();
+  const { next, skip } = useOnboardingActions();
   const animate = useAnimationsEnabled();
   const scale = useAnimationScale();
 
@@ -46,10 +50,19 @@ export function WelcomeScreen({ aboutIdentity, aboutFooter }: WelcomeScreenProps
         {aboutIdentity}
         <FormSection className="sk-onboarding-welcome__form">
           <LanguageThemeFields languageClassName="sk-onboarding-welcome__language" />
+          {sshKeyField}
         </FormSection>
-        <Button variant="primary" glass onClick={next}>
-          {t('onboarding.next')}
-        </Button>
+        <p className="sk-onboarding-welcome__hint">{t('onboarding.settingsLater')}</p>
+        <div className="sk-onboarding-welcome__actions">
+          {/* Ends the tour by jumping to its last step, so the closing screen
+              still shows rather than the app appearing without explanation. */}
+          <Button variant="secondary" glass onClick={skip}>
+            {t('onboarding.skip')}
+          </Button>
+          <Button variant="primary" glass onClick={next}>
+            {t('onboarding.next')}
+          </Button>
+        </div>
       </div>
       <div className="sk-onboarding-welcome__footer">{aboutFooter}</div>
       </motion.div>

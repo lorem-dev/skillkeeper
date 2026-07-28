@@ -61,7 +61,13 @@
   }
 }
 
+// Sits a little further below the link badges than the container's own gap puts
+// it: the badges are controls and the copyright is a caption, and at the plain
+// gap the line read as a fourth item in that row. The margin adds to whatever
+// gap the host column uses, so it reads the same in the About dialog and in the
+// onboarding footer.
 .sk-about__copyright {
+  margin-top: var(--sk-space-2);
   font-size: 12px;
   color: var(--sk-color-label-3);
 }

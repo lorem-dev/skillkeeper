@@ -31,11 +31,24 @@ const ABOUT_FOOTER = <div>(c) 2026 Lorem Dev</div>;
 // store so the language/theme controls render without a Tauri round trip. Theme
 // preference is left at "system" so the preview's own Theme toolbar toggle (see
 // .storybook/preview.tsx) drives light/dark -- no separate Dark story needed.
+/** Stand-in for the Settings row, which reaches the backend for its state. */
+const SSH_KEY_FIELD = (
+  <div style={{ fontSize: 12, opacity: 0.6 }}>SSH key: not set</div>
+);
+
 export const Default: Story = {
   render: () => {
     seedStore(() => {
       useSkillkeeperStore.setState({ config: BASE_CONFIG });
     });
-    return <WelcomeScreen aboutIdentity={ABOUT_IDENTITY} aboutFooter={ABOUT_FOOTER} />;
+    return (
+      <WelcomeScreen
+        aboutIdentity={ABOUT_IDENTITY}
+        aboutFooter={ABOUT_FOOTER}
+        // A plain stand-in: the real row talks to the backend, which Storybook
+        // runs without.
+        sshKeyField={SSH_KEY_FIELD}
+      />
+    );
   },
 };

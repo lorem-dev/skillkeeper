@@ -1216,6 +1216,9 @@ msgstr "Hook installation requires explicit consent (--allow-hooks). Skill body 
 msgid "skills.count"
 msgstr "{n} skill(s) installed"
 
+msgid "onboarding.settingsLater"
+msgstr "All of this can be changed later in Settings."
+
 msgid "onboarding.next"
 msgstr "Next"
 
