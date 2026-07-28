@@ -57,7 +57,9 @@ default branch is."
 
 SkillKeeper supports SSH transport for private GitHub and Bitbucket
 repositories. Key material and passphrases are handled by the user's
-ssh-agent; SkillKeeper never reads private keys. In the desktop app, a
+ssh-agent, unless a key is chosen in Settings - see
+[Using a dedicated SSH key](#using-a-dedicated-ssh-key) for what the app
+reads and holds in that case. In the desktop app, a
 repository's clone and sync run inside the app's own embedded terminal
 session rather than silently in the background - so if the ssh-agent needs a
 passphrase, the prompt surfaces there, and the app can open the terminal
@@ -85,8 +87,10 @@ authenticate without asking for the passphrase again. SkillKeeper works
 without one -- the desktop app opens its terminal and you type the passphrase
 each time -- but with an agent, clone and sync run without interruption.
 
-SkillKeeper never reads or stores your key or passphrase. It reuses whatever
-agent your system already provides.
+With no key chosen in Settings, SkillKeeper reads neither your key nor your
+passphrase: it reuses whatever agent your system already provides. With one
+chosen, it reads that key file to verify the passphrase you give it - see
+[Using a dedicated SSH key](#using-a-dedicated-ssh-key).
 
 ### macOS
 
@@ -191,8 +195,8 @@ if a host does not accept it, `ssh` falls back to your own `~/.ssh/config`
 identities and your agent, so a repository on a host this key has no access to
 keeps working. With no key chosen, nothing changes.
 
-If the key has a passphrase, the app asks for it in a separate window and
-verifies it immediately. It is held in memory for that run of the app only:
+If the key has a passphrase, the app asks for it in a separate window, which
+blocks the main window while it is up, and verifies it immediately. It is held in memory for that run of the app only:
 never written to the config or to disk, and asked again after a restart, the
 first time an operation actually needs it. A scheduled update check never
 blocks on it -- it raises the same window and resumes once the key is unlocked.
