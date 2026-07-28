@@ -86,11 +86,24 @@
   min-width: 0;
 }
 
-// Tooltip wrapper around the connection line: shrink to the (truncated) text
-// width, capped at the card width -- the hover/tooltip trigger covers only the
-// text, not the empty space beside a short url/command.
-.sk-mcp-card__conn-tip {
+// Tooltip wrapper around the connection line: shrink to the text width, capped
+// at the card width -- the hover/tooltip trigger covers only the text, not the
+// empty space beside a short url/command.
+//
+// The trigger span inside the tooltip is an inline-flex box that sizes to its
+// content, so without a cap of its own it hands the full url/command width
+// straight through and the text runs past the card. Capping it here (rather than
+// in the shared Tooltip) keeps every other trigger untouched.
+.sk-mcp-card__conn-tip,
+.sk-mcp-card__conn-tip > .sk-tooltip__trigger {
   align-self: flex-start;
+  max-width: 100%;
+  min-width: 0;
+}
+
+// The trigger's own child (the url button, or the button wrapping the command)
+// must be free to shrink too, or the cap above has nothing to act on.
+.sk-mcp-card__conn-tip > .sk-tooltip__trigger > * {
   max-width: 100%;
   min-width: 0;
 }
@@ -112,9 +125,17 @@
   border: 0;
   background: none;
   cursor: pointer;
-  // Lets the badge inside shrink and ellipsize instead of forcing the row wider
-  // than the card: a repository name can be arbitrarily long.
+  // The repository name is the one badge that can be arbitrarily long, so it is
+  // also the only one allowed to shrink and lose its tail. The short badges
+  // beside it keep their `flex: none` and stay whole.
   min-width: 0;
+}
+
+.sk-mcp-card__repo-badge > .sk-badge {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 // Actions (Edit / Install) stay hidden until the card is hovered (or a control
