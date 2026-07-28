@@ -33,6 +33,11 @@ vi.mock('@/services/bridge', () => ({
     syncRepository: vi.fn(),
     repoHasUpdate: vi.fn(),
     promptSshUnlock: vi.fn(),
+    addRepository: vi.fn(),
+    cloneRepository: vi.fn(),
+    listAvailableSkills: vi.fn(),
+    reconcileSkills: vi.fn(),
+    reconcileMcp: vi.fn(),
     describeRepository: vi.fn(),
     setOnboarding: vi.fn(),
   },
@@ -788,6 +793,25 @@ describe('useSkillkeeperStore', () => {
       const { tasks, notifications } = useSkillkeeperStore.getState();
       expect(tasks[0]!.status).toBe('error');
       expect(notifications).toHaveLength(0);
+    });
+
+    it('refreshes the skill catalog after a repository is added', async () => {
+      // The card's own skill count comes from describeRepository, so a stale
+      // catalog is invisible on the Repositories page and shows up as an empty
+      // Skills page for a repository that was just cloned.
+      const added = { ...mockRepo, id: 'repo-new' };
+      vi.mocked(bridgeClient.addRepository).mockResolvedValue({ ok: true, repository: added } as RepoResult);
+      vi.mocked(bridgeClient.cloneRepository).mockResolvedValue({ ok: true, repository: added } as RepoResult);
+      vi.mocked(bridgeClient.describeRepository).mockResolvedValue({ branch: 'main', skillCount: 9 });
+      vi.mocked(bridgeClient.listAvailableSkills).mockResolvedValue({ skills: [], warnings: [] });
+      vi.mocked(bridgeClient.reconcileSkills).mockResolvedValue([]);
+      vi.mocked(bridgeClient.reconcileMcp).mockResolvedValue([]);
+
+      await useSkillkeeperStore.getState().addRepository(added.url, added.name);
+
+      expect(bridgeClient.listAvailableSkills).toHaveBeenCalled();
+      expect(bridgeClient.reconcileSkills).toHaveBeenCalled();
+      expect(bridgeClient.reconcileMcp).toHaveBeenCalled();
     });
 
     it('clearFinishedTasks removes done/error tasks but keeps queued/running', () => {

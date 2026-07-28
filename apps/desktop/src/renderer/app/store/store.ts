@@ -1047,6 +1047,14 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         repoInfo: { ...s.repoInfo, [repo.id]: info },
         repoStatus: { ...s.repoStatus, [repo.id]: { phase: 'idle', hasUpdate: false } },
       }));
+      // A fresh clone brings its skills (and MCP presets) with it, so refresh
+      // the catalog and reconcile installs exactly as a sync does. Without this
+      // the card shows the new skill count while the Skills page still holds
+      // the catalog from before the repository existed, which reads as "the
+      // repository was added but its skills went missing".
+      await get().refreshAvailableSkills();
+      await get().reconcileSkills();
+      await get().reconcileMcp();
     })();
   },
 
