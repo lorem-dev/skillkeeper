@@ -29,7 +29,7 @@ use std::sync::{Arc, OnceLock};
 
 use skillkeeper_core::ssh_env::{ssh_env_vars, AskpassRef};
 
-use super::askpass::AskpassServer;
+use super::askpass::{AskpassServer, Refusal, RetiredReason};
 use super::ssh_key::{KeyState, SshKeyStore};
 use crate::state::AppContext;
 
@@ -61,6 +61,23 @@ impl GitEnvLease {
     pub fn vars(&self) -> &[(String, String)] {
         &self.vars
     }
+
+    /// Add `-v` to the `ssh` this lease runs, so the terminal shows which
+    /// identities were offered and whether the askpass helper was consulted.
+    ///
+    /// A no-op for a lease that sets no `GIT_SSH_COMMAND` (no key chosen, or a
+    /// path that cannot be expressed): there is no `ssh` of ours to make verbose,
+    /// and inventing one would change which key git uses.
+    fn verbose(mut self) -> Self {
+        for (key, value) in &mut self.vars {
+            if key == "GIT_SSH_COMMAND" {
+                if let Some(rest) = value.strip_prefix("ssh ") {
+                    *value = format!("ssh -v {rest}");
+                }
+            }
+        }
+        self
+    }
 }
 
 impl Drop for GitEnvLease {
@@ -78,6 +95,53 @@ impl Drop for GitEnvLease {
 impl skillkeeper_core::adapters::GitEnv for GitEnvLease {
     fn vars(&self) -> &[(String, String)] {
         &self.vars
+    }
+}
+
+/// Run one git invocation in the terminal with the chosen key's environment,
+/// and report an askpass refusal as the reason it failed.
+///
+/// The single funnel for the PTY git route, so every repository operation gets
+/// that explanation. It is needed because `ssh` gives the same account of two
+/// quite different failures -- `Permission denied (publickey)`, with no mention
+/// of askpass -- whether the helper answered nothing or the host rejected a key
+/// it did read. The server records which of those happened
+/// ([`AskpassServer::take_refusal`]); this is where that record is read, while
+/// it still belongs to the invocation that just failed.
+///
+/// A refusal is only ever substituted for a FAILED invocation: a successful one
+/// may legitimately have had a request refused along the way (`ssh` trying a
+/// second identity, say) and must not be reported as broken.
+pub fn run_git_in_terminal(ctx: &AppContext, cwd: &str, args: &[String]) -> Result<String, String> {
+    let result = ctx
+        .terminal
+        .run_git_with_env(cwd, args, &|| git_env_lease(ctx));
+    let refusal = ctx.askpass.get().and_then(AskpassServer::take_refusal);
+    match result {
+        Ok(output) => Ok(output),
+        Err(error) => Err(refusal.map_or(error, |r| refusal_error(&r).to_string())),
+    }
+}
+
+/// The renderer-facing code for a refusal.
+///
+/// One code per cause, deliberately: they call for different things from the
+/// user (confirm a host key, unlock the key again, retry) and point at different
+/// faults if they turn out to be ours, so flattening them into a single "the
+/// helper is unavailable" message would throw away the diagnosis the refusal
+/// record exists to make.
+fn refusal_error(refusal: &Refusal) -> &'static str {
+    match refusal {
+        Refusal::NotAPassphrase(_) => "ssh.hostKeyPrompt",
+        // Minted here, then retired before the request arrived: nothing is
+        // wrong with the key or the passphrase, and the operation is worth
+        // repeating.
+        Refusal::RetiredToken(RetiredReason::Expired) => "ssh.askpassExpired",
+        Refusal::RetiredToken(RetiredReason::Revoked) => "ssh.askpassStale",
+        // Never minted by this server: a leftover environment from an earlier
+        // run of the app, which a fresh operation replaces.
+        Refusal::UnknownToken => "ssh.askpassStale",
+        Refusal::NoPassphraseHeld => "ssh.askpassForgotten",
     }
 }
 
@@ -105,6 +169,34 @@ pub fn git_env_lease(ctx: &AppContext) -> GitEnvLease {
 ///   helper backed by the store's held passphrase, with a token fresh for
 ///   this one invocation.
 pub(crate) fn lease_from(
+    ssh_key: &Arc<SshKeyStore>,
+    askpass: &Arc<OnceLock<AskpassServer>>,
+) -> GitEnvLease {
+    let lease = lease_for_state(ssh_key, askpass);
+    match std::env::var(SSH_VERBOSE_ENV) {
+        Ok(value) if verbosity_requested(&value) => lease.verbose(),
+        _ => lease,
+    }
+}
+
+/// Environment variable that turns on `ssh -v` for every git invocation the app
+/// makes with the chosen key.
+///
+/// A diagnostic, not a feature: `Permission denied (publickey)` looks the same
+/// whether the askpass helper failed to answer or the host simply does not
+/// accept the key, and only `ssh`'s own trace separates the two. Start the app
+/// with this set and the terminal shows which it is.
+pub const SSH_VERBOSE_ENV: &str = "SKILLKEEPER_SSH_VERBOSE";
+
+/// Whether `value` (the raw variable) asks for verbosity. Anything but empty,
+/// `0` and `false` does, so the usual spellings all work.
+fn verbosity_requested(value: &str) -> bool {
+    let value = value.trim();
+    !(value.is_empty() || value == "0" || value.eq_ignore_ascii_case("false"))
+}
+
+/// The state-driven decision, before the verbosity switch above is applied.
+fn lease_for_state(
     ssh_key: &Arc<SshKeyStore>,
     askpass: &Arc<OnceLock<AskpassServer>>,
 ) -> GitEnvLease {
@@ -191,6 +283,68 @@ mod tests {
     use std::sync::mpsc;
     use std::sync::Mutex;
     use std::time::Duration;
+
+    /// Every refusal reaches the renderer as a code it can translate -- never as
+    /// a raw prompt from `ssh` or the remote host, which is what the
+    /// non-passphrase case carries.
+    #[test]
+    fn every_refusal_maps_to_a_translatable_code() {
+        assert_eq!(
+            refusal_error(&Refusal::NotAPassphrase(
+                "Are you sure you want to continue connecting?".to_string()
+            )),
+            "ssh.hostKeyPrompt"
+        );
+        assert_eq!(
+            refusal_error(&Refusal::RetiredToken(RetiredReason::Expired)),
+            "ssh.askpassExpired"
+        );
+        assert_eq!(
+            refusal_error(&Refusal::RetiredToken(RetiredReason::Revoked)),
+            "ssh.askpassStale"
+        );
+        assert_eq!(refusal_error(&Refusal::UnknownToken), "ssh.askpassStale");
+        assert_eq!(
+            refusal_error(&Refusal::NoPassphraseHeld),
+            "ssh.askpassForgotten"
+        );
+    }
+
+    /// The diagnostic switch reads as on for the spellings a user would try and
+    /// off for the ones that mean "no" -- an exported `=0` must not quietly turn
+    /// tracing on for the rest of the session.
+    #[test]
+    fn the_verbosity_switch_reads_the_usual_spellings() {
+        for on in ["1", "true", "yes", " 1 "] {
+            assert!(verbosity_requested(on), "{on:?} should enable tracing");
+        }
+        for off in ["", "  ", "0", "false", "FALSE"] {
+            assert!(!verbosity_requested(off), "{off:?} should leave it off");
+        }
+    }
+
+    /// Verbosity is added to OUR ssh invocation and nothing else: the key stays
+    /// exactly as it was, and a lease with no command of ours is left alone
+    /// rather than given one.
+    #[test]
+    fn verbosity_only_touches_our_own_ssh_command() {
+        let lease = GitEnvLease {
+            vars: vec![
+                ("GIT_SSH_COMMAND".to_string(), "ssh -i /k".to_string()),
+                ("SSH_ASKPASS".to_string(), "/helper".to_string()),
+            ],
+            revoke: None,
+        }
+        .verbose();
+        assert_eq!(
+            lease.vars(),
+            [
+                ("GIT_SSH_COMMAND".to_string(), "ssh -v -i /k".to_string()),
+                ("SSH_ASKPASS".to_string(), "/helper".to_string()),
+            ]
+        );
+        assert!(GitEnvLease::empty().verbose().vars().is_empty());
+    }
 
     /// Write a fresh, unencrypted ed25519 key inside the app's temp data dir.
     fn write_plain_key(app: &TempAppData) -> String {

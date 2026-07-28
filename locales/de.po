@@ -1141,6 +1141,16 @@ msgstr "Entsperren"
 msgid "ssh.askpassUnavailable"
 msgstr "Das Passphrase-Hilfsprogramm konnte nicht gestartet werden; ssh fragt im Terminal danach."
 
+msgid "ssh.askpassExpired"
+msgstr "Der Schlüssel wurde nicht rechtzeitig gebraucht, die Anfrage ist abgelaufen. Erneut versuchen."
+
+msgid "ssh.askpassStale"
+msgstr "Die Passphrasen-Anfrage kam von einem bereits beendeten Vorgang. Erneut versuchen."
+
+msgid "ssh.askpassForgotten"
+msgstr "Die Passphrase wird nicht mehr vorgehalten. Schlüssel erneut entsperren."
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "Der Hostschlüssel ist noch unbekannt. Bestätigen Sie ihn einmal im Terminal."
 

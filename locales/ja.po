@@ -1096,6 +1096,16 @@ msgstr "ロック解除"
 msgid "ssh.askpassUnavailable"
 msgstr "パスフレーズ補助プログラムを起動できませんでした。ssh がターミナルで尋ねます。"
 
+msgid "ssh.askpassExpired"
+msgstr "鍵が時間内に必要とされず、要求が期限切れになりました。もう一度お試しください。"
+
+msgid "ssh.askpassStale"
+msgstr "パスフレーズの要求は既に終了した操作から届きました。もう一度お試しください。"
+
+msgid "ssh.askpassForgotten"
+msgstr "パスフレーズは保持されていません。鍵をもう一度アンロックしてください。"
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "ホスト鍵はまだ未確認です。ターミナルで一度承認してください。"
 

@@ -1231,6 +1231,16 @@ msgstr "Odblokuj"
 msgid "ssh.askpassUnavailable"
 msgstr "Nie udało się uruchomić pomocnika hasła; ssh zapyta o nie w terminalu."
 
+msgid "ssh.askpassExpired"
+msgstr "Klucz nie był potrzebny na czas i żądanie wygasło. Spróbuj ponownie."
+
+msgid "ssh.askpassStale"
+msgstr "Żądanie hasła przyszło z operacji, która już się zakończyła. Spróbuj ponownie."
+
+msgid "ssh.askpassForgotten"
+msgstr "Hasło nie jest już przechowywane. Odblokuj klucz ponownie."
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "Klucz hosta nie jest jeszcze znany. Potwierdź go raz w terminalu."
 

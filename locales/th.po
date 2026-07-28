@@ -1096,6 +1096,16 @@ msgstr "ปลดล็อก"
 msgid "ssh.askpassUnavailable"
 msgstr "เริ่มตัวช่วยรหัสผ่านไม่ได้ ssh จะถามในเทอร์มินัล"
 
+msgid "ssh.askpassExpired"
+msgstr "คีย์ไม่ถูกใช้ทันเวลา คำขอจึงหมดอายุ ลองอีกครั้ง"
+
+msgid "ssh.askpassStale"
+msgstr "คำขอรหัสผ่านมาจากงานที่เสร็จไปแล้ว ลองอีกครั้ง"
+
+msgid "ssh.askpassForgotten"
+msgstr "ไม่ได้เก็บรหัสผ่านไว้แล้ว ปลดล็อกคีย์อีกครั้ง"
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "ยังไม่รู้จักคีย์ของโฮสต์ ให้ยืนยันหนึ่งครั้งในเทอร์มินัล"
 

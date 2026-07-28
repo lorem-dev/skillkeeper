@@ -1231,6 +1231,16 @@ msgstr "Sblocca"
 msgid "ssh.askpassUnavailable"
 msgstr "Non è stato possibile avviare l'assistente per la passphrase; ssh la chiederà nel terminale."
 
+msgid "ssh.askpassExpired"
+msgstr "La chiave non è servita in tempo e la richiesta è scaduta. Riprova."
+
+msgid "ssh.askpassStale"
+msgstr "La richiesta della passphrase veniva da un'operazione già conclusa. Riprova."
+
+msgid "ssh.askpassForgotten"
+msgstr "La passphrase non è più conservata. Sblocca di nuovo la chiave."
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "La chiave dell'host non è ancora nota. Confermala una volta nel terminale."
 

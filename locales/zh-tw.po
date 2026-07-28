@@ -1096,6 +1096,16 @@ msgstr "解鎖"
 msgid "ssh.askpassUnavailable"
 msgstr "無法啟動密碼短語輔助程式；ssh 將在終端機中詢問。"
 
+msgid "ssh.askpassExpired"
+msgstr "金鑰未及時被使用，請求已過期。請重試。"
+
+msgid "ssh.askpassStale"
+msgstr "密語請求來自已結束的操作。請重試。"
+
+msgid "ssh.askpassForgotten"
+msgstr "密語已不再保存。請重新解鎖金鑰。"
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "主機金鑰尚未確認。請在終端機中確認一次。"
 

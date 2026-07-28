@@ -263,6 +263,49 @@ fn selftest_run(report: &mut Report) -> i32 {
     1
 }
 
+/// Why the server did not answer a request it received.
+///
+/// Recorded so an operation that then fails can say which of these happened
+/// instead of leaving the user with `Permission denied (publickey)`, which is
+/// what `ssh` reports for a helper that answered nothing AND for a key the host
+/// rejected.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Refusal {
+    /// The token presented was minted here and then RETIRED before the request
+    /// arrived. Which of the two ways it retired is the whole diagnosis, so it
+    /// is carried rather than flattened: `Expired` means the invocation never
+    /// reached `ssh` within the TTL, `Revoked` means the request came from a
+    /// process that outlived the invocation it belonged to.
+    RetiredToken(RetiredReason),
+    /// The token presented was never minted by this server at all -- a stale
+    /// environment from an earlier run of the app, or another process entirely.
+    UnknownToken,
+    /// The prompt was not a passphrase prompt -- an unknown host key, or a
+    /// server-supplied keyboard-interactive question. Carries the prompt text,
+    /// which is what tells the user what to confirm in the terminal.
+    NotAPassphrase(String),
+    /// A live token asked for a passphrase the store no longer holds: the key
+    /// was unlocked when the invocation started and is not now.
+    NoPassphraseHeld,
+}
+
+/// How a token that this server did mint stopped being live.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RetiredReason {
+    /// Minted, never used, and the TTL elapsed: the invocation it was minted
+    /// for never got as far as asking `ssh` for anything.
+    Expired,
+    /// Retired with its invocation, whose git subprocess had exited. A request
+    /// presenting it therefore comes from something that outlived that
+    /// invocation -- an `ssh` still finishing after git was killed, say.
+    Revoked,
+}
+
+/// How many retired tokens are remembered, so a refusal can say which way the
+/// token went. Small on purpose: only the most recent invocations can plausibly
+/// be the source of a late request, and this is a diagnostic, not a ledger.
+const RETIRED_MEMORY: usize = 16;
+
 /// Bookkeeping for one minted token: when it was minted, and whether it has
 /// ever answered a live request.
 ///
@@ -286,7 +329,11 @@ struct TokenState {
 pub struct AskpassServer {
     endpoint: String,
     tokens: Arc<Mutex<HashMap<String, TokenState>>>,
-    declined_prompt: Arc<Mutex<Option<String>>>,
+    /// The last few tokens this server retired and how, oldest first, so a
+    /// request presenting one can be told apart from a request presenting a
+    /// token that was never ours.
+    retired: Arc<Mutex<Vec<(String, RetiredReason)>>>,
+    refusal: Arc<Mutex<Option<Refusal>>>,
     /// Owns the private socket directory on platforms that use a filesystem
     /// path (unix); removed on drop. `None` on Windows, whose namespaced named
     /// pipe needs no directory of ours.
@@ -311,20 +358,23 @@ impl AskpassServer {
     pub fn start(secret: Arc<dyn Fn() -> Option<String> + Send + Sync>) -> Result<Self, String> {
         let (listener, endpoint, socket_dir) = make_listener()?;
         let tokens: Arc<Mutex<HashMap<String, TokenState>>> = Arc::new(Mutex::new(HashMap::new()));
-        let declined_prompt: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+        let refusal: Arc<Mutex<Option<Refusal>>> = Arc::new(Mutex::new(None));
+        let retired: Arc<Mutex<Vec<(String, RetiredReason)>>> = Arc::new(Mutex::new(Vec::new()));
 
         let accept_tokens = Arc::clone(&tokens);
-        let accept_declined = Arc::clone(&declined_prompt);
+        let accept_retired = Arc::clone(&retired);
+        let accept_refusal = Arc::clone(&refusal);
         std::thread::spawn(move || {
             for connection in listener.incoming() {
                 let Ok(stream) = connection else {
                     continue;
                 };
                 let tokens = Arc::clone(&accept_tokens);
-                let declined = Arc::clone(&accept_declined);
+                let retired = Arc::clone(&accept_retired);
+                let refusal = Arc::clone(&accept_refusal);
                 let secret = Arc::clone(&secret);
                 std::thread::spawn(move || {
-                    handle_connection(stream, &tokens, &declined, &secret);
+                    handle_connection(stream, &tokens, &retired, &refusal, &secret);
                 });
             }
         });
@@ -332,7 +382,8 @@ impl AskpassServer {
         Ok(Self {
             endpoint,
             tokens,
-            declined_prompt,
+            retired,
+            refusal,
             _socket_dir: socket_dir,
         })
     }
@@ -346,7 +397,7 @@ impl AskpassServer {
     /// until it is first used.
     pub fn mint_token(&self) -> String {
         let mut tokens = self.tokens.lock().unwrap();
-        prune_expired(&mut tokens);
+        prune_expired(&mut tokens, &self.retired);
         let token = uuid::Uuid::new_v4().to_string();
         tokens.insert(
             token.clone(),
@@ -366,14 +417,21 @@ impl AskpassServer {
     /// outlives the one invocation it was minted for and can never answer a
     /// later, unrelated one.
     pub fn revoke_token(&self, token: &str) {
-        self.tokens.lock().unwrap().remove(token);
+        if self.tokens.lock().unwrap().remove(token).is_some() {
+            remember_retired(&self.retired, token, RetiredReason::Revoked);
+        }
     }
 
-    /// The most recent prompt the server declined to answer (because it was
-    /// not a passphrase prompt), if any. Reading it clears it, so a later
-    /// failure is not misattributed to an earlier decline.
-    pub fn take_declined_prompt(&self) -> Option<String> {
-        self.declined_prompt.lock().unwrap().take()
+    /// Why the server last refused to answer a request, if it did. Reading it
+    /// clears it, so a later failure is not misattributed to an earlier refusal.
+    ///
+    /// This is the only account of a refusal there is. `ssh` reports a helper
+    /// that answered nothing exactly as it reports a key the host rejected --
+    /// `Permission denied (publickey)`, no mention of askpass -- so without this
+    /// the two are indistinguishable from the outside, which is precisely the
+    /// confusion it exists to end.
+    pub fn take_refusal(&self) -> Option<Refusal> {
+        self.refusal.lock().unwrap().take()
     }
 }
 
@@ -387,9 +445,49 @@ impl AskpassServer {
 /// explicit [`AskpassServer::revoke_token`] call. The TTL here is only the
 /// backstop for a token that was minted and then abandoned -- the invocation
 /// never actually reached `ssh`, or crashed before it could.
-fn prune_expired(tokens: &mut HashMap<String, TokenState>) {
+fn prune_expired(
+    tokens: &mut HashMap<String, TokenState>,
+    retired: &Mutex<Vec<(String, RetiredReason)>>,
+) {
     let now = Instant::now();
-    tokens.retain(|_, state| state.used || now.duration_since(state.minted) < TOKEN_TTL);
+    tokens.retain(|token, state| {
+        let live = state.used || now.duration_since(state.minted) < TOKEN_TTL;
+        if !live {
+            remember_retired(retired, token, RetiredReason::Expired);
+        }
+        live
+    });
+}
+
+/// Note that `token` is no longer live and why, keeping only the most recent
+/// [`RETIRED_MEMORY`] entries: a request presenting a token from further back
+/// than that is indistinguishable from one that was never ours, and saying so is
+/// honest.
+fn remember_retired(
+    retired: &Mutex<Vec<(String, RetiredReason)>>,
+    token: &str,
+    reason: RetiredReason,
+) {
+    let mut retired = retired.lock().unwrap();
+    retired.push((token.to_string(), reason));
+    if retired.len() > RETIRED_MEMORY {
+        let excess = retired.len() - RETIRED_MEMORY;
+        retired.drain(..excess);
+    }
+}
+
+/// How `token` was retired, if this server remembers retiring it.
+fn retired_reason(
+    retired: &Mutex<Vec<(String, RetiredReason)>>,
+    token: &str,
+) -> Option<RetiredReason> {
+    retired
+        .lock()
+        .unwrap()
+        .iter()
+        .rev()
+        .find(|(known, _)| known == token)
+        .map(|(_, reason)| *reason)
 }
 
 /// Handle one connection (on its own thread -- see [`AskpassServer::start`]):
@@ -404,7 +502,8 @@ fn prune_expired(tokens: &mut HashMap<String, TokenState>) {
 fn handle_connection(
     mut stream: Stream,
     tokens: &Mutex<HashMap<String, TokenState>>,
-    declined_prompt: &Mutex<Option<String>>,
+    retired: &Mutex<Vec<(String, RetiredReason)>>,
+    refusal: &Mutex<Option<Refusal>>,
     secret: &Arc<dyn Fn() -> Option<String> + Send + Sync>,
 ) {
     // Best-effort: bounds how long this connection's own thread can be stuck
@@ -431,7 +530,7 @@ fn handle_connection(
 
     let is_live = {
         let mut tokens = tokens.lock().unwrap();
-        prune_expired(&mut tokens);
+        prune_expired(&mut tokens, retired);
         match tokens.get_mut(token) {
             Some(state) => {
                 state.used = true;
@@ -441,15 +540,25 @@ fn handle_connection(
         }
     };
     if !is_live {
+        // Refused -- and that refusal is the whole explanation for the
+        // authentication failure `ssh` is about to report, so record which kind
+        // it is: a token this server retired (and how), or one it never minted.
+        *refusal.lock().unwrap() = Some(match retired_reason(retired, token) {
+            Some(reason) => Refusal::RetiredToken(reason),
+            None => Refusal::UnknownToken,
+        });
         return;
     }
 
     if !is_passphrase_prompt(prompt) {
-        *declined_prompt.lock().unwrap() = Some(prompt.to_string());
+        *refusal.lock().unwrap() = Some(Refusal::NotAPassphrase(prompt.to_string()));
         return;
     }
 
     let Some(passphrase) = secret() else {
+        // The key was unlocked when the invocation started and is not now
+        // (Forget passphrase, or the chosen key changed under it).
+        *refusal.lock().unwrap() = Some(Refusal::NoPassphraseHeld);
         return;
     };
     let _ = writeln!(stream, "{passphrase}");
@@ -710,10 +819,60 @@ mod tests {
             ),
             None
         );
-        let declined = server.take_declined_prompt().expect("prompt recorded");
-        assert!(declined.contains("continue connecting"));
+        let Some(Refusal::NotAPassphrase(prompt)) = server.take_refusal() else {
+            panic!("the declined prompt must be recorded, with its text");
+        };
+        assert!(prompt.contains("continue connecting"));
         // Reading it clears it, so a later failure is not misattributed.
-        assert!(server.take_declined_prompt().is_none());
+        assert!(server.take_refusal().is_none());
+    }
+
+    /// A token this server never minted: a leftover environment from an earlier
+    /// run of the app, and nothing this session can explain further.
+    #[test]
+    fn an_unknown_token_is_recorded_as_the_reason() {
+        let server =
+            AskpassServer::start(Arc::new(|| Some("topsecret".to_string()))).expect("server");
+        assert_eq!(
+            fetch(server.endpoint(), "not-a-token", "Enter passphrase: "),
+            None
+        );
+        assert_eq!(server.take_refusal(), Some(Refusal::UnknownToken));
+    }
+
+    /// The two refusals that look identical from `ssh`'s side and mean quite
+    /// different things on ours: a token retired WITH its invocation (so the
+    /// request came from something that outlived it) versus one that expired
+    /// unused (so the invocation never reached `ssh` in time). Telling them
+    /// apart is the whole point of remembering retired tokens.
+    #[test]
+    fn a_retired_token_is_recorded_with_the_way_it_retired() {
+        let server =
+            AskpassServer::start(Arc::new(|| Some("topsecret".to_string()))).expect("server");
+
+        let revoked = server.mint_token();
+        server.revoke_token(&revoked);
+        assert_eq!(
+            fetch(server.endpoint(), &revoked, "Enter passphrase: "),
+            None
+        );
+        assert_eq!(
+            server.take_refusal(),
+            Some(Refusal::RetiredToken(RetiredReason::Revoked))
+        );
+
+        let abandoned = server.mint_token();
+        server.force_stale_for_test(&abandoned);
+        // Minting sweeps the expired one out, which is where it is recorded.
+        let _ = server.mint_token();
+        assert_eq!(
+            fetch(server.endpoint(), &abandoned, "Enter passphrase: "),
+            None
+        );
+        assert_eq!(
+            server.take_refusal(),
+            Some(Refusal::RetiredToken(RetiredReason::Expired))
+        );
     }
 
     #[test]
@@ -721,6 +880,9 @@ mod tests {
         let server = AskpassServer::start(Arc::new(|| None)).expect("server");
         let token = server.mint_token();
         assert_eq!(fetch(server.endpoint(), &token, "Enter passphrase: "), None);
+        // A live token that could not be answered is a refusal of its own: the
+        // key was unlocked when the invocation started and is not now.
+        assert_eq!(server.take_refusal(), Some(Refusal::NoPassphraseHeld));
     }
 
     #[test]

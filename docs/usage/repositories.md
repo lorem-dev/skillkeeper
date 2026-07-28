@@ -206,6 +206,10 @@ A few things worth knowing:
   app answers passphrase prompts itself, `ssh` cannot ask anything else there.
 - The CLI reads the same setting but keeps no passphrase, so `ssh` asks in the
   terminal you ran it from.
+- `Permission denied (publickey)` looks the same whether the passphrase never
+  reached `ssh` or the host does not accept the key. Start the app with
+  `SKILLKEEPER_SSH_VERBOSE=1` to run every git operation as `ssh -v`, and the
+  terminal shows which it is.
 
 ## Git LFS
 

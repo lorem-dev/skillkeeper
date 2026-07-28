@@ -1231,6 +1231,16 @@ msgstr "Разблакаваць"
 msgid "ssh.askpassUnavailable"
 msgstr "Не ўдалося запусціць памочніка для пароля; ssh спытае яго ў тэрмінале."
 
+msgid "ssh.askpassExpired"
+msgstr "Ключ не спатрэбіўся своечасова, і запрос застарэў. Паспрабуйце зноў."
+
+msgid "ssh.askpassStale"
+msgstr "Запрос пароля прыйшоў ад ужо завершанай аперацыі. Паспрабуйце зноў."
+
+msgid "ssh.askpassForgotten"
+msgstr "Пароль больш не зберагаецца. Разблакуйце ключ нанова."
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "Ключ хоста пакуль невядомы. Пацвердзіце яго адзін раз у тэрмінале."
 

@@ -1186,6 +1186,16 @@ msgstr "Откључај"
 msgid "ssh.askpassUnavailable"
 msgstr "Помоћник за фразу није могао да се покрене; ssh ће питати у терминалу."
 
+msgid "ssh.askpassExpired"
+msgstr "Кључ није затражен на време и захтев је истекао. Пробајте поново."
+
+msgid "ssh.askpassStale"
+msgstr "Захтев за фразу дошао је од операције која је већ завршена. Пробајте поново."
+
+msgid "ssh.askpassForgotten"
+msgstr "Фраза се више не чува. Откључајте кључ поново."
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "Кључ хоста још није познат. Потврдите га једном у терминалу."
 

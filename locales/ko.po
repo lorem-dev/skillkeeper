@@ -1222,6 +1222,16 @@ msgstr "잠금 해제"
 msgid "ssh.askpassUnavailable"
 msgstr "암호 구문 도우미를 실행할 수 없습니다. ssh 가 터미널에서 묻습니다."
 
+msgid "ssh.askpassExpired"
+msgstr "키가 제때 필요하지 않아 요청이 만료되었습니다. 다시 시도하세요."
+
+msgid "ssh.askpassStale"
+msgstr "암호 구문 요청이 이미 끝난 작업에서 왔습니다. 다시 시도하세요."
+
+msgid "ssh.askpassForgotten"
+msgstr "암호 구문이 더 이상 보관되지 않습니다. 키를 다시 잠금 해제하세요."
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "호스트 키가 아직 확인되지 않았습니다. 터미널에서 한 번 확인하세요."
 

@@ -90,9 +90,7 @@ where
     F: FnOnce() -> PortResult<()>,
 {
     if ctx.terminal.is_started() {
-        ctx.terminal
-            .run_git_with_env(cwd, args, &|| crate::app::ssh_git::git_env_lease(ctx))
-            .map(|_| ())
+        crate::app::ssh_git::run_git_in_terminal(ctx, cwd, args).map(|_| ())
     } else {
         direct().map_err(|e| e.to_string())
     }
@@ -108,15 +106,13 @@ fn clone_op(ctx: &AppContext, options: &CloneOptions) -> Result<(), String> {
             .map(|p| p.to_string_lossy().into_owned())
             .filter(|p| !p.is_empty())
             .unwrap_or_else(|| ".".to_string());
-        ctx.terminal
-            .run_git_with_env(&parent, &build_clone_args(options), &|| {
-                crate::app::ssh_git::git_env_lease(ctx)
-            })?;
+        crate::app::ssh_git::run_git_in_terminal(ctx, &parent, &build_clone_args(options))?;
         if options.lfs {
-            ctx.terminal
-                .run_git_with_env(&options.destination, &build_lfs_pull_args(), &|| {
-                    crate::app::ssh_git::git_env_lease(ctx)
-                })?;
+            crate::app::ssh_git::run_git_in_terminal(
+                ctx,
+                &options.destination,
+                &build_lfs_pull_args(),
+            )?;
         }
         Ok(())
     } else {
@@ -128,18 +124,9 @@ fn clone_op(ctx: &AppContext, options: &CloneOptions) -> Result<(), String> {
 /// `clean -fd`, each a separate PTY invocation (matching `terminal.ts`).
 fn force_pull_op(ctx: &AppContext, path: &str) -> Result<(), String> {
     if ctx.terminal.is_started() {
-        ctx.terminal
-            .run_git_with_env(path, &build_fetch_args(), &|| {
-                crate::app::ssh_git::git_env_lease(ctx)
-            })?;
-        ctx.terminal
-            .run_git_with_env(path, &build_reset_hard_args(), &|| {
-                crate::app::ssh_git::git_env_lease(ctx)
-            })?;
-        ctx.terminal
-            .run_git_with_env(path, &build_clean_args(), &|| {
-                crate::app::ssh_git::git_env_lease(ctx)
-            })?;
+        crate::app::ssh_git::run_git_in_terminal(ctx, path, &build_fetch_args())?;
+        crate::app::ssh_git::run_git_in_terminal(ctx, path, &build_reset_hard_args())?;
+        crate::app::ssh_git::run_git_in_terminal(ctx, path, &build_clean_args())?;
         Ok(())
     } else {
         ctx.git.force_pull(path).map_err(|e| e.to_string())

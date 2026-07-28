@@ -1165,6 +1165,16 @@ msgstr "The host key is not known yet. Confirm it in the terminal once."
 msgid "ssh.askpassUnavailable"
 msgstr "The passphrase helper could not be started; ssh will ask in the terminal."
 
+msgid "ssh.askpassExpired"
+msgstr "The key was not needed in time and the request expired. Try again."
+
+msgid "ssh.askpassStale"
+msgstr "The passphrase request came from an operation that had already finished. Try again."
+
+msgid "ssh.askpassForgotten"
+msgstr "The passphrase is no longer held. Unlock the key again."
+
+
 msgid "settings.updates.mode"
 msgstr "Update checks"
 

@@ -1141,6 +1141,16 @@ msgstr "Déverrouiller"
 msgid "ssh.askpassUnavailable"
 msgstr "L'assistant de phrase secrète n'a pas pu démarrer ; ssh la demandera dans le terminal."
 
+msgid "ssh.askpassExpired"
+msgstr "La clé n'a pas été requise à temps et la demande a expiré. Réessayez."
+
+msgid "ssh.askpassStale"
+msgstr "La demande de phrase secrète venait d'une opération déjà terminée. Réessayez."
+
+msgid "ssh.askpassForgotten"
+msgstr "La phrase secrète n'est plus conservée. Déverrouillez la clé à nouveau."
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "La clé de l'hôte n'est pas encore connue. Confirmez-la une fois dans le terminal."
 

@@ -1141,6 +1141,16 @@ msgstr "अनलॉक करें"
 msgid "ssh.askpassUnavailable"
 msgstr "पासफ़्रेज़ सहायक शुरू नहीं हो सका; ssh टर्मिनल में पूछेगा।"
 
+msgid "ssh.askpassExpired"
+msgstr "कुंजी समय पर आवश्यक नहीं हुई और अनुरोध समाप्त हो गया। फिर प्रयास करें।"
+
+msgid "ssh.askpassStale"
+msgstr "पासफ़्रेज़ अनुरोध पहले ही समाप्त हो चुके कार्य से आया। फिर प्रयास करें।"
+
+msgid "ssh.askpassForgotten"
+msgstr "पासफ़्रेज़ अब संग्रहित नहीं है। कुंजी फिर अनलॉक करें।"
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "होस्ट कुंजी अभी ज्ञात नहीं है। टर्मिनल में एक बार पुष्टि करें।"
 

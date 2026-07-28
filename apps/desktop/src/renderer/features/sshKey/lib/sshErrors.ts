@@ -8,6 +8,9 @@ const SSH_ERROR_KEYS = [
   'ssh.hostKeyPrompt',
   'ssh.wrongPassphrase',
   'ssh.askpassUnavailable',
+  'ssh.askpassExpired',
+  'ssh.askpassStale',
+  'ssh.askpassForgotten',
 ] as const satisfies readonly MessageKey[];
 
 /**

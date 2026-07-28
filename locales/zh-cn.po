@@ -1096,6 +1096,16 @@ msgstr "解锁"
 msgid "ssh.askpassUnavailable"
 msgstr "无法启动密码短语助手；ssh 将在终端中询问。"
 
+msgid "ssh.askpassExpired"
+msgstr "密钥未及时被使用，请求已过期。请重试。"
+
+msgid "ssh.askpassStale"
+msgstr "口令请求来自已结束的操作。请重试。"
+
+msgid "ssh.askpassForgotten"
+msgstr "口令已不再保存。请重新解锁密钥。"
+
+
 msgid "ssh.hostKeyPrompt"
 msgstr "主机密钥尚未确认。请在终端中确认一次。"
 
