@@ -2,61 +2,32 @@
 
 ## Development
 
-### Added
-
-- Adding a repository points out a port written after a colon. In the
-  `user@host:path` form everything after the colon is a path, so
-  `git@host:2222/team/repo.git` asks for the path `2222/team/repo.git` on port 22
-  -- git accepts it and the mistake only surfaces later as
-  `Permission denied (publickey)`, with nothing naming the port. The form now
-  says so and shows the same remote written as `ssh://host:port/path`, which
-  does carry it.
-
-### Fixed
-
-- A repository operation on Windows could start failing part-way through a
-  session and then fail every time, with `Permission denied (publickey)`, until
-  the passphrase was forgotten and entered again. The variables that carry the
-  chosen key and the askpass token are typed alongside the command there, and
-  `set` in a shell changes the SESSION, not one command -- so they stayed behind
-  afterwards. An operation that needs no askpass (a locked key, a key that
-  cannot be read, no key at all) inherited the previous operation's token, which
-  had been revoked the moment that operation finished: `ssh` asked the helper,
-  the helper presented a dead token, and nothing recovered on its own. Every
-  command now states the value of every variable the app manages, so nothing an
-  earlier one set can leak into a later one.
+## Version 0.3.0
 
 ### Added
 
-- A private key can be chosen in Settings for SSH remotes, with its passphrase
-  entered once and held only until the app quits. Until now the app used
-  whatever key the system ssh setup picked, which is the wrong one on a machine
-  with two identities for the same host, and an encrypted key meant answering
-  the same prompt on every operation. The passphrase is never written to the
-  config or to disk: `ssh` receives it through a helper that reads it from the
-  running app's memory over a single-use token. A locked key stops only work
-  you asked for, which raises a small window to unlock it; a scheduled update
-  check raises the same window and resumes once the key is unlocked. With no
-  key chosen nothing changes -- the system ssh setup and agent are used exactly
-  as before. The CLI honours the same setting, without caching the passphrase.
+- A dedicated SSH key for git over SSH: point the app at one private key
+  (`repositories.sshKeyPath`, honoured by the CLI too) instead of letting `ssh`
+  pick. The key is offered, not enforced, so hosts it has no access to keep
+  working through your own config and agent.
+- The passphrase for that key, held for one run of the app. Asked for in a
+  window of its own, verified at once, never written anywhere, and asked again
+  after a restart. `SKILLKEEPER_SSH_VERBOSE=1` traces the `ssh` it runs.
+- The SSH key on the first onboarding screen, beside language and theme, plus a
+  Skip button: a private repository needs the key before anything can be added.
+- The running version on the status bar.
+- A warning when a repository URL writes the port after a colon, which the
+  `user@host:path` form silently reads as part of the path.
+
+### Changed
+
+- The interface is fully translated again in all 18 languages.
+- An update check postponed by a locked key is listed as "Postponed", not failed.
 
 ### Fixed
 
-- Adding a repository left the skill catalog as it was before the repository
-  existed, so its card showed a skill count while the Skills page reported none
-  found. A clone now refreshes the catalog the same way a sync does.
-- A long MCP command ran past the edge of its card and over the card beside it,
-  and squeezed badges wrapped onto a second line. The connection line is now
-  clipped to the card it is in rather than to a fixed character count, and a
-  badge stays on one line.
-- The configuration reference had drifted from the schema: it documented
-  `intervalHours` where the config has `intervalMinutes`, named the editor and
-  hook-consent keys wrongly, and omitted the `repositories`, `projects` and
-  `mcp` sections entirely.
-
-- The documentation link in the "no ssh-agent" notice pointed at a page that
-  does not exist. The site is versioned, so a deep path needs the `latest`
-  segment -- only the bare root redirects to a version.
+- Adding a repository shows its skills straight away.
+- MCP cards and badges stay inside their bounds with long commands or names.
 
 ## Version 0.2.2
 
