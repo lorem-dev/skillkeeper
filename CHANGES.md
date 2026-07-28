@@ -2,6 +2,12 @@
 
 ## Development
 
+### Fixed
+
+- The documentation link in the "no ssh-agent" notice pointed at a page that
+  does not exist. The site is versioned, so a deep path needs the `latest`
+  segment -- only the bare root redirects to a version.
+
 ## Version 0.2.2
 
 ### Added
