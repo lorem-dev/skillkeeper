@@ -6,6 +6,7 @@
 //!   `sshKey:state`        -> `ssh_key_state`
 //!   `sshKey:select`       -> `ssh_key_select`
 //!   `sshKey:clear`        -> `ssh_key_clear`
+//!   `sshKey:prompt`       -> `ssh_key_prompt`
 //!   `sshKey:unlock`       -> `ssh_key_unlock`
 //!   `sshKey:forget`       -> `ssh_key_forget`
 //!   `sshKey:cancelUnlock` -> `ssh_key_cancel_unlock`
@@ -17,11 +18,19 @@
 //! three [`crate::app::ssh_key`] exports), never a message from `ssh`, the
 //! window system, or the key parser.
 //!
-//! [`require_unlocked`] is the gate the repository commands call before any
-//! git work that may touch the chosen key. It is the only thing here that can
-//! raise the unlock window, and it does so only for work the user just asked
-//! for -- [`gate_for`] encodes that rule, so a scheduled update check can
-//! never pop a passphrase prompt with nobody there to answer it.
+//! Two entry points raise the unlock window, and no others:
+//!
+//! - [`require_unlocked`] is the gate the repository commands call before any
+//!   git work that may touch the chosen key. It raises the prompt and waits
+//!   for the answer, and it does so only for work the user just asked for --
+//!   [`gate_for`] encodes that rule, so a scheduled update check can never pop
+//!   a passphrase prompt with nobody there to answer it.
+//! - [`prompt`] is Settings asking outright, so a key can be unlocked when it
+//!   is chosen rather than at the next clone. Same decision, same window, but
+//!   it returns as soon as the window is up.
+//!
+//! Both go through [`open_unlock_window`], so there is only ever one prompt:
+//! whichever arrives second joins the first rather than opening its own.
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -349,6 +358,55 @@ pub fn require_unlocked(
     }
 }
 
+/// Raise the unlock prompt because the user asked for it, and return without
+/// waiting for an answer.
+///
+/// The Settings entry point: choosing an encrypted key, or pressing Unlock on
+/// a locked one, should get the passphrase verified there and then rather than
+/// at the next clone. Nothing in Settings is blocked on the answer, so unlike
+/// [`require_unlocked`] this does not park -- it puts the window up and
+/// returns.
+///
+/// It is otherwise the same act, so it makes the same decision the same way:
+/// [`gate_for`] as a user-initiated SSH operation. A key that needs no
+/// passphrase is a no-op returning `Ok` -- there is nothing to ask about, and
+/// the caller has already been told as much by the [`KeyState`] it holds. A
+/// key whose file is gone or unusable is the one case worth interrupting for,
+/// and reports the same code the git path would.
+///
+/// MUST run on the blocking pool, for the same reason as [`require_unlocked`]:
+/// building the window dispatches to the main thread and waits for it.
+///
+/// # Errors
+///
+/// Returns [`KEY_MISSING_ERROR`], [`NOT_A_KEY_ERROR`], or [`KEY_LOCKED_ERROR`]
+/// when the prompt could not be raised. Never a raw window-system message.
+pub fn prompt(app: &AppHandle, ctx: &AppContext) -> Result<(), String> {
+    raise_prompt(ctx.ssh_key.state(), || open_unlock_window(app, ctx))
+}
+
+/// The decision half of [`prompt`], with raising the window as a parameter so
+/// it can be tested without a window system.
+///
+/// `raise` is [`open_unlock_window`], which joins the prompt already on screen
+/// rather than building a second one and announces it only if it can still be
+/// answered -- so a prompt raised here and a prompt raised by a blocked git
+/// operation are always the same window, with the same answered flag, whoever
+/// got there first.
+fn raise_prompt(
+    state: KeyState,
+    raise: impl FnOnce() -> Result<Arc<AtomicBool>, String>,
+) -> Result<(), String> {
+    // `true, true`: this IS the user asking about the SSH key, so the decision
+    // is the ssh-transport, interactive one -- the same row of the table a
+    // user-initiated clone over SSH would take.
+    match gate_for(true, state, true) {
+        Gate::Proceed => Ok(()),
+        Gate::Fail(code) => Err(code.to_string()),
+        Gate::Prompt => raise().map(|_| ()),
+    }
+}
+
 /// Raise a prompt and block until the key is usable, the prompt is dismissed,
 /// or `deadline` passes.
 ///
@@ -608,6 +666,21 @@ pub async fn ssh_key_clear(ctx: State<'_, Arc<AppContext>>) -> Result<SshKeyDto,
     blocking(&ctx, clear).await?
 }
 
+/// `sshKey:prompt` -- raise the unlock window on demand and return at once.
+///
+/// For Settings: choosing an encrypted key, or pressing Unlock on a locked
+/// one, gets the passphrase verified while the user is still there. Resolves
+/// as soon as the window is up -- the answer arrives through
+/// [`ssh_key_unlock`] from that window, after which Settings re-reads
+/// [`ssh_key_state`].
+///
+/// Joins the prompt an operation may already be waiting behind rather than
+/// opening a second one.
+#[tauri::command]
+pub async fn ssh_key_prompt(app: AppHandle, ctx: State<'_, Arc<AppContext>>) -> Result<(), String> {
+    blocking(&ctx, move |c| prompt(&app, c)).await?
+}
+
 /// `sshKey:unlock` -- verify `passphrase` and hold it for this session.
 ///
 /// The one place a passphrase crosses the bridge, and only inbound.
@@ -822,6 +895,135 @@ mod tests {
              asked {} time(s)",
             asks.load(Ordering::Acquire)
         );
+    }
+
+    /// Settings raising the prompt for a locked key: the window goes up and
+    /// the call returns, with nothing waiting behind it.
+    #[test]
+    fn a_locked_key_raises_a_prompt_on_demand_without_waiting_for_it() {
+        let raises = std::sync::atomic::AtomicUsize::new(0);
+        let fresh = Arc::new(AtomicBool::new(false));
+
+        let started = Instant::now();
+        let result = raise_prompt(KeyState::Locked, || {
+            raises.fetch_add(1, Ordering::AcqRel);
+            Ok(Arc::clone(&fresh))
+        });
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(raises.load(Ordering::Acquire), 1);
+        assert!(
+            started.elapsed() < Duration::from_millis(500),
+            "Settings must not be parked behind the answer"
+        );
+    }
+
+    /// A prompt an operation is already waiting behind must be joined, not
+    /// duplicated: the same window, the same answered flag, and one focus.
+    #[test]
+    fn raising_a_prompt_that_is_already_open_joins_it() {
+        // The prompt some blocked git operation put up and is waiting on.
+        let waiting_on = Arc::new(AtomicBool::new(false));
+        let raises = std::sync::atomic::AtomicUsize::new(0);
+        let announcements = std::sync::atomic::AtomicUsize::new(0);
+
+        let result = raise_prompt(KeyState::Locked, || {
+            raises.fetch_add(1, Ordering::AcqRel);
+            // Exactly what `open_unlock_window` does: take whatever is on
+            // record instead of building, and announce it only if it can still
+            // be answered. (`a_live_prompt_is_announced_once` pins that the
+            // flag handed back is the recorded one, not a copy.)
+            join_and_announce(
+                || Ok(Arc::clone(&waiting_on)),
+                || {
+                    announcements.fetch_add(1, Ordering::AcqRel);
+                },
+            )
+        });
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            raises.load(Ordering::Acquire),
+            1,
+            "one raise, joining the window already up"
+        );
+        assert_eq!(
+            announcements.load(Ordering::Acquire),
+            1,
+            "the prompt already up is brought to the front, once"
+        );
+        assert!(
+            !waiting_on.load(Ordering::Acquire),
+            "joining must leave the waiting operation's answered flag alone"
+        );
+    }
+
+    /// And joining a prompt that has already been answered must not refocus
+    /// it either -- the same rule the poll loop relies on.
+    #[test]
+    fn raising_a_prompt_that_is_already_answered_does_not_refocus_it() {
+        let spent = Arc::new(AtomicBool::new(true));
+        let announcements = std::sync::atomic::AtomicUsize::new(0);
+
+        let result = raise_prompt(KeyState::Locked, || {
+            join_and_announce(
+                || Ok(Arc::clone(&spent)),
+                || {
+                    announcements.fetch_add(1, Ordering::AcqRel);
+                },
+            )
+        });
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(announcements.load(Ordering::Acquire), 0);
+        assert!(spent.load(Ordering::Acquire), "the flag is left as it was");
+    }
+
+    /// What an on-demand prompt does for a key with no passphrase to ask
+    /// about, and for one that cannot be used at all. Same table as the git
+    /// path takes, because it is the same question.
+    #[test]
+    fn raising_a_prompt_for_a_key_that_needs_none_asks_nothing() {
+        for state in [
+            KeyState::Unlocked,
+            KeyState::Unencrypted,
+            KeyState::NotConfigured,
+        ] {
+            let raises = std::sync::atomic::AtomicUsize::new(0);
+            let result = raise_prompt(state, || {
+                raises.fetch_add(1, Ordering::AcqRel);
+                Ok(Arc::new(AtomicBool::new(false)))
+            });
+            assert_eq!(result, Ok(()), "{state:?} needs no passphrase");
+            assert_eq!(
+                raises.load(Ordering::Acquire),
+                0,
+                "{state:?} must not put a window up"
+            );
+        }
+
+        let never_raised = || -> Result<Arc<AtomicBool>, String> {
+            panic!("a key that cannot be used must not raise a prompt")
+        };
+        assert_eq!(
+            raise_prompt(KeyState::Missing, never_raised).unwrap_err(),
+            "ssh.keyMissing"
+        );
+        assert_eq!(
+            raise_prompt(KeyState::NotAKey, never_raised).unwrap_err(),
+            "ssh.notAPrivateKey"
+        );
+    }
+
+    /// A window that cannot be built reaches Settings as a code it can
+    /// translate, never as the window system's own message.
+    #[test]
+    fn a_prompt_that_cannot_be_raised_fails_with_a_stable_code() {
+        let result = raise_prompt(KeyState::Locked, || {
+            // What `build_unlock_window` returns for any builder failure.
+            Err(unlock_window_failed())
+        });
+        assert_eq!(result, Err("ssh.keyLocked".to_string()));
     }
 
     /// A prompt that has been answered but whose window is still on screen is

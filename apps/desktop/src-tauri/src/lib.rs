@@ -142,6 +142,7 @@ pub fn run() {
             commands::ssh_key::ssh_key_state,
             commands::ssh_key::ssh_key_select,
             commands::ssh_key::ssh_key_clear,
+            commands::ssh_key::ssh_key_prompt,
             commands::ssh_key::ssh_key_unlock,
             commands::ssh_key::ssh_key_forget,
             commands::ssh_key::ssh_key_cancel_unlock,
