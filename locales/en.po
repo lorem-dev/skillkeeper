@@ -1113,7 +1113,7 @@ msgid "settings.ssh.state.plain"
 msgstr "Ready (no passphrase)."
 
 msgid "settings.ssh.state.locked"
-msgstr "Locked -- the passphrase is asked when it is first needed."
+msgstr "Locked. The passphrase is asked when it is first needed."
 
 msgid "settings.ssh.state.unlocked"
 msgstr "Unlocked for this session."
