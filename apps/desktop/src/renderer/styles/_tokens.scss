@@ -157,6 +157,7 @@ $themes: (
   --sk-z-popover: 400; // anchored popovers (menu / combobox), above a modal and the onboarding overlay
   --sk-z-toast: 450; // toast / alert notification stack, above modals and popovers
   --sk-z-tooltip: 500; // tooltip bubble, topmost
+  --sk-z-window-block: 600; // the block that goes up while a separate window (the SSH passphrase prompt) owns the interaction: above everything, tooltips included, since anything left above it would still be clickable
 }
 
 [data-theme='dark'] {

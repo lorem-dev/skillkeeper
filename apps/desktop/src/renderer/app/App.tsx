@@ -27,6 +27,7 @@ import { TasksPage } from '@/systems/tasks';
 import { AboutDialog, AboutIdentity, AboutFooter } from '@/features/about';
 import { OnboardingDemoTree } from '@/features/onboardingDemo';
 import { OnboardingOverlay, useOnboardingActive, useOnboardingStep } from '@/systems/onboarding';
+import { SshUnlockBlocker } from '@/systems/sshUnlock';
 import { SshKeyField } from '@/features/sshKey';
 import { STEP_VIEW } from '@/app/config/onboarding';
 import './App.scss';
@@ -409,6 +410,10 @@ export function App() {
         renderDemoTree={(variant) => <OnboardingDemoTree variant={variant} />}
         sshKeyField={<SshKeyField />}
       />
+      {/* Last, and portaled to the body from there: while the passphrase prompt
+          is up, this window takes no interaction at all -- including the
+          onboarding tour above and the portaled menus/tooltips outside. */}
+      <SshUnlockBlocker />
     </div>
     </AnimationProvider>
   );

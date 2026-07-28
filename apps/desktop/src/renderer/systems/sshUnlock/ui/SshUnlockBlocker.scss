@@ -1,0 +1,41 @@
+// The app-wide block that goes up with the SSH passphrase prompt (see
+// SshUnlockBlocker.tsx). Portaled to `document.body`, so it covers the portaled
+// surfaces (menus, tooltips, modals) as well as the app tree.
+
+.sk-ssh-block {
+  // No design token exists for the dim color (same reasoning as Modal.scss and
+  // the onboarding scrim); this one sits between those two in weight -- the app
+  // behind it is fully inert, but the window that matters is a separate one on
+  // top, so it need not read as heavily as the onboarding tour's.
+  --sk-ssh-block-color: rgba(0, 0, 0, 0.45);
+
+  position: fixed;
+  inset: 0;
+  // Above EVERY app-wide layer, tooltips included: this blocks interaction, so
+  // anything left above it would still be clickable.
+  z-index: var(--sk-z-window-block);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--sk-space-8);
+  background: var(--sk-ssh-block-color);
+  // Swallows every pointer event on its way to the app beneath it. The `inert`
+  // root already blocks the app tree; this also covers the portaled surfaces
+  // outside it.
+  pointer-events: auto;
+  cursor: default;
+}
+
+// The one line saying why the app has stopped responding. Sits at the bottom
+// edge rather than in the middle, where the prompt window itself is: an
+// explanation, not a competing dialog.
+.sk-ssh-block__note {
+  margin: 0;
+  padding: var(--sk-space-2) var(--sk-space-4);
+  border: 0.5px solid var(--sk-color-separator);
+  border-radius: var(--sk-radius-xl);
+  background: var(--sk-color-bg-secondary);
+  box-shadow: var(--sk-shadow-2);
+  font-size: 13px;
+  color: var(--sk-color-label);
+}
