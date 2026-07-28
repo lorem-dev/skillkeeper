@@ -9,6 +9,13 @@
   font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
+  // A badge is a label, not a paragraph: it stays on one line and loses its
+  // tail when the row squeezes it, rather than growing to two lines and
+  // changing the height of everything around it.
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   // Badges read as labels/controls, not body text -- no text selection by
   // default; opt in with the `selectable` prop.
   user-select: none;

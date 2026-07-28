@@ -112,6 +112,9 @@
   border: 0;
   background: none;
   cursor: pointer;
+  // Lets the badge inside shrink and ellipsize instead of forcing the row wider
+  // than the card: a repository name can be arbitrarily long.
+  min-width: 0;
 }
 
 // Actions (Edit / Install) stay hidden until the card is hovered (or a control
