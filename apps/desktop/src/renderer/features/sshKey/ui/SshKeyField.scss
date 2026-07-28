@@ -16,12 +16,19 @@
   min-height: var(--sk-control-height);
 }
 
-// Bounded so a long path can never widen the form. The text itself is clipped
-// at its head in the component (see clipHead); `text-overflow` stays as a
-// backstop for the moment before that measurement lands. The full path is
-// always available via the element's `title`.
+// The path is clipped at its head in the component (see clipHead), measured
+// against this element's own width; `text-overflow` stays as a backstop for the
+// moment before that measurement lands, and the full path is always available
+// via the element's `title`. Nothing here caps the width: the row's free space
+// does, which is what keeps the actions on the trailing edge.
 .sk-ssh-key__path {
-  max-width: 220px;
+  // Takes the row's free space, which puts the actions on the trailing edge
+  // instead of wherever the path happens to end -- and lines them up with the
+  // state line below, which is aligned the same way. `min-width: 0` lets the
+  // path give way rather than push them out of view; the measured head-clipping
+  // in the component reads this element's real width, so it adapts.
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -29,17 +36,57 @@
   color: var(--sk-color-label);
 }
 
-// Takes the row's free space so the action beside it lands on the trailing
-// edge, in line with the buttons of the row above. `flex-basis: 0` keeps the
-// text out of the container's intrinsic width, so the path row above still
-// decides how wide the control is; `min-width: 0` lets it ellipsize instead of
-// pushing that action out of view.
+// Takes the row's free space, so the row keeps the height of the one above it
+// and the text ellipsizes rather than widening the control. `flex-basis: 0`
+// keeps it out of the container's intrinsic width, so the path row decides how
+// wide the control is. Aligned to the trailing edge, where it reads as a caption
+// under the actions it describes rather than as a stray line under the path.
 .sk-ssh-key__state {
   flex: 1;
+  text-align: right;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
   color: var(--sk-color-label-2);
+}
+
+// Choose / clear / lock as one control: the GROUP carries the radius and clips
+// its members, so every button inside has square corners and the outer corners
+// come from the clip. Doing it that way rather than with :first-child and
+// :last-child is what keeps the seam intact while members come and go -- the
+// clear action appears with a chosen key, the padlock changes with its state,
+// and each is wrapped in a tooltip, so positional selectors had a way of
+// landing on the wrapper instead of the button and leaving one member detached.
+//
+// The tooltip bubble is portaled to the body, so this clip cannot hide it.
+.sk-ssh-key__actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+  // The same radius a Button carries on its own, so the group is shaped exactly
+  // like the single control it now reads as.
+  border-radius: var(--sk-radius-xl);
+  overflow: hidden;
+}
+
+// `.sk-button` (one class) sets the pill radius, so this needs at least as much
+// specificity to undo it -- `:where(button)` adds none and lost the tie on source
+// order, which left each member keeping its own pill inside the group and the
+// padlock looking detached from the button beside it.
+.sk-ssh-key__actions .sk-button {
+  border-radius: 0;
+}
+
+// Collapses the touching borders into one line instead of a double-weight seam.
+.sk-ssh-key__actions > *:not(:first-child) {
+  margin-left: -1px;
+}
+
+// Square icon-only members of the group: the glyph centered, no text padding.
+.sk-ssh-key__icon-btn {
+  width: var(--sk-control-height);
+  min-width: 0;
+  padding: 0;
 }

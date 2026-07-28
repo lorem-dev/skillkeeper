@@ -10,19 +10,22 @@ import { bridgeClient } from '@/services/bridge';
 import type { SshKeyDto } from '@/services/bridge';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { FormRow, Button } from '@/shared/ui';
+import { FormRow, Button, Icon, Tooltip } from '@/shared/ui';
 import { sshErrorKey } from '../lib/sshErrors';
 import { shouldPromptOnSelect } from '../lib/sshPrompt';
 import { createLatestRequestGuard } from '../lib/latestRequest';
 import { clipHead } from '../lib/clipHead';
+import { hasKey } from '../lib/hasKey';
 import './SshKeyField.scss';
 
-/** The msgid describing a chosen key's state, or null for `notConfigured` --
- *  the "Not set" path label already says enough on its own. */
-function stateMessageKey(state: SshKeyDto['state']): MessageKey | null {
+/** The msgid for the line under the actions: what the chosen key's state is, or,
+ *  with no key chosen, what happens instead. That sentence used to sit in the
+ *  row's description, where it read as a caveat about a setting the user had not
+ *  made yet; under the button it answers the question the empty row raises. */
+function stateMessageKey(state: SshKeyDto['state']): MessageKey {
   switch (state) {
     case 'notConfigured':
-      return null;
+      return 'settings.ssh.keyDescriptionFallback';
     case 'missing':
       return 'settings.ssh.state.missing';
     case 'notAKey':
@@ -196,15 +199,7 @@ export function SshKeyField() {
   return (
     <FormRow
       label={t('settings.ssh.key')}
-      // Two sentences, one per line: left to wrap on its own the hint breaks
-      // mid-sentence at this column, which reads as an accident.
-      description={
-        <>
-          {t('settings.ssh.keyDescription')}
-          <br />
-          {t('settings.ssh.keyDescriptionFallback')}
-        </>
-      }
+      description={t('settings.ssh.keyDescription')}
       align="top"
     >
       <div className="sk-ssh-key">
@@ -212,30 +207,53 @@ export function SshKeyField() {
           <span ref={pathRef} className="sk-ssh-key__path" title={dto.path}>
             {displayPath}
           </span>
-          <Button variant="secondary" loading={busy} onClick={() => void choose()}>
-            {t('settings.ssh.choose')}
-          </Button>
-          {dto.path !== undefined && (
-            <Button variant="secondary" onClick={() => void clear()}>
-              {t('settings.ssh.clear')}
-            </Button>
-          )}
+          {/* One joined group: the choose/clear action and, when there is a
+              passphrase to hold, the padlock. Choosing and clearing are the
+              same slot rather than two buttons: with a key already set there is
+              nothing to choose until it is cleared, so offering both left one
+              of them inert. The padlock is an icon with a tooltip, since it
+              toggles rather than names an action. */}
+          <div className="sk-ssh-key__actions">
+            {hasKey(dto) ? (
+              <Button variant="secondary" onClick={() => void clear()}>
+                {t('settings.ssh.clear')}
+              </Button>
+            ) : (
+              <Button variant="secondary" loading={busy} onClick={() => void choose()}>
+                {t('settings.ssh.choose')}
+              </Button>
+            )}
+            {dto.state === 'locked' && (
+              <Tooltip content={t('settings.ssh.unlock')}>
+                <Button
+                  variant="secondary"
+                  className="sk-ssh-key__icon-btn"
+                  loading={busy}
+                  aria-label={t('settings.ssh.unlock')}
+                  onClick={() => void unlock()}
+                >
+                  <Icon name="lock" size={16} />
+                </Button>
+              </Tooltip>
+            )}
+            {dto.state === 'unlocked' && (
+              <Tooltip content={t('settings.ssh.forget')}>
+                <Button
+                  variant="secondary"
+                  className="sk-ssh-key__icon-btn"
+                  aria-label={t('settings.ssh.forget')}
+                  onClick={() => void forget()}
+                >
+                  <Icon name="unlock" size={16} />
+                </Button>
+              </Tooltip>
+            )}
+          </div>
         </div>
         {/* Always rendered, even with nothing to say: the row holds its height
-            so the rest of Settings does not move when a state line or its
-            action appears. */}
+            so the rest of Settings does not move when a state line appears. */}
         <div className="sk-ssh-key__row">
-          <span className="sk-ssh-key__state">{stateKey !== null ? t(stateKey) : ''}</span>
-          {dto.state === 'locked' && (
-            <Button variant="secondary" loading={busy} onClick={() => void unlock()}>
-              {t('settings.ssh.unlock')}
-            </Button>
-          )}
-          {dto.state === 'unlocked' && (
-            <Button variant="secondary" onClick={() => void forget()}>
-              {t('settings.ssh.forget')}
-            </Button>
-          )}
+          <span className="sk-ssh-key__state">{t(stateKey)}</span>
         </div>
       </div>
     </FormRow>
