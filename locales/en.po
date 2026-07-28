@@ -1094,7 +1094,7 @@ msgid "settings.ssh.keyDescription"
 msgstr "Private key used for SSH remotes."
 
 msgid "settings.ssh.keyDescriptionFallback"
-msgstr "Without one, the system ssh setup is used."
+msgstr "Without an SSH key, the system ssh setup is used."
 
 msgid "settings.ssh.notSet"
 msgstr "Not set"
@@ -1112,16 +1112,16 @@ msgid "settings.ssh.forget"
 msgstr "Forget passphrase"
 
 msgid "settings.ssh.state.missing"
-msgstr "The chosen key file no longer exists."
+msgstr "Key file not found."
 
 msgid "settings.ssh.state.notAKey"
-msgstr "That file is not a private key."
+msgstr "Not a private key."
 
 msgid "settings.ssh.state.plain"
-msgstr "Ready (no passphrase)."
+msgstr "Ready, no passphrase."
 
 msgid "settings.ssh.state.locked"
-msgstr "Locked. The passphrase is asked when it is first needed."
+msgstr "Locked. Asked when first needed."
 
 msgid "settings.ssh.state.unlocked"
 msgstr "Unlocked for this session."
@@ -1140,6 +1140,9 @@ msgstr "Unlock"
 
 msgid "ssh.unlock.cancel"
 msgstr "Cancel"
+
+msgid "ssh.unlock.blocking"
+msgstr "Waiting for the SSH key passphrase."
 
 msgid "ssh.wrongPassphrase"
 msgstr "Wrong passphrase."

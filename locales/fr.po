@@ -1089,3 +1089,108 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "Aucun projet correspondant"
+
+msgid "logs.readMore"
+msgstr "En savoir plus"
+
+msgid "onboarding.settingsLater"
+msgstr "Tout cela peut être modifié plus tard dans les réglages."
+
+msgid "repositories.scpPortIgnored"
+msgstr "Un port ne peut pas être indiqué après deux-points : c'est un chemin qui commence là, donc la connexion se fera sur le port 22. Utilisez {url}."
+
+msgid "settings.ssh.choose"
+msgstr "Choisir…"
+
+msgid "settings.ssh.clear"
+msgstr "Effacer"
+
+msgid "settings.ssh.forget"
+msgstr "Oublier la phrase secrète"
+
+msgid "settings.ssh.key"
+msgstr "Clé SSH"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Clé privée utilisée pour les dépôts SSH."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Sans clé SSH, la configuration ssh du système est utilisée."
+
+msgid "settings.ssh.notSet"
+msgstr "Non définie"
+
+msgid "settings.ssh.state.locked"
+msgstr "Verrouillée. Demandée au premier besoin."
+
+msgid "settings.ssh.state.missing"
+msgstr "Fichier de clé introuvable."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "Pas une clé privée."
+
+msgid "settings.ssh.state.plain"
+msgstr "Prête, sans phrase secrète."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Déverrouillée pour la session."
+
+msgid "settings.ssh.unlock"
+msgstr "Déverrouiller"
+
+msgid "ssh.askpassUnavailable"
+msgstr "L'assistant de phrase secrète n'a pas pu démarrer ; ssh la demandera dans le terminal."
+
+msgid "ssh.hostKeyPrompt"
+msgstr "La clé de l'hôte n'est pas encore connue. Confirmez-la une fois dans le terminal."
+
+msgid "ssh.keyLocked"
+msgstr "La clé SSH est verrouillée. Déverrouillez-la pour continuer."
+
+msgid "ssh.keyMissing"
+msgstr "Le fichier de clé SSH indiqué est introuvable."
+
+msgid "ssh.noAgent"
+msgstr "Aucun ssh-agent ne tourne, donc Git demande la phrase secrète de votre clé chaque fois. Configurez-en un pour ne la saisir qu'une seule fois."
+
+msgid "ssh.notAPrivateKey"
+msgstr "Le fichier de clé SSH indiqué n'est pas une clé privée."
+
+msgid "ssh.unlock.cancel"
+msgstr "Annuler"
+
+msgid "ssh.unlock.blocking"
+msgstr "En attente de la phrase secrète de la clé SSH."
+
+msgid "ssh.unlock.hint"
+msgstr "Saisissez la phrase secrète de {path}. Elle n'est conservée que jusqu'à la fermeture de l'application."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Phrase secrète"
+
+msgid "ssh.unlock.submit"
+msgstr "Déverrouiller"
+
+msgid "ssh.unlock.title"
+msgstr "Déverrouiller la clé SSH"
+
+msgid "ssh.wrongPassphrase"
+msgstr "Phrase secrète incorrecte."
+
+msgid "tasks.status.skipped"
+msgstr "Reportée"
+
+msgid "terminal.copy"
+msgstr "Copier"
+
+msgid "terminal.paste"
+msgstr "Coller"
+
+msgid "terminal.selectAll"
+msgstr "Tout sélectionner"
+
+msgid "terminal.unavailable"
+msgstr "Terminal indisponible : {error}. Les commandes git s'exécutent toujours, mais leur sortie n'est pas affichée ici."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Vérification des mises à jour reportée : la clé SSH est verrouillée. Déverrouillez-la dans les réglages."

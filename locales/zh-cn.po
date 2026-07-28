@@ -1044,3 +1044,108 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "没有匹配的项目"
+
+msgid "logs.readMore"
+msgstr "了解更多"
+
+msgid "onboarding.settingsLater"
+msgstr "以上设置之后都可以在“设置”中更改。"
+
+msgid "repositories.scpPortIgnored"
+msgstr "冒号后面不能写端口：那里开始的是路径，因此连接会走 22 端口。请改用 {url}。"
+
+msgid "settings.ssh.choose"
+msgstr "选择…"
+
+msgid "settings.ssh.clear"
+msgstr "清除"
+
+msgid "settings.ssh.forget"
+msgstr "忘记密码短语"
+
+msgid "settings.ssh.key"
+msgstr "SSH 密钥"
+
+msgid "settings.ssh.keyDescription"
+msgstr "用于 SSH 仓库的私钥。"
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "未设置 SSH 密钥时使用系统 ssh 配置。"
+
+msgid "settings.ssh.notSet"
+msgstr "未设置"
+
+msgid "settings.ssh.state.locked"
+msgstr "已锁定。首次需要时询问。"
+
+msgid "settings.ssh.state.missing"
+msgstr "找不到密钥文件。"
+
+msgid "settings.ssh.state.notAKey"
+msgstr "不是私钥。"
+
+msgid "settings.ssh.state.plain"
+msgstr "就绪，无需密码短语。"
+
+msgid "settings.ssh.state.unlocked"
+msgstr "本次会话已解锁。"
+
+msgid "settings.ssh.unlock"
+msgstr "解锁"
+
+msgid "ssh.askpassUnavailable"
+msgstr "无法启动密码短语助手；ssh 将在终端中询问。"
+
+msgid "ssh.hostKeyPrompt"
+msgstr "主机密钥尚未确认。请在终端中确认一次。"
+
+msgid "ssh.keyLocked"
+msgstr "SSH 密钥已锁定。请解锁后继续。"
+
+msgid "ssh.keyMissing"
+msgstr "找不到所配置的 SSH 密钥文件。"
+
+msgid "ssh.noAgent"
+msgstr "没有运行 ssh-agent，因此 Git 每次都会询问密钥的密码短语。配置一个即可只输入一次。"
+
+msgid "ssh.notAPrivateKey"
+msgstr "所配置的 SSH 密钥文件不是私钥。"
+
+msgid "ssh.unlock.cancel"
+msgstr "取消"
+
+msgid "ssh.unlock.blocking"
+msgstr "正在等待 SSH 密钥口令。"
+
+msgid "ssh.unlock.hint"
+msgstr "请输入 {path} 的密码短语。它只保留到应用退出。"
+
+msgid "ssh.unlock.passphrase"
+msgstr "密码短语"
+
+msgid "ssh.unlock.submit"
+msgstr "解锁"
+
+msgid "ssh.unlock.title"
+msgstr "解锁 SSH 密钥"
+
+msgid "ssh.wrongPassphrase"
+msgstr "密码短语不正确。"
+
+msgid "tasks.status.skipped"
+msgstr "已推迟"
+
+msgid "terminal.copy"
+msgstr "复制"
+
+msgid "terminal.paste"
+msgstr "粘贴"
+
+msgid "terminal.selectAll"
+msgstr "全选"
+
+msgid "terminal.unavailable"
+msgstr "终端不可用：{error}。git 命令仍会运行，但这里不显示其输出。"
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "更新检查已推迟：SSH 密钥已锁定。请在设置中解锁。"

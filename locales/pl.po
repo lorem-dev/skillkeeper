@@ -1179,3 +1179,108 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "Brak pasujących projektów"
+
+msgid "logs.readMore"
+msgstr "Dowiedz się więcej"
+
+msgid "onboarding.settingsLater"
+msgstr "Wszystko to można zmienić później w ustawieniach."
+
+msgid "repositories.scpPortIgnored"
+msgstr "Portu nie da się podać po dwukropku: tam zaczyna się ścieżka, więc połączenie pójdzie na port 22. Użyj {url}."
+
+msgid "settings.ssh.choose"
+msgstr "Wybierz…"
+
+msgid "settings.ssh.clear"
+msgstr "Wyczyść"
+
+msgid "settings.ssh.forget"
+msgstr "Zapomnij hasło"
+
+msgid "settings.ssh.key"
+msgstr "Klucz SSH"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Klucz prywatny dla repozytoriów SSH."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Bez klucza SSH używana jest konfiguracja systemowa."
+
+msgid "settings.ssh.notSet"
+msgstr "Nie ustawiono"
+
+msgid "settings.ssh.state.locked"
+msgstr "Zablokowany. Zapytamy przy pierwszym użyciu."
+
+msgid "settings.ssh.state.missing"
+msgstr "Nie znaleziono pliku klucza."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "To nie jest klucz prywatny."
+
+msgid "settings.ssh.state.plain"
+msgstr "Gotowy, bez hasła."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Odblokowany na tę sesję."
+
+msgid "settings.ssh.unlock"
+msgstr "Odblokuj"
+
+msgid "ssh.askpassUnavailable"
+msgstr "Nie udało się uruchomić pomocnika hasła; ssh zapyta o nie w terminalu."
+
+msgid "ssh.hostKeyPrompt"
+msgstr "Klucz hosta nie jest jeszcze znany. Potwierdź go raz w terminalu."
+
+msgid "ssh.keyLocked"
+msgstr "Klucz SSH jest zablokowany. Odblokuj go, aby kontynuować."
+
+msgid "ssh.keyMissing"
+msgstr "Nie znaleziono wskazanego pliku klucza SSH."
+
+msgid "ssh.noAgent"
+msgstr "ssh-agent nie jest uruchomiony, więc Git pyta o hasło klucza za każdym razem. Skonfiguruj go, aby podać hasło tylko raz."
+
+msgid "ssh.notAPrivateKey"
+msgstr "Wskazany plik klucza SSH nie jest kluczem prywatnym."
+
+msgid "ssh.unlock.cancel"
+msgstr "Anuluj"
+
+msgid "ssh.unlock.blocking"
+msgstr "Oczekiwanie na hasło klucza SSH."
+
+msgid "ssh.unlock.hint"
+msgstr "Podaj hasło do klucza {path}. Jest przechowywane tylko do zamknięcia aplikacji."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Hasło"
+
+msgid "ssh.unlock.submit"
+msgstr "Odblokuj"
+
+msgid "ssh.unlock.title"
+msgstr "Odblokowanie klucza SSH"
+
+msgid "ssh.wrongPassphrase"
+msgstr "Nieprawidłowe hasło."
+
+msgid "tasks.status.skipped"
+msgstr "Odłożone"
+
+msgid "terminal.copy"
+msgstr "Kopiuj"
+
+msgid "terminal.paste"
+msgstr "Wklej"
+
+msgid "terminal.selectAll"
+msgstr "Zaznacz wszystko"
+
+msgid "terminal.unavailable"
+msgstr "Terminal niedostępny: {error}. Polecenia git działają, ale ich wyjście nie jest tu pokazywane."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Sprawdzanie aktualizacji odłożone: klucz SSH jest zablokowany. Odblokuj go w ustawieniach."

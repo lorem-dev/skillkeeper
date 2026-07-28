@@ -1089,3 +1089,108 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "hooks.requireConsent"
 msgstr "Die Installation von Hooks erfordert eine ausdrückliche Zustimmung (--allow-hooks). Skill-Inhalt installiert; Hooks übersprungen."
+
+msgid "logs.readMore"
+msgstr "Mehr erfahren"
+
+msgid "onboarding.settingsLater"
+msgstr "All das lässt sich später in den Einstellungen ändern."
+
+msgid "repositories.scpPortIgnored"
+msgstr "Ein Port lässt sich nicht nach einem Doppelpunkt angeben: dort beginnt ein Pfad, die Verbindung geht also auf Port 22. Verwenden Sie {url}."
+
+msgid "settings.ssh.choose"
+msgstr "Auswählen…"
+
+msgid "settings.ssh.clear"
+msgstr "Leeren"
+
+msgid "settings.ssh.forget"
+msgstr "Passphrase verwerfen"
+
+msgid "settings.ssh.key"
+msgstr "SSH-Schlüssel"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Privater Schlüssel für SSH-Repositorys."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Ohne SSH-Schlüssel gilt die System-ssh-Konfiguration."
+
+msgid "settings.ssh.notSet"
+msgstr "Nicht gesetzt"
+
+msgid "settings.ssh.state.locked"
+msgstr "Gesperrt. Wird beim ersten Bedarf erfragt."
+
+msgid "settings.ssh.state.missing"
+msgstr "Schlüsseldatei nicht gefunden."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "Kein privater Schlüssel."
+
+msgid "settings.ssh.state.plain"
+msgstr "Bereit, ohne Passphrase."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Für diese Sitzung entsperrt."
+
+msgid "settings.ssh.unlock"
+msgstr "Entsperren"
+
+msgid "ssh.askpassUnavailable"
+msgstr "Das Passphrase-Hilfsprogramm konnte nicht gestartet werden; ssh fragt im Terminal danach."
+
+msgid "ssh.hostKeyPrompt"
+msgstr "Der Hostschlüssel ist noch unbekannt. Bestätigen Sie ihn einmal im Terminal."
+
+msgid "ssh.keyLocked"
+msgstr "Der SSH-Schlüssel ist gesperrt. Entsperren Sie ihn, um fortzufahren."
+
+msgid "ssh.keyMissing"
+msgstr "Die angegebene SSH-Schlüsseldatei wurde nicht gefunden."
+
+msgid "ssh.noAgent"
+msgstr "Es läuft kein ssh-agent, daher fragt Git jedes Mal nach der Passphrase des Schlüssels. Richten Sie einen ein, um nur einmal gefragt zu werden."
+
+msgid "ssh.notAPrivateKey"
+msgstr "Die angegebene SSH-Schlüsseldatei ist kein privater Schlüssel."
+
+msgid "ssh.unlock.cancel"
+msgstr "Abbrechen"
+
+msgid "ssh.unlock.blocking"
+msgstr "Warten auf die Passphrase des SSH-Schlüssels."
+
+msgid "ssh.unlock.hint"
+msgstr "Geben Sie die Passphrase für {path} ein. Sie wird nur bis zum Beenden der App behalten."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Passphrase"
+
+msgid "ssh.unlock.submit"
+msgstr "Entsperren"
+
+msgid "ssh.unlock.title"
+msgstr "SSH-Schlüssel entsperren"
+
+msgid "ssh.wrongPassphrase"
+msgstr "Falsche Passphrase."
+
+msgid "tasks.status.skipped"
+msgstr "Zurückgestellt"
+
+msgid "terminal.copy"
+msgstr "Kopieren"
+
+msgid "terminal.paste"
+msgstr "Einfügen"
+
+msgid "terminal.selectAll"
+msgstr "Alles auswählen"
+
+msgid "terminal.unavailable"
+msgstr "Terminal nicht verfügbar: {error}. Git-Befehle laufen weiter, ihre Ausgabe wird hier aber nicht gezeigt."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Update-Prüfung zurückgestellt: der SSH-Schlüssel ist gesperrt. Entsperren Sie ihn in den Einstellungen."

@@ -1089,3 +1089,108 @@ msgstr "commit-helper"
 
 msgid "onboarding.tree.skillC"
 msgstr "changelog"
+
+msgid "logs.readMore"
+msgstr "और जानें"
+
+msgid "onboarding.settingsLater"
+msgstr "यह सब बाद में सेटिंग्स में बदला जा सकता है।"
+
+msgid "repositories.scpPortIgnored"
+msgstr "कोलन के बाद पोर्ट नहीं लिखा जा सकता: वहाँ से पथ शुरू होता है, इसलिए कनेक्शन पोर्ट 22 पर जाएगा। {url} का उपयोग करें।"
+
+msgid "settings.ssh.choose"
+msgstr "चुनें…"
+
+msgid "settings.ssh.clear"
+msgstr "हटाएँ"
+
+msgid "settings.ssh.forget"
+msgstr "पासफ़्रेज़ भुला दें"
+
+msgid "settings.ssh.key"
+msgstr "SSH कुंजी"
+
+msgid "settings.ssh.keyDescription"
+msgstr "SSH रिपॉज़िटरी के लिए निजी कुंजी।"
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "SSH कुंजी बिना सिस्टम की ssh सेटअप उपयोग होती है।"
+
+msgid "settings.ssh.notSet"
+msgstr "सेट नहीं है"
+
+msgid "settings.ssh.state.locked"
+msgstr "लॉक है। पहली बार ज़रूरत पर पूछेंगे।"
+
+msgid "settings.ssh.state.missing"
+msgstr "कुंजी फ़ाइल नहीं मिली।"
+
+msgid "settings.ssh.state.notAKey"
+msgstr "यह निजी कुंजी नहीं है।"
+
+msgid "settings.ssh.state.plain"
+msgstr "तैयार, पासफ़्रेज़ नहीं।"
+
+msgid "settings.ssh.state.unlocked"
+msgstr "इस सत्र के लिए अनलॉक।"
+
+msgid "settings.ssh.unlock"
+msgstr "अनलॉक करें"
+
+msgid "ssh.askpassUnavailable"
+msgstr "पासफ़्रेज़ सहायक शुरू नहीं हो सका; ssh टर्मिनल में पूछेगा।"
+
+msgid "ssh.hostKeyPrompt"
+msgstr "होस्ट कुंजी अभी ज्ञात नहीं है। टर्मिनल में एक बार पुष्टि करें।"
+
+msgid "ssh.keyLocked"
+msgstr "SSH कुंजी लॉक है। जारी रखने के लिए अनलॉक करें।"
+
+msgid "ssh.keyMissing"
+msgstr "निर्धारित SSH कुंजी फ़ाइल नहीं मिली।"
+
+msgid "ssh.noAgent"
+msgstr "कोई ssh-agent नहीं चल रहा, इसलिए Git हर बार कुंजी का पासफ़्रेज़ पूछता है। एक सेट करें ताकि केवल एक बार पूछा जाए।"
+
+msgid "ssh.notAPrivateKey"
+msgstr "निर्धारित SSH कुंजी फ़ाइल निजी कुंजी नहीं है।"
+
+msgid "ssh.unlock.cancel"
+msgstr "रद्द करें"
+
+msgid "ssh.unlock.blocking"
+msgstr "SSH कुंजी के पासफ़्रेज़ की प्रतीक्षा है।"
+
+msgid "ssh.unlock.hint"
+msgstr "{path} का पासफ़्रेज़ दर्ज करें। यह ऐप बंद होने तक ही रखा जाता है।"
+
+msgid "ssh.unlock.passphrase"
+msgstr "पासफ़्रेज़"
+
+msgid "ssh.unlock.submit"
+msgstr "अनलॉक करें"
+
+msgid "ssh.unlock.title"
+msgstr "SSH कुंजी अनलॉक करें"
+
+msgid "ssh.wrongPassphrase"
+msgstr "पासफ़्रेज़ ग़लत है।"
+
+msgid "tasks.status.skipped"
+msgstr "स्थगित"
+
+msgid "terminal.copy"
+msgstr "कॉपी"
+
+msgid "terminal.paste"
+msgstr "पेस्ट"
+
+msgid "terminal.selectAll"
+msgstr "सब चुनें"
+
+msgid "terminal.unavailable"
+msgstr "टर्मिनल उपलब्ध नहीं: {error}। git कमांड चलते रहते हैं, पर उनका आउटपुट यहाँ नहीं दिखता।"
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "अपडेट जाँच स्थगित: SSH कुंजी लॉक है। सेटिंग्स में अनलॉक करें।"

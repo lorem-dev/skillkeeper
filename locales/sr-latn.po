@@ -1134,3 +1134,108 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "Nema odgovarajućeg projekta"
+
+msgid "logs.readMore"
+msgstr "Saznaj više"
+
+msgid "onboarding.settingsLater"
+msgstr "Sve ovo se može promeniti kasnije u podešavanjima."
+
+msgid "repositories.scpPortIgnored"
+msgstr "Port se ne može navesti posle dvotačke: tamo počinje putanja, pa će veza ići na port 22. Koristite {url}."
+
+msgid "settings.ssh.choose"
+msgstr "Izaberi…"
+
+msgid "settings.ssh.clear"
+msgstr "Očisti"
+
+msgid "settings.ssh.forget"
+msgstr "Zaboravi frazu"
+
+msgid "settings.ssh.key"
+msgstr "SSH ključ"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Privatni ključ za SSH repozitorijume."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Bez SSH ključa koristi se sistemski ssh."
+
+msgid "settings.ssh.notSet"
+msgstr "Nije postavljen"
+
+msgid "settings.ssh.state.locked"
+msgstr "Zaključan. Pitaćemo pri prvoj upotrebi."
+
+msgid "settings.ssh.state.missing"
+msgstr "Datoteka ključa nije nađena."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "Nije privatni ključ."
+
+msgid "settings.ssh.state.plain"
+msgstr "Spreman, bez fraze."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Otključan za ovu sesiju."
+
+msgid "settings.ssh.unlock"
+msgstr "Otključaj"
+
+msgid "ssh.askpassUnavailable"
+msgstr "Pomoćnik za frazu nije mogao da se pokrene; ssh će pitati u terminalu."
+
+msgid "ssh.hostKeyPrompt"
+msgstr "Ključ hosta još nije poznat. Potvrdite ga jednom u terminalu."
+
+msgid "ssh.keyLocked"
+msgstr "SSH ključ je zaključan. Otključajte ga da biste nastavili."
+
+msgid "ssh.keyMissing"
+msgstr "Navedena datoteka SSH ključa nije nađena."
+
+msgid "ssh.noAgent"
+msgstr "ssh-agent nije pokrenut, pa Git svaki put traži frazu ključa. Podesite ga da biste je uneli samo jednom."
+
+msgid "ssh.notAPrivateKey"
+msgstr "Navedena datoteka SSH ključa nije privatni ključ."
+
+msgid "ssh.unlock.cancel"
+msgstr "Otkaži"
+
+msgid "ssh.unlock.blocking"
+msgstr "Čeka se fraza za SSH ključ."
+
+msgid "ssh.unlock.hint"
+msgstr "Unesite frazu za {path}. Čuva se samo dok se aplikacija ne zatvori."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Fraza"
+
+msgid "ssh.unlock.submit"
+msgstr "Otključaj"
+
+msgid "ssh.unlock.title"
+msgstr "Otključavanje SSH ključa"
+
+msgid "ssh.wrongPassphrase"
+msgstr "Pogrešna fraza."
+
+msgid "tasks.status.skipped"
+msgstr "Odloženo"
+
+msgid "terminal.copy"
+msgstr "Kopiraj"
+
+msgid "terminal.paste"
+msgstr "Nalepi"
+
+msgid "terminal.selectAll"
+msgstr "Izaberi sve"
+
+msgid "terminal.unavailable"
+msgstr "Terminal nedostupan: {error}. Git komande se izvršavaju, ali njihov izlaz se ovde ne prikazuje."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Provera ažuriranja je odložena: SSH ključ je zaključan. Otključajte ga u podešavanjima."

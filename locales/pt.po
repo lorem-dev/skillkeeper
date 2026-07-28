@@ -1179,3 +1179,108 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "Nenhum projeto correspondente"
+
+msgid "logs.readMore"
+msgstr "Saber mais"
+
+msgid "onboarding.settingsLater"
+msgstr "Tudo isto pode ser alterado depois nas configurações."
+
+msgid "repositories.scpPortIgnored"
+msgstr "A porta não pode ser indicada após os dois pontos: ali começa um caminho, por isso a ligação irá para a porta 22. Use {url}."
+
+msgid "settings.ssh.choose"
+msgstr "Escolher…"
+
+msgid "settings.ssh.clear"
+msgstr "Limpar"
+
+msgid "settings.ssh.forget"
+msgstr "Esquecer a frase-passe"
+
+msgid "settings.ssh.key"
+msgstr "Chave SSH"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Chave privada para repositórios SSH."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Sem chave SSH usa-se a configuração ssh do sistema."
+
+msgid "settings.ssh.notSet"
+msgstr "Não definida"
+
+msgid "settings.ssh.state.locked"
+msgstr "Bloqueada. Pedida no primeiro uso."
+
+msgid "settings.ssh.state.missing"
+msgstr "Ficheiro de chave não encontrado."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "Não é uma chave privada."
+
+msgid "settings.ssh.state.plain"
+msgstr "Pronta, sem frase-passe."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Desbloqueada nesta sessão."
+
+msgid "settings.ssh.unlock"
+msgstr "Desbloquear"
+
+msgid "ssh.askpassUnavailable"
+msgstr "Não foi possível iniciar o auxiliar da frase-passe; o ssh vai pedi-la no terminal."
+
+msgid "ssh.hostKeyPrompt"
+msgstr "A chave do anfitrião ainda não é conhecida. Confirme-a uma vez no terminal."
+
+msgid "ssh.keyLocked"
+msgstr "A chave SSH está bloqueada. Desbloqueie-a para continuar."
+
+msgid "ssh.keyMissing"
+msgstr "O ficheiro de chave SSH indicado não foi encontrado."
+
+msgid "ssh.noAgent"
+msgstr "Nenhum ssh-agent em execução, por isso o Git pede a frase-passe da chave todas as vezes. Configure um para a introduzir apenas uma vez."
+
+msgid "ssh.notAPrivateKey"
+msgstr "O ficheiro de chave SSH indicado não é uma chave privada."
+
+msgid "ssh.unlock.cancel"
+msgstr "Cancelar"
+
+msgid "ssh.unlock.blocking"
+msgstr "A aguardar a frase-passe da chave SSH."
+
+msgid "ssh.unlock.hint"
+msgstr "Introduza a frase-passe de {path}. É guardada apenas até fechar a aplicação."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Frase-passe"
+
+msgid "ssh.unlock.submit"
+msgstr "Desbloquear"
+
+msgid "ssh.unlock.title"
+msgstr "Desbloquear a chave SSH"
+
+msgid "ssh.wrongPassphrase"
+msgstr "Frase-passe incorreta."
+
+msgid "tasks.status.skipped"
+msgstr "Adiada"
+
+msgid "terminal.copy"
+msgstr "Copiar"
+
+msgid "terminal.paste"
+msgstr "Colar"
+
+msgid "terminal.selectAll"
+msgstr "Selecionar tudo"
+
+msgid "terminal.unavailable"
+msgstr "Terminal indisponível: {error}. Os comandos git continuam a correr, mas a saída não é mostrada aqui."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Verificação de atualizações adiada: a chave SSH está bloqueada. Desbloqueie-a nas configurações."

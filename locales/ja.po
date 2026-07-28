@@ -1044,3 +1044,108 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "一致するプロジェクトがありません"
+
+msgid "logs.readMore"
+msgstr "詳しく見る"
+
+msgid "onboarding.settingsLater"
+msgstr "これらは後から設定で変更できます。"
+
+msgid "repositories.scpPortIgnored"
+msgstr "コロンの後ろにポートは書けません。そこから始まるのはパスなので、接続はポート 22 になります。{url} を使ってください。"
+
+msgid "settings.ssh.choose"
+msgstr "選択…"
+
+msgid "settings.ssh.clear"
+msgstr "クリア"
+
+msgid "settings.ssh.forget"
+msgstr "パスフレーズを破棄"
+
+msgid "settings.ssh.key"
+msgstr "SSH 鍵"
+
+msgid "settings.ssh.keyDescription"
+msgstr "SSH リモート用の秘密鍵。"
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "SSH 鍵がなければシステムの ssh 設定を使います。"
+
+msgid "settings.ssh.notSet"
+msgstr "未設定"
+
+msgid "settings.ssh.state.locked"
+msgstr "ロック中。最初に必要なときに尋ねます。"
+
+msgid "settings.ssh.state.missing"
+msgstr "鍵ファイルが見つかりません。"
+
+msgid "settings.ssh.state.notAKey"
+msgstr "秘密鍵ではありません。"
+
+msgid "settings.ssh.state.plain"
+msgstr "準備完了。パスフレーズ不要。"
+
+msgid "settings.ssh.state.unlocked"
+msgstr "このセッションは解除済み。"
+
+msgid "settings.ssh.unlock"
+msgstr "ロック解除"
+
+msgid "ssh.askpassUnavailable"
+msgstr "パスフレーズ補助プログラムを起動できませんでした。ssh がターミナルで尋ねます。"
+
+msgid "ssh.hostKeyPrompt"
+msgstr "ホスト鍵はまだ未確認です。ターミナルで一度承認してください。"
+
+msgid "ssh.keyLocked"
+msgstr "SSH 鍵がロックされています。解除してから続けてください。"
+
+msgid "ssh.keyMissing"
+msgstr "設定された SSH 鍵ファイルが見つかりません。"
+
+msgid "ssh.noAgent"
+msgstr "ssh-agent が動いていないため、Git は毎回鍵のパスフレーズを尋ねます。設定すれば入力は一度だけになります。"
+
+msgid "ssh.notAPrivateKey"
+msgstr "設定された SSH 鍵ファイルは秘密鍵ではありません。"
+
+msgid "ssh.unlock.cancel"
+msgstr "キャンセル"
+
+msgid "ssh.unlock.blocking"
+msgstr "SSH キーのパスフレーズを待っています。"
+
+msgid "ssh.unlock.hint"
+msgstr "{path} のパスフレーズを入力してください。アプリを終了するまでのみ保持されます。"
+
+msgid "ssh.unlock.passphrase"
+msgstr "パスフレーズ"
+
+msgid "ssh.unlock.submit"
+msgstr "ロック解除"
+
+msgid "ssh.unlock.title"
+msgstr "SSH 鍵のロック解除"
+
+msgid "ssh.wrongPassphrase"
+msgstr "パスフレーズが違います。"
+
+msgid "tasks.status.skipped"
+msgstr "延期"
+
+msgid "terminal.copy"
+msgstr "コピー"
+
+msgid "terminal.paste"
+msgstr "貼り付け"
+
+msgid "terminal.selectAll"
+msgstr "すべて選択"
+
+msgid "terminal.unavailable"
+msgstr "ターミナルを利用できません: {error}。git コマンドは実行されますが、出力はここに表示されません。"
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "更新確認を延期しました: SSH 鍵がロックされています。設定で解除してください。"

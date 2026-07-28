@@ -1179,3 +1179,108 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "hooks.requireConsent"
 msgstr "Установка хуков требует явного согласия (--allow-hooks). Тело навыка установлено; хуки пропущены."
+
+msgid "logs.readMore"
+msgstr "Подробнее"
+
+msgid "onboarding.settingsLater"
+msgstr "Всё это можно изменить позже в настройках."
+
+msgid "repositories.scpPortIgnored"
+msgstr "Порт нельзя указать после двоеточия: там начинается путь, поэтому соединение пойдёт на порт 22. Используйте {url}."
+
+msgid "settings.ssh.choose"
+msgstr "Выбрать…"
+
+msgid "settings.ssh.clear"
+msgstr "Очистить"
+
+msgid "settings.ssh.forget"
+msgstr "Забыть пароль"
+
+msgid "settings.ssh.key"
+msgstr "SSH-ключ"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Приватный ключ для SSH-репозиториев."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Без SSH-ключа используется системный ssh."
+
+msgid "settings.ssh.notSet"
+msgstr "Не задан"
+
+msgid "settings.ssh.state.locked"
+msgstr "Заблокирован. Спросим при первом обращении."
+
+msgid "settings.ssh.state.missing"
+msgstr "Файл ключа не найден."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "Это не приватный ключ."
+
+msgid "settings.ssh.state.plain"
+msgstr "Готов, без пароля."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Разблокирован на сессию."
+
+msgid "settings.ssh.unlock"
+msgstr "Разблокировать"
+
+msgid "ssh.askpassUnavailable"
+msgstr "Не удалось запустить помощник для пароля; ssh спросит его в терминале."
+
+msgid "ssh.hostKeyPrompt"
+msgstr "Ключ хоста ещё неизвестен. Подтвердите его один раз в терминале."
+
+msgid "ssh.keyLocked"
+msgstr "SSH-ключ заблокирован. Разблокируйте его, чтобы продолжить."
+
+msgid "ssh.keyMissing"
+msgstr "Указанный файл SSH-ключа не найден."
+
+msgid "ssh.noAgent"
+msgstr "ssh-agent не запущен, поэтому Git спрашивает пароль ключа каждый раз. Настройте его, чтобы вводить пароль только один раз."
+
+msgid "ssh.notAPrivateKey"
+msgstr "Указанный файл SSH-ключа не является приватным ключом."
+
+msgid "ssh.unlock.cancel"
+msgstr "Отмена"
+
+msgid "ssh.unlock.blocking"
+msgstr "Ожидание пароля от SSH-ключа."
+
+msgid "ssh.unlock.hint"
+msgstr "Введите пароль для ключа {path}. Он хранится только до выхода из приложения."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Пароль"
+
+msgid "ssh.unlock.submit"
+msgstr "Разблокировать"
+
+msgid "ssh.unlock.title"
+msgstr "Разблокировка SSH-ключа"
+
+msgid "ssh.wrongPassphrase"
+msgstr "Неверный пароль."
+
+msgid "tasks.status.skipped"
+msgstr "Отложено"
+
+msgid "terminal.copy"
+msgstr "Копировать"
+
+msgid "terminal.paste"
+msgstr "Вставить"
+
+msgid "terminal.selectAll"
+msgstr "Выделить всё"
+
+msgid "terminal.unavailable"
+msgstr "Терминал недоступен: {error}. Команды git выполняются, но их вывод здесь не показывается."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Проверка обновлений отложена: SSH-ключ заблокирован. Разблокируйте его в настройках."

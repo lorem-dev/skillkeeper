@@ -1044,3 +1044,108 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "沒有符合的專案"
+
+msgid "logs.readMore"
+msgstr "了解更多"
+
+msgid "onboarding.settingsLater"
+msgstr "以上設定之後都可以在「設定」中變更。"
+
+msgid "repositories.scpPortIgnored"
+msgstr "冒號後面不能寫通訊埠：那裡開始的是路徑，因此連線會走 22 埠。請改用 {url}。"
+
+msgid "settings.ssh.choose"
+msgstr "選擇…"
+
+msgid "settings.ssh.clear"
+msgstr "清除"
+
+msgid "settings.ssh.forget"
+msgstr "忘記密碼短語"
+
+msgid "settings.ssh.key"
+msgstr "SSH 金鑰"
+
+msgid "settings.ssh.keyDescription"
+msgstr "用於 SSH 儲存庫的私密金鑰。"
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "未設定 SSH 金鑰時使用系統 ssh 設定。"
+
+msgid "settings.ssh.notSet"
+msgstr "未設定"
+
+msgid "settings.ssh.state.locked"
+msgstr "已鎖定。首次需要時詢問。"
+
+msgid "settings.ssh.state.missing"
+msgstr "找不到金鑰檔案。"
+
+msgid "settings.ssh.state.notAKey"
+msgstr "不是私密金鑰。"
+
+msgid "settings.ssh.state.plain"
+msgstr "就緒，不需密碼短語。"
+
+msgid "settings.ssh.state.unlocked"
+msgstr "本次工作階段已解鎖。"
+
+msgid "settings.ssh.unlock"
+msgstr "解鎖"
+
+msgid "ssh.askpassUnavailable"
+msgstr "無法啟動密碼短語輔助程式；ssh 將在終端機中詢問。"
+
+msgid "ssh.hostKeyPrompt"
+msgstr "主機金鑰尚未確認。請在終端機中確認一次。"
+
+msgid "ssh.keyLocked"
+msgstr "SSH 金鑰已鎖定。請解鎖後繼續。"
+
+msgid "ssh.keyMissing"
+msgstr "找不到所設定的 SSH 金鑰檔案。"
+
+msgid "ssh.noAgent"
+msgstr "沒有執行 ssh-agent，因此 Git 每次都會詢問金鑰的密碼短語。設定一個即可只輸入一次。"
+
+msgid "ssh.notAPrivateKey"
+msgstr "所設定的 SSH 金鑰檔案不是私密金鑰。"
+
+msgid "ssh.unlock.cancel"
+msgstr "取消"
+
+msgid "ssh.unlock.blocking"
+msgstr "正在等待 SSH 金鑰密語。"
+
+msgid "ssh.unlock.hint"
+msgstr "請輸入 {path} 的密碼短語。它只保留到應用程式結束。"
+
+msgid "ssh.unlock.passphrase"
+msgstr "密碼短語"
+
+msgid "ssh.unlock.submit"
+msgstr "解鎖"
+
+msgid "ssh.unlock.title"
+msgstr "解鎖 SSH 金鑰"
+
+msgid "ssh.wrongPassphrase"
+msgstr "密碼短語不正確。"
+
+msgid "tasks.status.skipped"
+msgstr "已延後"
+
+msgid "terminal.copy"
+msgstr "複製"
+
+msgid "terminal.paste"
+msgstr "貼上"
+
+msgid "terminal.selectAll"
+msgstr "全選"
+
+msgid "terminal.unavailable"
+msgstr "終端機不可用：{error}。git 命令仍會執行，但這裡不顯示其輸出。"
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "更新檢查已延後：SSH 金鑰已鎖定。請在設定中解鎖。"
