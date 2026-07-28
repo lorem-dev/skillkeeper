@@ -4,7 +4,7 @@
  * client -- the renderer never verifies a passphrase or touches the key file
  * itself. Local component state only: nothing else in the app reads it.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MessageKey } from '@skillkeeper/i18n';
 import { bridgeClient } from '@/services/bridge';
 import type { SshKeyDto } from '@/services/bridge';
@@ -13,6 +13,7 @@ import { useTranslator } from '@/systems/i18n';
 import { FormRow, Button } from '@/shared/ui';
 import { sshErrorKey } from '../lib/sshErrors';
 import { shouldPromptOnSelect } from '../lib/sshPrompt';
+import { createLatestRequestGuard } from '../lib/latestRequest';
 import './SshKeyField.scss';
 
 /** The msgid describing a chosen key's state, or null for `notConfigured` --
@@ -38,17 +39,61 @@ export function SshKeyField() {
   const t = useTranslator();
   const notify = useSkillkeeperStore((s) => s.notify);
   const [dto, setDto] = useState<SshKeyDto | null>(null);
+  // Guards Choose and Unlock: both raise a native window (a file picker, or
+  // the unlock prompt) and a double-click must not raise a second one, so
+  // both are disabled for the duration of whichever is running.
+  const [busy, setBusy] = useState(false);
+  // Mount, the unlock-required event, and the unlock-resolved event each
+  // trigger their own `sshKeyState()` read; two can be in flight together
+  // (e.g. a resolve arriving just after mount), and nothing guarantees they
+  // settle in the order they started. The guard lets a stale settle be
+  // ignored instead of clobbering the row with an older value.
+  // `useRef`'s initializer only matters on the first render (later calls are
+  // discarded), so the guard is constructed once despite the plain argument.
+  const requestGuard = useRef(createLatestRequestGuard());
+
+  // ssh_key_select/clear/forget/prompt reject with a raw backend error string
+  // (unlike the RepoResult-shaped calls) -- map through sshErrorKey so a
+  // known code still translates, exactly like the clone/sync notify path in
+  // store.ts. `notify` is a stable store-action reference, so this identity
+  // never actually changes -- wrapped in `useCallback` only so `refreshState`
+  // below can declare it as a dependency.
+  const reportFailure = useCallback(
+    (error: unknown) => {
+      const text = String(error);
+      const key = sshErrorKey(text);
+      notify(key !== null ? { key } : text, 'error');
+    },
+    [notify],
+  );
+
+  // Re-reads `sshKeyState()` under the request guard, so a settle that is no
+  // longer the latest request is silently dropped (neither applied nor
+  // reported) rather than clobbering the row or double-reporting a failure
+  // two overlapping reads both hit.
+  const refreshState = useCallback(() => {
+    const guard = requestGuard.current;
+    const token = guard.start();
+    bridgeClient
+      .sshKeyState()
+      .then((next) => {
+        if (guard.isCurrent(token)) setDto(next);
+      })
+      .catch((error: unknown) => {
+        if (guard.isCurrent(token)) reportFailure(error);
+      });
+  }, [reportFailure]);
 
   useEffect(() => {
-    void bridgeClient.sshKeyState().then(setDto);
-  }, []);
+    refreshState();
+  }, [refreshState]);
 
   // A blocked git operation elsewhere (e.g. a repository sync) can raise the
   // unlock window while this page happens to be open; refresh so the state
   // line does not go stale until the user navigates back to Settings.
   useEffect(
-    () => bridgeClient.onSshUnlockRequired(() => void bridgeClient.sshKeyState().then(setDto)),
-    [],
+    () => bridgeClient.onSshUnlockRequired(() => refreshState()),
+    [refreshState],
   );
 
   // The prompt this row raises (or joins) resolves in its own window, so this
@@ -56,18 +101,9 @@ export function SshKeyField() {
   // than trusting the payload, so the row settles to "Unlocked for this
   // session" on success or back to "Locked" on cancel/close either way.
   useEffect(
-    () => bridgeClient.onSshUnlockResolved(() => void bridgeClient.sshKeyState().then(setDto)),
-    [],
+    () => bridgeClient.onSshUnlockResolved(() => refreshState()),
+    [refreshState],
   );
-
-  // ssh_key_select/clear/forget reject with a raw backend error string (unlike
-  // the RepoResult-shaped calls) -- map through sshErrorKey so a known code
-  // still translates, exactly like the clone/sync notify path in store.ts.
-  function reportFailure(error: unknown): void {
-    const text = String(error);
-    const key = sshErrorKey(text);
-    notify(key !== null ? { key } : text, 'error');
-  }
 
   // Raises the unlock window on demand (or joins the one a blocked git
   // operation is already waiting behind) and returns as soon as it is up --
@@ -83,9 +119,10 @@ export function SshKeyField() {
   }
 
   async function choose(): Promise<void> {
-    const path = await bridgeClient.pickSshKeyFile();
-    if (path === null) return;
+    setBusy(true);
     try {
+      const path = await bridgeClient.pickSshKeyFile();
+      if (path === null) return;
       const next = await bridgeClient.selectSshKey(path);
       setDto(next);
       // A freshly-chosen encrypted key: ask now, while the user is still
@@ -93,6 +130,17 @@ export function SshKeyField() {
       if (shouldPromptOnSelect(next.state)) await promptUnlock();
     } catch (error) {
       reportFailure(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unlock(): Promise<void> {
+    setBusy(true);
+    try {
+      await promptUnlock();
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -125,7 +173,7 @@ export function SshKeyField() {
           <span className="sk-ssh-key__path" title={dto.path}>
             {displayPath}
           </span>
-          <Button variant="secondary" onClick={() => void choose()}>
+          <Button variant="secondary" loading={busy} onClick={() => void choose()}>
             {t('settings.ssh.choose')}
           </Button>
           {dto.path !== undefined && (
@@ -138,7 +186,7 @@ export function SshKeyField() {
           <div className="sk-ssh-key__row">
             <span className="sk-ssh-key__state">{t(stateKey)}</span>
             {dto.state === 'locked' && (
-              <Button variant="secondary" onClick={() => void promptUnlock()}>
+              <Button variant="secondary" loading={busy} onClick={() => void unlock()}>
                 {t('settings.ssh.unlock')}
               </Button>
             )}

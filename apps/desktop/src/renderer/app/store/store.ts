@@ -42,7 +42,10 @@ import { ensureCatalog, resolveLang } from '@/systems/i18n';
 import { ONBOARDING_ORDER } from '@/app/config/onboarding';
 import { nextStepId, prevStepId } from '@/systems/onboarding';
 import type { StepId } from '@/systems/onboarding';
-import { sshErrorKey } from '@/features/sshKey';
+// From the feature's UI-free lib barrel, not its main barrel (`@/features/sshKey`):
+// that one re-exports `ui/SshKeyField.tsx`, which imports `@/app/store` --
+// importing it here would be a cycle (store -> feature UI barrel -> store).
+import { sshErrorKey } from '@/features/sshKey/lib';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
