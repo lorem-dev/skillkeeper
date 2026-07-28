@@ -106,7 +106,7 @@ jobs:
       # re-downloaded: /var/cache/apt is root-owned, which actions/cache cannot
       # read, so the download is redirected somewhere it can.
       - name: Cache the Tauri apt packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .apt-cache
           key: apt-tauri-${{ runner.os }}-libwebkit2gtk-4.1-dev-v1
