@@ -46,8 +46,10 @@ pub async fn dialog_select_folder(app: AppHandle) -> Result<Option<String>, Stri
 /// every key lives. No extension filter: private keys usually have no
 /// extension at all, so filtering would hide the very files being looked for.
 ///
-/// Whatever comes back is only a path -- the backend re-checks that it is
-/// actually a private key when `ssh_key_select` records it.
+/// Whatever comes back is only a path, and only a candidate: `ssh_key_select`
+/// re-validates it (rejecting a blank path, and one git cannot be told about),
+/// and whether the file is actually a private key is reported as the resulting
+/// `KeyState` rather than refused here.
 #[tauri::command]
 pub async fn dialog_select_ssh_key(
     app: AppHandle,

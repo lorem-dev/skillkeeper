@@ -12,8 +12,10 @@
 //!
 //! The passphrase crosses the bridge in exactly one direction, once: as the
 //! argument of [`ssh_key_unlock`]. It is never returned, never logged, and
-//! never part of an error -- every failure here is one of the stable error
-//! keys [`crate::app::ssh_key`] exports, which the renderer translates.
+//! never part of an error -- every key-related failure is one of the four
+//! stable codes the renderer translates ([`WRONG_PASSPHRASE_ERROR`] and the
+//! three [`crate::app::ssh_key`] exports), never a message from `ssh`, the
+//! window system, or the key parser.
 //!
 //! [`require_unlocked`] is the gate the repository commands call before any
 //! git work that may touch the chosen key. It is the only thing here that can
@@ -22,8 +24,9 @@
 //! never pop a passphrase prompt with nobody there to answer it.
 
 use std::path::Path;
-use std::sync::Arc;
-use std::time::Duration;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use skillkeeper_core::ports::HostEnv;
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
@@ -68,6 +71,22 @@ const UNLOCK_TITLE_FALLBACK: &str = "Unlock SSH key";
 /// race, short enough that a forgotten window cannot pin a blocking-pool
 /// thread for the rest of the session.
 pub const UNLOCK_TIMEOUT: Duration = Duration::from_secs(10 * 60);
+
+/// How long a blocked operation parks before re-reading the key state and the
+/// prompt's answered flag for itself.
+///
+/// This is the cost of a signal that never reached a particular waiter, not
+/// the normal wake-up latency -- a notification that does arrive wakes it
+/// immediately. Short enough to be imperceptible, long enough that a prompt
+/// left up for ten minutes costs a couple of thousand cheap checks, not a spin.
+const UNLOCK_POLL_INTERVAL: Duration = Duration::from_millis(250);
+
+/// The unlock prompt currently on record: the flag it sets once it has been
+/// answered, by an unlock, a Cancel, or a close.
+///
+/// Also the lock that serializes raising the prompt, so a burst of blocked
+/// operations produces exactly one window (see [`open_unlock_window`]).
+static UNLOCK_PROMPT: Mutex<Option<Arc<AtomicBool>>> = Mutex::new(None);
 
 /// The chosen key as the renderer sees it: the path, and what inspecting it
 /// found. Never carries the passphrase.
@@ -132,12 +151,22 @@ pub fn state(ctx: &AppContext) -> SshKeyDto {
 ///
 /// # Errors
 ///
-/// Returns [`KEY_MISSING_ERROR`] for a blank path, or the config writer's
-/// message when the file cannot be written.
+/// Returns [`KEY_MISSING_ERROR`] for a blank path, [`NOT_A_KEY_ERROR`] for one
+/// that cannot be used (see below), or the config writer's message when the
+/// file cannot be written.
 pub fn select(ctx: &AppContext, path: String) -> Result<SshKeyDto, String> {
     let trimmed = path.trim();
     if trimmed.is_empty() {
         return Err(KEY_MISSING_ERROR.to_string());
+    }
+    // A double quote cannot be expressed in `GIT_SSH_COMMAND`, so
+    // `ssh_env_vars` returns no environment at all for such a path
+    // (`skillkeeper_core::ssh_env`). Accepting it would report a perfectly
+    // healthy `Unlocked` key in the UI while every git operation silently fell
+    // back to the default agent identity -- the exact failure this feature
+    // exists to prevent -- so refuse it here instead.
+    if trimmed.contains('"') {
+        return Err(NOT_A_KEY_ERROR.to_string());
     }
     // Stored expanded, so every reader of the config -- this app and the CLI
     // alike -- sees a path it can open directly.
@@ -177,8 +206,10 @@ fn write_path(ctx: &AppContext, path: Option<String>) -> Result<(), String> {
 ///
 /// # Errors
 ///
-/// Returns [`WRONG_PASSPHRASE_ERROR`], [`KEY_MISSING_ERROR`] or
-/// [`NOT_A_KEY_ERROR`]. The passphrase itself never appears in the error.
+/// Returns [`WRONG_PASSPHRASE_ERROR`], [`KEY_MISSING_ERROR`],
+/// [`NOT_A_KEY_ERROR`], or [`KEY_LOCKED_ERROR`] when the passphrase verified
+/// but the chosen key changed underneath it (see the body). The passphrase
+/// itself never appears in the error.
 pub fn unlock(ctx: &AppContext, passphrase: String) -> Result<(), String> {
     // Scrubbed when this call returns: the store keeps its own zeroizing copy,
     // and this one -- the last hop of the value that came over the bridge --
@@ -205,9 +236,21 @@ pub fn forget(ctx: &AppContext) {
 }
 
 /// Release whatever operation is waiting on the unlock window: the window's
-/// Cancel button, and its close handler as a backstop.
+/// Cancel button.
+///
+/// Marks the prompt spent through the same [`dismiss_prompt`] the window's
+/// close handler uses, so a Cancel followed (as the renderer does) by closing
+/// the window dismisses once, not twice.
 pub fn cancel_unlock(ctx: &AppContext) {
-    ctx.ssh_key.notify_unlock_result(false);
+    let live = live_prompt();
+    match live.as_deref() {
+        Some(answered) => {
+            dismiss_prompt(answered, &ctx.ssh_key);
+        }
+        // No prompt on record -- a defensive call from the renderer, or one
+        // racing the very first build. Release any waiter anyway.
+        None => ctx.ssh_key.notify_unlock_result(false),
+    }
 }
 
 /// The renderer-facing error key for an [`UnlockError`].
@@ -235,13 +278,41 @@ fn state_error_key(state: KeyState) -> Option<&'static str> {
     }
 }
 
-/// Whether closing the unlock window should release a waiting operation.
+/// Whether the key can be used for git work right now.
 ///
-/// Only a key that ended up usable means the prompt did its job; anything else
-/// is a window closed without an answer, and the operation waiting behind it
-/// must be told so rather than left hanging until the timeout.
-fn releases_waiters_on_close(state: KeyState) -> bool {
-    !matches!(state, KeyState::Unlocked | KeyState::Unencrypted)
+/// The single definition of "usable", shared by the gate's wait loop, the
+/// window's close handler and [`unlock`]'s result check, so none of them can
+/// drift from the others -- an unencrypted key is just as usable as an
+/// unlocked one.
+fn key_is_usable(state: KeyState) -> bool {
+    state_error_key(state).is_none()
+}
+
+/// Mark a prompt answered and, if that answer was a dismissal, release the
+/// operations waiting behind it. Returns whether this call was the one that
+/// answered it.
+///
+/// Idempotent by design: Cancel and the window's `Destroyed` event both land
+/// here for a cancelled prompt, and a second dismissal would be a live round
+/// fired into whatever started waiting in the meantime.
+fn dismiss_prompt(answered: &AtomicBool, store: &crate::app::ssh_key::SshKeyStore) -> bool {
+    if answered.swap(true, Ordering::AcqRel) {
+        return false;
+    }
+    // Nothing to release when the prompt did its job: the successful unlock
+    // has already woken everyone waiting.
+    if !key_is_usable(store.state()) {
+        store.notify_unlock_result(false);
+    }
+    true
+}
+
+/// The prompt currently on record, if any.
+fn live_prompt() -> Option<Arc<AtomicBool>> {
+    UNLOCK_PROMPT
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
 }
 
 /// Make sure the chosen key is usable before an operation that needs it.
@@ -250,11 +321,19 @@ fn releases_waiters_on_close(state: KeyState) -> bool {
 /// check must never raise a passphrase window on its own. Called BEFORE the git
 /// queue and before the state lock, so a waiting prompt never holds either.
 ///
+/// MUST run on the blocking pool (every command body already does, via
+/// [`super::blocking`]): this parks the calling thread for as long as the
+/// prompt is up, and `WebviewWindowBuilder::build` dispatches to the main
+/// thread and waits for it -- calling either from the main thread would
+/// deadlock the whole app.
+///
 /// # Errors
 ///
 /// Returns one of [`KEY_LOCKED_ERROR`], [`KEY_MISSING_ERROR`] or
 /// [`NOT_A_KEY_ERROR`] when the operation must not run, including when the
-/// user cancels the prompt or it goes unanswered for [`UNLOCK_TIMEOUT`].
+/// user cancels the prompt, closes it, or leaves it unanswered for
+/// [`UNLOCK_TIMEOUT`]. Never a raw window-system message: the renderer only
+/// ever receives a code it can translate.
 // Wired into the repository commands in a later task; the window half is
 // exercised by hand and the waiting half by the tests below.
 #[allow(dead_code)]
@@ -267,19 +346,71 @@ pub fn require_unlocked(
     match gate_for(is_ssh, ctx.ssh_key.state(), interactive) {
         Gate::Proceed => Ok(()),
         Gate::Fail(code) => Err(code.to_string()),
-        Gate::Prompt => {
-            open_unlock_window(app, ctx)?;
-            // Raising the window is not instant, and when a prompt is already
-            // on screen it may be answered while this call is still getting
-            // there. `wait_for_unlock` only reacts to notifications that
-            // arrive after it starts waiting, so re-read the state first
-            // rather than parking on one that has already been and gone.
-            if ctx.ssh_key.state() == KeyState::Unlocked {
-                Ok(())
-            } else {
-                // Blocks this blocking-pool thread until the window reports
-                // back. No lock is held here -- see this function's doc.
-                ctx.ssh_key.wait_for_unlock(UNLOCK_TIMEOUT)
+        Gate::Prompt => wait_for_usable_key(ctx, Instant::now() + UNLOCK_TIMEOUT, || {
+            open_unlock_window(app, ctx)
+        }),
+    }
+}
+
+/// Raise a prompt and block until the key is usable, the prompt is dismissed,
+/// or `deadline` passes.
+///
+/// Polling rather than a single park, because neither of the two signals this
+/// waits on is reliably delivered as a notification:
+///
+/// - An unlock changes the key state without necessarily notifying *this*
+///   waiter. [`SshKeyStore::wait_for_unlock`](crate::app::ssh_key::SshKeyStore::wait_for_unlock)
+///   only reacts to notifications that arrive after it starts waiting, and
+///   reaching it means first reading the key file (a full filesystem
+///   round-trip on a cold cache or a network-mounted home). A notification
+///   landing inside that window used to cost the whole timeout; now it costs
+///   at most one [`UNLOCK_POLL_INTERVAL`], because every round re-reads the
+///   state itself rather than trusting the notification.
+/// - A dismissal changes no key state at all, so it cannot be observed by
+///   re-reading. The prompt's `answered` flag is what carries it, and it is
+///   re-read on the same schedule.
+///
+/// `join_prompt` is a parameter so the loop can be tested without a window
+/// system; [`require_unlocked`] passes [`open_unlock_window`].
+fn wait_for_usable_key(
+    ctx: &AppContext,
+    deadline: Instant,
+    mut join_prompt: impl FnMut() -> Result<Arc<AtomicBool>, String>,
+) -> Result<(), String> {
+    // The prompt this operation is waiting on. Joined once and then kept: a
+    // dismissal must end this wait, not reopen the window the user just
+    // dismissed.
+    let mut joined: Option<Arc<AtomicBool>> = None;
+    loop {
+        if key_is_usable(ctx.ssh_key.state()) {
+            return Ok(());
+        }
+        if joined.as_ref().is_some_and(|p| p.load(Ordering::Acquire)) {
+            // Cancelled or closed: nobody is going to answer this.
+            return Err(KEY_LOCKED_ERROR.to_string());
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(KEY_LOCKED_ERROR.to_string());
+        }
+        let slice = UNLOCK_POLL_INTERVAL.min(remaining);
+        match joined {
+            // Parks until an unlock, a dismissal, or the slice expires --
+            // whichever comes first. No lock is held across this.
+            Some(_) => {
+                let _ = ctx.ssh_key.wait_for_unlock(slice);
+            }
+            None => {
+                let prompt = join_prompt()?;
+                if prompt.load(Ordering::Acquire) {
+                    // Joined a prompt that was answered while this call was on
+                    // its way to it -- a window mid-teardown. Let the teardown
+                    // finish and ask for a fresh prompt rather than parking
+                    // behind one nobody can answer.
+                    std::thread::sleep(slice);
+                } else {
+                    joined = Some(prompt);
+                }
             }
         }
     }
@@ -300,62 +431,127 @@ fn unlock_window_title(app: &AppHandle) -> String {
     }
 }
 
-/// Raise (or focus) the small window that asks for the passphrase, then
-/// announce which key it is asking about.
+/// Whether a prompt on record can still be joined: it needs a window on
+/// screen to go with it.
 ///
-/// Focusing an existing window rather than building a second one keeps a burst
-/// of blocked operations to a single prompt; each of them waits on the same
-/// store, and one successful unlock releases them all.
+/// A recorded prompt whose window is gone is stale (the window was destroyed
+/// after being answered), and a window with no recorded prompt is one this
+/// process cannot have built -- neither is joinable, and both mean "build".
+fn joinable(recorded: Option<&Arc<AtomicBool>>, window_exists: bool) -> bool {
+    recorded.is_some() && window_exists
+}
+
+/// Whether a window-builder failure means a prompt is already on screen.
+fn is_label_taken(error: &tauri::Error) -> bool {
+    matches!(
+        error,
+        tauri::Error::WindowLabelAlreadyExists(_) | tauri::Error::WebviewLabelAlreadyExists(_)
+    )
+}
+
+/// Raise (or join) the small window that asks for the passphrase, then
+/// announce which key it is asking about. Returns the prompt's `answered`
+/// flag, which whoever is waiting watches for a dismissal.
+///
+/// Joining the prompt already on screen rather than building a second one
+/// keeps a burst of blocked operations to a single window; each of them waits
+/// on the same store, and one successful unlock releases them all.
 ///
 /// # Errors
 ///
-/// Returns the window builder's message when the window cannot be created.
-fn open_unlock_window(app: &AppHandle, ctx: &AppContext) -> Result<(), String> {
+/// Returns [`KEY_LOCKED_ERROR`] when the window cannot be created, never the
+/// window system's own message: this failure reaches the renderer through
+/// [`require_unlocked`], which owes it a translatable code.
+fn open_unlock_window(app: &AppHandle, ctx: &AppContext) -> Result<Arc<AtomicBool>, String> {
     let path = ctx.ssh_key.path().unwrap_or_default();
-    match app.get_webview_window(UNLOCK_WINDOW_LABEL) {
-        Some(existing) => {
-            let _ = existing.set_focus();
-        }
-        None => {
-            let mut builder = WebviewWindowBuilder::new(
-                app,
-                UNLOCK_WINDOW_LABEL,
-                WebviewUrl::App("index.html".into()),
-            )
-            .title(unlock_window_title(app))
-            .inner_size(460.0, 300.0)
-            .resizable(false)
-            .center()
-            .focused(true);
-            // Parented to the main window so the OS keeps the prompt in front
-            // of the app it belongs to, the same reason the native pickers in
-            // `commands::dialog` are parented.
-            if let Some(main) = app.get_webview_window("main") {
-                builder = builder.parent(&main).map_err(|e| e.to_string())?;
+
+    let prompt = {
+        // Held across the check-and-build and nothing else -- never across the
+        // wait. Without it, a burst of blocked operations ("update all" over
+        // three SSH repositories) would all find no window, all build one, and
+        // every loser would fail on a label collision instead of joining the
+        // one prompt that won.
+        let mut recorded = UNLOCK_PROMPT.lock().unwrap_or_else(|e| e.into_inner());
+        let on_screen = app.get_webview_window(UNLOCK_WINDOW_LABEL).is_some();
+        let joined = recorded
+            .clone()
+            .filter(|_| joinable(recorded.as_ref(), on_screen));
+        match joined {
+            Some(prompt) => prompt,
+            None => {
+                let prompt = build_unlock_window(app, ctx)?;
+                *recorded = Some(Arc::clone(&prompt));
+                prompt
             }
-            let window = builder.build().map_err(|e| e.to_string())?;
-
-            // A closed window must never leave a git operation hanging: the
-            // Cancel button routes through `ssh_key_cancel_unlock`, and this
-            // catches every other way the window can go away (the close
-            // button, the window menu, the app tearing it down).
-            let store = Arc::clone(&ctx.ssh_key);
-            window.on_window_event(move |event| {
-                if matches!(event, WindowEvent::Destroyed)
-                    && releases_waiters_on_close(store.state())
-                {
-                    store.notify_unlock_result(false);
-                }
-            });
         }
-    }
+    };
 
-    // Emitted app-wide, not to the window alone, so an already-open prompt
-    // learns that a further operation is now waiting on it. A window built
-    // just above is not listening yet, which is why the renderer paints its
-    // first frame from `ssh_key_state` instead of from this event.
-    app.emit(UNLOCK_REQUIRED_EVENT, UnlockRequired { path })
-        .map_err(|e| e.to_string())
+    if let Some(window) = app.get_webview_window(UNLOCK_WINDOW_LABEL) {
+        let _ = window.set_focus();
+    }
+    // Deliberately not fatal, and deliberately after the window exists: a
+    // failed emit would otherwise abandon a passphrase window on screen with
+    // nobody waiting behind it. Nothing is lost by it -- the prompt paints its
+    // first frame from `ssh_key_state`, and this event only tells an
+    // already-open prompt that a further operation is now waiting on it too.
+    // Emitted app-wide so the main window can react as well.
+    let _ = app.emit(UNLOCK_REQUIRED_EVENT, UnlockRequired { path });
+    Ok(prompt)
+}
+
+/// Build the unlock window and wire its close handler. Returns the new
+/// prompt's `answered` flag.
+///
+/// # Errors
+///
+/// Returns [`KEY_LOCKED_ERROR`] when the window cannot be created.
+fn build_unlock_window(app: &AppHandle, ctx: &AppContext) -> Result<Arc<AtomicBool>, String> {
+    let answered = Arc::new(AtomicBool::new(false));
+    let mut builder = WebviewWindowBuilder::new(
+        app,
+        UNLOCK_WINDOW_LABEL,
+        WebviewUrl::App("index.html".into()),
+    )
+    .title(unlock_window_title(app))
+    .inner_size(460.0, 300.0)
+    .resizable(false)
+    .center()
+    .focused(true);
+    // Parented to the main window so the OS keeps the prompt in front of the
+    // app it belongs to, the same reason the native pickers in
+    // `commands::dialog` are parented.
+    if let Some(main) = app.get_webview_window("main") {
+        builder = builder.parent(&main).map_err(|_| unlock_window_failed())?;
+    }
+    let window = match builder.build() {
+        Ok(window) => window,
+        // Belt and braces behind the mutex in `open_unlock_window`: a taken
+        // label means a prompt IS on screen, so join it rather than turning a
+        // working prompt into a failed operation. The flag returned here is
+        // never set by that window's handler, so such a waiter falls back to
+        // polling the key state until the deadline.
+        Err(e) if is_label_taken(&e) => return Ok(answered),
+        Err(_) => return Err(unlock_window_failed()),
+    };
+
+    // A closed window must never leave a git operation hanging: the Cancel
+    // button routes through `ssh_key_cancel_unlock`, and this catches every
+    // other way the window can go away (the close button, the window menu, the
+    // app tearing it down). `dismiss_prompt` makes the two idempotent.
+    let store = Arc::clone(&ctx.ssh_key);
+    let answered_on_close = Arc::clone(&answered);
+    window.on_window_event(move |event| {
+        if matches!(event, WindowEvent::Destroyed) {
+            dismiss_prompt(&answered_on_close, &store);
+        }
+    });
+    Ok(answered)
+}
+
+/// The code an operation gets when the prompt could not be raised: the key is
+/// locked and there is now no way to ask about it.
+fn unlock_window_failed() -> String {
+    KEY_LOCKED_ERROR.to_string()
 }
 
 /// `sshKey:state` -- the chosen key and what inspecting it found.
@@ -474,15 +670,180 @@ mod tests {
         assert_eq!(fresh.state(), KeyState::Locked);
     }
 
+    /// A prompt that is answered, from a test's point of view: hand
+    /// [`wait_for_usable_key`] a flag instead of a window.
+    fn fake_prompt(answered: &Arc<AtomicBool>) -> impl FnMut() -> Result<Arc<AtomicBool>, String> {
+        let prompt = Arc::clone(answered);
+        move || Ok(Arc::clone(&prompt))
+    }
+
+    fn in_a_moment() -> Instant {
+        Instant::now() + Duration::from_secs(5)
+    }
+
+    /// The reason the wait polls instead of parking once: an unlock that lands
+    /// while this operation is still on its way to `wait_for_unlock` notifies
+    /// nobody, and re-reading the key state is the only way to see it. Uses
+    /// the bluntest possible version of that -- a key that becomes usable with
+    /// no notification at all -- so a regression cannot pass by luck.
     #[test]
-    fn a_cancelled_prompt_releases_the_waiting_operation() {
+    fn the_wait_notices_a_usable_key_it_was_never_notified_about() {
         let app = TempAppData::new();
-        let store = std::sync::Arc::clone(&app.ctx.ssh_key);
-        let waiter = std::thread::spawn(move || store.wait_for_unlock(UNLOCK_TIMEOUT));
-        // Give the waiter a moment to park, then cancel as the window would.
-        std::thread::sleep(std::time::Duration::from_millis(50));
-        app.ctx.ssh_key.notify_unlock_result(false);
-        assert_eq!(waiter.join().unwrap(), Err("ssh.keyLocked".to_string()));
+        app.ctx
+            .ssh_key
+            .set_path(Some(write_encrypted_key(&app, "topsecret")));
+        let answered = Arc::new(AtomicBool::new(false));
+
+        let ctx = &app.ctx;
+        let plain = crate::commands::test_support::write_key(app.dir(), "plain_key", None);
+        std::thread::scope(|scope| {
+            scope.spawn(|| {
+                std::thread::sleep(Duration::from_millis(50));
+                // No notification of any kind: just a key that is now usable.
+                ctx.ssh_key.set_path(Some(plain));
+            });
+            let started = Instant::now();
+            let result = wait_for_usable_key(ctx, in_a_moment(), fake_prompt(&answered));
+            assert_eq!(result, Ok(()));
+            assert!(
+                started.elapsed() < Duration::from_secs(2),
+                "the poll must notice the state change, not wait out the deadline"
+            );
+        });
+    }
+
+    /// The other half: a dismissal changes no key state, so only the prompt's
+    /// flag carries it -- and it too may land in the gap before the park.
+    #[test]
+    fn the_wait_ends_when_the_prompt_it_joined_is_dismissed() {
+        let app = TempAppData::new();
+        app.ctx
+            .ssh_key
+            .set_path(Some(write_encrypted_key(&app, "topsecret")));
+        let answered = Arc::new(AtomicBool::new(false));
+
+        let ctx = &app.ctx;
+        let flag = Arc::clone(&answered);
+        std::thread::scope(|scope| {
+            scope.spawn(move || {
+                std::thread::sleep(Duration::from_millis(50));
+                // A dismissal whose notification this waiter never sees.
+                flag.store(true, Ordering::Release);
+            });
+            let started = Instant::now();
+            let result = wait_for_usable_key(ctx, in_a_moment(), fake_prompt(&answered));
+            assert_eq!(result, Err("ssh.keyLocked".to_string()));
+            assert!(
+                started.elapsed() < Duration::from_secs(2),
+                "the poll must notice the dismissal, not wait out the deadline"
+            );
+        });
+    }
+
+    /// Joining a window that is already tearing down must not park behind it:
+    /// the operation asks again once the teardown is done and gets its own
+    /// prompt.
+    #[test]
+    fn a_prompt_already_dismissed_is_not_joined_but_asked_for_again() {
+        let app = TempAppData::new();
+        app.ctx
+            .ssh_key
+            .set_path(Some(write_encrypted_key(&app, "topsecret")));
+
+        let asks = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let counter = Arc::clone(&asks);
+        let dying = Arc::new(AtomicBool::new(true));
+        let fresh = Arc::new(AtomicBool::new(false));
+        let fresh_for_prompt = Arc::clone(&fresh);
+        let join_prompt = move || {
+            if counter.fetch_add(1, Ordering::AcqRel) == 0 {
+                // The first ask lands on a window mid-teardown.
+                Ok(Arc::clone(&dying))
+            } else {
+                // By the second, the teardown is over: a live prompt.
+                Ok(Arc::clone(&fresh_for_prompt))
+            }
+        };
+
+        let ctx = &app.ctx;
+        std::thread::scope(|scope| {
+            scope.spawn(|| {
+                std::thread::sleep(Duration::from_millis(400));
+                // Dismissing the FRESH prompt is what ends the wait; the dying
+                // one must never have been adopted, or this would still be
+                // parked behind it.
+                fresh.store(true, Ordering::Release);
+            });
+            let started = Instant::now();
+            assert_eq!(
+                wait_for_usable_key(ctx, in_a_moment(), join_prompt),
+                Err("ssh.keyLocked".to_string())
+            );
+            assert!(
+                started.elapsed() < Duration::from_secs(2),
+                "the fresh prompt's dismissal must end the wait, not the deadline"
+            );
+        });
+        assert!(
+            asks.load(Ordering::Acquire) >= 2,
+            "the operation must ask for a prompt again after joining a dismissed one, \
+             asked {} time(s)",
+            asks.load(Ordering::Acquire)
+        );
+    }
+
+    /// Cancel and the window's own close both dismiss; the second must be a
+    /// no-op, or it would fire a stale failure at whatever started waiting in
+    /// the meantime.
+    #[test]
+    fn a_prompt_is_dismissed_once_however_many_exits_fire() {
+        let app = TempAppData::new();
+        app.ctx
+            .ssh_key
+            .set_path(Some(write_encrypted_key(&app, "topsecret")));
+        let answered = Arc::new(AtomicBool::new(false));
+
+        assert!(
+            dismiss_prompt(&answered, &app.ctx.ssh_key),
+            "the first exit answers the prompt"
+        );
+        assert!(
+            !dismiss_prompt(&answered, &app.ctx.ssh_key),
+            "the window closing after a Cancel must not dismiss a second time"
+        );
+        assert!(
+            !dismiss_prompt(&answered, &app.ctx.ssh_key),
+            "and neither must anything else"
+        );
+    }
+
+    /// A prompt whose window is still on screen is joined; one whose window
+    /// has gone is stale and must be replaced.
+    #[test]
+    fn only_a_prompt_with_a_window_behind_it_is_joined() {
+        let prompt = Arc::new(AtomicBool::new(false));
+        assert!(joinable(Some(&prompt), true));
+        assert!(!joinable(Some(&prompt), false));
+        // A window with no prompt on record cannot have been built here; the
+        // build below will find the label taken and join blind.
+        assert!(!joinable(None, true));
+        assert!(!joinable(None, false));
+    }
+
+    /// The losers of a build race must join the winner's prompt, not surface
+    /// the window system's own untranslatable message as the operation's
+    /// error.
+    #[test]
+    fn a_taken_window_label_means_a_prompt_is_already_open() {
+        assert!(is_label_taken(&tauri::Error::WindowLabelAlreadyExists(
+            UNLOCK_WINDOW_LABEL.to_string()
+        )));
+        assert!(is_label_taken(&tauri::Error::WebviewLabelAlreadyExists(
+            UNLOCK_WINDOW_LABEL.to_string()
+        )));
+        assert!(!is_label_taken(&tauri::Error::CannotReparentWebviewWindow));
+        // Whatever the reason, the renderer gets a code it can translate.
+        assert_eq!(unlock_window_failed(), "ssh.keyLocked");
     }
 
     #[test]
@@ -497,6 +858,32 @@ mod tests {
             .repositories
             .ssh_key_path
             .is_none());
+    }
+
+    /// A path containing a double quote cannot be expressed in
+    /// `GIT_SSH_COMMAND`, so `ssh_env_vars` hands back nothing at all for it
+    /// and git would quietly use the default agent identity while the UI
+    /// showed a healthy key. Refuse it at the door instead.
+    #[test]
+    fn a_path_that_cannot_reach_git_is_refused() {
+        let app = TempAppData::new();
+        let quoted =
+            crate::commands::test_support::write_key(app.dir(), "quo\"ted_key", Some("topsecret"));
+        // The file really is a usable key; only the path is the problem.
+        assert!(std::path::Path::new(&quoted).is_file());
+        assert!(skillkeeper_core::ssh_env::ssh_env_vars(&quoted, None).is_empty());
+
+        assert_eq!(
+            select(&app.ctx, quoted).unwrap_err(),
+            "ssh.notAPrivateKey",
+            "a path git cannot be told about is not a usable key"
+        );
+        assert!(crate::commands::config::load(&app.ctx)
+            .config
+            .repositories
+            .ssh_key_path
+            .is_none());
+        assert_eq!(state(&app.ctx).state, KeyState::NotConfigured);
     }
 
     /// A hand-edited `sshKeyPath: ~/.ssh/id_ed25519` has to resolve against the
@@ -590,17 +977,17 @@ mod tests {
         );
     }
 
-    /// Closing the window releases whatever is waiting -- unless the wait is
-    /// already over because the unlock succeeded, in which case a second
-    /// notification would be a spurious failure signal.
+    /// One definition of "usable" for the wait loop, the close handler and
+    /// `unlock`'s result check. An unencrypted key counts: switching to one
+    /// while the prompt is up must let the operation through, not park it.
     #[test]
-    fn closing_the_window_releases_waiters_except_after_a_successful_unlock() {
-        assert!(releases_waiters_on_close(KeyState::Locked));
-        assert!(releases_waiters_on_close(KeyState::Missing));
-        assert!(releases_waiters_on_close(KeyState::NotAKey));
-        assert!(releases_waiters_on_close(KeyState::NotConfigured));
-        assert!(!releases_waiters_on_close(KeyState::Unlocked));
-        assert!(!releases_waiters_on_close(KeyState::Unencrypted));
+    fn a_key_is_usable_when_nothing_stands_in_its_way() {
+        assert!(key_is_usable(KeyState::Unlocked));
+        assert!(key_is_usable(KeyState::Unencrypted));
+        assert!(!key_is_usable(KeyState::Locked));
+        assert!(!key_is_usable(KeyState::Missing));
+        assert!(!key_is_usable(KeyState::NotAKey));
+        assert!(!key_is_usable(KeyState::NotConfigured));
     }
 
     #[test]
