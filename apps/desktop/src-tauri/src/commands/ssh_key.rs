@@ -463,40 +463,75 @@ fn is_label_taken(error: &tauri::Error) -> bool {
 /// window system's own message: this failure reaches the renderer through
 /// [`require_unlocked`], which owes it a translatable code.
 fn open_unlock_window(app: &AppHandle, ctx: &AppContext) -> Result<Arc<AtomicBool>, String> {
-    let path = ctx.ssh_key.path().unwrap_or_default();
+    join_and_announce(
+        || join_or_build_prompt(app, ctx),
+        || announce_prompt(app, ctx),
+    )
+}
 
-    let prompt = {
-        // Held across the check-and-build and nothing else -- never across the
-        // wait. Without it, a burst of blocked operations ("update all" over
-        // three SSH repositories) would all find no window, all build one, and
-        // every loser would fail on a label collision instead of joining the
-        // one prompt that won.
-        let mut recorded = UNLOCK_PROMPT.lock().unwrap_or_else(|e| e.into_inner());
-        let on_screen = app.get_webview_window(UNLOCK_WINDOW_LABEL).is_some();
-        let joined = recorded
-            .clone()
-            .filter(|_| joinable(recorded.as_ref(), on_screen));
-        match joined {
-            Some(prompt) => prompt,
-            None => {
-                let prompt = build_unlock_window(app, ctx)?;
-                *recorded = Some(Arc::clone(&prompt));
-                prompt
-            }
-        }
-    };
+/// Get hold of the prompt and, unless it has already been answered, announce
+/// it. Returns the prompt either way.
+///
+/// The two halves are parameters so the rule between them can be tested
+/// without a window system. That rule matters because a waiter re-asks every
+/// [`UNLOCK_POLL_INTERVAL`] until it adopts a prompt, and a prompt that was
+/// answered but whose window is still on screen is never adopted: announcing
+/// on every one of those rounds would have a window nobody can answer
+/// stealing the focus four times a second, and would fire thousands of
+/// [`UNLOCK_REQUIRED_EVENT`]s at the renderer, for as long as the teardown
+/// lingered.
+fn join_and_announce(
+    join: impl FnOnce() -> Result<Arc<AtomicBool>, String>,
+    announce: impl FnOnce(),
+) -> Result<Arc<AtomicBool>, String> {
+    let prompt = join()?;
+    if !prompt.load(Ordering::Acquire) {
+        announce();
+    }
+    Ok(prompt)
+}
 
+/// Take the focus for the prompt window and tell the app which key it is
+/// asking about.
+///
+/// The emit is deliberately not fatal, and deliberately after the window
+/// exists: a failed emit would otherwise abandon a passphrase window on
+/// screen with nobody waiting behind it. Nothing is lost by it -- the prompt
+/// paints its first frame from [`ssh_key_state`], and this event only tells an
+/// already-open prompt that a further operation is now waiting on it too. It
+/// goes app-wide so the main window can react as well.
+fn announce_prompt(app: &AppHandle, ctx: &AppContext) {
     if let Some(window) = app.get_webview_window(UNLOCK_WINDOW_LABEL) {
         let _ = window.set_focus();
     }
-    // Deliberately not fatal, and deliberately after the window exists: a
-    // failed emit would otherwise abandon a passphrase window on screen with
-    // nobody waiting behind it. Nothing is lost by it -- the prompt paints its
-    // first frame from `ssh_key_state`, and this event only tells an
-    // already-open prompt that a further operation is now waiting on it too.
-    // Emitted app-wide so the main window can react as well.
+    let path = ctx.ssh_key.path().unwrap_or_default();
     let _ = app.emit(UNLOCK_REQUIRED_EVENT, UnlockRequired { path });
-    Ok(prompt)
+}
+
+/// The prompt on screen, building one if there is none.
+///
+/// # Errors
+///
+/// Returns [`KEY_LOCKED_ERROR`] when the window cannot be created.
+fn join_or_build_prompt(app: &AppHandle, ctx: &AppContext) -> Result<Arc<AtomicBool>, String> {
+    // Held across the check-and-build and nothing else -- never across the
+    // wait. Without it, a burst of blocked operations ("update all" over three
+    // SSH repositories) would all find no window, all build one, and every
+    // loser would fail on a label collision instead of joining the one prompt
+    // that won.
+    let mut recorded = UNLOCK_PROMPT.lock().unwrap_or_else(|e| e.into_inner());
+    let on_screen = app.get_webview_window(UNLOCK_WINDOW_LABEL).is_some();
+    let joined = recorded
+        .clone()
+        .filter(|_| joinable(recorded.as_ref(), on_screen));
+    match joined {
+        Some(prompt) => Ok(prompt),
+        None => {
+            let prompt = build_unlock_window(app, ctx)?;
+            *recorded = Some(Arc::clone(&prompt));
+            Ok(prompt)
+        }
+    }
 }
 
 /// Build the unlock window and wire its close handler. Returns the new
@@ -792,6 +827,75 @@ mod tests {
         );
     }
 
+    /// A prompt that has been answered but whose window is still on screen is
+    /// asked for again every poll round -- and must be announced on none of
+    /// them. Announcing means taking the focus and emitting
+    /// `ssh:unlockRequired`, so re-announcing would have a window nobody can
+    /// answer stealing the focus four times a second and firing thousands of
+    /// events at the renderer while it lingered.
+    #[test]
+    fn an_answered_prompt_is_never_re_announced_however_many_rounds_pass() {
+        let app = TempAppData::new();
+        app.ctx
+            .ssh_key
+            .set_path(Some(write_encrypted_key(&app, "topsecret")));
+
+        // Answered already, and the window it belongs to has not gone yet.
+        let lingering = Arc::new(AtomicBool::new(true));
+        let asks = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let announcements = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+        let asked = Arc::clone(&asks);
+        let announced = Arc::clone(&announcements);
+        let prompt = Arc::clone(&lingering);
+        let join_prompt = move || {
+            asked.fetch_add(1, Ordering::AcqRel);
+            let announced = Arc::clone(&announced);
+            join_and_announce(
+                || Ok(Arc::clone(&prompt)),
+                || {
+                    announced.fetch_add(1, Ordering::AcqRel);
+                },
+            )
+        };
+
+        // Several poll rounds, then give up: the answered prompt is never
+        // adopted, so the wait ends on the deadline.
+        let deadline = Instant::now() + Duration::from_millis(900);
+        assert_eq!(
+            wait_for_usable_key(&app.ctx, deadline, join_prompt),
+            Err("ssh.keyLocked".to_string())
+        );
+        assert!(
+            asks.load(Ordering::Acquire) >= 3,
+            "the wait must have polled several times, asked {} time(s)",
+            asks.load(Ordering::Acquire)
+        );
+        assert_eq!(
+            announcements.load(Ordering::Acquire),
+            0,
+            "an answered prompt must not be refocused or re-announced, on any round"
+        );
+    }
+
+    /// The other side of that rule: a prompt that can still be answered is
+    /// announced, so the window comes to the front and the renderer learns
+    /// which key it is being asked about.
+    #[test]
+    fn a_live_prompt_is_announced_once() {
+        let announcements = std::sync::atomic::AtomicUsize::new(0);
+        let live = Arc::new(AtomicBool::new(false));
+        let joined = join_and_announce(
+            || Ok(Arc::clone(&live)),
+            || {
+                announcements.fetch_add(1, Ordering::AcqRel);
+            },
+        )
+        .unwrap();
+        assert!(Arc::ptr_eq(&joined, &live));
+        assert_eq!(announcements.load(Ordering::Acquire), 1);
+    }
+
     /// Cancel and the window's own close both dismiss; the second must be a
     /// no-op, or it would fire a stale failure at whatever started waiting in
     /// the meantime.
@@ -867,10 +971,15 @@ mod tests {
     #[test]
     fn a_path_that_cannot_reach_git_is_refused() {
         let app = TempAppData::new();
-        let quoted =
-            crate::commands::test_support::write_key(app.dir(), "quo\"ted_key", Some("topsecret"));
-        // The file really is a usable key; only the path is the problem.
-        assert!(std::path::Path::new(&quoted).is_file());
+        // Deliberately never written to disk: a double quote is a reserved
+        // character in Windows filenames, so creating this file would panic
+        // there. Nothing needs it to exist -- the precondition below and the
+        // rejection itself both work on the path string alone.
+        let quoted = app
+            .dir()
+            .join("quo\"ted_key")
+            .to_string_lossy()
+            .into_owned();
         assert!(skillkeeper_core::ssh_env::ssh_env_vars(&quoted, None).is_empty());
 
         assert_eq!(
