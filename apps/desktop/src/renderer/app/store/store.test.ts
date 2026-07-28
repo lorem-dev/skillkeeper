@@ -463,6 +463,7 @@ describe('useSkillkeeperStore', () => {
         minimizeWindow: () => {},
         toggleMaximizeWindow: () => {},
         closeWindow: () => {},
+        fitWindowHeight: () => {},
         isWindowMaximized: async () => false,
         onMaximizeChange: () => () => {},
       };
@@ -550,6 +551,7 @@ describe('useSkillkeeperStore', () => {
         minimizeWindow: () => {},
         toggleMaximizeWindow: () => {},
         closeWindow: () => {},
+        fitWindowHeight: () => {},
         isWindowMaximized: async () => false,
         onMaximizeChange: () => () => {},
       };

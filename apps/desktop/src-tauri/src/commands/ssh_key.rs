@@ -665,7 +665,12 @@ fn build_unlock_window(app: &AppHandle, ctx: &AppContext) -> Result<Arc<AtomicBo
         WebviewUrl::App("index.html".into()),
     )
     .title(unlock_window_title(app))
-    .inner_size(460.0, 300.0)
+    // The size the window opens at, before its own content has been measured:
+    // the renderer reports the height its layout actually needs and the window
+    // follows (`window_fit_content_height`), since the hint names a key path of
+    // unknown length. Starting a little short means that first adjustment grows
+    // the window rather than shrinking it over content already on screen.
+    .inner_size(460.0, 260.0)
     .resizable(false)
     .center()
     .focused(true);

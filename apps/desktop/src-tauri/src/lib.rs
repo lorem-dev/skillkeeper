@@ -102,6 +102,7 @@ pub fn run() {
             commands::window::window_toggle_maximize,
             commands::window::window_close,
             commands::window::window_is_maximized,
+            commands::window::window_fit_content_height,
             commands::config::config_get,
             commands::config::config_set,
             commands::onboarding::onboarding_get,

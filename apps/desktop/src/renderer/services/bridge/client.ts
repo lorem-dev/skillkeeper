@@ -146,6 +146,11 @@ export interface BridgeClient {
   toggleMaximizeWindow(): void;
   /** Close the window. */
   closeWindow(): void;
+  /** Resize the window to `height` logical pixels of content, keeping its width
+   *  and re-centering it. For a fixed-size dialog whose text length is not known
+   *  ahead of time (the unlock window names the key path), which no single
+   *  height fits. */
+  fitWindowHeight(height: number): void;
   /** Whether the window is currently maximized. */
   isWindowMaximized(): Promise<boolean>;
   /** Subscribe to maximize/restore changes. Returns an unsubscribe fn. */
@@ -293,6 +298,9 @@ export const bridgeClient: BridgeClient = {
   },
   closeWindow: () => {
     void invoke('window_close');
+  },
+  fitWindowHeight: (height) => {
+    void invoke('window_fit_content_height', { height });
   },
   isWindowMaximized: () => invoke<boolean>('window_is_maximized'),
   onMaximizeChange: (callback) => subscribe<boolean>('window:maximizeChanged', callback),
