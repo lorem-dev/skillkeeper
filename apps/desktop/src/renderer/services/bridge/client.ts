@@ -120,11 +120,24 @@ export interface BridgeClient {
   cancelSshKeyUnlock(): Promise<void>;
   /** Native file picker for choosing a private key file. */
   pickSshKeyFile(): Promise<string | null>;
+  /** Raise the unlock prompt on demand (or join the one a blocked git
+   *  operation is already waiting behind) and return as soon as the window is
+   *  up -- it does not wait for the answer. A no-op for a key that needs no
+   *  passphrase; rejects with a stable `ssh.*` code when the prompt could not
+   *  be raised at all (a missing/invalid key, or a window-builder failure). */
+  promptSshUnlock(): Promise<void>;
   /** Subscribe to the backend requesting the unlock prompt for `path`. Returns
    *  an unsubscribe fn. Fires only while a further operation is waiting -- the
    *  first paint of a freshly opened unlock window must call `sshKeyState()`
    *  instead, since the webview is not listening yet when this first fires. */
   onSshUnlockRequired(callback: (path: string) => void): () => void;
+  /** Subscribe to the unlock prompt resolving -- `true` after a successful
+   *  unlock, `false` on cancel or the window closing. Fired once per
+   *  resolution and app-wide, so a view other than the prompt itself (e.g.
+   *  this Settings row) learns to re-read `sshKeyState()`. Treat the payload
+   *  as a cue to re-read, not as truth in itself: it is not emitted at all
+   *  for a cancel with no prompt on record. Returns an unsubscribe fn. */
+  onSshUnlockResolved(callback: (unlocked: boolean) => void): () => void;
   /** The host platform (`process.platform`), for choosing the window-control chrome. */
   readonly platform: string;
   /** Minimize the window (frameless title bar). */
@@ -234,6 +247,7 @@ export const bridgeClient: BridgeClient = {
   forgetSshKey: () => invoke<void>('ssh_key_forget'),
   cancelSshKeyUnlock: () => invoke<void>('ssh_key_cancel_unlock'),
   pickSshKeyFile: () => invoke<string | null>('dialog_select_ssh_key'),
+  promptSshUnlock: () => invoke<void>('ssh_key_prompt'),
   onSshUnlockRequired: (callback) => {
     // Same shape as onTerminalRequestOpen: start the listen(), keep the
     // promised unlisten, and return a synchronous off() that works even if
@@ -241,6 +255,21 @@ export const bridgeClient: BridgeClient = {
     let off: (() => void) | null = null;
     let cancelled = false;
     void listen<{ path: string }>('ssh:unlockRequired', (e) => callback(e.payload.path)).then(
+      (un) => {
+        if (cancelled) un();
+        else off = un;
+      },
+    );
+    return () => {
+      cancelled = true;
+      off?.();
+    };
+  },
+  onSshUnlockResolved: (callback) => {
+    // Same shape as onSshUnlockRequired.
+    let off: (() => void) | null = null;
+    let cancelled = false;
+    void listen<{ unlocked: boolean }>('ssh:unlockResolved', (e) => callback(e.payload.unlocked)).then(
       (un) => {
         if (cancelled) un();
         else off = un;

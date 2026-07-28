@@ -12,6 +12,7 @@ import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { FormRow, Button } from '@/shared/ui';
 import { sshErrorKey } from '../lib/sshErrors';
+import { shouldPromptOnSelect } from '../lib/sshPrompt';
 import './SshKeyField.scss';
 
 /** The msgid describing a chosen key's state, or null for `notConfigured` --
@@ -50,6 +51,15 @@ export function SshKeyField() {
     [],
   );
 
+  // The prompt this row raises (or joins) resolves in its own window, so this
+  // is the only way the row learns it is over -- re-read the state rather
+  // than trusting the payload, so the row settles to "Unlocked for this
+  // session" on success or back to "Locked" on cancel/close either way.
+  useEffect(
+    () => bridgeClient.onSshUnlockResolved(() => void bridgeClient.sshKeyState().then(setDto)),
+    [],
+  );
+
   // ssh_key_select/clear/forget reject with a raw backend error string (unlike
   // the RepoResult-shaped calls) -- map through sshErrorKey so a known code
   // still translates, exactly like the clone/sync notify path in store.ts.
@@ -59,11 +69,28 @@ export function SshKeyField() {
     notify(key !== null ? { key } : text, 'error');
   }
 
+  // Raises the unlock window on demand (or joins the one a blocked git
+  // operation is already waiting behind) and returns as soon as it is up --
+  // it does not itself unlock anything. The row learns the outcome from
+  // `onSshUnlockResolved` above, which re-reads the state once the prompt
+  // resolves.
+  async function promptUnlock(): Promise<void> {
+    try {
+      await bridgeClient.promptSshUnlock();
+    } catch (error) {
+      reportFailure(error);
+    }
+  }
+
   async function choose(): Promise<void> {
     const path = await bridgeClient.pickSshKeyFile();
     if (path === null) return;
     try {
-      setDto(await bridgeClient.selectSshKey(path));
+      const next = await bridgeClient.selectSshKey(path);
+      setDto(next);
+      // A freshly-chosen encrypted key: ask now, while the user is still
+      // here, rather than waiting for the next clone/sync to ask for it.
+      if (shouldPromptOnSelect(next.state)) await promptUnlock();
     } catch (error) {
       reportFailure(error);
     }
@@ -84,18 +111,6 @@ export function SshKeyField() {
     } catch (error) {
       reportFailure(error);
     }
-  }
-
-  // There is no backend command that raises the unlock window on its own --
-  // opening it (`open_unlock_window` in src-tauri/src/commands/ssh_key.rs) is
-  // always a side effect of a gated git operation (`require_unlocked`, wired
-  // from repository clone/sync/update-check), never something Settings can ask
-  // for directly. Until a repo-independent trigger exists on the backend, this
-  // re-reads the state instead, so a key unlocked meanwhile (e.g. by such an
-  // operation started while this page was open) shows up here without a full
-  // reload. See the task report's Concerns section.
-  async function recheck(): Promise<void> {
-    setDto(await bridgeClient.sshKeyState());
   }
 
   if (dto === null) return null;
@@ -123,7 +138,7 @@ export function SshKeyField() {
           <div className="sk-ssh-key__row">
             <span className="sk-ssh-key__state">{t(stateKey)}</span>
             {dto.state === 'locked' && (
-              <Button variant="secondary" onClick={() => void recheck()}>
+              <Button variant="secondary" onClick={() => void promptUnlock()}>
                 {t('settings.ssh.unlock')}
               </Button>
             )}
