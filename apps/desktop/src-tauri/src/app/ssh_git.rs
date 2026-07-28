@@ -310,27 +310,38 @@ mod tests {
         );
     }
 
-    /// Proves the ordering the PTY layer relies on: a second, queued
-    /// invocation's `make_env` does not run until the first invocation --
-    /// its own `make_env`, dispatch, and subprocess included -- has fully
-    /// finished and released the queue. Regression test for the token-
-    /// expiring-before-use failure: minting ahead of the queue would let a
-    /// long-running first invocation age out a second invocation's token
-    /// before it ever reached `ssh`. (Which invocation's token is which is
-    /// already covered by `an_unlocked_key_adds_askpass_and_a_fresh_token_each_time`;
-    /// this test is purely about ordering, so it logs plain markers instead.)
+    /// Proves the property the PTY layer relies on: a second, queued
+    /// invocation's `make_env` does not run while it is still merely
+    /// *waiting* for the queue -- i.e. while a first invocation is still
+    /// holding it. Regression test for the token-expiring-before-use
+    /// failure: minting ahead of the queue would let a long-running first
+    /// invocation age out a second invocation's token before it ever
+    /// reached `ssh`. (Which invocation's token is which is already covered
+    /// by `an_unlocked_key_adds_askpass_and_a_fresh_token_each_time`; this
+    /// test is purely about ordering, so it logs plain markers instead.)
     ///
-    /// Two checks, not one, because a single post-hoc ordering assertion is
-    /// vacuous here: the test's own `entered_rx` hand-off already guarantees
-    /// the first thread's marker is pushed before the second thread is even
-    /// spawned, so `["first:...", "second:..."]` would result even if
-    /// `make_env` were hoisted outside `git_queue.run` entirely (the second
-    /// invocation's own `make_env` has nothing to block on, so it would just
-    /// run moments after being spawned, well before anything is released).
-    /// The first check below closes that gap: it inspects the log BEFORE
-    /// releasing the first invocation, so seeing only the first invocation's
-    /// marker there is possible only if the second is genuinely still
-    /// blocked -- on the queue, since nothing else could hold it back.
+    /// The one assertion that matters is taken BEFORE the first invocation
+    /// is released, not after both finish: `GitQueue::run` releases its
+    /// mutex guard as part of returning from the closure, which happens
+    /// before the first invocation's own thread gets to run its very next
+    /// statement -- so any assertion comparing "first has returned" against
+    /// "second has started" from OUTSIDE the queued closure is racing the
+    /// scheduler and can flip under load (confirmed empirically: this test
+    /// used to push a `"first:returned"` marker right after
+    /// `run_git_with_env` returned and assert it preceded `"second:..."`;
+    /// stress runs at `--test-threads=16` reproduced `["first:make_env",
+    /// "second:make_env", "first:returned"]`, i.e. thread 2 got scheduled
+    /// and ran its whole queued turn before thread 1's very next line ran).
+    /// The snapshot below sidesteps that entirely by never comparing
+    /// anything that happens after the mutex is released: while the release
+    /// signal has not been sent yet, the first invocation's `make_env` is
+    /// still blocked on `release_rx.recv()` *inside* the queued closure, so
+    /// the queue's mutex is still held no matter how any thread is
+    /// scheduled -- the second invocation's `make_env` (which has no delay
+    /// of its own) simply cannot have run yet. A single unavoidable timing
+    /// assumption remains (the sleep below gives the second invocation a
+    /// real chance to misbehave before the snapshot), but nothing about
+    /// which of two already-independent events the scheduler picks first.
     #[test]
     fn a_second_queued_invocations_make_env_waits_for_the_first_to_finish() {
         if !git_available() {
@@ -370,9 +381,11 @@ mod tests {
                 let lease = git_env_lease(&app1.ctx);
                 order1.lock().unwrap().push("first:make_env");
                 let _ = entered_tx.send(());
-                // Stand in for a long-running git subprocess: held here until
-                // the test explicitly releases it, well past when the second
-                // invocation below has queued up behind it.
+                // Stand in for a long-running git subprocess: held here,
+                // still INSIDE the queued closure (so the queue's mutex is
+                // still held), until the test explicitly releases it, well
+                // past when the second invocation below has queued up
+                // behind it.
                 let _ = release_rx.recv();
                 lease
             };
@@ -380,10 +393,6 @@ mod tests {
                 app1.ctx
                     .terminal
                     .run_git_with_env(&cwd1, &["--version".to_string()], &make_env);
-            // Pushed only once this WHOLE invocation -- make_env, the actual
-            // dispatched `git --version`, and the queue's own bookkeeping --
-            // has returned, i.e. after the queue's mutex has been released.
-            order1.lock().unwrap().push("first:returned");
         });
 
         entered_rx
@@ -406,12 +415,17 @@ mod tests {
         });
 
         // Give the second call time to actually reach (and block on) the
-        // queue's mutex before releasing the first.
+        // queue's mutex before releasing the first -- a real chance for the
+        // regression to misbehave, not a substitute for the check below.
         std::thread::sleep(Duration::from_millis(200));
 
-        // The non-vacuous check: taken BEFORE the first invocation is
-        // released, so the second invocation's make_env has had a full
-        // 200ms to run if nothing were gating it.
+        // The whole test: taken BEFORE the first invocation is released, so
+        // the first invocation's make_env is still blocked inside the
+        // queued closure (the queue's mutex is still held) no matter what
+        // the scheduler has done with either thread since. The second
+        // invocation's make_env has had a full 200ms to run if nothing were
+        // gating it, so seeing only the first's marker here is possible
+        // only because the queue itself is still blocking it.
         assert_eq!(
             *order.lock().unwrap(),
             vec!["first:make_env"],
@@ -427,12 +441,13 @@ mod tests {
             .join()
             .expect("second invocation thread must not panic");
 
-        assert_eq!(
-            *order.lock().unwrap(),
-            vec!["first:make_env", "first:returned", "second:make_env"],
-            "the second invocation's make_env must run only after the \
-             first invocation's whole queued turn -- including its own \
-             dispatched git subprocess -- has finished"
-        );
+        // Both threads are joined here, so there is no more concurrency left
+        // to race: this is just confirming both invocations actually ran,
+        // in whichever relative order the scheduler picked after release --
+        // that order is not part of what this test is proving.
+        let seen = order.lock().unwrap().clone();
+        assert_eq!(seen.len(), 2, "both invocations must have run: {seen:?}");
+        assert!(seen.contains(&"first:make_env"), "seen: {seen:?}");
+        assert!(seen.contains(&"second:make_env"), "seen: {seen:?}");
     }
 }
