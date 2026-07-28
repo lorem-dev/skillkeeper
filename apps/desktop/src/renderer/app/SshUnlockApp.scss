@@ -29,6 +29,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  // A flex-column child otherwise refuses to shrink below its content's
+  // intrinsic width (the initial `min-width: auto`), which would stretch the
+  // fixed-size window instead of eliding the text.
+  min-width: 0;
 }
 
 .sk-ssh-unlock__form {
