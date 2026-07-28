@@ -23,8 +23,14 @@
   color: var(--sk-color-label);
 }
 
+// Takes the row's free space so the action beside it lands on the trailing
+// edge, in line with the buttons of the row above. `flex-basis: 0` keeps the
+// text out of the container's intrinsic width, so the path row above still
+// decides how wide the control is; `min-width: 0` lets it ellipsize instead of
+// pushing that action out of view.
 .sk-ssh-key__state {
-  max-width: 220px;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

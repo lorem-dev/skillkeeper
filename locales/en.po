@@ -1136,6 +1136,9 @@ msgstr "Cancel"
 msgid "ssh.wrongPassphrase"
 msgstr "Wrong passphrase."
 
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Update check skipped: the SSH key is locked. Unlock it in Settings."
+
 msgid "ssh.keyLocked"
 msgstr "The SSH key is locked. Unlock it to continue."
 

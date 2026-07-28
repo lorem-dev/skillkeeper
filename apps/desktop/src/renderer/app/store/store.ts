@@ -394,6 +394,13 @@ export interface SkillkeeperState {
    * Repositories page (App) and opens the add form prefilled (RepoAddButton).
    */
   addRepoRequest: string | null;
+  /**
+   * True once a background update check was refused because the chosen SSH key
+   * is locked. The refusal raises the passphrase window, and this flag is what
+   * lets the answer to that window re-run the sweep it interrupted (or explain
+   * the skip if the user declines). Cleared by any check that succeeds.
+   */
+  updatesBlockedByKey: boolean;
   /** Tracked projects. */
   projects: Project[];
   /** Per-project skill counts for the card badges (not persisted). */
@@ -505,6 +512,12 @@ export interface SkillkeeperActions {
    *  scheduled and startup sweeps pass false so a locked SSH key cannot pop a
    *  passphrase prompt with nobody there to answer it. */
   refreshRepoUpdates(interactive: boolean): Promise<void>;
+  /**
+   * Report how the passphrase window closed, so a sweep the locked key refused
+   * can finish what it started: an unlock re-runs it, a decline says once that
+   * the check stayed skipped. A no-op when no sweep was refused.
+   */
+  noteUnlockResolved(unlocked: boolean): void;
   /** Fetch branch + skill count for every repo into `repoInfo`. */
   refreshRepoInfo(): Promise<void>;
   /** Track a project for a chosen folder (name pre-derived from the folder). */
@@ -649,6 +662,46 @@ function repoErrorMessage(error: string): NotificationMessage {
 }
 
 /**
+ * Whether a background update check has already reported an SSH refusal this
+ * session. A locked key refuses every repository in the sweep, so without a
+ * latch one skipped sweep would produce one message per repository. A check
+ * that succeeds clears it, so a later refusal is reported again.
+ */
+let sshRefusalReported = false;
+
+/**
+ * React to an update check that failed. A refusal from the SSH gate is not a
+ * broken repository: the clone is untouched and the only thing missing is the
+ * passphrase, so a locked key raises the passphrase window right there instead
+ * of leaving the user to discover a silently failed sweep. Any other failure
+ * (real git output) stays in the task list, as it always has.
+ */
+function handleCheckFailure(
+  get: () => SkillkeeperStore,
+  set: (patch: Partial<SkillkeeperStore>) => void,
+  error: unknown,
+): void {
+  const key = sshErrorKey(String(error));
+  if (key === null) return;
+  if (key !== 'ssh.keyLocked') {
+    // A missing or unusable key file: nothing to unlock, so say it once.
+    if (sshRefusalReported) return;
+    sshRefusalReported = true;
+    get().notify({ key }, 'warning');
+    return;
+  }
+  // Every repository in the sweep hits the same locked key: raise the window
+  // once. `updatesBlockedByKey` is what tells the answer to that window which
+  // sweep to resume (see noteUnlockResolved).
+  if (get().updatesBlockedByKey) return;
+  set({ updatesBlockedByKey: true });
+  void bridgeClient.promptSshUnlock().catch((raiseError: unknown) => {
+    const raiseKey = sshErrorKey(String(raiseError));
+    get().notify(raiseKey !== null ? { key: raiseKey } : String(raiseError), 'error');
+  });
+}
+
+/**
  * Cap the retained log so a long-running session (background update checks,
  * per-op entries) cannot grow it without bound -- the LogsPage renders one DOM
  * node per entry. Keeps the most recent.
@@ -708,6 +761,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   mcpPresets: [],
   mcpInstalls: [],
   repoFocus: null,
+  updatesBlockedByKey: false,
   loading: false,
   error: null,
   onboarding: { active: false, step: 'welcome', completed: false },
@@ -1121,6 +1175,23 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set((s) => ({ tasks: s.tasks.filter((t) => t.status === 'queued' || t.status === 'running') }));
   },
 
+  noteUnlockResolved(unlocked) {
+    // Only a sweep that was actually refused has something to finish: an
+    // unlock the user did from Settings, or one behind a clone, must not kick
+    // off an unrelated check.
+    if (!get().updatesBlockedByKey) return;
+    set({ updatesBlockedByKey: false });
+    if (unlocked) {
+      void get().refreshRepoUpdates(false);
+      return;
+    }
+    // Declined: the checks stay skipped, so say so once rather than leaving an
+    // empty task list as the only trace.
+    if (sshRefusalReported) return;
+    sshRefusalReported = true;
+    get().notify({ key: 'updates.checkSkippedKeyLocked' }, 'warning');
+  },
+
   refreshRepoUpdates(interactive) {
     // Each repo's update-check fetch runs as its own queued task (sequentially,
     // via the shared task chain), so checks are visible in the task list and
@@ -1157,9 +1228,12 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
               },
             },
           }));
+          sshRefusalReported = false;
+          set({ updatesBlockedByKey: false });
           setTaskStatus('done');
-        } catch {
+        } catch (error) {
           setTaskStatus('error');
+          handleCheckFailure(get, set, error);
         }
       });
     });

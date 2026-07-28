@@ -32,6 +32,7 @@ vi.mock('@/services/bridge', () => ({
     setConfig: vi.fn(),
     syncRepository: vi.fn(),
     repoHasUpdate: vi.fn(),
+    promptSshUnlock: vi.fn(),
     describeRepository: vi.fn(),
     setOnboarding: vi.fn(),
   },
@@ -705,6 +706,88 @@ describe('useSkillkeeperStore', () => {
       expect(tasks).toHaveLength(1);
       expect(tasks[0]!.kind).toBe('check');
       expect(tasks[0]!.repoId).toBe('repo-1');
+    });
+
+    it('raises the passphrase window once when a locked key refuses the sweep', async () => {
+      // Every repository in the sweep hits the same locked key, so the window
+      // must be raised once, not once per repository -- and the sweep must not
+      // fail invisibly, which is what it did before.
+      useSkillkeeperStore.setState({
+        repositories: [
+          { ...mockRepo, id: 'repo-1' },
+          { ...mockRepo, id: 'repo-2' },
+        ],
+        notifications: [],
+        toasts: [],
+      });
+      vi.mocked(bridgeClient.repoHasUpdate).mockRejectedValue('ssh.keyLocked');
+      vi.mocked(bridgeClient.promptSshUnlock).mockResolvedValue(undefined);
+
+      await useSkillkeeperStore.getState().refreshRepoUpdates(false);
+
+      expect(bridgeClient.promptSshUnlock).toHaveBeenCalledTimes(1);
+      const { tasks, notifications, updatesBlockedByKey } = useSkillkeeperStore.getState();
+      expect(tasks.every((t) => t.status === 'error')).toBe(true);
+      expect(updatesBlockedByKey).toBe(true);
+      // The window itself is the message: no toast on top of it.
+      expect(notifications).toHaveLength(0);
+    });
+
+    it('resumes the refused sweep once the key is unlocked', async () => {
+      useSkillkeeperStore.setState({ repositories: [mockRepo], updatesBlockedByKey: true });
+      vi.mocked(bridgeClient.repoHasUpdate).mockClear();
+      vi.mocked(bridgeClient.repoHasUpdate).mockResolvedValue(true);
+
+      useSkillkeeperStore.getState().noteUnlockResolved(true);
+      await Promise.resolve();
+
+      expect(bridgeClient.repoHasUpdate).toHaveBeenCalledWith('repo-1', false);
+      expect(useSkillkeeperStore.getState().updatesBlockedByKey).toBe(false);
+    });
+
+    it('says the check stayed skipped when the passphrase is declined', () => {
+      useSkillkeeperStore.setState({ updatesBlockedByKey: true, notifications: [], toasts: [] });
+
+      useSkillkeeperStore.getState().noteUnlockResolved(false);
+
+      const { notifications, updatesBlockedByKey } = useSkillkeeperStore.getState();
+      expect(updatesBlockedByKey).toBe(false);
+      const skipped = notifications.filter((n) => n.key === 'updates.checkSkippedKeyLocked');
+      expect(skipped).toHaveLength(1);
+      expect(skipped[0]!.level).toBe('warning');
+    });
+
+    it('ignores an unlock that no refused sweep was waiting for', () => {
+      // An unlock done from Settings, or behind a clone, must not kick off an
+      // unrelated update check.
+      useSkillkeeperStore.setState({
+        repositories: [mockRepo],
+        updatesBlockedByKey: false,
+        notifications: [],
+        toasts: [],
+      });
+      vi.mocked(bridgeClient.repoHasUpdate).mockClear();
+      vi.mocked(bridgeClient.repoHasUpdate).mockResolvedValue(true);
+
+      useSkillkeeperStore.getState().noteUnlockResolved(true);
+
+      expect(bridgeClient.repoHasUpdate).not.toHaveBeenCalled();
+      expect(useSkillkeeperStore.getState().notifications).toHaveLength(0);
+    });
+
+    it('keeps a raw git failure out of the notifications, as it always did', async () => {
+      // A successful check first: it clears the once-per-session latch, so this
+      // test does not depend on whether an earlier one set it.
+      vi.mocked(bridgeClient.repoHasUpdate).mockResolvedValue(false);
+      await useSkillkeeperStore.getState().refreshRepoUpdates(false);
+      useSkillkeeperStore.setState({ notifications: [], toasts: [], tasks: [] });
+
+      vi.mocked(bridgeClient.repoHasUpdate).mockRejectedValue('fatal: could not read from remote');
+      await useSkillkeeperStore.getState().refreshRepoUpdates(false);
+
+      const { tasks, notifications } = useSkillkeeperStore.getState();
+      expect(tasks[0]!.status).toBe('error');
+      expect(notifications).toHaveLength(0);
     });
 
     it('clearFinishedTasks removes done/error tasks but keeps queued/running', () => {
