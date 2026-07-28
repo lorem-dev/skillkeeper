@@ -160,8 +160,11 @@ pub fn query_replies(chunk: &str) -> Vec<&'static str> {
 pub enum StreamPiece {
     /// Visible output to display (already marker-free).
     Text(String),
-    /// A stripped marker carrying the just-finished command's exit code.
-    Marker(i64),
+    /// A stripped marker carrying the just-finished command's exit code, and --
+    /// for the Windows sentinel, which names the invocation that printed it --
+    /// that invocation's nonce. The POSIX prompt hook has no nonce to give: it
+    /// reports the shell's last exit code, not one command's.
+    Marker { code: i64, nonce: Option<u64> },
 }
 
 /// The result of scanning one chunk (plus any carried-over partial) for markers.
@@ -192,7 +195,7 @@ impl ScanResult {
         self.pieces
             .iter()
             .filter_map(|p| match p {
-                StreamPiece::Marker(code) => Some(*code),
+                StreamPiece::Marker { code, .. } => Some(*code),
                 StreamPiece::Text(_) => None,
             })
             .collect()
@@ -234,7 +237,7 @@ pub fn scan_markers(carry: &str, chunk: &str) -> ScanResult {
                     pieces.push(StreamPiece::Text(stream[cursor..i].to_string()));
                 }
                 let code = stream[after..j].parse::<i64>().unwrap_or(0);
-                pieces.push(StreamPiece::Marker(code));
+                pieces.push(StreamPiece::Marker { code, nonce: None });
                 i = j + 1;
                 cursor = i;
                 continue;
@@ -284,22 +287,22 @@ pub fn scan_sentinels(carry: &str, chunk: &str) -> ScanResult {
     let mut pieces = Vec::new();
     let mut cursor = 0usize;
 
-    // Every COMPLETE sentinel: prefix, one-or-more digits, then the suffix.
+    // Every COMPLETE sentinel: prefix, the nonce's digits, `_`, the exit code's
+    // digits, then the suffix. Both digit runs are required, which is what keeps
+    // the shell's echo of the typed line (still holding the unexpanded
+    // `%^ERRORLEVEL%` / `$([int]$LASTEXITCODE)`) from matching.
     while let Some(rel) = stream[cursor..].find(SENTINEL_PREFIX) {
         let start = cursor + rel;
         let after = start + SENTINEL_PREFIX.len();
-        let digits_end = after
-            + stream[after..]
-                .bytes()
-                .take_while(u8::is_ascii_digit)
-                .count();
-        if digits_end > after && stream[digits_end..].starts_with(SENTINEL_SUFFIX) {
+        if let Some((nonce, code, end)) = parse_sentinel_body(&stream[after..]) {
             if cursor < start {
                 pieces.push(StreamPiece::Text(stream[cursor..start].to_string()));
             }
-            let code = stream[after..digits_end].parse::<i64>().unwrap_or(0);
-            pieces.push(StreamPiece::Marker(code));
-            cursor = digits_end + SENTINEL_SUFFIX.len();
+            pieces.push(StreamPiece::Marker {
+                code,
+                nonce: Some(nonce),
+            });
+            cursor = after + end;
             continue;
         }
         // Not (yet) a sentinel: keep the prefix as ordinary text and move past
@@ -328,6 +331,30 @@ pub fn scan_sentinels(carry: &str, chunk: &str) -> ScanResult {
         pieces,
         carry: carry_out,
     }
+}
+
+/// Read `<nonce>_<code>__` from the start of `rest`, returning the two numbers
+/// and how many bytes they and the suffix occupy.
+///
+/// `None` for anything that is not that shape -- which includes every partial
+/// sentinel still arriving and the shell's own echo of the typed line, where the
+/// exit code has not been expanded yet.
+fn parse_sentinel_body(rest: &str) -> Option<(u64, i64, usize)> {
+    let digits = |from: usize| from + rest[from..].bytes().take_while(u8::is_ascii_digit).count();
+    let nonce_end = digits(0);
+    if nonce_end == 0 || !rest[nonce_end..].starts_with('_') {
+        return None;
+    }
+    let code_start = nonce_end + 1;
+    let code_end = digits(code_start);
+    if code_end == code_start || !rest[code_end..].starts_with(SENTINEL_SUFFIX) {
+        return None;
+    }
+    Some((
+        rest[..nonce_end].parse().ok()?,
+        rest[code_start..code_end].parse().ok()?,
+        code_end + SENTINEL_SUFFIX.len(),
+    ))
 }
 
 /// Offset in `rest` where an incomplete sentinel begins, if one does: either a
@@ -366,6 +393,11 @@ pub struct Reaction {
     pub writes: Vec<String>,
     /// The latest command's exit code, if a marker was seen this event.
     pub exit_code: Option<i64>,
+    /// The nonce of the sentinel that carried `exit_code`, when it came from a
+    /// Windows sentinel rather than the POSIX prompt hook. It is what lets the
+    /// invocation that printed it -- and only that invocation -- treat it as its
+    /// own completion.
+    pub sentinel_nonce: Option<u64>,
     /// Raise the `needsInput` signal (a passphrase/password/confirm prompt).
     pub request_open: bool,
     /// (Re)arm the quiet timer that installs the hook after a lull.
@@ -481,7 +513,7 @@ impl ShellIntegration {
         for piece in scan.pieces {
             match piece {
                 StreamPiece::Text(t) => self.show(&t, &mut r),
-                StreamPiece::Marker(code) => self.on_marker(code, &mut r),
+                StreamPiece::Marker { code, nonce } => self.on_marker(code, nonce, &mut r),
             }
         }
         if !self.use_integration {
@@ -548,10 +580,11 @@ impl ShellIntegration {
     }
 
     /// The just-finished command's exit code arrived (port of `onMarker`).
-    fn on_marker(&mut self, code: i64, r: &mut Reaction) {
+    fn on_marker(&mut self, code: i64, nonce: Option<u64>, r: &mut Reaction) {
         self.confirmed = true;
         self.hide_hook = false;
         r.exit_code = Some(code);
+        r.sentinel_nonce = nonce;
         r.cancel_confirm_timer = true;
     }
 
@@ -996,7 +1029,7 @@ mod tests {
     /// view, and its exit code is extracted.
     #[test]
     fn a_sentinel_is_stripped_and_its_code_extracted() {
-        let scan = scan_sentinels("", "before\r\n__skk_done_0__\r\nafter");
+        let scan = scan_sentinels("", "before\r\n__skk_done_3_0__\r\nafter");
         assert_eq!(scan.exit_codes(), vec![0]);
         assert_eq!(scan.carry, "");
         let text: String = scan
@@ -1004,7 +1037,7 @@ mod tests {
             .iter()
             .filter_map(|p| match p {
                 StreamPiece::Text(t) => Some(t.as_str()),
-                StreamPiece::Marker(_) => None,
+                StreamPiece::Marker { .. } => None,
             })
             .collect();
         assert_eq!(text, "before\r\n\r\nafter");
@@ -1012,7 +1045,7 @@ mod tests {
 
     #[test]
     fn a_nonzero_sentinel_code_is_extracted() {
-        let scan = scan_sentinels("", "__skk_done_128__");
+        let scan = scan_sentinels("", "__skk_done_4_128__");
         assert_eq!(scan.exit_codes(), vec![128]);
     }
 
@@ -1028,14 +1061,35 @@ mod tests {
             .iter()
             .filter_map(|p| match p {
                 StreamPiece::Text(t) => Some(t.as_str()),
-                StreamPiece::Marker(_) => None,
+                StreamPiece::Marker { .. } => None,
             })
             .collect();
         assert_eq!(shown, "done\r\n", "half a sentinel must not be displayed");
 
-        let second = scan_sentinels(&first.carry, "ne_7__tail");
+        let second = scan_sentinels(&first.carry, "ne_9_7__tail");
         assert_eq!(second.exit_codes(), vec![7]);
         assert_eq!(second.carry, "");
+    }
+
+    /// A sentinel says WHICH invocation finished, which is what lets an
+    /// invocation ignore one printed late by a previous, interrupted command.
+    /// Without it, that late sentinel ended whichever wait was running: that
+    /// invocation returned before its git had really run, its askpass token was
+    /// revoked with it, and the `ssh` it had just started failed with
+    /// `Permission denied (publickey)` -- for the rest of the session, since the
+    /// drift persisted.
+    #[test]
+    fn a_sentinel_carries_the_nonce_of_the_invocation_that_printed_it() {
+        let scan = scan_sentinels("", "__skk_done_41_0__x__skk_done_42_1__");
+        let seen: Vec<(Option<u64>, i64)> = scan
+            .pieces
+            .iter()
+            .filter_map(|p| match p {
+                StreamPiece::Marker { code, nonce } => Some((*nonce, *code)),
+                StreamPiece::Text(_) => None,
+            })
+            .collect();
+        assert_eq!(seen, vec![(Some(41), 0), (Some(42), 1)]);
     }
 
     /// The digits are what separate the real sentinel from the shell echoing the
@@ -1043,7 +1097,7 @@ mod tests {
     #[test]
     fn the_unexpanded_echo_of_the_command_is_not_a_sentinel() {
         let echo =
-            "C:\\r>\"git\" -C \"C:\\r\" \"status\" & call echo __skk_done_%^ERRORLEVEL%__\r\n";
+            "C:\\r>\"git\" -C \"C:\\r\" \"status\" & call echo __skk_done_7_%^ERRORLEVEL%__\r\n";
         let scan = scan_sentinels("", echo);
         assert_eq!(scan.exit_codes(), Vec::<i64>::new());
         let shown: String = scan
@@ -1051,7 +1105,7 @@ mod tests {
             .iter()
             .filter_map(|p| match p {
                 StreamPiece::Text(t) => Some(t.as_str()),
-                StreamPiece::Marker(_) => None,
+                StreamPiece::Marker { .. } => None,
             })
             .collect();
         assert_eq!(shown, echo, "the echoed line must be shown verbatim");
@@ -1084,7 +1138,7 @@ mod tests {
         // The lull fires: the shell is at a prompt and can take a command.
         assert!(si.on_quiet_timeout().mark_ready);
 
-        let done = si.on_data("Fetching origin\r\n__skk_done_0__\r\n");
+        let done = si.on_data("Fetching origin\r\n__skk_done_1_0__\r\n");
         assert_eq!(done.exit_code, Some(0));
         assert!(
             done.mark_ready,
@@ -1130,7 +1184,7 @@ mod tests {
         assert!(!si.on_data("Enter passphrase for key 'x': ").request_open);
 
         // The command finishes; the next one must be able to raise it again.
-        assert_eq!(si.on_data("__skk_done_0__").exit_code, Some(0));
+        assert_eq!(si.on_data("__skk_done_2_0__").exit_code, Some(0));
         let second = si.on_data("Enter passphrase for key 'x': ");
         assert!(
             second.request_open,

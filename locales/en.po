@@ -287,6 +287,9 @@ msgstr "Done"
 msgid "tasks.status.error"
 msgstr "Failed"
 
+msgid "tasks.status.skipped"
+msgstr "Postponed"
+
 msgid "repositories.empty"
 msgstr "No repositories added yet."
 
@@ -304,6 +307,11 @@ msgstr "Never fetched"
 
 msgid "repositories.addRemote"
 msgstr "Remote URL"
+
+msgid "repositories.scpPortIgnored"
+msgstr ""
+"A port cannot be written after a colon: everything there is a path, so this "
+"connects on port 22. Use {url} instead."
 
 msgid "repositories.invalidRemote"
 msgstr "Enter a valid remote URL (https://... or git@host:path)."
@@ -1079,6 +1087,94 @@ msgstr "Git"
 msgid "settings.gitDescription"
 msgstr "Path to the git executable"
 
+msgid "settings.ssh.key"
+msgstr "SSH key"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Private key used for SSH remotes."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Without an SSH key, the system ssh setup is used."
+
+msgid "settings.ssh.notSet"
+msgstr "Not set"
+
+msgid "settings.ssh.choose"
+msgstr "Choose..."
+
+msgid "settings.ssh.clear"
+msgstr "Clear"
+
+msgid "settings.ssh.unlock"
+msgstr "Unlock"
+
+msgid "settings.ssh.forget"
+msgstr "Forget passphrase"
+
+msgid "settings.ssh.state.missing"
+msgstr "Key file not found."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "Not a private key."
+
+msgid "settings.ssh.state.plain"
+msgstr "Ready, no passphrase."
+
+msgid "settings.ssh.state.locked"
+msgstr "Locked. Asked when first needed."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Unlocked for this session."
+
+msgid "ssh.unlock.title"
+msgstr "Unlock SSH key"
+
+msgid "ssh.unlock.hint"
+msgstr "Enter the passphrase for {path}. It is kept only until SkillKeeper quits."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Passphrase"
+
+msgid "ssh.unlock.submit"
+msgstr "Unlock"
+
+msgid "ssh.unlock.cancel"
+msgstr "Cancel"
+
+msgid "ssh.unlock.blocking"
+msgstr "Waiting for the SSH key passphrase."
+
+msgid "ssh.wrongPassphrase"
+msgstr "Wrong passphrase."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Update check skipped: the SSH key is locked. Unlock it in Settings."
+
+msgid "ssh.keyLocked"
+msgstr "The SSH key is locked. Unlock it to continue."
+
+msgid "ssh.keyMissing"
+msgstr "The configured SSH key file was not found."
+
+msgid "ssh.notAPrivateKey"
+msgstr "The configured SSH key file is not a private key."
+
+msgid "ssh.hostKeyPrompt"
+msgstr "The host key is not known yet. Confirm it in the terminal once."
+
+msgid "ssh.askpassUnavailable"
+msgstr "The passphrase helper could not be started; ssh will ask in the terminal."
+
+msgid "ssh.askpassExpired"
+msgstr "The key was not needed in time and the request expired. Try again."
+
+msgid "ssh.askpassStale"
+msgstr "The passphrase request came from an operation that had already finished. Try again."
+
+msgid "ssh.askpassForgotten"
+msgstr "The passphrase is no longer held. Unlock the key again."
+
+
 msgid "settings.updates.mode"
 msgstr "Update checks"
 
@@ -1132,6 +1228,9 @@ msgstr "Hook installation requires explicit consent (--allow-hooks). Skill body 
 
 msgid "skills.count"
 msgstr "{n} skill(s) installed"
+
+msgid "onboarding.settingsLater"
+msgstr "All of this can be changed later in Settings."
 
 msgid "onboarding.next"
 msgstr "Next"

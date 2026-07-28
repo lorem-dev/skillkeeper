@@ -36,6 +36,9 @@ export interface OnboardingOverlayProps {
    *  agents steps, injected by the caller so this system never imports
    *  `features/onboardingDemo` (or the `entities` it composes) directly. */
   readonly renderDemoTree: (variant: DemoTreeVariant) => ReactNode;
+  /** The Settings row for choosing the SSH key, shown on the `welcome` step and
+   *  injected for the same reason as the blocks above. */
+  readonly sshKeyField: ReactNode;
 }
 
 /**
@@ -46,7 +49,12 @@ export interface OnboardingOverlayProps {
  * screen, a spotlight ring + coachmark anchored to a live control, or a
  * centered modal.
  */
-export function OnboardingOverlay({ aboutIdentity, aboutFooter, renderDemoTree }: OnboardingOverlayProps) {
+export function OnboardingOverlay({
+  aboutIdentity,
+  aboutFooter,
+  renderDemoTree,
+  sshKeyField,
+}: OnboardingOverlayProps) {
   const active = useOnboardingActive();
   const step = useOnboardingStep();
   const { next, back, skip } = useOnboardingActions();
@@ -99,7 +107,11 @@ export function OnboardingOverlay({ aboutIdentity, aboutFooter, renderDemoTree }
       )}
 
       {step === 'welcome' && (
-        <WelcomeScreen aboutIdentity={aboutIdentity} aboutFooter={aboutFooter} />
+        <WelcomeScreen
+          aboutIdentity={aboutIdentity}
+          aboutFooter={aboutFooter}
+          sshKeyField={sshKeyField}
+        />
       )}
 
       {meta.kind === 'spotlight' && (

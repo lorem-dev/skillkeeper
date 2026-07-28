@@ -82,12 +82,12 @@ fn onboarding_toggle_label_key(active: bool) -> &'static str {
     }
 }
 
-/// Build the macOS application menu.
-///
-/// Order mirrors `menu.ts`: SkillKeeper, Edit, View, Settings, Window, Help.
 /// Resolve the configured UI language code (e.g. "en", "de", "zh-cn") from the
 /// saved config, defaulting to English when it cannot be read.
-fn current_lang<R: Runtime>(app: &AppHandle<R>) -> String {
+///
+/// Shared with the other natively-titled surfaces (the SSH unlock window) so
+/// they all follow the in-app language setting, not the system one.
+pub(crate) fn current_lang<R: Runtime>(app: &AppHandle<R>) -> String {
     use tauri::Manager;
     let Some(ctx) = app.try_state::<std::sync::Arc<crate::state::AppContext>>() else {
         return "en".to_string();

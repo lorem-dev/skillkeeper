@@ -2,6 +2,33 @@
 
 ## Development
 
+## Version 0.3.0
+
+### Added
+
+- A dedicated SSH key for git over SSH: point the app at one private key
+  (`repositories.sshKeyPath`, honoured by the CLI too) instead of letting `ssh`
+  pick. The key is offered, not enforced, so hosts it has no access to keep
+  working through your own config and agent.
+- The passphrase for that key, held for one run of the app. Asked for in a
+  window of its own, verified at once, never written anywhere, and asked again
+  after a restart. `SKILLKEEPER_SSH_VERBOSE=1` traces the `ssh` it runs.
+- The SSH key on the first onboarding screen, beside language and theme, plus a
+  Skip button: a private repository needs the key before anything can be added.
+- The running version on the status bar.
+- A warning when a repository URL writes the port after a colon, which the
+  `user@host:path` form silently reads as part of the path.
+
+### Changed
+
+- The interface is fully translated again in all 18 languages.
+- An update check postponed by a locked key is listed as "Postponed", not failed.
+
+### Fixed
+
+- Adding a repository shows its skills straight away.
+- MCP cards and badges stay inside their bounds with long commands or names.
+
 ## Version 0.2.2
 
 ### Added

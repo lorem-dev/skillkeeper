@@ -76,6 +76,27 @@ for (const rel of CARGO_FILES) {
   }
 }
 
+// Cargo.lock records each workspace member's version alongside the registry
+// crates. It drifted a release behind twice before this check existed: the bump
+// script edited the manifests, cargo rewrote the lock only on the next build,
+// and the tag shipped a lock naming the previous version. A build with
+// `--locked` would fail on that, and a build without it silently rewrites the
+// lock mid-release.
+{
+  const lock = readFileSync(join(root, "Cargo.lock"), "utf8");
+  for (const block of lock.split("\n\n")) {
+    const name = block.match(/^name\s*=\s*"([^"]+)"/m);
+    if (name === null || !name[1].startsWith("skillkeeper")) continue;
+    // A registry crate could share the prefix; a workspace member is the one
+    // with no `source` line (it is local, not fetched).
+    if (/^source\s*=/m.test(block)) continue;
+    const version = block.match(/^version\s*=\s*"([^"]+)"/m);
+    if (version !== null && version[1] !== expected) {
+      mismatches.push(`Cargo.lock [${name[1]}]: ${version[1]} (expected ${expected})`);
+    }
+  }
+}
+
 if (mismatches.length > 0) {
   console.error(`check-version: tag ${rawTag} does not match package versions:`);
   for (const m of mismatches) console.error(`  - ${m}`);

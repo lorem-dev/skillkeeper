@@ -7,4 +7,9 @@ export type RepositoriesConfig = {
 /**
  * Path to the git executable used for repository operations.
  */
-gitPath: string, };
+gitPath: string, 
+/**
+ * Private key file to use for SSH remotes. Absent means the system
+ * default: whatever `ssh` and the system agent would pick on their own.
+ */
+sshKeyPath?: string | null, };

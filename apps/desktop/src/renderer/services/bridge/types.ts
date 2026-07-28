@@ -47,5 +47,6 @@ export type {
   McpUpdatePreflightArgs,
   McpUpdatePreflightResult,
   TerminalStatus,
+  SshKeyDto,
 } from './contracts';
 export type { McpServerDef, McpTransport, McpIdentity, McpPresetOrigin } from './generated/core';

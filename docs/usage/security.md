@@ -17,8 +17,10 @@ SkillKeeper is designed around a small set of security principles:
 
 3. Git runs as a subprocess with no shell interpolation. SkillKeeper invokes
    the system `git` binary with argument arrays only (never a shell string).
-   SkillKeeper never reads private keys or passphrases; these remain in the
-   user's ssh-agent.
+   Credentials stay outside the application: with no key chosen in Settings,
+   keys and passphrases remain in the user's ssh-agent. A chosen key is read to
+   verify its passphrase, which is then held in memory for that run of the
+   desktop app only (see "SSH and credentials" below).
 
 4. State writes are atomic. The application state store is written by first
    writing to a temp file and then renaming it, preventing partial writes from
@@ -60,15 +62,23 @@ reversed on read for display.
 
 ## SSH and credentials
 
-SkillKeeper delegates all SSH key and passphrase handling to the user's
-ssh-agent. It never stores, reads, or transmits credentials.
-
-To use private SSH repositories, load your key into the ssh-agent before
+By default SkillKeeper delegates all SSH key and passphrase handling to the
+user's ssh-agent, and never reads, stores, or transmits credentials. To use
+private SSH repositories that way, load your key into the ssh-agent before
 running SkillKeeper:
 
 ```
 ssh-add ~/.ssh/your-key
 ```
+
+The desktop app can instead be pointed at one private key
+(`repositories.sshKeyPath`). Then it does read that file, to verify the
+passphrase you type and to decrypt the key in memory; the passphrase is held for
+that run of the app only, never written to the config, to the state store, or to
+any log, and never transmitted. Only the path is persisted. `ssh` receives the
+passphrase over a local socket private to the user's account, authorised by a
+token minted per git invocation and revoked when that invocation ends. See
+[Using a dedicated SSH key](repositories.md#using-a-dedicated-ssh-key).
 
 ## Hook-consent policy
 

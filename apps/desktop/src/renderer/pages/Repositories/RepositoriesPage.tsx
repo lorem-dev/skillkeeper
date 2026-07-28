@@ -125,7 +125,9 @@ export function RepositoriesPage() {
             // REFRESH_MIN_MS, so a fast refresh does not just flash.
             setRefreshing(true);
             const minDelay = new Promise((resolve) => setTimeout(resolve, REFRESH_MIN_MS));
-            void Promise.all([refreshRepoUpdates(), refreshRepoInfo(), minDelay]).finally(() =>
+            // Interactive: the user pressed this, so a locked SSH key may ask
+            // for its passphrase.
+            void Promise.all([refreshRepoUpdates(true), refreshRepoInfo(), minDelay]).finally(() =>
               setRefreshing(false),
             );
           }}

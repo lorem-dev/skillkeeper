@@ -49,5 +49,7 @@ SkillKeeper ships two front ends over one shared, framework-agnostic core:
 - Vulnerability scanning (a seam exists; no implementation in v1).
 - Publishing skills (SkillKeeper consumes repositories; it does not author
   them).
-- Auto-resolving SSH key passphrases (delegated to the user's ssh-agent).
+- Managing SSH keys or agents (the desktop app can hold the passphrase of one
+  chosen key for its own run; everything else is delegated to the user's
+  ssh-agent).
 - Detailed desktop UI screens beyond the shell.

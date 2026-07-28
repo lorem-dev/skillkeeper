@@ -27,12 +27,19 @@ import { TasksPage } from '@/systems/tasks';
 import { AboutDialog, AboutIdentity, AboutFooter } from '@/features/about';
 import { OnboardingDemoTree } from '@/features/onboardingDemo';
 import { OnboardingOverlay, useOnboardingActive, useOnboardingStep } from '@/systems/onboarding';
+import { SshUnlockBlocker } from '@/systems/sshUnlock';
+import { SshKeyField } from '@/features/sshKey';
 import { STEP_VIEW } from '@/app/config/onboarding';
 import './App.scss';
 
-/** Documentation section explaining how to set an ssh-agent up per platform. */
+/**
+ * Documentation section explaining how to set an ssh-agent up per platform.
+ *
+ * The `latest` segment is required: the site is versioned by mike, so only the
+ * bare root redirects to a version -- a deep path without it is a 404.
+ */
 const SSH_AGENT_DOCS =
-  'https://lorem-dev.github.io/skillkeeper/usage/repositories/#setting-up-an-ssh-agent';
+  'https://lorem-dev.github.io/skillkeeper/latest/usage/repositories/#setting-up-an-ssh-agent';
 
 const RepositoriesPage = lazy(() =>
   import('@/pages/Repositories').then((m) => ({ default: m.RepositoriesPage })),
@@ -171,8 +178,20 @@ export function App() {
       const store = useSkillkeeperStore.getState();
       store.openTerminal();
       if (sshAgentWarned.current) return;
-      void bridgeClient.sshAgentAvailable().then((available) => {
+      // A held (unlocked) or unencrypted key already answers passphrase
+      // prompts on the app's behalf, so the agent advice would be wrong --
+      // check the key's state alongside the agent before deciding to warn.
+      // A failed key-state read must not suppress the notice: fall back to
+      // `null` (treated as "cannot rule it out") rather than letting the
+      // whole `Promise.all` reject and silently drop the check.
+      void Promise.all([
+        bridgeClient.sshAgentAvailable(),
+        bridgeClient.sshKeyState().catch(() => null),
+      ]).then(([available, keyState]) => {
         if (available || sshAgentWarned.current) return;
+        if (keyState !== null && (keyState.state === 'unlocked' || keyState.state === 'unencrypted')) {
+          return;
+        }
         sshAgentWarned.current = true;
         store.notify({ key: 'ssh.noAgent' }, 'info', undefined, SSH_AGENT_DOCS);
       });
@@ -389,7 +408,12 @@ export function App() {
         aboutIdentity={<AboutIdentity showTagline={false} />}
         aboutFooter={<AboutFooter />}
         renderDemoTree={(variant) => <OnboardingDemoTree variant={variant} />}
+        sshKeyField={<SshKeyField />}
       />
+      {/* Last, and portaled to the body from there: while the passphrase prompt
+          is up, this window takes no interaction at all -- including the
+          onboarding tour above and the portaled menus/tooltips outside. */}
+      <SshUnlockBlocker />
     </div>
     </AnimationProvider>
   );

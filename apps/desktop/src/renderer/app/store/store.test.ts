@@ -32,6 +32,12 @@ vi.mock('@/services/bridge', () => ({
     setConfig: vi.fn(),
     syncRepository: vi.fn(),
     repoHasUpdate: vi.fn(),
+    promptSshUnlock: vi.fn(),
+    addRepository: vi.fn(),
+    cloneRepository: vi.fn(),
+    listAvailableSkills: vi.fn(),
+    reconcileSkills: vi.fn(),
+    reconcileMcp: vi.fn(),
     describeRepository: vi.fn(),
     setOnboarding: vi.fn(),
   },
@@ -443,10 +449,21 @@ describe('useSkillkeeperStore', () => {
         onTerminalData: () => () => {},
         onTerminalExit: () => () => {},
         onTerminalRequestOpen: () => () => {},
+        sshKeyState: async () => ({ state: 'notConfigured' as const }),
+        selectSshKey: async () => ({ state: 'notConfigured' as const }),
+        clearSshKey: async () => ({ state: 'notConfigured' as const }),
+        unlockSshKey: async () => {},
+        forgetSshKey: async () => {},
+        cancelSshKeyUnlock: async () => {},
+        pickSshKeyFile: async () => null,
+        promptSshUnlock: async () => {},
+        onSshUnlockRequired: () => () => {},
+        onSshUnlockResolved: () => () => {},
         platform: 'darwin',
         minimizeWindow: () => {},
         toggleMaximizeWindow: () => {},
         closeWindow: () => {},
+        fitWindowHeight: () => {},
         isWindowMaximized: async () => false,
         onMaximizeChange: () => () => {},
       };
@@ -520,10 +537,21 @@ describe('useSkillkeeperStore', () => {
         onTerminalData: () => () => {},
         onTerminalExit: () => () => {},
         onTerminalRequestOpen: () => () => {},
+        sshKeyState: async () => ({ state: 'notConfigured' as const }),
+        selectSshKey: async () => ({ state: 'notConfigured' as const }),
+        clearSshKey: async () => ({ state: 'notConfigured' as const }),
+        unlockSshKey: async () => {},
+        forgetSshKey: async () => {},
+        cancelSshKeyUnlock: async () => {},
+        pickSshKeyFile: async () => null,
+        promptSshUnlock: async () => {},
+        onSshUnlockRequired: () => () => {},
+        onSshUnlockResolved: () => () => {},
         platform: 'darwin',
         minimizeWindow: () => {},
         toggleMaximizeWindow: () => {},
         closeWindow: () => {},
+        fitWindowHeight: () => {},
         isWindowMaximized: async () => false,
         onMaximizeChange: () => () => {},
       };
@@ -640,6 +668,21 @@ describe('useSkillkeeperStore', () => {
       expect(useSkillkeeperStore.getState().toasts).toHaveLength(1);
       expect(useSkillkeeperStore.getState().repoStatus['repo-1']?.error).toBe('boom');
     });
+
+    it('showRepoError translates a known ssh.* code but re-shows raw git text verbatim', () => {
+      const s = useSkillkeeperStore.getState();
+      s.notify('ssh.keyLocked', 'error', 'repo-1');
+      s.notify('fatal: could not read from remote repository', 'error', 'repo-2');
+      useSkillkeeperStore.getState().showRepoError('repo-1');
+      useSkillkeeperStore.getState().showRepoError('repo-2');
+      const toasts = useSkillkeeperStore.getState().toasts;
+      // Two from `notify` plus two re-shown by `showRepoError`.
+      expect(toasts).toHaveLength(4);
+      expect(toasts[2]?.key).toBe('ssh.keyLocked');
+      expect(toasts[2]?.text).toBeUndefined();
+      expect(toasts[3]?.text).toBe('fatal: could not read from remote repository');
+      expect(toasts[3]?.key).toBeUndefined();
+    });
   });
 
   describe('sync task queue', () => {
@@ -665,11 +708,113 @@ describe('useSkillkeeperStore', () => {
     });
 
     it('refreshRepoUpdates enqueues a check task per repo', () => {
-      void useSkillkeeperStore.getState().refreshRepoUpdates();
+      void useSkillkeeperStore.getState().refreshRepoUpdates(false);
       const tasks = useSkillkeeperStore.getState().tasks;
       expect(tasks).toHaveLength(1);
       expect(tasks[0]!.kind).toBe('check');
       expect(tasks[0]!.repoId).toBe('repo-1');
+    });
+
+    it('raises the passphrase window once when a locked key refuses the sweep', async () => {
+      // Every repository in the sweep hits the same locked key, so the window
+      // must be raised once, not once per repository -- and the sweep must not
+      // fail invisibly, which is what it did before.
+      useSkillkeeperStore.setState({
+        repositories: [
+          { ...mockRepo, id: 'repo-1' },
+          { ...mockRepo, id: 'repo-2' },
+        ],
+        notifications: [],
+        toasts: [],
+      });
+      vi.mocked(bridgeClient.repoHasUpdate).mockRejectedValue('ssh.keyLocked');
+      vi.mocked(bridgeClient.promptSshUnlock).mockResolvedValue(undefined);
+
+      await useSkillkeeperStore.getState().refreshRepoUpdates(false);
+
+      expect(bridgeClient.promptSshUnlock).toHaveBeenCalledTimes(1);
+      const { tasks, notifications, updatesBlockedByKey } = useSkillkeeperStore.getState();
+      // Postponed, not failed: the sweep is resumed once the key is unlocked.
+      expect(tasks.every((t) => t.status === 'skipped')).toBe(true);
+      expect(updatesBlockedByKey).toBe(true);
+      // The window itself is the message: no toast on top of it.
+      expect(notifications).toHaveLength(0);
+    });
+
+    it('resumes the refused sweep once the key is unlocked', async () => {
+      useSkillkeeperStore.setState({ repositories: [mockRepo], updatesBlockedByKey: true });
+      vi.mocked(bridgeClient.repoHasUpdate).mockClear();
+      vi.mocked(bridgeClient.repoHasUpdate).mockResolvedValue(true);
+
+      useSkillkeeperStore.getState().noteUnlockResolved(true);
+      await Promise.resolve();
+
+      expect(bridgeClient.repoHasUpdate).toHaveBeenCalledWith('repo-1', false);
+      expect(useSkillkeeperStore.getState().updatesBlockedByKey).toBe(false);
+    });
+
+    it('says the check stayed skipped when the passphrase is declined', () => {
+      useSkillkeeperStore.setState({ updatesBlockedByKey: true, notifications: [], toasts: [] });
+
+      useSkillkeeperStore.getState().noteUnlockResolved(false);
+
+      const { notifications, updatesBlockedByKey } = useSkillkeeperStore.getState();
+      expect(updatesBlockedByKey).toBe(false);
+      const skipped = notifications.filter((n) => n.key === 'updates.checkSkippedKeyLocked');
+      expect(skipped).toHaveLength(1);
+      expect(skipped[0]!.level).toBe('warning');
+    });
+
+    it('ignores an unlock that no refused sweep was waiting for', () => {
+      // An unlock done from Settings, or behind a clone, must not kick off an
+      // unrelated update check.
+      useSkillkeeperStore.setState({
+        repositories: [mockRepo],
+        updatesBlockedByKey: false,
+        notifications: [],
+        toasts: [],
+      });
+      vi.mocked(bridgeClient.repoHasUpdate).mockClear();
+      vi.mocked(bridgeClient.repoHasUpdate).mockResolvedValue(true);
+
+      useSkillkeeperStore.getState().noteUnlockResolved(true);
+
+      expect(bridgeClient.repoHasUpdate).not.toHaveBeenCalled();
+      expect(useSkillkeeperStore.getState().notifications).toHaveLength(0);
+    });
+
+    it('keeps a raw git failure out of the notifications, as it always did', async () => {
+      // A successful check first: it clears the once-per-session latch, so this
+      // test does not depend on whether an earlier one set it.
+      vi.mocked(bridgeClient.repoHasUpdate).mockResolvedValue(false);
+      await useSkillkeeperStore.getState().refreshRepoUpdates(false);
+      useSkillkeeperStore.setState({ notifications: [], toasts: [], tasks: [] });
+
+      vi.mocked(bridgeClient.repoHasUpdate).mockRejectedValue('fatal: could not read from remote');
+      await useSkillkeeperStore.getState().refreshRepoUpdates(false);
+
+      const { tasks, notifications } = useSkillkeeperStore.getState();
+      expect(tasks[0]!.status).toBe('error');
+      expect(notifications).toHaveLength(0);
+    });
+
+    it('refreshes the skill catalog after a repository is added', async () => {
+      // The card's own skill count comes from describeRepository, so a stale
+      // catalog is invisible on the Repositories page and shows up as an empty
+      // Skills page for a repository that was just cloned.
+      const added = { ...mockRepo, id: 'repo-new' };
+      vi.mocked(bridgeClient.addRepository).mockResolvedValue({ ok: true, repository: added } as RepoResult);
+      vi.mocked(bridgeClient.cloneRepository).mockResolvedValue({ ok: true, repository: added } as RepoResult);
+      vi.mocked(bridgeClient.describeRepository).mockResolvedValue({ branch: 'main', skillCount: 9 });
+      vi.mocked(bridgeClient.listAvailableSkills).mockResolvedValue({ skills: [], warnings: [] });
+      vi.mocked(bridgeClient.reconcileSkills).mockResolvedValue([]);
+      vi.mocked(bridgeClient.reconcileMcp).mockResolvedValue([]);
+
+      await useSkillkeeperStore.getState().addRepository(added.url, added.name);
+
+      expect(bridgeClient.listAvailableSkills).toHaveBeenCalled();
+      expect(bridgeClient.reconcileSkills).toHaveBeenCalled();
+      expect(bridgeClient.reconcileMcp).toHaveBeenCalled();
     });
 
     it('clearFinishedTasks removes done/error tasks but keeps queued/running', () => {

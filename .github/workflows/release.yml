@@ -75,6 +75,10 @@ jobs:
     name: Build ${{ matrix.target }}
     needs: verify-version
     runs-on: ${{ matrix.os }}
+    # A full leg takes 6 to 12 minutes; a hang (as on v0.3.0-rc.3, where apt sat
+    # on the dpkg lock for 19 minutes) should end the job, not the six-hour
+    # default.
+    timeout-minutes: 45
 
     env:
       # Sign only when a certificate secret is actually configured; GitHub
@@ -122,13 +126,21 @@ jobs:
       # packages are required for `tauri build` to compile the app crate.
       - name: Install Tauri Linux system dependencies
         if: startsWith(matrix.os, 'ubuntu')
+        env:
+          # This step hung for 19 minutes on v0.3.0-rc.3 and had to be cancelled.
+          # `apt` waits on the dpkg lock indefinitely by default, and the
+          # runner's unattended-upgrades holds it at boot; a bounded wait fails
+          # with a reason instead. `noninteractive` rules out a prompt nobody
+          # can answer.
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get update -o DPkg::Lock::Timeout=300
+          # patchelf is dropped: the AppImage bundler needs it, but it already
+          # ships in the ubuntu runner image, so installing it is pure download.
+          sudo apt-get install -y -o DPkg::Lock::Timeout=300 \
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
-            librsvg2-dev \
-            patchelf
+            librsvg2-dev
 
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -139,6 +151,13 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
+          # Restore only, never save. A run reads caches from its own ref, the
+          # default branch, or (for a pull request) the base branch -- and this
+          # job only ever runs on a tag, so a cache saved here can never be read
+          # by anything: not by the next tag, not by a branch. Saving them cost
+          # 7.7 GB of the repository's 10 GB budget across a handful of release
+          # candidates, which evicted the CI caches that do get reused.
+          save-if: false
           workspaces: ". -> target"
 
       - name: Enable pnpm via corepack

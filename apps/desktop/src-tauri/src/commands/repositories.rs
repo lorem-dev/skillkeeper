@@ -15,11 +15,21 @@
 //! handlers, and the read-only ones (`describe`, `listBranches`, `hasUpdate`)
 //! degrade to empty/false on any failure. Every state mutation runs under
 //! `ctx.state_lock` to reproduce the TypeScript `withStateLock` serialization.
+//!
+//! The three commands that reach the network -- `clone`, `sync` and
+//! `hasUpdate` -- run behind the SSH gate first (see [`gate_offline`]), so a
+//! repository served over SSH never starts a git subprocess that would sit
+//! waiting on a passphrase nobody is going to type. `update` and
+//! `listBranches` are deliberately outside it: the former only rewrites the
+//! remote URL and force-checks-out a local branch, and the latter reads
+//! `for-each-ref` out of the existing clone. Neither opens a connection. Nor
+//! does an update check on a repository that was never cloned, so that one is
+//! outside the gate too, even though `hasUpdate` as a whole is inside it.
 
 use std::path::Path;
 
 use serde::Serialize;
-use tauri::State;
+use tauri::{AppHandle, State};
 use uuid::Uuid;
 
 use skillkeeper_core::adapters::system_git::{
@@ -27,7 +37,7 @@ use skillkeeper_core::adapters::system_git::{
     build_lfs_pull_args, build_reset_hard_args,
 };
 use skillkeeper_core::git_remote::parse_remote;
-use skillkeeper_core::models::{AppState, Repository};
+use skillkeeper_core::models::{AppState, Repository, Transport};
 use skillkeeper_core::ports::{Clock, CloneOptions, FsPort, GitPort, PortResult};
 use skillkeeper_core::skills::resolver::resolve_skills;
 use skillkeeper_core::state::state::{load_state, save_state};
@@ -36,25 +46,37 @@ use skillkeeper_core::time::iso_from_millis;
 use std::sync::Arc;
 
 use super::blocking;
+use crate::app::ssh_key::{gate_for, Gate, KEY_LOCKED_ERROR};
+use crate::commands::ssh_key::require_unlocked;
 use crate::state::AppContext;
 
 // ---------------------------------------------------------------------------
 // Git routing: PTY session when live, direct SystemGit otherwise.
 //
 // User-initiated clone/sync/update-checkout and the hasUpdate fetch run IN the
-// interactive terminal session (`ctx.terminal.run_git`) so their output streams
-// to the terminal view and an ssh-key passphrase prompt reads the terminal's
-// input -- faithfully porting Electron's `terminalGit`. When no session has
-// started (headless contexts and the repository unit tests) they fall back to
-// the direct, silent `ctx.git` (`SystemGit`) so operations still work.
+// interactive terminal session (`ctx.terminal.run_git_with_env`) so their
+// output streams to the terminal view and an ssh-key passphrase prompt reads
+// the terminal's input -- faithfully porting Electron's `terminalGit`. When no
+// session has started (headless contexts and the repository unit tests) they
+// fall back to the direct, silent `ctx.git` (`SystemGit`) so operations still
+// work.
+//
+// Every PTY call is threaded with a `make_env` closure over
+// `app::ssh_git::git_env_lease(ctx)`, evaluated by the PTY layer only once it
+// has actually entered its queued slot: empty when no SSH key is chosen
+// (today's behaviour, unchanged), the key alone when it is locked or needs no
+// passphrase, or the key plus a token minted (and, once the invocation's git
+// subprocess exits, revoked) fresh for that one invocation when it is
+// unlocked for this session.
 //
 // The PTY steps reuse the same argument builders as `SystemGit`, decomposed to
 // match `terminal.ts` exactly: a force-pull is fetch + `reset --hard @{u}` +
-// `clean -fd` as three separate `run_git` invocations, and an lfs clone is the
-// clone followed by a separate `lfs pull`.
+// `clean -fd` as three separate `run_git_with_env` invocations, and an lfs
+// clone is the clone followed by a separate `lfs pull`.
 //
-// Configured git path: the PTY `run_git` invokes `git` from PATH (Wave 3 built
-// it that way), and the Tauri `AppContext` wires `ctx.git` as `SystemGit::new()`
+// Configured git path: the PTY `run_git_with_env` invokes `git` from PATH
+// (Wave 3 built it that way), and the Tauri `AppContext` wires `ctx.git` as
+// `SystemGit::new()`
 // -- which also resolves `git` on PATH -- so both routes agree. The Electron
 // `repositories.gitPath` config is not threaded into either Rust git route yet
 // (a pre-existing gap in the Tauri port, unchanged here).
@@ -68,7 +90,7 @@ where
     F: FnOnce() -> PortResult<()>,
 {
     if ctx.terminal.is_started() {
-        ctx.terminal.run_git(cwd, args).map(|_| ())
+        crate::app::ssh_git::run_git_in_terminal(ctx, cwd, args).map(|_| ())
     } else {
         direct().map_err(|e| e.to_string())
     }
@@ -84,10 +106,13 @@ fn clone_op(ctx: &AppContext, options: &CloneOptions) -> Result<(), String> {
             .map(|p| p.to_string_lossy().into_owned())
             .filter(|p| !p.is_empty())
             .unwrap_or_else(|| ".".to_string());
-        ctx.terminal.run_git(&parent, &build_clone_args(options))?;
+        crate::app::ssh_git::run_git_in_terminal(ctx, &parent, &build_clone_args(options))?;
         if options.lfs {
-            ctx.terminal
-                .run_git(&options.destination, &build_lfs_pull_args())?;
+            crate::app::ssh_git::run_git_in_terminal(
+                ctx,
+                &options.destination,
+                &build_lfs_pull_args(),
+            )?;
         }
         Ok(())
     } else {
@@ -99,9 +124,9 @@ fn clone_op(ctx: &AppContext, options: &CloneOptions) -> Result<(), String> {
 /// `clean -fd`, each a separate PTY invocation (matching `terminal.ts`).
 fn force_pull_op(ctx: &AppContext, path: &str) -> Result<(), String> {
     if ctx.terminal.is_started() {
-        ctx.terminal.run_git(path, &build_fetch_args())?;
-        ctx.terminal.run_git(path, &build_reset_hard_args())?;
-        ctx.terminal.run_git(path, &build_clean_args())?;
+        crate::app::ssh_git::run_git_in_terminal(ctx, path, &build_fetch_args())?;
+        crate::app::ssh_git::run_git_in_terminal(ctx, path, &build_reset_hard_args())?;
+        crate::app::ssh_git::run_git_in_terminal(ctx, path, &build_clean_args())?;
         Ok(())
     } else {
         ctx.git.force_pull(path).map_err(|e| e.to_string())
@@ -512,7 +537,7 @@ pub fn has_update(ctx: &AppContext, id: String) -> bool {
     // can report. Checking first also keeps the update sweep from running
     // `git -C <missing dir> fetch` -- which prints a `fatal:` into the terminal
     // on every startup, once per such repository. Matches `list_branches`.
-    if !ctx.fs.exists(&repo.local_path).unwrap_or(false) {
+    if !has_clone(ctx, &repo) {
         return false;
     }
     // Fetch in the terminal (visible, ssh-capable) like a pull; the rev-parse
@@ -532,6 +557,123 @@ pub fn has_update(ctx: &AppContext, id: String) -> bool {
 }
 
 // ---------------------------------------------------------------------------
+// The SSH gate.
+//
+// Split in two on purpose, and the split is what makes it testable:
+//
+// - `offer_unlock` is the half that can raise the passphrase window. It needs
+//   the `AppHandle`, so it lives in the command wrapper -- also the only layer
+//   where neither the state lock nor a git-queue slot is held yet. Its outcome
+//   is not consulted.
+// - `gate_offline` is the half that decides, and it needs no window at all. Each
+//   command's `*_gated` function runs it a moment later, re-reading the key
+//   state, and shapes the refusal the way that command's renderer expects.
+//
+// Every outcome `offer_unlock` can have -- unlocked, cancelled, closed, timed
+// out, key gone -- leaves a key state that `gate_offline` maps to exactly the
+// same answer, so nothing is lost by dropping the first result, and the whole
+// decision sits in one place a unit test can reach.
+// ---------------------------------------------------------------------------
+
+/// Whether `repo`'s remote is reached over SSH, and so needs the chosen key.
+///
+/// A field read: `transport` was parsed once when the record was written, so
+/// this never re-parses the URL.
+fn needs_key(repo: &Repository) -> bool {
+    repo.transport == Transport::Ssh
+}
+
+/// Whether `repo`'s clone directory is actually there.
+fn has_clone(ctx: &AppContext, repo: &Repository) -> bool {
+    ctx.fs.exists(&repo.local_path).unwrap_or(false)
+}
+
+/// Give the user a chance to unlock the chosen key before git work on `repo`
+/// starts.
+///
+/// Only ever raises the unlock window for an `interactive` caller;
+/// [`gate_for`], reached through [`require_unlocked`], is what enforces that, so
+/// a scheduled sweep returns from here at once. Callers must hold neither the
+/// state lock nor a git-queue slot: an answered-at-leisure prompt parks this
+/// thread for minutes.
+///
+/// The outcome is deliberately dropped -- see the section comment above.
+fn offer_unlock(app: &AppHandle, ctx: &AppContext, repo: &Repository, interactive: bool) {
+    let _ = require_unlocked(app, ctx, needs_key(repo), interactive);
+}
+
+/// The gate's decision for `repo` with no window in reach.
+///
+/// # Errors
+///
+/// The stable `ssh.*` code for a key that cannot serve this remote, never a raw
+/// window-system or git message. `Gate::Prompt` lands on
+/// [`KEY_LOCKED_ERROR`]: the window belongs to [`offer_unlock`], which has
+/// already had its turn by the time this runs, so still needing one means the
+/// key is still locked.
+fn gate_offline(ctx: &AppContext, repo: &Repository, interactive: bool) -> Result<(), String> {
+    match gate_for(needs_key(repo), ctx.ssh_key.state(), interactive) {
+        Gate::Proceed => Ok(()),
+        Gate::Fail(code) => Err(code.to_string()),
+        Gate::Prompt => Err(KEY_LOCKED_ERROR.to_string()),
+    }
+}
+
+/// [`clone`] behind the SSH gate.
+///
+/// A refusal is a `RepoResult`, not an `Err` across the bridge: the renderer
+/// awaits `cloneRepository` without a `try`, so a rejected call there would be
+/// an unhandled rejection instead of the error the user is shown. That shape is
+/// load-bearing, which is why this is a plain `&AppContext` function with a test
+/// on it rather than a match arm inside the command wrapper.
+fn clone_gated(ctx: &AppContext, id: String, interactive: bool) -> RepoResult {
+    // An unresolvable id is not the gate's failure to report; `clone` answers
+    // `not-found` for it exactly as it always has.
+    let Ok(Some(repo)) = find_repo(ctx, &id) else {
+        return clone(ctx, id);
+    };
+    match gate_offline(ctx, &repo, interactive) {
+        Ok(()) => clone(ctx, id),
+        Err(code) => RepoResult::err(code),
+    }
+}
+
+/// [`sync`] behind the SSH gate. Same refusal shape, and same reason, as
+/// [`clone_gated`].
+fn sync_gated(ctx: &AppContext, id: String, interactive: bool) -> RepoResult {
+    let Ok(Some(repo)) = find_repo(ctx, &id) else {
+        return sync(ctx, id);
+    };
+    match gate_offline(ctx, &repo, interactive) {
+        Ok(()) => sync(ctx, id),
+        Err(code) => RepoResult::err(code),
+    }
+}
+
+/// [`has_update`] behind the SSH gate.
+///
+/// The missing-clone check comes first, ahead of the gate: a repository that was
+/// never cloned makes [`has_update`] short-circuit before it runs any git, so
+/// there is no remote for a key to serve. Gating it anyway would fail one check
+/// per such repository on every scheduled sweep -- and prompt for a passphrase
+/// on the Refresh button -- for work that never touches the network.
+///
+/// # Errors
+///
+/// The stable `ssh.*` code for a key that cannot serve this remote. Everything
+/// else still degrades to `Ok(false)`, as the update sweep has always done.
+fn has_update_gated(ctx: &AppContext, id: &str, interactive: bool) -> Result<bool, String> {
+    let Ok(Some(repo)) = find_repo(ctx, id) else {
+        return Ok(false);
+    };
+    if !has_clone(ctx, &repo) {
+        return Ok(false);
+    }
+    gate_offline(ctx, &repo, interactive)?;
+    Ok(has_update(ctx, id.to_string()))
+}
+
+// ---------------------------------------------------------------------------
 // Tauri command wrappers. Thin adapters over the `&AppContext` functions above.
 // ---------------------------------------------------------------------------
 
@@ -545,13 +687,23 @@ pub async fn repositories_add(
     blocking(&ctx, move |c| add(c, url, name)).await
 }
 
-/// `repositories:clone`.
+/// `repositories:clone` -- user-initiated, so a locked key may ask.
+///
+/// A gate refusal comes back as `{ ok: false, error }` carrying the stable
+/// code, like every other clone failure, rather than as a rejected call.
 #[tauri::command]
 pub async fn repositories_clone(
+    app: AppHandle,
     ctx: State<'_, Arc<AppContext>>,
     id: String,
 ) -> Result<RepoResult, String> {
-    blocking(&ctx, move |c| clone(c, id)).await
+    blocking(&ctx, move |c| {
+        if let Ok(Some(repo)) = find_repo(c, &id) {
+            offer_unlock(&app, c, &repo, true);
+        }
+        clone_gated(c, id, true)
+    })
+    .await
 }
 
 /// `repositories:update`.
@@ -575,22 +727,51 @@ pub async fn repositories_remove(
     blocking(&ctx, move |c| remove(c, id)).await
 }
 
-/// `repositories:sync`.
+/// `repositories:sync` -- user-initiated, so a locked key may ask.
+///
+/// A gate refusal comes back as `{ ok: false, error }` carrying the stable
+/// code, like every other sync failure, rather than as a rejected call.
 #[tauri::command]
 pub async fn repositories_sync(
+    app: AppHandle,
     ctx: State<'_, Arc<AppContext>>,
     id: String,
 ) -> Result<RepoResult, String> {
-    blocking(&ctx, move |c| sync(c, id)).await
+    blocking(&ctx, move |c| {
+        if let Ok(Some(repo)) = find_repo(c, &id) {
+            offer_unlock(&app, c, &repo, true);
+        }
+        sync_gated(c, id, true)
+    })
+    .await
 }
 
 /// `repositories:hasUpdate`.
+///
+/// `interactive` says whether a user pressed Refresh (`true`) or this is the
+/// scheduled/startup sweep (`false`). The backend cannot tell the two apart, and
+/// the difference decides whether a locked key may raise the unlock prompt --
+/// so the caller states it. The scheduled sweep fails with `ssh.keyLocked`
+/// instead, and the renderer marks that check errored.
 #[tauri::command]
 pub async fn repositories_has_update(
+    app: AppHandle,
     ctx: State<'_, Arc<AppContext>>,
     id: String,
+    interactive: bool,
 ) -> Result<bool, String> {
-    blocking(&ctx, move |c| has_update(c, id)).await
+    blocking(&ctx, move |c| {
+        // Never ask for a key the check has no use for: a repository that was
+        // never cloned makes `has_update` short-circuit before it runs git, so
+        // pressing Refresh on one must not raise a passphrase window.
+        if let Ok(Some(repo)) = find_repo(c, &id) {
+            if has_clone(c, &repo) {
+                offer_unlock(&app, c, &repo, interactive);
+            }
+        }
+        has_update_gated(c, &id, interactive)
+    })
+    .await?
 }
 
 /// `repositories:describe`.
@@ -916,6 +1097,122 @@ mod tests {
         assert!(!has_update(&app.ctx, repo.id.clone()));
         src.advance("extra.txt");
         assert!(has_update(&app.ctx, repo.id));
+    }
+
+    // ---- the ssh gate (no git binary and no window system needed) ----
+
+    /// Configure an encrypted key and leave it locked, so every gate decision
+    /// below is the interesting one.
+    fn with_locked_key(app: &TempAppData) {
+        let path = crate::commands::test_support::write_key(app.dir(), "enc", Some("topsecret"));
+        app.ctx.ssh_key.set_path(Some(path));
+    }
+
+    /// Record a repository at `url` and put a directory where its clone would
+    /// be, so the gate is reached rather than short-circuited by the
+    /// missing-clone check. The directory is not a git repository -- nothing
+    /// past the gate needs it to be.
+    fn added_and_cloned(app: &TempAppData, url: &str) -> String {
+        let repo = add(&app.ctx, url.to_string(), "acme".to_string())
+            .repository
+            .expect("added");
+        std::fs::create_dir_all(&repo.local_path).expect("create clone dir");
+        repo.id
+    }
+
+    #[test]
+    fn a_scheduled_update_check_fails_instead_of_prompting() {
+        let app = TempAppData::new();
+        with_locked_key(&app);
+        // A cloned SSH repository whose key is locked: the scheduled path must
+        // report the locked key, not open a window (there is no AppHandle here
+        // at all).
+        let id = added_and_cloned(&app, "git@example.com:acme/skills.git");
+        let res = has_update_gated(&app.ctx, &id, false);
+        assert_eq!(res, Err("ssh.keyLocked".to_string()));
+    }
+
+    /// A repository that was never cloned reaches no remote -- `has_update`
+    /// short-circuits before running git -- so the locked key is irrelevant to
+    /// it. Gating it anyway would fail one check per such repository on every
+    /// sweep, and (worse) prompt for a passphrase on the Refresh button, for
+    /// work that never touches the network.
+    #[test]
+    fn an_uncloned_repository_is_not_gated_even_over_ssh() {
+        let app = TempAppData::new();
+        with_locked_key(&app);
+        let repo = add(
+            &app.ctx,
+            "git@example.com:acme/skills.git".to_string(),
+            "acme".to_string(),
+        )
+        .repository
+        .expect("added");
+        assert!(!Path::new(&repo.local_path).exists());
+        // Both directions: the scheduled sweep and the Refresh button. Neither
+        // can prompt -- there is no AppHandle here -- and neither may fail.
+        assert_eq!(has_update_gated(&app.ctx, &repo.id, false), Ok(false));
+        assert_eq!(has_update_gated(&app.ctx, &repo.id, true), Ok(false));
+    }
+
+    #[test]
+    fn an_https_repository_is_never_gated() {
+        let app = TempAppData::new();
+        with_locked_key(&app);
+        let id = added_and_cloned(&app, "https://example.com/acme/skills.git");
+        // Not an SSH remote: the gate lets it through, and the check then
+        // reports no update because the directory is not a clone. Pinned
+        // exactly, so a gate that fired with any other code would fail here.
+        assert_eq!(has_update_gated(&app.ctx, &id, false), Ok(false));
+    }
+
+    /// The refusal shape is load-bearing: the renderer awaits `cloneRepository`
+    /// without a `try`, so a rejected call would be an unhandled rejection
+    /// rather than the error the user is shown.
+    #[test]
+    fn a_locked_key_refuses_clone_and_sync_as_a_result_not_a_rejection() {
+        let app = TempAppData::new();
+        with_locked_key(&app);
+        let repo = add(
+            &app.ctx,
+            "git@example.com:acme/skills.git".to_string(),
+            "acme".to_string(),
+        )
+        .repository
+        .expect("added");
+
+        for result in [
+            clone_gated(&app.ctx, repo.id.clone(), true),
+            sync_gated(&app.ctx, repo.id.clone(), true),
+        ] {
+            assert!(!result.ok);
+            assert_eq!(result.error.as_deref(), Some("ssh.keyLocked"));
+            assert!(result.repository.is_none());
+        }
+        // Refused before any git ran, so nothing was cloned.
+        assert!(!Path::new(&repo.local_path).exists());
+    }
+
+    /// The same two commands over HTTPS must not consult the key at all -- they
+    /// fail for their own ordinary reasons instead.
+    #[test]
+    fn a_locked_key_does_not_refuse_an_https_clone_or_sync() {
+        let app = TempAppData::new();
+        with_locked_key(&app);
+        let repo = add(
+            &app.ctx,
+            "https://example.invalid/acme/skills.git".to_string(),
+            "acme".to_string(),
+        )
+        .repository
+        .expect("added");
+
+        for result in [
+            clone_gated(&app.ctx, repo.id.clone(), true),
+            sync_gated(&app.ctx, repo.id.clone(), true),
+        ] {
+            assert_ne!(result.error.as_deref(), Some("ssh.keyLocked"));
+        }
     }
 
     #[test]

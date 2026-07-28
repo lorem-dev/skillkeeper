@@ -1170,3 +1170,118 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "일치하는 프로젝트 없음"
+
+msgid "logs.readMore"
+msgstr "자세히 보기"
+
+msgid "onboarding.settingsLater"
+msgstr "이 설정은 나중에 설정에서 변경할 수 있습니다."
+
+msgid "repositories.scpPortIgnored"
+msgstr "콜론 뒤에는 포트를 쓸 수 없습니다. 거기서 시작하는 것은 경로이므로 연결은 22번 포트로 갑니다. {url} 을 사용하세요."
+
+msgid "settings.ssh.choose"
+msgstr "선택…"
+
+msgid "settings.ssh.clear"
+msgstr "지우기"
+
+msgid "settings.ssh.forget"
+msgstr "암호 구문 지우기"
+
+msgid "settings.ssh.key"
+msgstr "SSH 키"
+
+msgid "settings.ssh.keyDescription"
+msgstr "SSH 저장소에 사용할 개인 키."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "SSH 키가 없으면 시스템 ssh 설정을 사용합니다."
+
+msgid "settings.ssh.notSet"
+msgstr "설정되지 않음"
+
+msgid "settings.ssh.state.locked"
+msgstr "잠김. 처음 필요할 때 묻습니다."
+
+msgid "settings.ssh.state.missing"
+msgstr "키 파일을 찾을 수 없습니다."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "개인 키가 아닙니다."
+
+msgid "settings.ssh.state.plain"
+msgstr "준비됨, 암호 구문 없음."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "이 세션 동안 해제됨."
+
+msgid "settings.ssh.unlock"
+msgstr "잠금 해제"
+
+msgid "ssh.askpassUnavailable"
+msgstr "암호 구문 도우미를 실행할 수 없습니다. ssh 가 터미널에서 묻습니다."
+
+msgid "ssh.askpassExpired"
+msgstr "키가 제때 필요하지 않아 요청이 만료되었습니다. 다시 시도하세요."
+
+msgid "ssh.askpassStale"
+msgstr "암호 구문 요청이 이미 끝난 작업에서 왔습니다. 다시 시도하세요."
+
+msgid "ssh.askpassForgotten"
+msgstr "암호 구문이 더 이상 보관되지 않습니다. 키를 다시 잠금 해제하세요."
+
+
+msgid "ssh.hostKeyPrompt"
+msgstr "호스트 키가 아직 확인되지 않았습니다. 터미널에서 한 번 확인하세요."
+
+msgid "ssh.keyLocked"
+msgstr "SSH 키가 잠겨 있습니다. 잠금을 해제하고 계속하세요."
+
+msgid "ssh.keyMissing"
+msgstr "지정한 SSH 키 파일을 찾을 수 없습니다."
+
+msgid "ssh.noAgent"
+msgstr "ssh-agent 가 실행되지 않아 Git 이 매번 키 암호 구문을 묻습니다. 설정하면 한 번만 입력하면 됩니다."
+
+msgid "ssh.notAPrivateKey"
+msgstr "지정한 SSH 키 파일은 개인 키가 아닙니다."
+
+msgid "ssh.unlock.cancel"
+msgstr "취소"
+
+msgid "ssh.unlock.blocking"
+msgstr "SSH 키 암호 구문을 기다리는 중입니다."
+
+msgid "ssh.unlock.hint"
+msgstr "{path} 의 암호 구문을 입력하세요. 앱을 종료할 때까지만 보관됩니다."
+
+msgid "ssh.unlock.passphrase"
+msgstr "암호 구문"
+
+msgid "ssh.unlock.submit"
+msgstr "잠금 해제"
+
+msgid "ssh.unlock.title"
+msgstr "SSH 키 잠금 해제"
+
+msgid "ssh.wrongPassphrase"
+msgstr "암호 구문이 올바르지 않습니다."
+
+msgid "tasks.status.skipped"
+msgstr "연기됨"
+
+msgid "terminal.copy"
+msgstr "복사"
+
+msgid "terminal.paste"
+msgstr "붙여넣기"
+
+msgid "terminal.selectAll"
+msgstr "모두 선택"
+
+msgid "terminal.unavailable"
+msgstr "터미널을 사용할 수 없습니다: {error}. git 명령은 계속 실행되지만 출력은 여기에 표시되지 않습니다."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "업데이트 확인이 연기되었습니다: SSH 키가 잠겨 있습니다. 설정에서 잠금을 해제하세요."

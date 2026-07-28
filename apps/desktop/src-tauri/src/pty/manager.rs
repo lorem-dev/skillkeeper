@@ -37,6 +37,26 @@
 //! clone/sync/update/hasUpdate commands to [`run_git`](TerminalManager::run_git)
 //! (see `commands::repositories`), falling back to the direct `SystemGit` port
 //! when no session has started (headless/tests).
+//!
+//! [`TerminalManager::run_git_with_env`] is the same operation with extra
+//! environment variables layered on top -- the chosen SSH key and, once
+//! unlocked, its askpass token (`app::ssh_git::git_env_lease`). The caller
+//! passes a `make_env` closure rather than the environment itself: it is
+//! evaluated ONLY once this invocation has actually entered the queued slot
+//! (never while merely waiting for one), so an askpass token is never minted,
+//! and its TTL clock never starts, before there is a git subprocess to spend
+//! it on -- a queued invocation can otherwise wait behind a multi-minute
+//! clone for far longer than the token's TTL. The returned lease is held for
+//! (and dropped at the end of) exactly this one invocation, whichever way its
+//! git subprocess exits, so its token is revoked promptly rather than
+//! lingering for the rest of the session. A non-empty environment always
+//! takes the standalone process path rather than either in-shell one --
+//! simpler than quoting an env prefix for three different shells, not because
+//! a prompt would go unanswered there: that path's private pseudo-terminal is
+//! wired into the same terminal view's input and output, so a plain `ssh`
+//! prompt is answerable exactly as in the in-shell paths. Only when askpass is
+//! actually engaged is there truly nobody to answer, because `ssh` then never
+//! attempts a tty prompt at all.
 
 use std::any::Any;
 use std::io::{Read, Write};
@@ -46,6 +66,8 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtyPair, PtySize};
+
+use crate::app::ssh_git::GitEnvLease;
 
 use super::git_in_shell::{
     git_command_line, sentinel_command_line, ssh_add_command, win_shell_kind, wrap_bracketed_paste,
@@ -130,10 +152,19 @@ struct Shared {
     /// True when the shell is back at a ready prompt (bracketed paste re-enabled)
     /// and can accept the next in-shell command (port of `terminal.ts` `idle`).
     idle: bool,
-    /// Monotonic count of exit-code markers applied. An in-shell git command
-    /// captures this before typing, then waits for it to advance -- the advance
-    /// is its own command's completion marker (port of `pendingResolve`).
+    /// Monotonic count of exit-code markers applied. An in-shell git command on
+    /// the POSIX hook path captures this before typing, then waits for it to
+    /// advance -- the advance is its own command's completion marker (port of
+    /// `pendingResolve`).
     marker_seq: u64,
+    /// The nonce of the last Windows sentinel seen, and the next nonce to hand
+    /// out. On that path an invocation waits for ITS OWN nonce rather than for
+    /// any marker: a sentinel printed late by a previous, interrupted command
+    /// used to end the wait of whichever invocation happened to be running,
+    /// which revoked that invocation's askpass token while its `ssh` was still
+    /// starting -- `Permission denied (publickey)` from then on.
+    last_sentinel_nonce: Option<u64>,
+    next_sentinel_nonce: u64,
     /// Monotonic count of shell-process exits. A waiting in-shell command watches
     /// this so a shell that dies mid-command unblocks with a failure code.
     exit_gen: u64,
@@ -205,6 +236,8 @@ impl TerminalManager {
             last_exit_code: None,
             idle: false,
             marker_seq: 0,
+            last_sentinel_nonce: None,
+            next_sentinel_nonce: 1,
             exit_gen: 0,
             quiet_gen: 0,
             confirm_gen: 0,
@@ -401,21 +434,86 @@ impl TerminalManager {
     ///
     /// Returns an error message when git exits non-zero.
     pub fn run_git(&self, repo_path: &str, args: &[String]) -> Result<String, String> {
+        self.run_git_with_env(repo_path, args, &GitEnvLease::empty)
+    }
+
+    /// Run the app's git in the session, with extra environment variables
+    /// applied on top of the inherited session env (an injected variable
+    /// wins) -- used to point git at a chosen SSH key and, when unlocked, its
+    /// askpass helper.
+    ///
+    /// `make_env` is evaluated ONCE, INSIDE the queued slot -- after this
+    /// invocation has exclusive access, never while it is merely waiting for
+    /// one (see the module doc for why that ordering matters for an
+    /// askpass token's TTL). The returned lease's environment is applied when
+    /// non-empty; the lease itself is held until this invocation's git
+    /// subprocess has exited (by any path: success, failure, or the
+    /// silence-timeout kill) and is then dropped, revoking whatever token it
+    /// minted before the next queued invocation can run.
+    ///
+    /// A non-empty environment always takes the standalone process path
+    /// ([`run_git_process_env`](Self::run_git_process_env)), never an in-shell
+    /// one -- injecting it there would mean quoting an env prefix for three
+    /// different shells, where `CommandBuilder::env` just works. This is not
+    /// about whether a prompt can be answered: `run_git_process_env` installs
+    /// its private pseudo-terminal as the active input/output sink exactly
+    /// like the in-shell paths do (see its doc), so a plain `ssh` prompt
+    /// (e.g. a `Locked` key, which carries `GIT_SSH_COMMAND` but no askpass)
+    /// still appears in the terminal view and the user can still answer it
+    /// there. The one case with truly nobody to answer is when askpass is
+    /// actually engaged (`SSH_ASKPASS_REQUIRE=force`): `ssh` then asks the
+    /// helper program directly and never attempts a tty prompt at all, so no
+    /// amount of terminal routing would matter.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error message when git exits non-zero.
+    pub fn run_git_with_env(
+        &self,
+        repo_path: &str,
+        args: &[String],
+        make_env: &dyn Fn() -> GitEnvLease,
+    ) -> Result<String, String> {
         let code = self.git_queue.run(|| {
-            // Decide inside the queued slot. Both in-shell paths run git at the
-            // terminal the user is already looking at, which is what lets an SSH
-            // key passphrase prompt be answered: POSIX shells report the exit
-            // code through the prompt hook, Windows shells through a sentinel
-            // their command line prints. Only a POSIX shell we could not hook
-            // (or whose hook was abandoned) falls back to a private
-            // pseudo-terminal, where a prompt would have nobody to answer it.
-            if self.use_integration() {
+            // Minting (and thus starting the TTL clock on) an askpass token
+            // happens here, now that this call actually holds the queue --
+            // never before, while it was still waiting behind another
+            // invocation that could run for many minutes.
+            let env = make_env();
+            // Decide inside the queued slot. The in-shell paths run git in the
+            // interactive shell the user is already looking at, reporting the
+            // exit code via the prompt hook (POSIX) or a sentinel the command
+            // line prints (Windows). A caller carrying its own git environment
+            // always takes the private-pseudo-terminal path instead (simpler
+            // than quoting an env prefix for three different shells) -- which
+            // is just as answerable by the user (see `run_git_with_env`'s doc)
+            // except when that environment actually engages askpass, in which
+            // case `ssh` bypasses tty prompting entirely regardless of where
+            // it runs. A POSIX shell we could not hook (or whose hook was
+            // abandoned) falls back to the same private pseudo-terminal for a
+            // plain (env-less) invocation too.
+            // Windows keeps its in-shell path even with an environment to set.
+            // Giving git a pseudo-terminal of its own is what the non-empty-env
+            // branch does everywhere else, but on Windows that is the
+            // configuration where a git command never finishes (0.2.2 release
+            // notes), so the variables are typed alongside the command there
+            // (`env_prefix`) instead of being set on a process nobody can see.
+            let vars = env.vars();
+            let result = if cfg!(windows) {
+                self.run_git_in_shell_sentinel(repo_path, args, vars)
+            } else if !vars.is_empty() {
+                self.run_git_process_env(repo_path, args, vars)
+            } else if self.use_integration() {
                 self.run_git_in_shell(repo_path, args)
-            } else if cfg!(windows) {
-                self.run_git_in_shell_sentinel(repo_path, args)
             } else {
                 self.run_git_process(repo_path, args)
-            }
+            };
+            // `env` is dropped here, at the end of the queued closure -- always
+            // after the git subprocess above has exited, whichever way -- so
+            // its token (if any) is revoked right away rather than lingering
+            // until something else happens to replace it.
+            drop(env);
+            result
         });
         if code == 0 {
             Ok(String::new())
@@ -504,12 +602,20 @@ impl TerminalManager {
     /// sentinel.
     ///
     /// The POSIX counterpart above reads the exit code from the prompt hook;
-    /// Windows shells take no hook, so the command line reports it itself. What
-    /// matters is that git runs at the terminal the user is already typing into:
-    /// an SSH key passphrase prompt appears there and can be answered, which it
-    /// cannot in the private pseudo-terminal
-    /// [`run_git_process`](Self::run_git_process) would give it.
-    fn run_git_in_shell_sentinel(&self, dir: &str, args: &[String]) -> i64 {
+    /// Windows shells take no hook, so the command line reports it itself.
+    /// This runs git in the interactive shell the user is already typing
+    /// into, rather than [`run_git_process`](Self::run_git_process)'s own
+    /// private pseudo-terminal, so its output shares that shell's scrollback
+    /// inline with whatever the user was doing -- not because a prompt would
+    /// otherwise be unanswerable: `run_git_process` wires its private
+    /// pseudo-terminal into the same terminal view's input and output (see
+    /// its doc), so an SSH passphrase prompt is answerable there too.
+    fn run_git_in_shell_sentinel(
+        &self,
+        dir: &str,
+        args: &[String],
+        vars: &[(String, String)],
+    ) -> i64 {
         let _ = self.start(0, 0);
 
         let mut guard = self.shared.inner.lock().expect("terminal lock poisoned");
@@ -531,24 +637,25 @@ impl TerminalManager {
             guard = next;
         }
 
-        // Capture completion baselines before typing, so the sentinel we then
-        // wait for cannot be confused with a previous command's.
-        let seq0 = guard.marker_seq;
+        // Name this invocation, so the sentinel it waits for cannot be a
+        // previous command's however late that one prints.
+        let nonce = guard.next_sentinel_nonce;
+        guard.next_sentinel_nonce = guard.next_sentinel_nonce.wrapping_add(1);
         let exit0 = guard.exit_gen;
         guard.idle = false;
         guard.last_activity = Instant::now();
         let shell = win_shell_kind(&guard.shell.program);
-        let command = sentinel_command_line(shell, "git", dir, args);
+        let command = sentinel_command_line(shell, "git", dir, args, vars, nonce);
         if let Some(writer) = guard.writer.as_mut() {
             let _ = writer.write_all(command.as_bytes());
             let _ = writer.flush();
         }
 
-        // Await our sentinel, the shell dying, or a stretch in which nothing at
+        // Await OUR sentinel, the shell dying, or a stretch in which nothing at
         // all happened -- no output AND no typing. Waiting indefinitely is what
         // let one stuck command block every later one.
         loop {
-            if guard.marker_seq != seq0 {
+            if sentinel_completes(nonce, guard.last_sentinel_nonce) {
                 return guard.last_exit_code.unwrap_or(0);
             }
             if guard.exit_gen != exit0 {
@@ -582,8 +689,26 @@ impl TerminalManager {
 
     /// POSIX unintegrated shells: run git as its own arg-array PTY (no shell,
     /// so no POSIX quoting applies). Output streams to the view and input routes
-    /// to it until it exits (port of `runGitProcess`).
+    /// to it until it exits (port of `runGitProcess`). This private
+    /// pseudo-terminal is still the terminal view's active input/output sink
+    /// while git runs (see `active_cmd_writer`/`active_cmd_master` on
+    /// [`Shared`]), so a plain `ssh` prompt (no askpass configured) is just as
+    /// answerable here as in the in-shell paths -- only an askpass-forced
+    /// invocation truly has nobody to answer, because `ssh` itself never
+    /// attempts a tty prompt in that case.
     fn run_git_process(&self, dir: &str, args: &[String]) -> i64 {
+        self.run_git_process_env(dir, args, &[])
+    }
+
+    /// [`run_git_process`](Self::run_git_process) with `extra_env` applied on
+    /// top of the inherited session environment, after it, so an injected
+    /// variable wins over an inherited one of the same name.
+    fn run_git_process_env(
+        &self,
+        dir: &str,
+        args: &[String],
+        extra_env: &[(String, String)],
+    ) -> i64 {
         let _ = self.start(0, 0);
 
         // Echo a command header, then read geometry + env for the git PTY.
@@ -604,6 +729,9 @@ impl TerminalManager {
             cmd.arg(arg);
         }
         for (key, value) in &env {
+            cmd.env(key, value);
+        }
+        for (key, value) in extra_env {
             cmd.env(key, value);
         }
         cmd.env("TERM", "xterm-256color");
@@ -884,6 +1012,21 @@ fn spawn_session(shared: &mut Shared, state: &Arc<SharedState>) -> Result<(), St
     Ok(())
 }
 
+/// Whether a sentinel that has arrived completes the wait of the invocation
+/// that minted `awaited`.
+///
+/// Only its own does. The bug this rules out: an invocation abandoned by the
+/// silence timeout stops waiting but leaves the shell to print its sentinel
+/// whenever git finally dies, and that late sentinel used to satisfy whichever
+/// invocation was waiting by then. That invocation returned before its git had
+/// really run, its askpass token was revoked with it, and the `ssh` it had just
+/// started asked for the passphrase with a dead token -- reported as
+/// `Permission denied (publickey)`, and permanent, because every later
+/// invocation inherited the same one-command drift.
+fn sentinel_completes(awaited: u64, seen: Option<u64>) -> bool {
+    seen == Some(awaited)
+}
+
 /// Which fallback timer to arm.
 #[derive(Debug, Clone, Copy)]
 enum TimerKind {
@@ -903,6 +1046,13 @@ fn apply_reaction(reaction: Reaction, shared: &mut Shared, state: &Arc<SharedSta
         // A marker: an in-shell command just finished. Advance the sequence so a
         // waiter distinguishes it from the previous command's marker.
         shared.marker_seq = shared.marker_seq.wrapping_add(1);
+        // A Windows sentinel also says WHICH invocation finished. Recorded only
+        // when it does: the POSIX hook reports the shell's last exit code, with
+        // no invocation attached, and overwriting this with `None` there would
+        // lose a nonce a waiter is still looking for.
+        if reaction.sentinel_nonce.is_some() {
+            shared.last_sentinel_nonce = reaction.sentinel_nonce;
+        }
     }
     if reaction.mark_ready {
         shared.idle = true;
@@ -1077,9 +1227,31 @@ fn git_process_reader(
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use std::sync::mpsc::RecvTimeoutError;
     use std::time::{Duration, Instant};
+
+    /// Only an invocation's OWN sentinel ends its wait.
+    ///
+    /// The regression this pins: an invocation abandoned by the silence timeout
+    /// leaves the shell to print its sentinel whenever git finally dies, and that
+    /// late sentinel used to satisfy whichever invocation was waiting by then --
+    /// which returned before its git had run, revoked its askpass token with
+    /// itself, and left the `ssh` it had just started asking for the passphrase
+    /// with a dead token.
+    #[test]
+    fn only_an_invocations_own_sentinel_completes_its_wait() {
+        assert!(sentinel_completes(7, Some(7)));
+        assert!(
+            !sentinel_completes(7, Some(6)),
+            "a previous command's late sentinel must not end this wait"
+        );
+        assert!(
+            !sentinel_completes(7, None),
+            "nothing has finished yet, so nothing completes it"
+        );
+    }
 
     /// The shell spec for the current host, from the real environment.
     fn host_shell() -> ShellSpec {

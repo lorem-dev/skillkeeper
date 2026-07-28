@@ -28,6 +28,7 @@ import type {
   McpUpdatePreflightResult,
   OnboardingState,
   TerminalStatus,
+  SshKeyDto,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the Rust backend. */
@@ -75,7 +76,11 @@ export interface BridgeClient {
   updateRepository(id: string, name: string, url: string, branch?: string): Promise<RepoResult>;
   removeRepository(id: string): Promise<RemoveResult>;
   syncRepository(id: string): Promise<RepoResult>;
-  repoHasUpdate(id: string): Promise<boolean>;
+  /** Fetch a repository and report whether its branch is behind upstream.
+   *  `interactive` says a user asked for this check right now, which is what
+   *  lets a locked SSH key raise the passphrase prompt; the scheduled and
+   *  startup sweeps pass `false` and are refused instead. */
+  repoHasUpdate(id: string, interactive: boolean): Promise<boolean>;
   describeRepository(id: string): Promise<RepoInfo>;
   listBranches(id: string): Promise<string[]>;
   selectFolder(): Promise<string | null>;
@@ -100,6 +105,39 @@ export interface BridgeClient {
   onTerminalData(callback: (chunk: string) => void): () => void;
   onTerminalExit(callback: () => void): () => void;
   onTerminalRequestOpen(callback: () => void): () => void;
+  /** Read the configured SSH key's path and usability. */
+  sshKeyState(): Promise<SshKeyDto>;
+  /** Choose a new SSH key file (persists the path). */
+  selectSshKey(path: string): Promise<SshKeyDto>;
+  /** Stop using an SSH key (clears the path and any held passphrase). */
+  clearSshKey(): Promise<SshKeyDto>;
+  /** Verify the passphrase for the configured key and hold it for the session.
+   *  Rejects with a stable `ssh.*` code on failure. */
+  unlockSshKey(passphrase: string): Promise<void>;
+  /** Forget the held passphrase without unchoosing the key (relocks it). */
+  forgetSshKey(): Promise<void>;
+  /** Cancel an in-progress unlock prompt, releasing any operation waiting on it. */
+  cancelSshKeyUnlock(): Promise<void>;
+  /** Native file picker for choosing a private key file. */
+  pickSshKeyFile(): Promise<string | null>;
+  /** Raise the unlock prompt on demand (or join the one a blocked git
+   *  operation is already waiting behind) and return as soon as the window is
+   *  up -- it does not wait for the answer. A no-op for a key that needs no
+   *  passphrase; rejects with a stable `ssh.*` code when the prompt could not
+   *  be raised at all (a missing/invalid key, or a window-builder failure). */
+  promptSshUnlock(): Promise<void>;
+  /** Subscribe to the backend requesting the unlock prompt for `path`. Returns
+   *  an unsubscribe fn. Fires only while a further operation is waiting -- the
+   *  first paint of a freshly opened unlock window must call `sshKeyState()`
+   *  instead, since the webview is not listening yet when this first fires. */
+  onSshUnlockRequired(callback: (path: string) => void): () => void;
+  /** Subscribe to the unlock prompt resolving -- `true` after a successful
+   *  unlock, `false` on cancel or the window closing. Fired once per
+   *  resolution and app-wide, so a view other than the prompt itself (e.g.
+   *  this Settings row) learns to re-read `sshKeyState()`. Treat the payload
+   *  as a cue to re-read, not as truth in itself: it is not emitted at all
+   *  for a cancel with no prompt on record. Returns an unsubscribe fn. */
+  onSshUnlockResolved(callback: (unlocked: boolean) => void): () => void;
   /** The host platform (`process.platform`), for choosing the window-control chrome. */
   readonly platform: string;
   /** Minimize the window (frameless title bar). */
@@ -108,6 +146,11 @@ export interface BridgeClient {
   toggleMaximizeWindow(): void;
   /** Close the window. */
   closeWindow(): void;
+  /** Resize the window to `height` logical pixels of content, keeping its width
+   *  and re-centering it. For a fixed-size dialog whose text length is not known
+   *  ahead of time (the unlock window names the key path), which no single
+   *  height fits. */
+  fitWindowHeight(height: number): void;
   /** Whether the window is currently maximized. */
   isWindowMaximized(): Promise<boolean>;
   /** Subscribe to maximize/restore changes. Returns an unsubscribe fn. */
@@ -175,7 +218,8 @@ export const bridgeClient: BridgeClient = {
     invoke<RepoResult>('repositories_update', { id, name, url, branch }),
   removeRepository: (id) => invoke<RemoveResult>('repositories_remove', { id }),
   syncRepository: (id) => invoke<RepoResult>('repositories_sync', { id }),
-  repoHasUpdate: (id) => invoke<boolean>('repositories_has_update', { id }),
+  repoHasUpdate: (id, interactive) =>
+    invoke<boolean>('repositories_has_update', { id, interactive }),
   describeRepository: (id) => invoke<RepoInfo>('repositories_describe', { id }),
   listBranches: (id) => invoke<string[]>('repositories_list_branches', { id }),
   selectFolder: () => invoke<string | null>('dialog_select_folder'),
@@ -201,6 +245,46 @@ export const bridgeClient: BridgeClient = {
   onTerminalData: (callback) => subscribe<string>('terminal:data', callback),
   onTerminalExit: (callback) => subscribe<void>('terminal:exit', () => callback()),
   onTerminalRequestOpen: (callback) => subscribe<void>('terminal:requestOpen', () => callback()),
+  sshKeyState: () => invoke<SshKeyDto>('ssh_key_state'),
+  selectSshKey: (path) => invoke<SshKeyDto>('ssh_key_select', { path }),
+  clearSshKey: () => invoke<SshKeyDto>('ssh_key_clear'),
+  unlockSshKey: (passphrase) => invoke<void>('ssh_key_unlock', { passphrase }),
+  forgetSshKey: () => invoke<void>('ssh_key_forget'),
+  cancelSshKeyUnlock: () => invoke<void>('ssh_key_cancel_unlock'),
+  pickSshKeyFile: () => invoke<string | null>('dialog_select_ssh_key'),
+  promptSshUnlock: () => invoke<void>('ssh_key_prompt'),
+  onSshUnlockRequired: (callback) => {
+    // Same shape as onTerminalRequestOpen: start the listen(), keep the
+    // promised unlisten, and return a synchronous off() that works even if
+    // called before listen() resolves.
+    let off: (() => void) | null = null;
+    let cancelled = false;
+    void listen<{ path: string }>('ssh:unlockRequired', (e) => callback(e.payload.path)).then(
+      (un) => {
+        if (cancelled) un();
+        else off = un;
+      },
+    );
+    return () => {
+      cancelled = true;
+      off?.();
+    };
+  },
+  onSshUnlockResolved: (callback) => {
+    // Same shape as onSshUnlockRequired.
+    let off: (() => void) | null = null;
+    let cancelled = false;
+    void listen<{ unlocked: boolean }>('ssh:unlockResolved', (e) => callback(e.payload.unlocked)).then(
+      (un) => {
+        if (cancelled) un();
+        else off = un;
+      },
+    );
+    return () => {
+      cancelled = true;
+      off?.();
+    };
+  },
   // Resolved once by `init()` at startup and cached; read synchronously here so
   // the public interface stays sync (the App reads it during the first render).
   get platform() {
@@ -214,6 +298,9 @@ export const bridgeClient: BridgeClient = {
   },
   closeWindow: () => {
     void invoke('window_close');
+  },
+  fitWindowHeight: (height) => {
+    void invoke('window_fit_content_height', { height });
   },
   isWindowMaximized: () => invoke<boolean>('window_is_maximized'),
   onMaximizeChange: (callback) => subscribe<boolean>('window:maximizeChanged', callback),

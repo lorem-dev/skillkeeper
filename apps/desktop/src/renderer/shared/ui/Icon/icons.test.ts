@@ -17,6 +17,8 @@ import sync from './assets/sync.svg?raw';
 import bell from './assets/bell.svg?raw';
 import copy from './assets/copy.svg?raw';
 import close from './assets/close.svg?raw';
+import lock from './assets/lock.svg?raw';
+import unlock from './assets/unlock.svg?raw';
 import terminal from './assets/terminal.svg?raw';
 import deleteIcon from './assets/delete.svg?raw';
 import folder from './assets/folder.svg?raw';
@@ -44,6 +46,8 @@ const assets: Record<string, string> = {
   bell,
   copy,
   close,
+  lock,
+  unlock,
   terminal,
   delete: deleteIcon,
   folder,

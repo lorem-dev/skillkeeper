@@ -55,6 +55,45 @@ pub fn window_is_maximized(window: tauri::WebviewWindow) -> Result<bool, String>
     window.is_maximized().map_err(|e| e.to_string())
 }
 
+/// Bounds for [`window_fit_content_height`], so a measurement taken mid-layout
+/// (a webview that has not painted, a font that has not loaded) cannot leave a
+/// window too small to use or taller than a small screen.
+const FIT_MIN_HEIGHT: f64 = 160.0;
+const FIT_MAX_HEIGHT: f64 = 700.0;
+
+/// `window:fitContentHeight` -- resize the dispatching window to `height`
+/// logical pixels, keeping its width, and re-center it.
+///
+/// For a fixed-size dialog whose text length is not known when it is built: the
+/// unlock window names the key path, which takes one, two or three lines
+/// depending on the path and the language, so any height chosen up front is
+/// either short enough to clip the buttons or tall enough to leave a band of
+/// empty space under them. The renderer measures its own content instead and
+/// says how tall the window should be.
+///
+/// `height` is taken as given, and is NOT adjusted for the window frame here.
+/// It cannot be: on macOS the size set below counts the title bar, so the same
+/// number means different things per platform, and the caller is the only side
+/// that can see what it actually got (`window.innerHeight`) and correct for it.
+/// Adding a correction here as well would double it.
+///
+/// Re-centered because the window grows downward from its top-left, which would
+/// otherwise leave a dialog that was centered when built sitting low.
+#[tauri::command]
+pub fn window_fit_content_height(window: tauri::WebviewWindow, height: f64) -> Result<(), String> {
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let width = window
+        .inner_size()
+        .map_err(|e| e.to_string())?
+        .to_logical::<f64>(scale)
+        .width;
+    let height = height.clamp(FIT_MIN_HEIGHT, FIT_MAX_HEIGHT);
+    window
+        .set_size(tauri::LogicalSize::new(width, height))
+        .map_err(|e| e.to_string())?;
+    window.center().map_err(|e| e.to_string())
+}
+
 /// Wire the frameless chrome and the maximize-state relay onto the main window.
 ///
 /// Frameless setup (mirrors the Electron `createWindow`): macOS keeps the native

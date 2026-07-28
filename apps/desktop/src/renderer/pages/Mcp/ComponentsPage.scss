@@ -49,13 +49,18 @@
 }
 
 // The motion wrapper + the card fill the (stretched) grid cell, so the cards in
-// a row are all the same height.
+// a row are all the same height. `min-width: 0` on both is what keeps them
+// inside the cell: a grid item and a flex item both size to their content by
+// default, so one long unbreakable command line would stretch the cell past its
+// track and spill the card over its neighbour.
 .sk-mcp-grid > * {
   display: flex;
+  min-width: 0;
 }
 
 .sk-mcp-grid > * > .sk-mcp-card {
   flex: 1;
+  min-width: 0;
 }
 
 // Spacer between the (sticky) header and the tree.

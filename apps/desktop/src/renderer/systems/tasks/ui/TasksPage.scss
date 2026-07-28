@@ -94,6 +94,7 @@
 // queued/done read in the muted label color; running uses the accent color
 // (paired with the spinner); error reads in red.
 .sk-tasks__label--queued,
+.sk-tasks__label--skipped,
 .sk-tasks__label--done {
   color: var(--sk-color-label-2);
 }

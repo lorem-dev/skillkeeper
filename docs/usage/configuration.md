@@ -40,34 +40,39 @@ in your editor.
 
 ### general
 
-Language, theme (placeholder for future use), and default editor command.
+Display language, theme, animation speed, and the editor command used by
+"open in editor".
 
 ```yaml
 general:
-  language: en          # en | de | ru
-  theme: default        # placeholder; not functional in v1
-  editor: code          # default editor command for "open in IDE"
+  language: en          # see the list below
+  theme: system         # system | light | dark
+  animations: normal    # fast | normal | off
+  defaultEditor: code   # editor command; omitted means the platform default
 ```
 
-Default: language `en`, editor `code`.
+Default: language `en`, theme `system`, animations `normal`, no
+`defaultEditor`. For the list of languages see
+[Localization](localization.md).
 
 ### updates
 
-Controls when SkillKeeper checks for updates.
+Controls when SkillKeeper checks for skill and repository updates.
 
 ```yaml
 updates:
-  mode: manual          # manual | on-startup | scheduled
-  intervalHours: 24     # used when mode is "scheduled"
-  checkOnStartup: false # extra check on app/CLI start regardless of mode
+  mode: on-startup      # manual | on-startup | scheduled
+  intervalMinutes: 720  # used when mode is "scheduled"; 1 minute .. 23 hours
+  checkOnStartup: false # for "scheduled" mode: also check at startup
 ```
 
-Default: `mode: manual`, `intervalHours: 24`, `checkOnStartup: false`.
+Default: `mode: on-startup`, `intervalMinutes: 720` (12 hours),
+`checkOnStartup: false`.
 
-- `manual` - updates are only checked when you run `skillkeeper check`.
+- `manual` - updates are only checked when you ask for them.
 - `on-startup` - a check runs each time the CLI or desktop app starts.
-- `scheduled` - a check runs every `intervalHours` hours in the background
-  (desktop app only).
+- `scheduled` - a check runs every `intervalMinutes` minutes in the background
+  (desktop app only), plus one at startup when `checkOnStartup` is true.
 
 ### agents
 
@@ -101,16 +106,16 @@ Default: empty list (only manifest-declared executables are marked `+x`).
 
 ### security
 
-Hook-consent policy. `always-ask` is the default and recommended setting.
+Hook-consent policy.
 
 ```yaml
 security:
-  hookConsent: always-ask   # always-ask | per-repository | per-skill
+  hookConsentPolicy: always-ask   # always-ask
 ```
 
 `always-ask` means every hook install or update prompts for explicit
-confirmation, regardless of the source repository. Changing this to a less
-strict policy is possible but not recommended.
+confirmation, regardless of the source repository. It is currently the only
+policy: hooks run code on your machine, so consent is never implicit.
 
 ### notifications
 
@@ -123,16 +128,48 @@ notifications:
 
 Default: `true`.
 
+### repositories
+
+```yaml
+repositories:
+  gitPath: git                            # git executable to run
+  sshKeyPath: /home/you/.ssh/id_ed25519   # optional private key for SSH remotes
+```
+
+Default: `gitPath: git`, no `sshKeyPath` (the system ssh setup decides). The
+passphrase is never stored in the config; see
+[Using a dedicated SSH key](repositories.md).
+
+### projects
+
+```yaml
+projects:
+  checkIntervalMinutes: 1   # how often tracked folders are re-checked; 1 minute .. 23 hours
+```
+
+Default: `checkIntervalMinutes: 1`.
+
+### mcp
+
+```yaml
+mcp:
+  servers: []   # manually-defined presets; format in MCP servers
+```
+
+Default: empty list. See [MCP servers](mcp.md).
+
 ## Example config.yaml
 
 ```yaml
 general:
   language: en
-  editor: code
+  theme: system
+  animations: normal
+  defaultEditor: code
 
 updates:
-  mode: manual
-  intervalHours: 24
+  mode: on-startup
+  intervalMinutes: 720
   checkOnStartup: false
 
 agents:
@@ -147,8 +184,17 @@ executables:
   globs: []
 
 security:
-  hookConsent: always-ask
+  hookConsentPolicy: always-ask
 
 notifications:
   enabled: true
+
+repositories:
+  gitPath: git
+
+projects:
+  checkIntervalMinutes: 1
+
+mcp:
+  servers: []
 ```

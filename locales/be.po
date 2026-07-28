@@ -1179,3 +1179,118 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "Няма адпаведнага праекта"
+
+msgid "logs.readMore"
+msgstr "Падрабязней"
+
+msgid "onboarding.settingsLater"
+msgstr "Усё гэта можна змяніць пазней у наладах."
+
+msgid "repositories.scpPortIgnored"
+msgstr "Порт нельга ўказаць пасля двукроп'я: там пачынаецца шлях, таму злучэнне пойдзе на порт 22. Скарыстайце {url}."
+
+msgid "settings.ssh.choose"
+msgstr "Выбраць…"
+
+msgid "settings.ssh.clear"
+msgstr "Ачысціць"
+
+msgid "settings.ssh.forget"
+msgstr "Забыць пароль"
+
+msgid "settings.ssh.key"
+msgstr "SSH-ключ"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Прыватны ключ для SSH-рэпазіторыяў."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Без SSH-ключа выкарыстоўваецца сістэмны ssh."
+
+msgid "settings.ssh.notSet"
+msgstr "Не зададзены"
+
+msgid "settings.ssh.state.locked"
+msgstr "Заблакаваны. Спытаем пры першай патрэбе."
+
+msgid "settings.ssh.state.missing"
+msgstr "Файл ключа не знойдзены."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "Гэта не прыватны ключ."
+
+msgid "settings.ssh.state.plain"
+msgstr "Гатовы, без пароля."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Разблакаваны на сесію."
+
+msgid "settings.ssh.unlock"
+msgstr "Разблакаваць"
+
+msgid "ssh.askpassUnavailable"
+msgstr "Не ўдалося запусціць памочніка для пароля; ssh спытае яго ў тэрмінале."
+
+msgid "ssh.askpassExpired"
+msgstr "Ключ не спатрэбіўся своечасова, і запрос застарэў. Паспрабуйце зноў."
+
+msgid "ssh.askpassStale"
+msgstr "Запрос пароля прыйшоў ад ужо завершанай аперацыі. Паспрабуйце зноў."
+
+msgid "ssh.askpassForgotten"
+msgstr "Пароль больш не зберагаецца. Разблакуйце ключ нанова."
+
+
+msgid "ssh.hostKeyPrompt"
+msgstr "Ключ хоста пакуль невядомы. Пацвердзіце яго адзін раз у тэрмінале."
+
+msgid "ssh.keyLocked"
+msgstr "SSH-ключ заблакаваны. Разблакуйце яго, каб працягнуць."
+
+msgid "ssh.keyMissing"
+msgstr "Указаны файл SSH-ключа не знойдзены."
+
+msgid "ssh.noAgent"
+msgstr "ssh-agent не запушчаны, таму Git пытае пароль ключа кожны раз. Наладзьце яго, каб уводзіць пароль толькі адзін раз."
+
+msgid "ssh.notAPrivateKey"
+msgstr "Указаны файл SSH-ключа не з'яўляецца прыватным ключом."
+
+msgid "ssh.unlock.cancel"
+msgstr "Скасаваць"
+
+msgid "ssh.unlock.blocking"
+msgstr "Чаканне пароля да SSH-ключа."
+
+msgid "ssh.unlock.hint"
+msgstr "Увядзіце пароль для ключа {path}. Ён зберагаецца толькі да выхаду з праграмы."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Пароль"
+
+msgid "ssh.unlock.submit"
+msgstr "Разблакаваць"
+
+msgid "ssh.unlock.title"
+msgstr "Разблакаванне SSH-ключа"
+
+msgid "ssh.wrongPassphrase"
+msgstr "Няправільны пароль."
+
+msgid "tasks.status.skipped"
+msgstr "Адкладзена"
+
+msgid "terminal.copy"
+msgstr "Скапіяваць"
+
+msgid "terminal.paste"
+msgstr "Уставіць"
+
+msgid "terminal.selectAll"
+msgstr "Вылучыць усё"
+
+msgid "terminal.unavailable"
+msgstr "Тэрмінал недаступны: {error}. Каманды git выконваюцца, але іх вывад тут не паказваецца."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Праверка абнаўленняў адкладзена: SSH-ключ заблакаваны. Разблакуйце яго ў наладах."

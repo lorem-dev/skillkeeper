@@ -1,0 +1,73 @@
+// Root layout for the SSH-unlock window (see SshUnlockApp.tsx). The window is
+// non-resizable and 460 logical pixels wide; its HEIGHT follows this layout,
+// which the component measures and reports (`fitWindowHeight`), since the hint
+// names a key path of unknown length and wraps over one to three lines.
+
+// Sized by its content, NOT by the window: the window is sized from this
+// element's measured height (see the fit effect in SshUnlockApp.tsx), so
+// filling the window here would measure the window and the two would never
+// converge. The window's own background covers whatever is left.
+// The padding is what gives the dialog its margins now that the window is no
+// bigger than this element: at 24px the content sat right up against the window
+// edges, and a focus ring on the last button (2px, 2px offset) had nothing to
+// live in.
+.sk-ssh-unlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+  padding: var(--sk-space-8);
+  // Never shrink to the window. This is a flex item of the `#root` column (see
+  // _base.scss), so the default `flex-shrink: 1` let the window squeeze it: its
+  // measured height then always equalled the window's, the resize below asked
+  // for the size it already had, and the content that did not fit was simply
+  // clipped by the body's `overflow: hidden` -- which is exactly how the buttons
+  // ended up cut in half.
+  flex: none;
+}
+
+// The dialog's own heading, repeating what the window's title bar says: the bar
+// is easy to overlook (and on some platforms sits far from the content), so the
+// window states what it is asking about where the eye already is. The window is
+// sized to this layout, so the line it costs is added rather than taken.
+.sk-ssh-unlock__title {
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-label);
+}
+
+// Wraps, over as many lines as the sentence needs. It used to be one
+// ellipsized line, which read as a truncated path but actually cut the sentence
+// in half: the part saying the passphrase is kept only until the app quits sits
+// AFTER the path, so a key in a deep directory hid it entirely. A path has no
+// spaces to break at, so it needs `anywhere` to wrap at all; the full path is
+// also on the `title` attribute (native tooltip), as before.
+.sk-ssh-unlock__hint {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--sk-color-label-2);
+  overflow-wrap: anywhere;
+  // A flex-column child otherwise refuses to shrink below its content's
+  // intrinsic width (the initial `min-width: auto`), which would stretch the
+  // fixed-size window instead of wrapping the text.
+  min-width: 0;
+}
+
+.sk-ssh-unlock__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4);
+}
+
+.sk-ssh-unlock__error {
+  font-size: 12px;
+  color: var(--sk-red);
+}
+
+.sk-ssh-unlock__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+  margin-top: var(--sk-space-3);
+}

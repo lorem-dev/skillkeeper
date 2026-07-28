@@ -16,6 +16,18 @@
   z-index: var(--sk-z-statusbar);
 }
 
+// The version sits on the leading edge, with the buttons pushed to the trailing
+// one by the auto margin. Muted and small: it identifies the build without
+// competing with anything.
+.sk-statusbar__version {
+  margin-right: auto;
+  padding-left: var(--sk-space-1);
+  font-size: 11px;
+  color: var(--sk-color-label-3);
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 // Square icon buttons: drop the text-button height/padding to a small square
 // with a lightly rounded corner (distinct from the round action buttons), the
 // glyph centered. Colour + hover come from the plain Button variant.

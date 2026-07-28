@@ -86,7 +86,9 @@ impl Wiring {
     /// Build a fully-wired set of real ports for a CLI run.
     ///
     /// The git port resolves its executable from `repositories.gitPath` in the
-    /// loaded config, matching the desktop wiring.
+    /// loaded config, matching the desktop wiring. It also honours
+    /// `repositories.sshKeyPath` when set, without ever holding a passphrase:
+    /// the CLI lets `ssh` prompt in the terminal it already owns.
     ///
     /// # Errors
     ///
@@ -96,7 +98,9 @@ impl Wiring {
         let paths = AppPaths::resolve(&env);
 
         let git_path = config.repositories.git_path.clone();
-        let git = SystemGit::with_git_path(move || git_path.clone());
+        let ssh_key_path = config.repositories.ssh_key_path.clone();
+        let git = SystemGit::with_git_path(move || git_path.clone())
+            .with_env(move || git_env_for(ssh_key_path.clone()));
 
         let mut registry = AdapterRegistry::new();
         register_builtin_agents(&mut registry).map_err(|e| e.to_string())?;
@@ -110,6 +114,17 @@ impl Wiring {
             config: config.clone(),
             paths,
         })
+    }
+}
+
+/// Extra git environment for a configured SSH key, or nothing when unset. The
+/// CLI holds no passphrase: `ssh` prompts in the terminal it already owns.
+fn git_env_for(ssh_key_path: Option<String>) -> Vec<(String, String)> {
+    match ssh_key_path {
+        Some(path) if !path.trim().is_empty() => {
+            skillkeeper_core::ssh_env::ssh_env_vars(path.trim(), None)
+        }
+        _ => Vec::new(),
     }
 }
 
@@ -202,5 +217,23 @@ mod tests {
         let paths = AppPaths::resolve(&env);
         assert!(paths.config_yaml.contains(".config"));
         assert!(paths.config_yaml.ends_with("config.yaml"));
+    }
+
+    #[test]
+    fn git_env_is_empty_without_a_configured_key() {
+        assert!(git_env_for(None).is_empty());
+    }
+
+    #[test]
+    fn git_env_points_at_the_configured_key() {
+        let vars = git_env_for(Some("/home/u/.ssh/id_ed25519".to_string()));
+        assert_eq!(
+            vars.iter()
+                .find(|(k, _)| k == "GIT_SSH_COMMAND")
+                .map(|(_, v)| v.as_str()),
+            Some("ssh -i /home/u/.ssh/id_ed25519")
+        );
+        // The CLI never has a passphrase to give; ssh asks in its own terminal.
+        assert!(vars.iter().all(|(k, _)| k != "SSH_ASKPASS"));
     }
 }

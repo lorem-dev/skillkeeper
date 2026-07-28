@@ -57,7 +57,9 @@ default branch is."
 
 SkillKeeper supports SSH transport for private GitHub and Bitbucket
 repositories. Key material and passphrases are handled by the user's
-ssh-agent; SkillKeeper never reads private keys. In the desktop app, a
+ssh-agent, unless a key is chosen in Settings - see
+[Using a dedicated SSH key](#using-a-dedicated-ssh-key) for what the app
+reads and holds in that case. In the desktop app, a
 repository's clone and sync run inside the app's own embedded terminal
 session rather than silently in the background - so if the ssh-agent needs a
 passphrase, the prompt surfaces there, and the app can open the terminal
@@ -85,8 +87,10 @@ authenticate without asking for the passphrase again. SkillKeeper works
 without one -- the desktop app opens its terminal and you type the passphrase
 each time -- but with an agent, clone and sync run without interruption.
 
-SkillKeeper never reads or stores your key or passphrase. It reuses whatever
-agent your system already provides.
+With no key chosen in Settings, SkillKeeper reads neither your key nor your
+passphrase: it reuses whatever agent your system already provides. With one
+chosen, it reads that key file to verify the passphrase you give it - see
+[Using a dedicated SSH key](#using-a-dedicated-ssh-key).
 
 ### macOS
 
@@ -179,6 +183,37 @@ export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
 
 If you are not using GnuPG, you do not need pinentry at all -- a plain
 ssh-agent is enough.
+
+## Using a dedicated SSH key
+
+The desktop app can use one specific private key for SSH remotes instead of
+whatever `ssh` would pick. Choose it in Settings, under Repositories; the path
+is stored as `repositories.sshKeyPath` and the CLI honours it too.
+
+With a key chosen, Git runs as `ssh -i <key>`. The key is offered, not enforced:
+if a host does not accept it, `ssh` falls back to your own `~/.ssh/config`
+identities and your agent, so a repository on a host this key has no access to
+keeps working. With no key chosen, nothing changes.
+
+If the key has a passphrase, the app asks for it in a separate window, which
+blocks the main window while it is up, and verifies it immediately. It is held in memory for that run of the app only:
+never written to the config or to disk, and asked again after a restart, the
+first time an operation actually needs it. A scheduled update check never
+blocks on it -- it raises the same window and resumes once the key is unlocked.
+
+A few things worth knowing:
+
+- The chosen key is one identity among the ones `ssh` may try, so on a host that
+  accepts several of your keys it is not guaranteed to be the one used. If you
+  need a specific identity for a specific host, say so in `~/.ssh/config`.
+- An unknown host key must be confirmed once in the app's terminal. While the
+  app answers passphrase prompts itself, `ssh` cannot ask anything else there.
+- The CLI reads the same setting but keeps no passphrase, so `ssh` asks in the
+  terminal you ran it from.
+- `Permission denied (publickey)` looks the same whether the passphrase never
+  reached `ssh` or the host does not accept the key. Start the app with
+  `SKILLKEEPER_SSH_VERBOSE=1` to run every git operation as `ssh -v`, and the
+  terminal shows which it is.
 
 ## Git LFS
 

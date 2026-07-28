@@ -1044,3 +1044,118 @@ msgstr "commit-helper"
 
 msgid "onboarding.tree.skillC"
 msgstr "changelog"
+
+msgid "logs.readMore"
+msgstr "ดูเพิ่มเติม"
+
+msgid "onboarding.settingsLater"
+msgstr "ทั้งหมดนี้เปลี่ยนได้ภายหลังในหน้าตั้งค่า"
+
+msgid "repositories.scpPortIgnored"
+msgstr "ไม่สามารถระบุพอร์ตหลังเครื่องหมายโคลอน เพราะส่วนนั้นคือพาธ การเชื่อมต่อจึงไปที่พอร์ต 22 ให้ใช้ {url} แทน"
+
+msgid "settings.ssh.choose"
+msgstr "เลือก…"
+
+msgid "settings.ssh.clear"
+msgstr "ล้าง"
+
+msgid "settings.ssh.forget"
+msgstr "ลืมรหัสผ่านคีย์"
+
+msgid "settings.ssh.key"
+msgstr "คีย์ SSH"
+
+msgid "settings.ssh.keyDescription"
+msgstr "คีย์ส่วนตัวสำหรับที่เก็บแบบ SSH"
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "ไม่มีคีย์ SSH จะใช้การตั้งค่า ssh ของระบบ"
+
+msgid "settings.ssh.notSet"
+msgstr "ยังไม่ได้ตั้ง"
+
+msgid "settings.ssh.state.locked"
+msgstr "ล็อกอยู่ จะถามเมื่อใช้ครั้งแรก"
+
+msgid "settings.ssh.state.missing"
+msgstr "ไม่พบไฟล์คีย์"
+
+msgid "settings.ssh.state.notAKey"
+msgstr "ไม่ใช่คีย์ส่วนตัว"
+
+msgid "settings.ssh.state.plain"
+msgstr "พร้อมใช้ ไม่ต้องใช้รหัสผ่าน"
+
+msgid "settings.ssh.state.unlocked"
+msgstr "ปลดล็อกในเซสชันนี้"
+
+msgid "settings.ssh.unlock"
+msgstr "ปลดล็อก"
+
+msgid "ssh.askpassUnavailable"
+msgstr "เริ่มตัวช่วยรหัสผ่านไม่ได้ ssh จะถามในเทอร์มินัล"
+
+msgid "ssh.askpassExpired"
+msgstr "คีย์ไม่ถูกใช้ทันเวลา คำขอจึงหมดอายุ ลองอีกครั้ง"
+
+msgid "ssh.askpassStale"
+msgstr "คำขอรหัสผ่านมาจากงานที่เสร็จไปแล้ว ลองอีกครั้ง"
+
+msgid "ssh.askpassForgotten"
+msgstr "ไม่ได้เก็บรหัสผ่านไว้แล้ว ปลดล็อกคีย์อีกครั้ง"
+
+
+msgid "ssh.hostKeyPrompt"
+msgstr "ยังไม่รู้จักคีย์ของโฮสต์ ให้ยืนยันหนึ่งครั้งในเทอร์มินัล"
+
+msgid "ssh.keyLocked"
+msgstr "คีย์ SSH ถูกล็อก ปลดล็อกก่อนดำเนินการต่อ"
+
+msgid "ssh.keyMissing"
+msgstr "ไม่พบไฟล์คีย์ SSH ที่ตั้งไว้"
+
+msgid "ssh.noAgent"
+msgstr "ไม่มี ssh-agent ทำงานอยู่ Git จึงถามรหัสผ่านคีย์ทุกครั้ง ตั้งค่าไว้เพื่อกรอกเพียงครั้งเดียว"
+
+msgid "ssh.notAPrivateKey"
+msgstr "ไฟล์คีย์ SSH ที่ตั้งไว้ไม่ใช่คีย์ส่วนตัว"
+
+msgid "ssh.unlock.cancel"
+msgstr "ยกเลิก"
+
+msgid "ssh.unlock.blocking"
+msgstr "กำลังรอรหัสผ่านของคีย์ SSH"
+
+msgid "ssh.unlock.hint"
+msgstr "กรอกรหัสผ่านของ {path} เก็บไว้เพียงจนกว่าจะปิดแอป"
+
+msgid "ssh.unlock.passphrase"
+msgstr "รหัสผ่านคีย์"
+
+msgid "ssh.unlock.submit"
+msgstr "ปลดล็อก"
+
+msgid "ssh.unlock.title"
+msgstr "ปลดล็อกคีย์ SSH"
+
+msgid "ssh.wrongPassphrase"
+msgstr "รหัสผ่านไม่ถูกต้อง"
+
+msgid "tasks.status.skipped"
+msgstr "เลื่อนไว้"
+
+msgid "terminal.copy"
+msgstr "คัดลอก"
+
+msgid "terminal.paste"
+msgstr "วาง"
+
+msgid "terminal.selectAll"
+msgstr "เลือกทั้งหมด"
+
+msgid "terminal.unavailable"
+msgstr "ใช้เทอร์มินัลไม่ได้: {error} คำสั่ง git ยังทำงาน แต่ผลลัพธ์ไม่แสดงที่นี่"
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "เลื่อนการตรวจหาอัปเดต: คีย์ SSH ถูกล็อก ปลดล็อกในหน้าตั้งค่า"

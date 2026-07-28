@@ -1179,3 +1179,118 @@ msgstr "(c) {years} Lorem Dev"
 
 msgid "mcp.filterProjectsEmpty"
 msgstr "Nessun progetto corrispondente"
+
+msgid "logs.readMore"
+msgstr "Scopri di più"
+
+msgid "onboarding.settingsLater"
+msgstr "Tutto questo si può cambiare più tardi nelle impostazioni."
+
+msgid "repositories.scpPortIgnored"
+msgstr "La porta non si può indicare dopo i due punti: lì inizia un percorso, quindi la connessione andrà sulla porta 22. Usa {url}."
+
+msgid "settings.ssh.choose"
+msgstr "Scegli…"
+
+msgid "settings.ssh.clear"
+msgstr "Cancella"
+
+msgid "settings.ssh.forget"
+msgstr "Dimentica la passphrase"
+
+msgid "settings.ssh.key"
+msgstr "Chiave SSH"
+
+msgid "settings.ssh.keyDescription"
+msgstr "Chiave privata per i repository SSH."
+
+msgid "settings.ssh.keyDescriptionFallback"
+msgstr "Senza chiave SSH si usa la configurazione ssh di sistema."
+
+msgid "settings.ssh.notSet"
+msgstr "Non impostata"
+
+msgid "settings.ssh.state.locked"
+msgstr "Bloccata. Verrà chiesta al primo uso."
+
+msgid "settings.ssh.state.missing"
+msgstr "File della chiave non trovato."
+
+msgid "settings.ssh.state.notAKey"
+msgstr "Non è una chiave privata."
+
+msgid "settings.ssh.state.plain"
+msgstr "Pronta, senza passphrase."
+
+msgid "settings.ssh.state.unlocked"
+msgstr "Sbloccata per la sessione."
+
+msgid "settings.ssh.unlock"
+msgstr "Sblocca"
+
+msgid "ssh.askpassUnavailable"
+msgstr "Non è stato possibile avviare l'assistente per la passphrase; ssh la chiederà nel terminale."
+
+msgid "ssh.askpassExpired"
+msgstr "La chiave non è servita in tempo e la richiesta è scaduta. Riprova."
+
+msgid "ssh.askpassStale"
+msgstr "La richiesta della passphrase veniva da un'operazione già conclusa. Riprova."
+
+msgid "ssh.askpassForgotten"
+msgstr "La passphrase non è più conservata. Sblocca di nuovo la chiave."
+
+
+msgid "ssh.hostKeyPrompt"
+msgstr "La chiave dell'host non è ancora nota. Confermala una volta nel terminale."
+
+msgid "ssh.keyLocked"
+msgstr "La chiave SSH è bloccata. Sbloccala per continuare."
+
+msgid "ssh.keyMissing"
+msgstr "Il file della chiave SSH indicato non è stato trovato."
+
+msgid "ssh.noAgent"
+msgstr "Nessun ssh-agent in esecuzione, quindi Git chiede la passphrase della chiave ogni volta. Configuralo per inserirla una volta sola."
+
+msgid "ssh.notAPrivateKey"
+msgstr "Il file della chiave SSH indicato non è una chiave privata."
+
+msgid "ssh.unlock.cancel"
+msgstr "Annulla"
+
+msgid "ssh.unlock.blocking"
+msgstr "In attesa della passphrase della chiave SSH."
+
+msgid "ssh.unlock.hint"
+msgstr "Inserisci la passphrase per {path}. Viene conservata solo fino alla chiusura dell'app."
+
+msgid "ssh.unlock.passphrase"
+msgstr "Passphrase"
+
+msgid "ssh.unlock.submit"
+msgstr "Sblocca"
+
+msgid "ssh.unlock.title"
+msgstr "Sblocca la chiave SSH"
+
+msgid "ssh.wrongPassphrase"
+msgstr "Passphrase errata."
+
+msgid "tasks.status.skipped"
+msgstr "Rinviato"
+
+msgid "terminal.copy"
+msgstr "Copia"
+
+msgid "terminal.paste"
+msgstr "Incolla"
+
+msgid "terminal.selectAll"
+msgstr "Seleziona tutto"
+
+msgid "terminal.unavailable"
+msgstr "Terminale non disponibile: {error}. I comandi git vengono eseguiti, ma il loro output non è mostrato qui."
+
+msgid "updates.checkSkippedKeyLocked"
+msgstr "Controllo aggiornamenti rinviato: la chiave SSH è bloccata. Sbloccala nelle impostazioni."

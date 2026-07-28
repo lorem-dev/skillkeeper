@@ -28,6 +28,8 @@ import sync from './assets/sync.svg?raw';
 import bell from './assets/bell.svg?raw';
 import copy from './assets/copy.svg?raw';
 import close from './assets/close.svg?raw';
+import lock from './assets/lock.svg?raw';
+import unlock from './assets/unlock.svg?raw';
 import terminal from './assets/terminal.svg?raw';
 import deleteIcon from './assets/delete.svg?raw';
 import folder from './assets/folder.svg?raw';
@@ -55,6 +57,8 @@ export type IconName =
   | 'bell'
   | 'copy'
   | 'close'
+  | 'lock'
+  | 'unlock'
   | 'terminal'
   | 'delete'
   | 'folder'
@@ -82,6 +86,8 @@ const ICONS: Record<IconName, string> = {
   bell: stripSvgRoot(bell),
   copy: stripSvgRoot(copy),
   close: stripSvgRoot(close),
+  lock: stripSvgRoot(lock),
+  unlock: stripSvgRoot(unlock),
   terminal: stripSvgRoot(terminal),
   delete: stripSvgRoot(deleteIcon),
   folder: stripSvgRoot(folder),
