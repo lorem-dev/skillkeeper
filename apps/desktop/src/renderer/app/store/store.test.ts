@@ -732,7 +732,8 @@ describe('useSkillkeeperStore', () => {
 
       expect(bridgeClient.promptSshUnlock).toHaveBeenCalledTimes(1);
       const { tasks, notifications, updatesBlockedByKey } = useSkillkeeperStore.getState();
-      expect(tasks.every((t) => t.status === 'error')).toBe(true);
+      // Postponed, not failed: the sweep is resumed once the key is unlocked.
+      expect(tasks.every((t) => t.status === 'skipped')).toBe(true);
       expect(updatesBlockedByKey).toBe(true);
       // The window itself is the message: no toast on top of it.
       expect(notifications).toHaveLength(0);

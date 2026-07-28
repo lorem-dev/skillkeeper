@@ -254,8 +254,14 @@ export interface NotificationEntry {
   readonly at: string;
 }
 
-/** Lifecycle of a queued repository task. */
-export type RepoTaskStatus = 'queued' | 'running' | 'done' | 'error';
+/** Lifecycle of a queued repository task.
+ *
+ * `skipped` is not a failure: the operation could not run yet because the chosen
+ * SSH key is locked, and a scheduled check never blocks waiting for a
+ * passphrase. It raises the prompt and resumes once the key is unlocked, so
+ * reporting the first attempt as failed would call the app broken for doing
+ * exactly what it was asked to do. */
+export type RepoTaskStatus = 'queued' | 'running' | 'done' | 'error' | 'skipped';
 
 /** A repository operation queued for sequential execution (shown in the task list). */
 export interface RepoTask {
@@ -1240,7 +1246,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           set({ updatesBlockedByKey: false });
           setTaskStatus('done');
         } catch (error) {
-          setTaskStatus('error');
+          // An ssh refusal is a postponement, not a failure of this repository:
+          // handleCheckFailure raises the passphrase prompt and the sweep is
+          // re-run once the key is unlocked.
+          setTaskStatus(sshErrorKey(String(error)) !== null ? 'skipped' : 'error');
           handleCheckFailure(get, set, error);
         }
       });

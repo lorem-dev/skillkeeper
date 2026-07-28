@@ -21,7 +21,9 @@ export function TasksPage() {
 
   // Newest first; never mutates store state.
   const entries = useMemo(() => [...tasks].reverse(), [tasks]);
-  const hasFinished = tasks.some((task) => task.status === 'done' || task.status === 'error');
+  const hasFinished = tasks.some(
+    (task) => task.status === 'done' || task.status === 'error' || task.status === 'skipped',
+  );
 
   // Focus the overlay once when it opens (mirrors LogsPage/TerminalPage).
   const overlayRef = useRef<HTMLDivElement>(null);

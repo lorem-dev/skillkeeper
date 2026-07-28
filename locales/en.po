@@ -287,6 +287,9 @@ msgstr "Done"
 msgid "tasks.status.error"
 msgstr "Failed"
 
+msgid "tasks.status.skipped"
+msgstr "Postponed"
+
 msgid "repositories.empty"
 msgstr "No repositories added yet."
 
