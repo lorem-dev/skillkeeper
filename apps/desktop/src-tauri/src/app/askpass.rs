@@ -600,13 +600,26 @@ mod tests {
         let (tx, rx) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let mut response = String::new();
-            let read = BufReader::new(&mut stream).read_line(&mut response);
-            let _ = tx.send(read.ok());
+            let read = BufReader::new(&mut stream)
+                .read_line(&mut response)
+                .map_err(|e| e.kind());
+            let _ = tx.send((read, response));
         });
-        let read = rx
+        let (read, response) = rx
             .recv_timeout(Duration::from_secs(2))
             .expect("the bounded read must finish, not hang");
-        assert_eq!(read, Some(0), "malformed, oversized request gets no answer");
+        // The property is "no answer", not the mechanism by which the peer went
+        // away. A server that closes on an oversized request leaves the client
+        // with a clean end of stream on some platforms and a reset on others:
+        // Linux resets when it closes while our unread bytes are still queued,
+        // macOS reports the clean end. Both are silence. Only bytes coming back
+        // would be a leaked passphrase, and only a stall would be a missing cap.
+        match read {
+            Ok(0) => {}
+            Err(std::io::ErrorKind::ConnectionReset | std::io::ErrorKind::BrokenPipe) => {}
+            Ok(n) => panic!("oversized request was answered with {n} bytes: {response:?}"),
+            Err(kind) => panic!("unexpected read error: {kind:?}"),
+        }
     }
 
     #[test]
