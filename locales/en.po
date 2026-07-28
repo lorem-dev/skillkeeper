@@ -308,6 +308,11 @@ msgstr "Never fetched"
 msgid "repositories.addRemote"
 msgstr "Remote URL"
 
+msgid "repositories.scpPortIgnored"
+msgstr ""
+"A port cannot be written after a colon: everything there is a path, so this "
+"connects on port 22. Use {url} instead."
+
 msgid "repositories.invalidRemote"
 msgstr "Enter a valid remote URL (https://... or git@host:path)."
 

@@ -2,6 +2,16 @@
 
 ## Development
 
+### Added
+
+- Adding a repository points out a port written after a colon. In the
+  `user@host:path` form everything after the colon is a path, so
+  `git@host:2222/team/repo.git` asks for the path `2222/team/repo.git` on port 22
+  -- git accepts it and the mistake only surfaces later as
+  `Permission denied (publickey)`, with nothing naming the port. The form now
+  says so and shows the same remote written as `ssh://host:port/path`, which
+  does carry it.
+
 ### Fixed
 
 - A repository operation on Windows could start failing part-way through a

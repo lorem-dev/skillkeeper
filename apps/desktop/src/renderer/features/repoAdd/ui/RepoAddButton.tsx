@@ -3,6 +3,7 @@ import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { deriveRepoName, MAX_REPO_NAME_LENGTH } from '@/entities/repository';
 import { Button, Modal, TextField } from '@/shared/ui';
+import { asSchemeUrl, scpPortMistake } from '../lib/remoteHint';
 import './RepoAddButton.scss';
 
 /**
@@ -53,6 +54,9 @@ export function RepoAddButton() {
   };
 
   const valid = isValidRemote(url);
+  // Accepted by git and by the check above, but the port in it is silently a
+  // path: worth saying so here rather than leaving a public-key refusal later.
+  const portIgnored = scpPortMistake(url);
   const showError = url.trim() !== '' && !valid;
 
   const submit = (): void => {
@@ -75,6 +79,11 @@ export function RepoAddButton() {
             onChange={(e) => onUrlChange(e.target.value)}
           />
           {showError && <p className="sk-repo-form__error">{t('repositories.invalidRemote')}</p>}
+          {!showError && portIgnored && (
+            <p className="sk-repo-form__error">
+              {t('repositories.scpPortIgnored', { url: asSchemeUrl(url) })}
+            </p>
+          )}
           <TextField
             placeholder={t('repositories.addName')}
             value={name}
