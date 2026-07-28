@@ -180,6 +180,30 @@ export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
 If you are not using GnuPG, you do not need pinentry at all -- a plain
 ssh-agent is enough.
 
+## Using a dedicated SSH key
+
+The desktop app can use one specific private key for SSH remotes instead of
+whatever `ssh` would pick. Choose it in Settings, under Repositories; the path
+is stored as `repositories.sshKeyPath` and the CLI honours it too.
+
+With a key chosen, Git runs as `ssh -i <key> -o IdentitiesOnly=yes`. With none
+chosen, nothing changes.
+
+If the key has a passphrase, the app asks for it in a separate window and
+verifies it immediately. It is held in memory for that run of the app only:
+never written to the config or to disk, and asked again after a restart, the
+first time an operation actually needs it. A scheduled update check never
+blocks on it -- it raises the same window and resumes once the key is unlocked.
+
+Three things worth knowing:
+
+- The chosen key is offered first, but an `IdentityFile` in your own
+  `~/.ssh/config` still applies to the hosts it matches.
+- An unknown host key must be confirmed once in the app's terminal. While the
+  app answers passphrase prompts itself, `ssh` cannot ask anything else there.
+- The CLI reads the same setting but keeps no passphrase, so `ssh` asks in the
+  terminal you ran it from.
+
 ## Git LFS
 
 If a repository declares Git LFS usage, SkillKeeper runs `git lfs` steps
