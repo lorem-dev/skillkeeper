@@ -496,7 +496,11 @@ export interface SkillkeeperActions {
   syncRepository(id: string): Promise<void>;
   /** Remove finished (done/error) tasks from the task list. */
   clearFinishedTasks(): void;
-  refreshRepoUpdates(): Promise<void>;
+  /** Check every repository for upstream updates. `interactive` is true only
+   *  when a user asked for the check (the Repositories "Refresh" button); the
+   *  scheduled and startup sweeps pass false so a locked SSH key cannot pop a
+   *  passphrase prompt with nobody there to answer it. */
+  refreshRepoUpdates(interactive: boolean): Promise<void>;
   /** Fetch branch + skill count for every repo into `repoInfo`. */
   refreshRepoInfo(): Promise<void>;
   /** Track a project for a chosen folder (name pre-derived from the folder). */
@@ -1097,7 +1101,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set((s) => ({ tasks: s.tasks.filter((t) => t.status === 'queued' || t.status === 'running') }));
   },
 
-  refreshRepoUpdates() {
+  refreshRepoUpdates(interactive) {
     // Each repo's update-check fetch runs as its own queued task (sequentially,
     // via the shared task chain), so checks are visible in the task list and
     // never race a sync on the same repo -- rather than a parallel burst.
@@ -1122,7 +1126,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       return enqueue(async () => {
         setTaskStatus('running');
         try {
-          const hasUpdate = await bridgeClient.repoHasUpdate(r.id);
+          const hasUpdate = await bridgeClient.repoHasUpdate(r.id, interactive);
           set((s) => ({
             repoStatus: {
               ...s.repoStatus,

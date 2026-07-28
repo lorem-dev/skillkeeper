@@ -334,9 +334,6 @@ fn live_prompt() -> Option<Arc<AtomicBool>> {
 /// user cancels the prompt, closes it, or leaves it unanswered for
 /// [`UNLOCK_TIMEOUT`]. Never a raw window-system message: the renderer only
 /// ever receives a code it can translate.
-// Wired into the repository commands in a later task; the window half is
-// exercised by hand and the waiting half by the tests below.
-#[allow(dead_code)]
 pub fn require_unlocked(
     app: &AppHandle,
     ctx: &AppContext,

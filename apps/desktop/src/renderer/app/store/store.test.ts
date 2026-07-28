@@ -665,7 +665,7 @@ describe('useSkillkeeperStore', () => {
     });
 
     it('refreshRepoUpdates enqueues a check task per repo', () => {
-      void useSkillkeeperStore.getState().refreshRepoUpdates();
+      void useSkillkeeperStore.getState().refreshRepoUpdates(false);
       const tasks = useSkillkeeperStore.getState().tasks;
       expect(tasks).toHaveLength(1);
       expect(tasks[0]!.kind).toBe('check');

@@ -7,6 +7,10 @@
  *
  * A check fetches each repo and highlights the ones whose current (checked-out)
  * branch is behind its upstream (see store.refreshRepoUpdates -> repoHasUpdate).
+ *
+ * Every check started here is non-interactive: nobody asked for it, so a
+ * repository whose SSH key is still locked is reported as failed rather than
+ * being allowed to raise a passphrase prompt.
  */
 import { useEffect, useRef } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
@@ -24,14 +28,14 @@ export function useUpdateSchedule(): void {
     if (loading || mode === undefined || startupDone.current) return;
     startupDone.current = true;
     if (mode === 'on-startup' || (mode === 'scheduled' && checkOnStartup === true)) {
-      void refreshRepoUpdates();
+      void refreshRepoUpdates(false);
     }
   }, [loading, mode, checkOnStartup, refreshRepoUpdates]);
 
   // Recurring check for scheduled mode.
   useEffect(() => {
     if (mode !== 'scheduled' || intervalMinutes === undefined) return undefined;
-    const id = setInterval(() => void refreshRepoUpdates(), intervalMinutes * 60 * 1000);
+    const id = setInterval(() => void refreshRepoUpdates(false), intervalMinutes * 60 * 1000);
     return () => clearInterval(id);
   }, [mode, intervalMinutes, refreshRepoUpdates]);
 }

@@ -75,7 +75,11 @@ export interface BridgeClient {
   updateRepository(id: string, name: string, url: string, branch?: string): Promise<RepoResult>;
   removeRepository(id: string): Promise<RemoveResult>;
   syncRepository(id: string): Promise<RepoResult>;
-  repoHasUpdate(id: string): Promise<boolean>;
+  /** Fetch a repository and report whether its branch is behind upstream.
+   *  `interactive` says a user asked for this check right now, which is what
+   *  lets a locked SSH key raise the passphrase prompt; the scheduled and
+   *  startup sweeps pass `false` and are refused instead. */
+  repoHasUpdate(id: string, interactive: boolean): Promise<boolean>;
   describeRepository(id: string): Promise<RepoInfo>;
   listBranches(id: string): Promise<string[]>;
   selectFolder(): Promise<string | null>;
@@ -175,7 +179,8 @@ export const bridgeClient: BridgeClient = {
     invoke<RepoResult>('repositories_update', { id, name, url, branch }),
   removeRepository: (id) => invoke<RemoveResult>('repositories_remove', { id }),
   syncRepository: (id) => invoke<RepoResult>('repositories_sync', { id }),
-  repoHasUpdate: (id) => invoke<boolean>('repositories_has_update', { id }),
+  repoHasUpdate: (id, interactive) =>
+    invoke<boolean>('repositories_has_update', { id, interactive }),
   describeRepository: (id) => invoke<RepoInfo>('repositories_describe', { id }),
   listBranches: (id) => invoke<string[]>('repositories_list_branches', { id }),
   selectFolder: () => invoke<string | null>('dialog_select_folder'),
