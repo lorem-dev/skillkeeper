@@ -2,7 +2,33 @@
 
 ## Development
 
+### Added
+
+- A private key can be chosen in Settings for SSH remotes, with its passphrase
+  entered once and held only until the app quits. Until now the app used
+  whatever key the system ssh setup picked, which is the wrong one on a machine
+  with two identities for the same host, and an encrypted key meant answering
+  the same prompt on every operation. The passphrase is never written to the
+  config or to disk: `ssh` receives it through a helper that reads it from the
+  running app's memory over a single-use token. A locked key stops only work
+  you asked for, which raises a small window to unlock it; a scheduled update
+  check raises the same window and resumes once the key is unlocked. With no
+  key chosen nothing changes -- the system ssh setup and agent are used exactly
+  as before. The CLI honours the same setting, without caching the passphrase.
+
 ### Fixed
+
+- Adding a repository left the skill catalog as it was before the repository
+  existed, so its card showed a skill count while the Skills page reported none
+  found. A clone now refreshes the catalog the same way a sync does.
+- A long MCP command ran past the edge of its card and over the card beside it,
+  and squeezed badges wrapped onto a second line. The connection line is now
+  clipped to the card it is in rather than to a fixed character count, and a
+  badge stays on one line.
+- The configuration reference had drifted from the schema: it documented
+  `intervalHours` where the config has `intervalMinutes`, named the editor and
+  hook-consent keys wrongly, and omitted the `repositories`, `projects` and
+  `mcp` sections entirely.
 
 - The documentation link in the "no ssh-agent" notice pointed at a page that
   does not exist. The site is versioned, so a deep path needs the `latest`
