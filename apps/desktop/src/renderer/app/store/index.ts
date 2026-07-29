@@ -1,6 +1,13 @@
 // Public barrel for the app store. Lower layers may import only this surface
 // (`@/app/store`), per the architecture's app* exception.
-export { useSkillkeeperStore, normalizeMcpRemote, mcpInstallHasUpdate, matchMcpPreset } from './store';
+export {
+  useSkillkeeperStore,
+  normalizeMcpRemote,
+  mcpInstallHasUpdate,
+  matchMcpPreset,
+  scanMcpParams,
+  repoMcpPresetId,
+} from './store';
 export type {
   SkillkeeperState,
   SkillkeeperActions,

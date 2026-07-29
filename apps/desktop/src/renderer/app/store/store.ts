@@ -86,8 +86,12 @@ export interface McpPreset {
   readonly group?: string;
 }
 
-/** Synthesizes a stable id for a repo-discovered preset from its source. */
-function repoMcpPresetId(repoId: string, group: string | undefined, name: string): string {
+/** Synthesizes a stable id for a repo-discovered preset from its source.
+ *  Exported so a story fixture building an `McpPreset[]` by hand (Storybook
+ *  runs outside Tauri, so `refreshMcpPresets` cannot run for real) can derive
+ *  the same ids `buildMcpProjectTree`/`buildMcpRepoTree` expect instead of
+ *  hand-rolling a string that might drift from this format. */
+export function repoMcpPresetId(repoId: string, group: string | undefined, name: string): string {
   return `repo:${repoId}:${group ?? ''}:${name}`;
 }
 
@@ -871,7 +875,11 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       // unique -- only the URL is -- and two forks both default to the same
       // derived name, so a text-only key would silently swallow the second
       // repository's identical warning and leave a row attributed to the first.
-      const key = (repoId: string | undefined, text: string) => `${repoId ?? ''} ${text}`;
+      // The separator is NUL, written as an escape: neither an id nor a warning
+      // can contain it, so no pair of parts can collide by concatenation. Do not
+      // write it as a raw byte -- that makes the whole file read as binary to
+      // `file(1)` and to grep, which then skips it silently.
+      const key = (repoId: string | undefined, text: string) => `${repoId ?? ''}\0${text}`;
       const logged = new Set(
         s.notifications
           .filter((n) => n.level === 'warning' && n.text !== undefined)

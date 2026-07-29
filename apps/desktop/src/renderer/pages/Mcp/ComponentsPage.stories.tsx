@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useSkillkeeperStore } from '@/app/store';
+import { useSkillkeeperStore, scanMcpParams, repoMcpPresetId } from '@/app/store';
 import { seedStore } from '@/app/store/storyState';
-import type { SkillKeeperConfig } from '@/app/store';
+import type { SkillKeeperConfig, McpPreset } from '@/app/store';
 import type { AvailableMcp, Repository } from '@/services/bridge';
 import { ComponentsPage } from './ComponentsPage';
 
@@ -76,27 +76,70 @@ const AVAILABLE: AvailableMcp[] = [
   },
 ];
 
+// This page never compares an install's hash to a preset's (no Update badge
+// here -- see `ComponentsPage.tsx`'s module comment), so a fixed placeholder
+// hash is enough; nothing depends on it matching or mismatching anything.
+const PRESET_HASH = 'sha256:preset-fixture';
+
 /**
- * Seeds `config`/`repositories` and stubs the bridge calls the page's mount
- * effect makes (`listAvailableMcp`, via `refreshMcpPresets`) so the real store
- * action computes `mcpPresets` from these fixtures instead of throwing on the
- * unavailable Tauri bridge -- Storybook runs outside Tauri, so `invoke` is not
- * present. Mirrors `McpPage.stories.tsx`'s own `seedMcp`.
+ * Builds the `McpPreset[]` `refreshMcpPresets` would compute from `config`'s
+ * manual servers and the repo `available` catalog -- same shape, same
+ * `repoMcpPresetId`/`scanMcpParams` helpers the store uses, so preset ids
+ * match what `buildMcpRepoTree` expects.
+ */
+function buildMcpPresets(config: SkillKeeperConfig, available: readonly AvailableMcp[]): McpPreset[] {
+  const manual: McpPreset[] = config.mcp.servers.map((preset): McpPreset => {
+    const { id, ...def } = preset;
+    return {
+      id,
+      origin: 'manual',
+      name: def.name,
+      def,
+      hash: PRESET_HASH,
+      params: scanMcpParams(def),
+      hasRules: def.rules !== undefined,
+    };
+  });
+  const repo: McpPreset[] = available.map(
+    (a): McpPreset => ({
+      id: repoMcpPresetId(a.repoId, a.group, a.def.name),
+      origin: 'repo',
+      name: a.def.name,
+      def: a.def,
+      hash: a.hash,
+      params: scanMcpParams(a.def),
+      hasRules: a.def.rules !== undefined,
+      repoId: a.repoId,
+      remote: a.remote,
+      group: a.group,
+    }),
+  );
+  return [...manual, ...repo];
+}
+
+/**
+ * Seeds `config`/`repositories`/`mcpPresets` directly with the slice
+ * `refreshMcpPresets` would have computed. Storybook runs outside Tauri, so
+ * `invoke` (which that action calls through the bridge client) reads a
+ * `window.__TAURI_INTERNALS__` that does not exist and rejects -- before the
+ * action's own `set(...)`, so seeding `mcpPresets` up front is not overwritten
+ * when `ComponentsPage`'s mount effect calls it for real and it rejects the
+ * same way.
  *
- * Called directly in `render()` (not a `useEffect`) so it runs before
- * `ComponentsPage` mounts -- its own mount effect calls `refreshMcpPresets`
- * immediately, and effects fire child-before-parent.
+ * Called directly in `render()` (not a `useEffect`) so the fixtures are
+ * already in the store before `ComponentsPage` mounts and fires that effect.
  */
 function seedMcp(
   config: SkillKeeperConfig,
   available: readonly AvailableMcp[],
   componentsView: 'tiles' | 'tree',
 ): void {
-  (window as unknown as { skillkeeper: unknown }).skillkeeper = {
-    listAvailableMcp: async () => available,
-  };
   seedStore(() => {
-    useSkillkeeperStore.setState({ repositories: REPOSITORIES, config });
+    useSkillkeeperStore.setState({
+      repositories: REPOSITORIES,
+      config,
+      mcpPresets: buildMcpPresets(config, available),
+    });
     // Applied inside the seed: seedStore resets the store first, so a view set
     // before it would be discarded.
     useSkillkeeperStore.getState().setMcpUi({ componentsView });
