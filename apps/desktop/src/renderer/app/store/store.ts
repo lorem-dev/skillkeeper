@@ -1100,10 +1100,18 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       set((s) => {
         const { [id]: _removed, ...rest } = s.repoStatus;
         const { [id]: _removedInfo, ...restInfo } = s.repoInfo;
+        // Same reasoning as `removeProject` below: a persisted filter must never
+        // keep naming something that no longer exists, or it narrows the view by
+        // an option the user can no longer see, let alone clear.
         return {
           repositories: s.repositories.filter((r) => r.id !== id),
           repoStatus: rest,
           repoInfo: restInfo,
+          skillsUi: { ...s.skillsUi, repoFilter: s.skillsUi.repoFilter.filter((r) => r !== id) },
+          mcpUi: {
+            ...s.mcpUi,
+            componentsRepoFilter: s.mcpUi.componentsRepoFilter.filter((r) => r !== id),
+          },
         };
       });
     })();
@@ -1521,10 +1529,22 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       set((s) => {
         const { [id]: _removed, ...restInfo } = s.projectInfo;
         const { [id]: _removedMissing, ...restMissing } = s.projectMissing;
+        // Drop the gone project from every persisted filter that names it (see
+        // `removeRepository` above for the repository half of the same rule).
+        // Both management pages narrow their tree by these, and both can be left
+        // naming ONLY this project (the project cards' "show me this project"
+        // action sets exactly that) -- which would then filter the whole tree
+        // away while the combobox, listing labels of options that still exist,
+        // showed its all-projects placeholder.
         return {
           projects: s.projects.filter((p) => p.id !== id),
           projectInfo: restInfo,
           projectMissing: restMissing,
+          skillsUi: { ...s.skillsUi, projectFilter: s.skillsUi.projectFilter.filter((p) => p !== id) },
+          mcpUi: {
+            ...s.mcpUi,
+            managementProjectFilter: s.mcpUi.managementProjectFilter.filter((p) => p !== id),
+          },
         };
       });
     })();

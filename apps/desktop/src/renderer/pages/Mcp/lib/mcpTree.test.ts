@@ -372,6 +372,19 @@ describe('buildMcpProjectTree', () => {
     expect(nodes[1]!.id).toBe(mcpProjectRootId('p1'));
   });
 
+  it('omits the global root when the label is null', () => {
+    // The page passes null once the projects filter is narrowed to something
+    // that does not include the user-wide scope.
+    const globalInstall = install({ projectId: 'global', agent: 'codex', instanceName: 'github_1' });
+
+    const { nodes } = buildMcpProjectTree([], [globalInstall], projects, repos, null);
+
+    expect(nodes.find((n) => n.id === mcpProjectRootId(GLOBAL_SCOPE_ID))).toBeUndefined();
+    expect(nodes[0]!.id).toBe(mcpProjectRootId('p1'));
+    // The global install goes with the root: it must not fall through to a project.
+    expect(JSON.stringify(nodes)).not.toContain('github');
+  });
+
   it('nests a global install under the global root, not under a project', () => {
     const installed = install({ projectId: 'global', agent: 'codex', instanceName: 'github_1' });
 

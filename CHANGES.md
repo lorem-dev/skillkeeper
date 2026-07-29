@@ -9,6 +9,9 @@
   `skill install --global` does.
 - `--global` on `mcp install`, `mcp remove`, and `mcp update`, and user-wide MCP
   config paths for every agent (only Codex had one before).
+- The Global scope as an entry in the projects filter on both management pages
+  (skills and MCP), so filtering to one project no longer leaves the Global
+  root standing on its own.
 
 ### Changed
 
@@ -27,6 +30,14 @@
   `~/.config/opencode/opencode.json`, and the block is now carried through every
   MCP write untouched. OpenCode itself still cannot read a file holding both, so
   keep global OpenCode hooks and global OpenCode MCP servers apart for now.
+- Checking skills for a project with no agent selected no longer saves nothing:
+  the app asks which agents to install for before showing the change review.
+- The status bar version no longer highlights as selectable text on a stray
+  drag across the bar. The About dialog's version can be selected and copied
+  instead, for pasting into a bug report.
+- Removing a project no longer leaves it named in a management page's project
+  filter, where it hid the rest of the tree behind an empty page. An empty tree
+  a filter caused now says so and offers the reset.
 
 ## Version 0.3.0
 

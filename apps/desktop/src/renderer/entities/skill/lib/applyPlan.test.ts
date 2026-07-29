@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { AgentKind, InstallManifest } from '@/services/bridge';
 import { GLOBAL_SCOPE_ID } from '@/domain';
-import { buildProjectPlan } from './applyPlan';
+import { buildProjectPlan, scopesNeedingAgents } from './applyPlan';
 import { projectSkillKey } from './skillTree';
 
 /** Build a project-scoped install manifest. `remote` mirrors `.skid.yml` identity. */
@@ -127,5 +127,50 @@ describe('buildProjectPlan', () => {
 
     // The project-scope install must not leak into the global plan's removes.
     expect(plan.rows).toEqual([]);
+  });
+});
+
+describe('scopesNeedingAgents', () => {
+  const scopes = [GLOBAL_SCOPE_ID, 'p1', 'p2'];
+  const leaf = (scope: string, name: string) => projectSkillKey(scope, 'r1', undefined, name);
+
+  it('lists a scope whose checked skill is not installed and has no agents', () => {
+    expect(
+      scopesNeedingAgents(scopes, [leaf('p1', 'fmt')], [], {}),
+    ).toEqual(['p1']);
+  });
+
+  it('does not list a scope that already has agents chosen', () => {
+    expect(
+      scopesNeedingAgents(scopes, [leaf('p1', 'fmt')], [], { p1: ['claude'] }),
+    ).toEqual([]);
+  });
+
+  it('does not list a scope whose only pending change is a removal', () => {
+    // Two installed skills, one of them still checked: the pending change is
+    // the OTHER one's removal. An empty agent set here is a deliberate
+    // "uninstall" plan, which already produces real ops -- and the checked leaf
+    // must not read as a would-be install just because it is checked, which is
+    // what the `installed.has(key)` guard is for. Keeping a checked leaf in the
+    // mix is what makes that guard load-bearing: with nothing checked the loop
+    // never runs and this cannot fail.
+    const keep = leaf('p1', 'keep');
+    const drop = leaf('p1', 'drop');
+    expect(scopesNeedingAgents(scopes, [keep], [keep, drop], {})).toEqual([]);
+  });
+
+  it('does not list a scope whose checked skills are all already installed', () => {
+    const key = leaf('p1', 'fmt');
+    expect(scopesNeedingAgents(scopes, [key], [key], {})).toEqual([]);
+  });
+
+  it('treats the global scope like any other id and keeps the given order', () => {
+    expect(
+      scopesNeedingAgents(scopes, [leaf('p2', 'a'), leaf(GLOBAL_SCOPE_ID, 'b')], [], {}),
+    ).toEqual([GLOBAL_SCOPE_ID, 'p2']);
+  });
+
+  it('ignores a checked key whose scope is not in the given list', () => {
+    expect(scopesNeedingAgents(scopes, [leaf('gone', 'fmt')], [], {})).toEqual([]);
   });
 });

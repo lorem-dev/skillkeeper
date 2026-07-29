@@ -122,3 +122,30 @@ export function buildProjectPlan(
   }
   return { projectId, ops, rows };
 }
+
+/**
+ * Scope ids whose checked skills would install nothing because no agent is
+ * chosen: at least one checked leaf is not installed, and the agent set is
+ * empty. Returned in the order of `scopeIds`, so the caller's own scope order
+ * (global first, then projects) carries through to the interface.
+ *
+ * A scope whose only pending change is a removal is deliberately NOT listed: an
+ * empty agent set there is a "remove everything" plan, which already produces
+ * real operations and a correct review.
+ */
+export function scopesNeedingAgents(
+  scopeIds: readonly string[],
+  checkedIds: readonly string[],
+  installedIds: readonly string[],
+  agentsByScope: Readonly<Record<string, readonly AgentKind[]>>,
+): string[] {
+  const installed = new Set(installedIds);
+  const wouldInstall = new Set<string>();
+  for (const key of checkedIds) {
+    if (installed.has(key)) continue;
+    wouldInstall.add(parseProjectSkillKey(key).projectId);
+  }
+  return scopeIds.filter(
+    (id) => wouldInstall.has(id) && (agentsByScope[id]?.length ?? 0) === 0,
+  );
+}

@@ -47,6 +47,7 @@ import {
   buildProjectModel,
   installedLeafIds,
   installedAgentsByProject,
+  scopesNeedingAgents,
   filterTree,
   collectBranchIds,
   rootIds,
@@ -54,7 +55,7 @@ import {
   projectSkillKey,
   projectNodeId,
 } from '@/entities/skill';
-import { SkillSaveModal } from '@/features/skillSave';
+import { SkillSaveModal, AgentChoiceModal } from '@/features/skillSave';
 import './SkillsPage.scss';
 
 /** Whether two agent lists hold the same set. */
@@ -88,8 +89,9 @@ export function SkillsManagementPage() {
     expandedIds: persistedExpandedIds,
   } = skillsUi;
 
-  // Modal open flag is ephemeral -- it should not persist across navigation.
+  // Modal open flags are ephemeral -- they should not persist across navigation.
   const [saveOpen, setSaveOpen] = useState(false);
+  const [agentChoiceOpen, setAgentChoiceOpen] = useState(false);
 
   // This sub-page IS the projects mode; keep the store discriminator in sync
   // (see the file header). Clear the shared search only when arriving from the
@@ -109,8 +111,22 @@ export function SkillsManagementPage() {
 
   // The installed skills are the baseline the selection diffs against
   // (pre-checked leaves + each project's installed agents).
-  const installedSet = useMemo(() => new Set(installedLeafIds(installs)), [installs]);
+  const installedIds = useMemo(() => installedLeafIds(installs), [installs]);
+  const installedSet = useMemo(() => new Set(installedIds), [installedIds]);
   const installedAgents = useMemo(() => installedAgentsByProject(installs), [installs]);
+
+  // The scopes a save reviews: the global scope first, then every tracked
+  // project -- mirrors SkillSaveModal's own scope ordering, independent of the
+  // current project/repo filters (a filtered-out project's pending changes
+  // still need reviewing).
+  const scopeIds = useMemo(() => [GLOBAL_SCOPE_ID, ...projects.map((p) => p.id)], [projects]);
+
+  // Scopes whose checked skills would install nothing because no agent is
+  // chosen -- Save opens the agent-choice modal first when this is non-empty.
+  const needsAgents = useMemo(
+    () => scopesNeedingAgents(scopeIds, projectChecked, installedIds, projectAgents),
+    [scopeIds, projectChecked, installedIds, projectAgents],
+  );
 
   // Leaf ids whose skill ships a guidance file -> grey "rules" badge, keyed to
   // the project id scheme (one entry per project the skill could appear under,
@@ -135,12 +151,25 @@ export function SkillsManagementPage() {
     () => (projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id))),
     [projects, projectFilter],
   );
+  // The user-wide scope is one more entry in the projects filter, so it narrows
+  // like any project: an empty filter shows everything, a non-empty one keeps the
+  // Global root only when it was picked. A `null` label omits that root entirely
+  // (see `treeScopes`) rather than leaving it standing while a filter is active.
+  const showGlobal = projectFilter.length === 0 || projectFilter.includes(GLOBAL_SCOPE_ID);
 
   // Merge available skills with what is installed, so orphaned installs appear
   // (grey, remove-only) and update dots can be attached.
   const projectModel = useMemo(
-    () => buildProjectModel(availableSkills, shownRepos, repositories, shownProjects, installs, t('scope.global')),
-    [availableSkills, shownRepos, repositories, shownProjects, installs, t],
+    () =>
+      buildProjectModel(
+        availableSkills,
+        shownRepos,
+        repositories,
+        shownProjects,
+        installs,
+        showGlobal ? t('scope.global') : null,
+      ),
+    [availableSkills, shownRepos, repositories, shownProjects, installs, showGlobal, t],
   );
 
   const baseTree = projectModel.nodes;
@@ -353,11 +382,20 @@ export function SkillsManagementPage() {
   );
   const hasProjectChanges = pendingAdd > 0 || pendingRemove > 0 || agentsChangedAny;
 
-  const projectOptions = projects.map((p) => ({
-    value: p.id,
-    label: p.name,
-    icon: <ProjectIcon iconUrl={projectInfo[p.id]?.iconDataUrl} name={p.name} size={18} />,
-  }));
+  // The user-wide scope leads the projects filter, mirroring its position as the
+  // tree's first root.
+  const projectOptions = [
+    {
+      value: GLOBAL_SCOPE_ID,
+      label: t('scope.global'),
+      icon: <ProjectIcon global name="" size={18} />,
+    },
+    ...projects.map((p) => ({
+      value: p.id,
+      label: p.name,
+      icon: <ProjectIcon iconUrl={projectInfo[p.id]?.iconDataUrl} name={p.name} size={18} />,
+    })),
+  ];
   const repoOptions = repositories.map((r) => ({ value: r.id, label: r.name }));
 
   // Two filter controls (projects, repositories); the count badge shows how
@@ -398,7 +436,12 @@ export function SkillsManagementPage() {
         <Button key="reset" variant="secondary" glass onClick={() => resetSkillsSelection('projects')}>
           {t('skills.action.reset')}
         </Button>,
-        <Button key="save" variant="primary" glass onClick={() => setSaveOpen(true)}>
+        <Button
+          key="save"
+          variant="primary"
+          glass
+          onClick={() => (needsAgents.length > 0 ? setAgentChoiceOpen(true) : setSaveOpen(true))}
+        >
           {t('skills.action.save')}
         </Button>,
       ]
@@ -452,8 +495,23 @@ export function SkillsManagementPage() {
       }
       dock={dock}
     >
+      {/* An empty tree has two causes now that the Global root can be filtered
+          out too (before this it was always present, so `baseTree` was never
+          empty): nothing is tracked at all, or the filters excluded everything
+          that is. Only the first is "no projects tracked yet"; the second must
+          say so and carry its own reset, since the footer that normally holds
+          one is inside the non-empty branch. */}
       {baseTree.length === 0 ? (
-        <p className="sk-empty">{t('skills.emptyProjects')}</p>
+        filtering ? (
+          <div className="sk-empty-filtered">
+            <p className="sk-empty">{t('skills.emptyFiltered')}</p>
+            <Button variant="secondary" onClick={clearFilters}>
+              {t('skills.resetFilters')}
+            </Button>
+          </div>
+        ) : (
+          <p className="sk-empty">{t('skills.emptyProjects')}</p>
+        )
       ) : (
         <>
           <TreeView
@@ -479,13 +537,7 @@ export function SkillsManagementPage() {
               )}
               {filtering && (
                 <div className="sk-skills-filter-reset">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setRepoFilter([]);
-                      setProjectFilter([]);
-                    }}
-                  >
+                  <Button variant="secondary" onClick={clearFilters}>
                     {t('skills.resetFilters')}
                   </Button>
                 </div>
@@ -494,6 +546,16 @@ export function SkillsManagementPage() {
           )}
         </>
       )}
+      <AgentChoiceModal
+        open={agentChoiceOpen}
+        scopeIds={needsAgents}
+        onCancel={() => setAgentChoiceOpen(false)}
+        onConfirm={(chosen) => {
+          setSkillsUi({ projectAgents: { ...projectAgents, ...chosen } });
+          setAgentChoiceOpen(false);
+          setSaveOpen(true);
+        }}
+      />
       <SkillSaveModal
         open={saveOpen}
         onClose={() => setSaveOpen(false)}

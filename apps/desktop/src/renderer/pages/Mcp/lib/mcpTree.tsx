@@ -296,13 +296,17 @@ export function buildMcpRepoTree(presets: readonly McpPreset[], repos: readonly 
  * `projectId: "global"` (the same reserved id `GLOBAL_SCOPE_ID` holds), so
  * filtering `installs` by `i.projectId === scope.id` picks up the Global
  * root's installs with no special case.
+ *
+ * `globalLabel` is that root's label; pass `null` to omit the root, which is
+ * what the page does when the projects filter is narrowed to something that
+ * does not include the user-wide scope.
  */
 export function buildMcpProjectTree(
   presets: readonly McpPreset[],
   installs: readonly McpInstall[],
   projects: readonly Project[],
   repos: readonly Repository[],
-  globalLabel: string,
+  globalLabel: string | null,
 ): McpTreeResult {
   const items = new Map<string, McpTreeItem>();
 
@@ -325,10 +329,11 @@ export function buildMcpProjectTree(
 
   const manualPresetIds = new Set(presets.filter((p) => p.origin === 'manual').map((p) => p.id));
 
-  const scopes = [
-    { id: GLOBAL_SCOPE_ID, name: globalLabel, global: true },
-    ...projects.map((p) => ({ id: p.id, name: p.name, global: false })),
-  ];
+  const projectScopes = projects.map((p) => ({ id: p.id, name: p.name, global: false }));
+  const scopes =
+    globalLabel === null
+      ? projectScopes
+      : [{ id: GLOBAL_SCOPE_ID, name: globalLabel, global: true }, ...projectScopes];
 
   const projectNodes: TreeNode[] = [];
   for (const scope of scopes) {

@@ -156,3 +156,20 @@ export const Empty: Story = {
     return <ManagementPage />;
   },
 };
+
+// An empty tree the FILTER caused, not an empty catalog: the persisted project
+// filter still names a project that no longer exists, so no project root and no
+// Global root survive. It must say what happened and offer the reset -- claiming
+// there are no MCP servers would be a lie, and this page has no in-tree footer
+// reset to fall back on. `BASE_CONFIG` deliberately has no manual preset: those
+// are TOP-LEVEL leaves, so one would keep the tree non-empty on its own and this
+// branch would never be reached.
+export const FilteredEmpty: Story = {
+  render: () => {
+    seedMcp(BASE_CONFIG, AVAILABLE, INSTALLS, PROJECTS);
+    useSkillkeeperStore.setState((s) => ({
+      mcpUi: { ...s.mcpUi, managementProjectFilter: ['project-removed'] },
+    }));
+    return <ManagementPage />;
+  },
+};

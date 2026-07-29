@@ -652,6 +652,9 @@ msgstr "No skills found in your repositories."
 msgid "skills.emptyProjects"
 msgstr "No projects tracked yet."
 
+msgid "skills.emptyFiltered"
+msgstr "Nothing matches the current filters."
+
 msgid "skills.status.add"
 msgstr "Skill will be added"
 
@@ -789,6 +792,9 @@ msgstr "{count} skills total"
 
 msgid "mcp.empty"
 msgstr "No MCP servers yet."
+
+msgid "mcp.emptyFiltered"
+msgstr "Nothing matches the current filters."
 
 msgid "mcp.searchFound.one"
 msgstr "Found {count} MCP server"
@@ -1306,3 +1312,18 @@ msgstr "Installed for this user, in every project"
 
 msgid "mcp.install.codexGlobalOnly"
 msgstr "Codex installs MCP servers for the whole user, not per project"
+
+msgid "skills.agentChoice.title"
+msgstr "Choose agents"
+
+msgid "skills.agentChoice.intro"
+msgstr "These scopes have no agent selected, so nothing would be installed: pick the agents whose skills and MCP servers this scope should carry."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Continue"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Agents for {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "No agents selected"
