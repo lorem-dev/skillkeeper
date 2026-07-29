@@ -556,6 +556,9 @@ msgstr "Nema pronađenih veština u vašim repozitorijumima."
 msgid "skills.emptyProjects"
 msgstr "Još nema praćenih projekata."
 
+msgid "skills.emptyFiltered"
+msgstr "Ništa ne odgovara trenutnim filterima."
+
 msgid "skills.status.add"
 msgstr "Veština će biti dodata"
 
@@ -687,6 +690,9 @@ msgstr "Ukupno {count} veština"
 
 msgid "mcp.empty"
 msgstr "Jos nema MCP servera."
+
+msgid "mcp.emptyFiltered"
+msgstr "Ništa ne odgovara trenutnim filterima."
 
 msgid "mcp.searchFound.one"
 msgstr "Pronađen {count} MCP server"
@@ -1246,3 +1252,27 @@ msgstr "Terminal nedostupan: {error}. Git komande se izvršavaju, ali njihov izl
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Provera ažuriranja je odložena: SSH ključ je zaključan. Otključajte ga u podešavanjima."
+
+msgid "scope.global"
+msgstr "Globalno"
+
+msgid "scope.globalHint"
+msgstr "Instalirano za ovog korisnika, u svakom projektu"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex instalira MCP servere za celog korisnika, a ne po projektu"
+
+msgid "skills.agentChoice.title"
+msgstr "Izaberite agente"
+
+msgid "skills.agentChoice.intro"
+msgstr "Za ove opsege nije izabran ni jedan agent, pa ništa ne bi bilo instalirano: izaberite agente čije veštine i MCP servere ovaj opseg treba da sadrži."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Dalje"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Agenti za {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Nema izabranih agenata"

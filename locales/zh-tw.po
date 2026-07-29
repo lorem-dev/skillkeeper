@@ -490,6 +490,9 @@ msgstr "在您的儲存庫中找不到技能。"
 msgid "skills.emptyProjects"
 msgstr "尚未追蹤任何專案。"
 
+msgid "skills.emptyFiltered"
+msgstr "沒有符合目前篩選條件的內容。"
+
 msgid "skills.status.add"
 msgstr "將新增技能"
 
@@ -609,6 +612,9 @@ msgstr "共 {count} 個技能"
 
 msgid "mcp.empty"
 msgstr "尚無 MCP 伺服器。"
+
+msgid "mcp.emptyFiltered"
+msgstr "沒有符合目前篩選條件的內容。"
 
 msgid "mcp.searchFound.other"
 msgstr "找到 {count} 個 MCP 伺服器"
@@ -1156,3 +1162,27 @@ msgstr "終端機不可用：{error}。git 命令仍會執行，但這裡不顯�
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "更新檢查已延後：SSH 金鑰已鎖定。請在設定中解鎖。"
+
+msgid "scope.global"
+msgstr "全域"
+
+msgid "scope.globalHint"
+msgstr "為此使用者安裝，適用於所有專案"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex 為整個使用者安裝 MCP 伺服器，而非按專案安裝"
+
+msgid "skills.agentChoice.title"
+msgstr "選擇代理"
+
+msgid "skills.agentChoice.intro"
+msgstr "這些範圍未選取任何代理，因此不會安裝任何內容：請選擇此範圍應包含哪些代理的技能與 MCP 伺服器。"
+
+msgid "skills.agentChoice.confirm"
+msgstr "下一步"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "{scope} 的代理"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "未選取代理"

@@ -304,17 +304,26 @@ msgstr "Aucune branche correspondante"
 msgid "repositories.skillCount.one"
 msgstr "{count} competence"
 
+msgid "repositories.skillCount.many"
+msgstr "{count} competences"
+
 msgid "repositories.skillCount.other"
 msgstr "{count} competences"
 
 msgid "repositories.searchFound.one"
 msgstr "{count} depot trouve"
 
+msgid "repositories.searchFound.many"
+msgstr "{count} depots trouves"
+
 msgid "repositories.searchFound.other"
 msgstr "{count} depots trouves"
 
 msgid "repositories.searchTotal.one"
 msgstr "{count} depot au total"
+
+msgid "repositories.searchTotal.many"
+msgstr "{count} depots au total"
 
 msgid "repositories.searchTotal.other"
 msgstr "{count} depots au total"
@@ -370,6 +379,9 @@ msgstr "Chemin copie dans le presse-papiers"
 msgid "projects.skillCount.one"
 msgstr "{count} competence"
 
+msgid "projects.skillCount.many"
+msgstr "{count} competences"
+
 msgid "projects.skillCount.other"
 msgstr "{count} competences"
 
@@ -379,11 +391,17 @@ msgstr "{count} depuis les depots"
 msgid "projects.agentCount.one"
 msgstr "{count} agent"
 
+msgid "projects.agentCount.many"
+msgstr "{count} agents"
+
 msgid "projects.agentCount.other"
 msgstr "{count} agents"
 
 msgid "projects.fromReposHint.one"
 msgstr "{count} competence installee depuis les depots"
+
+msgid "projects.fromReposHint.many"
+msgstr "{count} competences installees depuis les depots"
 
 msgid "projects.fromReposHint.other"
 msgstr "{count} competences installees depuis les depots"
@@ -391,11 +409,17 @@ msgstr "{count} competences installees depuis les depots"
 msgid "projects.skillCountHint.one"
 msgstr "{count} competence au total dans le projet"
 
+msgid "projects.skillCountHint.many"
+msgstr "{count} competences au total dans le projet"
+
 msgid "projects.skillCountHint.other"
 msgstr "{count} competences au total dans le projet"
 
 msgid "projects.agentsHint.one"
 msgstr "Configurations presentes pour {count} agent"
+
+msgid "projects.agentsHint.many"
+msgstr "Configurations presentes pour {count} agents"
 
 msgid "projects.agentsHint.other"
 msgstr "Configurations presentes pour {count} agents"
@@ -406,17 +430,26 @@ msgstr "{count} MCP"
 msgid "projects.mcpHint.one"
 msgstr "{count} serveur MCP installe depuis les depots"
 
+msgid "projects.mcpHint.many"
+msgstr "{count} serveurs MCP installes depuis les depots"
+
 msgid "projects.mcpHint.other"
 msgstr "{count} serveurs MCP installes depuis les depots"
 
 msgid "projects.searchFound.one"
 msgstr "{count} projet trouve"
 
+msgid "projects.searchFound.many"
+msgstr "{count} projets trouves"
+
 msgid "projects.searchFound.other"
 msgstr "{count} projets trouves"
 
 msgid "projects.searchTotal.one"
 msgstr "{count} projet au total"
+
+msgid "projects.searchTotal.many"
+msgstr "{count} projets au total"
 
 msgid "projects.searchTotal.other"
 msgstr "{count} projets au total"
@@ -522,6 +555,9 @@ msgstr "Aucune competence trouvee dans vos depots."
 
 msgid "skills.emptyProjects"
 msgstr "Aucun projet suivi pour le moment."
+
+msgid "skills.emptyFiltered"
+msgstr "Aucun résultat pour les filtres actuels."
 
 msgid "skills.status.add"
 msgstr "La competence sera ajoutee"
@@ -637,11 +673,17 @@ msgstr "La compétence a des règles"
 msgid "skills.searchFound.one"
 msgstr "{count} competence trouvee"
 
+msgid "skills.searchFound.many"
+msgstr "{count} competences trouvees"
+
 msgid "skills.searchFound.other"
 msgstr "{count} competences trouvees"
 
 msgid "skills.searchTotal.one"
 msgstr "{count} competence au total"
+
+msgid "skills.searchTotal.many"
+msgstr "{count} competences au total"
 
 msgid "skills.searchTotal.other"
 msgstr "{count} competences au total"
@@ -649,14 +691,23 @@ msgstr "{count} competences au total"
 msgid "mcp.empty"
 msgstr "Aucun serveur MCP pour le moment."
 
+msgid "mcp.emptyFiltered"
+msgstr "Aucun résultat pour les filtres actuels."
+
 msgid "mcp.searchFound.one"
 msgstr "{count} serveur MCP trouve"
+
+msgid "mcp.searchFound.many"
+msgstr "{count} serveurs MCP trouves"
 
 msgid "mcp.searchFound.other"
 msgstr "{count} serveurs MCP trouves"
 
 msgid "mcp.searchTotal.one"
 msgstr "{count} serveur MCP au total"
+
+msgid "mcp.searchTotal.many"
+msgstr "{count} serveurs MCP au total"
 
 msgid "mcp.searchTotal.other"
 msgstr "{count} serveurs MCP au total"
@@ -1201,3 +1252,27 @@ msgstr "Terminal indisponible : {error}. Les commandes git s'exécutent toujours
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Vérification des mises à jour reportée : la clé SSH est verrouillée. Déverrouillez-la dans les réglages."
+
+msgid "scope.global"
+msgstr "Global"
+
+msgid "scope.globalHint"
+msgstr "Installé pour cet utilisateur, dans tous les projets"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex installe les serveurs MCP pour tout l'utilisateur, pas par projet"
+
+msgid "skills.agentChoice.title"
+msgstr "Choisir des agents"
+
+msgid "skills.agentChoice.intro"
+msgstr "Aucun agent n'est sélectionné pour ces portées, donc rien ne serait installé : choisissez les agents dont cette portée doit accueillir les compétences et les serveurs MCP."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Suivant"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Agents pour {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Aucun agent sélectionné"

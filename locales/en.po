@@ -1320,7 +1320,7 @@ msgid "skills.agentChoice.intro"
 msgstr "These scopes have no agent selected, so nothing would be installed: pick the agents whose skills and MCP servers this scope should carry."
 
 msgid "skills.agentChoice.confirm"
-msgstr "Continue"
+msgstr "Next"
 
 msgid "skills.agentChoice.agentsFor"
 msgstr "Agents for {scope}"

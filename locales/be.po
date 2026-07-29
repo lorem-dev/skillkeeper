@@ -589,6 +589,9 @@ msgstr "У вашых рэпазіторыях навыкаў не знойдз�
 msgid "skills.emptyProjects"
 msgstr "Праекты яшчэ не адсочваюцца."
 
+msgid "skills.emptyFiltered"
+msgstr "Няма нічога, што адпавядае бягучым фільтрам."
+
 msgid "skills.status.add"
 msgstr "Навык будзе дададзены"
 
@@ -726,6 +729,9 @@ msgstr "Усяго {count} навыку"
 
 msgid "mcp.empty"
 msgstr "Пакуль няма сервераў MCP."
+
+msgid "mcp.emptyFiltered"
+msgstr "Няма нічога, што адпавядае бягучым фільтрам."
 
 msgid "mcp.searchFound.one"
 msgstr "Знойдзены {count} сервер MCP"
@@ -1291,3 +1297,27 @@ msgstr "Тэрмінал недаступны: {error}. Каманды git вы�
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Праверка абнаўленняў адкладзена: SSH-ключ заблакаваны. Разблакуйце яго ў наладах."
+
+msgid "scope.global"
+msgstr "Глабальна"
+
+msgid "scope.globalHint"
+msgstr "Усталявана для гэтага карыстальніка, ва ўсіх праектах"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex усталёўвае серверы MCP для ўсяго карыстальніка, а не для кожнага праекта асобна"
+
+msgid "skills.agentChoice.title"
+msgstr "Выберыце агентаў"
+
+msgid "skills.agentChoice.intro"
+msgstr "Для гэтых абсягаў не выбраны ні адзін агент, таму нічога не будзе ўсталявана: выберыце агентаў, чые навыкі і серверы MCP павінен утрымліваць гэты абсяг."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Далей"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Агенты для {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Агенты не выбраны"

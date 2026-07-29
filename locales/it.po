@@ -589,6 +589,9 @@ msgstr "Nessuna competenza trovata nei tuoi repository."
 msgid "skills.emptyProjects"
 msgstr "Nessun progetto ancora monitorato."
 
+msgid "skills.emptyFiltered"
+msgstr "Nessun risultato con i filtri attuali."
+
 msgid "skills.status.add"
 msgstr "La competenza verra aggiunta"
 
@@ -726,6 +729,9 @@ msgstr "{count} competenze in totale"
 
 msgid "mcp.empty"
 msgstr "Ancora nessun server MCP."
+
+msgid "mcp.emptyFiltered"
+msgstr "Nessun risultato con i filtri attuali."
 
 msgid "mcp.searchFound.one"
 msgstr "Trovato {count} server MCP"
@@ -1291,3 +1297,27 @@ msgstr "Terminale non disponibile: {error}. I comandi git vengono eseguiti, ma i
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Controllo aggiornamenti rinviato: la chiave SSH è bloccata. Sbloccala nelle impostazioni."
+
+msgid "scope.global"
+msgstr "Globale"
+
+msgid "scope.globalHint"
+msgstr "Installato per questo utente, in ogni progetto"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex installa i server MCP per l'intero utente, non per singolo progetto"
+
+msgid "skills.agentChoice.title"
+msgstr "Scegli gli agenti"
+
+msgid "skills.agentChoice.intro"
+msgstr "Questi ambiti non hanno alcun agente selezionato, quindi non verrebbe installato nulla: scegli gli agenti le cui competenze e server MCP questo ambito deve contenere."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Avanti"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Agenti per {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Nessun agente selezionato"

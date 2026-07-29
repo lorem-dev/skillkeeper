@@ -607,6 +607,9 @@ msgstr "В ваших репозиториях не найдено скилло�
 msgid "skills.emptyProjects"
 msgstr "Проекты ещё не отслеживаются."
 
+msgid "skills.emptyFiltered"
+msgstr "Ничего не соответствует текущим фильтрам."
+
 msgid "skills.status.add"
 msgstr "Навык будет добавлен"
 
@@ -744,6 +747,9 @@ msgstr "Всего {count} скиллов"
 
 msgid "mcp.empty"
 msgstr "Серверов MCP пока нет."
+
+msgid "mcp.emptyFiltered"
+msgstr "Ничего не соответствует текущим фильтрам."
 
 msgid "mcp.searchFound.one"
 msgstr "Найден {count} сервер MCP"
@@ -1291,3 +1297,27 @@ msgstr "Терминал недоступен: {error}. Команды git вы�
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Проверка обновлений отложена: SSH-ключ заблокирован. Разблокируйте его в настройках."
+
+msgid "scope.global"
+msgstr "Глобально"
+
+msgid "scope.globalHint"
+msgstr "Установлено для этого пользователя, во всех проектах"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex устанавливает MCP серверы для всего пользователя, а не для отдельного проекта"
+
+msgid "skills.agentChoice.title"
+msgstr "Выберите агентов"
+
+msgid "skills.agentChoice.intro"
+msgstr "Для этих областей не выбран ни один агент, поэтому ничего не будет установлено: выберите агентов, чьи навыки и MCP серверы должна содержать эта область."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Далее"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Агенты для {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Агенты не выбраны"
