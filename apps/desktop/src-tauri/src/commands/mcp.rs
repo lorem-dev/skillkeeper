@@ -53,6 +53,19 @@ const PROJECT_MCP_AGENTS: [AgentKind; 4] = [
     AgentKind::Opencode,
 ];
 
+/// The reserved `projectId` an install reports at global scope. It is a bucket
+/// label on the wire only -- `state.json` never gains a project with this id.
+pub const GLOBAL_PROJECT_ID: &str = "global";
+
+/// Every agent, for the global pass over MCP ledgers.
+const ALL_MCP_AGENTS: [AgentKind; 5] = [
+    AgentKind::Claude,
+    AgentKind::Codex,
+    AgentKind::Copilot,
+    AgentKind::Cursor,
+    AgentKind::Opencode,
+];
+
 /// The mcp.yml/mcp.yaml file names checked in each candidate directory. `mcp.yml`
 /// wins outright: when both exist only `mcp.yml` is read (even if it fails to
 /// parse), mirroring the documented precedence.
@@ -162,6 +175,9 @@ pub struct McpBatch {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApplyMcpArgs {
+    /// Which scope to write into. Absent means `project`.
+    #[serde(default)]
+    pub scope: Scope,
     pub project_id: String,
     pub project_path: String,
     #[serde(default)]
@@ -186,6 +202,9 @@ pub struct McpUpdateReq {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMcpArgs {
+    /// Which scope to write into. Absent means `project`.
+    #[serde(default)]
+    pub scope: Scope,
     #[serde(default)]
     pub updates: Vec<McpUpdateReq>,
 }
@@ -194,6 +213,9 @@ pub struct UpdateMcpArgs {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct McpUpdatePreflightArgs {
+    /// Which scope to write into. Absent means `project`.
+    #[serde(default)]
+    pub scope: Scope,
     pub project_id: String,
     pub project_path: String,
     pub agent: AgentKind,
@@ -374,39 +396,30 @@ struct McpTarget {
     guidance_files: Vec<String>,
 }
 
-/// Resolve where one MCP install for `agent` writes: the native config path, the
-/// ledger/params paths under the agent's skills destination root (the SAME root
-/// the skills engine resolves), and the agent's guidance file. Codex resolves
-/// globally (native config, ledger, and guidance all under the home directory);
-/// the other four resolve under the project. Port of the TS `resolveMcpTarget`.
+/// Resolve where one MCP install for `agent` writes at `scope`: the native
+/// config path, the ledger/params paths under the agent's skills destination
+/// root for that scope (the SAME root the skills engine resolves), and the
+/// agent's guidance file. Codex is global-only and ignores `scope`.
 fn resolve_mcp_target(
     ctx: &AppContext,
     agent: AgentKind,
+    scope: Scope,
     project_path: &str,
     project_id: &str,
 ) -> Result<McpTarget, String> {
-    let is_codex = agent == AgentKind::Codex;
-    let target = if is_codex {
-        AgentTarget {
-            agent,
-            scope: Scope::Global,
-            project_id: None,
-        }
+    let global = scope == Scope::Global || agent == AgentKind::Codex;
+    let target = if global {
+        AgentTarget::global(agent)
     } else {
-        AgentTarget {
-            agent,
-            scope: Scope::Project,
-            project_id: Some(project_id.to_string()),
-        }
+        AgentTarget::project(agent, Some(project_id))
     };
     let env = ProjectEnv {
         inner: &ctx.env,
         project_path: project_path.to_string(),
     };
-    // Mirror the TS: both fields are passed; the writer uses projectPath for the
-    // four project agents and homeDir for codex.
     let native = mcp_destination(
         agent,
+        scope,
         &McpDestinationTarget {
             project_path: Some(project_path.to_string()),
             home_dir: Some(ctx.env.home_dir().to_string()),
@@ -530,7 +543,13 @@ fn resolve_install_values(
     let Some(copy) = &ins.copy_params_from else {
         return ins.values.clone();
     };
-    let target = match resolve_mcp_target(ctx, copy.agent, &args.project_path, &args.project_id) {
+    let target = match resolve_mcp_target(
+        ctx,
+        copy.agent,
+        args.scope,
+        &args.project_path,
+        &args.project_id,
+    ) {
         Ok(t) => t,
         Err(_) => return ins.values.clone(),
     };
@@ -571,8 +590,25 @@ fn apply_inner(
     let mut skipped: Vec<McpSkipped> = Vec::new();
 
     for batch in &args.batches {
-        let is_codex = batch.agent == AgentKind::Codex;
-        let target = resolve_mcp_target(ctx, batch.agent, &args.project_path, &args.project_id)?;
+        // Codex has no project-scoped MCP config: its only home is Global, so a
+        // project batch is reported rather than silently written to the home.
+        if args.scope == Scope::Project && batch.agent == AgentKind::Codex {
+            for ins in &batch.install {
+                skipped.push(McpSkipped {
+                    agent: batch.agent,
+                    source: ins.identity.source.clone(),
+                    transport: ins.def.transport,
+                });
+            }
+            continue;
+        }
+        let target = resolve_mcp_target(
+            ctx,
+            batch.agent,
+            args.scope,
+            &args.project_path,
+            &args.project_id,
+        )?;
 
         for rem in &batch.remove {
             remove_mcp_instance(
@@ -612,7 +648,7 @@ fn apply_inner(
                     def: ins.def.clone(),
                     values,
                     instance_name: None,
-                    gitignore_project_path: if is_codex {
+                    gitignore_project_path: if args.scope == Scope::Global {
                         None
                     } else {
                         Some(args.project_path.clone())
@@ -712,14 +748,19 @@ pub fn installs(ctx: &AppContext) -> Vec<McpInstall> {
 
     for project in &projects {
         for agent in PROJECT_MCP_AGENTS {
-            if let Ok(target) = resolve_mcp_target(ctx, agent, &project.path, &project.id) {
+            if let Ok(target) =
+                resolve_mcp_target(ctx, agent, Scope::Project, &project.path, &project.id)
+            {
                 collect_installs(ctx, &mut out, &project.id, agent, &target);
             }
         }
     }
 
-    if let Ok(target) = resolve_mcp_target(ctx, AgentKind::Codex, "", "") {
-        collect_installs(ctx, &mut out, "global", AgentKind::Codex, &target);
+    // The global scope of every agent, reported under the reserved bucket id.
+    for agent in ALL_MCP_AGENTS {
+        if let Ok(target) = resolve_mcp_target(ctx, agent, Scope::Global, "", "") {
+            collect_installs(ctx, &mut out, GLOBAL_PROJECT_ID, agent, &target);
+        }
     }
 
     out
@@ -838,7 +879,9 @@ pub fn reconcile(ctx: &AppContext) -> Vec<McpInstall> {
 
     for project in &projects {
         for agent in PROJECT_MCP_AGENTS {
-            if let Ok(target) = resolve_mcp_target(ctx, agent, &project.path, &project.id) {
+            if let Ok(target) =
+                resolve_mcp_target(ctx, agent, Scope::Project, &project.path, &project.id)
+            {
                 // A ledger whose native config is malformed is skipped, mirroring
                 // the per-project try/catch in the TS source.
                 let _ = reconcile_ledger(ctx, &mut out, &project.id, agent, &target);
@@ -846,8 +889,11 @@ pub fn reconcile(ctx: &AppContext) -> Vec<McpInstall> {
         }
     }
 
-    if let Ok(target) = resolve_mcp_target(ctx, AgentKind::Codex, "", "") {
-        let _ = reconcile_ledger(ctx, &mut out, "global", AgentKind::Codex, &target);
+    // The global scope of every agent, reported under the reserved bucket id.
+    for agent in ALL_MCP_AGENTS {
+        if let Ok(target) = resolve_mcp_target(ctx, agent, Scope::Global, "", "") {
+            let _ = reconcile_ledger(ctx, &mut out, GLOBAL_PROJECT_ID, agent, &target);
+        }
     }
 
     out
@@ -895,7 +941,13 @@ pub fn update_preflight(
 }
 
 fn preflight_inner(ctx: &AppContext, args: &McpUpdatePreflightArgs) -> Result<Vec<String>, String> {
-    let target = resolve_mcp_target(ctx, args.agent, &args.project_path, &args.project_id)?;
+    let target = resolve_mcp_target(
+        ctx,
+        args.agent,
+        args.scope,
+        &args.project_path,
+        &args.project_id,
+    )?;
     let stored = read_stored_params(ctx, &target, &args.instance_name)?;
     Ok(missing_params(&args.def, stored.as_ref()))
 }
@@ -916,8 +968,13 @@ pub fn update(ctx: &AppContext, args: UpdateMcpArgs) -> UpdateMcpResult {
 fn update_inner(ctx: &AppContext, args: &UpdateMcpArgs) -> Result<usize, String> {
     let mut updated = 0usize;
     for u in &args.updates {
-        let is_codex = u.agent == AgentKind::Codex;
-        let target = resolve_mcp_target(ctx, u.agent, &u.project_path, &u.project_id)?;
+        let target = resolve_mcp_target(
+            ctx,
+            u.agent,
+            args.scope,
+            &u.project_path,
+            &u.project_id,
+        )?;
         let stored = read_stored_params(ctx, &target, &u.instance_name)?;
         let mut values = stored.unwrap_or_default();
         for (key, value) in &u.values {
@@ -947,7 +1004,7 @@ fn update_inner(ctx: &AppContext, args: &UpdateMcpArgs) -> Result<usize, String>
                 def: u.def.clone(),
                 values,
                 instance_name: Some(u.instance_name.clone()),
-                gitignore_project_path: if is_codex {
+                gitignore_project_path: if args.scope == Scope::Global {
                     None
                 } else {
                     Some(u.project_path.clone())
@@ -1176,6 +1233,7 @@ mod tests {
 
     fn apply_args(proj: &ProjectDir, batches: Vec<McpBatch>) -> ApplyMcpArgs {
         ApplyMcpArgs {
+            scope: Scope::Project,
             project_id: "proj-1".to_string(),
             project_path: proj.path(),
             batches,
@@ -1417,6 +1475,7 @@ mod tests {
         let pre = update_preflight(
             &app.ctx,
             McpUpdatePreflightArgs {
+                scope: Scope::Project,
                 project_id: "proj-1".to_string(),
                 project_path: proj.path(),
                 agent: AgentKind::Claude,
@@ -1434,6 +1493,7 @@ mod tests {
         let updated = update(
             &app.ctx,
             UpdateMcpArgs {
+                scope: Scope::Project,
                 updates: vec![McpUpdateReq {
                     project_id: "proj-1".to_string(),
                     project_path: proj.path(),
@@ -1459,6 +1519,128 @@ mod tests {
         assert_eq!(listed[0].hash, hash_mcp_def(&stdio_token_org_def()));
     }
 
+    // ---- global scope ----
+
+    #[test]
+    fn apply_installs_globally_for_a_project_agent() {
+        // CodexApp isolates the home dir; reuse it for any global-scope write.
+        let app = CodexApp::new();
+
+        let result = apply(
+            &app.ctx,
+            ApplyMcpArgs {
+                scope: Scope::Global,
+                project_id: String::new(),
+                project_path: String::new(),
+                batches: vec![McpBatch {
+                    agent: AgentKind::Claude,
+                    install: vec![install_req(stdio_token_def(), &[("token", "abc")])],
+                    remove: vec![],
+                }],
+            },
+        );
+        assert!(result.ok, "global apply failed: {:?}", result.error);
+        assert_eq!(result.installed, Some(1));
+
+        // Native config in the home, ledger under the agent's global skills root.
+        let native = std::fs::read_to_string(app.home.join(".claude.json"))
+            .expect("global claude config written");
+        assert!(native.contains("github_1"));
+        assert!(app.home.join(".claude/skills/.skmcp.yml").exists());
+
+        // No .gitignore is touched at global scope: there is no repository.
+        assert!(!app.home.join(".gitignore").exists());
+
+        let listed = installs(&app.ctx);
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].project_id, "global");
+        assert_eq!(listed[0].agent, AgentKind::Claude);
+    }
+
+    #[test]
+    fn apply_skips_a_codex_batch_at_project_scope() {
+        let app = CodexApp::new();
+
+        let result = apply(
+            &app.ctx,
+            ApplyMcpArgs {
+                scope: Scope::Project,
+                project_id: "p1".to_string(),
+                project_path: app.home.join("proj").to_string_lossy().into_owned(),
+                batches: vec![McpBatch {
+                    agent: AgentKind::Codex,
+                    install: vec![install_req(stdio_token_def(), &[("token", "abc")])],
+                    remove: vec![],
+                }],
+            },
+        );
+        assert!(result.ok);
+        assert_eq!(result.installed, Some(0));
+        let skipped = result.skipped.expect("skipped list present");
+        assert_eq!(skipped.len(), 1);
+        assert_eq!(skipped[0].agent, AgentKind::Codex);
+        // Nothing was written anywhere.
+        assert!(!app.home.join(".codex/config.toml").exists());
+        assert!(installs(&app.ctx).is_empty());
+    }
+
+    #[test]
+    fn update_at_global_scope_touches_no_gitignore_for_a_non_codex_agent() {
+        // Regression test for a fix-round-1 finding: update_inner's gitignore
+        // gate used to key off `is_codex` instead of `args.scope`, so a global
+        // update for a non-codex agent (empty project_path, as every global
+        // call uses) resolved `format!("{project_path}/.gitignore")` to the
+        // absolute root path `/.gitignore` instead of skipping gitignore
+        // entirely.
+        let app = CodexApp::new();
+
+        assert!(
+            apply(
+                &app.ctx,
+                ApplyMcpArgs {
+                    scope: Scope::Global,
+                    project_id: String::new(),
+                    project_path: String::new(),
+                    batches: vec![McpBatch {
+                        agent: AgentKind::Claude,
+                        install: vec![install_req(stdio_token_def(), &[("token", "abc")])],
+                        remove: vec![],
+                    }],
+                },
+            )
+            .ok
+        );
+
+        let updated = update(
+            &app.ctx,
+            UpdateMcpArgs {
+                scope: Scope::Global,
+                updates: vec![McpUpdateReq {
+                    project_id: String::new(),
+                    project_path: String::new(),
+                    agent: AgentKind::Claude,
+                    instance_name: "github_1".to_string(),
+                    identity: identity(),
+                    def: stdio_token_org_def(),
+                    values: values(&[("org", "acme")]),
+                }],
+            },
+        );
+        assert!(updated.ok, "global update failed: {:?}", updated.error);
+        assert_eq!(updated.updated, Some(1));
+
+        // Native config reflects the new def; the stored token is preserved.
+        let native = std::fs::read_to_string(app.home.join(".claude.json")).unwrap();
+        assert!(native.contains("acme"));
+        assert!(native.contains("abc"));
+
+        // No .gitignore anywhere: not under the isolated home, and not at the
+        // filesystem-root path the old is_codex-gated bug would have produced
+        // from an empty project_path (`format!("{}/.gitignore", "")`).
+        assert!(!app.home.join(".gitignore").exists());
+        assert!(!Path::new("/.gitignore").exists());
+    }
+
     // ---- codex (TOML) + transport gating ----
 
     #[test]
@@ -1468,6 +1650,7 @@ mod tests {
         let result = apply(
             &app.ctx,
             ApplyMcpArgs {
+                scope: Scope::Global,
                 project_id: String::new(),
                 project_path: String::new(),
                 batches: vec![McpBatch {
@@ -1503,6 +1686,7 @@ mod tests {
         let result = apply(
             &app.ctx,
             ApplyMcpArgs {
+                scope: Scope::Global,
                 project_id: String::new(),
                 project_path: String::new(),
                 batches: vec![McpBatch {

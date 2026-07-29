@@ -147,4 +147,39 @@ describe('mcp', () => {
     expect(guidance).not.toContain('docs.example.com');
     expect(guidance).toContain('https://reg.example.com');
   });
+
+  describe('global scope', () => {
+    it('installs into the home config and the global ledger', () => {
+      sandbox.runOk(['mcp', 'install', 'bare-stdio', '--agent', 'claude', '--global']);
+
+      const native = readJson<{ mcpServers: Record<string, unknown> }>(
+        join(sandbox.home, '.claude.json'),
+      );
+      expect(Object.keys(native.mcpServers)).toHaveLength(1);
+      expect(read(join(sandbox.home, '.claude', 'skills', '.skmcp.yml'))).toContain('bare-stdio');
+      // No project file is touched at global scope. A fresh directory is used
+      // here (rather than the suite's shared `project`) because that one
+      // already carries a `.mcp.json` from the project-scope installs earlier
+      // in this file, which would make the assertion pass or fail for the
+      // wrong reason.
+      const untouched = sandbox.project('untouched-by-global');
+      expect(existsSync(join(untouched, '.mcp.json'))).toBe(false);
+    });
+
+    it('refuses --global together with --project', () => {
+      const res = sandbox.run([
+        'mcp', 'install', 'bare-stdio', '--agent', 'claude', '--global', '--project', project,
+      ]);
+      expect(res.status).not.toBe(0);
+      expect(res.output).toContain('--project');
+    });
+
+    it('tells the user to pass --global for codex', () => {
+      const res = sandbox.run([
+        'mcp', 'install', 'bare-stdio', '--agent', 'codex', '--project', project,
+      ]);
+      expect(res.status).not.toBe(0);
+      expect(res.output).toContain('--global');
+    });
+  });
 });

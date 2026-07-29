@@ -269,7 +269,7 @@ those discovered in tracked repositories.
 ### mcp install
 
 ```
-skillkeeper mcp install <name> [--agent <agent>]... [--param <name=value>]... [--project <dir>]
+skillkeeper mcp install <name> [--agent <agent>]... [--param <name=value>]... [--project <dir>] [--global]
 ```
 
 Install an MCP preset for one or more agents.
@@ -284,28 +284,41 @@ succeeded for at least one agent reports success.
   comma-separated.
 - `--param <name=value>` - repeatable; supplies values for the preset's
   `{param}` placeholders.
-- `--project <dir>` - project directory (default: the current directory);
-  ignored for `codex`, which is installed globally.
+- `--project <dir>` - project directory (default: the current directory).
+  Mutually exclusive with `--global`.
+- `--global` - install for the whole user, in every project, instead of one
+  project directory. Mutually exclusive with `--project`. Required for `codex`,
+  whose MCP config is user-wide.
 
 ### mcp remove
 
 ```
-skillkeeper mcp remove <instance-name> --agent <agent> [--project <dir>]
+skillkeeper mcp remove <instance-name> --agent <agent> [--project <dir>] [--global]
 ```
 
 Remove an installed MCP instance, identified by its assigned instance name (the
 native config key), for the given agent.
 
+- `--project <dir>` - project directory (default: the current directory).
+  Mutually exclusive with `--global`.
+- `--global` - act on the user-wide installs instead of a project's. Mutually
+  exclusive with `--project`.
+
 ### mcp update
 
 ```
-skillkeeper mcp update [<name>] [--agent <agent>]... [--all] [--param <name=value>]... [--project <dir>]
+skillkeeper mcp update [<name>] [--agent <agent>]... [--all] [--param <name=value>]... [--project <dir>] [--global]
 ```
 
 Reinstall MCP instances whose source definition changed. Limit to one preset by
 name (default: all project agents), or pass `--all` to check every tracked
-project and agent plus the global `codex` ledger. `--param` supplies values for
-any newly required placeholders.
+project and agent plus every agent's global ledger. `--param` supplies values
+for any newly required placeholders.
+
+- `--project <dir>` - project directory (default: the current directory);
+  ignored with `--all`. Mutually exclusive with `--global`.
+- `--global` - act on the user-wide installs instead of a project's. Mutually
+  exclusive with `--project` and `--all`.
 
 ---
 

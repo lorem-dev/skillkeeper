@@ -328,9 +328,9 @@ pub fn supports_transport(agent: AgentKind, t: McpTransport) -> bool {
 /// Inputs needed to resolve an agent's native MCP config destination.
 #[derive(Debug, Clone, Default)]
 pub struct McpDestinationTarget {
-    /// Project root; required for every agent except codex (global).
+    /// Project root; required at project scope, except for codex (global-only).
     pub project_path: Option<String>,
-    /// User home directory; required for codex only.
+    /// User home directory; required at global scope, and for codex always.
     pub home_dir: Option<String>,
 }
 
@@ -341,20 +341,30 @@ pub struct McpDestination {
     pub scope: Scope,
 }
 
-/// Resolve where `agent` keeps its native MCP config. Project-scoped agents
-/// resolve under `target.project_path`; codex is global, under
-/// `target.home_dir`. Returns an error when the required target field is absent.
+/// Resolve where `agent` keeps its native MCP config for `scope`. Global
+/// resolutions land next to the directory the agent's adapter already uses at
+/// global scope, so every SkillKeeper-managed file for that agent stays in one
+/// place. Codex is global-only: it has no project-scoped MCP config, so it
+/// ignores `scope`. Returns an error when the field the scope needs is absent.
 pub fn mcp_destination(
     agent: AgentKind,
+    scope: Scope,
     target: &McpDestinationTarget,
 ) -> Result<McpDestination, String> {
-    if agent == AgentKind::Codex {
+    if scope == Scope::Global || agent == AgentKind::Codex {
         let home = target
             .home_dir
             .as_ref()
-            .ok_or_else(|| "codex destination requires \"homeDir\"".to_string())?;
+            .ok_or_else(|| format!("{agent:?} global destination requires \"homeDir\""))?;
+        let path = match agent {
+            AgentKind::Claude => format!("{home}/.claude.json"),
+            AgentKind::Codex => format!("{home}/.codex/config.toml"),
+            AgentKind::Copilot => format!("{home}/.config/github-copilot/mcp-config.json"),
+            AgentKind::Cursor => format!("{home}/.cursor/mcp.json"),
+            AgentKind::Opencode => format!("{home}/.config/opencode/opencode.json"),
+        };
         return Ok(McpDestination {
-            path: format!("{home}/.codex/config.toml"),
+            path,
             scope: Scope::Global,
         });
     }
@@ -735,22 +745,28 @@ mod tests {
             home_dir: Some("/home/user".to_string()),
         };
         assert_eq!(
-            mcp_destination(AgentKind::Claude, &target).unwrap(),
+            mcp_destination(AgentKind::Claude, Scope::Project, &target).unwrap(),
             McpDestination {
                 path: "/proj/.mcp.json".to_string(),
                 scope: Scope::Project,
             }
         );
         assert_eq!(
-            mcp_destination(AgentKind::Cursor, &target).unwrap().path,
+            mcp_destination(AgentKind::Cursor, Scope::Project, &target)
+                .unwrap()
+                .path,
             "/proj/.cursor/mcp.json"
         );
         assert_eq!(
-            mcp_destination(AgentKind::Copilot, &target).unwrap().path,
+            mcp_destination(AgentKind::Copilot, Scope::Project, &target)
+                .unwrap()
+                .path,
             "/proj/.vscode/mcp.json"
         );
         assert_eq!(
-            mcp_destination(AgentKind::Opencode, &target).unwrap().path,
+            mcp_destination(AgentKind::Opencode, Scope::Project, &target)
+                .unwrap()
+                .path,
             "/proj/opencode.json"
         );
     }
@@ -762,7 +778,7 @@ mod tests {
             home_dir: Some("/home/user".to_string()),
         };
         assert_eq!(
-            mcp_destination(AgentKind::Codex, &target).unwrap(),
+            mcp_destination(AgentKind::Codex, Scope::Global, &target).unwrap(),
             McpDestination {
                 path: "/home/user/.codex/config.toml".to_string(),
                 scope: Scope::Global,
@@ -772,7 +788,67 @@ mod tests {
 
     #[test]
     fn mcp_destination_errors_on_missing_target_field() {
-        assert!(mcp_destination(AgentKind::Claude, &McpDestinationTarget::default()).is_err());
-        assert!(mcp_destination(AgentKind::Codex, &McpDestinationTarget::default()).is_err());
+        assert!(
+            mcp_destination(AgentKind::Claude, Scope::Project, &McpDestinationTarget::default())
+                .is_err()
+        );
+        assert!(
+            mcp_destination(AgentKind::Codex, Scope::Project, &McpDestinationTarget::default())
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn mcp_destination_resolves_global_paths_for_every_agent() {
+        let target = McpDestinationTarget {
+            project_path: Some("/proj".to_string()),
+            home_dir: Some("/home/user".to_string()),
+        };
+        let cases = [
+            (AgentKind::Claude, "/home/user/.claude.json"),
+            (AgentKind::Codex, "/home/user/.codex/config.toml"),
+            (
+                AgentKind::Copilot,
+                "/home/user/.config/github-copilot/mcp-config.json",
+            ),
+            (AgentKind::Cursor, "/home/user/.cursor/mcp.json"),
+            (
+                AgentKind::Opencode,
+                "/home/user/.config/opencode/opencode.json",
+            ),
+        ];
+        for (agent, expected) in cases {
+            let dest = mcp_destination(agent, Scope::Global, &target).unwrap();
+            assert_eq!(dest.path, expected, "{agent:?}");
+            assert_eq!(dest.scope, Scope::Global, "{agent:?}");
+        }
+    }
+
+    #[test]
+    fn mcp_destination_keeps_codex_global_at_project_scope() {
+        let target = McpDestinationTarget {
+            project_path: Some("/proj".to_string()),
+            home_dir: Some("/home/user".to_string()),
+        };
+        // Codex has no project-scoped MCP config; asking for one still resolves
+        // globally rather than inventing a path under the project.
+        let dest = mcp_destination(AgentKind::Codex, Scope::Project, &target).unwrap();
+        assert_eq!(dest.path, "/home/user/.codex/config.toml");
+        assert_eq!(dest.scope, Scope::Global);
+    }
+
+    #[test]
+    fn mcp_destination_global_errors_without_home_dir() {
+        let target = McpDestinationTarget {
+            project_path: Some("/proj".to_string()),
+            home_dir: None,
+        };
+        let err = mcp_destination(AgentKind::Cursor, Scope::Global, &target).unwrap_err();
+        assert!(err.contains("homeDir"), "unexpected message: {err}");
+    }
+
+    #[test]
+    fn scope_defaults_to_project() {
+        assert_eq!(Scope::default(), Scope::Project);
     }
 }
