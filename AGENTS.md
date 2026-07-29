@@ -364,17 +364,18 @@ backend events via `listen`. It imports the ts-rs-generated types under
 
 ## Local Development Skills
 
-Six skills live under `.agents/skills/`. Invoke them when the situation calls
+Seven skills live under `.agents/skills/`. Invoke them when the situation calls
 for it:
 
 | Skill | When to use |
 |---|---|
+| `bump-version` | To start a release -- set the version across every manifest and promote the CHANGES.md Development section, then make the release commit. Does not tag or push. |
 | `check-changes` | After a batch of commits -- verify CHANGES.md (Development section) reflects every change. |
 | `check-docs` | Before a release or after updating commands/options -- verify docs/ and README.md are current. |
 | `run-tests-and-linters` | Before marking any task done -- run the full gate (lint, typecheck, test:cov at 90%). |
 | `check-fixture-repo` | After touching resolution, install, hooks, guidance, or MCP -- drive the built CLI against the `examples/test-repo` fixture end to end, in a throwaway state dir. The only check that exercises the real binary against a real working tree. |
 | `check-licenses` | After editing any `package.json` or `Cargo.toml` -- verify all npm and cargo dependencies are license-compliant and update LICENSE. |
-| `pre-release-check` | Before cutting a release -- runs all five skills above plus version-bump and commit-format checks. |
+| `pre-release-check` | Before cutting a release -- runs the five `check-*` and `run-*` skills above (not `bump-version`) plus version-bump and commit-format checks. |
 
 ---
 
