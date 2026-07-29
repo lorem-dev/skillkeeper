@@ -166,6 +166,35 @@ describe('mcp', () => {
       expect(existsSync(join(untouched, '.mcp.json'))).toBe(false);
     });
 
+    // Runs after the install test above and reverses it: the global scope has
+    // to be as removable as a project's, or a user-wide server can only be
+    // uninstalled by editing the agent's config by hand.
+    it('removes at the same scope, leaving no native entry and no ledger entry', () => {
+      // The same preset installed into a project of its own, so this test can
+      // show the global remove staying out of a project's ledger without
+      // depending on the project-scope suite above having run.
+      const shadowed = sandbox.project('shadowed-by-global');
+      sandbox.runOk(['mcp', 'install', 'bare-stdio', '--agent', 'claude', '--project', shadowed]);
+
+      sandbox.runOk(['mcp', 'remove', 'bare_stdio_1', '--agent', 'claude', '--global']);
+
+      const native = readJson<{ mcpServers: Record<string, unknown> }>(
+        join(sandbox.home, '.claude.json'),
+      );
+      expect(Object.keys(native.mcpServers)).toHaveLength(0);
+      const ledgerDir = join(sandbox.home, '.claude', 'skills');
+      expect(read(join(ledgerDir, '.skmcp.yml'))).not.toContain('bare_stdio_1');
+      expect(read(join(ledgerDir, '.skmcp.params.yml'))).not.toContain('bare_stdio_1');
+      // The two scopes' ledgers are separate files: the project instance stays.
+      expect(read(join(shadowed, '.claude', 'skills', '.skmcp.yml'))).toContain('bare_stdio_1');
+    });
+
+    it('reports a missing instance at global scope instead of failing silently', () => {
+      const res = sandbox.run(['mcp', 'remove', 'bare_stdio_1', '--agent', 'claude', '--global']);
+      expect(res.status).toBe(1);
+      expect(res.output).toContain('bare_stdio_1');
+    });
+
     it('refuses --global together with --project', () => {
       const res = sandbox.run([
         'mcp', 'install', 'bare-stdio', '--agent', 'claude', '--global', '--project', project,

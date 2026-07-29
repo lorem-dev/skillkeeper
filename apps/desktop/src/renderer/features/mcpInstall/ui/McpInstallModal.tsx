@@ -20,7 +20,7 @@ import { useSkillkeeperStore } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import type { AgentKind } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
-import { Modal, Button, TextField, Checkbox, Tooltip, Alert } from '@/shared/ui';
+import { Modal, Button, TextField, Checkbox, Tooltip } from '@/shared/ui';
 import { ProjectSelect } from '@/entities/project';
 import { ALL_AGENTS, AGENT_LABELS, applyScope, isGlobalScope } from '@/domain';
 import { supportsTransport } from '../lib/supportsTransport';
@@ -164,8 +164,6 @@ export function McpInstallModal({
             })}
           </div>
         </div>
-
-        {agents.includes('codex') && <Alert tone="info">{t('mcp.codexGlobalNote')}</Alert>}
 
         {preset.params.length > 0 && (
           <div className="sk-mcp-install__params">

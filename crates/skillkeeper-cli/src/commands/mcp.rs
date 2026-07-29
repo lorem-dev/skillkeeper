@@ -300,6 +300,22 @@ struct McpTarget {
     ledger_path: String,
     params_path: String,
     guidance_files: Vec<String>,
+    /// The scope these paths were actually resolved at, which is not always the
+    /// requested one (codex is global-only). Gate anything that depends on
+    /// where the write lands -- the `.gitignore` entry above all -- on THIS,
+    /// never on the requested scope, or the two can disagree.
+    scope: Scope,
+}
+
+/// The scope an MCP write for `agent` really lands at. Codex has no
+/// project-scoped native config, so it is always global no matter what was
+/// requested.
+fn resolved_mcp_scope(agent: AgentKind, requested: Scope) -> Scope {
+    if agent == AgentKind::Codex {
+        Scope::Global
+    } else {
+        requested
+    }
 }
 
 /// Resolve where one MCP install for `agent` writes at `scope`: the native
@@ -314,11 +330,10 @@ fn resolve_mcp_target(
     project_path: &str,
     project_id: &str,
 ) -> Result<McpTarget, CliError> {
-    let global = scope == Scope::Global || agent == AgentKind::Codex;
-    let target = if global {
-        AgentTarget::global(agent)
-    } else {
-        AgentTarget::project(agent, Some(project_id))
+    let resolved = resolved_mcp_scope(agent, scope);
+    let target = match resolved {
+        Scope::Global => AgentTarget::global(agent),
+        Scope::Project => AgentTarget::project(agent, Some(project_id)),
     };
     let env = ProjectEnv {
         inner: ctx.env,
@@ -326,7 +341,7 @@ fn resolve_mcp_target(
     };
     let native = mcp_destination(
         agent,
-        scope,
+        resolved,
         &McpDestinationTarget {
             project_path: Some(project_path.to_string()),
             home_dir: Some(ctx.env.home_dir().to_string()),
@@ -341,6 +356,7 @@ fn resolve_mcp_target(
         ledger_path: format!("{dest_root}/{SKMCP_FILE}"),
         params_path: format!("{dest_root}/{SKMCP_PARAMS_FILE}"),
         guidance_files: vec![guidance_file],
+        scope: resolved,
     })
 }
 
@@ -467,9 +483,17 @@ pub fn install(
         return Ok(1);
     }
 
-    let scope = if global { Scope::Global } else { Scope::Project };
+    let scope = if global {
+        Scope::Global
+    } else {
+        Scope::Project
+    };
     // At global scope there is no project directory to record or gitignore.
-    let project_path = if global { "" } else { project.unwrap_or(ctx.cwd) };
+    let project_path = if global {
+        ""
+    } else {
+        project.unwrap_or(ctx.cwd)
+    };
     let identity = preset_identity(&preset);
     let mut any_installed = false;
 
@@ -512,7 +536,9 @@ pub fn install(
                 def: preset.def.clone(),
                 values: values.clone(),
                 instance_name: None,
-                gitignore_project_path: if scope == Scope::Global {
+                // Gated on the RESOLVED scope, not the requested one: a global
+                // write has no repository to keep the ledger out of.
+                gitignore_project_path: if target.scope == Scope::Global {
                     None
                 } else {
                     Some(project_path.to_string())
@@ -545,8 +571,16 @@ pub fn remove(
         writeln!(err, "Unknown agent: {agent}")?;
         return Ok(1);
     };
-    let scope = if global { Scope::Global } else { Scope::Project };
-    let project_path = if global { "" } else { project.unwrap_or(ctx.cwd) };
+    let scope = if global {
+        Scope::Global
+    } else {
+        Scope::Project
+    };
+    let project_path = if global {
+        ""
+    } else {
+        project.unwrap_or(ctx.cwd)
+    };
     let target = resolve_mcp_target(ctx, agent, scope, project_path, project_path)?;
 
     if !ctx.fs.exists(&target.ledger_path)? {
@@ -671,6 +705,20 @@ pub fn update(
         if !ctx.registry.has(scope.agent) {
             continue;
         }
+        // Codex's MCP config is user-wide, so a project-scope request for it
+        // cannot be honoured; refuse it the way `install` does rather than
+        // updating the user-wide file behind a project's back. Only an explicit
+        // `--agent codex` without `--global` reaches this: neither the
+        // project-scope default (`PROJECT_MCP_AGENTS`) nor `--all` puts codex at
+        // project scope.
+        if scope.agent == AgentKind::Codex && scope.scope == Scope::Project {
+            writeln!(
+                err,
+                "codex MCP servers are user-wide, not per project: pass --global."
+            )?;
+            failed = true;
+            continue;
+        }
         let target = resolve_mcp_target(
             ctx,
             scope.agent,
@@ -750,7 +798,9 @@ pub fn update(
                     def: current.def.clone(),
                     values: merged,
                     instance_name: Some(entry.name.clone()),
-                    gitignore_project_path: if scope.scope == Scope::Global {
+                    // Gated on the RESOLVED scope, not the requested one: see
+                    // `McpTarget::scope`.
+                    gitignore_project_path: if target.scope == Scope::Global {
                         None
                     } else {
                         Some(scope.project_path.clone())
@@ -1280,5 +1330,86 @@ mod tests {
         // that file appearing here (see the task report for the captured
         // failure).
         assert!(!app.fs.exists("/.gitignore").unwrap());
+    }
+
+    #[test]
+    fn resolve_mcp_target_reports_the_scope_it_really_resolved() {
+        let app = TestApp::new(seeded_fs());
+        seed_state(&app.fs);
+        // Codex ignores the requested scope, so the target must report Global --
+        // everything gated on "did this write land in a repository?" reads this
+        // field rather than the requested scope.
+        let codex = resolve_mcp_target(
+            &app.ctx(),
+            AgentKind::Codex,
+            Scope::Project,
+            PROJECT,
+            PROJECT,
+        )
+        .unwrap();
+        assert_eq!(codex.scope, Scope::Global);
+        assert_eq!(codex.native_path, format!("{HOME}/.codex/config.toml"));
+
+        let claude = resolve_mcp_target(
+            &app.ctx(),
+            AgentKind::Claude,
+            Scope::Project,
+            PROJECT,
+            PROJECT,
+        )
+        .unwrap();
+        assert_eq!(claude.scope, Scope::Project);
+    }
+
+    #[test]
+    fn update_refuses_codex_at_project_scope_and_touches_no_project_gitignore() {
+        let app = TestApp::new(seeded_fs());
+        seed_state(&app.fs);
+        let mut sink = Vec::new();
+        let mut sink2 = Vec::new();
+        // A codex instance exists, installed the only way it can be: globally.
+        install(
+            &app.ctx(),
+            "github",
+            None,
+            &["codex".to_string()],
+            &["token=abc".to_string()],
+            true,
+            &mut sink,
+            &mut sink2,
+        )
+        .unwrap();
+        // Its source def changes, so an update has real work to do.
+        app.fs
+            .write_file(
+                "/repos/r1/mcp.yml",
+                "version: 1\nservers:\n  - name: github\n    type: stdio\n    command: npx\n    args:\n      - --verbose\n    env:\n      TOKEN: \"{token}\"\n",
+            )
+            .unwrap();
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = update(
+            &app.ctx(),
+            None,
+            None,
+            &["codex".to_string()],
+            false,
+            &[],
+            false, // no --global: the cwd project is the requested scope
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+
+        // `install` already refuses this combination; `update` now does too,
+        // instead of writing the user-wide config on a project's behalf.
+        assert_eq!(code, 1);
+        assert!(String::from_utf8(err).unwrap().contains("--global"));
+        // The bug this guards against: the gate keyed on the REQUESTED scope
+        // while `resolve_mcp_target` forced codex global, so the reinstall
+        // handed `ensure_gitignore` the project path and created (or polluted)
+        // a .gitignore in a repository nothing had been written into.
+        assert!(!app.fs.exists(&format!("{PROJECT}/.gitignore")).unwrap());
     }
 }

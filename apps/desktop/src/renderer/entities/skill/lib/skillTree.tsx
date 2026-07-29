@@ -11,7 +11,8 @@
 import { Icon } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { fuzzyMatches } from '@/shared/lib';
-import { GLOBAL_SCOPE_ID, scopeIdOf } from '@/domain';
+import { GLOBAL_SCOPE_ID, applyScope, scopeIdOf } from '@/domain';
+import type { ApplyScope } from '@/domain';
 import type {
   AgentKind,
   AvailableSkill,
@@ -101,12 +102,31 @@ interface TreeScope {
   readonly id: string;
   readonly name: string;
   readonly global: boolean;
+  /** The apply arguments an operation on this scope's rows carries. */
+  readonly target: ApplyScope;
 }
 
-function treeScopes(projects: readonly Project[], globalLabel: string): TreeScope[] {
+/**
+ * The scopes to build roots for: the user-wide one first when `globalLabel` is a
+ * string, then every project. `null` omits the user-wide root entirely, for a
+ * caller already scoped to a single project (the install modal) -- a root the
+ * caller cannot act on would offer checkboxes that produce no operation.
+ */
+function treeScopes(projects: readonly Project[], globalLabel: string | null): TreeScope[] {
+  // `applyScope` is the single source of truth for the id -> apply-arguments
+  // mapping. Every id below comes from `projects` or is the reserved global one,
+  // so it never returns null here.
+  const targetOf = (id: string): ApplyScope => applyScope(id, projects)!;
+  const projectScopes = projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    global: false,
+    target: targetOf(p.id),
+  }));
+  if (globalLabel === null) return projectScopes;
   return [
-    { id: GLOBAL_SCOPE_ID, name: globalLabel, global: true },
-    ...projects.map((p) => ({ id: p.id, name: p.name, global: false })),
+    { id: GLOBAL_SCOPE_ID, name: globalLabel, global: true, target: targetOf(GLOBAL_SCOPE_ID) },
+    ...projectScopes,
   ];
 }
 
@@ -149,12 +169,17 @@ export function buildRepoTree(available: readonly AvailableSkill[], repos: reado
   return nodes;
 }
 
-/** Projects -> repositories -> (groups ->) skills. Roots are not selectable. */
+/**
+ * Projects -> repositories -> (groups ->) skills. Roots are not selectable.
+ *
+ * `globalLabel` is the label of the user-wide root, shown first; pass `null` to
+ * omit that root (see {@link treeScopes}).
+ */
 export function buildProjectTree(
   available: readonly AvailableSkill[],
   repos: readonly Repository[],
   projects: readonly Project[],
-  globalLabel: string,
+  globalLabel: string | null,
 ): TreeNode[] {
   const byRepo = new Map<string, AvailableSkill[]>();
   for (const s of available) pushTo(byRepo, s.repoId, s);
@@ -214,10 +239,15 @@ export function buildProjectTree(
  */
 export type ProjectLeafStatus = 'available' | 'present' | 'update' | 'orphan';
 
-/** A single skill to re-install in a project (from its current repository). */
+/** A single skill to re-install in one scope (from its current repository). */
 export interface ProjectSkillUpdate {
-  readonly projectId: string;
-  readonly projectPath: string;
+  /**
+   * Where to re-install: the whole scope triple the apply contract takes,
+   * resolved when the row was built. Carried as one value rather than as a bare
+   * `projectId`/`projectPath` pair so the update cannot be applied at the wrong
+   * scope -- a user-wide row's project id is not a project id at all.
+   */
+  readonly target: ApplyScope;
   readonly agents: AgentKind[];
   readonly ref: SkillRef;
   readonly repoId: string;
@@ -290,6 +320,9 @@ function leafStatus(e: LeafEntry): ProjectLeafStatus {
  *
  * `shownRepos` are the tracked repos to include (post repo-filter); dangling
  * (untracked-remote) installs are always shown so they can be removed.
+ *
+ * `globalLabel` is the label of the user-wide root, shown first; `null` omits
+ * that root (see {@link treeScopes}).
  */
 export function buildProjectModel(
   available: readonly AvailableSkill[],
@@ -297,14 +330,11 @@ export function buildProjectModel(
   allRepos: readonly Repository[],
   projects: readonly Project[],
   installs: readonly InstallManifest[],
-  globalLabel: string,
+  globalLabel: string | null,
 ): ProjectModel {
   const shownRepoIds = new Set(shownRepos.map((r) => r.id));
   const trackedIds = new Set(allRepos.map((r) => r.id));
   const repoNameById = new Map(allRepos.map((r) => [r.id, r.name] as const));
-  // The global scope carries no project path (mirrors `applyScope`'s `''` for
-  // the update-reinstall payload below); a tracked project's own path.
-  const pathById = new Map(projects.map((p) => [p.id, p.path] as const));
 
   const statusByLeaf = new Map<string, ProjectLeafStatus>();
   const updatesByNode = new Map<string, ProjectSkillUpdate[]>();
@@ -393,8 +423,7 @@ export function buildProjectModel(
         if (status === 'orphan') recordOrphan(leafId, entry);
         if (status === 'update') {
           const upd: ProjectSkillUpdate = {
-            projectId: scope.id,
-            projectPath: pathById.get(scope.id) ?? '',
+            target: scope.target,
             agents: [...entry.agents],
             ref: { repoId, group: entry.group, name: entry.name },
             repoId,

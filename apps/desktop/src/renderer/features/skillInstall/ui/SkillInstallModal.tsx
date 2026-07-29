@@ -21,6 +21,7 @@ import {
   buildProjectTree,
   buildProjectPlan,
   installedLeafIds,
+  projectNodeId,
   projectSkillKey,
   parseRepoSkillKey,
   parseProjectSkillKey,
@@ -111,14 +112,15 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
     [plan, projectId],
   );
 
-  // The global scope has no `Project` entry to pass through: an empty projects
-  // list still yields its own root (buildProjectTree always includes it), just
-  // without a second, unrelated project root alongside it.
+  // Exactly one root, for the scope chosen in step 1. The global scope has no
+  // `Project` entry to pass through, so it is the global root over an empty
+  // projects list; a project is that project's root with the global root
+  // suppressed (`null` label) -- its checkboxes would carry another scope's ids,
+  // which `buildProjectPlan` drops, so they would show an "add" badge and then
+  // do nothing.
   const tree = useMemo(() => {
     if (isGlobalScope(projectId)) return buildProjectTree(availableSkills, repositories, [], t('scope.global'));
-    return project !== undefined
-      ? buildProjectTree(availableSkills, repositories, [project], t('scope.global'))
-      : [];
+    return project !== undefined ? buildProjectTree(availableSkills, repositories, [project], null) : [];
   }, [availableSkills, repositories, project, projectId, t]);
 
   const decorated = useMemo(() => {
@@ -137,10 +139,13 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
         return { ...node, detail };
       });
     const withBadges = decorate(tree);
-    // The root is the chosen project: show its own icon (or a generated
-    // placeholder) instead of the default project glyph.
+    // The chosen project's root shows its own icon (or a generated placeholder)
+    // instead of the default project glyph. Matched by id rather than applied to
+    // every root, so no other root can ever wear this project's icon.
+    if (project === undefined) return withBadges;
+    const rootId = projectNodeId(project.id);
     return withBadges.map((root) =>
-      project !== undefined
+      root.id === rootId
         ? {
             ...root,
             icon: <ProjectIcon iconUrl={projectInfo[project.id]?.iconDataUrl} name={project.name} size={18} />,

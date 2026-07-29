@@ -153,6 +153,90 @@ pub fn remove_region(file: &str, delimiter_id: &str) -> String {
     kept.join("\n")
 }
 
+/// One managed region lifted out of a file by [`lift_regions`], with the little
+/// context [`restore_regions`] needs to put it back.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LiftedRegion {
+    /// The region text verbatim, open marker line through close marker line,
+    /// without a trailing newline.
+    pub block: String,
+    /// Whether the region sat above every other line of the file (blank lines
+    /// aside). Line numbers cannot be preserved across a caller that rewrites
+    /// the rest of the file wholesale, so "before or after the content" is the
+    /// position that survives.
+    pub leading: bool,
+}
+
+/// The delimiter id of an opening marker line, or `None` when the line is not
+/// one of our opening markers.
+fn open_marker_id(line: &str) -> Option<String> {
+    if !line.contains(SENTINEL) {
+        return None;
+    }
+    block_delimiter_id(line)
+}
+
+/// Line index of the closing marker for `delimiter_id` at or after `from`.
+fn close_marker_line(lines: &[&str], from: usize, delimiter_id: &str) -> Option<usize> {
+    let needle = format!("[{delimiter_id}] <<<");
+    lines[from..]
+        .iter()
+        .position(|line| line.contains(SENTINEL) && line.contains(&needle))
+        .map(|offset| from + offset)
+}
+
+/// Lift every managed region out of `file`, returning the remaining text plus
+/// the lifted blocks in source order.
+///
+/// This exists for writers whose parser cannot survive a comment-delimited
+/// region in the file they own -- the one live case is opencode at global scope,
+/// where the hook target file and the native MCP config file are the same
+/// `~/.config/opencode/opencode.json`. Such a writer lifts our regions, parses
+/// the remainder, and calls [`restore_regions`] on its output.
+///
+/// Only a COMPLETE region (an opening marker with a matching closing marker) is
+/// lifted. A lone marker -- a truncated file, a half-hand-edited block -- stays
+/// in the remainder, as does every other byte of foreign content, so a caller
+/// that parses the remainder still rejects what it cannot understand instead of
+/// quietly dropping it.
+pub fn lift_regions(file: &str) -> (String, Vec<LiftedRegion>) {
+    let lines: Vec<&str> = file.split('\n').collect();
+    let mut kept: Vec<&str> = Vec::new();
+    let mut regions: Vec<LiftedRegion> = Vec::new();
+    let mut i = 0;
+    while i < lines.len() {
+        if let Some(id) = open_marker_id(lines[i]) {
+            if let Some(end) = close_marker_line(&lines, i + 1, &id) {
+                regions.push(LiftedRegion {
+                    block: lines[i..=end].join("\n"),
+                    leading: kept.iter().all(|line| line.trim().is_empty()),
+                });
+                i = end + 1;
+                continue;
+            }
+        }
+        kept.push(lines[i]);
+        i += 1;
+    }
+    (kept.join("\n"), regions)
+}
+
+/// Put regions lifted by [`lift_regions`] back into `file`, each block
+/// byte-for-byte and on the side of the content it came from. The result ends
+/// with a newline whenever any region is restored.
+pub fn restore_regions(file: &str, regions: &[LiftedRegion]) -> String {
+    let mut out = file.to_string();
+    // Leading blocks are prepended in reverse so that repeated prepends leave
+    // them in their original relative order.
+    for region in regions.iter().filter(|r| r.leading).rev() {
+        out = insert_region(&out, &region.block, InsertMode::Prepend);
+    }
+    for region in regions.iter().filter(|r| !r.leading) {
+        out = insert_region(&out, &region.block, InsertMode::Append);
+    }
+    out
+}
+
 /// Escape any foreign occurrence of the managed-region sentinel in arbitrary
 /// content so it cannot be parsed as a real delimiter. Reversible via
 /// [`decapsulate_foreign_delimiters`].
@@ -339,6 +423,74 @@ mod tests {
         let file = format!("before\n{block}\nafter\n");
         assert_eq!(extract_region(&file, "e1"), Some(block));
         assert_eq!(extract_region(&file, "absent"), None);
+    }
+
+    #[test]
+    fn lift_takes_our_region_and_leaves_the_rest() {
+        let block = wrap_region(&opts("#", "l1", "a:b", "gen"));
+        let file = format!("{{\n  \"theme\": \"dark\"\n}}\n{block}\n");
+        let (remainder, regions) = lift_regions(&file);
+        assert_eq!(remainder, "{\n  \"theme\": \"dark\"\n}\n");
+        assert_eq!(regions.len(), 1);
+        assert_eq!(regions[0].block, block);
+        assert!(!regions[0].leading);
+        assert_eq!(restore_regions(&remainder, &regions), file);
+    }
+
+    #[test]
+    fn lift_marks_a_region_above_all_content_as_leading() {
+        let block = wrap_region(&opts("#", "l2", "a:b", "gen"));
+        let file = format!("\n{block}\n{{}}\n");
+        let (remainder, regions) = lift_regions(&file);
+        assert_eq!(remainder, "\n{}\n");
+        assert!(regions[0].leading);
+        // The block goes back above the content, though the blank line the file
+        // opened with is not reproduced.
+        assert_eq!(restore_regions("{}", &regions), format!("{block}\n{{}}\n"));
+    }
+
+    #[test]
+    fn lift_keeps_several_regions_in_order_on_their_own_side() {
+        let leading = wrap_region(&opts("#", "first", "a:b", "1"));
+        let leading2 = wrap_region(&opts("#", "second", "c:d", "2"));
+        let trailing = wrap_region(&opts("#", "third", "e:f", "3"));
+        let file = format!("{leading}\n{leading2}\nbody\n{trailing}\n");
+        let (remainder, regions) = lift_regions(&file);
+        assert_eq!(remainder, "body\n");
+        assert_eq!(regions.len(), 3);
+        assert_eq!(
+            regions.iter().map(|r| r.leading).collect::<Vec<_>>(),
+            vec![true, true, false]
+        );
+        assert_eq!(restore_regions(&remainder, &regions), file);
+    }
+
+    #[test]
+    fn lift_leaves_a_region_missing_its_close_marker_in_place() {
+        // A truncated or hand-mangled block is not ours to move: a caller that
+        // parses the remainder must still see (and reject) the leftover text.
+        let block = wrap_region(&opts("#", "t1", "a:b", "gen"));
+        let truncated = block.split('\n').take(2).collect::<Vec<&str>>().join("\n");
+        let file = format!("{{}}\n{truncated}\n");
+        let (remainder, regions) = lift_regions(&file);
+        assert!(regions.is_empty());
+        assert_eq!(remainder, file);
+    }
+
+    #[test]
+    fn lift_returns_nothing_for_a_file_without_regions() {
+        for file in ["", "{}\n", "# an ordinary comment\n"] {
+            let (remainder, regions) = lift_regions(file);
+            assert_eq!(remainder, file);
+            assert!(regions.is_empty());
+        }
+    }
+
+    #[test]
+    fn restore_puts_a_region_into_an_empty_result() {
+        let block = wrap_region(&opts("#", "r1", "a:b", "gen"));
+        let (_, regions) = lift_regions(&format!("{block}\n"));
+        assert_eq!(restore_regions("", &regions), format!("{block}\n"));
     }
 
     #[test]

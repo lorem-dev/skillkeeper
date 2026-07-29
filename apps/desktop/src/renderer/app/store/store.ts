@@ -36,6 +36,7 @@ import type {
   UpdateMcpResult,
 } from '@/services/bridge';
 import { bridgeClient } from '@/services/bridge';
+import { applyScope } from '@/domain';
 import { installedLeafIds, installedAgentsByProject } from '@/entities/skill';
 import type { ProjectSkillUpdate } from '@/entities/skill';
 import { ensureCatalog, resolveLang } from '@/systems/i18n';
@@ -1375,20 +1376,18 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const { mcpInstalls, projects, notify, applyMcp, updateConfig, refreshMcpPresets, refreshMcpInstalls } = get();
       const matching = mcpInstalls.filter((i) => i.identity.local === presetId);
 
-      // Group by real project (resolving its path for `applyMcp`) and the
-      // 'global' (codex) bucket separately; an install whose projectId no
-      // longer resolves to a tracked project is left alone (nothing to
-      // resolve a path from -- reconcile will clean it up separately).
-      const byProject = new Map<string, McpInstall[]>();
-      const globalInstalls: McpInstall[] = [];
+      // Group by the scope each instance lives in. `McpInstall.projectId` is a
+      // tracked project's id or the reserved global id, and `applyScope` is the
+      // one place that turns either into apply arguments -- including the
+      // `scope` field, without which a global batch is applied at project scope
+      // (codex's removes are then dropped, and the other four agents fail on an
+      // empty project path). An id that resolves to neither is left alone:
+      // there is no path to resolve, and reconcile cleans it up separately.
+      const byScope = new Map<string, McpInstall[]>();
       for (const inst of matching) {
-        if (inst.projectId === 'global') {
-          globalInstalls.push(inst);
-          continue;
-        }
-        const list = byProject.get(inst.projectId);
+        const list = byScope.get(inst.projectId);
         if (list !== undefined) list.push(inst);
-        else byProject.set(inst.projectId, [inst]);
+        else byScope.set(inst.projectId, [inst]);
       }
 
       // One remove batch per (agent, instanceName) -- each installed instance
@@ -1396,25 +1395,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const removeBatches = (installs: readonly McpInstall[]): McpBatch[] =>
         installs.map((inst) => ({ agent: inst.agent, install: [], remove: [{ instanceName: inst.instanceName }] }));
 
-      for (const [projectId, installs] of byProject) {
-        const project = projects.find((p) => p.id === projectId);
-        if (project === undefined) continue;
-        const result = await applyMcp({ projectId, projectPath: project.path, batches: removeBatches(installs) });
-        if (!result.ok) {
-          notify(result.error, 'error');
-          return;
-        }
-      }
-
-      if (globalInstalls.length > 0) {
-        // Codex resolves globally regardless of projectId/projectPath (see
-        // `resolve_mcp_target` in apps/desktop/src-tauri/src/commands/mcp.rs),
-        // so an empty path is safe here.
-        const result = await applyMcp({
-          projectId: 'global',
-          projectPath: '',
-          batches: removeBatches(globalInstalls),
-        });
+      for (const [scopeId, installs] of byScope) {
+        const scope = applyScope(scopeId, projects);
+        if (scope === null) continue;
+        const result = await applyMcp({ ...scope, batches: removeBatches(installs) });
         if (!result.ok) {
           notify(result.error, 'error');
           return;
@@ -1470,9 +1454,11 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       }));
       void enqueue(async () => {
         setTaskStatus('running');
+        // `req.target` carries the scope the row was built for, so an update
+        // badge on a user-wide row re-installs user-wide instead of asking Rust
+        // to resolve a project that does not exist.
         const result = await get().applySkills({
-          projectId: req.projectId,
-          projectPath: req.projectPath,
+          ...req.target,
           agents: req.agents,
           install: [req.ref],
           remove: [req.ref],

@@ -763,9 +763,6 @@ msgstr "エージェント"
 msgid "mcp.field.parameters"
 msgstr "パラメーター"
 
-msgid "mcp.codexGlobalNote"
-msgstr "Codexはグローバルにインストールされます(このプロジェクトに限定されません)。"
-
 msgid "mcp.transportUnsupported"
 msgstr "{agent} はネイティブ設定で {transport} トランスポートを表現できません。"
 

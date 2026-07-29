@@ -889,9 +889,6 @@ msgstr "에이전트"
 msgid "mcp.field.parameters"
 msgstr "매개변수"
 
-msgid "mcp.codexGlobalNote"
-msgstr "Codex는 전역으로 설치됩니다(이 프로젝트에 한정되지 않음)."
-
 msgid "mcp.transportUnsupported"
 msgstr "{agent}는 기본 설정에서 {transport} 전송 방식을 표현할 수 없습니다."
 

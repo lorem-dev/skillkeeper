@@ -964,9 +964,6 @@ msgstr "Agents"
 msgid "mcp.field.parameters"
 msgstr "Parameters"
 
-msgid "mcp.codexGlobalNote"
-msgstr "Codex installs globally (not scoped to this project)."
-
 msgid "mcp.transportUnsupported"
 msgstr "{agent} cannot express the {transport} transport in its native config."
 

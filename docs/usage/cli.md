@@ -318,7 +318,9 @@ for any newly required placeholders.
 - `--project <dir>` - project directory (default: the current directory);
   ignored with `--all`. Mutually exclusive with `--global`.
 - `--global` - act on the user-wide installs instead of a project's. Mutually
-  exclusive with `--project` and `--all`.
+  exclusive with `--project` and `--all`. Required for `codex`, whose MCP config
+  is user-wide: `--agent codex` at project scope is refused, the same way
+  `mcp install` refuses it.
 
 ---
 

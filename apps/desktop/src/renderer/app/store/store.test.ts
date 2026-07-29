@@ -958,15 +958,23 @@ describe('useSkillkeeperStore', () => {
     it('uninstalls every instance of the manual preset across projects and global, then drops it from config', async () => {
       await useSkillkeeperStore.getState().deleteMcpPreset('m1');
 
+      // Exact objects (`toEqual`, not `objectContaining`): the point of this
+      // assertion is that BOTH calls carry an explicit `scope`. The global
+      // bucket used to be applied with no `scope` at all, which Rust reads as
+      // `project` -- dropping codex's removes silently and failing the other
+      // four agents on the empty project path. A dropped `scope` fails here
+      // again, because `toEqual` treats the missing key as a difference.
       expect(applyMcpArgs()).toEqual(
         expect.arrayContaining([
           {
+            scope: 'project',
             projectId: 'proj-1',
             projectPath: mockProject.path,
             batches: [{ agent: 'claude', install: [], remove: [{ instanceName: 'github_1' }] }],
           },
           {
-            projectId: 'global',
+            scope: 'global',
+            projectId: '',
             projectPath: '',
             batches: [{ agent: 'codex', install: [], remove: [{ instanceName: 'github_1' }] }],
           },

@@ -799,9 +799,6 @@ msgstr "เอเจนต์"
 msgid "mcp.field.parameters"
 msgstr "พารามิเตอร์"
 
-msgid "mcp.codexGlobalNote"
-msgstr "Codex ติดตั้งแบบทั่วระบบ (ไม่จำกัดเฉพาะโปรเจกต์นี้)"
-
 msgid "mcp.transportUnsupported"
 msgstr "{agent} ไม่สามารถแสดงทรานสปอร์ต {transport} ในคอนฟิกดั้งเดิมได้"
 

@@ -763,9 +763,6 @@ msgstr "代理"
 msgid "mcp.field.parameters"
 msgstr "参数"
 
-msgid "mcp.codexGlobalNote"
-msgstr "Codex 是全局安装的(不限定于此项目)。"
-
 msgid "mcp.transportUnsupported"
 msgstr "{agent} 无法在其原生配置中表达 {transport} 传输方式。"
 

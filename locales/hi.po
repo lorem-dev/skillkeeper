@@ -844,9 +844,6 @@ msgstr "एजेंट"
 msgid "mcp.field.parameters"
 msgstr "पैरामीटर"
 
-msgid "mcp.codexGlobalNote"
-msgstr "Codex वैश्विक रूप से इंस्टॉल होता है (इस प्रोजेक्ट तक सीमित नहीं)।"
-
 msgid "mcp.transportUnsupported"
 msgstr "{agent} अपने मूल कॉन्फ़िग में {transport} ट्रांसपोर्ट व्यक्त नहीं कर सकता।"
 

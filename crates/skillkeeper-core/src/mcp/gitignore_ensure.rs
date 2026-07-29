@@ -27,7 +27,14 @@ const GITIGNORE_LINES: [&str; 2] = [SKMCP_PARAMS_FILE, SKMCP_PARAMS_FILE_YAML];
 /// - Appends missing lines when present but incomplete, preserving existing
 ///   content; the comment is only (re-)added when not already present.
 /// - Performs no write when both lines are already present.
+/// - Does nothing at all for a blank `project_path`: `format!` would turn it
+///   into the filesystem root's `/.gitignore`. Callers gate this on the resolved
+///   scope, so a blank path here means a global write leaked through rather than
+///   a repository that wants the entry.
 pub fn ensure_gitignore(fs: &dyn FsPort, project_path: &str) -> PortResult<()> {
+    if project_path.trim().is_empty() {
+        return Ok(());
+    }
     let path = format!("{project_path}/.gitignore");
     let exists = fs.exists(&path)?;
     let existing = if exists {
@@ -150,6 +157,18 @@ mod tests {
             fs.read_file(GITIGNORE).unwrap(),
             format!("{COMMENT}\n{LINE_YML}\n{LINE_YAML}\n")
         );
+    }
+
+    #[test]
+    fn writes_nothing_for_a_blank_project_path() {
+        // The last line of defence against the filesystem-root `.gitignore`:
+        // `format!("{}/.gitignore", "")` is `/.gitignore`, and a blank path only
+        // ever reaches here when a global write leaked past its scope gate.
+        for blank in ["", "   "] {
+            let fs = MemFs::new();
+            ensure_gitignore(&fs, blank).unwrap();
+            assert!(!fs.exists("/.gitignore").unwrap());
+        }
     }
 
     #[test]
