@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.4.0-rc.1
+
 ### Added
 
 - A Global scope in the app, listed first wherever projects are: install skills
