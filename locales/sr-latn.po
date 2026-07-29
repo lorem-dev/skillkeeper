@@ -1260,7 +1260,7 @@ msgid "skills.agentChoice.title"
 msgstr "Izaberite agente"
 
 msgid "skills.agentChoice.intro"
-msgstr "Za ove opsege nije izabran ni jedan agent, pa ništa ne bi bilo instalirano: izaberite agente čije veštine i MCP servere ovaj opseg treba da sadrži."
+msgstr "Ispod nije izabran ni jedan agent, pa ništa ne bi bilo instalirano. Izaberite za koje agente instalirati veštine i MCP servere."
 
 msgid "skills.agentChoice.confirm"
 msgstr "Dalje"

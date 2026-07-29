@@ -1170,7 +1170,7 @@ msgid "skills.agentChoice.title"
 msgstr "選擇代理"
 
 msgid "skills.agentChoice.intro"
-msgstr "這些範圍未選取任何代理，因此不會安裝任何內容：請選擇此範圍應包含哪些代理的技能與 MCP 伺服器。"
+msgstr "下方未選取任何代理，因此不會安裝任何內容。請選擇要為哪些代理安裝技能和 MCP 伺服器。"
 
 msgid "skills.agentChoice.confirm"
 msgstr "下一步"

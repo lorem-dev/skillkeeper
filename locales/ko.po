@@ -1296,7 +1296,7 @@ msgid "skills.agentChoice.title"
 msgstr "에이전트 선택"
 
 msgid "skills.agentChoice.intro"
-msgstr "이 범위에는 선택된 에이전트가 없어 아무것도 설치되지 않습니다: 이 범위가 담을 스킬과 MCP 서버의 에이전트를 선택하세요."
+msgstr "아래에 선택된 에이전트가 없어 아무것도 설치되지 않습니다. 어떤 에이전트에 스킬과 MCP 서버를 설치할지 선택하세요."
 
 msgid "skills.agentChoice.confirm"
 msgstr "다음"

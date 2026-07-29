@@ -35,9 +35,13 @@
 - The status bar version no longer highlights as selectable text on a stray
   drag across the bar. The About dialog's version can be selected and copied
   instead, for pasting into a bug report.
-- Removing a project no longer leaves it named in a management page's project
-  filter, where it hid the rest of the tree behind an empty page. An empty tree
-  a filter caused now says so and offers the reset.
+- Removing a project or a repository no longer leaves it named in a management
+  page's filter, where it hid the rest of the tree behind an empty page. An empty
+  tree a filter caused now says so and offers the reset.
+- Missing accents are back in seven catalogs: French, Polish, German, Italian,
+  Serbian in Latin script, Russian and Ukrainian each had older entries whose
+  diacritics had been stripped, so the same word appeared spelled two ways in one
+  interface.
 
 ## Version 0.3.0
 

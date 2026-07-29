@@ -1260,7 +1260,7 @@ msgid "skills.agentChoice.title"
 msgstr "Choisir des agents"
 
 msgid "skills.agentChoice.intro"
-msgstr "Aucun agent n'est sélectionné pour ces portées, donc rien ne serait installé : choisissez les agents dont cette portée doit accueillir les compétences et les serveurs MCP."
+msgstr "Aucun agent n'est sélectionné ci-dessous, donc rien ne serait installé. Choisissez pour quels agents installer les compétences et les serveurs MCP."
 
 msgid "skills.agentChoice.confirm"
 msgstr "Suivant"

@@ -1170,7 +1170,7 @@ msgid "skills.agentChoice.title"
 msgstr "エージェントを選択"
 
 msgid "skills.agentChoice.intro"
-msgstr "これらのスコープではエージェントが選択されていないため、何もインストールされません: このスコープが持つスキルとMCPサーバーのエージェントを選択してください。"
+msgstr "以下ではエージェントが選択されていないため、何もインストールされません。どのエージェントにスキルとMCPサーバーをインストールするか選択してください。"
 
 msgid "skills.agentChoice.confirm"
 msgstr "次へ"

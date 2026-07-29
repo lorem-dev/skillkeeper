@@ -1215,7 +1215,7 @@ msgid "skills.agentChoice.title"
 msgstr "Agenten wählen"
 
 msgid "skills.agentChoice.intro"
-msgstr "Für diese Bereiche ist kein Agent ausgewählt, daher würde nichts installiert: Wählen Sie die Agenten aus, deren Skills und MCP-Server dieser Bereich enthalten soll."
+msgstr "Unten ist kein Agent ausgewählt, daher würde nichts installiert. Wählen Sie, für welche Agenten jeweils Skills und MCP-Server installiert werden."
 
 msgid "skills.agentChoice.confirm"
 msgstr "Weiter"
