@@ -251,7 +251,7 @@ msgid "tasks.status.error"
 msgstr "Ошибка"
 
 msgid "repositories.empty"
-msgstr "Репозитории еще не добавлены."
+msgstr "Репозитории ещё не добавлены."
 
 msgid "repositories.add"
 msgstr "Добавить репозиторий"
@@ -359,7 +359,7 @@ msgid "repositories.showAll"
 msgstr "Показать все репозитории"
 
 msgid "projects.empty"
-msgstr "Проекты еще не отслеживаются."
+msgstr "Проекты ещё не отслеживаются."
 
 msgid "projects.add"
 msgstr "Добавить проект"
@@ -509,7 +509,7 @@ msgid "projects.showAll"
 msgstr "Показать все проекты"
 
 msgid "skills.empty"
-msgstr "Навыки еще не установлены."
+msgstr "Навыки ещё не установлены."
 
 msgid "skills.add"
 msgstr "Установить навык"
@@ -528,12 +528,6 @@ msgstr "Без версии"
 
 msgid "skills.installedFor"
 msgstr "Установлен для"
-
-msgid "skills.scope.project"
-msgstr "Проект"
-
-msgid "skills.scope.global"
-msgstr "Глобально"
 
 msgid "skills.source.repo"
 msgstr "Из репозитория"
@@ -704,7 +698,7 @@ msgid "skills.updateBadge"
 msgstr "обновить"
 
 msgid "skills.unlinked"
-msgstr "открепленный"
+msgstr "откреплённый"
 
 msgid "skills.addRepo"
 msgstr "Добавить репозиторий"

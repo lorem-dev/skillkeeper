@@ -478,12 +478,6 @@ msgstr "Без верзије"
 msgid "skills.installedFor"
 msgstr "Инсталирано за"
 
-msgid "skills.scope.project"
-msgstr "Пројекат"
-
-msgid "skills.scope.global"
-msgstr "Глобално"
-
 msgid "skills.source.repo"
 msgstr "Из репозиторијума"
 

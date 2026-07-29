@@ -11,7 +11,7 @@ msgid "nav.repositories"
 msgstr "Repositories"
 
 msgid "nav.skills"
-msgstr "Fahigkeiten"
+msgstr "Fähigkeiten"
 
 msgid "nav.projects"
 msgstr "Projekte"
@@ -462,12 +462,6 @@ msgstr "Keine Version"
 
 msgid "skills.installedFor"
 msgstr "Installiert für"
-
-msgid "skills.scope.project"
-msgstr "Projekt"
-
-msgid "skills.scope.global"
-msgstr "Global"
 
 msgid "skills.source.repo"
 msgstr "Aus Repository"

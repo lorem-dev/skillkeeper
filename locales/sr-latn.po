@@ -119,7 +119,7 @@ msgid "common.clear"
 msgstr "Očisti"
 
 msgid "common.goToSkills"
-msgstr "Idi na vestine"
+msgstr "Idi na veštine"
 
 msgid "common.goToMcp"
 msgstr "Idi na MCP"
@@ -478,12 +478,6 @@ msgstr "Bez verzije"
 msgid "skills.installedFor"
 msgstr "Instalirano za"
 
-msgid "skills.scope.project"
-msgstr "Projekat"
-
-msgid "skills.scope.global"
-msgstr "Globalno"
-
 msgid "skills.source.repo"
 msgstr "Iz repozitorijuma"
 
@@ -689,7 +683,7 @@ msgid "skills.searchTotal.other"
 msgstr "Ukupno {count} veština"
 
 msgid "mcp.empty"
-msgstr "Jos nema MCP servera."
+msgstr "Još nema MCP servera."
 
 msgid "mcp.emptyFiltered"
 msgstr "Ništa ne odgovara trenutnim filterima."
@@ -770,7 +764,7 @@ msgid "mcp.protocol.sse"
 msgstr "sse"
 
 msgid "mcp.paramsHelp"
-msgstr "Parametri {name} su podrzani u URL-u, zaglavljima, komandi, argumentima, promenljivama okruzenja i pravilima."
+msgstr "Parametri {name} su podržani u URL-u, zaglavljima, komandi, argumentima, promenljivama okruženja i pravilima."
 
 msgid "mcp.field.name"
 msgstr "Naziv"
@@ -815,7 +809,7 @@ msgid "mcp.addArgument"
 msgstr "Dodaj argument"
 
 msgid "mcp.field.env"
-msgstr "Promenljive okruzenja"
+msgstr "Promenljive okruženja"
 
 msgid "mcp.varNamePlaceholder"
 msgstr "Naziv promenljive"
@@ -845,7 +839,7 @@ msgid "mcp.validation.urlRequired"
 msgstr "URL je obavezan za http/sse servere."
 
 msgid "mcp.validation.invalidParam"
-msgstr "Nevazeci parametar ({reason}) na poziciji {index}."
+msgstr "Nevažeći parametar ({reason}) na poziciji {index}."
 
 msgid "mcp.field.project"
 msgstr "Projekat"
@@ -860,13 +854,13 @@ msgid "mcp.field.parameters"
 msgstr "Parametri"
 
 msgid "mcp.transportUnsupported"
-msgstr "{agent} ne moze izraziti transport {transport} u svojoj izvornoj konfiguraciji."
+msgstr "{agent} ne može izraziti transport {transport} u svojoj izvornoj konfiguraciji."
 
 msgid "mcp.skippedAgents"
-msgstr "Preskoceno je {count} agenata: transport preseta nije podrzan."
+msgstr "Preskočeno je {count} agenata: transport preseta nije podržan."
 
 msgid "mcp.needsParamsNotice"
-msgstr "Ove MCP instalacije zahtevaju parametre pre nego sto mogu biti dodate:"
+msgstr "Ove MCP instalacije zahtevaju parametre pre nego što mogu biti dodate:"
 
 msgid "mcp.delete"
 msgstr "Obriši"
@@ -875,7 +869,7 @@ msgid "mcp.deleteConfirmTitle"
 msgstr "Obrisati {name}?"
 
 msgid "mcp.deleteConfirmBody"
-msgstr "Ova radnja se ne moze opozvati."
+msgstr "Ova radnja se ne može opozvati."
 
 msgid "mcp.detailsTitle"
 msgstr "Detalji MCP servera"

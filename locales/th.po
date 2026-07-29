@@ -445,12 +445,6 @@ msgstr "ไม่มีเวอร์ชัน"
 msgid "skills.installedFor"
 msgstr "ติดตั้งสำหรับ"
 
-msgid "skills.scope.project"
-msgstr "โปรเจกต์"
-
-msgid "skills.scope.global"
-msgstr "ทั่วระบบ"
-
 msgid "skills.source.repo"
 msgstr "จากที่เก็บโค้ด"
 

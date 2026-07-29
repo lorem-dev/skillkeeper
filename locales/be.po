@@ -511,12 +511,6 @@ msgstr "Без версіі"
 msgid "skills.installedFor"
 msgstr "Усталявана для"
 
-msgid "skills.scope.project"
-msgstr "Праект"
-
-msgid "skills.scope.global"
-msgstr "Глабальна"
-
 msgid "skills.source.repo"
 msgstr "З рэпазіторыя"
 

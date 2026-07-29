@@ -574,12 +574,6 @@ msgstr "No version"
 msgid "skills.installedFor"
 msgstr "Installed for"
 
-msgid "skills.scope.project"
-msgstr "Project"
-
-msgid "skills.scope.global"
-msgstr "Global"
-
 msgid "skills.source.repo"
 msgstr "From repository"
 

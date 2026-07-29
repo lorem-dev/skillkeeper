@@ -511,12 +511,6 @@ msgstr "Без версії"
 msgid "skills.installedFor"
 msgstr "Встановлено для"
 
-msgid "skills.scope.project"
-msgstr "Проєкт"
-
-msgid "skills.scope.global"
-msgstr "Глобально"
-
 msgid "skills.source.repo"
 msgstr "З репозиторію"
 
@@ -920,7 +914,7 @@ msgid "mcp.deleteConfirmTitle"
 msgstr "Видалити {name}?"
 
 msgid "mcp.deleteConfirmBody"
-msgstr "Цю дiю не можна скасувати."
+msgstr "Цю дію не можна скасувати."
 
 msgid "mcp.detailsTitle"
 msgstr "Відомості про сервер MCP"

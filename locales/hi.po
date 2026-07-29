@@ -478,12 +478,6 @@ msgstr "कोई संस्करण नहीं"
 msgid "skills.installedFor"
 msgstr "इनके लिए इंस्टॉल"
 
-msgid "skills.scope.project"
-msgstr "प्रोजेक्ट"
-
-msgid "skills.scope.global"
-msgstr "वैश्विक"
-
 msgid "skills.source.repo"
 msgstr "रिपॉज़िटरी से"
 

@@ -412,12 +412,6 @@ msgstr "无版本"
 msgid "skills.installedFor"
 msgstr "已安装到"
 
-msgid "skills.scope.project"
-msgstr "项目"
-
-msgid "skills.scope.global"
-msgstr "全局"
-
 msgid "skills.source.repo"
 msgstr "来自仓库"
 

@@ -412,12 +412,6 @@ msgstr "バージョンなし"
 msgid "skills.installedFor"
 msgstr "インストール先"
 
-msgid "skills.scope.project"
-msgstr "プロジェクト"
-
-msgid "skills.scope.global"
-msgstr "グローバル"
-
 msgid "skills.source.repo"
 msgstr "リポジトリから"
 

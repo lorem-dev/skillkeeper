@@ -8,10 +8,10 @@ msgid "app.title"
 msgstr "SkillKeeper"
 
 msgid "nav.repositories"
-msgstr "Depots"
+msgstr "Dépôts"
 
 msgid "nav.skills"
-msgstr "Competences"
+msgstr "Compétences"
 
 msgid "nav.projects"
 msgstr "Projets"
@@ -20,7 +20,7 @@ msgid "nav.mcp"
 msgstr "MCP"
 
 msgid "nav.settings"
-msgstr "Parametres"
+msgstr "Paramètres"
 
 msgid "menu.view"
 msgstr "Affichage"
@@ -110,7 +110,7 @@ msgid "common.refresh"
 msgstr "Actualiser"
 
 msgid "common.comingSoon"
-msgstr "Bientot disponible"
+msgstr "Bientôt disponible"
 
 msgid "common.close"
 msgstr "Fermer"
@@ -119,13 +119,13 @@ msgid "common.clear"
 msgstr "Effacer"
 
 msgid "common.goToSkills"
-msgstr "Aller aux competences"
+msgstr "Aller aux compétences"
 
 msgid "common.goToMcp"
 msgstr "Aller aux MCP"
 
 msgid "skills.resetFilters"
-msgstr "Reinitialiser les filtres"
+msgstr "Réinitialiser les filtres"
 
 msgid "skills.componentsTitle"
 msgstr "Composants"
@@ -146,7 +146,7 @@ msgid "common.filter"
 msgstr "Filtrer"
 
 msgid "common.clearFilters"
-msgstr "Reinitialiser les filtres"
+msgstr "Réinitialiser les filtres"
 
 msgid "notifications.error"
 msgstr "Erreur"
@@ -167,7 +167,7 @@ msgid "statusbar.terminal"
 msgstr "Terminal"
 
 msgid "statusbar.tasks"
-msgstr "Taches"
+msgstr "Tâches"
 
 msgid "logs.title"
 msgstr "Notifications"
@@ -176,7 +176,7 @@ msgid "terminal.title"
 msgstr "Terminal"
 
 msgid "logs.empty"
-msgstr "Rien a afficher."
+msgstr "Rien à afficher."
 
 msgid "logs.copy"
 msgstr "Copier"
@@ -200,19 +200,19 @@ msgid "logs.level.info"
 msgstr "Messages"
 
 msgid "tasks.title"
-msgstr "Taches"
+msgstr "Tâches"
 
 msgid "tasks.empty"
-msgstr "Aucune tache."
+msgstr "Aucune tâche."
 
 msgid "tasks.clear"
-msgstr "Effacer les terminees"
+msgstr "Effacer les terminées"
 
 msgid "tasks.kind.sync"
 msgstr "Synchroniser"
 
 msgid "tasks.kind.check"
-msgstr "Verifier les mises a jour"
+msgstr "Vérifier les mises à jour"
 
 msgid "tasks.kind.update-skill"
 msgstr "Mettre à jour la compétence"
@@ -227,16 +227,16 @@ msgid "tasks.status.running"
 msgstr "En cours"
 
 msgid "tasks.status.done"
-msgstr "Termine"
+msgstr "Terminé"
 
 msgid "tasks.status.error"
-msgstr "Echec"
+msgstr "Échec"
 
 msgid "repositories.empty"
-msgstr "Aucun depot ajoute pour le moment."
+msgstr "Aucun dépôt ajouté pour le moment."
 
 msgid "repositories.add"
-msgstr "Ajouter un depot"
+msgstr "Ajouter un dépôt"
 
 msgid "repositories.lfs"
 msgstr "LFS"
@@ -245,19 +245,19 @@ msgid "repositories.lastFetched"
 msgstr "Dernier fetch : {when}"
 
 msgid "repositories.neverFetched"
-msgstr "Jamais recupere"
+msgstr "Jamais récupéré"
 
 msgid "repositories.addRemote"
 msgstr "URL distante"
 
 msgid "repositories.invalidRemote"
-msgstr "Saisissez une URL distante valide (https://... ou git@hote:chemin)."
+msgstr "Saisissez une URL distante valide (https://... ou git@hôte:chemin)."
 
 msgid "repositories.addName"
 msgstr "Nom"
 
 msgid "repositories.edit"
-msgstr "Modifier le depot"
+msgstr "Modifier le dépôt"
 
 msgid "repositories.save"
 msgstr "Enregistrer"
@@ -275,7 +275,7 @@ msgid "repositories.deleteConfirm"
 msgstr "Confirmer la suppression"
 
 msgid "repositories.hasUpdate"
-msgstr "Mise a jour disponible"
+msgstr "Mise à jour disponible"
 
 msgid "repositories.viewError"
 msgstr "Cliquez pour voir l'erreur"
@@ -284,13 +284,13 @@ msgid "repositories.copyBranch"
 msgstr "Copier le nom de la branche"
 
 msgid "repositories.branchCopied"
-msgstr "Nom de la branche copie dans le presse-papiers"
+msgstr "Nom de la branche copié dans le presse-papiers"
 
 msgid "repositories.copyRemote"
 msgstr "Copier le lien"
 
 msgid "repositories.remoteCopied"
-msgstr "URL distante copiee dans le presse-papiers"
+msgstr "URL distante copiée dans le presse-papiers"
 
 msgid "repositories.branch"
 msgstr "Branche"
@@ -302,34 +302,34 @@ msgid "repositories.branchNone"
 msgstr "Aucune branche correspondante"
 
 msgid "repositories.skillCount.one"
-msgstr "{count} competence"
+msgstr "{count} compétence"
 
 msgid "repositories.skillCount.many"
-msgstr "{count} competences"
+msgstr "{count} compétences"
 
 msgid "repositories.skillCount.other"
-msgstr "{count} competences"
+msgstr "{count} compétences"
 
 msgid "repositories.searchFound.one"
-msgstr "{count} depot trouve"
+msgstr "{count} dépôt trouvé"
 
 msgid "repositories.searchFound.many"
-msgstr "{count} depots trouves"
+msgstr "{count} dépôts trouvés"
 
 msgid "repositories.searchFound.other"
-msgstr "{count} depots trouves"
+msgstr "{count} dépôts trouvés"
 
 msgid "repositories.searchTotal.one"
-msgstr "{count} depot au total"
+msgstr "{count} dépôt au total"
 
 msgid "repositories.searchTotal.many"
-msgstr "{count} depots au total"
+msgstr "{count} dépôts au total"
 
 msgid "repositories.searchTotal.other"
-msgstr "{count} depots au total"
+msgstr "{count} dépôts au total"
 
 msgid "repositories.showAll"
-msgstr "Afficher tous les depots"
+msgstr "Afficher tous les dépôts"
 
 msgid "projects.empty"
 msgstr "Aucun projet suivi pour le moment."
@@ -338,7 +338,7 @@ msgid "projects.add"
 msgstr "Ajouter un projet"
 
 msgid "projects.addedAt"
-msgstr "Ajoute {when}"
+msgstr "Ajouté {when}"
 
 msgid "projects.edit"
 msgstr "Modifier le projet"
@@ -368,25 +368,25 @@ msgid "projects.openFailed"
 msgstr "Impossible d'ouvrir le projet"
 
 msgid "projects.missing"
-msgstr "Le dossier a ete supprime ou deplace"
+msgstr "Le dossier a été supprimé ou déplacé"
 
 msgid "projects.copyPath"
 msgstr "Copier le chemin complet"
 
 msgid "projects.pathCopied"
-msgstr "Chemin copie dans le presse-papiers"
+msgstr "Chemin copié dans le presse-papiers"
 
 msgid "projects.skillCount.one"
-msgstr "{count} competence"
+msgstr "{count} compétence"
 
 msgid "projects.skillCount.many"
-msgstr "{count} competences"
+msgstr "{count} compétences"
 
 msgid "projects.skillCount.other"
-msgstr "{count} competences"
+msgstr "{count} compétences"
 
 msgid "projects.fromRepos"
-msgstr "{count} depuis les depots"
+msgstr "{count} depuis les dépôts"
 
 msgid "projects.agentCount.one"
 msgstr "{count} agent"
@@ -398,52 +398,52 @@ msgid "projects.agentCount.other"
 msgstr "{count} agents"
 
 msgid "projects.fromReposHint.one"
-msgstr "{count} competence installee depuis les depots"
+msgstr "{count} compétence installée depuis les dépôts"
 
 msgid "projects.fromReposHint.many"
-msgstr "{count} competences installees depuis les depots"
+msgstr "{count} compétences installées depuis les dépôts"
 
 msgid "projects.fromReposHint.other"
-msgstr "{count} competences installees depuis les depots"
+msgstr "{count} compétences installées depuis les dépôts"
 
 msgid "projects.skillCountHint.one"
-msgstr "{count} competence au total dans le projet"
+msgstr "{count} compétence au total dans le projet"
 
 msgid "projects.skillCountHint.many"
-msgstr "{count} competences au total dans le projet"
+msgstr "{count} compétences au total dans le projet"
 
 msgid "projects.skillCountHint.other"
-msgstr "{count} competences au total dans le projet"
+msgstr "{count} compétences au total dans le projet"
 
 msgid "projects.agentsHint.one"
-msgstr "Configurations presentes pour {count} agent"
+msgstr "Configurations présentes pour {count} agent"
 
 msgid "projects.agentsHint.many"
-msgstr "Configurations presentes pour {count} agents"
+msgstr "Configurations présentes pour {count} agents"
 
 msgid "projects.agentsHint.other"
-msgstr "Configurations presentes pour {count} agents"
+msgstr "Configurations présentes pour {count} agents"
 
 msgid "projects.mcpCount"
 msgstr "{count} MCP"
 
 msgid "projects.mcpHint.one"
-msgstr "{count} serveur MCP installe depuis les depots"
+msgstr "{count} serveur MCP installé depuis les dépôts"
 
 msgid "projects.mcpHint.many"
-msgstr "{count} serveurs MCP installes depuis les depots"
+msgstr "{count} serveurs MCP installés depuis les dépôts"
 
 msgid "projects.mcpHint.other"
-msgstr "{count} serveurs MCP installes depuis les depots"
+msgstr "{count} serveurs MCP installés depuis les dépôts"
 
 msgid "projects.searchFound.one"
-msgstr "{count} projet trouve"
+msgstr "{count} projet trouvé"
 
 msgid "projects.searchFound.many"
-msgstr "{count} projets trouves"
+msgstr "{count} projets trouvés"
 
 msgid "projects.searchFound.other"
-msgstr "{count} projets trouves"
+msgstr "{count} projets trouvés"
 
 msgid "projects.searchTotal.one"
 msgstr "{count} projet au total"
@@ -458,13 +458,13 @@ msgid "projects.showAll"
 msgstr "Afficher tous les projets"
 
 msgid "skills.empty"
-msgstr "Aucune competence installee pour le moment."
+msgstr "Aucune compétence installée pour le moment."
 
 msgid "skills.add"
-msgstr "Installer une competence"
+msgstr "Installer une compétence"
 
 msgid "skills.searchPlaceholder"
-msgstr "Rechercher des competences"
+msgstr "Rechercher des compétences"
 
 msgid "skills.filterAgent"
 msgstr "Agent"
@@ -476,22 +476,16 @@ msgid "skills.noVersion"
 msgstr "Aucune version"
 
 msgid "skills.installedFor"
-msgstr "Installe pour"
-
-msgid "skills.scope.project"
-msgstr "Projet"
-
-msgid "skills.scope.global"
-msgstr "Global"
+msgstr "Installé pour"
 
 msgid "skills.source.repo"
-msgstr "Depuis un depot"
+msgstr "Depuis un dépôt"
 
 msgid "skills.source.local"
 msgstr "Depuis un chemin local"
 
 msgid "skills.details.title"
-msgstr "Details de la competence"
+msgstr "Détails de la compétence"
 
 msgid "skills.details.files"
 msgstr "{n} fichiers"
@@ -500,34 +494,34 @@ msgid "skills.details.hooks"
 msgstr "{n} hooks"
 
 msgid "skills.details.installedAt"
-msgstr "Installe : {when}"
+msgstr "Installé : {when}"
 
 msgid "skills.details.destination"
 msgstr "Destination"
 
 msgid "skills.verify"
-msgstr "Verifier"
+msgstr "Vérifier"
 
 msgid "skills.update"
-msgstr "Mettre a jour"
+msgstr "Mettre à jour"
 
 msgid "skills.source"
 msgstr "Mode d'affichage"
 
 msgid "skills.source.repositories"
-msgstr "Depots"
+msgstr "Dépôts"
 
 msgid "skills.source.projects"
 msgstr "Projets"
 
 msgid "skills.filterRepositories"
-msgstr "Depots"
+msgstr "Dépôts"
 
 msgid "skills.filterRepositoriesPlaceholder"
-msgstr "Tous les depots"
+msgstr "Tous les dépôts"
 
 msgid "skills.filterRepositoriesEmpty"
-msgstr "Aucun depot correspondant"
+msgstr "Aucun dépôt correspondant"
 
 msgid "skills.filterProjects"
 msgstr "Projets"
@@ -548,10 +542,10 @@ msgid "skills.action.reset"
 msgstr "Réinitialiser"
 
 msgid "skills.showAll"
-msgstr "Afficher toutes les competences"
+msgstr "Afficher toutes les compétences"
 
 msgid "skills.emptyRepositories"
-msgstr "Aucune competence trouvee dans vos depots."
+msgstr "Aucune compétence trouvée dans vos dépôts."
 
 msgid "skills.emptyProjects"
 msgstr "Aucun projet suivi pour le moment."
@@ -560,28 +554,28 @@ msgid "skills.emptyFiltered"
 msgstr "Aucun résultat pour les filtres actuels."
 
 msgid "skills.status.add"
-msgstr "La competence sera ajoutee"
+msgstr "La compétence sera ajoutée"
 
 msgid "skills.status.remove"
-msgstr "La competence sera retiree"
+msgstr "La compétence sera retirée"
 
 msgid "skills.status.present"
-msgstr "Competence deja installee"
+msgstr "Compétence déjà installée"
 
 msgid "skills.installPending"
-msgstr "L'installation des competences arrive bientot ({count} selectionnees)"
+msgstr "L'installation des compétences arrive bientôt ({count} sélectionnées)"
 
 msgid "skills.savePending"
-msgstr "L'enregistrement des modifications arrive bientot (+{add} / -{remove})"
+msgstr "L'enregistrement des modifications arrive bientôt (+{add} / -{remove})"
 
 msgid "skills.install.title"
-msgstr "Installer des competences"
+msgstr "Installer des compétences"
 
 msgid "skills.install.chooseProject"
 msgstr "Projet"
 
 msgid "skills.install.agents"
-msgstr "Agents selectionnes"
+msgstr "Agents sélectionnés"
 
 msgid "skills.install.agentsPlaceholder"
 msgstr "Choisir des agents"
@@ -602,22 +596,22 @@ msgid "skills.install.summary"
 msgstr "+{add} / -{remove}"
 
 msgid "skills.save.title"
-msgstr "Verifier les modifications"
+msgstr "Vérifier les modifications"
 
 msgid "skills.save.confirm"
 msgstr "Confirmer ?"
 
 msgid "skills.save.empty"
-msgstr "Aucune modification a appliquer"
+msgstr "Aucune modification à appliquer"
 
 msgid "skills.col.project"
 msgstr "Projet"
 
 msgid "skills.col.repository"
-msgstr "Depot"
+msgstr "Dépôt"
 
 msgid "skills.col.skill"
-msgstr "Competence"
+msgstr "Compétence"
 
 msgid "skills.col.action"
 msgstr "Action"
@@ -635,10 +629,10 @@ msgid "skills.agentsLabel"
 msgstr "Agents"
 
 msgid "skills.agentsTooltip"
-msgstr "Agents utilises"
+msgstr "Agents utilisés"
 
 msgid "skills.agentsChanged"
-msgstr "Agents modifies"
+msgstr "Agents modifiés"
 
 msgid "skills.updateSkill"
 msgstr "mettre à jour la compétence"
@@ -671,22 +665,22 @@ msgid "skills.rulesHint"
 msgstr "La compétence a des règles"
 
 msgid "skills.searchFound.one"
-msgstr "{count} competence trouvee"
+msgstr "{count} compétence trouvée"
 
 msgid "skills.searchFound.many"
-msgstr "{count} competences trouvees"
+msgstr "{count} compétences trouvées"
 
 msgid "skills.searchFound.other"
-msgstr "{count} competences trouvees"
+msgstr "{count} compétences trouvées"
 
 msgid "skills.searchTotal.one"
-msgstr "{count} competence au total"
+msgstr "{count} compétence au total"
 
 msgid "skills.searchTotal.many"
-msgstr "{count} competences au total"
+msgstr "{count} compétences au total"
 
 msgid "skills.searchTotal.other"
-msgstr "{count} competences au total"
+msgstr "{count} compétences au total"
 
 msgid "mcp.empty"
 msgstr "Aucun serveur MCP pour le moment."
@@ -695,13 +689,13 @@ msgid "mcp.emptyFiltered"
 msgstr "Aucun résultat pour les filtres actuels."
 
 msgid "mcp.searchFound.one"
-msgstr "{count} serveur MCP trouve"
+msgstr "{count} serveur MCP trouvé"
 
 msgid "mcp.searchFound.many"
-msgstr "{count} serveurs MCP trouves"
+msgstr "{count} serveurs MCP trouvés"
 
 msgid "mcp.searchFound.other"
-msgstr "{count} serveurs MCP trouves"
+msgstr "{count} serveurs MCP trouvés"
 
 msgid "mcp.searchTotal.one"
 msgstr "{count} serveur MCP au total"
@@ -740,7 +734,7 @@ msgid "mcp.remove"
 msgstr "Retirer"
 
 msgid "mcp.update"
-msgstr "Mettre a jour"
+msgstr "Mettre à jour"
 
 msgid "mcp.cancel"
 msgstr "Annuler"
@@ -752,10 +746,10 @@ msgid "mcp.copy"
 msgstr "Copier"
 
 msgid "mcp.copiedToClipboard"
-msgstr "Copie dans le presse-papiers"
+msgstr "Copié dans le presse-papiers"
 
 msgid "mcp.goToRepository"
-msgstr "Aller au depot"
+msgstr "Aller au dépôt"
 
 msgid "mcp.rulesBadge"
 msgstr "règles"
@@ -770,7 +764,7 @@ msgid "mcp.protocol.sse"
 msgstr "sse"
 
 msgid "mcp.paramsHelp"
-msgstr "Les parametres {name} sont pris en charge dans l'URL, les en-tetes, la commande, les arguments, les variables d'environnement et les regles."
+msgstr "Les paramètres {name} sont pris en charge dans l'URL, les en-têtes, la commande, les arguments, les variables d'environnement et les règles."
 
 msgid "mcp.field.name"
 msgstr "Nom"
@@ -788,16 +782,16 @@ msgid "mcp.urlPlaceholder"
 msgstr "https://example.com/{token}"
 
 msgid "mcp.field.headers"
-msgstr "En-tetes"
+msgstr "En-têtes"
 
 msgid "mcp.headerNamePlaceholder"
-msgstr "Nom de l'en-tete"
+msgstr "Nom de l'en-tête"
 
 msgid "mcp.headerValuePlaceholder"
-msgstr "Valeur de l'en-tete"
+msgstr "Valeur de l'en-tête"
 
 msgid "mcp.addHeader"
-msgstr "Ajouter un en-tete"
+msgstr "Ajouter un en-tête"
 
 msgid "mcp.field.command"
 msgstr "Commande"
@@ -827,16 +821,16 @@ msgid "mcp.addVariable"
 msgstr "Ajouter une variable"
 
 msgid "mcp.field.rules"
-msgstr "Regles"
+msgstr "Règles"
 
 msgid "mcp.rulesPlaceholder"
-msgstr "Instructions injectees dans le fichier de regles/consignes de l'agent lors de l'installation de ce serveur."
+msgstr "Instructions injectées dans le fichier de règles/consignes de l'agent lors de l'installation de ce serveur."
 
 msgid "mcp.validation.nameRequired"
 msgstr "Le nom est requis."
 
 msgid "mcp.validation.selectType"
-msgstr "Selectionnez un type de transport."
+msgstr "Sélectionnez un type de transport."
 
 msgid "mcp.validation.commandRequired"
 msgstr "Une commande est requise pour les serveurs stdio."
@@ -845,7 +839,7 @@ msgid "mcp.validation.urlRequired"
 msgstr "Une URL est requise pour les serveurs http/sse."
 
 msgid "mcp.validation.invalidParam"
-msgstr "Parametre invalide ({reason}) a la position {index}."
+msgstr "Paramètre invalide ({reason}) à la position {index}."
 
 msgid "mcp.field.project"
 msgstr "Projet"
@@ -857,16 +851,16 @@ msgid "mcp.field.agents"
 msgstr "Agents"
 
 msgid "mcp.field.parameters"
-msgstr "Parametres"
+msgstr "Paramètres"
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} ne peut pas exprimer le transport {transport} dans sa configuration native."
 
 msgid "mcp.skippedAgents"
-msgstr "{count} agent(s) ignore(s) : le transport du preset n'est pas pris en charge."
+msgstr "{count} agent(s) ignoré(s) : le transport du preset n'est pas pris en charge."
 
 msgid "mcp.needsParamsNotice"
-msgstr "Ces installations MCP necessitent des parametres avant de pouvoir etre ajoutees :"
+msgstr "Ces installations MCP nécessitent des paramètres avant de pouvoir être ajoutées :"
 
 msgid "mcp.delete"
 msgstr "Supprimer"
@@ -875,10 +869,10 @@ msgid "mcp.deleteConfirmTitle"
 msgstr "Supprimer {name} ?"
 
 msgid "mcp.deleteConfirmBody"
-msgstr "Cette action est irreversible."
+msgstr "Cette action est irréversible."
 
 msgid "mcp.detailsTitle"
-msgstr "Details du serveur MCP"
+msgstr "Détails du serveur MCP"
 
 msgid "mcp.view.label"
 msgstr "Afficher comme"
@@ -896,22 +890,22 @@ msgid "mcp.managementTitle"
 msgstr "Gestion"
 
 msgid "settings.comingSoon"
-msgstr "L'ecran des parametres arrive bientot."
+msgstr "L'écran des paramètres arrive bientôt."
 
 msgid "settings.section.general"
-msgstr "General"
+msgstr "Général"
 
 msgid "settings.section.updates"
-msgstr "Mises a jour"
+msgstr "Mises à jour"
 
 msgid "settings.section.agents"
 msgstr "Agents"
 
 msgid "settings.section.executables"
-msgstr "Executables"
+msgstr "Exécutables"
 
 msgid "settings.section.security"
-msgstr "Securite"
+msgstr "Sécurité"
 
 msgid "settings.section.notifications"
 msgstr "Notifications"
@@ -926,16 +920,16 @@ msgid "settings.openConfig"
 msgstr "Ouvrir le fichier de configuration"
 
 msgid "settings.openConfigInEditor"
-msgstr "Ouvrir le fichier de configuration dans un editeur"
+msgstr "Ouvrir le fichier de configuration dans un éditeur"
 
 msgid "settings.editor.defaultApp"
-msgstr "Ouvrir dans l'application par defaut"
+msgstr "Ouvrir dans l'application par défaut"
 
 msgid "settings.openConfigFailed"
 msgstr "Impossible d'ouvrir le fichier de configuration"
 
 msgid "settings.theme"
-msgstr "Theme"
+msgstr "Thème"
 
 msgid "settings.animations"
 msgstr "Animations"
@@ -953,7 +947,7 @@ msgid "settings.animations.off"
 msgstr "Désactivé"
 
 msgid "settings.theme.system"
-msgstr "Systeme"
+msgstr "Système"
 
 msgid "settings.theme.light"
 msgstr "Clair"
@@ -968,7 +962,7 @@ msgid "settings.languageEmpty"
 msgstr "Aucune langue correspondante"
 
 msgid "settings.section.repositories"
-msgstr "Depots"
+msgstr "Dépôts"
 
 msgid "settings.section.projects"
 msgstr "Projets"
@@ -977,25 +971,25 @@ msgid "settings.git"
 msgstr "Git"
 
 msgid "settings.gitDescription"
-msgstr "Chemin vers l'executable git"
+msgstr "Chemin vers l'exécutable git"
 
 msgid "settings.updates.mode"
-msgstr "Verification des mises a jour"
+msgstr "Vérification des mises à jour"
 
 msgid "settings.updates.mode.manual"
 msgstr "Manuelle"
 
 msgid "settings.updates.mode.onStartup"
-msgstr "Au demarrage"
+msgstr "Au démarrage"
 
 msgid "settings.updates.mode.scheduled"
-msgstr "Planifiee"
+msgstr "Planifiée"
 
 msgid "settings.updates.interval"
-msgstr "Intervalle de mise a jour"
+msgstr "Intervalle de mise à jour"
 
 msgid "settings.projects.checkInterval"
-msgstr "Intervalle de verification des dossiers"
+msgstr "Intervalle de vérification des dossiers"
 
 msgid "settings.interval.minutesUnit"
 msgstr "min"
@@ -1004,16 +998,16 @@ msgid "settings.interval.hoursUnit"
 msgstr "h"
 
 msgid "settings.agents.enabled"
-msgstr "Agents actives"
+msgstr "Agents activés"
 
 msgid "settings.agents.placeholder"
 msgstr "Choisir des agents"
 
 msgid "settings.agents.selected"
-msgstr "{count} selectionnes"
+msgstr "{count} sélectionnés"
 
 msgid "settings.notifications.enabled"
-msgstr "Notifications systeme"
+msgstr "Notifications système"
 
 msgid "settings.section.onboarding"
 msgstr "Tutoriel"
@@ -1025,13 +1019,13 @@ msgid "settings.onboarding.restart.button"
 msgstr "Recommencer le tutoriel"
 
 msgid "config.invalidBanner"
-msgstr "La configuration contient des sections invalides. Les valeurs par defaut sont utilisees. Executez \"skillkeeper config validate\" pour plus de details."
+msgstr "La configuration contient des sections invalides. Les valeurs par défaut sont utilisées. Exécutez \"skillkeeper config validate\" pour plus de détails."
 
 msgid "hooks.requireConsent"
-msgstr "L'installation des hooks requiert un consentement explicite (--allow-hooks). Corps de la competence installe ; hooks ignores."
+msgstr "L'installation des hooks requiert un consentement explicite (--allow-hooks). Corps de la compétence installé ; hooks ignorés."
 
 msgid "skills.count"
-msgstr "{n} competence(s) installee(s)"
+msgstr "{n} compétence(s) installée(s)"
 
 msgid "onboarding.next"
 msgstr "Suivant"

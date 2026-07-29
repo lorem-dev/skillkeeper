@@ -502,12 +502,6 @@ msgstr "버전 없음"
 msgid "skills.installedFor"
 msgstr "설치 대상"
 
-msgid "skills.scope.project"
-msgstr "프로젝트"
-
-msgid "skills.scope.global"
-msgstr "전역"
-
 msgid "skills.source.repo"
 msgstr "저장소에서"
 
