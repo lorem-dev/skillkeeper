@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { McpPreset } from '@/app/store';
 import type { McpInstall } from '@/services/bridge';
+import { GLOBAL_SCOPE_ID } from '@/domain';
 import { buildProjectMcpPlan } from './mcpPlan';
 
 function preset(over: Partial<McpPreset> & { id: string; name: string }): McpPreset {
@@ -139,5 +140,46 @@ describe('buildProjectMcpPlan', () => {
 
     expect(plan.rows).toEqual([]);
     expect(plan.batches).toEqual([]);
+  });
+
+  // Regression: `SkillSaveModal`'s per-scope review previously only ever
+  // called this for tracked projects, so a global-scope MCP instance never
+  // appeared in the Save modal's rows or its apply loop. `McpInstall.projectId`
+  // already stores the literal `'global'` string for a user-wide instance (the
+  // plain-equality filter above needs no change for that half), so the two
+  // tests below exercise `buildProjectMcpPlan` directly at the global scope --
+  // the same "produces a real op" shape as the `applyPlan.ts` regressions.
+  it('removes an installed global-scope instance for an agent dropped from the chosen set', () => {
+    const installs = [install({ instanceName: 'github_1', agent: 'claude', projectId: GLOBAL_SCOPE_ID })];
+    const presets = [preset({ id: 'p1', name: 'github', remote: 'r' })];
+
+    const plan = buildProjectMcpPlan(installs, GLOBAL_SCOPE_ID, [], presets);
+
+    const removeRows = plan.rows.filter((r) => r.action === 'remove');
+    expect(removeRows).toHaveLength(1);
+    expect(removeRows[0]!.agents).toEqual(['claude']);
+    const claudeBatch = plan.batches.find((b) => b.agent === 'claude');
+    expect(claudeBatch?.remove).toEqual([{ instanceName: 'github_1' }]);
+  });
+
+  // Codex has no project-scoped MCP config, so it is excluded from every
+  // PROJECT plan's install candidates (see the other tests above/below) -- but
+  // at the global scope it is a legitimate, even primary, agent. Before this
+  // fix the install-candidate list was unconditionally the four
+  // project-scoped agents, so a newly-chosen codex at the global scope could
+  // never receive an already-installed instance's install op.
+  it('allows codex as an install candidate at the global scope (unlike a project scope)', () => {
+    const installs = [install({ instanceName: 'github_1', agent: 'claude', projectId: GLOBAL_SCOPE_ID })];
+    const presets = [preset({ id: 'p1', name: 'github', remote: 'r' })]; // stdio -- codex-compatible
+
+    const plan = buildProjectMcpPlan(installs, GLOBAL_SCOPE_ID, ['claude', 'codex'], presets);
+
+    const installRows = plan.rows.filter((r) => r.action === 'install');
+    expect(installRows).toHaveLength(1);
+    expect(installRows[0]!.agents).toEqual(['codex']);
+    const codexBatch = plan.batches.find((b) => b.agent === 'codex');
+    expect(codexBatch?.install).toEqual([
+      { identity: { remote: 'r', source: 'github' }, def: presets[0]!.def, values: {} },
+    ]);
   });
 });

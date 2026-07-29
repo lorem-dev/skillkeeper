@@ -7,6 +7,7 @@
  * the review table.
  */
 import type { AgentKind, InstallManifest, SkillRef } from '@/services/bridge';
+import { scopeIdOf } from '@/domain';
 import { parseProjectSkillKey, repoSkillKey } from './skillTree';
 
 export interface AgentOps {
@@ -37,8 +38,9 @@ function pushAgent(map: Map<string, AgentKind[]>, key: string, agent: AgentKind)
 }
 
 /**
- * Plan for one project. `checkedKeys` are project-mode keys (only this
- * project's are considered); `installs` is the full manifest list.
+ * Plan for one scope (a tracked project, or the reserved global scope id).
+ * `checkedKeys` are project-mode keys (only this scope's are considered);
+ * `installs` is the full manifest list.
  */
 export function buildProjectPlan(
   projectId: string,
@@ -66,7 +68,11 @@ export function buildProjectPlan(
   // be installed for other agents.
   const removeOnly = new Set<string>();
   for (const m of installs) {
-    if (m.target.scope !== 'project' || m.target.projectId !== projectId) continue;
+    // `scopeIdOf` is the single source of truth for which scope bucket an
+    // install belongs to (the reserved global id, or the project's own id) --
+    // matching on `target.scope` alone would silently drop every global-scope
+    // manifest from a `projectId === GLOBAL_SCOPE_ID` plan.
+    if (scopeIdOf(m.target) !== projectId) continue;
     if (m.sourceRepoId === undefined) continue;
     const ref: SkillRef = { repoId: m.sourceRepoId, group: m.skillId.group, name: m.skillId.name };
     const k = refKey(ref);

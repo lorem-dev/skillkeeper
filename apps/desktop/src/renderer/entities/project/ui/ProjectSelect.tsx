@@ -9,6 +9,7 @@
  */
 import { Combobox } from '@/shared/ui';
 import type { Project, ProjectInfo } from '@/services/bridge';
+import { GLOBAL_SCOPE_ID } from '@/domain';
 import { ProjectIcon } from './ProjectIcon';
 
 export interface ProjectSelectProps {
@@ -24,6 +25,10 @@ export interface ProjectSelectProps {
   readonly emptyText?: string;
   readonly disabled?: boolean;
   readonly className?: string;
+  /** Offer the user-wide scope as the first option (value `GLOBAL_SCOPE_ID`). */
+  readonly includeGlobal?: boolean;
+  /** Label for that option. Required when `includeGlobal` is set. */
+  readonly globalLabel?: string;
 }
 
 export function ProjectSelect({
@@ -36,12 +41,25 @@ export function ProjectSelect({
   emptyText,
   disabled,
   className,
+  includeGlobal,
+  globalLabel,
 }: ProjectSelectProps) {
-  const options = projects.map((p) => ({
+  const projectOptions = projects.map((p) => ({
     value: p.id,
     label: p.name,
     icon: <ProjectIcon iconUrl={projectInfo?.[p.id]?.iconDataUrl} name={p.name} size={18} />,
   }));
+  const options =
+    includeGlobal === true
+      ? [
+          {
+            value: GLOBAL_SCOPE_ID,
+            label: globalLabel ?? GLOBAL_SCOPE_ID,
+            icon: <ProjectIcon global name="" size={18} />,
+          },
+          ...projectOptions,
+        ]
+      : projectOptions;
 
   return (
     <Combobox

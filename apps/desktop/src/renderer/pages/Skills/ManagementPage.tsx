@@ -23,6 +23,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
+import { GLOBAL_SCOPE_ID } from '@/domain';
 import {
   Page,
   Toolbar,
@@ -51,6 +52,7 @@ import {
   rootIds,
   countLeaves,
   projectSkillKey,
+  projectNodeId,
 } from '@/entities/skill';
 import { SkillSaveModal } from '@/features/skillSave';
 import './SkillsPage.scss';
@@ -111,12 +113,15 @@ export function SkillsManagementPage() {
   const installedAgents = useMemo(() => installedAgentsByProject(installs), [installs]);
 
   // Leaf ids whose skill ships a guidance file -> grey "rules" badge, keyed to
-  // the project id scheme (one entry per project the skill could appear under).
+  // the project id scheme (one entry per project the skill could appear under,
+  // plus the global scope -- a guidance-bearing skill installed user-wide gets
+  // the badge too).
   const guidanceIds = useMemo(() => {
     const ids = new Set<string>();
     for (const s of availableSkills) {
       if (!s.hasGuidance) continue;
       for (const p of projects) ids.add(projectSkillKey(p.id, s.repoId, s.group, s.name));
+      ids.add(projectSkillKey(GLOBAL_SCOPE_ID, s.repoId, s.group, s.name));
     }
     return ids;
   }, [availableSkills, projects]);
@@ -134,8 +139,8 @@ export function SkillsManagementPage() {
   // Merge available skills with what is installed, so orphaned installs appear
   // (grey, remove-only) and update dots can be attached.
   const projectModel = useMemo(
-    () => buildProjectModel(availableSkills, shownRepos, repositories, shownProjects, installs),
-    [availableSkills, shownRepos, repositories, shownProjects, installs],
+    () => buildProjectModel(availableSkills, shownRepos, repositories, shownProjects, installs, t('scope.global')),
+    [availableSkills, shownRepos, repositories, shownProjects, installs, t],
   );
 
   const baseTree = projectModel.nodes;
@@ -293,8 +298,16 @@ export function SkillsManagementPage() {
       );
       // The project's own icon (resolved + safety-checked in main) when it has
       // one; otherwise a generated placeholder -- via the shared ProjectIcon.
+      // The global root shows the globe glyph instead of any project's icon.
       const projName = projects.find((p) => p.id === pid)?.name ?? pid;
-      const icon = <ProjectIcon iconUrl={projectInfo[pid]?.iconDataUrl} name={projName} size={18} />;
+      const icon =
+        root.id === projectNodeId(GLOBAL_SCOPE_ID) ? (
+          // `name` is unused once `global` is set (ProjectIcon returns the globe
+          // glyph before touching it) but the prop type still requires one.
+          <ProjectIcon global name="" size={18} />
+        ) : (
+          <ProjectIcon iconUrl={projectInfo[pid]?.iconDataUrl} name={projName} size={18} />
+        );
       return { ...root, icon, trailing, children };
     });
   }, [
@@ -329,9 +342,13 @@ export function SkillsManagementPage() {
     const checkedSet = new Set(projectChecked);
     return [...installedSet].filter((id) => !checkedSet.has(id)).length;
   }, [projectChecked, installedSet]);
-  // Agents changing (even with no skill change) is a saveable diff too.
+  // Agents changing (even with no skill change) is a saveable diff too -- the
+  // global scope's row is a live `AgentSelect` same as any project's, so its
+  // pending agent change must count here too, or Save/Reset never appears.
   const agentsChangedAny = useMemo(
-    () => projects.some((p) => !sameAgents(projectAgents[p.id] ?? [], installedAgents[p.id] ?? [])),
+    () =>
+      !sameAgents(projectAgents[GLOBAL_SCOPE_ID] ?? [], installedAgents[GLOBAL_SCOPE_ID] ?? []) ||
+      projects.some((p) => !sameAgents(projectAgents[p.id] ?? [], installedAgents[p.id] ?? [])),
     [projects, projectAgents, installedAgents],
   );
   const hasProjectChanges = pendingAdd > 0 || pendingRemove > 0 || agentsChangedAny;

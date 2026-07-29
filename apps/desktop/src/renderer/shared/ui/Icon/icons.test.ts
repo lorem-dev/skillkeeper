@@ -28,6 +28,7 @@ import viewTiles from './assets/view-tiles.svg?raw';
 import viewTree from './assets/view-tree.svg?raw';
 import filter from './assets/filter.svg?raw';
 import info from './assets/info.svg?raw';
+import global from './assets/global.svg?raw';
 
 const assets: Record<string, string> = {
   repositories,
@@ -57,6 +58,7 @@ const assets: Record<string, string> = {
   'view-tree': viewTree,
   filter,
   info,
+  global,
 };
 
 describe('Icon assets', () => {

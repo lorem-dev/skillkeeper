@@ -7,6 +7,7 @@
  */
 import type { CSSProperties } from 'react';
 import { cx } from '@/shared/lib';
+import { Icon } from '@/shared/ui';
 import { hueFromName } from '../lib/hueFromName';
 import './ProjectIcon.scss';
 
@@ -19,10 +20,24 @@ export interface ProjectIconProps {
   /** Square size in px. Default 18. */
   readonly size?: number;
   readonly className?: string;
+  /** Draw the user-wide scope instead of a project: a globe on an accent tile.
+   *  Takes precedence over `iconUrl` and `name`. */
+  readonly global?: boolean;
 }
 
-export function ProjectIcon({ iconUrl, name, size = 18, className }: ProjectIconProps) {
+export function ProjectIcon({ iconUrl, name, size = 18, className, global }: ProjectIconProps) {
   const box: CSSProperties = { width: size, height: size };
+  if (global === true) {
+    return (
+      <span
+        className={cx('sk-project-icon', 'sk-project-icon--global', className)}
+        style={box}
+        aria-hidden="true"
+      >
+        <Icon name="global" size={Math.round(size * 0.72)} />
+      </span>
+    );
+  }
   if (iconUrl !== undefined) {
     return (
       <img

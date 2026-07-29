@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { ProjectCard } from '@/entities/project';
+import { ProjectCard, GlobalScopeCard } from '@/entities/project';
 import { ProjectAddButton } from '@/features/projectAdd';
 import { ProjectEditModal } from '@/features/projectEdit';
 import { OpenProjectButton } from '@/features/projectOpen';
@@ -33,6 +33,7 @@ export function ProjectsPage() {
   const goToSkills = useSkillkeeperStore((s) => s.goToSkills);
   const goToMcpProject = useSkillkeeperStore((s) => s.goToMcpProject);
   const mcpInstalls = useSkillkeeperStore((s) => s.mcpInstalls);
+  const installs = useSkillkeeperStore((s) => s.skills);
   const notify = useSkillkeeperStore((s) => s.notify);
   const t = useTranslator();
   const addProjectAnchor = useOnboardingAnchor('add-project');
@@ -81,6 +82,20 @@ export function ProjectsPage() {
     return map;
   }, [mcpInstalls]);
 
+  // Global-scope skill/agent counts, derived from the manifests already in the
+  // store -- there is no folder to describe, so this does not go through
+  // describeProject or a bridge call.
+  const globalCounts = useMemo(() => {
+    const globals = installs.filter((m) => m.target.scope === 'global');
+    const skills = new Set(
+      globals.map((m) =>
+        m.skillId.group !== undefined ? `${m.skillId.group}/${m.skillId.name}` : m.skillId.name,
+      ),
+    );
+    const agents = new Set(globals.map((m) => m.target.agent));
+    return { skills: skills.size, agents: agents.size };
+  }, [installs]);
+
   const trailing = (
     <>
       {projects.length >= 2 && (
@@ -124,11 +139,26 @@ export function ProjectsPage() {
         </span>
       }
     >
-      {projects.length === 0 ? (
-        <p className="sk-empty">{t('projects.empty')}</p>
-      ) : (
-        <>
-        <div className="sk-project-list">
+      <div className="sk-project-list">
+        <GlobalScopeCard
+          name={t('scope.global')}
+          hint={t('scope.globalHint')}
+          skillCountLabel={t.plural('projects.skillCount', globalCounts.skills)}
+          skillCountHint={t.plural('projects.skillCountHint', globalCounts.skills)}
+          agentsLabel={
+            globalCounts.agents > 0
+              ? t.plural('projects.agentCount', globalCounts.agents)
+              : undefined
+          }
+          agentsHint={
+            globalCounts.agents > 0
+              ? t.plural('projects.agentsHint', globalCounts.agents)
+              : undefined
+          }
+        />
+        {projects.length === 0 ? (
+          <p className="sk-empty">{t('projects.empty')}</p>
+        ) : (
           <AnimatePresence mode="popLayout" initial={animate}>
             {filtered.map((p, i) => {
               const info = projectInfo[p.id];
@@ -199,28 +229,27 @@ export function ProjectsPage() {
               );
             })}
           </AnimatePresence>
-        </div>
-        <AnimatePresence>
-          {searching && (
-            <motion.div
-              key="footer"
-              className="sk-list-footer"
-              variants={fade}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-            >
-              <SearchSummary
-                foundLabel={t.plural('projects.searchFound', filtered.length)}
-                totalLabel={t.plural('projects.searchTotal', projects.length)}
-                showAllLabel={t('projects.showAll')}
-                onShowAll={() => setQuery('')}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        </>
-      )}
+        )}
+      </div>
+      <AnimatePresence>
+        {searching && (
+          <motion.div
+            key="footer"
+            className="sk-list-footer"
+            variants={fade}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <SearchSummary
+              foundLabel={t.plural('projects.searchFound', filtered.length)}
+              totalLabel={t.plural('projects.searchTotal', projects.length)}
+              showAllLabel={t('projects.showAll')}
+              onShowAll={() => setQuery('')}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <ProjectEditModal project={editing} onClose={() => setEditing(null)} />
     </Page>
   );

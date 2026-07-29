@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { GLOBAL_SCOPE_ID } from '@/domain';
 import { ProjectSelect } from './ProjectSelect';
 
 const meta = {
@@ -87,6 +88,25 @@ export const Empty: Story = {
         placeholder="Choose a project"
         ariaLabel="Project"
         emptyText="No matching project"
+      />
+    );
+  },
+};
+
+// The user-wide scope offered as the first, distinct option.
+export const WithGlobal: Story = {
+  render: () => {
+    const [value, setValue] = useState(GLOBAL_SCOPE_ID);
+    return (
+      <ProjectSelect
+        projects={projects}
+        value={value}
+        onChange={setValue}
+        placeholder="Choose a project"
+        ariaLabel="Project"
+        emptyText="No matching project"
+        includeGlobal
+        globalLabel="Global"
       />
     );
   },

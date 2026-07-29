@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { McpPreset } from '@/app/store';
+import { GLOBAL_SCOPE_ID } from '@/domain';
 import type { McpInstall, Repository, Project } from '@/services/bridge';
 import type { TreeNode } from '@/shared/ui';
 import {
@@ -162,16 +163,18 @@ describe('buildMcpProjectTree', () => {
   it('places manual presets as top-level leaves before the project nodes', () => {
     const manual = preset({ id: 'm1', name: 'manual-tool', origin: 'manual' });
 
-    const { nodes } = buildMcpProjectTree([manual], [], projects, repos);
+    const { nodes } = buildMcpProjectTree([manual], [], projects, repos, 'Global');
 
+    // Manual leaf first, then the global root, then every tracked project.
     expect(nodes[0]!.id).toBe(mcpManualLeafId('m1'));
-    expect(nodes[1]!.id).toBe(mcpProjectRootId('p1'));
+    expect(nodes[1]!.id).toBe(mcpProjectRootId(GLOBAL_SCOPE_ID));
+    expect(nodes[2]!.id).toBe(mcpProjectRootId('p1'));
   });
 
   it('always renders a repo preset install row, even with no installed instance', () => {
     const p = preset({ id: 'repo:r1::tool', name: 'tool', repoId: 'r1' });
 
-    const { nodes, items } = buildMcpProjectTree([p], [], projects, repos);
+    const { nodes, items } = buildMcpProjectTree([p], [], projects, repos, 'Global');
 
     const repoNode = findNode(nodes, mcpProjectRepoNodeId('p1', 'r1'));
     expect(repoNode!.children).toHaveLength(1);
@@ -190,7 +193,7 @@ describe('buildMcpProjectTree', () => {
       }),
     ];
 
-    const { nodes, items } = buildMcpProjectTree([grouped], installs, projects, repos);
+    const { nodes, items } = buildMcpProjectTree([grouped], installs, projects, repos, 'Global');
 
     const groupNode = findNode(nodes, mcpProjectGroupNodeId('p1', 'r1', 'g'));
     expect(groupNode!.children).toHaveLength(2);
@@ -215,7 +218,7 @@ describe('buildMcpProjectTree', () => {
       }),
     ];
 
-    const { nodes, items } = buildMcpProjectTree([grouped], installs, projects, repos);
+    const { nodes, items } = buildMcpProjectTree([grouped], installs, projects, repos, 'Global');
 
     const repoNode = findNode(nodes, mcpProjectRepoNodeId('p1', 'r1'));
     const installedLeaf = repoNode!.children!.find((c) => c.label === 'tool 1')!;
@@ -229,7 +232,7 @@ describe('buildMcpProjectTree', () => {
       install({ instanceName: 'tool_1', agent: 'cursor', identity: { remote: repoA.url, source: 'tool' }, hash: grouped.hash }),
     ];
 
-    const { nodes, items } = buildMcpProjectTree([grouped], installs, projects, repos);
+    const { nodes, items } = buildMcpProjectTree([grouped], installs, projects, repos, 'Global');
 
     const repoNode = findNode(nodes, mcpProjectRepoNodeId('p1', 'r1'));
     // Install row + one grouped row (not two).
@@ -245,7 +248,7 @@ describe('buildMcpProjectTree', () => {
       install({ instanceName: 'tool_2', agent: 'claude', identity: { remote: repoA.url, source: 'tool' } }),
     ];
 
-    const { nodes } = buildMcpProjectTree([grouped], installs, projects, repos);
+    const { nodes } = buildMcpProjectTree([grouped], installs, projects, repos, 'Global');
 
     const repoNode = findNode(nodes, mcpProjectRepoNodeId('p1', 'r1'));
     expect(repoNode!.children).toHaveLength(3);
@@ -256,7 +259,7 @@ describe('buildMcpProjectTree', () => {
   it('renders an installed instance with no matching preset as a muted leaf under a synthetic unlinked node', () => {
     const orphan = install({ instanceName: 'ghost_1', agent: 'claude', identity: { source: 'ghost' } });
 
-    const { nodes, items } = buildMcpProjectTree([], [orphan], projects, repos);
+    const { nodes, items } = buildMcpProjectTree([], [orphan], projects, repos, 'Global');
 
     const projNode = findNode(nodes, mcpProjectRootId('p1'));
     const unlinkedNode = projNode!.children!.find((c) => c.muted === true);
@@ -277,7 +280,7 @@ describe('buildMcpProjectTree', () => {
       hash: manual.hash,
     });
 
-    const { nodes, items } = buildMcpProjectTree([manual], [matched], projects, repos);
+    const { nodes, items } = buildMcpProjectTree([manual], [matched], projects, repos, 'Global');
 
     const projNode = findNode(nodes, mcpProjectRootId('p1'));
     const unlinkedNode = projNode!.children!.find((c) => c.muted === true);
@@ -292,7 +295,7 @@ describe('buildMcpProjectTree', () => {
     const manual = preset({ id: 'm1', name: 'github', origin: 'manual' });
     const orphan = install({ instanceName: 'ghost_1', agent: 'claude', identity: { source: 'ghost' } });
 
-    const { nodes, items } = buildMcpProjectTree([manual], [orphan], projects, repos);
+    const { nodes, items } = buildMcpProjectTree([manual], [orphan], projects, repos, 'Global');
 
     const projNode = findNode(nodes, mcpProjectRootId('p1'));
     const unlinkedNode = projNode!.children!.find((c) => c.muted === true);
@@ -309,7 +312,7 @@ describe('buildMcpProjectTree', () => {
       install({ instanceName: 'ghost_2', agent: 'claude', identity: { source: 'ghost' } }),
     ];
 
-    const { nodes } = buildMcpProjectTree([], orphans, projects, repos);
+    const { nodes } = buildMcpProjectTree([], orphans, projects, repos, 'Global');
 
     const projNode = findNode(nodes, mcpProjectRootId('p1'));
     const unlinkedNodes = projNode!.children!.filter((c) => c.muted === true);
@@ -317,12 +320,14 @@ describe('buildMcpProjectTree', () => {
     expect(unlinkedNodes[0]!.children).toHaveLength(2);
   });
 
-  it('always emits one node per project, even with no presets or installs at all', () => {
-    const { nodes } = buildMcpProjectTree([], [], projects, repos);
+  it('always emits one node per project (plus the global root), even with no presets or installs at all', () => {
+    const { nodes } = buildMcpProjectTree([], [], projects, repos, 'Global');
 
-    expect(nodes).toHaveLength(1);
-    expect(nodes[0]!.id).toBe(mcpProjectRootId('p1'));
+    expect(nodes).toHaveLength(2);
+    expect(nodes[0]!.id).toBe(mcpProjectRootId(GLOBAL_SCOPE_ID));
     expect(nodes[0]!.children).toEqual([]);
+    expect(nodes[1]!.id).toBe(mcpProjectRootId('p1'));
+    expect(nodes[1]!.children).toEqual([]);
   });
 
   it('produces no duplicate ids across presets, installed instances, and unlinked leaves', () => {
@@ -334,7 +339,7 @@ describe('buildMcpProjectTree', () => {
     });
     const orphan = install({ instanceName: 'ghost_1', agent: 'claude', identity: { source: 'ghost' } });
 
-    const { nodes } = buildMcpProjectTree([p], [matched, orphan], projects, repos);
+    const { nodes } = buildMcpProjectTree([p], [matched, orphan], projects, repos, 'Global');
     const ids = allIds(nodes);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -349,7 +354,7 @@ describe('buildMcpProjectTree', () => {
     });
     const orphan = install({ instanceName: 'ghost_1', agent: 'claude', identity: { source: 'ghost' } });
 
-    const { nodes, items } = buildMcpProjectTree([manual, p], [matched, orphan], projects, repos);
+    const { nodes, items } = buildMcpProjectTree([manual, p], [matched, orphan], projects, repos, 'Global');
 
     for (const id of allIds(nodes)) {
       const node = findNode(nodes, id)!;
@@ -357,6 +362,25 @@ describe('buildMcpProjectTree', () => {
         expect(items.get(id)).toBeDefined();
       }
     }
+  });
+
+  it('places the global root before the project nodes', () => {
+    const { nodes } = buildMcpProjectTree([], [], projects, repos, 'Global');
+
+    expect(nodes[0]!.id).toBe(mcpProjectRootId(GLOBAL_SCOPE_ID));
+    expect(nodes[0]!.label).toBe('Global');
+    expect(nodes[1]!.id).toBe(mcpProjectRootId('p1'));
+  });
+
+  it('nests a global install under the global root, not under a project', () => {
+    const installed = install({ projectId: 'global', agent: 'codex', instanceName: 'github_1' });
+
+    const { nodes } = buildMcpProjectTree([], [installed], projects, repos, 'Global');
+
+    const globalRoot = nodes.find((n) => n.id === mcpProjectRootId(GLOBAL_SCOPE_ID))!;
+    const projectRoot = nodes.find((n) => n.id === mcpProjectRootId('p1'))!;
+    expect(JSON.stringify(globalRoot)).toContain('github');
+    expect(projectRoot.children ?? []).toHaveLength(0);
   });
 });
 
@@ -384,6 +408,7 @@ describe('branch nodes are not selectable', () => {
       [],
       [project({ id: 'pr1', name: 'Proj' })],
       [repo({ id: 'r1', name: 'Repo One' })],
+      'Global',
     );
     expect(findNode(nodes, mcpProjectRootId('pr1'))?.selectable).toBe(false);
     expect(findNode(nodes, mcpProjectRepoNodeId('pr1', 'r1'))?.selectable).toBe(false);

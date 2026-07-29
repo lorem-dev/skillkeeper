@@ -14,6 +14,7 @@ import type { AgentKind } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { Modal, Button, ProgressBar, TreeView, ChangeBadge } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
+import { applyScope, isGlobalScope } from '@/domain';
 import { AgentSelect } from '@/entities/agent';
 import { ProjectIcon, ProjectSelect } from '@/entities/project';
 import {
@@ -61,7 +62,6 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
   }, [open]);
 
   const project = projects.find((p) => p.id === projectId);
-  const projectPath = project?.path ?? '';
 
   // Default the agent selection to those auto-detected in the project folder
   // whenever a project is chosen; the user can still adjust it below.
@@ -111,10 +111,15 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
     [plan, projectId],
   );
 
-  const tree = useMemo(
-    () => (project !== undefined ? buildProjectTree(availableSkills, repositories, [project]) : []),
-    [availableSkills, repositories, project],
-  );
+  // The global scope has no `Project` entry to pass through: an empty projects
+  // list still yields its own root (buildProjectTree always includes it), just
+  // without a second, unrelated project root alongside it.
+  const tree = useMemo(() => {
+    if (isGlobalScope(projectId)) return buildProjectTree(availableSkills, repositories, [], t('scope.global'));
+    return project !== undefined
+      ? buildProjectTree(availableSkills, repositories, [project], t('scope.global'))
+      : [];
+  }, [availableSkills, repositories, project, projectId, t]);
 
   const decorated = useMemo(() => {
     const decorate = (nodes: readonly TreeNode[]): TreeNode[] =>
@@ -155,11 +160,12 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
       return;
     }
     setConfirming(false);
+    const scope = applyScope(projectId, projects);
+    if (scope === null) return;
     // One call per agent (each op carries that agent's install/remove lists).
     for (const op of plan.ops) {
       const result = await applySkills({
-        projectId,
-        projectPath,
+        ...scope,
         agents: [op.agent],
         install: op.install,
         remove: op.remove,
@@ -188,6 +194,8 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
               placeholder={t('skills.install.chooseProject')}
               ariaLabel={t('skills.install.chooseProject')}
               emptyText={t('skills.filterProjectsEmpty')}
+              includeGlobal
+              globalLabel={t('scope.global')}
             />
           </label>
           <label className="sk-skill-modal__field">
@@ -206,7 +214,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             </Button>
             <Button
               variant="primary"
-              disabled={project === undefined || agents.length === 0}
+              disabled={(project === undefined && !isGlobalScope(projectId)) || agents.length === 0}
               onClick={goToTree}
             >
               {t('skills.install.next')}

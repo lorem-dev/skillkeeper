@@ -5,6 +5,8 @@ export type {
   Project,
   InstallManifest,
   AgentKind,
+  Scope,
+  AgentTarget,
 } from './generated/core';
 export type {
   LoadConfigResult,

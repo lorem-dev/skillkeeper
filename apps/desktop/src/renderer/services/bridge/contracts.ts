@@ -10,6 +10,7 @@ import type {
   McpServerDef,
   McpTransport,
   McpIdentity,
+  Scope,
 } from './generated/core';
 
 // -- editors -----------------------------------------------------------------
@@ -104,13 +105,15 @@ export interface SkillRef {
 }
 
 export interface ApplyArgs {
-  /** Project UUID (recorded as target.projectId). */
+  /** Project UUID (recorded as target.projectId). Ignored at global scope. */
   readonly projectId: string;
-  /** Project folder path (used for PROJECT_DIR_ENV path resolution). */
+  /** Project folder path (used for PROJECT_DIR_ENV path resolution). Ignored at global scope. */
   readonly projectPath: string;
   readonly agents: readonly AgentKind[];
   readonly install: readonly SkillRef[];
   readonly remove: readonly SkillRef[];
+  /** Which scope to write into. Omit for a project (the default in Rust). */
+  readonly scope?: Scope;
 }
 
 export interface ApplyProgress {
@@ -159,9 +162,13 @@ export interface McpBatch {
 
 /** Arguments for applyMcp. */
 export interface ApplyMcpArgs {
+  /** Ignored at global scope. */
   readonly projectId: string;
+  /** Ignored at global scope. */
   readonly projectPath: string;
   readonly batches: readonly McpBatch[];
+  /** Which scope to write into. Omit for a project (the default in Rust). */
+  readonly scope?: Scope;
 }
 
 /** An install skipped because the agent cannot express the def's transport. */
@@ -213,6 +220,8 @@ export interface McpUpdateReq {
 /** Arguments for updateMcp. */
 export interface UpdateMcpArgs {
   readonly updates: readonly McpUpdateReq[];
+  /** Which scope to write into. Omit for a project (the default in Rust). */
+  readonly scope?: Scope;
 }
 
 /** Result of updateMcp. Never thrown across the bridge boundary. */
@@ -221,13 +230,17 @@ export type UpdateMcpResult =
 
 /** Arguments for mcpUpdatePreflight. */
 export interface McpUpdatePreflightArgs {
+  /** Ignored at global scope. */
   readonly projectId: string;
+  /** Ignored at global scope. */
   readonly projectPath: string;
   readonly agent: AgentKind;
   /** The existing instance name to check stored params against. */
   readonly instanceName: string;
   /** The NEW/current source def (placeholders intact) to check params for. */
   readonly def: McpServerDef;
+  /** Which scope to write into. Omit for a project (the default in Rust). */
+  readonly scope?: Scope;
 }
 
 /** Result of mcpUpdatePreflight. Never thrown across the bridge boundary. */

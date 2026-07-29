@@ -22,7 +22,7 @@ import type { AgentKind } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { Modal, Button, TextField, Checkbox, Tooltip, Alert } from '@/shared/ui';
 import { ProjectSelect } from '@/entities/project';
-import { ALL_AGENTS, AGENT_LABELS } from '@/domain';
+import { ALL_AGENTS, AGENT_LABELS, applyScope, isGlobalScope } from '@/domain';
 import { supportsTransport } from '../lib/supportsTransport';
 import { buildInstallBatches } from '../lib/buildBatches';
 import './McpInstallModal.scss';
@@ -75,11 +75,17 @@ export function McpInstallModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const project = projects.find((p) => p.id === projectId);
-  const projectPath = project?.path ?? '';
+  // Codex becomes unselectable the moment the scope narrows to a project (its
+  // MCP config is user-wide only): drop it from the current selection so a
+  // checkbox that is about to disable itself never stays checked underneath.
+  useEffect(() => {
+    if (!isGlobalScope(projectId)) setAgents((prev) => prev.filter((a) => a !== 'codex'));
+  }, [projectId]);
 
   /** Reason text for a disabled agent checkbox, or undefined when selectable. */
   function disabledReason(agent: AgentKind): string | undefined {
+    // Codex has no project-scoped MCP config: it is installable only user-wide.
+    if (agent === 'codex' && !isGlobalScope(projectId)) return t('mcp.install.codexGlobalOnly');
     if (supportsTransport(agent, preset.def.type)) return undefined;
     return t('mcp.transportUnsupported', {
       agent: AGENT_LABELS[agent],
@@ -97,9 +103,11 @@ export function McpInstallModal({
 
   async function confirm(): Promise<void> {
     if (!canConfirm) return;
+    const scope = applyScope(projectId, projects);
+    if (scope === null) return;
     setBusy(true);
     const batches = buildInstallBatches(preset, agents, values);
-    const result = await applyMcp({ projectId, projectPath, batches });
+    const result = await applyMcp({ ...scope, batches });
     setBusy(false);
     if (!result.ok) {
       notify(result.error, 'error');
@@ -130,6 +138,8 @@ export function McpInstallModal({
             ariaLabel={t('mcp.field.project')}
             emptyText={t('mcp.filterProjectsEmpty')}
             disabled={busy}
+            includeGlobal
+            globalLabel={t('scope.global')}
           />
         </label>
 

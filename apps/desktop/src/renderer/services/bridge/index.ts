@@ -6,6 +6,8 @@ export type {
   Project,
   InstallManifest,
   AgentKind,
+  Scope,
+  AgentTarget,
   LoadConfigResult,
   SectionValidity,
   SkillKeeperConfig,

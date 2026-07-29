@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { AgentKind, InstallManifest } from '@/services/bridge';
+import { GLOBAL_SCOPE_ID } from '@/domain';
 import { buildProjectPlan } from './applyPlan';
 import { projectSkillKey } from './skillTree';
 
@@ -15,6 +16,26 @@ function mk(over: {
   return {
     skillId: { name: over.name, ...(over.group ? { group: over.group } : {}) },
     target: { agent: over.agent, scope: 'project', projectId: over.projectId },
+    destinationRoot: '/d',
+    installedAt: '2026-01-01T00:00:00.000Z',
+    files: [],
+    hookEdits: [],
+    sourceRepoId: over.repoId,
+    ...(over.remote ? { sourceRemote: over.remote } : {}),
+  };
+}
+
+/** Build a global-scope install manifest (no `projectId`). */
+function mkGlobal(over: {
+  name: string;
+  agent: AgentKind;
+  repoId: string;
+  remote?: string;
+  group?: string;
+}): InstallManifest {
+  return {
+    skillId: { name: over.name, ...(over.group ? { group: over.group } : {}) },
+    target: { agent: over.agent, scope: 'global' },
     destinationRoot: '/d',
     installedAt: '2026-01-01T00:00:00.000Z',
     files: [],
@@ -73,5 +94,38 @@ describe('buildProjectPlan', () => {
     const installRows = plan.rows.filter((r) => r.action === 'install');
     expect(installRows.map((r) => r.ref.name)).toEqual(['fresh']);
     expect(installRows[0]!.agents).toEqual(['claude']);
+  });
+
+  // Regression: a global-scope manifest carries `scope: 'global'` and no
+  // `projectId`, so matching on `target.scope === 'project'` (as this function
+  // once did) silently dropped every already-installed global skill from the
+  // plan -- it never showed as already present, and unchecking it never
+  // produced a remove op.
+  it('recognizes already-installed global-scope skills, matching by scope id', () => {
+    const installs = [mkGlobal({ name: 'present', agent: 'claude', repoId: 'r-g' })];
+    const checked = [projectSkillKey(GLOBAL_SCOPE_ID, 'r-g', undefined, 'present')];
+
+    const plan = buildProjectPlan(GLOBAL_SCOPE_ID, checked, installs, ['claude']);
+
+    // Already installed and still checked -> no ops at all.
+    expect(plan.ops).toEqual([]);
+  });
+
+  it('removes a global-scope skill when it is unchecked', () => {
+    const installs = [mkGlobal({ name: 'present', agent: 'claude', repoId: 'r-g' })];
+
+    const plan = buildProjectPlan(GLOBAL_SCOPE_ID, [], installs, ['claude']);
+
+    const removeRows = plan.rows.filter((r) => r.action === 'remove');
+    expect(removeRows.map((r) => r.ref.name)).toEqual(['present']);
+  });
+
+  it('does not confuse a project-scope manifest for a global one with the same agent', () => {
+    const installs = [mk({ projectId: 'p1', name: 'proj-only', agent: 'claude', repoId: 'r1' })];
+
+    const plan = buildProjectPlan(GLOBAL_SCOPE_ID, [], installs, ['claude']);
+
+    // The project-scope install must not leak into the global plan's removes.
+    expect(plan.rows).toEqual([]);
   });
 });

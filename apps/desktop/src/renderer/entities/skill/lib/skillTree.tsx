@@ -11,6 +11,7 @@
 import { Icon } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { fuzzyMatches } from '@/shared/lib';
+import { GLOBAL_SCOPE_ID, scopeIdOf } from '@/domain';
 import type {
   AgentKind,
   AvailableSkill,
@@ -26,6 +27,7 @@ const repoIcon = <Icon name="repositories" size={18} />;
 const groupIcon = <Icon name="skill-group" size={18} />;
 const skillIcon = <Icon name="skills" size={18} />;
 const projectIcon = <Icon name="projects" size={18} />;
+const globalIcon = <Icon name="global" size={18} />;
 
 /** Stable checkbox key for a repo-mode skill leaf. */
 export function repoSkillKey(repoId: string, group: string | undefined, name: string): string {
@@ -94,6 +96,20 @@ function pushTo<K>(map: Map<K, AvailableSkill[]>, key: K, value: AvailableSkill)
 
 const byName = (a: AvailableSkill, b: AvailableSkill): number => a.name.localeCompare(b.name);
 
+/** The scopes a project-mode tree shows, user-wide first. */
+interface TreeScope {
+  readonly id: string;
+  readonly name: string;
+  readonly global: boolean;
+}
+
+function treeScopes(projects: readonly Project[], globalLabel: string): TreeScope[] {
+  return [
+    { id: GLOBAL_SCOPE_ID, name: globalLabel, global: true },
+    ...projects.map((p) => ({ id: p.id, name: p.name, global: false })),
+  ];
+}
+
 /** Repositories -> (groups -> skills) or (-> skills). Roots are not selectable. */
 export function buildRepoTree(available: readonly AvailableSkill[], repos: readonly Repository[]): TreeNode[] {
   const byRepo = new Map<string, AvailableSkill[]>();
@@ -138,12 +154,13 @@ export function buildProjectTree(
   available: readonly AvailableSkill[],
   repos: readonly Repository[],
   projects: readonly Project[],
+  globalLabel: string,
 ): TreeNode[] {
   const byRepo = new Map<string, AvailableSkill[]>();
   for (const s of available) pushTo(byRepo, s.repoId, s);
 
   const nodes: TreeNode[] = [];
-  for (const project of projects) {
+  for (const scope of treeScopes(projects, globalLabel)) {
     const repoNodes: TreeNode[] = [];
     for (const repo of repos) {
       const skills = byRepo.get(repo.id);
@@ -159,23 +176,29 @@ export function buildProjectTree(
       const children: TreeNode[] = [];
       for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
         children.push({
-          id: projectGroupNodeId(project.id, repo.id, group),
+          id: projectGroupNodeId(scope.id, repo.id, group),
           label: group,
           icon: groupIcon,
           children: [...gs].sort(byName).map((s) => ({
-            id: projectSkillKey(project.id, repo.id, s.group, s.name),
+            id: projectSkillKey(scope.id, repo.id, s.group, s.name),
             label: s.name,
             icon: skillIcon,
           })),
         });
       }
       for (const s of [...ungrouped].sort(byName)) {
-        children.push({ id: projectSkillKey(project.id, repo.id, undefined, s.name), label: s.name, icon: skillIcon });
+        children.push({ id: projectSkillKey(scope.id, repo.id, undefined, s.name), label: s.name, icon: skillIcon });
       }
 
-      repoNodes.push({ id: projectRepoNodeId(project.id, repo.id), label: repo.name, icon: repoIcon, children });
+      repoNodes.push({ id: projectRepoNodeId(scope.id, repo.id), label: repo.name, icon: repoIcon, children });
     }
-    nodes.push({ id: projectNodeId(project.id), label: project.name, icon: projectIcon, selectable: false, children: repoNodes });
+    nodes.push({
+      id: projectNodeId(scope.id),
+      label: scope.name,
+      icon: scope.global ? globalIcon : projectIcon,
+      selectable: false,
+      children: repoNodes,
+    });
   }
   return nodes;
 }
@@ -274,10 +297,14 @@ export function buildProjectModel(
   allRepos: readonly Repository[],
   projects: readonly Project[],
   installs: readonly InstallManifest[],
+  globalLabel: string,
 ): ProjectModel {
   const shownRepoIds = new Set(shownRepos.map((r) => r.id));
   const trackedIds = new Set(allRepos.map((r) => r.id));
   const repoNameById = new Map(allRepos.map((r) => [r.id, r.name] as const));
+  // The global scope carries no project path (mirrors `applyScope`'s `''` for
+  // the update-reinstall payload below); a tracked project's own path.
+  const pathById = new Map(projects.map((p) => [p.id, p.path] as const));
 
   const statusByLeaf = new Map<string, ProjectLeafStatus>();
   const updatesByNode = new Map<string, ProjectSkillUpdate[]>();
@@ -298,10 +325,10 @@ export function buildProjectModel(
   };
 
   const nodes: TreeNode[] = [];
-  for (const project of projects) {
+  for (const scope of treeScopes(projects, globalLabel)) {
     const entries = new Map<string, LeafEntry>();
     const ensure = (repoId: string, group: string | undefined, name: string): LeafEntry => {
-      const id = projectSkillKey(project.id, repoId, group, name);
+      const id = projectSkillKey(scope.id, repoId, group, name);
       let e = entries.get(id);
       if (e === undefined) {
         e = { repoId, group, name, available: false, installed: false, agents: [] };
@@ -318,7 +345,10 @@ export function buildProjectModel(
       e.remote ??= s.remote;
     }
     for (const m of installs) {
-      if (m.target.scope !== 'project' || m.target.projectId !== project.id) continue;
+      // Buckets both a tracked project and the user-wide scope by the same id
+      // scheme as `installedLeafIds`/`installedAgentsByProject` -- whichever
+      // scope this manifest's target resolves to.
+      if (scopeIdOf(m.target) !== scope.id) continue;
       if (m.sourceRepoId === undefined) continue;
       // Filtered-out tracked repos are hidden; dangling installs always show.
       if (trackedIds.has(m.sourceRepoId) && !shownRepoIds.has(m.sourceRepoId)) continue;
@@ -350,7 +380,7 @@ export function buildProjectModel(
       const items = byRepo.get(repoId)!;
       const remote = items.find((i) => i.entry.remote !== undefined)?.entry.remote;
       const repoName = repoNameById.get(repoId) ?? repoLabelFromRemote(remote, repoId);
-      const repoBranchId = projectRepoNodeId(project.id, repoId);
+      const repoBranchId = projectRepoNodeId(scope.id, repoId);
       // A repo node that is not tracked (removed) is itself "unlinked" -- offer to
       // re-add it (one action re-links all of its skills).
       if (!trackedIds.has(repoId) && remote !== undefined) {
@@ -363,14 +393,14 @@ export function buildProjectModel(
         if (status === 'orphan') recordOrphan(leafId, entry);
         if (status === 'update') {
           const upd: ProjectSkillUpdate = {
-            projectId: project.id,
-            projectPath: project.path,
+            projectId: scope.id,
+            projectPath: pathById.get(scope.id) ?? '',
             agents: [...entry.agents],
             ref: { repoId, group: entry.group, name: entry.name },
             repoId,
             repoName,
           };
-          for (const nid of [leafId, projectGroupNodeId(project.id, repoId, entry.group ?? ''), repoBranchId]) {
+          for (const nid of [leafId, projectGroupNodeId(scope.id, repoId, entry.group ?? ''), repoBranchId]) {
             addUpdate(nid, upd);
           }
         }
@@ -396,7 +426,7 @@ export function buildProjectModel(
       for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
         const leaves = [...gs].sort((a, b) => a.entry.name.localeCompare(b.entry.name)).map(makeLeaf);
         children.push({
-          id: projectGroupNodeId(project.id, repoId, group),
+          id: projectGroupNodeId(scope.id, repoId, group),
           label: group,
           icon: groupIcon,
           muted: leaves.every((l) => l.muted === true),
@@ -429,9 +459,9 @@ export function buildProjectModel(
 
     const projectChildren = [...repoNodes, ...unmanagedLeaves];
     nodes.push({
-      id: projectNodeId(project.id),
-      label: project.name,
-      icon: projectIcon,
+      id: projectNodeId(scope.id),
+      label: scope.name,
+      icon: scope.global ? globalIcon : projectIcon,
       selectable: false,
       muted: projectChildren.length > 0 && projectChildren.every((c) => c.muted === true),
       children: projectChildren,
@@ -441,26 +471,29 @@ export function buildProjectModel(
   return { nodes, statusByLeaf, updatesByNode, orphanLeaves };
 }
 
-/** Project-mode leaf ids for every currently-installed skill (pre-checked set). */
+/** Project-mode leaf ids for every currently-installed skill (pre-checked set).
+ *  A global install is keyed under the reserved global scope id. */
 export function installedLeafIds(installs: readonly InstallManifest[]): string[] {
   const out: string[] = [];
   for (const m of installs) {
-    if (m.target.projectId === undefined || m.sourceRepoId === undefined) continue;
-    out.push(projectSkillKey(m.target.projectId, m.sourceRepoId, m.skillId.group, m.skillId.name));
+    const scopeId = scopeIdOf(m.target);
+    if (scopeId === undefined || m.sourceRepoId === undefined) continue;
+    out.push(projectSkillKey(scopeId, m.sourceRepoId, m.skillId.group, m.skillId.name));
   }
   return out;
 }
 
 /**
- * Agents each project currently has skills installed for (project id -> agents).
- * The baseline for the project-mode agent picker and the "agents changed" mark.
+ * Agents each scope currently has skills installed for (scope id -> agents),
+ * the reserved global scope id standing in for the user-wide scope. The
+ * baseline for the project-mode agent picker and the "agents changed" mark.
  */
 export function installedAgentsByProject(installs: readonly InstallManifest[]): Record<string, AgentKind[]> {
   const map: Record<string, AgentKind[]> = {};
   for (const m of installs) {
-    const pid = m.target.projectId;
-    if (m.target.scope !== 'project' || pid === undefined) continue;
-    const list = (map[pid] ??= []);
+    const scopeId = scopeIdOf(m.target);
+    if (scopeId === undefined) continue;
+    const list = (map[scopeId] ??= []);
     if (!list.includes(m.target.agent)) list.push(m.target.agent);
   }
   return map;

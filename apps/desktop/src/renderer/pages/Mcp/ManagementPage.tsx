@@ -21,6 +21,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
+import { GLOBAL_SCOPE_ID } from '@/domain';
 import type { Project } from '@/services/bridge';
 import { Page, Toolbar, ExpandingSearch, FilterButton, CollapsibleFilters, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
@@ -93,8 +94,8 @@ export function ManagementPage() {
   );
 
   const treeResult = useMemo(
-    () => buildMcpProjectTree(mcpPresets, mcpInstalls, shownProjects, shownRepos),
-    [mcpPresets, mcpInstalls, shownProjects, shownRepos],
+    () => buildMcpProjectTree(mcpPresets, mcpInstalls, shownProjects, shownRepos, t('scope.global')),
+    [mcpPresets, mcpInstalls, shownProjects, shownRepos, t],
   );
   const { nodes: baseTree, items } = treeResult;
 
@@ -173,7 +174,15 @@ export function ManagementPage() {
         );
       // A project-root node: show the project's own icon (resolved +
       // safety-checked in main) when it has one, otherwise a generated
-      // placeholder -- via the shared ProjectIcon, mirroring McpPage.
+      // placeholder -- via the shared ProjectIcon, mirroring McpPage. The
+      // global root shows the globe glyph instead of any project's icon
+      // (mirrors pages/Skills/ManagementPage.tsx's equivalent branch).
+      if (node.id === mcpProjectRootId(GLOBAL_SCOPE_ID)) {
+        // `name` is unused once `global` is set (ProjectIcon returns the globe
+        // glyph before touching it) but the prop type still requires one.
+        const icon = <ProjectIcon global name="" size={18} />;
+        return { ...node, icon, children, detail };
+      }
       const project = projectByRootId.get(node.id);
       if (project !== undefined) {
         const icon = <ProjectIcon iconUrl={projectInfo[project.id]?.iconDataUrl} name={project.name} size={18} />;
