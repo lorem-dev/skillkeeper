@@ -379,6 +379,9 @@ msgstr "프로젝트를 열 수 없습니다"
 msgid "projects.missing"
 msgstr "폴더가 삭제되었거나 이동되었습니다"
 
+msgid "projects.noAccess"
+msgstr "이 폴더를 읽을 수 없습니다. 시스템 설정에서 접근을 허용하세요."
+
 msgid "projects.copyPath"
 msgstr "전체 경로 복사"
 

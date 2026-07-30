@@ -2,6 +2,16 @@
 
 ## Development
 
+### Fixed
+
+- A project folder the system will not let the app read is no longer reported as
+  deleted. macOS withholds Desktop, Documents, Downloads and removable or
+  network volumes until access is granted, and the card used to answer that with
+  "The folder was deleted or moved", which sends the user looking for the wrong
+  thing. The two cases are now told apart and the second says what to allow.
+- Projects on a network volume can be reached at all: that is a protected
+  category of its own on macOS, and the app never declared it.
+
 ## Version 0.4.0-rc.1
 
 ### Added

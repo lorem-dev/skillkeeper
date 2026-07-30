@@ -379,6 +379,9 @@ msgstr "Не ўдалося адкрыць праект"
 msgid "projects.missing"
 msgstr "Тэчка выдалена або перамешчана"
 
+msgid "projects.noAccess"
+msgstr "Гэтую папку не ўдалося прачытаць. Дайце да яе доступ у сістэмных наладах."
+
 msgid "projects.copyPath"
 msgstr "Скапіраваць поўны шлях"
 

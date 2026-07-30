@@ -385,6 +385,9 @@ msgstr "ไม่สามารถเปิดโปรเจกต์ได้
 msgid "projects.missing"
 msgstr "โฟลเดอร์ถูกลบหรือย้ายไปแล้ว"
 
+msgid "projects.noAccess"
+msgstr "ไม่สามารถอ่านโฟลเดอร์นี้ได้ อนุญาตการเข้าถึงในการตั้งค่าระบบ"
+
 msgid "projects.copyPath"
 msgstr "คัดลอกพาธเต็ม"
 

@@ -397,6 +397,9 @@ msgstr "Не удалось открыть проект"
 msgid "projects.missing"
 msgstr "Папка удалена или перемещена"
 
+msgid "projects.noAccess"
+msgstr "Не удалось прочитать эту папку. Разрешите доступ к ней в системных настройках."
+
 msgid "projects.copyPath"
 msgstr "Скопировать полный путь"
 

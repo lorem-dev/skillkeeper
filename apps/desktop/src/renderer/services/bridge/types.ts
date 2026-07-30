@@ -3,6 +3,7 @@
 export type {
   Repository,
   Project,
+  ProjectFolderState,
   InstallManifest,
   AgentKind,
   Scope,

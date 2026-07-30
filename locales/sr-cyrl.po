@@ -370,6 +370,9 @@ msgstr "Пројекат није могуће отворити"
 msgid "projects.missing"
 msgstr "Фасцикла је обрисана или премештена"
 
+msgid "projects.noAccess"
+msgstr "Ова фасцикла не може да се прочита. Дозволите приступ у системским подешавањима."
+
 msgid "projects.copyPath"
 msgstr "Копирај пуну путању"
 

@@ -370,6 +370,9 @@ msgstr "Impossible d'ouvrir le projet"
 msgid "projects.missing"
 msgstr "Le dossier a été supprimé ou déplacé"
 
+msgid "projects.noAccess"
+msgstr "Ce dossier ne peut pas être lu. Autorisez l'accès dans les réglages du système."
+
 msgid "projects.copyPath"
 msgstr "Copier le chemin complet"
 

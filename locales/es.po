@@ -379,6 +379,9 @@ msgstr "No se pudo abrir el proyecto"
 msgid "projects.missing"
 msgstr "La carpeta se eliminó o se movió"
 
+msgid "projects.noAccess"
+msgstr "No se puede leer esta carpeta. Permite el acceso en los ajustes del sistema."
+
 msgid "projects.copyPath"
 msgstr "Copiar ruta completa"
 

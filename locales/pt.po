@@ -379,6 +379,9 @@ msgstr "Não foi possível abrir o projeto"
 msgid "projects.missing"
 msgstr "A pasta foi eliminada ou movida"
 
+msgid "projects.noAccess"
+msgstr "Esta pasta não pode ser lida. Permita o acesso nas configurações do sistema."
+
 msgid "projects.copyPath"
 msgstr "Copiar caminho completo"
 

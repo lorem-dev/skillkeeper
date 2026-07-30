@@ -394,6 +394,9 @@ msgstr "प्रोजेक्ट खोला नहीं जा सका"
 msgid "projects.missing"
 msgstr "फ़ोल्डर हटा दिया गया या स्थानांतरित कर दिया गया"
 
+msgid "projects.noAccess"
+msgstr "यह फ़ोल्डर पढ़ा नहीं जा सका। सिस्टम सेटिंग्स में इसकी अनुमति दें।"
+
 msgid "projects.copyPath"
 msgstr "पूरा पथ कॉपी करें"
 

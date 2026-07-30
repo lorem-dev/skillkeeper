@@ -35,6 +35,15 @@ pub struct FileStat {
     pub size: u64,
 }
 
+/// What a path probe found. See [`FsPort::probe`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PathState {
+    Present,
+    Missing,
+    /// The path may or may not exist: the operating system refused to say.
+    Denied,
+}
+
 /// Minimal filesystem abstraction. All paths are absolute (or resolved by the
 /// caller before use). Reads and writes are UTF-8 text.
 pub trait FsPort {
@@ -48,6 +57,25 @@ pub trait FsPort {
     fn stat(&self, path: &str) -> PortResult<Option<FileStat>>;
     /// True when the path exists.
     fn exists(&self, path: &str) -> PortResult<bool>;
+    /// Probe a path, telling an unreadable one apart from an absent one.
+    ///
+    /// [`FsPort::exists`] collapses those two into `false`, which is what an
+    /// install probe wants: a path it cannot read is a path it cannot use. It is
+    /// the wrong answer when the point is to tell a user why their project
+    /// folder went away, because "you deleted it" and "this system will not let
+    /// me read it" call for different actions -- and on macOS the second is the
+    /// normal state until the user grants access to Desktop, Documents,
+    /// Downloads, or a removable or network volume.
+    ///
+    /// The default implementation cannot tell them apart and never reports
+    /// `Denied`; an implementation over a real filesystem overrides it.
+    fn probe(&self, path: &str) -> PortResult<PathState> {
+        Ok(if self.exists(path)? {
+            PathState::Present
+        } else {
+            PathState::Missing
+        })
+    }
     /// Create a directory and any missing parents.
     fn mkdir(&self, path: &str) -> PortResult<()>;
     /// Remove a file. No-op when it does not exist.

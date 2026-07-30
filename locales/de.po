@@ -379,6 +379,9 @@ msgstr "Projekt konnte nicht geöffnet werden"
 msgid "projects.missing"
 msgstr "Der Ordner wurde gelöscht oder verschoben"
 
+msgid "projects.noAccess"
+msgstr "Dieser Ordner kann nicht gelesen werden. Erlauben Sie den Zugriff in den Systemeinstellungen."
+
 msgid "projects.copyPath"
 msgstr "Vollständigen Pfad kopieren"
 

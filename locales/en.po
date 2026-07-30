@@ -442,6 +442,9 @@ msgstr "Could not open the project"
 msgid "projects.missing"
 msgstr "The folder was deleted or moved"
 
+msgid "projects.noAccess"
+msgstr "This folder cannot be read. Allow access to it in your system settings."
+
 msgid "projects.copyPath"
 msgstr "Copy full path"
 

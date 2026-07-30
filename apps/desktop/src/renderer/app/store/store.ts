@@ -17,6 +17,7 @@ import type {
   ProjectsConfig,
   Repository,
   Project,
+  ProjectFolderState,
   InstallManifest,
   AvailableSkill,
   SkillResolveWarning,
@@ -416,8 +417,14 @@ export interface SkillkeeperState {
   projects: Project[];
   /** Per-project skill counts for the card badges (not persisted). */
   projectInfo: Record<string, ProjectInfo>;
-  /** Projects whose folder no longer exists (deleted/moved); not persisted. */
-  projectMissing: Record<string, boolean>;
+  /**
+   * Projects whose folder the app cannot use, and why: `missing` when it was
+   * deleted or moved, `denied` when this system refuses to describe it (on macOS
+   * the normal state for a folder under Desktop, Documents, Downloads, or a
+   * removable or network volume until the user grants access). A project absent
+   * from the map is usable. Not persisted.
+   */
+  projectFolder: Record<string, ProjectFolderState>;
   /** Union of manual (config) + repo-discovered MCP server presets. */
   mcpPresets: McpPreset[];
   /** Installed MCP server instances, read from every agent's ledger. */
@@ -538,7 +545,7 @@ export interface SkillkeeperActions {
   removeProject(id: string): Promise<void>;
   /** Fetch skill counts for every project into `projectInfo`. */
   refreshProjectInfo(): Promise<void>;
-  /** Check every project's folder exists and update `projectMissing`. */
+  /** Check every project's folder and update `projectFolder`. */
   checkProjects(): Promise<void>;
   /** Run the folder check now and (re)schedule the next run after the interval. */
   sweepProjects(): Promise<void>;
@@ -735,7 +742,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   repoStatus: {},
   repoInfo: {},
   projectInfo: {},
-  projectMissing: {},
+  projectFolder: {},
   notifications: [],
   toasts: [],
   tasks: [],
@@ -1536,7 +1543,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       }
       set((s) => {
         const { [id]: _removed, ...restInfo } = s.projectInfo;
-        const { [id]: _removedMissing, ...restMissing } = s.projectMissing;
+        const { [id]: _removedFolder, ...restFolder } = s.projectFolder;
         // Drop the gone project from every persisted filter that names it (see
         // `removeRepository` above for the repository half of the same rule).
         // Both management pages narrow their tree by these, and both can be left
@@ -1547,7 +1554,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         return {
           projects: s.projects.filter((p) => p.id !== id),
           projectInfo: restInfo,
-          projectMissing: restMissing,
+          projectFolder: restFolder,
           skillsUi: { ...s.skillsUi, projectFilter: s.skillsUi.projectFilter.filter((p) => p !== id) },
           mcpUi: {
             ...s.mcpUi,
@@ -1585,8 +1592,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const projects = get().projects;
       await Promise.all(
         projects.map(async (p) => {
-          const exists = await bridgeClient.projectExists(p.id);
-          set((s) => ({ projectMissing: { ...s.projectMissing, [p.id]: !exists } }));
+          const state = await bridgeClient.projectFolderState(p.id);
+          set((s) => ({ projectFolder: { ...s.projectFolder, [p.id]: state } }));
         }),
       );
     })();
@@ -1638,10 +1645,14 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   ensureProjectAvailable(id) {
     return (async () => {
-      const exists = await bridgeClient.projectExists(id);
-      set((s) => ({ projectMissing: { ...s.projectMissing, [id]: !exists } }));
-      if (!exists) get().notify({ key: 'projects.missing' }, 'error');
-      return exists;
+      const state = await bridgeClient.projectFolderState(id);
+      set((s) => ({ projectFolder: { ...s.projectFolder, [id]: state } }));
+      // Name the actual obstacle: a folder this system withholds is not a folder
+      // the user deleted, and only one of the two is theirs to fix here.
+      if (state !== 'present') {
+        get().notify({ key: state === 'denied' ? 'projects.noAccess' : 'projects.missing' }, 'error');
+      }
+      return state === 'present';
     })();
   },
 

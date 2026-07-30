@@ -352,6 +352,9 @@ msgstr "无法打开项目"
 msgid "projects.missing"
 msgstr "文件夹已被删除或移动"
 
+msgid "projects.noAccess"
+msgstr "无法读取此文件夹。请在系统设置中允许访问。"
+
 msgid "projects.copyPath"
 msgstr "复制完整路径"
 

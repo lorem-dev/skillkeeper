@@ -379,6 +379,9 @@ msgstr "Impossibile aprire il progetto"
 msgid "projects.missing"
 msgstr "La cartella è stata eliminata o spostata"
 
+msgid "projects.noAccess"
+msgstr "Questa cartella non può essere letta. Consenti l'accesso nelle impostazioni di sistema."
+
 msgid "projects.copyPath"
 msgstr "Copia percorso completo"
 

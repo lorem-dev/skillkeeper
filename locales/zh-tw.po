@@ -352,6 +352,9 @@ msgstr "無法開啟專案"
 msgid "projects.missing"
 msgstr "資料夾已刪除或移動"
 
+msgid "projects.noAccess"
+msgstr "無法讀取此資料夾。請在系統設定中允許存取。"
+
 msgid "projects.copyPath"
 msgstr "複製完整路徑"
 

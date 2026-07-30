@@ -352,6 +352,9 @@ msgstr "プロジェクトを開けませんでした"
 msgid "projects.missing"
 msgstr "フォルダーが削除または移動されました"
 
+msgid "projects.noAccess"
+msgstr "このフォルダーを読み取れません。システム設定でアクセスを許可してください。"
+
 msgid "projects.copyPath"
 msgstr "フルパスをコピー"
 

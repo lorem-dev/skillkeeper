@@ -25,7 +25,7 @@ export function ProjectsPage() {
   const { cardStagger } = useMotion();
   const projects = useSkillkeeperStore((s) => s.projects);
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
-  const projectMissing = useSkillkeeperStore((s) => s.projectMissing);
+  const projectFolder = useSkillkeeperStore((s) => s.projectFolder);
   const refreshProjectInfo = useSkillkeeperStore((s) => s.refreshProjectInfo);
   const refreshProjects = useSkillkeeperStore((s) => s.refreshProjects);
   const ensureProjectAvailable = useSkillkeeperStore((s) => s.ensureProjectAvailable);
@@ -163,6 +163,10 @@ export function ProjectsPage() {
             {filtered.map((p, i) => {
               const info = projectInfo[p.id];
               const mcpCount = mcpFromReposByProject.get(p.id)?.size ?? 0;
+              // Absent until the first check answers, which is not the same as
+              // usable: the card shows no warning either way, so an unchecked
+              // project reads as fine rather than as broken.
+              const folderState = projectFolder[p.id];
               return (
                 <motion.div
                   key={p.id}
@@ -207,8 +211,10 @@ export function ProjectsPage() {
                         ? t.plural('projects.agentsHint', info.agentCount)
                         : undefined
                     }
-                    missing={projectMissing[p.id] === true}
-                    missingLabel={t('projects.missing')}
+                    missing={folderState !== undefined && folderState !== 'present'}
+                    missingLabel={
+                      folderState === 'denied' ? t('projects.noAccess') : t('projects.missing')
+                    }
                     pathCopyLabel={t('projects.copyPath')}
                     onPathClick={() => copyPath(p.path)}
                     editLabel={t('projects.edit')}

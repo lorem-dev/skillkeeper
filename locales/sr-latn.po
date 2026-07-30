@@ -370,6 +370,9 @@ msgstr "Projekat nije moguće otvoriti"
 msgid "projects.missing"
 msgstr "Fascikla je obrisana ili premeštena"
 
+msgid "projects.noAccess"
+msgstr "Ova fascikla ne može da se pročita. Dozvolite pristup u sistemskim podešavanjima."
+
 msgid "projects.copyPath"
 msgstr "Kopiraj punu putanju"
 

@@ -379,6 +379,9 @@ msgstr "Не вдалося відкрити проєкт"
 msgid "projects.missing"
 msgstr "Папку видалено або переміщено"
 
+msgid "projects.noAccess"
+msgstr "Цю теку не вдалося прочитати. Надайте до неї доступ у системних налаштуваннях."
+
 msgid "projects.copyPath"
 msgstr "Скопіювати повний шлях"
 

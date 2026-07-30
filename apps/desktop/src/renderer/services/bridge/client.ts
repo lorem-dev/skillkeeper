@@ -4,6 +4,7 @@ import type {
   LoadConfigResult,
   Repository,
   Project,
+  ProjectFolderState,
   InstallManifest,
   SkillKeeperConfig,
   EditorOption,
@@ -88,7 +89,7 @@ export interface BridgeClient {
   updateProject(id: string, path: string, name: string): Promise<ProjectResult>;
   removeProject(id: string): Promise<RemoveResult>;
   describeProject(id: string): Promise<ProjectInfo>;
-  projectExists(id: string): Promise<boolean>;
+  projectFolderState(id: string): Promise<ProjectFolderState>;
   openProject(path: string, editorId: string): Promise<OpenResult>;
   startTerminal(cols: number, rows: number): Promise<string>;
   /** Whether a shell session is live, and why not when it is not. Repository git
@@ -227,7 +228,7 @@ export const bridgeClient: BridgeClient = {
   updateProject: (id, path, name) => invoke<ProjectResult>('projects_update', { id, path, name }),
   removeProject: (id) => invoke<RemoveResult>('projects_remove', { id }),
   describeProject: (id) => invoke<ProjectInfo>('projects_describe', { id }),
-  projectExists: (id) => invoke<boolean>('projects_exists', { id }),
+  projectFolderState: (id) => invoke<ProjectFolderState>('projects_folder_state', { id }),
   openProject: (path, editorId) => invoke<OpenResult>('open_project', { path, editorId }),
   startTerminal: (cols, rows) => invoke<string>('terminal_start', { cols, rows }),
   terminalStatus: () => invoke<TerminalStatus>('terminal_status'),
