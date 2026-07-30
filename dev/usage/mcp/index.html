@@ -1426,13 +1426,14 @@ agent:</p>
 project the install was started from (see "Codex" below).</p>
 <h2 id="per-agent-native-destinations">Per-agent native destinations<a class="headerlink" href="#per-agent-native-destinations" title="Permanent link">&para;</a></h2>
 <p>Each agent has its own native MCP config file and its own supported
-transports:</p>
+transports. <code>mcp install --global</code> (and <code>--project</code>) picks which of the two
+destinations below is written; every agent supports both, not only codex:</p>
 <table>
 <thead>
 <tr>
 <th>agent</th>
-<th>destination</th>
-<th>scope</th>
+<th>project destination</th>
+<th>global destination</th>
 <th>transports</th>
 <th>container key</th>
 </tr>
@@ -1441,35 +1442,35 @@ transports:</p>
 <tr>
 <td>claude</td>
 <td><code>&lt;project&gt;/.mcp.json</code></td>
-<td>project</td>
+<td><code>~/.claude.json</code></td>
 <td>stdio, http, sse</td>
 <td><code>mcpServers</code></td>
 </tr>
 <tr>
 <td>cursor</td>
 <td><code>&lt;project&gt;/.cursor/mcp.json</code></td>
-<td>project</td>
+<td><code>~/.cursor/mcp.json</code></td>
 <td>stdio, http, sse</td>
 <td><code>mcpServers</code></td>
 </tr>
 <tr>
 <td>copilot</td>
 <td><code>&lt;project&gt;/.vscode/mcp.json</code></td>
-<td>project</td>
+<td><code>~/.config/github-copilot/mcp-config.json</code></td>
 <td>stdio, http, sse</td>
 <td><code>servers</code></td>
 </tr>
 <tr>
 <td>opencode</td>
 <td><code>&lt;project&gt;/opencode.json</code></td>
-<td>project</td>
+<td><code>~/.config/opencode/opencode.json</code></td>
 <td>stdio, http, sse</td>
 <td><code>mcp</code></td>
 </tr>
 <tr>
 <td>codex</td>
+<td>(not available)</td>
 <td><code>~/.codex/config.toml</code></td>
-<td>global</td>
 <td>stdio only</td>
 <td><code>mcp_servers</code></td>
 </tr>
@@ -1480,10 +1481,13 @@ other keys and other servers already in the file are preserved. Output key
 order is sorted, so re-writing the same content is a no-op diff.</p>
 <p>Codex differs from the other four agents in two ways:</p>
 <ul>
-<li><strong>Global scope</strong>: an MCP install for Codex always writes to
-  <code>~/.codex/config.toml</code>, <code>~/.codex/skills/.skmcp.yml</code>, and
-  <code>~/.codex/skills/.skmcp.params.yml</code> - never into the project - regardless
-  of which project the install was started from. This is intentional and
+<li><strong>Global only</strong>: every agent can be installed user-wide with <code>--global</code>, but
+  Codex has no project-scoped MCP config at all, so it is global <em>only</em> --
+  <code>mcp install --agent codex</code> and <code>mcp update --agent codex</code> without <code>--global</code>
+  are both refused. An install for
+  Codex always writes to <code>~/.codex/config.toml</code>, <code>~/.codex/skills/.skmcp.yml</code>,
+  and <code>~/.codex/skills/.skmcp.params.yml</code> - never into a project - regardless
+  of which project directory the command was run from. This is intentional and
   applies to the guidance target too (<code>~/AGENTS.md</code>): Codex has only a single
   global MCP config, so a Codex MCP server is shared across every project.
   Keeping its ledger, parameter values, instance-name allocation, and rules
@@ -1504,6 +1508,13 @@ server becomes a <code>local</code> entry whose <code>command</code> array is th
 followed by its args, with <code>env</code> under the key <code>environment</code>; an http/sse
 server becomes a <code>remote</code> entry (both transports use the same shape, since
 opencode does not distinguish them at this level).</p>
+<p>At global scope, <code>~/.config/opencode/opencode.json</code> is also opencode's hook
+target: a skill's <code>delimited-text</code> hook writes a <code>#</code>-delimited block into that
+same file. The MCP writer carries such a block through its rewrites
+byte-for-byte instead of failing on it or dropping it, so neither install order
+loses data. Note that a <code>#</code> comment is not valid JSON, so a file holding both a
+hook block and MCP servers is still not readable by opencode itself; avoid
+installing global opencode hooks and global opencode MCP servers together.</p>
 <h2 id="rules-guidance">Rules (guidance)<a class="headerlink" href="#rules-guidance" title="Permanent link">&para;</a></h2>
 <p>A preset's <code>rules</code> field, if present, is installed into the target agent's
 guidance file using the same mechanism as skill guidance: a marked block</p>

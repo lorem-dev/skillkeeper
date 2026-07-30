@@ -1069,8 +1069,7 @@ registered by its <code>AgentKind</code>. New agents are added by supplying a ne
 <p><strong>Hooks:</strong>
 - Strategy: <code>json-merge</code>
 - Target file: <code>&lt;project&gt;/.claude/settings.json</code> (project scope), or
-  <code>.claude/settings.local.json</code> (project-local), or <code>~/.claude/settings.json</code>
-  (global scope).
+  <code>~/.claude/settings.json</code> (global scope).
 - Each installed hook entry is merged under the <code>hooks</code> key in the appropriate
   <code>settings.json</code> and tagged with a <code>_skillkeeper</code> ownership marker carrying
   the skill and hook identity plus a <code>markerId</code>. This lets verify detect drift

@@ -1741,7 +1741,7 @@ behavior). Preset names accept the same unique-prefix shorthand as skill ids.</p
 <p>List the available MCP presets: those defined manually in <code>config.yaml</code> plus
 those discovered in tracked repositories.</p>
 <h3 id="mcp-install">mcp install<a class="headerlink" href="#mcp-install" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper mcp install &lt;name&gt; [--agent &lt;agent&gt;]... [--param &lt;name=value&gt;]... [--project &lt;dir&gt;]
+<div class="highlight"><pre><span></span><code>skillkeeper mcp install &lt;name&gt; [--agent &lt;agent&gt;]... [--param &lt;name=value&gt;]... [--project &lt;dir&gt;] [--global]
 </code></pre></div>
 <p>Install an MCP preset for one or more agents.</p>
 <p>An agent whose native config cannot express the preset's transport is skipped
@@ -1754,21 +1754,38 @@ succeeded for at least one agent reports success.</p>
   comma-separated.</li>
 <li><code>--param &lt;name=value&gt;</code> - repeatable; supplies values for the preset's
   <code>{param}</code> placeholders.</li>
-<li><code>--project &lt;dir&gt;</code> - project directory (default: the current directory);
-  ignored for <code>codex</code>, which is installed globally.</li>
+<li><code>--project &lt;dir&gt;</code> - project directory (default: the current directory).
+  Mutually exclusive with <code>--global</code>.</li>
+<li><code>--global</code> - install for the whole user, in every project, instead of one
+  project directory. Mutually exclusive with <code>--project</code>. Required for <code>codex</code>,
+  whose MCP config is user-wide.</li>
 </ul>
 <h3 id="mcp-remove">mcp remove<a class="headerlink" href="#mcp-remove" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper mcp remove &lt;instance-name&gt; --agent &lt;agent&gt; [--project &lt;dir&gt;]
+<div class="highlight"><pre><span></span><code>skillkeeper mcp remove &lt;instance-name&gt; --agent &lt;agent&gt; [--project &lt;dir&gt;] [--global]
 </code></pre></div>
 <p>Remove an installed MCP instance, identified by its assigned instance name (the
 native config key), for the given agent.</p>
+<ul>
+<li><code>--project &lt;dir&gt;</code> - project directory (default: the current directory).
+  Mutually exclusive with <code>--global</code>.</li>
+<li><code>--global</code> - act on the user-wide installs instead of a project's. Mutually
+  exclusive with <code>--project</code>.</li>
+</ul>
 <h3 id="mcp-update">mcp update<a class="headerlink" href="#mcp-update" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>skillkeeper mcp update [&lt;name&gt;] [--agent &lt;agent&gt;]... [--all] [--param &lt;name=value&gt;]... [--project &lt;dir&gt;]
+<div class="highlight"><pre><span></span><code>skillkeeper mcp update [&lt;name&gt;] [--agent &lt;agent&gt;]... [--all] [--param &lt;name=value&gt;]... [--project &lt;dir&gt;] [--global]
 </code></pre></div>
 <p>Reinstall MCP instances whose source definition changed. Limit to one preset by
 name (default: all project agents), or pass <code>--all</code> to check every tracked
-project and agent plus the global <code>codex</code> ledger. <code>--param</code> supplies values for
-any newly required placeholders.</p>
+project and agent plus every agent's global ledger. <code>--param</code> supplies values
+for any newly required placeholders.</p>
+<ul>
+<li><code>--project &lt;dir&gt;</code> - project directory (default: the current directory);
+  ignored with <code>--all</code>. Mutually exclusive with <code>--global</code>.</li>
+<li><code>--global</code> - act on the user-wide installs instead of a project's. Mutually
+  exclusive with <code>--project</code> and <code>--all</code>. Required for <code>codex</code>, whose MCP config
+  is user-wide: <code>--agent codex</code> at project scope is refused, the same way
+  <code>mcp install</code> refuses it.</li>
+</ul>
 <hr />
 <h2 id="skillkeeper-version">skillkeeper version<a class="headerlink" href="#skillkeeper-version" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>skillkeeper version
