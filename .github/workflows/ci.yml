@@ -12,6 +12,21 @@ on:
       - develop
   pull_request:
 
+# One run per branch (or per pull request), and only the newest of them. Without
+# this, nothing ever cancelled a superseded run: a push to a branch with an open
+# pull request starts TWO runs of three jobs for the same commit -- one for the
+# push, one for the pull request -- and a second push before those finish leaves
+# a dozen jobs queued against commits nobody is waiting on any more. That queue
+# is what left the end-to-end job without a runner for five minutes while its
+# two siblings were already running.
+#
+# Keyed on the pull request when there is one, so the pull-request run and the
+# push run of the same branch stay separate (their `github.ref` differs anyway)
+# and each cancels only its own predecessor.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     name: Lint, typecheck, test, build
