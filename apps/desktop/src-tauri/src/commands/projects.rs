@@ -6,7 +6,7 @@
 //!   `projects:update`      -> `projects_update`
 //!   `projects:remove`      -> `projects_remove`
 //!   `projects:describe`    -> `projects_describe`
-//!   `projects:exists`      -> `projects_exists`
+//!   `projects:folderState` -> `projects_folder_state`
 //!   `projects:detectAgents`-> `projects_detect_agents`
 //!
 //! `projects:list` already lives in `state_read.rs` and is left there.
@@ -26,7 +26,7 @@ use uuid::Uuid;
 
 use skillkeeper_agents::detect_project_agents;
 use skillkeeper_core::models::{AgentKind, AppState, InstallManifest, Project};
-use skillkeeper_core::ports::{Clock, FsPort};
+use skillkeeper_core::ports::{Clock, FsPort, PathState};
 use skillkeeper_core::state::state::{load_state, save_state};
 use skillkeeper_core::time::iso_from_millis;
 
@@ -237,19 +237,52 @@ pub fn remove(ctx: &AppContext, id: String) -> RemoveResult {
     }
 }
 
-/// `projects:exists` -- whether the project's folder still exists on disk
-/// (false when untracked, gone, or on any failure).
-pub fn exists(ctx: &AppContext, id: String) -> bool {
+/// What the interface says about a project whose folder it cannot use.
+///
+/// Three states, not a boolean, because the two failures need different words:
+/// a folder that was deleted or moved is the user's own doing, while one the
+/// system refuses to describe is a permission they can grant. On macOS the
+/// second is the ordinary state for a project under Desktop, Documents,
+/// Downloads, or a removable or network volume until access is allowed, and
+/// calling that "deleted" sends the user looking for the wrong thing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(
+    test,
+    ts(
+        export,
+        export_to = "../../../../apps/desktop/src/renderer/services/bridge/generated/core/"
+    )
+)]
+#[serde(rename_all = "camelCase")]
+pub enum ProjectFolderState {
+    Present,
+    Missing,
+    /// The folder may well be there; this system will not say.
+    Denied,
+}
+
+/// `projects:folderState` -- whether the project's folder is usable, and when it
+/// is not, which of the two reasons applies. An untracked id, or a state file
+/// that cannot be read, reports `Missing`: there is nothing to show a badge for.
+pub fn folder_state(ctx: &AppContext, id: String) -> ProjectFolderState {
     let state = {
         let _guard = lock(ctx);
         match load_state(&ctx.fs, &ctx.paths.state_json) {
             Ok(state) => state,
-            Err(_) => return false,
+            Err(_) => return ProjectFolderState::Missing,
         }
     };
-    match state.projects.iter().find(|p| p.id == id) {
-        Some(project) => ctx.fs.exists(&project.path).unwrap_or(false),
-        None => false,
+    let Some(project) = state.projects.iter().find(|p| p.id == id) else {
+        return ProjectFolderState::Missing;
+    };
+    match ctx.fs.probe(&project.path) {
+        Ok(PathState::Present) => ProjectFolderState::Present,
+        Ok(PathState::Denied) => ProjectFolderState::Denied,
+        Ok(PathState::Missing) => ProjectFolderState::Missing,
+        // A probe that failed for some other reason tells us nothing about the
+        // folder, so claim nothing: treat it as usable rather than accuse it.
+        Err(_) => ProjectFolderState::Present,
     }
 }
 
@@ -322,10 +355,13 @@ pub async fn projects_remove(
     blocking(&ctx, move |c| remove(c, id)).await
 }
 
-/// `projects:exists`.
+/// `projects:folderState`.
 #[tauri::command]
-pub async fn projects_exists(ctx: State<'_, Arc<AppContext>>, id: String) -> Result<bool, String> {
-    blocking(&ctx, move |c| exists(c, id)).await
+pub async fn projects_folder_state(
+    ctx: State<'_, Arc<AppContext>>,
+    id: String,
+) -> Result<ProjectFolderState, String> {
+    blocking(&ctx, move |c| folder_state(c, id)).await
 }
 
 /// `projects:describe`.
@@ -470,18 +506,56 @@ mod tests {
     }
 
     #[test]
-    fn exists_is_true_for_a_present_folder_and_false_otherwise() {
+    fn folder_state_separates_a_present_folder_from_a_gone_one() {
         let app = TempAppData::new();
         let dir = ProjectDir::new();
         let added = add(&app.ctx, dir.path(), "p".to_string()).project.unwrap();
-        assert!(exists(&app.ctx, added.id.clone()));
+        assert_eq!(
+            folder_state(&app.ctx, added.id.clone()),
+            ProjectFolderState::Present
+        );
 
-        // Unknown id -> false.
-        assert!(!exists(&app.ctx, "nope".to_string()));
+        // Unknown id -> nothing to badge.
+        assert_eq!(
+            folder_state(&app.ctx, "nope".to_string()),
+            ProjectFolderState::Missing
+        );
 
-        // Folder gone -> false.
         std::fs::remove_dir_all(&dir.path).unwrap();
-        assert!(!exists(&app.ctx, added.id));
+        assert_eq!(
+            folder_state(&app.ctx, added.id),
+            ProjectFolderState::Missing
+        );
+    }
+
+    // The case this command was widened for: a folder that is there but
+    // unreadable must not be reported as deleted. Stood up by clearing the
+    // parent's permissions, which is what macOS's privacy controls look like
+    // from here -- both arrive as PermissionDenied.
+    #[cfg(unix)]
+    #[test]
+    fn folder_state_reports_an_unreadable_folder_as_denied() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let app = TempAppData::new();
+        let outer = ProjectDir::new();
+        let inner = format!("{}/project", outer.path());
+        std::fs::create_dir_all(&inner).unwrap();
+        let added = add(&app.ctx, inner, "p".to_string()).project.unwrap();
+
+        let mode = |m: u32| {
+            std::fs::set_permissions(&outer.path, std::fs::Permissions::from_mode(m)).unwrap()
+        };
+
+        mode(0o000);
+        let state = folder_state(&app.ctx, added.id);
+        mode(0o755);
+
+        // Running as root makes the setup impossible, not the behaviour wrong.
+        if state == ProjectFolderState::Present {
+            return;
+        }
+        assert_eq!(state, ProjectFolderState::Denied);
     }
 
     // ---- detect_agents ----

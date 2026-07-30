@@ -14,12 +14,14 @@ import type { AgentKind } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { Modal, Button, ProgressBar, TreeView, ChangeBadge } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
+import { applyScope, isGlobalScope } from '@/domain';
 import { AgentSelect } from '@/entities/agent';
 import { ProjectIcon, ProjectSelect } from '@/entities/project';
 import {
   buildProjectTree,
   buildProjectPlan,
   installedLeafIds,
+  projectNodeId,
   projectSkillKey,
   parseRepoSkillKey,
   parseProjectSkillKey,
@@ -61,7 +63,6 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
   }, [open]);
 
   const project = projects.find((p) => p.id === projectId);
-  const projectPath = project?.path ?? '';
 
   // Default the agent selection to those auto-detected in the project folder
   // whenever a project is chosen; the user can still adjust it below.
@@ -111,10 +112,16 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
     [plan, projectId],
   );
 
-  const tree = useMemo(
-    () => (project !== undefined ? buildProjectTree(availableSkills, repositories, [project]) : []),
-    [availableSkills, repositories, project],
-  );
+  // Exactly one root, for the scope chosen in step 1. The global scope has no
+  // `Project` entry to pass through, so it is the global root over an empty
+  // projects list; a project is that project's root with the global root
+  // suppressed (`null` label) -- its checkboxes would carry another scope's ids,
+  // which `buildProjectPlan` drops, so they would show an "add" badge and then
+  // do nothing.
+  const tree = useMemo(() => {
+    if (isGlobalScope(projectId)) return buildProjectTree(availableSkills, repositories, [], t('scope.global'));
+    return project !== undefined ? buildProjectTree(availableSkills, repositories, [project], null) : [];
+  }, [availableSkills, repositories, project, projectId, t]);
 
   const decorated = useMemo(() => {
     const decorate = (nodes: readonly TreeNode[]): TreeNode[] =>
@@ -132,10 +139,13 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
         return { ...node, detail };
       });
     const withBadges = decorate(tree);
-    // The root is the chosen project: show its own icon (or a generated
-    // placeholder) instead of the default project glyph.
+    // The chosen project's root shows its own icon (or a generated placeholder)
+    // instead of the default project glyph. Matched by id rather than applied to
+    // every root, so no other root can ever wear this project's icon.
+    if (project === undefined) return withBadges;
+    const rootId = projectNodeId(project.id);
     return withBadges.map((root) =>
-      project !== undefined
+      root.id === rootId
         ? {
             ...root,
             icon: <ProjectIcon iconUrl={projectInfo[project.id]?.iconDataUrl} name={project.name} size={18} />,
@@ -155,11 +165,12 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
       return;
     }
     setConfirming(false);
+    const scope = applyScope(projectId, projects);
+    if (scope === null) return;
     // One call per agent (each op carries that agent's install/remove lists).
     for (const op of plan.ops) {
       const result = await applySkills({
-        projectId,
-        projectPath,
+        ...scope,
         agents: [op.agent],
         install: op.install,
         remove: op.remove,
@@ -188,6 +199,8 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
               placeholder={t('skills.install.chooseProject')}
               ariaLabel={t('skills.install.chooseProject')}
               emptyText={t('skills.filterProjectsEmpty')}
+              includeGlobal
+              globalLabel={t('scope.global')}
             />
           </label>
           <label className="sk-skill-modal__field">
@@ -206,7 +219,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             </Button>
             <Button
               variant="primary"
-              disabled={project === undefined || agents.length === 0}
+              disabled={(project === undefined && !isGlobalScope(projectId)) || agents.length === 0}
               onClick={goToTree}
             >
               {t('skills.install.next')}

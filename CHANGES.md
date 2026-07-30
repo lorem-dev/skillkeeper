@@ -2,6 +2,56 @@
 
 ## Development
 
+## Version 0.4.0
+
+### Added
+
+- A Global scope in the app, listed first wherever projects are: install skills
+  and MCP servers for the whole user, in every project, exactly as the CLI's
+  `skill install --global` does.
+- `--global` on `mcp install`, `mcp remove`, and `mcp update`, and user-wide MCP
+  config paths for every agent (only Codex had one before).
+- The Global scope as an entry in the projects filter on both management pages
+  (skills and MCP), so filtering to one project no longer leaves the Global
+  root standing on its own.
+
+### Changed
+
+- Codex MCP servers are offered only in the Global scope. Their config was never
+  per project, so a project row promised something it could not do.
+- Codex MCP instances are visible and removable at last: they now appear under
+  Global instead of belonging to no listed project.
+- `mcp update --agent codex` without `--global` is refused, as `mcp install`
+  already was: it used to write the user-wide config while adding the parameter
+  files to the current repository's `.gitignore`.
+
+### Fixed
+
+- A global OpenCode MCP install no longer fails, and no longer destroys the hook
+  block of a globally installed skill: at that scope both write to the same
+  `~/.config/opencode/opencode.json`, and the block is now carried through every
+  MCP write untouched. OpenCode itself still cannot read a file holding both, so
+  keep global OpenCode hooks and global OpenCode MCP servers apart for now.
+- Checking skills for a project with no agent selected no longer saves nothing:
+  the app asks which agents to install for before showing the change review.
+- The status bar version no longer highlights as selectable text on a stray
+  drag across the bar. The About dialog's version can be selected and copied
+  instead, for pasting into a bug report.
+- Removing a project or a repository no longer leaves it named in a management
+  page's filter, where it hid the rest of the tree behind an empty page. An empty
+  tree a filter caused now says so and offers the reset.
+- Missing accents are back in seven catalogs: French, Polish, German, Italian,
+  Serbian in Latin script, Russian and Ukrainian each had older entries whose
+  diacritics had been stripped, so the same word appeared spelled two ways in one
+  interface.
+- A project folder the system will not let the app read is no longer reported as
+  deleted. macOS withholds Desktop, Documents, Downloads and removable or
+  network volumes until access is granted, and the card used to answer that with
+  "The folder was deleted or moved", which sends the user looking for the wrong
+  thing. The two cases are now told apart and the second says what to allow.
+- Projects on a network volume can be reached at all: that is a protected
+  category of its own on macOS, and the app never declared it.
+
 ## Version 0.3.0
 
 ### Added

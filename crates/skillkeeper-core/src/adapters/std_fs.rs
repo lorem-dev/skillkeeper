@@ -10,7 +10,7 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-use crate::ports::{FileStat, FsPort, PortError, PortResult};
+use crate::ports::{FileStat, FsPort, PathState, PortError, PortResult};
 
 /// Owner-executable permission bit (`0o100`).
 #[cfg(unix)]
@@ -94,6 +94,19 @@ impl FsPort for StdFs {
 
     fn exists(&self, path: &str) -> PortResult<bool> {
         Ok(Path::new(path).exists())
+    }
+
+    fn probe(&self, path: &str) -> PortResult<PathState> {
+        // `Path::exists` answers `false` for a path it merely cannot read, so it
+        // cannot back this: the whole point here is to keep that case apart.
+        match fs::metadata(path) {
+            Ok(_) => Ok(PathState::Present),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(PathState::Missing),
+            // macOS reports a folder withheld by its privacy controls as EPERM,
+            // and a plain unreadable parent directory as EACCES; both land here.
+            Err(e) if e.kind() == io::ErrorKind::PermissionDenied => Ok(PathState::Denied),
+            Err(e) => Err(map_err(path, e)),
+        }
     }
 
     fn mkdir(&self, path: &str) -> PortResult<()> {
@@ -252,6 +265,54 @@ mod tests {
         assert!(!fs.exists(&dir.join("x")).unwrap());
         fs.write_file(&dir.join("x"), "1").unwrap();
         assert!(fs.exists(&dir.join("x")).unwrap());
+    }
+
+    #[test]
+    fn probe_separates_present_from_absent() {
+        let dir = TempDir::new();
+        let fs = StdFs::new();
+        assert_eq!(fs.probe(&dir.join("x")).unwrap(), PathState::Missing);
+        fs.write_file(&dir.join("x"), "1").unwrap();
+        assert_eq!(fs.probe(&dir.join("x")).unwrap(), PathState::Present);
+    }
+
+    // The case the whole method exists for: a path that is there but cannot be
+    // described. Stood up by clearing the parent directory's permissions, which
+    // is the closest a test can get to the privacy controls that produce it on
+    // macOS -- both surface as PermissionDenied.
+    #[cfg(unix)]
+    #[test]
+    fn probe_reports_an_unreadable_path_as_denied() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = TempDir::new();
+        let fs = StdFs::new();
+        let closed = dir.join("closed");
+        fs.mkdir(&closed).unwrap();
+        let inner = format!("{closed}/project");
+        fs.mkdir(&inner).unwrap();
+
+        let shut = |mode: u32| {
+            std::fs::set_permissions(&closed, std::fs::Permissions::from_mode(mode)).unwrap()
+        };
+
+        shut(0o000);
+        let probed = fs.probe(&inner);
+        let existed = fs.exists(&inner);
+        // Restore before asserting, so a failed assertion cannot leave a
+        // directory the harness is unable to delete.
+        shut(0o755);
+
+        // Running as root (or on a filesystem that ignores mode bits) makes the
+        // setup impossible rather than the behaviour wrong: there is nothing to
+        // assert then.
+        if probed.as_ref().is_ok_and(|s| *s == PathState::Present) {
+            return;
+        }
+        assert_eq!(probed.unwrap(), PathState::Denied);
+        // `exists` still collapses the same path to false, which is exactly why
+        // `probe` had to be added rather than the existing method reused.
+        assert!(!existed.unwrap());
     }
 
     #[cfg(unix)]

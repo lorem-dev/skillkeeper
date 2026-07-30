@@ -352,6 +352,9 @@ msgstr "プロジェクトを開けませんでした"
 msgid "projects.missing"
 msgstr "フォルダーが削除または移動されました"
 
+msgid "projects.noAccess"
+msgstr "このフォルダーを読み取れません。システム設定でアクセスを許可してください。"
+
 msgid "projects.copyPath"
 msgstr "フルパスをコピー"
 
@@ -411,12 +414,6 @@ msgstr "バージョンなし"
 
 msgid "skills.installedFor"
 msgstr "インストール先"
-
-msgid "skills.scope.project"
-msgstr "プロジェクト"
-
-msgid "skills.scope.global"
-msgstr "グローバル"
 
 msgid "skills.source.repo"
 msgstr "リポジトリから"
@@ -489,6 +486,9 @@ msgstr "リポジトリ内にスキルが見つかりませんでした。"
 
 msgid "skills.emptyProjects"
 msgstr "まだプロジェクトが登録されていません。"
+
+msgid "skills.emptyFiltered"
+msgstr "現在のフィルターに一致するものはありません。"
 
 msgid "skills.status.add"
 msgstr "スキルが追加されます"
@@ -609,6 +609,9 @@ msgstr "合計 {count} 件のスキル"
 
 msgid "mcp.empty"
 msgstr "MCPサーバーはまだありません。"
+
+msgid "mcp.emptyFiltered"
+msgstr "現在のフィルターに一致するものはありません。"
 
 msgid "mcp.searchFound.other"
 msgstr "{count} 件のMCPサーバーが見つかりました"
@@ -762,9 +765,6 @@ msgstr "エージェント"
 
 msgid "mcp.field.parameters"
 msgstr "パラメーター"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codexはグローバルにインストールされます(このプロジェクトに限定されません)。"
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} はネイティブ設定で {transport} トランスポートを表現できません。"
@@ -1159,3 +1159,27 @@ msgstr "ターミナルを利用できません: {error}。git コマンドは�
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "更新確認を延期しました: SSH 鍵がロックされています。設定で解除してください。"
+
+msgid "scope.global"
+msgstr "グローバル"
+
+msgid "scope.globalHint"
+msgstr "このユーザー全体にインストールされ、すべてのプロジェクトで有効"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex はMCPサーバーをプロジェクトごとではなくユーザー全体にインストールします"
+
+msgid "skills.agentChoice.title"
+msgstr "エージェントを選択"
+
+msgid "skills.agentChoice.intro"
+msgstr "以下ではエージェントが選択されていないため、何もインストールされません。どのエージェントにスキルとMCPサーバーをインストールするか選択してください。"
+
+msgid "skills.agentChoice.confirm"
+msgstr "次へ"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "{scope} のエージェント"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "エージェントが選択されていません"

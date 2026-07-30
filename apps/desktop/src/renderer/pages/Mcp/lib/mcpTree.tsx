@@ -51,6 +51,7 @@ import { Icon } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import type { McpPreset } from '@/app/store';
 import { normalizeMcpRemote, mcpInstallHasUpdate } from '@/app/store';
+import { GLOBAL_SCOPE_ID } from '@/domain';
 import type { McpInstall, Repository, Project } from '@/services/bridge';
 
 const SEP = '::';
@@ -62,6 +63,7 @@ const mcpIconInstalled = <Icon name="mcp" size={18} className="sk-mcp-icon--inst
 const repoIcon = <Icon name="repositories" size={18} />;
 const groupIcon = <Icon name="mcp-group" size={18} />;
 const projectIcon = <Icon name="projects" size={18} />;
+const globalIcon = <Icon name="global" size={18} />;
 
 /** What a leaf id resolves to, for the page's trailing-badge and click logic. */
 export type McpTreeItem =
@@ -285,12 +287,26 @@ export function buildMcpRepoTree(presets: readonly McpPreset[], repos: readonly 
  * identity's `local` matches a manual preset's id is never "unlinked" -- it
  * renders as an installed row directly under the project root instead (see
  * `manualInstanceLeaves` below).
+ *
+ * The Global scope renders as its own root, ahead of every tracked project
+ * (mirrors `entities/skill/lib/skillTree.tsx`'s `treeScopes` ordering, though
+ * this module keeps its own local scope list rather than importing that
+ * helper -- it lives under `pages/Mcp/lib/` and must not depend on
+ * `entities/skill`). The backend reports global installs with
+ * `projectId: "global"` (the same reserved id `GLOBAL_SCOPE_ID` holds), so
+ * filtering `installs` by `i.projectId === scope.id` picks up the Global
+ * root's installs with no special case.
+ *
+ * `globalLabel` is that root's label; pass `null` to omit the root, which is
+ * what the page does when the projects filter is narrowed to something that
+ * does not include the user-wide scope.
  */
 export function buildMcpProjectTree(
   presets: readonly McpPreset[],
   installs: readonly McpInstall[],
   projects: readonly Project[],
   repos: readonly Repository[],
+  globalLabel: string | null,
 ): McpTreeResult {
   const items = new Map<string, McpTreeItem>();
 
@@ -313,13 +329,19 @@ export function buildMcpProjectTree(
 
   const manualPresetIds = new Set(presets.filter((p) => p.origin === 'manual').map((p) => p.id));
 
+  const projectScopes = projects.map((p) => ({ id: p.id, name: p.name, global: false }));
+  const scopes =
+    globalLabel === null
+      ? projectScopes
+      : [{ id: GLOBAL_SCOPE_ID, name: globalLabel, global: true }, ...projectScopes];
+
   const projectNodes: TreeNode[] = [];
-  for (const project of projects) {
-    const projectInstalls = installs.filter((i) => i.projectId === project.id);
+  for (const scope of scopes) {
+    const projectInstalls = installs.filter((i) => i.projectId === scope.id);
     const consumed = new Set<McpInstall>();
 
     const rowsFor = (p: RepoPreset): TreeNode[] => {
-      const presetLeafId = mcpProjectPresetLeafId(project.id, p.id);
+      const presetLeafId = mcpProjectPresetLeafId(scope.id, p.id);
       items.set(presetLeafId, { kind: 'repo-preset', preset: p });
       const presetLeaf: TreeNode = { id: presetLeafId, label: p.name, icon: mcpIcon };
 
@@ -338,7 +360,7 @@ export function buildMcpProjectTree(
       const instanceLeaves: TreeNode[] = instanceGroups.map((group) => {
         const first = group[0]!;
         const key = instanceKey(first.identity, first.instanceName);
-        const id = mcpInstalledLeafId(project.id, key);
+        const id = mcpInstalledLeafId(scope.id, key);
         const updatable = mcpInstallHasUpdate(first, presets);
         items.set(id, { kind: 'installed', installs: group, updatable });
         return { id, label: instanceDisplayName(first.identity.source, first.instanceName), icon: mcpIconInstalled };
@@ -365,7 +387,7 @@ export function buildMcpProjectTree(
       const children: TreeNode[] = [];
       for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
         children.push({
-          id: mcpProjectGroupNodeId(project.id, repo.id, group),
+          id: mcpProjectGroupNodeId(scope.id, repo.id, group),
           label: group,
           icon: groupIcon,
           selectable: false,
@@ -376,7 +398,7 @@ export function buildMcpProjectTree(
         children.push(...rowsFor(p));
       }
 
-      repoChildren.push({ id: mcpProjectRepoNodeId(project.id, repo.id), label: repo.name, icon: repoIcon, selectable: false, children });
+      repoChildren.push({ id: mcpProjectRepoNodeId(scope.id, repo.id), label: repo.name, icon: repoIcon, selectable: false, children });
     }
 
     // Installed instances of a manual preset (identity.local === preset id):
@@ -400,7 +422,7 @@ export function buildMcpProjectTree(
       .map((group) => {
         const first = group[0]!;
         const key = instanceKey(first.identity, first.instanceName);
-        const id = mcpInstalledLeafId(project.id, key);
+        const id = mcpInstalledLeafId(scope.id, key);
         const updatable = mcpInstallHasUpdate(first, presets);
         items.set(id, { kind: 'installed', installs: group, updatable });
         return { id, label: instanceDisplayName(first.identity.source, first.instanceName), icon: mcpIconInstalled };
@@ -425,7 +447,7 @@ export function buildMcpProjectTree(
       const first = group[0]!;
       const groupKey = unlinkedGroupKey(first.identity);
       const key = instanceKey(first.identity, first.instanceName);
-      const id = mcpUnlinkedLeafId(project.id, key);
+      const id = mcpUnlinkedLeafId(scope.id, key);
       items.set(id, { kind: 'unlinked', installs: group });
       const label = instanceDisplayName(first.identity.source, first.instanceName);
       const leaf: TreeNode = { id, label, icon: mcpIcon, muted: true };
@@ -437,7 +459,7 @@ export function buildMcpProjectTree(
       .map(([groupKey, g]) => ({ groupKey, label: g.label, rows: g.rows }))
       .sort((a, b) => a.label.localeCompare(b.label))
       .map((g) => ({
-        id: mcpUnlinkedNodeId(project.id, g.groupKey),
+        id: mcpUnlinkedNodeId(scope.id, g.groupKey),
         label: g.label,
         icon: repoIcon,
         muted: true,
@@ -446,9 +468,9 @@ export function buildMcpProjectTree(
       }));
 
     projectNodes.push({
-      id: mcpProjectRootId(project.id),
-      label: project.name,
-      icon: projectIcon,
+      id: mcpProjectRootId(scope.id),
+      label: scope.name,
+      icon: scope.global ? globalIcon : projectIcon,
       selectable: false,
       children: [...repoChildren, ...manualInstanceLeaves, ...unlinkedNodes],
     });

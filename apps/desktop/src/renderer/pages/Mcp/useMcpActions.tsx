@@ -11,8 +11,10 @@ import type { ReactNode } from 'react';
 import { useSkillkeeperStore, matchMcpPreset } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
+import { applyScope } from '@/domain';
+import type { ApplyScope } from '@/domain';
 import { bridgeClient } from '@/services/bridge';
-import type { McpInstall, McpUpdateReq, Project } from '@/services/bridge';
+import type { McpInstall, McpUpdateReq } from '@/services/bridge';
 import { Button, Modal } from '@/shared/ui';
 import { McpCard } from '@/entities/mcp';
 import { McpEditModal } from '@/features/mcpEdit';
@@ -81,7 +83,7 @@ export function useMcpActions(): McpActions {
   // confirming aborts the update -- no `McpUpdateParamsModal` `onConfirm` call
   // means `runMcpUpdate` never runs.
   const [updateTarget, setUpdateTarget] = useState<{
-    project: Project;
+    scope: ApplyScope;
     installs: readonly McpInstall[];
     missingParams: string[];
   } | null>(null);
@@ -119,20 +121,20 @@ export function useMcpActions(): McpActions {
     async (toUpdate: readonly McpInstall[], values: Record<string, string>): Promise<void> => {
       const first = toUpdate[0];
       if (first === undefined) return;
-      const project = projects.find((p) => p.id === first.projectId);
-      if (project === undefined) return;
+      const scope = applyScope(first.projectId, projects);
+      if (scope === null) return;
       const preset = matchMcpPreset(first, mcpPresets);
       if (preset === undefined) return;
       const updates: McpUpdateReq[] = toUpdate.map((inst) => ({
-        projectId: project.id,
-        projectPath: project.path,
+        projectId: scope.projectId,
+        projectPath: scope.projectPath,
         agent: inst.agent,
         instanceName: inst.instanceName,
         identity: inst.identity,
         def: preset.def,
         values,
       }));
-      const result = await updateMcp({ updates });
+      const result = await updateMcp({ updates, scope: scope.scope });
       if (!result.ok) notify(result.error, 'error');
     },
     [projects, mcpPresets, updateMcp, notify],
@@ -147,18 +149,19 @@ export function useMcpActions(): McpActions {
     async (toUpdate: readonly McpInstall[]): Promise<void> => {
       const first = toUpdate[0];
       if (first === undefined) return;
-      const project = projects.find((p) => p.id === first.projectId);
-      if (project === undefined) return;
+      const scope = applyScope(first.projectId, projects);
+      if (scope === null) return;
       const preset = matchMcpPreset(first, mcpPresets);
       if (preset === undefined) return;
       const results = await Promise.all(
         toUpdate.map((inst) =>
           bridgeClient.mcpUpdatePreflight({
-            projectId: project.id,
-            projectPath: project.path,
+            projectId: scope.projectId,
+            projectPath: scope.projectPath,
             agent: inst.agent,
             instanceName: inst.instanceName,
             def: preset.def,
+            scope: scope.scope,
           }),
         ),
       );
@@ -174,7 +177,7 @@ export function useMcpActions(): McpActions {
         await runMcpUpdate(toUpdate, {});
         return;
       }
-      setUpdateTarget({ project, installs: toUpdate, missingParams: [...missing].sort() });
+      setUpdateTarget({ scope, installs: toUpdate, missingParams: [...missing].sort() });
     },
     [projects, mcpPresets, notify, runMcpUpdate],
   );
@@ -193,13 +196,9 @@ export function useMcpActions(): McpActions {
     async (toRemove: readonly McpInstall[]): Promise<void> => {
       const first = toRemove[0];
       if (first === undefined) return;
-      const project = projects.find((p) => p.id === first.projectId);
-      if (project === undefined) return;
-      const result = await applyMcp({
-        projectId: project.id,
-        projectPath: project.path,
-        batches: buildRemoveBatches(toRemove),
-      });
+      const scope = applyScope(first.projectId, projects);
+      if (scope === null) return;
+      const result = await applyMcp({ ...scope, batches: buildRemoveBatches(toRemove) });
       if (!result.ok) notify(result.error, 'error');
     },
     [projects, applyMcp, notify],

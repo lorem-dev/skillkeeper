@@ -251,7 +251,7 @@ msgid "tasks.status.error"
 msgstr "Ошибка"
 
 msgid "repositories.empty"
-msgstr "Репозитории еще не добавлены."
+msgstr "Репозитории ещё не добавлены."
 
 msgid "repositories.add"
 msgstr "Добавить репозиторий"
@@ -359,7 +359,7 @@ msgid "repositories.showAll"
 msgstr "Показать все репозитории"
 
 msgid "projects.empty"
-msgstr "Проекты еще не отслеживаются."
+msgstr "Проекты ещё не отслеживаются."
 
 msgid "projects.add"
 msgstr "Добавить проект"
@@ -396,6 +396,9 @@ msgstr "Не удалось открыть проект"
 
 msgid "projects.missing"
 msgstr "Папка удалена или перемещена"
+
+msgid "projects.noAccess"
+msgstr "Не удалось прочитать эту папку. Разрешите доступ к ней в системных настройках."
 
 msgid "projects.copyPath"
 msgstr "Скопировать полный путь"
@@ -509,7 +512,7 @@ msgid "projects.showAll"
 msgstr "Показать все проекты"
 
 msgid "skills.empty"
-msgstr "Навыки еще не установлены."
+msgstr "Навыки ещё не установлены."
 
 msgid "skills.add"
 msgstr "Установить навык"
@@ -528,12 +531,6 @@ msgstr "Без версии"
 
 msgid "skills.installedFor"
 msgstr "Установлен для"
-
-msgid "skills.scope.project"
-msgstr "Проект"
-
-msgid "skills.scope.global"
-msgstr "Глобально"
 
 msgid "skills.source.repo"
 msgstr "Из репозитория"
@@ -606,6 +603,9 @@ msgstr "В ваших репозиториях не найдено скилло�
 
 msgid "skills.emptyProjects"
 msgstr "Проекты ещё не отслеживаются."
+
+msgid "skills.emptyFiltered"
+msgstr "Ничего не соответствует текущим фильтрам."
 
 msgid "skills.status.add"
 msgstr "Навык будет добавлен"
@@ -701,7 +701,7 @@ msgid "skills.updateBadge"
 msgstr "обновить"
 
 msgid "skills.unlinked"
-msgstr "открепленный"
+msgstr "откреплённый"
 
 msgid "skills.addRepo"
 msgstr "Добавить репозиторий"
@@ -744,6 +744,9 @@ msgstr "Всего {count} скиллов"
 
 msgid "mcp.empty"
 msgstr "Серверов MCP пока нет."
+
+msgid "mcp.emptyFiltered"
+msgstr "Ничего не соответствует текущим фильтрам."
 
 msgid "mcp.searchFound.one"
 msgstr "Найден {count} сервер MCP"
@@ -918,9 +921,6 @@ msgstr "Агенты"
 
 msgid "mcp.field.parameters"
 msgstr "Параметры"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codex устанавливается глобально (не привязан к этому проекту)."
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} не может выразить транспорт {transport} в своей нативной конфигурации."
@@ -1294,3 +1294,27 @@ msgstr "Терминал недоступен: {error}. Команды git вы�
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Проверка обновлений отложена: SSH-ключ заблокирован. Разблокируйте его в настройках."
+
+msgid "scope.global"
+msgstr "Глобально"
+
+msgid "scope.globalHint"
+msgstr "Установлено для этого пользователя, во всех проектах"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex устанавливает MCP серверы для всего пользователя, а не для отдельного проекта"
+
+msgid "skills.agentChoice.title"
+msgstr "Выберите агентов"
+
+msgid "skills.agentChoice.intro"
+msgstr "Ниже не выбран ни один агент, поэтому ничего не будет установлено. Укажите, для каких агентов устанавливать навыки и серверы MCP."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Далее"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Агенты для {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Агенты не выбраны"

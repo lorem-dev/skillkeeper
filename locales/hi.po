@@ -394,6 +394,9 @@ msgstr "प्रोजेक्ट खोला नहीं जा सका"
 msgid "projects.missing"
 msgstr "फ़ोल्डर हटा दिया गया या स्थानांतरित कर दिया गया"
 
+msgid "projects.noAccess"
+msgstr "यह फ़ोल्डर पढ़ा नहीं जा सका। सिस्टम सेटिंग्स में इसकी अनुमति दें।"
+
 msgid "projects.copyPath"
 msgstr "पूरा पथ कॉपी करें"
 
@@ -478,12 +481,6 @@ msgstr "कोई संस्करण नहीं"
 msgid "skills.installedFor"
 msgstr "इनके लिए इंस्टॉल"
 
-msgid "skills.scope.project"
-msgstr "प्रोजेक्ट"
-
-msgid "skills.scope.global"
-msgstr "वैश्विक"
-
 msgid "skills.source.repo"
 msgstr "रिपॉज़िटरी से"
 
@@ -555,6 +552,9 @@ msgstr "आपकी रिपॉज़िटरी में कोई स्�
 
 msgid "skills.emptyProjects"
 msgstr "अभी कोई प्रोजेक्ट ट्रैक नहीं किया गया।"
+
+msgid "skills.emptyFiltered"
+msgstr "मौजूदा फ़िल्टर से कुछ मेल नहीं खाता।"
 
 msgid "skills.status.add"
 msgstr "स्किल जोड़ी जाएगी"
@@ -681,6 +681,9 @@ msgstr "कुल {count} स्किल"
 
 msgid "mcp.empty"
 msgstr "अभी कोई MCP सर्वर नहीं।"
+
+msgid "mcp.emptyFiltered"
+msgstr "मौजूदा फ़िल्टर से कुछ मेल नहीं खाता।"
 
 msgid "mcp.searchFound.one"
 msgstr "{count} MCP सर्वर मिला"
@@ -843,9 +846,6 @@ msgstr "एजेंट"
 
 msgid "mcp.field.parameters"
 msgstr "पैरामीटर"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codex वैश्विक रूप से इंस्टॉल होता है (इस प्रोजेक्ट तक सीमित नहीं)।"
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} अपने मूल कॉन्फ़िग में {transport} ट्रांसपोर्ट व्यक्त नहीं कर सकता।"
@@ -1204,3 +1204,27 @@ msgstr "टर्मिनल उपलब्ध नहीं: {error}। git �
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "अपडेट जाँच स्थगित: SSH कुंजी लॉक है। सेटिंग्स में अनलॉक करें।"
+
+msgid "scope.global"
+msgstr "वैश्विक"
+
+msgid "scope.globalHint"
+msgstr "इस उपयोगकर्ता के लिए, हर प्रोजेक्ट में इंस्टॉल"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex, MCP सर्वर पूरे उपयोगकर्ता के लिए इंस्टॉल करता है, प्रति प्रोजेक्ट नहीं"
+
+msgid "skills.agentChoice.title"
+msgstr "एजेंट चुनें"
+
+msgid "skills.agentChoice.intro"
+msgstr "नीचे कोई एजेंट नहीं चुना गया है, इसलिए कुछ भी इंस्टॉल नहीं होगा। चुनें कि किन एजेंट के लिए स्किल और MCP सर्वर इंस्टॉल करने हैं।"
+
+msgid "skills.agentChoice.confirm"
+msgstr "आगे"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "{scope} के लिए एजेंट"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "कोई एजेंट नहीं चुना गया"

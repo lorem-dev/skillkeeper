@@ -11,7 +11,7 @@ msgid "nav.repositories"
 msgstr "Repositories"
 
 msgid "nav.skills"
-msgstr "Fahigkeiten"
+msgstr "Fähigkeiten"
 
 msgid "nav.projects"
 msgstr "Projekte"
@@ -379,6 +379,9 @@ msgstr "Projekt konnte nicht geöffnet werden"
 msgid "projects.missing"
 msgstr "Der Ordner wurde gelöscht oder verschoben"
 
+msgid "projects.noAccess"
+msgstr "Dieser Ordner kann nicht gelesen werden. Erlauben Sie den Zugriff in den Systemeinstellungen."
+
 msgid "projects.copyPath"
 msgstr "Vollständigen Pfad kopieren"
 
@@ -463,12 +466,6 @@ msgstr "Keine Version"
 msgid "skills.installedFor"
 msgstr "Installiert für"
 
-msgid "skills.scope.project"
-msgstr "Projekt"
-
-msgid "skills.scope.global"
-msgstr "Global"
-
 msgid "skills.source.repo"
 msgstr "Aus Repository"
 
@@ -540,6 +537,9 @@ msgstr "In deinen Repositories wurden keine Skills gefunden."
 
 msgid "skills.emptyProjects"
 msgstr "Noch keine Projekte erfasst."
+
+msgid "skills.emptyFiltered"
+msgstr "Keine Treffer für die aktuellen Filter."
 
 msgid "skills.status.add"
 msgstr "Skill wird hinzugefügt"
@@ -666,6 +666,9 @@ msgstr "{count} Skills insgesamt"
 
 msgid "mcp.empty"
 msgstr "Noch keine MCP-Server vorhanden."
+
+msgid "mcp.emptyFiltered"
+msgstr "Keine Treffer für die aktuellen Filter."
 
 msgid "mcp.searchFound.one"
 msgstr "{count} MCP-Server gefunden"
@@ -828,9 +831,6 @@ msgstr "Agenten"
 
 msgid "mcp.field.parameters"
 msgstr "Parameter"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codex installiert global (nicht auf dieses Projekt beschränkt)."
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} kann den Transport {transport} in seiner nativen Konfiguration nicht abbilden."
@@ -1204,3 +1204,27 @@ msgstr "Terminal nicht verfügbar: {error}. Git-Befehle laufen weiter, ihre Ausg
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Update-Prüfung zurückgestellt: der SSH-Schlüssel ist gesperrt. Entsperren Sie ihn in den Einstellungen."
+
+msgid "scope.global"
+msgstr "Global"
+
+msgid "scope.globalHint"
+msgstr "Für diesen Benutzer installiert, in jedem Projekt"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex installiert MCP-Server für den gesamten Benutzer, nicht pro Projekt"
+
+msgid "skills.agentChoice.title"
+msgstr "Agenten wählen"
+
+msgid "skills.agentChoice.intro"
+msgstr "Unten ist kein Agent ausgewählt, daher würde nichts installiert. Wählen Sie, für welche Agenten jeweils Skills und MCP-Server installiert werden."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Weiter"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Agenten für {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Keine Agenten ausgewählt"

@@ -15,6 +15,8 @@
   <string>SkillKeeper needs access to open and manage skills in projects in your Downloads.</string>
   <key>NSRemovableVolumesUsageDescription</key>
   <string>SkillKeeper needs access to open and manage skills in projects on removable volumes.</string>
+  <key>NSNetworkVolumesUsageDescription</key>
+  <string>SkillKeeper needs access to open and manage skills in projects on network volumes.</string>
   <!--
     Declare every UI language the app localizes programmatically. This makes
     NSBundle's preferred localization follow the app's own language override

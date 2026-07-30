@@ -385,6 +385,9 @@ msgstr "ไม่สามารถเปิดโปรเจกต์ได้
 msgid "projects.missing"
 msgstr "โฟลเดอร์ถูกลบหรือย้ายไปแล้ว"
 
+msgid "projects.noAccess"
+msgstr "ไม่สามารถอ่านโฟลเดอร์นี้ได้ อนุญาตการเข้าถึงในการตั้งค่าระบบ"
+
 msgid "projects.copyPath"
 msgstr "คัดลอกพาธเต็ม"
 
@@ -444,12 +447,6 @@ msgstr "ไม่มีเวอร์ชัน"
 
 msgid "skills.installedFor"
 msgstr "ติดตั้งสำหรับ"
-
-msgid "skills.scope.project"
-msgstr "โปรเจกต์"
-
-msgid "skills.scope.global"
-msgstr "ทั่วระบบ"
 
 msgid "skills.source.repo"
 msgstr "จากที่เก็บโค้ด"
@@ -522,6 +519,9 @@ msgstr "ไม่พบสกิลในที่เก็บโค้ดขอ
 
 msgid "skills.emptyProjects"
 msgstr "ยังไม่มีโปรเจกต์ที่ติดตาม"
+
+msgid "skills.emptyFiltered"
+msgstr "ไม่มีรายการที่ตรงกับตัวกรองปัจจุบัน"
 
 msgid "skills.status.add"
 msgstr "สกิลจะถูกเพิ่ม"
@@ -642,6 +642,9 @@ msgstr "ทั้งหมด {count} สกิล"
 
 msgid "mcp.empty"
 msgstr "ยังไม่มีเซิร์ฟเวอร์ MCP"
+
+msgid "mcp.emptyFiltered"
+msgstr "ไม่มีรายการที่ตรงกับตัวกรองปัจจุบัน"
 
 msgid "mcp.searchFound.other"
 msgstr "พบเซิร์ฟเวอร์ MCP {count} รายการ"
@@ -798,9 +801,6 @@ msgstr "เอเจนต์"
 
 msgid "mcp.field.parameters"
 msgstr "พารามิเตอร์"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codex ติดตั้งแบบทั่วระบบ (ไม่จำกัดเฉพาะโปรเจกต์นี้)"
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} ไม่สามารถแสดงทรานสปอร์ต {transport} ในคอนฟิกดั้งเดิมได้"
@@ -1159,3 +1159,27 @@ msgstr "ใช้เทอร์มินัลไม่ได้: {error} ค�
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "เลื่อนการตรวจหาอัปเดต: คีย์ SSH ถูกล็อก ปลดล็อกในหน้าตั้งค่า"
+
+msgid "scope.global"
+msgstr "ทั่วระบบ"
+
+msgid "scope.globalHint"
+msgstr "ติดตั้งสำหรับผู้ใช้นี้ ในทุกโปรเจกต์"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex ติดตั้งเซิร์ฟเวอร์ MCP สำหรับผู้ใช้ทั้งหมด ไม่ใช่แยกตามโปรเจกต์"
+
+msgid "skills.agentChoice.title"
+msgstr "เลือกเอเจนต์"
+
+msgid "skills.agentChoice.intro"
+msgstr "ด้านล่างยังไม่ได้เลือกเอเจนต์ จึงจะไม่มีการติดตั้งอะไรเลย เลือกว่าจะติดตั้งสกิลและเซิร์ฟเวอร์ MCP ให้เอเจนต์ใด"
+
+msgid "skills.agentChoice.confirm"
+msgstr "ต่อไป"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "เอเจนต์สำหรับ {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "ยังไม่ได้เลือกเอเจนต์"

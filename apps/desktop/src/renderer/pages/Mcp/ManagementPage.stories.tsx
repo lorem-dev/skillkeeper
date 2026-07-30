@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useSkillkeeperStore } from '@/app/store';
+import { useSkillkeeperStore, scanMcpParams, repoMcpPresetId } from '@/app/store';
 import { seedStore } from '@/app/store/storyState';
-import type { SkillKeeperConfig } from '@/app/store';
-import type { AvailableMcp, McpInstall, Project, Repository } from '@/services/bridge';
+import type { SkillKeeperConfig, McpPreset } from '@/app/store';
+import type { AvailableMcp, McpInstall, Project, ProjectInfo, Repository } from '@/services/bridge';
 import { ManagementPage } from './ManagementPage';
 
 const meta: Meta<typeof ManagementPage> = { title: 'pages/ManagementPage', component: ManagementPage };
@@ -74,9 +74,54 @@ const AVAILABLE: AvailableMcp[] = [
   },
 ];
 
+// The manual preset's "current" hash. The real thing (`hashMcpDefInRenderer`)
+// is an async SHA-256 digest of the def -- not worth computing for a fixture,
+// since all the Update badge needs is a preset hash that differs from an
+// install's stored one. `local-filesystem_1` in INSTALLS below stores
+// 'sha256:stale' on purpose so it mismatches this and drives the Update badge.
+const MANUAL_HASH = 'sha256:manual-current';
+
+/**
+ * Builds the `McpPreset[]` `refreshMcpPresets` would compute from `config`'s
+ * manual servers and the repo `available` catalog -- same shape, same
+ * `repoMcpPresetId`/`scanMcpParams` helpers the store uses, so preset ids
+ * match what `buildMcpProjectTree` expects an `McpInstall.identity` to
+ * resolve against. Only the manual hash is a stand-in (see `MANUAL_HASH`);
+ * the repo hash is `a.hash` verbatim, exactly as the store computes it.
+ */
+function buildMcpPresets(config: SkillKeeperConfig, available: readonly AvailableMcp[]): McpPreset[] {
+  const manual: McpPreset[] = config.mcp.servers.map((preset): McpPreset => {
+    const { id, ...def } = preset;
+    return {
+      id,
+      origin: 'manual',
+      name: def.name,
+      def,
+      hash: MANUAL_HASH,
+      params: scanMcpParams(def),
+      hasRules: def.rules !== undefined,
+    };
+  });
+  const repo: McpPreset[] = available.map(
+    (a): McpPreset => ({
+      id: repoMcpPresetId(a.repoId, a.group, a.def.name),
+      origin: 'repo',
+      name: a.def.name,
+      def: a.def,
+      hash: a.hash,
+      params: scanMcpParams(a.def),
+      hasRules: a.def.rules !== undefined,
+      repoId: a.repoId,
+      remote: a.remote,
+      group: a.group,
+    }),
+  );
+  return [...manual, ...repo];
+}
+
 // One installed instance per case the projects tree distinguishes:
-//  - `local-filesystem_1` matches the manual preset by `identity.local`, with
-//    a deliberately stale `hash` so it renders with the Update badge.
+//  - `local-filesystem_1` matches the manual preset by `identity.local`; its
+//    stale `hash` (vs. `MANUAL_HASH` above) drives the Update badge.
 //  - `linear_1` matches the repo preset by (remote, group, source), with the
 //    SAME hash as `AVAILABLE[0]` so it renders with no Update badge.
 //  - `legacy-server_1` matches nothing current -- unlinked, muted, Delete
@@ -110,17 +155,17 @@ const INSTALLS: McpInstall[] = [
 ];
 
 /**
- * Seeds `config`/`repositories`/`projects` and stubs the bridge calls the
- * page's mount effect makes (`listAvailableMcp`, `listMcpInstalls`,
- * `describeProject`, via `refreshMcpPresets`/`refreshMcpInstalls`/
- * `refreshProjectInfo`) so the real store actions compute `mcpPresets`/
- * `mcpInstalls` from these fixtures instead of throwing on the unavailable
- * Tauri bridge -- Storybook runs outside Tauri, so `invoke` is not present.
- * Mirrors `McpPage.stories.tsx`'s own `seedMcp`.
+ * Seeds `config`/`repositories`/`projects`/`mcpPresets`/`mcpInstalls`/
+ * `projectInfo` directly with the slices `refreshMcpPresets`/
+ * `refreshMcpInstalls`/`refreshProjectInfo` would have computed. Storybook
+ * runs outside Tauri, so `invoke` (which every one of those actions calls
+ * through the bridge client) reads a `window.__TAURI_INTERNALS__` that does
+ * not exist and rejects -- before any of the three actions' own `set(...)`,
+ * so seeding the slices up front is not overwritten when `ManagementPage`'s
+ * mount effect calls them for real and they reject the same way.
  *
- * Called directly in `render()` (not a `useEffect`) so it runs before
- * `ManagementPage` mounts -- its own mount effect calls `refreshMcpPresets`
- * immediately, and effects fire child-before-parent.
+ * Called directly in `render()` (not a `useEffect`) so the fixtures are
+ * already in the store before `ManagementPage` mounts and fires that effect.
  */
 function seedMcp(
   config: SkillKeeperConfig,
@@ -128,13 +173,18 @@ function seedMcp(
   installs: readonly McpInstall[] = [],
   projects: readonly Project[] = [],
 ): void {
-  (window as unknown as { skillkeeper: unknown }).skillkeeper = {
-    listAvailableMcp: async () => available,
-    listMcpInstalls: async () => installs,
-    describeProject: async () => ({ skillCount: 0, fromReposCount: 0, agentCount: 0 }),
-  };
+  const projectInfo: Record<string, ProjectInfo> = Object.fromEntries(
+    projects.map((p): [string, ProjectInfo] => [p.id, { skillCount: 0, fromReposCount: 0, agentCount: 0 }]),
+  );
   seedStore(() => {
-    useSkillkeeperStore.setState({ repositories: REPOSITORIES, projects: [...projects], config });
+    useSkillkeeperStore.setState({
+      repositories: REPOSITORIES,
+      projects: [...projects],
+      config,
+      mcpPresets: buildMcpPresets(config, available),
+      mcpInstalls: [...installs],
+      projectInfo,
+    });
   });
 }
 
@@ -149,10 +199,32 @@ export const Default: Story = {
   },
 };
 
-// No projects at all: the empty-state message instead of a tree.
-export const Empty: Story = {
+// No tracked projects and nothing installed anywhere: the tree still renders
+// its always-present Global scope root (see `buildMcpProjectTree` -- an empty
+// `projects` list no longer empties the tree the way it used to), just with
+// no children under it. That is what "nothing yet" actually looks like now;
+// the genuinely empty tree (no Global root either) only happens once a
+// filter excludes everything, which `FilteredEmpty` below demonstrates.
+export const GlobalRootOnly: Story = {
   render: () => {
     seedMcp(BASE_CONFIG, []);
+    return <ManagementPage />;
+  },
+};
+
+// An empty tree the FILTER caused, not an empty catalog: the persisted project
+// filter still names a project that no longer exists, so no project root and no
+// Global root survive. It must say what happened and offer the reset -- claiming
+// there are no MCP servers would be a lie, and this page has no in-tree footer
+// reset to fall back on. `BASE_CONFIG` deliberately has no manual preset: those
+// are TOP-LEVEL leaves, so one would keep the tree non-empty on its own and this
+// branch would never be reached.
+export const FilteredEmpty: Story = {
+  render: () => {
+    seedMcp(BASE_CONFIG, AVAILABLE, INSTALLS, PROJECTS);
+    useSkillkeeperStore.setState((s) => ({
+      mcpUi: { ...s.mcpUi, managementProjectFilter: ['project-removed'] },
+    }));
     return <ManagementPage />;
   },
 };

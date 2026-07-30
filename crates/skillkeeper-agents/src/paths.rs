@@ -51,12 +51,29 @@ pub fn require_project_dir(env: &dyn HostEnv) -> PortResult<String> {
     }
 }
 
+/// Resolve the home directory for a global-scope target from the host
+/// environment. Returns an error when it is blank, so a global operation never
+/// silently resolves to the filesystem root: `HostEnv::home_dir` reports an
+/// unset `HOME`/`USERPROFILE` as an empty string, which `join_path` would turn
+/// into `/.claude/skills` rather than into an error.
+pub fn require_home_dir(env: &dyn HostEnv) -> PortResult<String> {
+    let home = env.home_dir().trim();
+    if home.is_empty() {
+        return Err(PortError::Other(
+            "No home directory available: set HOME (or USERPROFILE) for global-scope operations"
+                .to_string(),
+        ));
+    }
+    Ok(home.to_string())
+}
+
 /// Resolve the base directory for a target: the project directory for project
-/// scope, the home directory for global scope.
+/// scope, the home directory for global scope. Both are required to be
+/// non-blank.
 pub fn base_dir(target: &AgentTarget, env: &dyn HostEnv) -> PortResult<String> {
     match target.scope {
         Scope::Project => require_project_dir(env),
-        Scope::Global => Ok(env.home_dir().to_string()),
+        Scope::Global => require_home_dir(env),
     }
 }
 
@@ -139,6 +156,20 @@ mod tests {
         let env = FakeEnv::new(HOME);
         let target = AgentTarget::global(AgentKind::Claude);
         assert_eq!(base_dir(&target, &env).unwrap(), HOME);
+    }
+
+    #[test]
+    fn base_dir_errors_on_a_blank_home_at_global_scope() {
+        // `home_dir_string()` reports an unset HOME/USERPROFILE as `""`, so a
+        // global install would otherwise resolve under the filesystem root
+        // (`/.claude/skills`) instead of failing.
+        let target = AgentTarget::global(AgentKind::Claude);
+        for blank in ["", "   "] {
+            let env = FakeEnv::new(blank);
+            let err = base_dir(&target, &env)
+                .expect_err("a blank home must not resolve to the filesystem root");
+            assert!(err.to_string().to_lowercase().contains("home directory"));
+        }
     }
 
     #[test]

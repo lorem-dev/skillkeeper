@@ -11,6 +11,15 @@
 //! `serde_json`'s default object map is sorted; TOML output is likewise
 //! deterministic.
 //!
+//! The JSON writers also carry a SkillKeeper hook region through the
+//! read-modify-write untouched, because opencode's global native MCP config is
+//! the very file opencode's hooks are delimited into (see the comment on the
+//! [`JsonWriter`] impl). Note that this only keeps SkillKeeper from failing and
+//! from destroying the region: a `#`-delimited block is not valid JSON, so a
+//! file holding both is still unreadable BY OPENCODE. Making the combined file
+//! valid means moving the opencode hook strategy to `json-merge`, tracked
+//! separately.
+//!
 //! LIMITATION (codex): the TOML writer round-trips through `toml`'s
 //! parse/serialize. Table structure and values survive but the user's original
 //! comments and formatting do not -- an accepted v1 tradeoff (see the design
@@ -21,6 +30,7 @@ use std::collections::BTreeMap;
 use serde_json::{Map, Value};
 use thiserror::Error;
 
+use crate::hooks::region::{lift_regions, restore_regions};
 use crate::mcp::model::{McpServerDef, McpTransport};
 use crate::models::{AgentKind, Scope};
 
@@ -158,23 +168,36 @@ fn serialize_json(root: Map<String, Value>) -> String {
     serde_json::to_string_pretty(&Value::Object(root)).expect("serialize json")
 }
 
+// Every method here lifts SkillKeeper's own hook regions out before
+// `serde_json` sees the text and restores them afterwards. At global scope
+// opencode's native MCP config and opencode's hook target are the same file,
+// `~/.config/opencode/opencode.json`, and the hook side writes a `#`-delimited
+// text region into it. Without the lift, installing an MCP server into a file
+// that already carries a hook region fails with a raw JSON parse error, and the
+// writer's own output would drop the region on the floor. Only our own complete
+// regions are lifted (see [`lift_regions`]); every other non-JSON byte stays in
+// the text and is still rejected by [`parse_json_root`].
 impl McpConfigWriter for JsonWriter {
     fn upsert(&self, text: &str, name: &str, def: &McpServerDef) -> Result<String, WriterError> {
-        let mut root = parse_json_root(text)?;
+        let (json_text, regions) = lift_regions(text);
+        let mut root = parse_json_root(&json_text)?;
         let mut container = match root.get(self.container_key) {
             Some(Value::Object(existing)) => existing.clone(),
             _ => Map::new(),
         };
         container.insert(name.to_string(), (self.to_server)(def)?);
         root.insert(self.container_key.to_string(), Value::Object(container));
-        Ok(serialize_json(root))
+        Ok(restore_regions(&serialize_json(root), &regions))
     }
 
     fn remove(&self, text: &str, name: &str) -> Result<String, WriterError> {
-        if text.trim().is_empty() {
+        let (json_text, regions) = lift_regions(text);
+        // A file that holds nothing but our region carries no JSON document, so
+        // there is no server to drop and nothing to rewrite.
+        if json_text.trim().is_empty() {
             return Ok(text.to_string());
         }
-        let mut root = parse_json_root(text)?;
+        let mut root = parse_json_root(&json_text)?;
         let Some(Value::Object(existing)) = root.get(self.container_key) else {
             return Ok(text.to_string());
         };
@@ -184,14 +207,15 @@ impl McpConfigWriter for JsonWriter {
         let mut container = existing.clone();
         container.remove(name);
         root.insert(self.container_key.to_string(), Value::Object(container));
-        Ok(serialize_json(root))
+        Ok(restore_regions(&serialize_json(root), &regions))
     }
 
     fn existing_names(&self, text: &str) -> Result<Vec<String>, WriterError> {
-        if text.trim().is_empty() {
+        let (json_text, _) = lift_regions(text);
+        if json_text.trim().is_empty() {
             return Ok(Vec::new());
         }
-        let root = parse_json_root(text)?;
+        let root = parse_json_root(&json_text)?;
         match root.get(self.container_key) {
             Some(Value::Object(existing)) => Ok(existing.keys().cloned().collect()),
             _ => Ok(Vec::new()),
@@ -328,9 +352,11 @@ pub fn supports_transport(agent: AgentKind, t: McpTransport) -> bool {
 /// Inputs needed to resolve an agent's native MCP config destination.
 #[derive(Debug, Clone, Default)]
 pub struct McpDestinationTarget {
-    /// Project root; required for every agent except codex (global).
+    /// Project root; required (and non-blank) at project scope, except for
+    /// codex (global-only).
     pub project_path: Option<String>,
-    /// User home directory; required for codex only.
+    /// User home directory; required (and non-blank) at global scope, and for
+    /// codex always.
     pub home_dir: Option<String>,
 }
 
@@ -341,27 +367,54 @@ pub struct McpDestination {
     pub scope: Scope,
 }
 
-/// Resolve where `agent` keeps its native MCP config. Project-scoped agents
-/// resolve under `target.project_path`; codex is global, under
-/// `target.home_dir`. Returns an error when the required target field is absent.
+/// Require a destination input to be present AND non-blank, so a missing value
+/// can never resolve to the filesystem root (`""` + `/.claude.json`). Mirrors
+/// `require_project_dir` in `skillkeeper-agents`, which rejects a blank project
+/// directory for the same reason: `HostEnv::home_dir` reports an unset
+/// `HOME`/`USERPROFILE` as an empty string, not as `None`, so every caller
+/// passes `Some("")` rather than `None`.
+fn require_destination_input<'a>(
+    value: Option<&'a String>,
+    message: &str,
+) -> Result<&'a str, String> {
+    match value.map(|v| v.trim()) {
+        Some(dir) if !dir.is_empty() => Ok(dir),
+        _ => Err(message.to_string()),
+    }
+}
+
+/// Resolve where `agent` keeps its native MCP config for `scope`. Global
+/// resolutions land next to the directory the agent's adapter already uses at
+/// global scope, so every SkillKeeper-managed file for that agent stays in one
+/// place. Codex is global-only: it has no project-scoped MCP config, so it
+/// ignores `scope`. Returns an error when the field the scope needs is absent
+/// or blank.
 pub fn mcp_destination(
     agent: AgentKind,
+    scope: Scope,
     target: &McpDestinationTarget,
 ) -> Result<McpDestination, String> {
-    if agent == AgentKind::Codex {
-        let home = target
-            .home_dir
-            .as_ref()
-            .ok_or_else(|| "codex destination requires \"homeDir\"".to_string())?;
+    if scope == Scope::Global || agent == AgentKind::Codex {
+        let home = require_destination_input(
+            target.home_dir.as_ref(),
+            &format!("{agent:?} global destination requires \"homeDir\""),
+        )?;
+        let path = match agent {
+            AgentKind::Claude => format!("{home}/.claude.json"),
+            AgentKind::Codex => format!("{home}/.codex/config.toml"),
+            AgentKind::Copilot => format!("{home}/.config/github-copilot/mcp-config.json"),
+            AgentKind::Cursor => format!("{home}/.cursor/mcp.json"),
+            AgentKind::Opencode => format!("{home}/.config/opencode/opencode.json"),
+        };
         return Ok(McpDestination {
-            path: format!("{home}/.codex/config.toml"),
+            path,
             scope: Scope::Global,
         });
     }
-    let project = target
-        .project_path
-        .as_ref()
-        .ok_or_else(|| format!("{agent:?} destination requires \"projectPath\""))?;
+    let project = require_destination_input(
+        target.project_path.as_ref(),
+        &format!("{agent:?} destination requires \"projectPath\""),
+    )?;
     let path = match agent {
         AgentKind::Claude => format!("{project}/.mcp.json"),
         AgentKind::Cursor => format!("{project}/.cursor/mcp.json"),
@@ -378,6 +431,7 @@ pub fn mcp_destination(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hooks::region::{insert_region, wrap_region, InsertMode, WrapRegionOptions};
 
     fn stdio_def() -> McpServerDef {
         let mut env = BTreeMap::new();
@@ -609,6 +663,161 @@ mod tests {
         assert_eq!(parsed["mcp"]["user_server"]["url"], "https://user.example");
     }
 
+    // ---- coexistence with a delimited hook region (opencode at global scope) ----
+
+    /// A hook region shaped exactly like the one the delimited-text apply path
+    /// writes into opencode's `opencode.json` (comment token `#`).
+    fn hook_block(id: &str) -> String {
+        wrap_region(&WrapRegionOptions {
+            comment_token: "#".to_string(),
+            comment_close: None,
+            delimiter_id: id.to_string(),
+            label: "devtools/tool:preflight".to_string(),
+            version: Some("1.0.0".to_string()),
+            content: "echo preflight".to_string(),
+        })
+    }
+
+    /// The JSON body of `text`, as the writer itself sees it.
+    fn json_body(text: &str) -> String {
+        lift_regions(text).0
+    }
+
+    #[test]
+    fn opencode_upsert_keeps_an_existing_hook_region_verbatim() {
+        // Order 1: a global opencode skill with hooks is installed first, then a
+        // global opencode MCP server. This used to fail with a raw JSON parse
+        // error and could never succeed until the user edited the file by hand.
+        let writer = writer_for(AgentKind::Opencode);
+        let block = hook_block("a1b2c3d4e5f6");
+        let existing = format!("{{\n  \"theme\": \"dark\"\n}}\n{block}\n");
+
+        let text = writer.upsert(&existing, "github_1", &stdio_def()).unwrap();
+
+        assert!(text.contains(&block), "hook region lost: {text}");
+        let parsed = parse(&json_body(&text));
+        assert_eq!(parsed["theme"], "dark");
+        assert_eq!(parsed["mcp"]["github_1"]["type"], "local");
+        // The region stays on the side of the JSON it came from.
+        assert!(text.trim_end().ends_with(block.lines().last().unwrap()));
+    }
+
+    #[test]
+    fn opencode_remove_keeps_an_existing_hook_region_verbatim() {
+        let writer = writer_for(AgentKind::Opencode);
+        let block = hook_block("a1b2c3d4e5f6");
+        let installed = writer.upsert("", "github_1", &stdio_def()).unwrap();
+        let with_two = writer.upsert(&installed, "other_1", &http_def()).unwrap();
+        let with_hook = insert_region(&with_two, &block, InsertMode::Append);
+
+        // existing_names must see through the region too: reconcile calls it, and
+        // an error there made the instance vanish from the interface.
+        let mut names = writer.existing_names(&with_hook).unwrap();
+        names.sort();
+        assert_eq!(names, vec!["github_1", "other_1"]);
+
+        let removed = writer.remove(&with_hook, "github_1").unwrap();
+        assert!(removed.contains(&block), "hook region lost: {removed}");
+        let parsed = parse(&json_body(&removed));
+        assert!(parsed["mcp"].get("github_1").is_none());
+        assert!(parsed["mcp"].get("other_1").is_some());
+
+        // A no-op removal returns the text (region included) unchanged.
+        assert_eq!(
+            writer.remove(&with_hook, "does_not_exist").unwrap(),
+            with_hook
+        );
+    }
+
+    #[test]
+    fn json_writers_read_a_region_only_file_as_an_empty_document() {
+        // A file that holds nothing but our region carries no JSON document, so
+        // it names no servers rather than erroring.
+        let block = hook_block("only1only2");
+        let region_only = format!("{block}\n");
+        for (agent, container_key) in JSON_AGENTS
+            .iter()
+            .copied()
+            .chain([(AgentKind::Opencode, "mcp")])
+        {
+            let writer = writer_for(agent);
+            assert_eq!(
+                writer.existing_names(&region_only).unwrap(),
+                Vec::<String>::new()
+            );
+            assert_eq!(
+                writer.remove(&region_only, "anything").unwrap(),
+                region_only
+            );
+
+            let text = writer
+                .upsert(&region_only, "github_1", &stdio_def())
+                .unwrap();
+            assert!(text.contains(&block), "{agent:?} lost the hook region");
+            let parsed = parse(&json_body(&text));
+            assert!(parsed[container_key].get("github_1").is_some(), "{agent:?}");
+        }
+    }
+
+    #[test]
+    fn json_writers_still_reject_foreign_non_json() {
+        // Only our own markers are tolerated. A hand-written JSONC comment, a
+        // truncated file, or a half-mangled region must be an error rather than
+        // content the writer silently rewrites away.
+        let block = hook_block("f1f2f3f4");
+        let half_region = block.lines().take(2).collect::<Vec<&str>>().join("\n");
+        let cases = [
+            "// a hand-written comment\n{\n  \"mcp\": {}\n}\n".to_string(),
+            "{\n  \"mcp\": {\n".to_string(),
+            format!("{{}}\n{half_region}\n"),
+        ];
+        let writer = writer_for(AgentKind::Opencode);
+        for case in &cases {
+            assert!(writer.existing_names(case).is_err(), "names: {case}");
+            assert!(
+                writer.upsert(case, "github_1", &stdio_def()).is_err(),
+                "upsert: {case}"
+            );
+            assert!(writer.remove(case, "github_1").is_err(), "remove: {case}");
+        }
+    }
+
+    #[test]
+    fn opencode_round_trips_a_hook_region_in_both_orders() {
+        let writer = writer_for(AgentKind::Opencode);
+        let block = hook_block("0f0f0f0f");
+
+        // Order 1: hook region first (it is the whole file), MCP server second.
+        let hook_first = writer
+            .upsert(&format!("{block}\n"), "github_1", &stdio_def())
+            .unwrap();
+
+        // Order 2: MCP server first, then the region appended after it -- what
+        // the delimited-text apply path does to an existing file -- then two more
+        // MCP writes over the top.
+        let mcp_first = insert_region(
+            &writer.upsert("", "github_1", &stdio_def()).unwrap(),
+            &block,
+            InsertMode::Append,
+        );
+        let mcp_first = writer.upsert(&mcp_first, "other_1", &http_def()).unwrap();
+        let mcp_first = writer.remove(&mcp_first, "other_1").unwrap();
+
+        for text in [&hook_first, &mcp_first] {
+            assert!(text.contains(&block), "hook region lost: {text}");
+            assert_eq!(parse(&json_body(text))["mcp"]["github_1"]["type"], "local");
+            // Idempotent: rewriting the same server changes nothing, so repeated
+            // installs cannot accumulate or drift the region.
+            assert_eq!(
+                &writer.upsert(text, "github_1", &stdio_def()).unwrap(),
+                text
+            );
+        }
+        // Each order keeps the region on the side it was written on.
+        assert!(hook_first.starts_with(&block), "{hook_first}");
+        assert!(mcp_first.trim_end().ends_with(&block), "{mcp_first}");
+    }
+
     #[test]
     fn codex_round_trips_a_stdio_server() {
         let writer = writer_for(AgentKind::Codex);
@@ -735,22 +944,28 @@ mod tests {
             home_dir: Some("/home/user".to_string()),
         };
         assert_eq!(
-            mcp_destination(AgentKind::Claude, &target).unwrap(),
+            mcp_destination(AgentKind::Claude, Scope::Project, &target).unwrap(),
             McpDestination {
                 path: "/proj/.mcp.json".to_string(),
                 scope: Scope::Project,
             }
         );
         assert_eq!(
-            mcp_destination(AgentKind::Cursor, &target).unwrap().path,
+            mcp_destination(AgentKind::Cursor, Scope::Project, &target)
+                .unwrap()
+                .path,
             "/proj/.cursor/mcp.json"
         );
         assert_eq!(
-            mcp_destination(AgentKind::Copilot, &target).unwrap().path,
+            mcp_destination(AgentKind::Copilot, Scope::Project, &target)
+                .unwrap()
+                .path,
             "/proj/.vscode/mcp.json"
         );
         assert_eq!(
-            mcp_destination(AgentKind::Opencode, &target).unwrap().path,
+            mcp_destination(AgentKind::Opencode, Scope::Project, &target)
+                .unwrap()
+                .path,
             "/proj/opencode.json"
         );
     }
@@ -762,7 +977,7 @@ mod tests {
             home_dir: Some("/home/user".to_string()),
         };
         assert_eq!(
-            mcp_destination(AgentKind::Codex, &target).unwrap(),
+            mcp_destination(AgentKind::Codex, Scope::Global, &target).unwrap(),
             McpDestination {
                 path: "/home/user/.codex/config.toml".to_string(),
                 scope: Scope::Global,
@@ -772,7 +987,109 @@ mod tests {
 
     #[test]
     fn mcp_destination_errors_on_missing_target_field() {
-        assert!(mcp_destination(AgentKind::Claude, &McpDestinationTarget::default()).is_err());
-        assert!(mcp_destination(AgentKind::Codex, &McpDestinationTarget::default()).is_err());
+        assert!(mcp_destination(
+            AgentKind::Claude,
+            Scope::Project,
+            &McpDestinationTarget::default()
+        )
+        .is_err());
+        assert!(mcp_destination(
+            AgentKind::Codex,
+            Scope::Project,
+            &McpDestinationTarget::default()
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn mcp_destination_resolves_global_paths_for_every_agent() {
+        let target = McpDestinationTarget {
+            project_path: Some("/proj".to_string()),
+            home_dir: Some("/home/user".to_string()),
+        };
+        let cases = [
+            (AgentKind::Claude, "/home/user/.claude.json"),
+            (AgentKind::Codex, "/home/user/.codex/config.toml"),
+            (
+                AgentKind::Copilot,
+                "/home/user/.config/github-copilot/mcp-config.json",
+            ),
+            (AgentKind::Cursor, "/home/user/.cursor/mcp.json"),
+            (
+                AgentKind::Opencode,
+                "/home/user/.config/opencode/opencode.json",
+            ),
+        ];
+        for (agent, expected) in cases {
+            let dest = mcp_destination(agent, Scope::Global, &target).unwrap();
+            assert_eq!(dest.path, expected, "{agent:?}");
+            assert_eq!(dest.scope, Scope::Global, "{agent:?}");
+        }
+    }
+
+    #[test]
+    fn mcp_destination_keeps_codex_global_at_project_scope() {
+        let target = McpDestinationTarget {
+            project_path: Some("/proj".to_string()),
+            home_dir: Some("/home/user".to_string()),
+        };
+        // Codex has no project-scoped MCP config; asking for one still resolves
+        // globally rather than inventing a path under the project.
+        let dest = mcp_destination(AgentKind::Codex, Scope::Project, &target).unwrap();
+        assert_eq!(dest.path, "/home/user/.codex/config.toml");
+        assert_eq!(dest.scope, Scope::Global);
+    }
+
+    #[test]
+    fn mcp_destination_global_errors_without_home_dir() {
+        let target = McpDestinationTarget {
+            project_path: Some("/proj".to_string()),
+            home_dir: None,
+        };
+        let err = mcp_destination(AgentKind::Cursor, Scope::Global, &target).unwrap_err();
+        assert!(err.contains("homeDir"), "unexpected message: {err}");
+    }
+
+    #[test]
+    fn mcp_destination_global_errors_on_a_blank_home_dir() {
+        // `HostEnv::home_dir` reports an unset HOME/USERPROFILE as `""`, and
+        // every caller passes `Some(that)`. Without this guard a global install
+        // resolves to the filesystem root (`/.claude.json`) and its ledger to
+        // `/.claude/skills/.skmcp.yml`.
+        for blank in ["", "   "] {
+            let target = McpDestinationTarget {
+                project_path: Some("/proj".to_string()),
+                home_dir: Some(blank.to_string()),
+            };
+            for agent in [
+                AgentKind::Claude,
+                AgentKind::Codex,
+                AgentKind::Copilot,
+                AgentKind::Cursor,
+                AgentKind::Opencode,
+            ] {
+                let err = mcp_destination(agent, Scope::Global, &target)
+                    .expect_err("a blank home must not resolve to the filesystem root");
+                assert!(err.contains("homeDir"), "unexpected message: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn mcp_destination_project_errors_on_a_blank_project_path() {
+        // The same class at project scope: an empty project path would make
+        // `<proj>/.mcp.json` into `/.mcp.json`.
+        let target = McpDestinationTarget {
+            project_path: Some(String::new()),
+            home_dir: Some("/home/user".to_string()),
+        };
+        let err = mcp_destination(AgentKind::Claude, Scope::Project, &target)
+            .expect_err("a blank project path must not resolve to the filesystem root");
+        assert!(err.contains("projectPath"), "unexpected message: {err}");
+    }
+
+    #[test]
+    fn scope_defaults_to_project() {
+        assert_eq!(Scope::default(), Scope::Project);
     }
 }

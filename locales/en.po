@@ -442,6 +442,9 @@ msgstr "Could not open the project"
 msgid "projects.missing"
 msgstr "The folder was deleted or moved"
 
+msgid "projects.noAccess"
+msgstr "This folder cannot be read. Allow access to it in your system settings."
+
 msgid "projects.copyPath"
 msgstr "Copy full path"
 
@@ -574,12 +577,6 @@ msgstr "No version"
 msgid "skills.installedFor"
 msgstr "Installed for"
 
-msgid "skills.scope.project"
-msgstr "Project"
-
-msgid "skills.scope.global"
-msgstr "Global"
-
 msgid "skills.source.repo"
 msgstr "From repository"
 
@@ -651,6 +648,9 @@ msgstr "No skills found in your repositories."
 
 msgid "skills.emptyProjects"
 msgstr "No projects tracked yet."
+
+msgid "skills.emptyFiltered"
+msgstr "Nothing matches the current filters."
 
 msgid "skills.status.add"
 msgstr "Skill will be added"
@@ -789,6 +789,9 @@ msgstr "{count} skills total"
 
 msgid "mcp.empty"
 msgstr "No MCP servers yet."
+
+msgid "mcp.emptyFiltered"
+msgstr "Nothing matches the current filters."
 
 msgid "mcp.searchFound.one"
 msgstr "Found {count} MCP server"
@@ -963,9 +966,6 @@ msgstr "Agents"
 
 msgid "mcp.field.parameters"
 msgstr "Parameters"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codex installs globally (not scoped to this project)."
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} cannot express the {transport} transport in its native config."
@@ -1300,3 +1300,27 @@ msgstr "commit-helper"
 
 msgid "onboarding.tree.skillC"
 msgstr "changelog"
+
+msgid "scope.global"
+msgstr "Global"
+
+msgid "scope.globalHint"
+msgstr "Installed for this user, in every project"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex installs MCP servers for the whole user, not per project"
+
+msgid "skills.agentChoice.title"
+msgstr "Choose agents"
+
+msgid "skills.agentChoice.intro"
+msgstr "No agent is selected below, so nothing would be installed. Choose which agents each one installs skills and MCP servers for."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Next"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Agents for {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "No agents selected"

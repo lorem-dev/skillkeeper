@@ -28,7 +28,7 @@ export type {
   ProjectSkillUpdate,
   OrphanLeafInfo,
 } from './lib/skillTree';
-export { buildProjectPlan } from './lib/applyPlan';
+export { buildProjectPlan, scopesNeedingAgents } from './lib/applyPlan';
 export type { ProjectPlan, AgentOps, SkillChangeRow } from './lib/applyPlan';
 export { SkillCard } from './ui/SkillCard';
 export type { SkillCardProps } from './ui/SkillCard';

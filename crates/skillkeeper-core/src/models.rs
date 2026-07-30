@@ -228,7 +228,7 @@ pub struct Repository {
 }
 
 /// The scope an install targets.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[cfg_attr(
     test,
@@ -239,6 +239,9 @@ pub struct Repository {
 )]
 #[serde(rename_all = "lowercase")]
 pub enum Scope {
+    /// The default so an apply argument object without a `scope` field keeps
+    /// the pre-Global behaviour.
+    #[default]
     Project,
     Global,
 }

@@ -7,6 +7,7 @@
  */
 import type { CSSProperties } from 'react';
 import { cx } from '@/shared/lib';
+import { Icon } from '@/shared/ui';
 import { hueFromName } from '../lib/hueFromName';
 import './ProjectIcon.scss';
 
@@ -19,10 +20,31 @@ export interface ProjectIconProps {
   /** Square size in px. Default 18. */
   readonly size?: number;
   readonly className?: string;
+  /** Draw the user-wide scope instead of a project: a globe on an accent tile.
+   *  Takes precedence over `iconUrl` and `name`. */
+  readonly global?: boolean;
 }
 
-export function ProjectIcon({ iconUrl, name, size = 18, className }: ProjectIconProps) {
+export function ProjectIcon({ iconUrl, name, size = 18, className, global }: ProjectIconProps) {
   const box: CSSProperties = { width: size, height: size };
+  if (global === true) {
+    // Size the glyph from a symmetric inset rather than from a fraction of the
+    // box: a fraction rounds to whatever parity it lands on, and an odd glyph in
+    // an even tile leaves a half pixel per side that the browser resolves
+    // unevenly (13px in 18px gave 2px on one side and 3px on the other, which
+    // reads as visibly off-centre). Insetting keeps both gutters whole and equal
+    // at any size.
+    const inset = Math.round(size * 0.14);
+    return (
+      <span
+        className={cx('sk-project-icon', 'sk-project-icon--global', className)}
+        style={box}
+        aria-hidden="true"
+      >
+        <Icon name="global" size={size - inset * 2} />
+      </span>
+    );
+  }
   if (iconUrl !== undefined) {
     return (
       <img

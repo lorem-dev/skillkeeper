@@ -10,13 +10,13 @@ use skillkeeper_core::ports::{HostEnv, PortResult};
 
 use crate::adapter::{make_adapter, AdapterSpec, AgentAdapter, HookCapability};
 use crate::model::{AgentKind, AgentTarget, HookStrategy, Scope};
-use crate::paths::{base_dir, join_path, require_project_dir};
+use crate::paths::{base_dir, join_path, require_home_dir, require_project_dir};
 
 /// OpenCode's base config directory differs between project and global scope.
 fn opencode_dir(target: &AgentTarget, env: &dyn HostEnv) -> PortResult<String> {
     match target.scope {
         Scope::Project => Ok(join_path(&[&require_project_dir(env)?, ".opencode"])),
-        Scope::Global => Ok(join_path(&[env.home_dir(), ".config", "opencode"])),
+        Scope::Global => Ok(join_path(&[&require_home_dir(env)?, ".config", "opencode"])),
     }
 }
 

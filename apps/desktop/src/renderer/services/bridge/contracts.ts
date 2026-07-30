@@ -10,6 +10,7 @@ import type {
   McpServerDef,
   McpTransport,
   McpIdentity,
+  Scope,
 } from './generated/core';
 
 // -- editors -----------------------------------------------------------------
@@ -104,13 +105,19 @@ export interface SkillRef {
 }
 
 export interface ApplyArgs {
-  /** Project UUID (recorded as target.projectId). */
+  /** Project UUID (recorded as target.projectId). Ignored at global scope. */
   readonly projectId: string;
-  /** Project folder path (used for PROJECT_DIR_ENV path resolution). */
+  /** Project folder path (used for PROJECT_DIR_ENV path resolution). Ignored at global scope. */
   readonly projectPath: string;
   readonly agents: readonly AgentKind[];
   readonly install: readonly SkillRef[];
   readonly remove: readonly SkillRef[];
+  /**
+   * Which scope to write into. Required, even though Rust defaults an absent
+   * field to `project`: an omitted scope is how a global operation silently
+   * became a project one. Build it with `applyScope` rather than by hand.
+   */
+  readonly scope: Scope;
 }
 
 export interface ApplyProgress {
@@ -159,16 +166,26 @@ export interface McpBatch {
 
 /** Arguments for applyMcp. */
 export interface ApplyMcpArgs {
+  /** Ignored at global scope. */
   readonly projectId: string;
+  /** Ignored at global scope. */
   readonly projectPath: string;
   readonly batches: readonly McpBatch[];
+  /** Which scope to write into. Required; see {@link ApplyArgs.scope}. */
+  readonly scope: Scope;
 }
 
-/** An install skipped because the agent cannot express the def's transport. */
+/**
+ * One operation `applyMcp` declined to perform: an install whose transport the
+ * agent cannot express, or any operation in a codex batch that arrived at
+ * project scope (codex's native config is user-wide only).
+ */
 export interface McpSkipped {
   readonly agent: AgentKind;
+  /** The preset's source name for an install, the instance name for a remove. */
   readonly source: string;
-  readonly transport: McpTransport;
+  /** The transport that could not be expressed; absent for a skipped remove. */
+  readonly transport?: McpTransport;
 }
 
 /** Result of applyMcp. Never thrown across the bridge boundary. */
@@ -213,6 +230,8 @@ export interface McpUpdateReq {
 /** Arguments for updateMcp. */
 export interface UpdateMcpArgs {
   readonly updates: readonly McpUpdateReq[];
+  /** Which scope to write into. Required; see {@link ApplyArgs.scope}. */
+  readonly scope: Scope;
 }
 
 /** Result of updateMcp. Never thrown across the bridge boundary. */
@@ -221,13 +240,17 @@ export type UpdateMcpResult =
 
 /** Arguments for mcpUpdatePreflight. */
 export interface McpUpdatePreflightArgs {
+  /** Ignored at global scope. */
   readonly projectId: string;
+  /** Ignored at global scope. */
   readonly projectPath: string;
   readonly agent: AgentKind;
   /** The existing instance name to check stored params against. */
   readonly instanceName: string;
   /** The NEW/current source def (placeholders intact) to check params for. */
   readonly def: McpServerDef;
+  /** Which scope to read from. Required; see {@link ApplyArgs.scope}. */
+  readonly scope: Scope;
 }
 
 /** Result of mcpUpdatePreflight. Never thrown across the bridge boundary. */

@@ -435,9 +435,14 @@ pub struct SkillRef {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApplyArgs {
-    /// Project UUID (recorded as `target.projectId`).
+    /// Which scope to install into. Absent means `project`, so an older caller
+    /// keeps its behaviour.
+    #[serde(default)]
+    pub scope: Scope,
+    /// Project UUID (recorded as `target.projectId`). Ignored at global scope.
     pub project_id: String,
     /// Project folder path (used for `PROJECT_DIR_ENV` path resolution).
+    /// Ignored at global scope.
     pub project_path: String,
     pub agents: Vec<AgentKind>,
     pub install: Vec<SkillRef>,
@@ -574,6 +579,29 @@ fn tick(done: &mut usize, total: usize, label: &str, on_progress: &mut dyn FnMut
     });
 }
 
+/// The install target for one agent, honouring the requested scope. At global
+/// scope there is no project id to record; the adapters resolve every path from
+/// the home directory (`base_dir` in `skillkeeper-agents::paths`).
+fn target_for(agent: AgentKind, args: &ApplyArgs) -> AgentTarget {
+    match args.scope {
+        Scope::Global => AgentTarget::global(agent),
+        Scope::Project => AgentTarget::project(agent, Some(&args.project_id)),
+    }
+}
+
+/// Whether `m` was installed at the target this apply is acting on: at global
+/// scope any global manifest, at project scope only that project's. A global
+/// manifest carries no `project_id`, so comparing ids alone never matches it.
+fn same_scope(m: &InstallManifest, args: &ApplyArgs) -> bool {
+    match args.scope {
+        Scope::Global => m.target.scope == Scope::Global,
+        Scope::Project => {
+            m.target.scope == Scope::Project
+                && m.target.project_id.as_deref() == Some(args.project_id.as_str())
+        }
+    }
+}
+
 /// The fallible body of [`apply`], run under the state lock.
 fn apply_inner(
     ctx: &AppContext,
@@ -606,19 +634,14 @@ fn apply_inner(
     // Removals first, so a re-install onto the same target starts clean.
     for r in &args.remove {
         for &agent in &args.agents {
-            if let Some(pos) = installs.iter().position(|m| {
-                m.target.project_id.as_deref() == Some(args.project_id.as_str())
-                    && m.target.agent == agent
-                    && same_skill(m, r)
-            }) {
+            if let Some(pos) = installs
+                .iter()
+                .position(|m| same_scope(m, args) && m.target.agent == agent && same_skill(m, r))
+            {
                 let manifest = installs.remove(pos);
                 uninstall_skill(&ctx.fs, &manifest).map_err(|e| e.to_string())?;
                 if let Some(remote) = &manifest.source_remote {
-                    let target = AgentTarget {
-                        agent,
-                        scope: Scope::Project,
-                        project_id: Some(args.project_id.clone()),
-                    };
+                    let target = target_for(agent, args);
                     let file = ctx
                         .registry
                         .get(agent)
@@ -652,18 +675,12 @@ fn apply_inner(
         };
         for &agent in &args.agents {
             if let (Some(repo), Some(resolved)) = (&repo, &resolved) {
-                let already = installs.iter().any(|m| {
-                    m.target.project_id.as_deref() == Some(args.project_id.as_str())
-                        && m.target.agent == agent
-                        && same_skill(m, r)
-                });
+                let already = installs
+                    .iter()
+                    .any(|m| same_scope(m, args) && m.target.agent == agent && same_skill(m, r));
                 if !already {
                     let adapter = ctx.registry.get(agent).map_err(|e| e.to_string())?;
-                    let target = AgentTarget {
-                        agent,
-                        scope: Scope::Project,
-                        project_id: Some(args.project_id.clone()),
-                    };
+                    let target = target_for(agent, args);
                     let dest_root = adapter
                         .destination_root(&target, &env)
                         .map_err(|e| e.to_string())?;
@@ -713,7 +730,7 @@ fn apply_inner(
     }
     // (b) Untouched surviving installs keep their block.
     for m in &installs {
-        if m.target.project_id.as_deref() != Some(args.project_id.as_str()) {
+        if !same_scope(m, args) {
             continue;
         }
         let Some(remote) = &m.source_remote else {
@@ -722,11 +739,7 @@ fn apply_inner(
         if new_this_run.contains(&manifest_key(m)) {
             continue;
         }
-        let target = AgentTarget {
-            agent: m.target.agent,
-            scope: Scope::Project,
-            project_id: Some(args.project_id.clone()),
-        };
+        let target = target_for(m.target.agent, args);
         let file = ctx
             .registry
             .get(m.target.agent)
@@ -974,12 +987,25 @@ mod tests {
         remove: Vec<SkillRef>,
     ) -> ApplyArgs {
         ApplyArgs {
+            scope: Scope::Project,
             project_id: project_id.to_string(),
             project_path: proj.path(),
             agents: vec![AgentKind::Claude],
             install,
             remove,
         }
+    }
+
+    /// Seed state with one tracked repository holding one skill (`skill-a`, via
+    /// [`seed_state`]) inside a fresh project. Returns the owning temp-dir guards
+    /// (kept alive by the caller for as long as `apply`/`reconcile` need to read
+    /// the repo from disk), the seeded project id, and a ready-to-use
+    /// [`SkillRef`] for that skill.
+    fn seed_repo_with_skill(app: &TempAppData) -> (SkillRepo, ProjectDir, String, SkillRef) {
+        let src = SkillRepo::new();
+        let proj = ProjectDir::new();
+        let (repo_id, project_id) = seed_state(app, &src, &proj);
+        (src, proj, project_id, install_ref(&repo_id))
     }
 
     // ---- available ----
@@ -1056,14 +1082,12 @@ mod tests {
     #[test]
     fn apply_installs_a_skill_and_verify_reports_ok() {
         let app = TempAppData::new();
-        let src = SkillRepo::new();
-        let proj = ProjectDir::new();
-        let (repo_id, project_id) = seed_state(&app, &src, &proj);
+        let (_src, proj, project_id, skill) = seed_repo_with_skill(&app);
 
         let mut steps: Vec<ApplyProgress> = Vec::new();
         let result = apply(
             &app.ctx,
-            apply_args(&project_id, &proj, vec![install_ref(&repo_id)], vec![]),
+            apply_args(&project_id, &proj, vec![skill], vec![]),
             &mut |p| steps.push(p),
         );
         assert!(result.ok, "apply failed: {:?}", result.error);
@@ -1093,6 +1117,152 @@ mod tests {
         let report = verify_install(&app.ctx.fs, &installs[0]).unwrap();
         assert!(report.ok, "verify not ok: {report:?}");
         assert_eq!(installs[0].source_repo_id.as_deref(), Some("repo-1"));
+    }
+
+    #[test]
+    fn apply_installs_a_skill_globally_and_records_the_global_scope() {
+        // Seed exactly as the project-scope apply test does (a tracked repo
+        // holding one skill), but apply with scope: Global.
+        let app = TempAppData::new();
+        let (_src, _proj, _project_id, skill) = seed_repo_with_skill(&app);
+
+        let result = apply(
+            &app.ctx,
+            ApplyArgs {
+                scope: Scope::Global,
+                project_id: String::new(),
+                project_path: String::new(),
+                agents: vec![AgentKind::Claude],
+                install: vec![skill],
+                remove: vec![],
+            },
+            &mut |_p| {},
+        );
+        assert!(result.ok, "global apply failed: {:?}", result.error);
+
+        // The skill landed under the isolated home, not under any project.
+        let installs = load_state(&app.ctx.fs, &app.ctx.paths.state_json)
+            .unwrap()
+            .installs;
+        let manifest = installs
+            .iter()
+            .find(|m| m.target.agent == AgentKind::Claude)
+            .expect("one manifest recorded");
+        assert_eq!(manifest.target.scope, Scope::Global);
+        assert_eq!(manifest.target.project_id, None);
+        assert!(
+            manifest.destination_root.contains("/.claude/skills"),
+            "unexpected destination: {}",
+            manifest.destination_root
+        );
+        assert!(app.ctx.fs.exists(&manifest.destination_root).unwrap());
+    }
+
+    #[test]
+    fn reconcile_keeps_a_global_install() {
+        // reconcile only walks tracked projects; a global manifest must survive
+        // it untouched (commands/skills.rs `kept` seed).
+        let app = TempAppData::new();
+        let (_src, _proj, _project_id, skill) = seed_repo_with_skill(&app);
+        let applied = apply(
+            &app.ctx,
+            ApplyArgs {
+                scope: Scope::Global,
+                project_id: String::new(),
+                project_path: String::new(),
+                agents: vec![AgentKind::Claude],
+                install: vec![skill],
+                remove: vec![],
+            },
+            &mut |_p| {},
+        );
+        assert!(applied.ok);
+
+        let kept = reconcile(&app.ctx).expect("reconcile ok");
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].target.scope, Scope::Global);
+    }
+
+    #[test]
+    fn apply_is_idempotent_for_an_already_installed_global_skill() {
+        // A global manifest carries no project_id; the already-installed check
+        // must still recognize it by scope, or a second global apply appends a
+        // duplicate manifest instead of a no-op.
+        let app = TempAppData::new();
+        let (_src, _proj, _project_id, skill) = seed_repo_with_skill(&app);
+        let mut noop = |_p: ApplyProgress| {};
+        let global_args = |skill: SkillRef| ApplyArgs {
+            scope: Scope::Global,
+            project_id: String::new(),
+            project_path: String::new(),
+            agents: vec![AgentKind::Claude],
+            install: vec![skill],
+            remove: vec![],
+        };
+
+        assert!(apply(&app.ctx, global_args(skill.clone()), &mut noop).ok);
+        assert!(apply(&app.ctx, global_args(skill), &mut noop).ok);
+
+        let installs = load_state(&app.ctx.fs, &app.ctx.paths.state_json)
+            .unwrap()
+            .installs;
+        assert_eq!(installs.len(), 1, "duplicate global manifest recorded");
+    }
+
+    #[test]
+    fn apply_removes_a_globally_installed_skill() {
+        // A global manifest carries no project_id; the remove filter must still
+        // recognize it by scope, or the remove silently no-ops while reporting
+        // success (neither the manifest nor the on-disk skill would be gone).
+        let app = TempAppData::new();
+        let (_src, _proj, _project_id, skill) = seed_repo_with_skill(&app);
+        let mut noop = |_p: ApplyProgress| {};
+
+        let installed = apply(
+            &app.ctx,
+            ApplyArgs {
+                scope: Scope::Global,
+                project_id: String::new(),
+                project_path: String::new(),
+                agents: vec![AgentKind::Claude],
+                install: vec![skill.clone()],
+                remove: vec![],
+            },
+            &mut noop,
+        );
+        assert!(installed.ok);
+        let installs = load_state(&app.ctx.fs, &app.ctx.paths.state_json)
+            .unwrap()
+            .installs;
+        assert_eq!(installs.len(), 1);
+        // `destination_root` is the shared agent-wide skills root; the skill's
+        // own directory lives one level under it.
+        let skill_dir = format!("{}/skill-a", installs[0].destination_root);
+        assert!(app.ctx.fs.exists(&skill_dir).unwrap());
+
+        let removed = apply(
+            &app.ctx,
+            ApplyArgs {
+                scope: Scope::Global,
+                project_id: String::new(),
+                project_path: String::new(),
+                agents: vec![AgentKind::Claude],
+                install: vec![],
+                remove: vec![skill],
+            },
+            &mut noop,
+        );
+        assert!(removed.ok, "global remove failed: {:?}", removed.error);
+        assert_eq!(removed.removed, Some(1));
+
+        let installs = load_state(&app.ctx.fs, &app.ctx.paths.state_json)
+            .unwrap()
+            .installs;
+        assert!(installs.is_empty(), "global manifest not removed");
+        assert!(
+            !app.ctx.fs.exists(&skill_dir).unwrap(),
+            "installed skill directory not deleted"
+        );
     }
 
     #[test]

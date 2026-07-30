@@ -81,9 +81,15 @@ fn phase2_command_surface_end_to_end() {
     assert_eq!(info.from_repos_count, 0);
     assert_eq!(info.agent_count, 0);
 
-    // --- projects: exists (present now, gone after the folder is deleted) ---
-    assert!(projects::exists(ctx, project.id.clone()));
-    assert!(!projects::exists(ctx, "no-such-id".to_string()));
+    // --- projects: folder state (present now, gone after the folder is deleted) ---
+    assert_eq!(
+        projects::folder_state(ctx, project.id.clone()),
+        projects::ProjectFolderState::Present
+    );
+    assert_eq!(
+        projects::folder_state(ctx, "no-such-id".to_string()),
+        projects::ProjectFolderState::Missing
+    );
 
     // --- projects: remove -> list empty ---
     let removed = projects::remove(ctx, project.id.clone());
@@ -91,5 +97,8 @@ fn phase2_command_surface_end_to_end() {
     assert!(state_read::list_projects(ctx).is_empty());
 
     // A removed project no longer exists to the command surface.
-    assert!(!projects::exists(ctx, project.id));
+    assert_eq!(
+        projects::folder_state(ctx, project.id),
+        projects::ProjectFolderState::Missing
+    );
 }

@@ -4,8 +4,11 @@ export type { BridgeClient } from './client';
 export type {
   Repository,
   Project,
+  ProjectFolderState,
   InstallManifest,
   AgentKind,
+  Scope,
+  AgentTarget,
   LoadConfigResult,
   SectionValidity,
   SkillKeeperConfig,

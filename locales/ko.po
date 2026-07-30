@@ -379,6 +379,9 @@ msgstr "프로젝트를 열 수 없습니다"
 msgid "projects.missing"
 msgstr "폴더가 삭제되었거나 이동되었습니다"
 
+msgid "projects.noAccess"
+msgstr "이 폴더를 읽을 수 없습니다. 시스템 설정에서 접근을 허용하세요."
+
 msgid "projects.copyPath"
 msgstr "전체 경로 복사"
 
@@ -502,12 +505,6 @@ msgstr "버전 없음"
 msgid "skills.installedFor"
 msgstr "설치 대상"
 
-msgid "skills.scope.project"
-msgstr "프로젝트"
-
-msgid "skills.scope.global"
-msgstr "전역"
-
 msgid "skills.source.repo"
 msgstr "저장소에서"
 
@@ -579,6 +576,9 @@ msgstr "저장소에서 스킬을 찾을 수 없습니다."
 
 msgid "skills.emptyProjects"
 msgstr "추적 중인 프로젝트가 없습니다."
+
+msgid "skills.emptyFiltered"
+msgstr "현재 필터와 일치하는 항목이 없습니다."
 
 msgid "skills.status.add"
 msgstr "스킬이 추가됩니다"
@@ -717,6 +717,9 @@ msgstr "전체 스킬 {count}개"
 
 msgid "mcp.empty"
 msgstr "아직 MCP 서버가 없습니다."
+
+msgid "mcp.emptyFiltered"
+msgstr "현재 필터와 일치하는 항목이 없습니다."
 
 msgid "mcp.searchFound.one"
 msgstr "MCP 서버 {count}개 찾음"
@@ -888,9 +891,6 @@ msgstr "에이전트"
 
 msgid "mcp.field.parameters"
 msgstr "매개변수"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codex는 전역으로 설치됩니다(이 프로젝트에 한정되지 않음)."
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent}는 기본 설정에서 {transport} 전송 방식을 표현할 수 없습니다."
@@ -1285,3 +1285,27 @@ msgstr "터미널을 사용할 수 없습니다: {error}. git 명령은 계속 �
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "업데이트 확인이 연기되었습니다: SSH 키가 잠겨 있습니다. 설정에서 잠금을 해제하세요."
+
+msgid "scope.global"
+msgstr "전역"
+
+msgid "scope.globalHint"
+msgstr "이 사용자 전체에 설치되어 모든 프로젝트에 적용"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex는 MCP 서버를 프로젝트별이 아니라 사용자 전체에 설치합니다"
+
+msgid "skills.agentChoice.title"
+msgstr "에이전트 선택"
+
+msgid "skills.agentChoice.intro"
+msgstr "아래에 선택된 에이전트가 없어 아무것도 설치되지 않습니다. 어떤 에이전트에 스킬과 MCP 서버를 설치할지 선택하세요."
+
+msgid "skills.agentChoice.confirm"
+msgstr "다음"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "{scope}의 에이전트"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "선택된 에이전트 없음"

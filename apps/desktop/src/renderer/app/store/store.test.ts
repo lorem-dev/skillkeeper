@@ -40,6 +40,8 @@ vi.mock('@/services/bridge', () => ({
     reconcileMcp: vi.fn(),
     describeRepository: vi.fn(),
     setOnboarding: vi.fn(),
+    removeProject: vi.fn(),
+    removeRepository: vi.fn(),
   },
 }));
 
@@ -359,6 +361,75 @@ describe('useSkillkeeperStore', () => {
     });
   });
 
+  describe('removeRepository', () => {
+    beforeEach(() => {
+      vi.mocked(bridgeClient.removeRepository).mockReset();
+      vi.mocked(bridgeClient.removeRepository).mockResolvedValue({ ok: true } as RemoveResult);
+    });
+
+    // The repository half of the same rule as `removeProject`: a persisted
+    // filter naming a gone repository narrows the view by an option that is no
+    // longer offered, so the user cannot even see what is hiding their content.
+    it('drops the gone repository from both persisted repository filters', async () => {
+      useSkillkeeperStore.setState({
+        repositories: [mockRepo],
+        skillsUi: { ...useSkillkeeperStore.getState().skillsUi, repoFilter: [mockRepo.id, 'repo-2'] },
+        mcpUi: { ...useSkillkeeperStore.getState().mcpUi, componentsRepoFilter: [mockRepo.id] },
+      });
+
+      await useSkillkeeperStore.getState().removeRepository(mockRepo.id);
+
+      const state = useSkillkeeperStore.getState();
+      expect(state.repositories).toEqual([]);
+      expect(state.skillsUi.repoFilter).toEqual(['repo-2']);
+      expect(state.mcpUi.componentsRepoFilter).toEqual([]);
+    });
+  });
+
+  describe('removeProject', () => {
+    const other: Project = { ...mockProject, id: 'project-2', name: 'Beta', path: '/tmp/beta' };
+
+    beforeEach(() => {
+      vi.mocked(bridgeClient.removeProject).mockReset();
+      vi.mocked(bridgeClient.removeProject).mockResolvedValue({ ok: true } as RemoveResult);
+    });
+
+    // Both management pages narrow their tree by a persisted project filter, and
+    // either can be left naming ONLY the removed project (a project card's
+    // "show me this project" action sets exactly that). A filter still naming a
+    // gone project filtered the entire tree away while its combobox, which only
+    // joins labels of options that still exist, showed the all-projects
+    // placeholder -- an empty page with nothing explaining it.
+    it('drops the gone project from both persisted project filters', async () => {
+      useSkillkeeperStore.setState({
+        projects: [mockProject, other],
+        skillsUi: { ...useSkillkeeperStore.getState().skillsUi, projectFilter: [mockProject.id, other.id] },
+        mcpUi: { ...useSkillkeeperStore.getState().mcpUi, managementProjectFilter: [mockProject.id] },
+      });
+
+      await useSkillkeeperStore.getState().removeProject(mockProject.id);
+
+      const state = useSkillkeeperStore.getState();
+      expect(state.projects.map((p) => p.id)).toEqual([other.id]);
+      expect(state.skillsUi.projectFilter).toEqual([other.id]);
+      expect(state.mcpUi.managementProjectFilter).toEqual([]);
+    });
+
+    it('leaves the filters alone when the bridge refuses the removal', async () => {
+      vi.mocked(bridgeClient.removeProject).mockResolvedValue({ ok: false, error: 'busy' } as RemoveResult);
+      useSkillkeeperStore.setState({
+        projects: [mockProject],
+        skillsUi: { ...useSkillkeeperStore.getState().skillsUi, projectFilter: [mockProject.id] },
+      });
+
+      await useSkillkeeperStore.getState().removeProject(mockProject.id);
+
+      const state = useSkillkeeperStore.getState();
+      expect(state.projects.map((p) => p.id)).toEqual([mockProject.id]);
+      expect(state.skillsUi.projectFilter).toEqual([mockProject.id]);
+    });
+  });
+
   describe('setLoading', () => {
     it('sets loading to true', () => {
       useSkillkeeperStore.getState().setLoading(true);
@@ -437,7 +508,7 @@ describe('useSkillkeeperStore', () => {
         updateProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
         removeProject: async () => ({ ok: true } as RemoveResult),
         describeProject: async () => ({ skillCount: 0, fromReposCount: 0, agentCount: 0 }),
-        projectExists: async () => true,
+        projectFolderState: async () => 'present' as const,
         openProject: async () => ({ ok: true }),
         startTerminal: async () => '',
         terminalStatus: async () => ({ started: true }),
@@ -525,7 +596,7 @@ describe('useSkillkeeperStore', () => {
         updateProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
         removeProject: async () => ({ ok: true } as RemoveResult),
         describeProject: async () => ({ skillCount: 0, fromReposCount: 0, agentCount: 0 }),
-        projectExists: async () => true,
+        projectFolderState: async () => 'present' as const,
         openProject: async () => ({ ok: true }),
         startTerminal: async () => '',
         terminalStatus: async () => ({ started: true }),
@@ -958,15 +1029,23 @@ describe('useSkillkeeperStore', () => {
     it('uninstalls every instance of the manual preset across projects and global, then drops it from config', async () => {
       await useSkillkeeperStore.getState().deleteMcpPreset('m1');
 
+      // Exact objects (`toEqual`, not `objectContaining`): the point of this
+      // assertion is that BOTH calls carry an explicit `scope`. The global
+      // bucket used to be applied with no `scope` at all, which Rust reads as
+      // `project` -- dropping codex's removes silently and failing the other
+      // four agents on the empty project path. A dropped `scope` fails here
+      // again, because `toEqual` treats the missing key as a difference.
       expect(applyMcpArgs()).toEqual(
         expect.arrayContaining([
           {
+            scope: 'project',
             projectId: 'proj-1',
             projectPath: mockProject.path,
             batches: [{ agent: 'claude', install: [], remove: [{ instanceName: 'github_1' }] }],
           },
           {
-            projectId: 'global',
+            scope: 'global',
+            projectId: '',
             projectPath: '',
             batches: [{ agent: 'codex', install: [], remove: [{ instanceName: 'github_1' }] }],
           },

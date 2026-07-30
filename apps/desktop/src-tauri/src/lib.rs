@@ -135,7 +135,7 @@ pub fn run() {
             commands::projects::projects_add,
             commands::projects::projects_update,
             commands::projects::projects_remove,
-            commands::projects::projects_exists,
+            commands::projects::projects_folder_state,
             commands::projects::projects_describe,
             commands::projects::projects_detect_agents,
             commands::dialog::dialog_select_folder,

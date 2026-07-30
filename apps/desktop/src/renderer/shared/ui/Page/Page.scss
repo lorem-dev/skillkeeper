@@ -213,3 +213,14 @@
 .sk-empty {
   color: var(--sk-color-label-2);
 }
+
+// An empty state a filter caused rather than an empty catalog: the muted line
+// plus the control that clears the filter. The in-tree footer that normally
+// carries that reset lives inside the non-empty branch, so a fully filtered-out
+// tree has to offer its own way back.
+.sk-empty-filtered {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sk-space-3);
+}

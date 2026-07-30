@@ -64,8 +64,7 @@ Claude is the reference adapter and supports **both skills and hooks**.
 **Hooks:**
 - Strategy: `json-merge`
 - Target file: `<project>/.claude/settings.json` (project scope), or
-  `.claude/settings.local.json` (project-local), or `~/.claude/settings.json`
-  (global scope).
+  `~/.claude/settings.json` (global scope).
 - Each installed hook entry is merged under the `hooks` key in the appropriate
   `settings.json` and tagged with a `_skillkeeper` ownership marker carrying
   the skill and hook identity plus a `markerId`. This lets verify detect drift

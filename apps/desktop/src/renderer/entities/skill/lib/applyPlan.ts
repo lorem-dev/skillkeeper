@@ -7,6 +7,7 @@
  * the review table.
  */
 import type { AgentKind, InstallManifest, SkillRef } from '@/services/bridge';
+import { scopeIdOf } from '@/domain';
 import { parseProjectSkillKey, repoSkillKey } from './skillTree';
 
 export interface AgentOps {
@@ -37,8 +38,9 @@ function pushAgent(map: Map<string, AgentKind[]>, key: string, agent: AgentKind)
 }
 
 /**
- * Plan for one project. `checkedKeys` are project-mode keys (only this
- * project's are considered); `installs` is the full manifest list.
+ * Plan for one scope (a tracked project, or the reserved global scope id).
+ * `checkedKeys` are project-mode keys (only this scope's are considered);
+ * `installs` is the full manifest list.
  */
 export function buildProjectPlan(
   projectId: string,
@@ -66,7 +68,11 @@ export function buildProjectPlan(
   // be installed for other agents.
   const removeOnly = new Set<string>();
   for (const m of installs) {
-    if (m.target.scope !== 'project' || m.target.projectId !== projectId) continue;
+    // `scopeIdOf` is the single source of truth for which scope bucket an
+    // install belongs to (the reserved global id, or the project's own id) --
+    // matching on `target.scope` alone would silently drop every global-scope
+    // manifest from a `projectId === GLOBAL_SCOPE_ID` plan.
+    if (scopeIdOf(m.target) !== projectId) continue;
     if (m.sourceRepoId === undefined) continue;
     const ref: SkillRef = { repoId: m.sourceRepoId, group: m.skillId.group, name: m.skillId.name };
     const k = refKey(ref);
@@ -115,4 +121,31 @@ export function buildProjectPlan(
     rows.push({ skillKey: key, ref: refByKey.get(key)!, action: 'remove', agents });
   }
   return { projectId, ops, rows };
+}
+
+/**
+ * Scope ids whose checked skills would install nothing because no agent is
+ * chosen: at least one checked leaf is not installed, and the agent set is
+ * empty. Returned in the order of `scopeIds`, so the caller's own scope order
+ * (global first, then projects) carries through to the interface.
+ *
+ * A scope whose only pending change is a removal is deliberately NOT listed: an
+ * empty agent set there is a "remove everything" plan, which already produces
+ * real operations and a correct review.
+ */
+export function scopesNeedingAgents(
+  scopeIds: readonly string[],
+  checkedIds: readonly string[],
+  installedIds: readonly string[],
+  agentsByScope: Readonly<Record<string, readonly AgentKind[]>>,
+): string[] {
+  const installed = new Set(installedIds);
+  const wouldInstall = new Set<string>();
+  for (const key of checkedIds) {
+    if (installed.has(key)) continue;
+    wouldInstall.add(parseProjectSkillKey(key).projectId);
+  }
+  return scopeIds.filter(
+    (id) => wouldInstall.has(id) && (agentsByScope[id]?.length ?? 0) === 0,
+  );
 }

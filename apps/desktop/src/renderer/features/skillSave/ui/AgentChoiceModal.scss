@@ -1,0 +1,53 @@
+// Agent-choice modal: the step before the save review, asking for agents in
+// every scope whose checked skills would otherwise install nothing.
+.sk-agent-choice-modal {
+  max-width: 480px;
+}
+
+.sk-agent-choice-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+}
+
+.sk-agent-choice-modal__intro {
+  margin: 0;
+  font-size: 13px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-agent-choice-modal__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sk-agent-choice-modal__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sk-space-3);
+}
+
+.sk-agent-choice-modal__scope {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  min-width: 0;
+}
+
+.sk-agent-choice-modal__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-agent-choice-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+}

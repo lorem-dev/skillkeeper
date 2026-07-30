@@ -352,6 +352,9 @@ msgstr "无法打开项目"
 msgid "projects.missing"
 msgstr "文件夹已被删除或移动"
 
+msgid "projects.noAccess"
+msgstr "无法读取此文件夹。请在系统设置中允许访问。"
+
 msgid "projects.copyPath"
 msgstr "复制完整路径"
 
@@ -411,12 +414,6 @@ msgstr "无版本"
 
 msgid "skills.installedFor"
 msgstr "已安装到"
-
-msgid "skills.scope.project"
-msgstr "项目"
-
-msgid "skills.scope.global"
-msgstr "全局"
 
 msgid "skills.source.repo"
 msgstr "来自仓库"
@@ -489,6 +486,9 @@ msgstr "在你的仓库中未找到任何技能。"
 
 msgid "skills.emptyProjects"
 msgstr "尚未跟踪任何项目。"
+
+msgid "skills.emptyFiltered"
+msgstr "没有符合当前筛选条件的内容。"
 
 msgid "skills.status.add"
 msgstr "将添加技能"
@@ -609,6 +609,9 @@ msgstr "共 {count} 个技能"
 
 msgid "mcp.empty"
 msgstr "还没有 MCP 服务器。"
+
+msgid "mcp.emptyFiltered"
+msgstr "没有符合当前筛选条件的内容。"
 
 msgid "mcp.searchFound.other"
 msgstr "找到 {count} 个 MCP 服务器"
@@ -762,9 +765,6 @@ msgstr "代理"
 
 msgid "mcp.field.parameters"
 msgstr "参数"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codex 是全局安装的(不限定于此项目)。"
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} 无法在其原生配置中表达 {transport} 传输方式。"
@@ -1159,3 +1159,27 @@ msgstr "终端不可用：{error}。git 命令仍会运行，但这里不显示�
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "更新检查已推迟：SSH 密钥已锁定。请在设置中解锁。"
+
+msgid "scope.global"
+msgstr "全局"
+
+msgid "scope.globalHint"
+msgstr "为该用户安装，适用于所有项目"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex 为整个用户安装 MCP 服务器，而不是按项目安装"
+
+msgid "skills.agentChoice.title"
+msgstr "选择代理"
+
+msgid "skills.agentChoice.intro"
+msgstr "下面未选择任何代理，因此不会安装任何内容。请选择为哪些代理安装技能和 MCP 服务器。"
+
+msgid "skills.agentChoice.confirm"
+msgstr "下一步"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "{scope} 的代理"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "未选择代理"

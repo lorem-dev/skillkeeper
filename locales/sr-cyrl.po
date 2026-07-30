@@ -370,6 +370,9 @@ msgstr "Пројекат није могуће отворити"
 msgid "projects.missing"
 msgstr "Фасцикла је обрисана или премештена"
 
+msgid "projects.noAccess"
+msgstr "Ова фасцикла не може да се прочита. Дозволите приступ у системским подешавањима."
+
 msgid "projects.copyPath"
 msgstr "Копирај пуну путању"
 
@@ -478,12 +481,6 @@ msgstr "Без верзије"
 msgid "skills.installedFor"
 msgstr "Инсталирано за"
 
-msgid "skills.scope.project"
-msgstr "Пројекат"
-
-msgid "skills.scope.global"
-msgstr "Глобално"
-
 msgid "skills.source.repo"
 msgstr "Из репозиторијума"
 
@@ -555,6 +552,9 @@ msgstr "Нема пронађених вештина у вашим репози�
 
 msgid "skills.emptyProjects"
 msgstr "Још нема праћених пројеката."
+
+msgid "skills.emptyFiltered"
+msgstr "Ништа не одговара тренутним филтерима."
 
 msgid "skills.status.add"
 msgstr "Вештина ће бити додата"
@@ -687,6 +687,9 @@ msgstr "Укупно {count} вештина"
 
 msgid "mcp.empty"
 msgstr "Још нема MCP сервера."
+
+msgid "mcp.emptyFiltered"
+msgstr "Ништа не одговара тренутним филтерима."
 
 msgid "mcp.searchFound.one"
 msgstr "Пронађен {count} MCP сервер"
@@ -852,9 +855,6 @@ msgstr "Агенти"
 
 msgid "mcp.field.parameters"
 msgstr "Параметри"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codex се инсталира глобално (није ограничен на овај пројекат)."
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} не може изразити транспорт {transport} у својој изворној конфигурацији."
@@ -1249,3 +1249,27 @@ msgstr "Терминал недоступан: {error}. Git команде се 
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Провера ажурирања је одложена: SSH кључ је закључан. Откључајте га у подешавањима."
+
+msgid "scope.global"
+msgstr "Глобално"
+
+msgid "scope.globalHint"
+msgstr "Инсталирано за овог корисника, у сваком пројекту"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex инсталира MCP сервере за целог корисника, а не по пројекту"
+
+msgid "skills.agentChoice.title"
+msgstr "Изаберите агенте"
+
+msgid "skills.agentChoice.intro"
+msgstr "Испод није изабран ни један агент, па ништа не би било инсталирано. Изаберите за које агенте инсталирати вештине и MCP сервере."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Даље"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Агенти за {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Нема изабраних агената"

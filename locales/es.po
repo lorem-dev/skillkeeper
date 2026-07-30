@@ -379,6 +379,9 @@ msgstr "No se pudo abrir el proyecto"
 msgid "projects.missing"
 msgstr "La carpeta se eliminó o se movió"
 
+msgid "projects.noAccess"
+msgstr "No se puede leer esta carpeta. Permite el acceso en los ajustes del sistema."
+
 msgid "projects.copyPath"
 msgstr "Copiar ruta completa"
 
@@ -511,12 +514,6 @@ msgstr "Sin versión"
 msgid "skills.installedFor"
 msgstr "Instalada para"
 
-msgid "skills.scope.project"
-msgstr "Proyecto"
-
-msgid "skills.scope.global"
-msgstr "Global"
-
 msgid "skills.source.repo"
 msgstr "Desde repositorio"
 
@@ -588,6 +585,9 @@ msgstr "No se encontraron habilidades en tus repositorios."
 
 msgid "skills.emptyProjects"
 msgstr "Aún no se ha añadido ningún proyecto."
+
+msgid "skills.emptyFiltered"
+msgstr "Nada coincide con los filtros actuales."
 
 msgid "skills.status.add"
 msgstr "La habilidad se añadirá"
@@ -726,6 +726,9 @@ msgstr "{count} habilidades en total"
 
 msgid "mcp.empty"
 msgstr "Aún no hay servidores MCP."
+
+msgid "mcp.emptyFiltered"
+msgstr "Nada coincide con los filtros actuales."
 
 msgid "mcp.searchFound.one"
 msgstr "Se encontró {count} servidor MCP"
@@ -897,9 +900,6 @@ msgstr "Agentes"
 
 msgid "mcp.field.parameters"
 msgstr "Parámetros"
-
-msgid "mcp.codexGlobalNote"
-msgstr "Codex se instala globalmente (no está limitado a este proyecto)."
 
 msgid "mcp.transportUnsupported"
 msgstr "{agent} no puede expresar el transporte {transport} en su configuración nativa."
@@ -1294,3 +1294,27 @@ msgstr "Terminal no disponible: {error}. Los comandos de git siguen ejecutándos
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Comprobación de actualizaciones aplazada: la clave SSH está bloqueada. Desbloquéala en los ajustes."
+
+msgid "scope.global"
+msgstr "Global"
+
+msgid "scope.globalHint"
+msgstr "Instalado para este usuario, en todos los proyectos"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex instala servidores MCP para todo el usuario, no por proyecto"
+
+msgid "skills.agentChoice.title"
+msgstr "Elegir agentes"
+
+msgid "skills.agentChoice.intro"
+msgstr "Abajo no hay ningún agente seleccionado, así que no se instalaría nada. Elige para qué agentes instalar las habilidades y los servidores MCP."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Siguiente"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Agentes para {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Ningún agente seleccionado"

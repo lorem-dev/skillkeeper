@@ -1,14 +1,15 @@
 /**
  * Projects-mode "Save" flow. Shows the pending changes -- at (skill, agent)
- * granularity, so changing a project's agents re-syncs even already-installed
- * skills -- in a table (Project | Repository | Skill | Action | Agents).
- * Also folds in MCP instance rows for the same reason (design spec "MCP
- * support" section 8, "Skills-change modal (agent changes)"): an agent added
- * to (or dropped from) a project's chosen set adds (or removes) that agent's
- * copy of every already-installed MCP instance, tagged with an "MCP" badge so
- * they read as distinct from skill rows. Confirm (double-confirm) applies
- * every project's skill plan, then its MCP plan (plus any freshly-prompted
- * params), in turn with a progress bar.
+ * granularity, so changing a scope's agents re-syncs even already-installed
+ * skills -- in a table (Project | Repository | Skill | Action | Agents). Scopes
+ * are the global (user-wide) scope plus every tracked project. Also folds in
+ * MCP instance rows for the same reason (design spec "MCP support" section 8,
+ * "Skills-change modal (agent changes)"): an agent added to (or dropped from)
+ * a scope's chosen set adds (or removes) that agent's copy of every
+ * already-installed MCP instance, tagged with an "MCP" badge so they read as
+ * distinct from skill rows. Confirm (double-confirm) applies every scope's
+ * skill plan, then its MCP plan (plus any freshly-prompted params), in turn
+ * with a progress bar.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
@@ -16,15 +17,15 @@ import type { AgentKind, McpBatch } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { Modal, Button, ProgressBar, Table, Icon, Badge, TextField } from '@/shared/ui';
 import type { TableColumn, TableRow } from '@/shared/ui';
-import { AGENT_LABELS } from '@/domain';
+import { AGENT_LABELS, applyScope, GLOBAL_SCOPE_ID } from '@/domain';
 import { buildProjectPlan } from '@/entities/skill';
 import { buildInstallBatches } from '@/features/mcpInstall';
 import { buildProjectMcpPlan } from '../lib/mcpPlan';
 import './SkillSaveModal.scss';
 
-/** Key for the per-row param-prompt draft values, unique across projects. */
-function promptKey(projectId: string, rowKey: string): string {
-  return `${projectId}::${rowKey}`;
+/** Key for the per-row param-prompt draft values, unique across scopes. */
+function promptKey(scopeId: string, rowKey: string): string {
+  return `${scopeId}::${rowKey}`;
 }
 
 export interface SkillSaveModalProps {
@@ -60,26 +61,45 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
 
   const repoName = useMemo(() => new Map(repositories.map((r) => [r.id, r.name] as const)), [repositories]);
 
-  // A non-empty plan per project (skill+agent diff vs the installed state).
-  const plans = useMemo(
-    () =>
-      projects
-        .map((p) => ({ project: p, plan: buildProjectPlan(p.id, checkedIds, installs, projectAgents[p.id] ?? []) }))
-        .filter(({ plan }) => plan.ops.length > 0),
-    [projects, checkedIds, installs, projectAgents],
+  // The scopes a save reviews: the global scope first, then every tracked
+  // project -- mirrors the tree builders' scope ordering.
+  const scopes = useMemo(
+    () => [
+      { id: GLOBAL_SCOPE_ID, name: t('scope.global') },
+      ...projects.map((p) => ({ id: p.id, name: p.name })),
+    ],
+    [projects, t],
   );
 
-  // Same idea for MCP instances: one row per (identity, action) per project,
-  // grouping every agent's copy of the same installed instance-source.
+  // A non-empty plan per scope (skill+agent diff vs the installed state).
+  const plans = useMemo(
+    () =>
+      scopes
+        .map((scope) => ({
+          scope,
+          plan: buildProjectPlan(scope.id, checkedIds, installs, projectAgents[scope.id] ?? []),
+        }))
+        .filter(({ plan }) => plan.ops.length > 0),
+    [scopes, checkedIds, installs, projectAgents],
+  );
+
+  // Same idea for MCP instances: one row per (identity, action) per scope,
+  // grouping every agent's copy of the same installed instance-source. Uses
+  // the same `scopes` list as the skill plans above (global first, then every
+  // tracked project) -- `McpInstall.projectId` already stores the literal
+  // `'global'` string for a user-wide instance (unlike `AgentTarget`, it has
+  // no separate scope field to reconcile), so `buildProjectMcpPlan` itself
+  // needs no change: passing `GLOBAL_SCOPE_ID` through as `projectId` already
+  // selects the right installs.
   const mcpPlans = useMemo(
     () =>
-      projects
-        .map((p) => ({
-          project: p,
-          plan: buildProjectMcpPlan(mcpInstalls, p.id, projectAgents[p.id] ?? [], mcpPresets),
+      scopes
+        .map((scope) => ({
+          scope,
+          plan: buildProjectMcpPlan(mcpInstalls, scope.id, projectAgents[scope.id] ?? [], mcpPresets),
         }))
         .filter(({ plan }) => plan.rows.length > 0),
-    [projects, mcpInstalls, projectAgents, mcpPresets],
+    [scopes, mcpInstalls, projectAgents, mcpPresets],
   );
 
   const columns: TableColumn[] = [
@@ -92,15 +112,15 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
 
   // One row per (skill, agent, action): a skill may be installed for one agent
   // and removed for another when the agent set changes.
-  const skillRows: TableRow[] = plans.flatMap(({ project, plan }) =>
+  const skillRows: TableRow[] = plans.flatMap(({ scope, plan }) =>
     plan.ops.flatMap((op) => {
       const make = (ref: (typeof op.install)[number], action: 'install' | 'remove'): TableRow => {
         const skillLabel = ref.group !== undefined ? `${ref.group} / ${ref.name}` : ref.name;
         const skillKey = `${ref.repoId}::${ref.group ?? ''}::${ref.name}`;
         return {
-          id: `${project.id}:${op.agent}:${action}:${skillKey}`,
+          id: `${scope.id}:${op.agent}:${action}:${skillKey}`,
           cells: [
-            project.name,
+            scope.name,
             repoName.get(ref.repoId) ?? ref.repoId,
             skillLabel,
             <span key="a" className={`sk-save-modal__action sk-save-modal__action--${action}`}>
@@ -117,11 +137,11 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
   // One row per (MCP instance-source, action) -- already grouped across
   // agents by `buildProjectMcpPlan` -- tagged with an "MCP" badge so they read
   // as distinct from skill rows in the same table.
-  const mcpRows: TableRow[] = mcpPlans.flatMap(({ project, plan }) =>
+  const mcpRows: TableRow[] = mcpPlans.flatMap(({ scope, plan }) =>
     plan.rows.map((row) => ({
-      id: `mcp:${project.id}:${row.key}`,
+      id: `mcp:${scope.id}:${row.key}`,
       cells: [
-        project.name,
+        scope.name,
         row.preset?.origin === 'repo' ? (repoName.get(row.preset.repoId ?? '') ?? '') : '',
         <span key="s" className="sk-save-modal__mcplabel">
           <Icon name="mcp" size={14} />
@@ -141,13 +161,13 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
   // Install rows still missing their param values (no sibling instance to
   // copy from) -- Confirm stays disabled until every one is filled, per the
   // design spec: "do not silently install with blanks".
-  const promptRows = mcpPlans.flatMap(({ project, plan }) =>
+  const promptRows = mcpPlans.flatMap(({ scope, plan }) =>
     plan.rows
       .filter((row) => row.action === 'install' && row.needsParamPrompt && row.preset !== undefined)
-      .map((row) => ({ project, row, preset: row.preset! })),
+      .map((row) => ({ scope, row, preset: row.preset! })),
   );
-  const missingMcpParams = promptRows.some(({ project, row, preset }) => {
-    const values = mcpParamValues[promptKey(project.id, row.key)] ?? {};
+  const missingMcpParams = promptRows.some(({ scope, row, preset }) => {
+    const values = mcpParamValues[promptKey(scope.id, row.key)] ?? {};
     return preset.params.some((p) => (values[p] ?? '').trim() === '');
   });
 
@@ -159,12 +179,13 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
       return;
     }
     setConfirming(false);
-    // Apply each project's plan; one applySkills call per agent op.
-    for (const { project, plan } of plans) {
+    // Apply each scope's plan; one applySkills call per agent op.
+    for (const { scope, plan } of plans) {
+      const args = applyScope(scope.id, projects);
+      if (args === null) continue;
       for (const op of plan.ops) {
         const result = await applySkills({
-          projectId: project.id,
-          projectPath: project.path,
+          ...args,
           agents: [op.agent],
           install: op.install,
           remove: op.remove,
@@ -172,17 +193,19 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
         if (!result.ok) return;
       }
     }
-    // Apply each project's MCP plan, plus any install this review prompted
-    // for (its preset's params were not yet known anywhere).
-    for (const { project, plan } of mcpPlans) {
+    // Apply each scope's MCP plan, plus any install this review prompted for
+    // (its preset's params were not yet known anywhere).
+    for (const { scope, plan } of mcpPlans) {
+      const args = applyScope(scope.id, projects);
+      if (args === null) continue;
       const prompted: McpBatch[] = plan.rows
         .filter((row) => row.action === 'install' && row.needsParamPrompt && row.preset !== undefined)
         .flatMap((row) =>
-          buildInstallBatches(row.preset!, row.agents, mcpParamValues[promptKey(project.id, row.key)] ?? {}),
+          buildInstallBatches(row.preset!, row.agents, mcpParamValues[promptKey(scope.id, row.key)] ?? {}),
         );
       const batches = [...plan.batches, ...prompted];
       if (batches.length === 0) continue;
-      const result = await applyMcp({ projectId: project.id, projectPath: project.path, batches });
+      const result = await applyMcp({ ...args, batches });
       if (!result.ok) {
         notify(result.error, 'error');
         return;
@@ -210,13 +233,13 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
         {promptRows.length > 0 && (
           <div className="sk-save-modal__mcpprompt">
             <span className="sk-save-modal__mcpprompt-title">{t('mcp.needsParamsNotice')}</span>
-            {promptRows.map(({ project, row, preset }) => (
-              <div key={`${project.id}::${row.key}`} className="sk-save-modal__mcpprompt-row">
+            {promptRows.map(({ scope, row, preset }) => (
+              <div key={`${scope.id}::${row.key}`} className="sk-save-modal__mcpprompt-row">
                 <span className="sk-save-modal__mcpprompt-label">
-                  {project.name} / {row.label}
+                  {scope.name} / {row.label}
                 </span>
                 {preset.params.map((param) => {
-                  const values = mcpParamValues[promptKey(project.id, row.key)] ?? {};
+                  const values = mcpParamValues[promptKey(scope.id, row.key)] ?? {};
                   return (
                     <label key={param} className="sk-save-modal__mcpprompt-field">
                       <span>{param}</span>
@@ -226,7 +249,7 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
                         onChange={(e) => {
                           const next = e.target.value;
                           setMcpParamValues((prev) => {
-                            const k = promptKey(project.id, row.key);
+                            const k = promptKey(scope.id, row.key);
                             return { ...prev, [k]: { ...prev[k], [param]: next } };
                           });
                         }}

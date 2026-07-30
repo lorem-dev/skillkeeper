@@ -3,8 +3,11 @@
 export type {
   Repository,
   Project,
+  ProjectFolderState,
   InstallManifest,
   AgentKind,
+  Scope,
+  AgentTarget,
 } from './generated/core';
 export type {
   LoadConfigResult,

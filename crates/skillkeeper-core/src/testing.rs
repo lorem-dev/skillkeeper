@@ -4,7 +4,7 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::ports::{FileStat, FsPort, PortError, PortResult};
+use crate::ports::{FileStat, FsPort, PathState, PortError, PortResult};
 
 struct FileNode {
     content: String,
@@ -15,6 +15,11 @@ struct FileNode {
 pub struct MemFs {
     files: RefCell<BTreeMap<String, FileNode>>,
     dirs: RefCell<BTreeSet<String>>,
+    /// Paths [`FsPort::probe`] answers `Denied` for, so a test can stand in for
+    /// a folder the operating system refuses to describe. Nothing else consults
+    /// this: `exists` keeps collapsing the case to `false`, exactly as a real
+    /// filesystem does.
+    denied: RefCell<BTreeSet<String>>,
 }
 
 impl Default for MemFs {
@@ -24,6 +29,7 @@ impl Default for MemFs {
         Self {
             files: RefCell::new(BTreeMap::new()),
             dirs: RefCell::new(dirs),
+            denied: RefCell::new(BTreeSet::new()),
         }
     }
 }
@@ -36,6 +42,12 @@ impl MemFs {
     /// Seed a file (creating parent dirs), for concise test setup.
     pub fn with_file(self, path: &str, content: &str) -> Self {
         self.write_file(path, content).expect("seed file");
+        self
+    }
+
+    /// Mark a path unreadable, so [`FsPort::probe`] reports it as `Denied`.
+    pub fn with_denied(self, path: &str) -> Self {
+        self.denied.borrow_mut().insert(normalize(path));
         self
     }
 
@@ -148,6 +160,18 @@ impl FsPort for MemFs {
     fn exists(&self, path: &str) -> PortResult<bool> {
         let key = normalize(path);
         Ok(self.files.borrow().contains_key(&key) || self.dirs.borrow().contains(&key))
+    }
+
+    fn probe(&self, path: &str) -> PortResult<PathState> {
+        let key = normalize(path);
+        if self.denied.borrow().contains(&key) {
+            return Ok(PathState::Denied);
+        }
+        Ok(if self.exists(&key)? {
+            PathState::Present
+        } else {
+            PathState::Missing
+        })
     }
 
     fn mkdir(&self, path: &str) -> PortResult<()> {

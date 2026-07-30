@@ -379,6 +379,9 @@ msgstr "Не вдалося відкрити проєкт"
 msgid "projects.missing"
 msgstr "Папку видалено або переміщено"
 
+msgid "projects.noAccess"
+msgstr "Цю теку не вдалося прочитати. Надайте до неї доступ у системних налаштуваннях."
+
 msgid "projects.copyPath"
 msgstr "Скопіювати повний шлях"
 
@@ -511,12 +514,6 @@ msgstr "Без версії"
 msgid "skills.installedFor"
 msgstr "Встановлено для"
 
-msgid "skills.scope.project"
-msgstr "Проєкт"
-
-msgid "skills.scope.global"
-msgstr "Глобально"
-
 msgid "skills.source.repo"
 msgstr "З репозиторію"
 
@@ -588,6 +585,9 @@ msgstr "У ваших репозиторіях навичок не знайде�
 
 msgid "skills.emptyProjects"
 msgstr "Проєкти ще не відстежуються."
+
+msgid "skills.emptyFiltered"
+msgstr "Нічого не відповідає поточним фільтрам."
 
 msgid "skills.status.add"
 msgstr "Навичку буде додано"
@@ -726,6 +726,9 @@ msgstr "Усього {count} навички"
 
 msgid "mcp.empty"
 msgstr "Серверів MCP ще немає."
+
+msgid "mcp.emptyFiltered"
+msgstr "Нічого не відповідає поточним фільтрам."
 
 msgid "mcp.searchFound.one"
 msgstr "Знайдено {count} сервер MCP"
@@ -898,9 +901,6 @@ msgstr "Агенти"
 msgid "mcp.field.parameters"
 msgstr "Параметри"
 
-msgid "mcp.codexGlobalNote"
-msgstr "Codex встановлюється глобально (не обмежений цим проєктом)."
-
 msgid "mcp.transportUnsupported"
 msgstr "{agent} не може виразити транспорт {transport} у своїй рідній конфігурації."
 
@@ -917,7 +917,7 @@ msgid "mcp.deleteConfirmTitle"
 msgstr "Видалити {name}?"
 
 msgid "mcp.deleteConfirmBody"
-msgstr "Цю дiю не можна скасувати."
+msgstr "Цю дію не можна скасувати."
 
 msgid "mcp.detailsTitle"
 msgstr "Відомості про сервер MCP"
@@ -1294,3 +1294,27 @@ msgstr "Термінал недоступний: {error}. Команди git в�
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Перевірку оновлень відкладено: SSH-ключ заблоковано. Розблокуйте його в налаштуваннях."
+
+msgid "scope.global"
+msgstr "Глобально"
+
+msgid "scope.globalHint"
+msgstr "Встановлено для цього користувача, у всіх проєктах"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex встановлює сервери MCP для всього користувача, а не для окремого проєкту"
+
+msgid "skills.agentChoice.title"
+msgstr "Виберіть агентів"
+
+msgid "skills.agentChoice.intro"
+msgstr "Нижче не вибрано жодного агента, тому нічого не буде встановлено. Укажіть, для яких агентів встановлювати навички та сервери MCP."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Далі"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Агенти для {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Агентів не вибрано"

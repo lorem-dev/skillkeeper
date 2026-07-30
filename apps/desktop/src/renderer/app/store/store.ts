@@ -17,6 +17,7 @@ import type {
   ProjectsConfig,
   Repository,
   Project,
+  ProjectFolderState,
   InstallManifest,
   AvailableSkill,
   SkillResolveWarning,
@@ -36,6 +37,7 @@ import type {
   UpdateMcpResult,
 } from '@/services/bridge';
 import { bridgeClient } from '@/services/bridge';
+import { applyScope } from '@/domain';
 import { installedLeafIds, installedAgentsByProject } from '@/entities/skill';
 import type { ProjectSkillUpdate } from '@/entities/skill';
 import { ensureCatalog, resolveLang } from '@/systems/i18n';
@@ -85,8 +87,12 @@ export interface McpPreset {
   readonly group?: string;
 }
 
-/** Synthesizes a stable id for a repo-discovered preset from its source. */
-function repoMcpPresetId(repoId: string, group: string | undefined, name: string): string {
+/** Synthesizes a stable id for a repo-discovered preset from its source.
+ *  Exported so a story fixture building an `McpPreset[]` by hand (Storybook
+ *  runs outside Tauri, so `refreshMcpPresets` cannot run for real) can derive
+ *  the same ids `buildMcpProjectTree`/`buildMcpRepoTree` expect instead of
+ *  hand-rolling a string that might drift from this format. */
+export function repoMcpPresetId(repoId: string, group: string | undefined, name: string): string {
   return `repo:${repoId}:${group ?? ''}:${name}`;
 }
 
@@ -411,8 +417,14 @@ export interface SkillkeeperState {
   projects: Project[];
   /** Per-project skill counts for the card badges (not persisted). */
   projectInfo: Record<string, ProjectInfo>;
-  /** Projects whose folder no longer exists (deleted/moved); not persisted. */
-  projectMissing: Record<string, boolean>;
+  /**
+   * Projects whose folder the app cannot use, and why: `missing` when it was
+   * deleted or moved, `denied` when this system refuses to describe it (on macOS
+   * the normal state for a folder under Desktop, Documents, Downloads, or a
+   * removable or network volume until the user grants access). A project absent
+   * from the map is usable. Not persisted.
+   */
+  projectFolder: Record<string, ProjectFolderState>;
   /** Union of manual (config) + repo-discovered MCP server presets. */
   mcpPresets: McpPreset[];
   /** Installed MCP server instances, read from every agent's ledger. */
@@ -533,7 +545,7 @@ export interface SkillkeeperActions {
   removeProject(id: string): Promise<void>;
   /** Fetch skill counts for every project into `projectInfo`. */
   refreshProjectInfo(): Promise<void>;
-  /** Check every project's folder exists and update `projectMissing`. */
+  /** Check every project's folder and update `projectFolder`. */
   checkProjects(): Promise<void>;
   /** Run the folder check now and (re)schedule the next run after the interval. */
   sweepProjects(): Promise<void>;
@@ -730,7 +742,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   repoStatus: {},
   repoInfo: {},
   projectInfo: {},
-  projectMissing: {},
+  projectFolder: {},
   notifications: [],
   toasts: [],
   tasks: [],
@@ -870,7 +882,11 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       // unique -- only the URL is -- and two forks both default to the same
       // derived name, so a text-only key would silently swallow the second
       // repository's identical warning and leave a row attributed to the first.
-      const key = (repoId: string | undefined, text: string) => `${repoId ?? ''} ${text}`;
+      // The separator is NUL, written as an escape: neither an id nor a warning
+      // can contain it, so no pair of parts can collide by concatenation. Do not
+      // write it as a raw byte -- that makes the whole file read as binary to
+      // `file(1)` and to grep, which then skips it silently.
+      const key = (repoId: string | undefined, text: string) => `${repoId ?? ''}\0${text}`;
       const logged = new Set(
         s.notifications
           .filter((n) => n.level === 'warning' && n.text !== undefined)
@@ -1099,10 +1115,18 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       set((s) => {
         const { [id]: _removed, ...rest } = s.repoStatus;
         const { [id]: _removedInfo, ...restInfo } = s.repoInfo;
+        // Same reasoning as `removeProject` below: a persisted filter must never
+        // keep naming something that no longer exists, or it narrows the view by
+        // an option the user can no longer see, let alone clear.
         return {
           repositories: s.repositories.filter((r) => r.id !== id),
           repoStatus: rest,
           repoInfo: restInfo,
+          skillsUi: { ...s.skillsUi, repoFilter: s.skillsUi.repoFilter.filter((r) => r !== id) },
+          mcpUi: {
+            ...s.mcpUi,
+            componentsRepoFilter: s.mcpUi.componentsRepoFilter.filter((r) => r !== id),
+          },
         };
       });
     })();
@@ -1375,20 +1399,18 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const { mcpInstalls, projects, notify, applyMcp, updateConfig, refreshMcpPresets, refreshMcpInstalls } = get();
       const matching = mcpInstalls.filter((i) => i.identity.local === presetId);
 
-      // Group by real project (resolving its path for `applyMcp`) and the
-      // 'global' (codex) bucket separately; an install whose projectId no
-      // longer resolves to a tracked project is left alone (nothing to
-      // resolve a path from -- reconcile will clean it up separately).
-      const byProject = new Map<string, McpInstall[]>();
-      const globalInstalls: McpInstall[] = [];
+      // Group by the scope each instance lives in. `McpInstall.projectId` is a
+      // tracked project's id or the reserved global id, and `applyScope` is the
+      // one place that turns either into apply arguments -- including the
+      // `scope` field, without which a global batch is applied at project scope
+      // (codex's removes are then dropped, and the other four agents fail on an
+      // empty project path). An id that resolves to neither is left alone:
+      // there is no path to resolve, and reconcile cleans it up separately.
+      const byScope = new Map<string, McpInstall[]>();
       for (const inst of matching) {
-        if (inst.projectId === 'global') {
-          globalInstalls.push(inst);
-          continue;
-        }
-        const list = byProject.get(inst.projectId);
+        const list = byScope.get(inst.projectId);
         if (list !== undefined) list.push(inst);
-        else byProject.set(inst.projectId, [inst]);
+        else byScope.set(inst.projectId, [inst]);
       }
 
       // One remove batch per (agent, instanceName) -- each installed instance
@@ -1396,25 +1418,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const removeBatches = (installs: readonly McpInstall[]): McpBatch[] =>
         installs.map((inst) => ({ agent: inst.agent, install: [], remove: [{ instanceName: inst.instanceName }] }));
 
-      for (const [projectId, installs] of byProject) {
-        const project = projects.find((p) => p.id === projectId);
-        if (project === undefined) continue;
-        const result = await applyMcp({ projectId, projectPath: project.path, batches: removeBatches(installs) });
-        if (!result.ok) {
-          notify(result.error, 'error');
-          return;
-        }
-      }
-
-      if (globalInstalls.length > 0) {
-        // Codex resolves globally regardless of projectId/projectPath (see
-        // `resolve_mcp_target` in apps/desktop/src-tauri/src/commands/mcp.rs),
-        // so an empty path is safe here.
-        const result = await applyMcp({
-          projectId: 'global',
-          projectPath: '',
-          batches: removeBatches(globalInstalls),
-        });
+      for (const [scopeId, installs] of byScope) {
+        const scope = applyScope(scopeId, projects);
+        if (scope === null) continue;
+        const result = await applyMcp({ ...scope, batches: removeBatches(installs) });
         if (!result.ok) {
           notify(result.error, 'error');
           return;
@@ -1470,9 +1477,11 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       }));
       void enqueue(async () => {
         setTaskStatus('running');
+        // `req.target` carries the scope the row was built for, so an update
+        // badge on a user-wide row re-installs user-wide instead of asking Rust
+        // to resolve a project that does not exist.
         const result = await get().applySkills({
-          projectId: req.projectId,
-          projectPath: req.projectPath,
+          ...req.target,
           agents: req.agents,
           install: [req.ref],
           remove: [req.ref],
@@ -1534,11 +1543,23 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       }
       set((s) => {
         const { [id]: _removed, ...restInfo } = s.projectInfo;
-        const { [id]: _removedMissing, ...restMissing } = s.projectMissing;
+        const { [id]: _removedFolder, ...restFolder } = s.projectFolder;
+        // Drop the gone project from every persisted filter that names it (see
+        // `removeRepository` above for the repository half of the same rule).
+        // Both management pages narrow their tree by these, and both can be left
+        // naming ONLY this project (the project cards' "show me this project"
+        // action sets exactly that) -- which would then filter the whole tree
+        // away while the combobox, listing labels of options that still exist,
+        // showed its all-projects placeholder.
         return {
           projects: s.projects.filter((p) => p.id !== id),
           projectInfo: restInfo,
-          projectMissing: restMissing,
+          projectFolder: restFolder,
+          skillsUi: { ...s.skillsUi, projectFilter: s.skillsUi.projectFilter.filter((p) => p !== id) },
+          mcpUi: {
+            ...s.mcpUi,
+            managementProjectFilter: s.mcpUi.managementProjectFilter.filter((p) => p !== id),
+          },
         };
       });
     })();
@@ -1571,8 +1592,8 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const projects = get().projects;
       await Promise.all(
         projects.map(async (p) => {
-          const exists = await bridgeClient.projectExists(p.id);
-          set((s) => ({ projectMissing: { ...s.projectMissing, [p.id]: !exists } }));
+          const state = await bridgeClient.projectFolderState(p.id);
+          set((s) => ({ projectFolder: { ...s.projectFolder, [p.id]: state } }));
         }),
       );
     })();
@@ -1624,10 +1645,14 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
 
   ensureProjectAvailable(id) {
     return (async () => {
-      const exists = await bridgeClient.projectExists(id);
-      set((s) => ({ projectMissing: { ...s.projectMissing, [id]: !exists } }));
-      if (!exists) get().notify({ key: 'projects.missing' }, 'error');
-      return exists;
+      const state = await bridgeClient.projectFolderState(id);
+      set((s) => ({ projectFolder: { ...s.projectFolder, [id]: state } }));
+      // Name the actual obstacle: a folder this system withholds is not a folder
+      // the user deleted, and only one of the two is theirs to fix here.
+      if (state !== 'present') {
+        get().notify({ key: state === 'denied' ? 'projects.noAccess' : 'projects.missing' }, 'error');
+      }
+      return state === 'present';
     })();
   },
 

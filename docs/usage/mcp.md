@@ -241,15 +241,16 @@ project the install was started from (see "Codex" below).
 ## Per-agent native destinations
 
 Each agent has its own native MCP config file and its own supported
-transports:
+transports. `mcp install --global` (and `--project`) picks which of the two
+destinations below is written; every agent supports both, not only codex:
 
-| agent    | destination                    | scope   | transports      | container key |
-|----------|---------------------------------|---------|------------------|----------------|
-| claude   | `<project>/.mcp.json`          | project | stdio, http, sse | `mcpServers`   |
-| cursor   | `<project>/.cursor/mcp.json`   | project | stdio, http, sse | `mcpServers`   |
-| copilot  | `<project>/.vscode/mcp.json`   | project | stdio, http, sse | `servers`      |
-| opencode | `<project>/opencode.json`      | project | stdio, http, sse | `mcp`          |
-| codex    | `~/.codex/config.toml`         | global  | stdio only       | `mcp_servers`  |
+| agent    | project destination            | global destination                              | transports       | container key |
+|----------|---------------------------------|--------------------------------------------------|------------------|----------------|
+| claude   | `<project>/.mcp.json`          | `~/.claude.json`                                 | stdio, http, sse | `mcpServers`   |
+| cursor   | `<project>/.cursor/mcp.json`   | `~/.cursor/mcp.json`                              | stdio, http, sse | `mcpServers`   |
+| copilot  | `<project>/.vscode/mcp.json`   | `~/.config/github-copilot/mcp-config.json`        | stdio, http, sse | `servers`      |
+| opencode | `<project>/opencode.json`      | `~/.config/opencode/opencode.json`                | stdio, http, sse | `mcp`          |
+| codex    | (not available)                 | `~/.codex/config.toml`                            | stdio only       | `mcp_servers`  |
 
 Writers only touch their own container key and the server entries they own;
 other keys and other servers already in the file are preserved. Output key
@@ -257,10 +258,13 @@ order is sorted, so re-writing the same content is a no-op diff.
 
 Codex differs from the other four agents in two ways:
 
-- **Global scope**: an MCP install for Codex always writes to
-  `~/.codex/config.toml`, `~/.codex/skills/.skmcp.yml`, and
-  `~/.codex/skills/.skmcp.params.yml` - never into the project - regardless
-  of which project the install was started from. This is intentional and
+- **Global only**: every agent can be installed user-wide with `--global`, but
+  Codex has no project-scoped MCP config at all, so it is global *only* --
+  `mcp install --agent codex` and `mcp update --agent codex` without `--global`
+  are both refused. An install for
+  Codex always writes to `~/.codex/config.toml`, `~/.codex/skills/.skmcp.yml`,
+  and `~/.codex/skills/.skmcp.params.yml` - never into a project - regardless
+  of which project directory the command was run from. This is intentional and
   applies to the guidance target too (`~/AGENTS.md`): Codex has only a single
   global MCP config, so a Codex MCP server is shared across every project.
   Keeping its ledger, parameter values, instance-name allocation, and rules
@@ -282,6 +286,14 @@ server becomes a `local` entry whose `command` array is the command
 followed by its args, with `env` under the key `environment`; an http/sse
 server becomes a `remote` entry (both transports use the same shape, since
 opencode does not distinguish them at this level).
+
+At global scope, `~/.config/opencode/opencode.json` is also opencode's hook
+target: a skill's `delimited-text` hook writes a `#`-delimited block into that
+same file. The MCP writer carries such a block through its rewrites
+byte-for-byte instead of failing on it or dropping it, so neither install order
+loses data. Note that a `#` comment is not valid JSON, so a file holding both a
+hook block and MCP servers is still not readable by opencode itself; avoid
+installing global opencode hooks and global opencode MCP servers together.
 
 ## Rules (guidance)
 

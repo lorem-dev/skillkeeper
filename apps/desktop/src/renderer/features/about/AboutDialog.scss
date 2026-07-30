@@ -20,9 +20,15 @@
   color: var(--sk-color-label);
 }
 
+// The one selectable piece of chrome in the app (styles/_base.scss makes the
+// body non-selectable and only editable fields opt back in): asked for their
+// exact version in a bug report, a user has to be able to copy it from
+// somewhere, and the status bar's copy is deliberately not selectable.
 .sk-about__version {
   font-size: 13px;
   color: var(--sk-color-label-2);
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .sk-about__tagline {

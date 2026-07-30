@@ -21,8 +21,9 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
+import { GLOBAL_SCOPE_ID } from '@/domain';
 import type { Project } from '@/services/bridge';
-import { Page, Toolbar, ExpandingSearch, FilterButton, CollapsibleFilters, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, FilterButton, CollapsibleFilters, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { useFilterToggle } from '@/shared/lib';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
@@ -91,10 +92,22 @@ export function ManagementPage() {
       projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id)),
     [projects, projectFilter],
   );
+  // The user-wide scope is one more entry in the projects filter, so it narrows
+  // like any project: an empty filter shows everything, a non-empty one keeps the
+  // Global root only when it was picked. A `null` label omits that root entirely
+  // rather than leaving it standing while a filter is active.
+  const showGlobal = projectFilter.length === 0 || projectFilter.includes(GLOBAL_SCOPE_ID);
 
   const treeResult = useMemo(
-    () => buildMcpProjectTree(mcpPresets, mcpInstalls, shownProjects, shownRepos),
-    [mcpPresets, mcpInstalls, shownProjects, shownRepos],
+    () =>
+      buildMcpProjectTree(
+        mcpPresets,
+        mcpInstalls,
+        shownProjects,
+        shownRepos,
+        showGlobal ? t('scope.global') : null,
+      ),
+    [mcpPresets, mcpInstalls, shownProjects, shownRepos, showGlobal, t],
   );
   const { nodes: baseTree, items } = treeResult;
 
@@ -173,7 +186,15 @@ export function ManagementPage() {
         );
       // A project-root node: show the project's own icon (resolved +
       // safety-checked in main) when it has one, otherwise a generated
-      // placeholder -- via the shared ProjectIcon, mirroring McpPage.
+      // placeholder -- via the shared ProjectIcon, mirroring McpPage. The
+      // global root shows the globe glyph instead of any project's icon
+      // (mirrors pages/Skills/ManagementPage.tsx's equivalent branch).
+      if (node.id === mcpProjectRootId(GLOBAL_SCOPE_ID)) {
+        // `name` is unused once `global` is set (ProjectIcon returns the globe
+        // glyph before touching it) but the prop type still requires one.
+        const icon = <ProjectIcon global name="" size={18} />;
+        return { ...node, icon, children, detail };
+      }
       const project = projectByRootId.get(node.id);
       if (project !== undefined) {
         const icon = <ProjectIcon iconUrl={projectInfo[project.id]?.iconDataUrl} name={project.name} size={18} />;
@@ -192,6 +213,7 @@ export function ManagementPage() {
   }
 
   const searching = query.trim() !== '';
+  const filtering = filterCount > 0;
   const totalMcp = useMemo(() => countLeaves(baseTree), [baseTree]);
   const shownMcp = useMemo(() => countLeaves(shownTree), [shownTree]);
   // Seed from the persisted expansion (falling back to the roots the first
@@ -227,11 +249,20 @@ export function ManagementPage() {
   // which nodes the tree shows. Mirrors SkillsPage's `filters` block; the
   // project options carry a leading `ProjectIcon` (the repo options do not).
   const repoOptions = repositories.map((r) => ({ value: r.id, label: r.name }));
-  const projectOptions = projects.map((p) => ({
-    value: p.id,
-    label: p.name,
-    icon: <ProjectIcon iconUrl={projectInfo[p.id]?.iconDataUrl} name={p.name} size={18} />,
-  }));
+  // The user-wide scope leads the projects filter, mirroring its position as the
+  // tree's first root.
+  const projectOptions = [
+    {
+      value: GLOBAL_SCOPE_ID,
+      label: t('scope.global'),
+      icon: <ProjectIcon global name="" size={18} />,
+    },
+    ...projects.map((p) => ({
+      value: p.id,
+      label: p.name,
+      icon: <ProjectIcon iconUrl={projectInfo[p.id]?.iconDataUrl} name={p.name} size={18} />,
+    })),
+  ];
 
   const filters = (
     <CollapsibleFilters
@@ -278,8 +309,23 @@ export function ManagementPage() {
         </div>
       }
     >
+      {/* An empty tree has two causes now that the Global root can be filtered
+          out too (before this it was always present, so `baseTree` was never
+          empty): there is nothing installed at all, or the filters excluded
+          everything there is. Only the first is "no MCP servers yet"; the second
+          must say so and carry a reset, since this page has no in-tree footer
+          reset to fall back on at all. */}
       {baseTree.length === 0 ? (
-        <p className="sk-empty">{t('mcp.empty')}</p>
+        filtering ? (
+          <div className="sk-empty-filtered">
+            <p className="sk-empty">{t('mcp.emptyFiltered')}</p>
+            <Button variant="secondary" onClick={clearFilters}>
+              {t('skills.resetFilters')}
+            </Button>
+          </div>
+        ) : (
+          <p className="sk-empty">{t('mcp.empty')}</p>
+        )
       ) : (
         <>
           <TreeView

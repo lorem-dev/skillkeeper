@@ -119,7 +119,7 @@ msgid "common.clear"
 msgstr "Očisti"
 
 msgid "common.goToSkills"
-msgstr "Idi na vestine"
+msgstr "Idi na veštine"
 
 msgid "common.goToMcp"
 msgstr "Idi na MCP"
@@ -370,6 +370,9 @@ msgstr "Projekat nije moguće otvoriti"
 msgid "projects.missing"
 msgstr "Fascikla je obrisana ili premeštena"
 
+msgid "projects.noAccess"
+msgstr "Ova fascikla ne može da se pročita. Dozvolite pristup u sistemskim podešavanjima."
+
 msgid "projects.copyPath"
 msgstr "Kopiraj punu putanju"
 
@@ -478,12 +481,6 @@ msgstr "Bez verzije"
 msgid "skills.installedFor"
 msgstr "Instalirano za"
 
-msgid "skills.scope.project"
-msgstr "Projekat"
-
-msgid "skills.scope.global"
-msgstr "Globalno"
-
 msgid "skills.source.repo"
 msgstr "Iz repozitorijuma"
 
@@ -555,6 +552,9 @@ msgstr "Nema pronađenih veština u vašim repozitorijumima."
 
 msgid "skills.emptyProjects"
 msgstr "Još nema praćenih projekata."
+
+msgid "skills.emptyFiltered"
+msgstr "Ništa ne odgovara trenutnim filterima."
 
 msgid "skills.status.add"
 msgstr "Veština će biti dodata"
@@ -686,7 +686,10 @@ msgid "skills.searchTotal.other"
 msgstr "Ukupno {count} veština"
 
 msgid "mcp.empty"
-msgstr "Jos nema MCP servera."
+msgstr "Još nema MCP servera."
+
+msgid "mcp.emptyFiltered"
+msgstr "Ništa ne odgovara trenutnim filterima."
 
 msgid "mcp.searchFound.one"
 msgstr "Pronađen {count} MCP server"
@@ -764,7 +767,7 @@ msgid "mcp.protocol.sse"
 msgstr "sse"
 
 msgid "mcp.paramsHelp"
-msgstr "Parametri {name} su podrzani u URL-u, zaglavljima, komandi, argumentima, promenljivama okruzenja i pravilima."
+msgstr "Parametri {name} su podržani u URL-u, zaglavljima, komandi, argumentima, promenljivama okruženja i pravilima."
 
 msgid "mcp.field.name"
 msgstr "Naziv"
@@ -809,7 +812,7 @@ msgid "mcp.addArgument"
 msgstr "Dodaj argument"
 
 msgid "mcp.field.env"
-msgstr "Promenljive okruzenja"
+msgstr "Promenljive okruženja"
 
 msgid "mcp.varNamePlaceholder"
 msgstr "Naziv promenljive"
@@ -839,7 +842,7 @@ msgid "mcp.validation.urlRequired"
 msgstr "URL je obavezan za http/sse servere."
 
 msgid "mcp.validation.invalidParam"
-msgstr "Nevazeci parametar ({reason}) na poziciji {index}."
+msgstr "Nevažeći parametar ({reason}) na poziciji {index}."
 
 msgid "mcp.field.project"
 msgstr "Projekat"
@@ -853,17 +856,14 @@ msgstr "Agenti"
 msgid "mcp.field.parameters"
 msgstr "Parametri"
 
-msgid "mcp.codexGlobalNote"
-msgstr "Codex se instalira globalno (nije ogranicen na ovaj projekat)."
-
 msgid "mcp.transportUnsupported"
-msgstr "{agent} ne moze izraziti transport {transport} u svojoj izvornoj konfiguraciji."
+msgstr "{agent} ne može izraziti transport {transport} u svojoj izvornoj konfiguraciji."
 
 msgid "mcp.skippedAgents"
-msgstr "Preskoceno je {count} agenata: transport preseta nije podrzan."
+msgstr "Preskočeno je {count} agenata: transport preseta nije podržan."
 
 msgid "mcp.needsParamsNotice"
-msgstr "Ove MCP instalacije zahtevaju parametre pre nego sto mogu biti dodate:"
+msgstr "Ove MCP instalacije zahtevaju parametre pre nego što mogu biti dodate:"
 
 msgid "mcp.delete"
 msgstr "Obriši"
@@ -872,7 +872,7 @@ msgid "mcp.deleteConfirmTitle"
 msgstr "Obrisati {name}?"
 
 msgid "mcp.deleteConfirmBody"
-msgstr "Ova radnja se ne moze opozvati."
+msgstr "Ova radnja se ne može opozvati."
 
 msgid "mcp.detailsTitle"
 msgstr "Detalji MCP servera"
@@ -1249,3 +1249,27 @@ msgstr "Terminal nedostupan: {error}. Git komande se izvršavaju, ali njihov izl
 
 msgid "updates.checkSkippedKeyLocked"
 msgstr "Provera ažuriranja je odložena: SSH ključ je zaključan. Otključajte ga u podešavanjima."
+
+msgid "scope.global"
+msgstr "Globalno"
+
+msgid "scope.globalHint"
+msgstr "Instalirano za ovog korisnika, u svakom projektu"
+
+msgid "mcp.install.codexGlobalOnly"
+msgstr "Codex instalira MCP servere za celog korisnika, a ne po projektu"
+
+msgid "skills.agentChoice.title"
+msgstr "Izaberite agente"
+
+msgid "skills.agentChoice.intro"
+msgstr "Ispod nije izabran ni jedan agent, pa ništa ne bi bilo instalirano. Izaberite za koje agente instalirati veštine i MCP servere."
+
+msgid "skills.agentChoice.confirm"
+msgstr "Dalje"
+
+msgid "skills.agentChoice.agentsFor"
+msgstr "Agenti za {scope}"
+
+msgid "skills.agentChoice.agentsPlaceholder"
+msgstr "Nema izabranih agenata"

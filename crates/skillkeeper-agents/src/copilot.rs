@@ -9,7 +9,7 @@ use skillkeeper_core::ports::{HostEnv, PortResult};
 
 use crate::adapter::{make_adapter, AdapterSpec, AgentAdapter, HookCapability};
 use crate::model::{AgentKind, AgentTarget, HookStrategy, Scope};
-use crate::paths::{base_dir, join_path, require_project_dir};
+use crate::paths::{base_dir, join_path, require_home_dir, require_project_dir};
 
 /// Copilot's base config directory differs between project and global scope.
 fn copilot_dir(target: &AgentTarget, env: &dyn HostEnv) -> PortResult<String> {
@@ -19,7 +19,11 @@ fn copilot_dir(target: &AgentTarget, env: &dyn HostEnv) -> PortResult<String> {
             ".github",
             "copilot",
         ])),
-        Scope::Global => Ok(join_path(&[env.home_dir(), ".config", "github-copilot"])),
+        Scope::Global => Ok(join_path(&[
+            &require_home_dir(env)?,
+            ".config",
+            "github-copilot",
+        ])),
     }
 }
 
