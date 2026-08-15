@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.4.1-rc.1
+
 ### Changed
 
 - A skill with extra or oddly typed frontmatter fields installs instead of
