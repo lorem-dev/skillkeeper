@@ -12,9 +12,10 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-/// The transport used to reach an MCP server.
+/// The transport used to reach an MCP server. `stdio` launches a local
+/// process; `http` and `sse` connect to a URL.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(test, derive(ts_rs::TS, schemars::JsonSchema))]
 #[cfg_attr(
     test,
     ts(
@@ -50,8 +51,11 @@ pub enum McpPresetOrigin {
 /// fields are populated per transport (`url`/`headers` for `http`/`sse`,
 /// `command`/`args`/`env` for `stdio`). `rules` carries optional free-form
 /// usage guidance.
+/// Any string field may carry `{name}` placeholders; their values are asked for
+/// at install time. Quote a value that STARTS with one -- a leading `{` opens a
+/// flow mapping in YAML, so `X-Token: {tok}` is a map, not text.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(test, derive(ts_rs::TS, schemars::JsonSchema))]
 #[cfg_attr(
     test,
     ts(
@@ -61,19 +65,32 @@ pub enum McpPresetOrigin {
     )
 )]
 pub struct McpServerDef {
+    /// Preset name, unique within the file. Becomes the basis of the installed
+    /// instance's name.
     pub name: String,
+    /// Transport: `stdio`, `http`, or `sse`. Selects which of the fields below
+    /// apply.
     #[serde(rename = "type")]
     pub transport: McpTransport,
+    /// Server URL. Required for `http` and `sse`; ignored for `stdio`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+    /// Request headers, for `http` and `sse`. Quote any value that starts with
+    /// a `{placeholder}`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub headers: Option<BTreeMap<String, String>>,
+    /// Executable to launch. Required for `stdio`; ignored otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    /// Arguments passed to `command`, for `stdio`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub args: Option<Vec<String>>,
+    /// Environment variables for the launched process, for `stdio`. Quote any
+    /// value that starts with a `{placeholder}`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub env: Option<BTreeMap<String, String>>,
+    /// Usage guidance written into the agent's guidance file on install, the
+    /// same way skill guidance is.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rules: Option<String>,
 }

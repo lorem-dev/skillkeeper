@@ -6,6 +6,7 @@
 
 pub mod adapters;
 pub mod frontmatter;
+pub mod git_lfs;
 pub mod git_remote;
 pub mod glob;
 pub mod hashing;
@@ -19,3 +20,4 @@ pub mod ssh_env;
 pub mod state;
 pub mod testing;
 pub mod time;
+pub mod yaml_repair;

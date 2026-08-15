@@ -3499,7 +3499,7 @@ checksum = "3fbf2ae1b8bc8e02df939598064d22402220cd5bbcca1c76f7d6a310974d5615"
 dependencies = [
  "dyn-clone",
  "indexmap 1.9.3",
- "schemars_derive",
+ "schemars_derive 0.8.22",
  "serde",
  "serde_json",
  "url",
@@ -3526,6 +3526,7 @@ checksum = "a2b42f36aa1cd011945615b92222f6bf73c599a102a300334cd7f8dbeec726cc"
 dependencies = [
  "dyn-clone",
  "ref-cast",
+ "schemars_derive 1.2.1",
  "serde",
  "serde_json",
 ]
@@ -3535,6 +3536,18 @@ name = "schemars_derive"
 version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32e265784ad618884abaea0600a9adf15393368d840e0222d101a072f3f7534d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "schemars_derive"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d115b50f4aaeea07e79c1912f645c7513d81715d0420f8bc77a18c6260b307f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3830,7 +3843,7 @@ checksum = "8ee5873ec9cce0195efcb7a4e9507a04cd49aec9c83d0389df45b1ef7ba2e649"
 
 [[package]]
 name = "skillkeeper"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "gettext",
  "interprocess",
@@ -3856,14 +3869,14 @@ dependencies = [
 
 [[package]]
 name = "skillkeeper-agents"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "skillkeeper-core",
 ]
 
 [[package]]
 name = "skillkeeper-cli"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "clap",
  "skillkeeper-agents",
@@ -3874,7 +3887,7 @@ dependencies = [
 
 [[package]]
 name = "skillkeeper-config"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "serde",
  "serde_yaml_ng",
@@ -3885,10 +3898,11 @@ dependencies = [
 
 [[package]]
 name = "skillkeeper-core"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "hex",
  "regex",
+ "schemars 1.2.1",
  "serde",
  "serde_json",
  "serde_yaml_ng",

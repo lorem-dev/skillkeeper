@@ -31,6 +31,7 @@ use crate::models::{
     HookManifest, ResolveResult, ResolvedHook, ResolvedSkill, SkillId, SkillManifest,
 };
 use crate::ports::{FsPort, PortResult};
+use crate::skills::manifest::{self, Parsed};
 use crate::skills::repo_config::parse_repo_config;
 
 const SKILL_FILE: &str = "SKILL.md";
@@ -180,32 +181,40 @@ fn auto_skill_id(root_path: &str) -> SkillId {
 }
 
 /// Extract the frontmatter data for a manifest, defaulting an absent block to
-/// an empty mapping (mirroring the TypeScript `data ?? {}`).
-fn manifest_data(md: &str) -> Result<Value, String> {
+/// an empty mapping (mirroring the TypeScript `data ?? {}`). Any note the
+/// frontmatter leniency produced rides along, to be reported beside the
+/// manifest's own.
+fn manifest_data(md: &str) -> Result<(Value, Vec<String>), String> {
     let fm = split_frontmatter(md).map_err(|e| e.to_string())?;
-    Ok(fm
+    let data = fm
         .data
-        .unwrap_or_else(|| Value::Mapping(Default::default())))
+        .unwrap_or_else(|| Value::Mapping(Default::default()));
+    Ok((data, fm.notes))
 }
 
-/// Parse `SKILL.md` frontmatter into a [`SkillManifest`].
-fn parse_skill_manifest(md: &str) -> Result<SkillManifest, String> {
-    let manifest: SkillManifest =
-        serde_yaml_ng::from_value(manifest_data(md)?).map_err(|e| e.to_string())?;
-    if manifest.name.is_empty() {
-        return Err("name must not be empty".to_string());
-    }
-    Ok(manifest)
+/// Parse `SKILL.md` frontmatter into a [`SkillManifest`], tolerating mistyped
+/// optional fields (see [`crate::skills::manifest`]).
+fn parse_skill_manifest(md: &str) -> Result<Parsed<SkillManifest>, String> {
+    let (data, notes) = manifest_data(md)?;
+    let mut parsed = manifest::parse_skill_manifest(&data)?;
+    parsed.notes.splice(..0, notes);
+    Ok(parsed)
 }
 
 /// Parse `HOOK.md` frontmatter into a [`HookManifest`].
-fn parse_hook_manifest(md: &str) -> Result<HookManifest, String> {
-    let manifest: HookManifest =
-        serde_yaml_ng::from_value(manifest_data(md)?).map_err(|e| e.to_string())?;
-    if manifest.name.is_empty() {
-        return Err("name must not be empty".to_string());
+fn parse_hook_manifest(md: &str) -> Result<Parsed<HookManifest>, String> {
+    let (data, notes) = manifest_data(md)?;
+    let mut parsed = manifest::parse_hook_manifest(&data)?;
+    parsed.notes.splice(..0, notes);
+    Ok(parsed)
+}
+
+/// Record the leniencies a manifest needed, so a coerced or dropped field is
+/// visible without costing the skill.
+fn note_leniencies(path: &str, notes: Vec<String>, warnings: &mut Vec<String>) {
+    for note in notes {
+        warnings.push(format!("In {path}: {note}"));
     }
-    Ok(manifest)
 }
 
 /// Resolve the hooks declared under a skill's `hooks/` directory.
@@ -233,7 +242,10 @@ fn resolve_hooks(
         let hook_dir = &manifest_path[..manifest_path.len() - HOOK_FILE.len() - 1];
         let text = fs.read_file(&format!("{repo_root}/{manifest_path}"))?;
         let manifest = match parse_hook_manifest(&text) {
-            Ok(m) => m,
+            Ok(parsed) => {
+                note_leniencies(&manifest_path, parsed.notes, warnings);
+                parsed.manifest
+            }
             Err(e) => {
                 warnings.push(format!("Skipping invalid {manifest_path}: {e}"));
                 continue;
@@ -264,14 +276,18 @@ fn build_skill(
     id: SkillId,
     warnings: &mut Vec<String>,
 ) -> PortResult<Option<ResolvedSkill>> {
+    let manifest_path = format!("{root_path}/{SKILL_FILE}");
     let manifest = match fs
-        .read_file(&format!("{repo_root}/{root_path}/{SKILL_FILE}"))
+        .read_file(&format!("{repo_root}/{manifest_path}"))
         .map_err(|e| e.to_string())
         .and_then(|text| parse_skill_manifest(&text))
     {
-        Ok(m) => m,
+        Ok(parsed) => {
+            note_leniencies(&manifest_path, parsed.notes, warnings);
+            parsed.manifest
+        }
         Err(e) => {
-            warnings.push(format!("Skipping invalid {root_path}/{SKILL_FILE}: {e}"));
+            warnings.push(format!("Skipping invalid {manifest_path}: {e}"));
             return Ok(None);
         }
     };
@@ -691,6 +707,47 @@ mod tests {
         let names: Vec<String> = result.skills.iter().map(|s| s.id.name.clone()).collect();
         assert_eq!(names, vec!["ok".to_string()]);
         assert_eq!(result.warnings.len(), 1);
+    }
+
+    #[test]
+    fn keeps_a_skill_whose_optional_fields_are_mistyped() {
+        let fs = MemFs::new().with_file(
+            "repo/good/SKILL.md",
+            "---\nname: good\nversion: 1.0\nexecutables: run.sh\nallowed-tools: Read\n---\nbody\n",
+        );
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(result.skills[0].manifest.version.as_deref(), Some("1.0"));
+        assert_eq!(
+            result.skills[0].manifest.executables,
+            Some(vec!["run.sh".to_string()])
+        );
+        // The leniencies are reported, but the skill is still installable.
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.contains("good/SKILL.md") && w.contains("version")));
+    }
+
+    #[test]
+    fn keeps_a_skill_whose_description_holds_a_second_colon() {
+        let fs = MemFs::new().with_file(
+            "repo/good/SKILL.md",
+            "---\nname: good\ndescription: Covers the tool: run it\n---\nbody\n",
+        );
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(
+            result.skills[0].manifest.description.as_deref(),
+            Some("Covers the tool: run it")
+        );
+        // Tolerated, but not silently: the warning names the line to quote.
+        assert_eq!(result.warnings.len(), 1);
+        assert!(
+            result.warnings[0].contains("good/SKILL.md") && result.warnings[0].contains("line 3"),
+            "{}",
+            result.warnings[0]
+        );
     }
 
     #[test]

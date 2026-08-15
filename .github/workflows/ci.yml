@@ -198,6 +198,22 @@ jobs:
       - name: Test workspace
         run: cargo test --workspace
 
+      # `cargo test` WRITES the generated artifacts (ts-rs bindings, the mcp.yml
+      # JSON Schema) rather than asserting them, so a commit that changes a Rust
+      # type but forgets to commit the regenerated file is green here and only
+      # wrong afterwards. For the schema that is worse than for the bindings: it
+      # ships as a release asset that editors pin, so a stale one makes every
+      # user's editor flag correct files until someone notices.
+      - name: Fail on stale generated artifacts
+        run: |
+          git diff --exit-code -- \
+            schemas/ \
+            apps/desktop/src/renderer/services/bridge/generated/ \
+          || {
+            echo "::error::A generated artifact is out of date. Run 'cargo test' and commit the result."
+            exit 1
+          }
+
   e2e:
     name: End-to-end (CLI against the fixture)
     runs-on: ubuntu-latest

@@ -16,6 +16,12 @@ use crate::mcp::model::{McpServerDef, McpTransport};
 pub struct McpConfig {
     pub version: i64,
     pub servers: Vec<McpServerDef>,
+    /// Notes about values [`crate::yaml_repair`] had to re-quote to read the
+    /// file, each naming the line to fix. Empty for a file that parsed as
+    /// written. Callers are expected to report these: a silently tolerated
+    /// file and a silently skipped one look identical from the outside, which
+    /// is precisely the confusion this exists to prevent.
+    pub warnings: Vec<String>,
 }
 
 /// Raised when an `mcp.yml` is not valid. `field_path` is the dotted path to the
@@ -41,11 +47,57 @@ impl McpConfigError {
             field_path,
         }
     }
+
+    /// Same field path, with the deserializer's own complaint appended -- it
+    /// names the offending key and the type it wanted, which the path alone
+    /// does not ("servers.0" versus "headers: invalid type: map").
+    fn at_detailed(field_path: impl Into<String>, detail: &str) -> Self {
+        let mut err = Self::at(field_path);
+        err.message = format!("{}: {detail}", err.message);
+        err
+    }
 }
 
 /// Parse and validate an `mcp.yml`. Returns the typed config, or an
 /// [`McpConfigError`] carrying the field path of the first validation failure.
+///
+/// A file that fails is retried once with [`crate::yaml_repair`] applied, which
+/// re-quotes the plain scalars YAML misreads -- above all a bare `{param}`
+/// placeholder, which YAML takes for a flow mapping. A file rescued that way
+/// parses, and says so through [`McpConfig::warnings`].
+///
+/// # Errors
+///
+/// Returns [`McpConfigError`] when the file is invalid even after that retry.
 pub fn parse_mcp_config(text: &str) -> Result<McpConfig, McpConfigError> {
+    match parse_strict(text) {
+        Ok(config) => Ok(config),
+        Err(err) => {
+            // The retry has to cover BOTH failure modes: a bare `{param}` is
+            // valid YAML, so it survives the parse and only fails later, when
+            // a header mapping does not fit a string field.
+            let Some(repaired) = crate::yaml_repair::repair(text) else {
+                return Err(err);
+            };
+            match parse_strict(&repaired.text) {
+                // Report the ORIGINAL error when the repair did not help: it
+                // describes the file as the author wrote it.
+                Err(_) => Err(err),
+                Ok(config) => Ok(McpConfig {
+                    warnings: repaired
+                        .repairs
+                        .iter()
+                        .map(crate::yaml_repair::Repair::note)
+                        .collect(),
+                    ..config
+                }),
+            }
+        }
+    }
+}
+
+/// Parse and validate exactly as written, with no leniency.
+fn parse_strict(text: &str) -> Result<McpConfig, McpConfigError> {
     let data: Value = serde_yaml_ng::from_str(text).map_err(|_| McpConfigError::at(""))?;
     let Value::Mapping(map) = data else {
         return Err(McpConfigError::at(""));
@@ -64,7 +116,7 @@ pub fn parse_mcp_config(text: &str) -> Result<McpConfig, McpConfigError> {
     let mut servers = Vec::with_capacity(servers_raw.len());
     for (index, item) in servers_raw.iter().enumerate() {
         let def: McpServerDef = serde_yaml_ng::from_value(item.clone())
-            .map_err(|_| McpConfigError::at(format!("servers.{index}")))?;
+            .map_err(|e| McpConfigError::at_detailed(format!("servers.{index}"), &e.to_string()))?;
         if def.name.is_empty() {
             return Err(McpConfigError::at(format!("servers.{index}.name")));
         }
@@ -81,6 +133,7 @@ pub fn parse_mcp_config(text: &str) -> Result<McpConfig, McpConfigError> {
     Ok(McpConfig {
         version: 1,
         servers,
+        warnings: Vec::new(),
     })
 }
 
@@ -113,6 +166,91 @@ mod tests {
         let server = &cfg.servers[0];
         assert_eq!(server.transport, McpTransport::Stdio);
         assert_eq!(server.command.as_deref(), Some("npx"));
+    }
+
+    #[test]
+    fn accepts_a_bare_placeholder_header_and_says_so() {
+        // `{personal_token}` is valid YAML -- a flow mapping -- so this file
+        // parses and then fails to deserialize. The retry has to reach it.
+        let cfg = parse_mcp_config(
+            "version: 1\nservers:\n  - name: jira\n    type: http\n    url: https://example.com/mcp\n    headers:\n      X-Token: {personal_token}\n",
+        )
+        .unwrap();
+        assert_eq!(
+            cfg.servers[0]
+                .headers
+                .as_ref()
+                .and_then(|h| h.get("X-Token")),
+            Some(&"{personal_token}".to_string())
+        );
+        assert_eq!(cfg.warnings.len(), 1);
+        assert!(cfg.warnings[0].contains("line 7"), "{}", cfg.warnings[0]);
+        assert!(
+            cfg.warnings[0].contains("{personal_token}"),
+            "{}",
+            cfg.warnings[0]
+        );
+    }
+
+    #[test]
+    fn a_repaired_placeholder_still_registers_as_a_parameter() {
+        let cfg = parse_mcp_config(
+            "version: 1\nservers:\n  - name: s\n    type: http\n    url: https://x/mcp\n    headers:\n      A: {tok}\n",
+        )
+        .unwrap();
+        assert_eq!(
+            crate::mcp::params::parse_params(&cfg.servers[0]),
+            vec!["tok"]
+        );
+    }
+
+    #[test]
+    fn one_bad_value_no_longer_costs_the_whole_file() {
+        let cfg = parse_mcp_config(
+            "version: 1\nservers:\n  - name: a\n    type: http\n    url: https://x/mcp\n    headers:\n      A: {tok}\n  - name: b\n    type: http\n    url: https://y/mcp\n",
+        )
+        .unwrap();
+        assert_eq!(cfg.servers.len(), 2);
+    }
+
+    #[test]
+    fn reports_no_warnings_for_a_file_that_parses_as_written() {
+        let cfg = parse_mcp_config(
+            "version: 1\nservers:\n  - name: s\n    type: http\n    url: \"https://x/mcp\"\n",
+        )
+        .unwrap();
+        assert!(cfg.warnings.is_empty());
+    }
+
+    #[test]
+    fn a_genuine_flow_mapping_is_still_read_as_a_mapping() {
+        let cfg = parse_mcp_config(
+            "version: 1\nservers:\n  - name: s\n    type: stdio\n    command: npx\n    env: { KEY: value }\n",
+        )
+        .unwrap();
+        assert_eq!(
+            cfg.servers[0].env.as_ref().and_then(|e| e.get("KEY")),
+            Some(&"value".to_string())
+        );
+        assert!(cfg.warnings.is_empty());
+    }
+
+    #[test]
+    fn the_error_carries_the_deserializer_complaint_not_just_a_path() {
+        // `url` as a list cannot be repaired into anything, so this still
+        // fails -- and the message has to say something about WHY. serde
+        // reports the type mismatch but not the key it was reading (that would
+        // need serde_path_to_error, a dependency this does not justify), so
+        // the path locates the server and the detail explains the refusal.
+        let err = parse_mcp_config(
+            "version: 1\nservers:\n  - name: s\n    type: http\n    url:\n      - a\n      - b\n",
+        )
+        .unwrap_err();
+        assert_eq!(err.field_path, "servers.0");
+        assert_eq!(
+            err.message,
+            "Invalid mcp.yml at \"servers.0\": invalid type: sequence, expected a string"
+        );
     }
 
     #[test]

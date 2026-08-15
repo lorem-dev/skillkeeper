@@ -35,6 +35,7 @@ vi.mock('@/services/bridge', () => ({
     promptSshUnlock: vi.fn(),
     addRepository: vi.fn(),
     cloneRepository: vi.fn(),
+    updateRepository: vi.fn(),
     listAvailableSkills: vi.fn(),
     reconcileSkills: vi.fn(),
     reconcileMcp: vi.fn(),
@@ -476,7 +477,7 @@ describe('useSkillkeeperStore', () => {
         listSkills: async () => [],
         listAvailableSkills: async () => ({ skills: [], warnings: [] }),
         reconcileSkills: async () => [],
-        listAvailableMcp: async () => [],
+        listAvailableMcp: async () => ({ mcp: [], warnings: [] }),
         applyMcp: async () => ({ ok: true as const, installed: 0, removed: 0, skipped: [] }),
         listMcpInstalls: async () => [],
         reconcileMcp: async () => [],
@@ -564,7 +565,7 @@ describe('useSkillkeeperStore', () => {
         listSkills: async () => [],
         listAvailableSkills: async () => ({ skills: [], warnings: [] }),
         reconcileSkills: async () => [],
-        listAvailableMcp: async () => [],
+        listAvailableMcp: async () => ({ mcp: [], warnings: [] }),
         applyMcp: async () => ({ ok: true as const, installed: 0, removed: 0, skipped: [] }),
         listMcpInstalls: async () => [],
         reconcileMcp: async () => [],
@@ -878,12 +879,39 @@ describe('useSkillkeeperStore', () => {
       vi.mocked(bridgeClient.cloneRepository).mockResolvedValue({ ok: true, repository: added } as RepoResult);
       vi.mocked(bridgeClient.describeRepository).mockResolvedValue({ branch: 'main', skillCount: 9 });
       vi.mocked(bridgeClient.listAvailableSkills).mockResolvedValue({ skills: [], warnings: [] });
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue({ mcp: [], warnings: [] });
       vi.mocked(bridgeClient.reconcileSkills).mockResolvedValue([]);
       vi.mocked(bridgeClient.reconcileMcp).mockResolvedValue([]);
 
       await useSkillkeeperStore.getState().addRepository(added.url, added.name);
 
       expect(bridgeClient.listAvailableSkills).toHaveBeenCalled();
+      expect(bridgeClient.listAvailableMcp).toHaveBeenCalled();
+      expect(bridgeClient.reconcileSkills).toHaveBeenCalled();
+      expect(bridgeClient.reconcileMcp).toHaveBeenCalled();
+    });
+
+    it('refreshes both catalogs after a branch switch', async () => {
+      // A checkout swaps the working tree, so the previous branch's skills and
+      // MCP presets must not survive in the store: the card would show the new
+      // branch while the Skills/MCP pages still list the old branch's contents.
+      const switched = { ...mockRepo, branch: 'release' };
+      vi.mocked(bridgeClient.updateRepository).mockResolvedValue({
+        ok: true,
+        repository: switched,
+      } as RepoResult);
+      vi.mocked(bridgeClient.describeRepository).mockResolvedValue({ branch: 'release', skillCount: 3 });
+      vi.mocked(bridgeClient.listAvailableSkills).mockResolvedValue({ skills: [], warnings: [] });
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue({ mcp: [], warnings: [] });
+      vi.mocked(bridgeClient.reconcileSkills).mockResolvedValue([]);
+      vi.mocked(bridgeClient.reconcileMcp).mockResolvedValue([]);
+
+      await useSkillkeeperStore
+        .getState()
+        .updateRepository(mockRepo.id, mockRepo.name, mockRepo.url, 'release');
+
+      expect(bridgeClient.listAvailableSkills).toHaveBeenCalled();
+      expect(bridgeClient.listAvailableMcp).toHaveBeenCalled();
       expect(bridgeClient.reconcileSkills).toHaveBeenCalled();
       expect(bridgeClient.reconcileMcp).toHaveBeenCalled();
     });
@@ -929,7 +957,41 @@ describe('useSkillkeeperStore', () => {
         [],
       );
       vi.mocked(bridgeClient.listAvailableMcp).mockReset();
-      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue([repoAvailable]);
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue({ mcp: [repoAvailable], warnings: [] });
+      // The shared `reset` leaves the notification log alone, and these tests
+      // assert on it -- so clear it here rather than inherit the previous
+      // test's entries.
+      useSkillkeeperStore.setState({ notifications: [], toasts: [] });
+    });
+
+    it('logs a warning about an mcp.yml that could not be read', async () => {
+      // The whole point of the warning channel: a preset that cannot be read
+      // is otherwise just absent, which reads as "SkillKeeper ignored my file".
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue({
+        mcp: [],
+        warnings: [
+          {
+            repoId: 'repo-1',
+            repoName: 'My Skills',
+            message: 'Skipping invalid MCP config at "/tmp/skills/mcp.yml": Invalid mcp.yml at "servers.0"',
+          },
+        ],
+      });
+
+      await useSkillkeeperStore.getState().refreshMcpPresets();
+
+      const { notifications, toasts } = useSkillkeeperStore.getState();
+      expect(notifications).toHaveLength(1);
+      expect(notifications[0]!.level).toBe('warning');
+      expect(notifications[0]!.text).toContain('[My Skills]');
+      expect(notifications[0]!.text).toContain('servers.0');
+      // A standing condition of the repository, not a reaction to a click.
+      expect(toasts).toHaveLength(0);
+    });
+
+    it('raises no warning when every mcp.yml read cleanly', async () => {
+      await useSkillkeeperStore.getState().refreshMcpPresets();
+      expect(useSkillkeeperStore.getState().notifications).toHaveLength(0);
     });
 
     it('unions manual config presets and repo-discovered presets with correct origin/params/hasRules', async () => {
@@ -1006,7 +1068,7 @@ describe('useSkillkeeperStore', () => {
       vi.mocked(bridgeClient.listMcpInstalls).mockReset();
       vi.mocked(bridgeClient.listMcpInstalls).mockResolvedValue([unrelatedInstall]);
       vi.mocked(bridgeClient.listAvailableMcp).mockReset();
-      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue([]);
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue({ mcp: [], warnings: [] });
       vi.mocked(bridgeClient.setConfig).mockReset();
       vi.mocked(bridgeClient.setConfig).mockImplementation(async (config) => ({
         config,

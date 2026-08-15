@@ -126,6 +126,15 @@ mod tests {
             }
             self.inner.read_file(path)
         }
+        fn read_bytes(&self, path: &str) -> PortResult<Vec<u8>> {
+            if matches!(self.fault, Fault::Read) {
+                return Err(PortError::Io("read failed".to_string()));
+            }
+            self.inner.read_bytes(path)
+        }
+        fn write_bytes(&self, path: &str, content: &[u8]) -> PortResult<()> {
+            self.write_file(path, &String::from_utf8_lossy(content))
+        }
         fn write_file(&self, path: &str, content: &str) -> PortResult<()> {
             if matches!(self.fault, Fault::Write) {
                 return Err(PortError::Io("write failed".to_string()));

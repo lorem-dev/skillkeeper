@@ -1118,6 +1118,9 @@ msgstr "找不到所設定的 SSH 金鑰檔案。"
 msgid "ssh.noAgent"
 msgstr "沒有執行 ssh-agent，因此 Git 每次都會詢問金鑰的密碼短語。設定一個即可只輸入一次。"
 
+msgid "repo.lfsRequired"
+msgstr "此存放庫使用 Git LFS 儲存檔案，但尚未安裝 Git LFS。缺少它時，這類檔案都只會以佔位符的形式下載。請先安裝 git-lfs，然後同步存放庫。"
+
 msgid "ssh.notAPrivateKey"
 msgstr "所設定的 SSH 金鑰檔案不是私密金鑰。"
 

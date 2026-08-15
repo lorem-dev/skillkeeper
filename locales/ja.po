@@ -1118,6 +1118,9 @@ msgstr "設定された SSH 鍵ファイルが見つかりません。"
 msgid "ssh.noAgent"
 msgstr "ssh-agent が動いていないため、Git は毎回鍵のパスフレーズを尋ねます。設定すれば入力は一度だけになります。"
 
+msgid "repo.lfsRequired"
+msgstr "このリポジトリは Git LFS でファイルを保存していますが、Git LFS がインストールされていません。ないままでは該当するファイルはすべてプレースホルダーとして届きます。git-lfs をインストールしてから、リポジトリを同期してください。"
+
 msgid "ssh.notAPrivateKey"
 msgstr "設定された SSH 鍵ファイルは秘密鍵ではありません。"
 

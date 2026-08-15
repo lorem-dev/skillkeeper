@@ -40,6 +40,12 @@ If a directory has both `mcp.yml` and `mcp.yaml`, `mcp.yml` is read and
 precedence rule, not a fallback). A file that fails to parse is skipped with
 a warning; it never fails the rest of the sync.
 
+That warning is visible: it appears in the app's notifications log, named
+against the repository it came from, and on the CLI's standard error whenever
+it lists or installs MCP presets. The same goes for a file that exists but
+cannot be read at all. A skipped file is the one case where presets are
+missing for a reason nothing else shows, so it is never dropped silently.
+
 Schema:
 
 ```yaml
@@ -60,9 +66,28 @@ servers:
 `stdio` requires `command`; `http` and `sse` require `url`. A server missing
 the field its transport needs fails validation for the whole file.
 
+### Editor support
+
+Every release publishes a JSON Schema for this format. Point an editor at it
+with a `yaml-language-server` comment on the first line and you get
+completion, hover documentation, and validation as you type - including the
+quoting rule above, which the schema reports as a type error on the value:
+
+```yaml
+# yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json
+```
+
+`releases/latest/download` resolves to the newest final release, so the line
+needs no maintenance; pre-release builds are not served by it. Field names,
+types, and descriptions are generated from the same Rust types the parser
+uses, and CI fails if the committed schema drifts from them. The schema is
+deliberately stricter in one place: it flags an unquoted `{param}`, which the
+parser tolerates with a warning.
+
 ### Example: repository root
 
 ```yaml
+# yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json
 # mcp.yml at the repository root
 version: 1
 servers:
@@ -85,6 +110,7 @@ servers:
 ### Example: inside a skill group
 
 ```yaml
+# yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json
 # tooling/mcp.yml -- group "tooling"
 version: 1
 servers:
@@ -123,6 +149,20 @@ typed or secret fields exist yet). The rendering step substitutes each
 
 Example: the `docs-http` server above has two parameters, `host` and
 `token` (`host` appears in both `url` and `rules`; it still counts once).
+
+### Quote a value that starts with a placeholder
+
+```yaml
+headers:
+  X-Token: "{personal_token}"   # quoted -- a string
+  Authorization: Bearer {token} # fine unquoted: `{` is not the first character
+```
+
+In YAML a leading `{` opens a flow mapping, so an unquoted `{personal_token}`
+is read as the map `{personal_token: null}` rather than as text. SkillKeeper
+recovers the intended string and reads the file anyway, but it reports a
+warning naming the line, because the same spelling means something else to
+every other YAML tool. Quoting silences it.
 
 ## Install, update, and remove
 

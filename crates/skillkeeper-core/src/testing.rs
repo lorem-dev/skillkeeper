@@ -7,7 +7,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::ports::{FileStat, FsPort, PathState, PortError, PortResult};
 
 struct FileNode {
-    content: String,
+    /// Stored as bytes, so a test can hold the binary asset a real skill
+    /// might ship; `read_file` decodes on the way out, as a real one does.
+    content: Vec<u8>,
     executable: bool,
 }
 
@@ -42,6 +44,13 @@ impl MemFs {
     /// Seed a file (creating parent dirs), for concise test setup.
     pub fn with_file(self, path: &str, content: &str) -> Self {
         self.write_file(path, content).expect("seed file");
+        self
+    }
+
+    /// Seed a file from raw bytes, for standing in for the binary assets a
+    /// skill may ship (an image, a font, a compiled helper).
+    pub fn with_bytes(self, path: &str, content: &[u8]) -> Self {
+        self.write_bytes(path, content).expect("seed file");
         self
     }
 
@@ -96,6 +105,16 @@ fn basename(path: &str) -> String {
 
 impl FsPort for MemFs {
     fn read_file(&self, path: &str) -> PortResult<String> {
+        let bytes = self.read_bytes(path)?;
+        String::from_utf8(bytes)
+            .map_err(|_| PortError::Io(format!("{path}: stream did not contain valid UTF-8")))
+    }
+
+    fn write_file(&self, path: &str, content: &str) -> PortResult<()> {
+        self.write_bytes(path, content.as_bytes())
+    }
+
+    fn read_bytes(&self, path: &str) -> PortResult<Vec<u8>> {
         let key = normalize(path);
         self.files
             .borrow()
@@ -104,13 +123,13 @@ impl FsPort for MemFs {
             .ok_or(PortError::NotFound(key))
     }
 
-    fn write_file(&self, path: &str, content: &str) -> PortResult<()> {
+    fn write_bytes(&self, path: &str, content: &[u8]) -> PortResult<()> {
         let key = normalize(path);
         self.ensure_dir(&parent(&key));
         self.files.borrow_mut().insert(
             key,
             FileNode {
-                content: content.to_string(),
+                content: content.to_vec(),
                 executable: false,
             },
         );

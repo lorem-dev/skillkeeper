@@ -1253,6 +1253,9 @@ msgstr "Il file della chiave SSH indicato non è stato trovato."
 msgid "ssh.noAgent"
 msgstr "Nessun ssh-agent in esecuzione, quindi Git chiede la passphrase della chiave ogni volta. Configuralo per inserirla una volta sola."
 
+msgid "repo.lfsRequired"
+msgstr "Questo repository archivia file con Git LFS, che non è installato. Senza di esso ogni file di questo tipo arriva solo come segnaposto. Installa git-lfs, poi sincronizza il repository."
+
 msgid "ssh.notAPrivateKey"
 msgstr "Il file della chiave SSH indicato non è una chiave privata."
 

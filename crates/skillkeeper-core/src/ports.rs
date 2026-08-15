@@ -45,12 +45,25 @@ pub enum PathState {
 }
 
 /// Minimal filesystem abstraction. All paths are absolute (or resolved by the
-/// caller before use). Reads and writes are UTF-8 text.
+/// caller before use).
+///
+/// Text and bytes are separate operations on purpose. Configuration files,
+/// manifests and guidance are text and are edited as text; a skill's body is
+/// arbitrary content a skill author chose to ship, which may be an image, a
+/// font, or a compiled helper. Reading such a file as text fails, so anything
+/// that walks a skill body -- hashing, copying, verifying -- uses the byte
+/// pair. There is deliberately no lossy conversion between them.
 pub trait FsPort {
-    /// Read a file as UTF-8 text. Errors if it does not exist.
+    /// Read a file as UTF-8 text. Errors if it does not exist, or if its
+    /// contents are not valid UTF-8.
     fn read_file(&self, path: &str) -> PortResult<String>;
     /// Write a file as UTF-8 text, creating parent directories as needed.
     fn write_file(&self, path: &str, content: &str) -> PortResult<()>;
+    /// Read a file as raw bytes. Errors if it does not exist. Use this for any
+    /// file whose contents are not known to be text.
+    fn read_bytes(&self, path: &str) -> PortResult<Vec<u8>>;
+    /// Write raw bytes, creating parent directories as needed.
+    fn write_bytes(&self, path: &str, content: &[u8]) -> PortResult<()>;
     /// List the immediate entry names of a directory. Errors if missing.
     fn list(&self, path: &str) -> PortResult<Vec<String>>;
     /// Stat a path, or return `None` when it does not exist.

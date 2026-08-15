@@ -142,6 +142,26 @@ export interface AvailableMcp {
   readonly hash: string;
 }
 
+/**
+ * One problem found while reading a repository's `mcp.yml`: a file that could
+ * not be parsed at all, or one that only parsed because of the YAML leniency
+ * (a bare `{param}` header, which YAML reads as a mapping). Structurally the
+ * same record as {@link SkillResolveWarning} and handled by the same store
+ * action, so a preset that went missing reads the same way as a skill that did.
+ */
+export interface McpConfigWarning {
+  readonly repoId: string;
+  readonly repoName: string;
+  /** Already-composed English message from the backend (not an i18n key). */
+  readonly message: string;
+}
+
+/** The `mcp_list_available` payload: the catalog plus any warnings. */
+export interface AvailableMcpResult {
+  readonly mcp: AvailableMcp[];
+  readonly warnings: McpConfigWarning[];
+}
+
 export interface McpInstallReq {
   readonly identity: McpIdentity;
   readonly def: McpServerDef;

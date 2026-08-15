@@ -467,10 +467,15 @@ fn resolve_mcp_target(
 // ---------------------------------------------------------------------------
 
 /// Read and parse the first mcp.yml/mcp.yaml found directly under `dir`
-/// (preferring `mcp.yml`). Returns an empty list when neither exists, or when the
-/// file found fails to parse (a warning is reported in that case). Port of the TS
-/// `readMcpDefs`.
-fn read_mcp_defs(fs: &dyn FsPort, dir: &str) -> Vec<McpServerDef> {
+/// (preferring `mcp.yml`), plus anything worth telling the user about it.
+/// Returns an empty list when neither exists, or when the file found fails to
+/// parse. Port of the TS `readMcpDefs`.
+///
+/// Both outcomes that lose presets carry a message: a file that could not be
+/// parsed at all, and one that only parsed because of the YAML leniency. Left
+/// on stderr, as these were, they are invisible in a windowed app -- and a
+/// skipped file is then indistinguishable from an absent one.
+fn read_mcp_defs(fs: &dyn FsPort, dir: &str) -> (Vec<McpServerDef>, Vec<String>) {
     for file_name in MCP_FILE_NAMES {
         let path = format!("{dir}/{file_name}");
         if !fs.exists(&path).unwrap_or(false) {
@@ -478,36 +483,80 @@ fn read_mcp_defs(fs: &dyn FsPort, dir: &str) -> Vec<McpServerDef> {
         }
         let text = match fs.read_file(&path) {
             Ok(t) => t,
-            Err(_) => return Vec::new(),
+            // The third way to lose presets, and the one that used to be
+            // silent: the file is there but cannot be read at all (permissions,
+            // I/O, not valid UTF-8). Saying nothing here made a skipped file
+            // indistinguishable from an absent one, which is exactly what this
+            // warning channel exists to prevent.
+            Err(e) => return (Vec::new(), vec![format!("Could not read \"{path}\": {e}")]),
         };
         return match parse_mcp_config(&text) {
-            Ok(cfg) => cfg.servers,
-            Err(e) => {
-                eprintln!("[mcp] Skipping invalid MCP config at \"{path}\": {e}");
-                Vec::new()
+            Ok(cfg) => {
+                let notes = cfg
+                    .warnings
+                    .iter()
+                    .map(|w| format!("{path}: {w}"))
+                    .collect();
+                (cfg.servers, notes)
             }
+            Err(e) => (
+                Vec::new(),
+                vec![format!("Skipping invalid MCP config at \"{path}\": {e}")],
+            ),
         };
     }
-    Vec::new()
+    (Vec::new(), Vec::new())
+}
+
+/// The `mcp:list-available` payload: the catalog plus any warning raised while
+/// reading it. Mirrors `AvailableSkillsResult`, for the same reason -- a preset
+/// that cannot be read is otherwise silently absent.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AvailableMcpResult {
+    pub mcp: Vec<AvailableMcp>,
+    pub warnings: Vec<McpConfigWarning>,
+}
+
+/// One problem found while reading a repository's MCP config, attributed to the
+/// repository so the renderer can name it.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct McpConfigWarning {
+    pub repo_id: String,
+    pub repo_name: String,
+    pub message: String,
 }
 
 /// `mcp:list-available` -- every MCP server preset available across all cloned
 /// repositories: a root mcp.yml/mcp.yaml plus one per skill-group directory.
 /// Repos whose clone is missing are skipped. Port of the TS `listAvailableMcp`.
-pub fn list_available(ctx: &AppContext) -> Vec<AvailableMcp> {
+pub fn list_available(ctx: &AppContext) -> AvailableMcpResult {
     let mut out = Vec::new();
+    let mut warnings: Vec<McpConfigWarning> = Vec::new();
     let repos = {
         let _guard = lock(ctx);
         match load_state(&ctx.fs, &ctx.paths.state_json) {
             Ok(state) => state.repositories,
-            Err(_) => return out,
+            Err(_) => return AvailableMcpResult { mcp: out, warnings },
         }
     };
     for repo in repos {
         if !ctx.fs.exists(&repo.local_path).unwrap_or(false) {
             continue;
         }
-        for def in read_mcp_defs(&ctx.fs, &repo.local_path) {
+        let mut note = |message: String| {
+            warnings.push(McpConfigWarning {
+                repo_id: repo.id.clone(),
+                repo_name: repo.name.clone(),
+                message,
+            });
+        };
+        let (defs, notes) = read_mcp_defs(&ctx.fs, &repo.local_path);
+        for message in notes {
+            note(message);
+        }
+        for def in defs {
             let hash = hash_mcp_def(&def);
             out.push(AvailableMcp {
                 repo_id: repo.id.clone(),
@@ -521,6 +570,14 @@ pub fn list_available(ctx: &AppContext) -> Vec<AvailableMcp> {
         // (rootPath's first segment when nested one level), not the skill's
         // declared `id.group` -- an mcp.yml sits in the actual directory.
         let resolved = resolve_skills(&ctx.fs, &repo.local_path);
+        // Carry the resolution warnings, as the CLI already does: a skill that
+        // fails to resolve cannot contribute its directory as a group, so a
+        // broken SKILL.md silently hides its sibling mcp.yml. This page can be
+        // refreshed on its own, so the skills-side warning is not guaranteed to
+        // be in the log alongside it.
+        for message in &resolved.warnings {
+            note(message.clone());
+        }
         let mut groups: Vec<String> = Vec::new();
         for skill in &resolved.skills {
             let parts: Vec<&str> = skill.root_path.split('/').collect();
@@ -533,7 +590,11 @@ pub fn list_available(ctx: &AppContext) -> Vec<AvailableMcp> {
         }
         for group in groups {
             let dir = format!("{}/{}", repo.local_path, group);
-            for def in read_mcp_defs(&ctx.fs, &dir) {
+            let (defs, notes) = read_mcp_defs(&ctx.fs, &dir);
+            for message in notes {
+                note(message);
+            }
+            for def in defs {
                 let hash = hash_mcp_def(&def);
                 out.push(AvailableMcp {
                     repo_id: repo.id.clone(),
@@ -545,7 +606,7 @@ pub fn list_available(ctx: &AppContext) -> Vec<AvailableMcp> {
             }
         }
     }
-    out
+    AvailableMcpResult { mcp: out, warnings }
 }
 
 // ---------------------------------------------------------------------------
@@ -1061,7 +1122,7 @@ fn update_inner(ctx: &AppContext, args: &UpdateMcpArgs) -> Result<usize, String>
 #[tauri::command]
 pub async fn mcp_list_available(
     ctx: State<'_, Arc<AppContext>>,
-) -> Result<Vec<AvailableMcp>, String> {
+) -> Result<AvailableMcpResult, String> {
     blocking(&ctx, list_available).await
 }
 
@@ -1318,12 +1379,13 @@ mod tests {
         save_state(&app.ctx.fs, &app.ctx.paths.state_json, &state).unwrap();
 
         let out = list_available(&app.ctx);
-        assert_eq!(out.len(), 2);
-        let root = out.iter().find(|m| m.group.is_none()).unwrap();
+        assert_eq!(out.mcp.len(), 2);
+        assert!(out.warnings.is_empty());
+        let root = out.mcp.iter().find(|m| m.group.is_none()).unwrap();
         assert_eq!(root.def.name, "root-srv");
         assert_eq!(root.repo_id, "repo-1");
         assert!(!root.hash.is_empty());
-        let group = out.iter().find(|m| m.group.is_some()).unwrap();
+        let group = out.mcp.iter().find(|m| m.group.is_some()).unwrap();
         assert_eq!(group.group.as_deref(), Some("devtools"));
         assert_eq!(group.def.name, "dt-srv");
     }
@@ -1331,7 +1393,74 @@ mod tests {
     #[test]
     fn list_available_is_empty_without_repositories() {
         let app = TempAppData::new();
-        assert!(list_available(&app.ctx).is_empty());
+        let out = list_available(&app.ctx);
+        assert!(out.mcp.is_empty());
+        assert!(out.warnings.is_empty());
+    }
+
+    /// One repository holding `mcp.yml` with `text`, registered in state.
+    fn app_with_mcp_yml(text: &str) -> (TempAppData, ProjectDir) {
+        let app = TempAppData::new();
+        let repo = ProjectDir::new();
+        std::fs::write(Path::new(&repo.path()).join("mcp.yml"), text).unwrap();
+        let state = AppState {
+            version: STATE_VERSION,
+            repositories: vec![Repository {
+                id: "repo-1".to_string(),
+                name: "mcps".to_string(),
+                url: "git@github.com:acme/mcps.git".to_string(),
+                kind: RepositoryKind::Generic,
+                transport: Transport::Ssh,
+                lfs: false,
+                local_path: repo.path(),
+                last_fetched: None,
+                branch: None,
+            }],
+            projects: vec![],
+            installs: vec![],
+        };
+        save_state(&app.ctx.fs, &app.ctx.paths.state_json, &state).unwrap();
+        (app, repo)
+    }
+
+    #[test]
+    fn list_available_reports_an_unparsable_config_instead_of_dropping_it() {
+        let (app, _repo) = app_with_mcp_yml("version: 1\nservers:\n  - name: s\n    type: nope\n");
+        let out = list_available(&app.ctx);
+        assert!(out.mcp.is_empty());
+        assert_eq!(out.warnings.len(), 1);
+        assert_eq!(out.warnings[0].repo_id, "repo-1");
+        assert_eq!(out.warnings[0].repo_name, "mcps");
+        assert!(
+            out.warnings[0]
+                .message
+                .contains("Skipping invalid MCP config"),
+            "{}",
+            out.warnings[0].message
+        );
+    }
+
+    #[test]
+    fn list_available_keeps_a_bare_placeholder_and_warns_about_it() {
+        let (app, _repo) = app_with_mcp_yml(
+            "version: 1\nservers:\n  - name: jira\n    type: http\n    url: https://example.com/mcp\n    headers:\n      X-Token: {personal_token}\n",
+        );
+        let out = list_available(&app.ctx);
+        assert_eq!(out.mcp.len(), 1);
+        assert_eq!(
+            out.mcp[0]
+                .def
+                .headers
+                .as_ref()
+                .and_then(|h| h.get("X-Token")),
+            Some(&"{personal_token}".to_string())
+        );
+        assert_eq!(out.warnings.len(), 1);
+        assert!(
+            out.warnings[0].message.contains("{personal_token}"),
+            "{}",
+            out.warnings[0].message
+        );
     }
 
     // ---- apply (JSON: claude) ----

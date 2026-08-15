@@ -213,6 +213,12 @@ msgstr ""
 "No ssh-agent is running, so Git asks for your key passphrase every time. Set "
 "one up to be asked only once."
 
+msgid "repo.lfsRequired"
+msgstr ""
+"This repository stores files with Git LFS, which is not installed. Without "
+"it every such file arrives as a placeholder. Install git-lfs, then sync the "
+"repository."
+
 msgid "logs.readMore"
 msgstr "Learn more"
 

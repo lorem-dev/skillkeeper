@@ -2,8 +2,8 @@
 name: check-changes
 description: >
   Verify that CHANGES.md (Development section) reflects every commit since the
-  last release. Flag missing entries, stale entries, or commits that have no
-  corresponding changelog bullet.
+  last release. Flag missing entries, stale entries, over-long entries, or
+  commits that have no corresponding changelog bullet.
 ---
 
 # check-changes
@@ -38,13 +38,22 @@ release.
    verbatim -- it only needs to describe the same change at a short summary
    level.
 
-5. **Report findings.**
+5. **Check each bullet against the length rule.**
+   Per the "Changelog Entries" section of CONTRIBUTING.md, a bullet is at most
+   **25 words**, counted as whitespace-separated tokens with a code span
+   counting as one word. Count every bullet under `## Development` and list the
+   ones that exceed it, with their count. Do not measure released `## Version`
+   sections -- a section is frozen once cut and is never rewritten.
+
+6. **Report findings.**
    - List commits with NO changelog entry (missing entries -- these must be
      added).
    - List changelog bullets that appear to describe nothing in the commit
      history (stale or speculative entries -- flag for author review).
+   - List bullets over the 25-word limit, each with its count, and propose a
+     shorter wording.
    - If everything matches, report "CHANGES.md is current."
 
-6. **Do not edit CHANGES.md automatically.**
+7. **Do not edit CHANGES.md automatically.**
    Propose the missing bullets in your report and let the developer apply them.
    The developer owns the changelog wording.

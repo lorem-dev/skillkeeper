@@ -1208,6 +1208,9 @@ msgstr "Le fichier de clé SSH indiqué est introuvable."
 msgid "ssh.noAgent"
 msgstr "Aucun ssh-agent ne tourne, donc Git demande la phrase secrète de votre clé chaque fois. Configurez-en un pour ne la saisir qu'une seule fois."
 
+msgid "repo.lfsRequired"
+msgstr "Ce dépôt stocke des fichiers avec Git LFS, qui n'est pas installé. Sans lui, chacun de ces fichiers arrive uniquement sous forme d'espace réservé. Installez git-lfs, puis synchronisez le dépôt."
+
 msgid "ssh.notAPrivateKey"
 msgstr "Le fichier de clé SSH indiqué n'est pas une clé privée."
 

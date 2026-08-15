@@ -207,11 +207,23 @@ pub fn available(ctx: &AppContext) -> AvailableSkillsResult {
             });
         }
         for skill in &resolved.skills {
-            // A read failure aborts the rest of this repo, keeping any already
-            // pushed (mirrors the per-repo try/catch in the TS source).
+            // Skip the skill that cannot be hashed, and only that one. This
+            // used to `break`, which dropped every skill the walk had not
+            // reached yet -- a whole repository could go missing because one
+            // skill deep inside it held a file that could not be read, and the
+            // survivors were whichever ones the filesystem happened to list
+            // first. Say which skill and why, rather than leaving the count
+            // short with no explanation.
             let content_hash = match resolved_content_hash(&ctx.fs, &repo.local_path, skill) {
                 Ok(h) => h,
-                Err(_) => break,
+                Err(e) => {
+                    warnings.push(SkillResolveWarning {
+                        repo_id: repo.id.clone(),
+                        repo_name: repo.name.clone(),
+                        message: format!("Skipping \"{}\": {e}", skill.root_path),
+                    });
+                    continue;
+                }
             };
             let guide = format!("{}/GUIDE.md", skill.root_path);
             let rules = format!("{}/RULES.md", skill.root_path);
@@ -1057,6 +1069,65 @@ mod tests {
         assert_eq!(w.repo_id, "repo-1");
         assert_eq!(w.repo_name, "skills");
         assert!(w.message.contains("group/sub/too-deep"), "{}", w.message);
+    }
+
+    #[test]
+    fn available_lists_a_skill_carrying_a_binary_asset() {
+        // Reading a body file as text failed on anything that is not UTF-8,
+        // which is how a single icon.png used to take a repository's catalog
+        // down with it.
+        let app = TempAppData::new();
+        let src = SkillRepo::new();
+        let proj = ProjectDir::new();
+        seed_state(&app, &src, &proj);
+        let assets = src.path.join("skill-a").join("assets");
+        std::fs::create_dir_all(&assets).unwrap();
+        std::fs::write(
+            assets.join("icon.png"),
+            [0x89u8, 0x50, 0x4E, 0x47, 0xFF, 0xFE],
+        )
+        .unwrap();
+
+        let listed = available(&app.ctx);
+        assert_eq!(listed.skills.len(), 1);
+        assert!(listed.warnings.is_empty(), "{:?}", listed.warnings);
+    }
+
+    /// Only meaningful where a file can be made unreadable, and never as root.
+    #[cfg(unix)]
+    #[test]
+    fn available_skips_only_the_unreadable_skill_and_says_which() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let app = TempAppData::new();
+        let src = SkillRepo::new();
+        let proj = ProjectDir::new();
+        seed_state(&app, &src, &proj);
+        // A second skill whose body file the process cannot read.
+        let broken = src.path.join("broken");
+        std::fs::create_dir_all(&broken).unwrap();
+        std::fs::write(broken.join("SKILL.md"), "---\nname: broken\n---\nbody\n").unwrap();
+        let locked = broken.join("locked.txt");
+        std::fs::write(&locked, "secret\n").unwrap();
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
+        if std::fs::read(&locked).is_ok() {
+            return; // running as root: the permission bit proves nothing
+        }
+
+        let listed = available(&app.ctx);
+        // The healthy skill survives regardless of walk order -- this used to
+        // `break`, so whether it appeared depended on which one came first.
+        assert!(
+            listed.skills.iter().any(|s| s.name == "skill-a"),
+            "the readable skill must still be listed"
+        );
+        assert!(listed.skills.iter().all(|s| s.name != "broken"));
+        assert_eq!(listed.warnings.len(), 1);
+        assert!(
+            listed.warnings[0].message.contains("broken"),
+            "{}",
+            listed.warnings[0].message
+        );
     }
 
     #[test]

@@ -1163,6 +1163,9 @@ msgstr "Die angegebene SSH-Schlüsseldatei wurde nicht gefunden."
 msgid "ssh.noAgent"
 msgstr "Es läuft kein ssh-agent, daher fragt Git jedes Mal nach der Passphrase des Schlüssels. Richten Sie einen ein, um nur einmal gefragt zu werden."
 
+msgid "repo.lfsRequired"
+msgstr "Dieses Repository speichert Dateien mit Git LFS, das nicht installiert ist. Ohne es kommt jede dieser Dateien nur als Platzhalter an. Installieren Sie git-lfs und synchronisieren Sie das Repository."
+
 msgid "ssh.notAPrivateKey"
 msgstr "Die angegebene SSH-Schlüsseldatei ist kein privater Schlüssel."
 

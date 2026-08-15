@@ -178,10 +178,24 @@ fn read_mcp_defs(fs: &dyn FsPort, dir: &str, err: &mut dyn Write) -> Vec<McpServ
         }
         let text = match fs.read_file(&path) {
             Ok(t) => t,
-            Err(_) => return Vec::new(),
+            // Present but unreadable (permissions, I/O, not valid UTF-8). This
+            // used to return silently, making a skipped file look like an
+            // absent one.
+            Err(e) => {
+                let _ = writeln!(err, "[mcp] Could not read \"{path}\": {e}");
+                return Vec::new();
+            }
         };
         return match parse_mcp_config(&text) {
-            Ok(cfg) => cfg.servers,
+            Ok(cfg) => {
+                // A file that only parsed because of the YAML leniency still
+                // says so: tolerated is not the same as correct, and the note
+                // names the line to quote.
+                for warning in &cfg.warnings {
+                    let _ = writeln!(err, "[mcp] {path}: {warning}");
+                }
+                cfg.servers
+            }
             Err(e) => {
                 let _ = writeln!(err, "[mcp] Skipping invalid MCP config at \"{path}\": {e}");
                 Vec::new()

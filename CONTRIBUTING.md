@@ -36,6 +36,39 @@ docs: document hook consent flow
 
 ---
 
+## Changelog Entries
+
+Every user-visible change gets a bullet under `## Development` in
+[`CHANGES.md`](CHANGES.md), grouped under `### Added`, `### Changed`, or
+`### Fixed`.
+
+**Rules:**
+
+- Keep each bullet to 25 words or fewer, counted as whitespace-separated
+  tokens; a code span counts as one word whatever it contains. Wrap at the
+  file's usual width, with continuation lines indented two spaces.
+- The cap applies to `### Added`, `### Changed`, and `### Fixed` alike, and
+  only to `## Development`. A section is frozen once released.
+- English, and describe the change, not the code that made it.
+- One bullet per change. Two changes that need separate wording are two
+  bullets, never one longer one.
+
+**Examples:**
+
+```
+### Changed
+
+- A skill with extra or oddly typed frontmatter fields installs instead of
+  being dropped: only `name` is required.
+
+### Fixed
+
+- Switching a repository's branch refreshes its skills and MCP servers,
+  instead of leaving both pages on the previous branch's contents.
+```
+
+---
+
 ## Dependency Discipline
 
 Add only packages that are genuinely required for the application to work.

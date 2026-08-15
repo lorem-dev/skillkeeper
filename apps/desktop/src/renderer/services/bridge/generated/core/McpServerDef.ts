@@ -6,5 +6,45 @@ import type { McpTransport } from "./McpTransport";
  * fields are populated per transport (`url`/`headers` for `http`/`sse`,
  * `command`/`args`/`env` for `stdio`). `rules` carries optional free-form
  * usage guidance.
+ * Any string field may carry `{name}` placeholders; their values are asked for
+ * at install time. Quote a value that STARTS with one -- a leading `{` opens a
+ * flow mapping in YAML, so `X-Token: {tok}` is a map, not text.
  */
-export type McpServerDef = { name: string, type: McpTransport, url?: string, headers?: { [key in string]: string }, command?: string, args?: Array<string>, env?: { [key in string]: string }, rules?: string, };
+export type McpServerDef = { 
+/**
+ * Preset name, unique within the file. Becomes the basis of the installed
+ * instance's name.
+ */
+name: string, 
+/**
+ * Transport: `stdio`, `http`, or `sse`. Selects which of the fields below
+ * apply.
+ */
+type: McpTransport, 
+/**
+ * Server URL. Required for `http` and `sse`; ignored for `stdio`.
+ */
+url?: string, 
+/**
+ * Request headers, for `http` and `sse`. Quote any value that starts with
+ * a `{placeholder}`.
+ */
+headers?: { [key in string]: string }, 
+/**
+ * Executable to launch. Required for `stdio`; ignored otherwise.
+ */
+command?: string, 
+/**
+ * Arguments passed to `command`, for `stdio`.
+ */
+args?: Array<string>, 
+/**
+ * Environment variables for the launched process, for `stdio`. Quote any
+ * value that starts with a `{placeholder}`.
+ */
+env?: { [key in string]: string }, 
+/**
+ * Usage guidance written into the agent's guidance file on install, the
+ * same way skill guidance is.
+ */
+rules?: string, };
