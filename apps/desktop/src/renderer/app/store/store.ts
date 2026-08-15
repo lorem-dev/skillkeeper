@@ -1369,7 +1369,12 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
         }),
       );
       const available = await bridgeClient.listAvailableMcp();
-      const repo: McpPreset[] = available.map((a) => ({
+      // An mcp.yml that could not be read (or that only read thanks to the
+      // YAML leniency) is reported the same way a skill-resolution warning is:
+      // logged, deduped, no toast. Without this a preset simply is not there,
+      // which is indistinguishable from never having been declared.
+      get().notifyResolveWarnings(available.warnings);
+      const repo: McpPreset[] = available.mcp.map((a) => ({
         id: repoMcpPresetId(a.repoId, a.group, a.def.name),
         origin: 'repo',
         name: a.def.name,

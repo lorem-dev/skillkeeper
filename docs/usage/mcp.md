@@ -40,6 +40,11 @@ If a directory has both `mcp.yml` and `mcp.yaml`, `mcp.yml` is read and
 precedence rule, not a fallback). A file that fails to parse is skipped with
 a warning; it never fails the rest of the sync.
 
+That warning is visible: it appears in the app's notifications, named against
+the repository it came from, and on the CLI's standard error. A skipped file
+is the one case where presets are missing for a reason nothing else shows, so
+it is never dropped silently.
+
 Schema:
 
 ```yaml
@@ -123,6 +128,20 @@ typed or secret fields exist yet). The rendering step substitutes each
 
 Example: the `docs-http` server above has two parameters, `host` and
 `token` (`host` appears in both `url` and `rules`; it still counts once).
+
+### Quote a value that starts with a placeholder
+
+```yaml
+headers:
+  X-Token: "{personal_token}"   # quoted -- a string
+  Authorization: Bearer {token} # fine unquoted: `{` is not the first character
+```
+
+In YAML a leading `{` opens a flow mapping, so an unquoted `{personal_token}`
+is read as the map `{personal_token: null}` rather than as text. SkillKeeper
+recovers the intended string and reads the file anyway, but it reports a
+warning naming the line, because the same spelling means something else to
+every other YAML tool. Quoting silences it.
 
 ## Install, update, and remove
 

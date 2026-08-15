@@ -181,23 +181,32 @@ fn auto_skill_id(root_path: &str) -> SkillId {
 }
 
 /// Extract the frontmatter data for a manifest, defaulting an absent block to
-/// an empty mapping (mirroring the TypeScript `data ?? {}`).
-fn manifest_data(md: &str) -> Result<Value, String> {
+/// an empty mapping (mirroring the TypeScript `data ?? {}`). Any note the
+/// frontmatter leniency produced rides along, to be reported beside the
+/// manifest's own.
+fn manifest_data(md: &str) -> Result<(Value, Vec<String>), String> {
     let fm = split_frontmatter(md).map_err(|e| e.to_string())?;
-    Ok(fm
+    let data = fm
         .data
-        .unwrap_or_else(|| Value::Mapping(Default::default())))
+        .unwrap_or_else(|| Value::Mapping(Default::default()));
+    Ok((data, fm.notes))
 }
 
 /// Parse `SKILL.md` frontmatter into a [`SkillManifest`], tolerating mistyped
 /// optional fields (see [`crate::skills::manifest`]).
 fn parse_skill_manifest(md: &str) -> Result<Parsed<SkillManifest>, String> {
-    manifest::parse_skill_manifest(&manifest_data(md)?)
+    let (data, notes) = manifest_data(md)?;
+    let mut parsed = manifest::parse_skill_manifest(&data)?;
+    parsed.notes.splice(..0, notes);
+    Ok(parsed)
 }
 
 /// Parse `HOOK.md` frontmatter into a [`HookManifest`].
 fn parse_hook_manifest(md: &str) -> Result<Parsed<HookManifest>, String> {
-    manifest::parse_hook_manifest(&manifest_data(md)?)
+    let (data, notes) = manifest_data(md)?;
+    let mut parsed = manifest::parse_hook_manifest(&data)?;
+    parsed.notes.splice(..0, notes);
+    Ok(parsed)
 }
 
 /// Record the leniencies a manifest needed, so a coerced or dropped field is
@@ -732,7 +741,13 @@ mod tests {
             result.skills[0].manifest.description.as_deref(),
             Some("Covers the tool: run it")
         );
-        assert!(result.warnings.is_empty());
+        // Tolerated, but not silently: the warning names the line to quote.
+        assert_eq!(result.warnings.len(), 1);
+        assert!(
+            result.warnings[0].contains("good/SKILL.md") && result.warnings[0].contains("line 3"),
+            "{}",
+            result.warnings[0]
+        );
     }
 
     #[test]

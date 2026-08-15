@@ -19,7 +19,7 @@ import type {
   ApplyProgress,
   ApplyResult,
   AgentKind,
-  AvailableMcp,
+  AvailableMcpResult,
   ApplyMcpArgs,
   ApplyMcpResult,
   McpInstall,
@@ -47,7 +47,7 @@ export interface BridgeClient {
   listSkills(): Promise<InstallManifest[]>;
   listAvailableSkills(): Promise<AvailableSkillsResult>;
   reconcileSkills(): Promise<InstallManifest[]>;
-  listAvailableMcp(): Promise<AvailableMcp[]>;
+  listAvailableMcp(): Promise<AvailableMcpResult>;
   applyMcp(args: ApplyMcpArgs): Promise<ApplyMcpResult>;
   listMcpInstalls(): Promise<McpInstall[]>;
   reconcileMcp(): Promise<McpInstall[]>;
@@ -191,7 +191,7 @@ export const bridgeClient: BridgeClient = {
   listSkills: () => invoke<InstallManifest[]>('skills_list'),
   listAvailableSkills: () => invoke<AvailableSkillsResult>('skills_available'),
   reconcileSkills: () => invoke<InstallManifest[]>('skills_reconcile'),
-  listAvailableMcp: () => invoke<AvailableMcp[]>('mcp_list_available'),
+  listAvailableMcp: () => invoke<AvailableMcpResult>('mcp_list_available'),
   applyMcp: (args) => invoke<ApplyMcpResult>('mcp_apply', { args }),
   listMcpInstalls: () => invoke<McpInstall[]>('mcp_installs'),
   reconcileMcp: () => invoke<McpInstall[]>('mcp_reconcile'),

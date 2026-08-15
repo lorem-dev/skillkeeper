@@ -35,6 +35,8 @@ export type {
   ApplyProgress,
   ApplyResult,
   AvailableMcp,
+  AvailableMcpResult,
+  McpConfigWarning,
   McpInstallReq,
   McpBatch,
   ApplyMcpArgs,

@@ -21,6 +21,8 @@ use regex::Regex;
 use serde_yaml_ng::Value;
 use thiserror::Error;
 
+use crate::yaml_repair;
+
 /// Lines the opening `---` fence occupies, so a position inside the YAML block
 /// maps onto the line the reader sees in the file.
 const FENCE_LINES: usize = 1;
@@ -32,6 +34,10 @@ pub struct Frontmatter {
     pub data: Option<Value>,
     /// The Markdown body following the frontmatter (or the whole input).
     pub body: String,
+    /// Notes about values [`crate::yaml_repair`] had to re-quote to parse the
+    /// block, each naming the line to fix. Empty for a block that parsed as
+    /// written -- which is every block that does not lean on the leniency.
+    pub notes: Vec<String>,
 }
 
 /// Returned when the frontmatter block contains invalid YAML.
@@ -72,97 +78,6 @@ fn describe(err: &serde_yaml_ng::Error) -> FrontmatterError {
     }
 }
 
-/// Whether `value` starts a YAML construct that quoting would destroy (an
-/// anchor, alias, tag, block scalar, flow collection, comment, or directive).
-fn starts_yaml_construct(value: &str) -> bool {
-    value.chars().next().is_some_and(|c| {
-        matches!(
-            c,
-            '&' | '*' | '!' | '|' | '>' | '{' | '[' | '#' | '%' | '@' | '`' | '"' | '\''
-        )
-    })
-}
-
-/// Split `line` at the `key:` separator: the first colon that ends the line or
-/// is followed by a space. Returns `(indent_and_key, value)`, or `None` when
-/// the line is not a `key: value` mapping entry.
-fn split_key_value(line: &str) -> Option<(&str, &str)> {
-    let key_end = line.char_indices().find_map(|(i, c)| {
-        if c != ':' {
-            return None;
-        }
-        match line[i + 1..].chars().next() {
-            None | Some(' ') | Some('\t') => Some(i),
-            Some(_) => None,
-        }
-    })?;
-    let key = &line[..key_end];
-    let trimmed = key.trim_start();
-    // A list item, comment, or empty key is not a plain mapping key we can
-    // safely rewrite.
-    if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with('-') {
-        return None;
-    }
-    Some((key, line[key_end + 1..].trim_start_matches([' ', '\t'])))
-}
-
-/// Indentation width of `line`, in characters.
-fn indent_of(line: &str) -> usize {
-    line.len() - line.trim_start_matches([' ', '\t']).len()
-}
-
-/// Re-quote plain scalars carrying a bare `": "` (or a trailing colon), which
-/// YAML reads as a nested mapping and rejects. Returns `None` when there is
-/// nothing to rewrite, so a document that already parses is never touched.
-///
-/// Lines belonging to a block scalar (`key: |`, `key: >`) are left verbatim --
-/// their content is literal text, not YAML to reinterpret.
-fn requote_inline_colons(yaml: &str) -> Option<String> {
-    let mut out: Vec<String> = Vec::new();
-    let mut changed = false;
-    // Indentation a block scalar's content must exceed to still belong to it.
-    let mut block_indent: Option<usize> = None;
-
-    for raw in yaml.split('\n') {
-        // Keep CRLF intact: the split is on '\n', so a '\r' rides along.
-        let (line, eol) = match raw.strip_suffix('\r') {
-            Some(stripped) => (stripped, "\r"),
-            None => (raw, ""),
-        };
-
-        if let Some(indent) = block_indent {
-            if line.trim().is_empty() || indent_of(line) > indent {
-                out.push(raw.to_string());
-                continue;
-            }
-            block_indent = None;
-        }
-
-        let Some((key, value)) = split_key_value(line) else {
-            out.push(raw.to_string());
-            continue;
-        };
-        if value.starts_with('|') || value.starts_with('>') {
-            block_indent = Some(indent_of(line));
-            out.push(raw.to_string());
-            continue;
-        }
-        let value = value.trim_end_matches([' ', '\t']);
-        let needs_quoting = !value.is_empty()
-            && !starts_yaml_construct(value)
-            && (value.contains(": ") || value.ends_with(':'));
-        if !needs_quoting {
-            out.push(raw.to_string());
-            continue;
-        }
-        changed = true;
-        let escaped = value.replace('\\', "\\\\").replace('"', "\\\"");
-        out.push(format!("{key}: \"{escaped}\"{eol}"));
-    }
-
-    changed.then(|| out.join("\n"))
-}
-
 /// Split a Markdown document into its optional YAML frontmatter block and body.
 /// The frontmatter must start on the very first line. When absent, `data` is
 /// `None` and `body` is the whole input.
@@ -170,29 +85,52 @@ fn requote_inline_colons(yaml: &str) -> Option<String> {
 /// # Errors
 ///
 /// Returns [`FrontmatterError`] when the frontmatter block holds YAML that is
-/// invalid even after unquoted `": "` values are re-quoted.
+/// invalid even after [`crate::yaml_repair`] re-quotes the plain scalars YAML
+/// would misread.
 pub fn split_frontmatter(md: &str) -> Result<Frontmatter, FrontmatterError> {
     let Some(caps) = frontmatter_re().captures(md) else {
         return Ok(Frontmatter {
             data: None,
             body: md.to_string(),
+            notes: Vec::new(),
         });
     };
     let yaml_text = caps.get(1).map_or("", |m| m.as_str());
     let body = caps.get(2).map_or("", |m| m.as_str()).to_string();
-    let data: Value = match serde_yaml_ng::from_str(yaml_text) {
-        Ok(data) => data,
+    let (data, notes): (Value, Vec<String>) = match serde_yaml_ng::from_str(yaml_text) {
+        Ok(data) => (data, Vec::new()),
         Err(err) => {
-            // Retry with inline colons quoted; report the ORIGINAL error when
-            // that does not help, since it describes the document as written.
-            let repaired = requote_inline_colons(yaml_text)
-                .and_then(|text| serde_yaml_ng::from_str(&text).ok());
-            repaired.ok_or_else(|| describe(&err))?
+            // Retry re-quoted; report the ORIGINAL error when that does not
+            // help, since it describes the document as the author wrote it.
+            let repaired = yaml_repair::repair(yaml_text).and_then(|r| {
+                serde_yaml_ng::from_str(&r.text)
+                    .ok()
+                    .map(|v| (v, r.repairs))
+            });
+            match repaired {
+                // Repair line numbers are block-relative; restate them against
+                // the file, the same shift `describe` applies to an error.
+                Some((value, repairs)) => (
+                    value,
+                    repairs
+                        .iter()
+                        .map(|r| {
+                            format!(
+                                "line {}: read \"{}\" as text; quote it to silence this",
+                                r.line + FENCE_LINES,
+                                r.value
+                            )
+                        })
+                        .collect(),
+                ),
+                None => return Err(describe(&err)),
+            }
         }
     };
     Ok(Frontmatter {
         data: Some(data),
         body,
+        notes,
     })
 }
 
@@ -276,6 +214,21 @@ mod tests {
             Some(yaml("name: x\ndescription: \"Covers the tool: run it\""))
         );
         assert_eq!(fm.body, "body\n");
+    }
+
+    #[test]
+    fn reports_a_repair_against_the_file_line() {
+        // The repaired value sits on the file's THIRD line: fence, name, then it.
+        let fm =
+            split_frontmatter("---\nname: x\ndescription: Covers the tool: run it\n---\n").unwrap();
+        assert_eq!(fm.notes.len(), 1);
+        assert!(fm.notes[0].starts_with("line 3: "), "{}", fm.notes[0]);
+    }
+
+    #[test]
+    fn reports_no_notes_for_a_block_that_parses_as_written() {
+        let fm = split_frontmatter("---\nname: x\n---\nbody\n").unwrap();
+        assert!(fm.notes.is_empty());
     }
 
     #[test]

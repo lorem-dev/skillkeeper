@@ -7,8 +7,17 @@
 - Prebuilt arm64 builds for Linux and Windows: desktop bundles, CLI archives,
   and the one-line installers, alongside the existing x64 and macOS ones.
 
+### Changed
+
+- A bare `{param}` in a header or `env` value is read as a placeholder, not as
+  the YAML mapping a leading `{` normally opens.
+
 ### Fixed
 
+- An `mcp.yml` that cannot be read now says so in the app's notifications and
+  on the CLI's standard error, instead of vanishing with its presets.
+- A rejected `mcp.yml` names what the parser objected to, not just which
+  server it gave up on.
 - The Windows MSIX now always packages the desktop app; it picked between two
   binaries sharing a file name.
 

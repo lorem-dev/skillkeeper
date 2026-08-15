@@ -19,3 +19,4 @@ pub mod ssh_env;
 pub mod state;
 pub mod testing;
 pub mod time;
+pub mod yaml_repair;
