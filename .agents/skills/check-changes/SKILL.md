@@ -2,8 +2,8 @@
 name: check-changes
 description: >
   Verify that CHANGES.md (Development section) reflects every commit since the
-  last release. Flag missing entries, stale entries, or commits that have no
-  corresponding changelog bullet.
+  last release. Flag missing entries, stale entries, over-long entries, or
+  commits that have no corresponding changelog bullet.
 ---
 
 # check-changes
@@ -40,9 +40,10 @@ release.
 
 5. **Check each bullet against the length rule.**
    Per the "Changelog Entries" section of CONTRIBUTING.md, a bullet is at most
-   **25 words**. Count the words in every bullet under `## Development` and
-   list the ones that exceed it, with their count. Do not measure released
-   `## Version` sections -- they predate the rule and stay as written.
+   **25 words**, counted as whitespace-separated tokens with a code span
+   counting as one word. Count every bullet under `## Development` and list the
+   ones that exceed it, with their count. Do not measure released `## Version`
+   sections -- a section is frozen once cut and is never rewritten.
 
 6. **Report findings.**
    - List commits with NO changelog entry (missing entries -- these must be

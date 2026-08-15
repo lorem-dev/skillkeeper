@@ -483,7 +483,12 @@ fn read_mcp_defs(fs: &dyn FsPort, dir: &str) -> (Vec<McpServerDef>, Vec<String>)
         }
         let text = match fs.read_file(&path) {
             Ok(t) => t,
-            Err(_) => return (Vec::new(), Vec::new()),
+            // The third way to lose presets, and the one that used to be
+            // silent: the file is there but cannot be read at all (permissions,
+            // I/O, not valid UTF-8). Saying nothing here made a skipped file
+            // indistinguishable from an absent one, which is exactly what this
+            // warning channel exists to prevent.
+            Err(e) => return (Vec::new(), vec![format!("Could not read \"{path}\": {e}")]),
         };
         return match parse_mcp_config(&text) {
             Ok(cfg) => {
@@ -565,6 +570,14 @@ pub fn list_available(ctx: &AppContext) -> AvailableMcpResult {
         // (rootPath's first segment when nested one level), not the skill's
         // declared `id.group` -- an mcp.yml sits in the actual directory.
         let resolved = resolve_skills(&ctx.fs, &repo.local_path);
+        // Carry the resolution warnings, as the CLI already does: a skill that
+        // fails to resolve cannot contribute its directory as a group, so a
+        // broken SKILL.md silently hides its sibling mcp.yml. This page can be
+        // refreshed on its own, so the skills-side warning is not guaranteed to
+        // be in the log alongside it.
+        for message in &resolved.warnings {
+            note(message.clone());
+        }
         let mut groups: Vec<String> = Vec::new();
         for skill in &resolved.skills {
             let parts: Vec<&str> = skill.root_path.split('/').collect();

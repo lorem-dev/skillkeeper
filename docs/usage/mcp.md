@@ -40,10 +40,11 @@ If a directory has both `mcp.yml` and `mcp.yaml`, `mcp.yml` is read and
 precedence rule, not a fallback). A file that fails to parse is skipped with
 a warning; it never fails the rest of the sync.
 
-That warning is visible: it appears in the app's notifications, named against
-the repository it came from, and on the CLI's standard error. A skipped file
-is the one case where presets are missing for a reason nothing else shows, so
-it is never dropped silently.
+That warning is visible: it appears in the app's notifications log, named
+against the repository it came from, and on the CLI's standard error whenever
+it lists or installs MCP presets. The same goes for a file that exists but
+cannot be read at all. A skipped file is the one case where presets are
+missing for a reason nothing else shows, so it is never dropped silently.
 
 Schema:
 
@@ -70,15 +71,18 @@ the field its transport needs fails validation for the whole file.
 Every release publishes a JSON Schema for this format. Point an editor at it
 with a `yaml-language-server` comment on the first line and you get
 completion, hover documentation, and validation as you type - including the
-quoting rule above, which the schema catches as "not of type string":
+quoting rule above, which the schema reports as a type error on the value:
 
 ```yaml
 # yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json
 ```
 
-`releases/latest/download` always resolves to the newest release, so the line
-needs no maintenance. The schema is generated from the same Rust types the
-parser uses, so it cannot describe a format SkillKeeper does not accept.
+`releases/latest/download` resolves to the newest final release, so the line
+needs no maintenance; pre-release builds are not served by it. Field names,
+types, and descriptions are generated from the same Rust types the parser
+uses, and CI fails if the committed schema drifts from them. The schema is
+deliberately stricter in one place: it flags an unquoted `{param}`, which the
+parser tolerates with a warning.
 
 ### Example: repository root
 

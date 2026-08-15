@@ -14,6 +14,11 @@
             ]
           },
           "then": {
+            "properties": {
+              "command": {
+                "type": "string"
+              }
+            },
             "required": [
               "command"
             ]
@@ -34,6 +39,11 @@
             ]
           },
           "then": {
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            },
             "required": [
               "url"
             ]
@@ -81,6 +91,7 @@
         },
         "name": {
           "description": "Preset name, unique within the file. Becomes the basis of the installed\ninstance's name.",
+          "minLength": 1,
           "type": "string"
         },
         "rules": {
@@ -120,9 +131,12 @@
   },
   "$id": "https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
   "description": "MCP server presets declared by a repository, at its root or in a skill-group directory. See https://github.com/lorem-dev/skillkeeper/blob/main/docs/usage/mcp.md",
   "properties": {
+    "$schema": {
+      "description": "Optional: some editors attach a schema with this key instead of a yaml-language-server comment.",
+      "type": "string"
+    },
     "servers": {
       "description": "The MCP server presets this file declares.",
       "items": {

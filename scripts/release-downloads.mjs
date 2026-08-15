@@ -120,10 +120,12 @@ for (const name of readdirSync(distDir).sort()) {
     const label = arch
       ? `Desktop ${bundle.os} ${arch} (${bundle.format})`
       : `Desktop ${bundle.os} (${bundle.format})`;
-    // Within an OS: the common architecture first, then the other one, then any
-    // bundle whose name does not state an architecture at all (a .msix, say) --
-    // rather than guessing one it might not have.
-    const archRank = arch === null ? 3 : arch === 'Intel' || arch === 'x64' ? 2 : 1;
+    // Within an OS: the architecture most readers are on first, then the
+    // other, then any bundle whose name states none. That is Apple Silicon on
+    // macOS and x64 on Windows and Linux -- a single "arm64 first" rule was
+    // right only while macOS was the sole dual-arch platform.
+    const common = bundle.os === 'macOS' ? 'Apple Silicon' : 'x64';
+    const archRank = arch === null ? 3 : arch === common ? 1 : 2;
     desktop.push({ name, label, rank: (OS_RANK[bundle.os] ?? 9) * 10 + archRank });
     continue;
   }

@@ -38,10 +38,19 @@ pub const SCHEMA_PATH: &str = "schemas/mcp.schema.json";
 /// Derivation cannot see this rule: every field but `name` and `type` is
 /// `Option` in Rust, because which ones matter depends on the transport.
 fn transport_conditionals() -> Value {
+    // `then` pins the TYPE as well as presence. Every optional field derives as
+    // `["string", "null"]`, and JSON Schema's `required` only checks that a key
+    // exists -- so `url:` with an empty value satisfied `required` and the file
+    // validated clean in the editor, then failed the transport check at sync
+    // time and took every preset in it down. Intersecting with `"string"` here
+    // makes the schema agree with `parse_strict`.
     let requires = |transport: Value, field: &str| {
         json!({
             "if": { "properties": { "type": transport }, "required": ["type"] },
-            "then": { "required": [field] }
+            "then": {
+                "required": [field],
+                "properties": { field: { "type": "string" } }
+            }
         })
     };
     json!([
@@ -69,6 +78,13 @@ fn build() -> Value {
         map.remove("$schema");
         map.remove("title");
         map.insert("allOf".to_string(), transport_conditionals());
+        // Derivation cannot express "non-empty"; `parse_strict` rejects an
+        // empty name at `servers.N.name`, so the schema must too.
+        if let Some(Value::Object(props)) = map.get_mut("properties") {
+            if let Some(Value::Object(name)) = props.get_mut("name") {
+                name.insert("minLength".to_string(), json!(1));
+            }
+        }
     }
     defs.insert("McpServerDef".to_string(), server);
 
@@ -82,8 +98,17 @@ fn build() -> Value {
              https://github.com/lorem-dev/skillkeeper/blob/main/docs/usage/mcp.md",
         "type": "object",
         "required": ["version", "servers"],
-        "additionalProperties": false,
+        // Deliberately open. `parse_strict` reads `version` and `servers` and
+        // ignores every other root key, so closing this would flag files
+        // SkillKeeper accepts -- including one using the `$schema:` key, the
+        // other way yaml-language-server attaches the very schema below.
         "properties": {
+            "$schema": {
+                "description":
+                    "Optional: some editors attach a schema with this key instead of a \
+                     yaml-language-server comment.",
+                "type": "string"
+            },
             "version": {
                 "description": "Schema version. Always 1.",
                 "const": 1
@@ -177,11 +202,42 @@ mod tests {
 
     #[test]
     fn lists_the_three_transports() {
+        // Assert the ENUM, not the serialized blob: the transport names also
+        // appear in the type's description, so a `contains` check passed even
+        // with a variant deleted.
+        assert_eq!(
+            build()["$defs"]["McpTransport"]["enum"],
+            json!(["stdio", "http", "sse"])
+        );
+    }
+
+    /// The schema must agree with `parse_strict` about what a valid file is.
+    /// These pin the three places where derivation alone disagreed: an optional
+    /// field derives as `["string","null"]` so `url:` left empty satisfied
+    /// `required`; `name` had no length floor; and a closed root rejected keys
+    /// the parser ignores.
+    #[test]
+    fn agrees_with_the_parser_on_what_it_rejects() {
         let schema = build();
-        let transport = schema["$defs"]["McpTransport"].clone();
-        let listed = serde_json::to_string(&transport).expect("transport schema");
-        for name in ["stdio", "http", "sse"] {
-            assert!(listed.contains(name), "{name} missing from {listed}");
+        let server = &schema["$defs"]["McpServerDef"];
+
+        // An empty name is refused at `servers.N.name`.
+        assert_eq!(server["properties"]["name"]["minLength"], json!(1));
+
+        // The transport's required field must be a string, not merely present.
+        for (index, field) in [(0usize, "command"), (1, "url")] {
+            let then = &server["allOf"][index]["then"];
+            assert_eq!(then["required"], json!([field]));
+            assert_eq!(
+                then["properties"][field]["type"],
+                json!("string"),
+                "{field} may still be null"
+            );
         }
+
+        // The root stays open: `parse_strict` reads two keys and ignores the
+        // rest, and an editor may attach the schema with a `$schema:` key.
+        assert!(schema.get("additionalProperties").is_none());
+        assert_eq!(schema["properties"]["$schema"]["type"], json!("string"));
     }
 }

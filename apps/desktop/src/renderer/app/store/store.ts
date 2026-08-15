@@ -668,22 +668,31 @@ function makeNotificationEntry(
   };
 }
 
+/** Backend errors that are message keys rather than git output. `satisfies`
+ *  makes a renamed msgid a typecheck failure instead of a raw key on screen. */
+const REPO_ERROR_KEYS = ['repo.lfsRequired'] as const satisfies readonly MessageKey[];
+
 /**
- * Repository errors are raw git text today, with two exceptions: a refusal from
- * the SSH gate (`require_unlocked` in the Rust backend) is one of the stable
- * `ssh.*` codes, and a clone or sync of an LFS repository on a machine without
- * git-lfs answers `repo.lfsRequired`. Both are message keys rather than git
- * output, so route them through translation while everything else (real git
- * text) passes through untouched, exactly as it always has.
+ * The message key a repository error carries, or `null` when it is raw git
+ * text. Two families qualify: a refusal from the SSH gate (`require_unlocked`
+ * in the Rust backend) is one of the stable `ssh.*` codes, and a clone or sync
+ * of an LFS repository on a machine without git-lfs answers `repo.lfsRequired`.
+ *
+ * Every site that turns a repository error into something displayable must go
+ * through this. `showRepoError` deriving its own key is how `repo.lfsRequired`
+ * reached the screen untranslated: the toast raised at failure time was
+ * correct, but re-opening the same error from the card's red dot showed the
+ * bare identifier.
  */
-const REPO_ERROR_KEYS = ['repo.lfsRequired'] as const;
+function repoErrorKey(error: string): MessageKey | null {
+  const ssh = sshErrorKey(error);
+  if (ssh !== null) return ssh;
+  return (REPO_ERROR_KEYS as readonly string[]).includes(error) ? (error as MessageKey) : null;
+}
 
 function repoErrorMessage(error: string): NotificationMessage {
-  const key = sshErrorKey(error);
-  if (key !== null) return { key };
-  return (REPO_ERROR_KEYS as readonly string[]).includes(error)
-    ? { key: error as MessageKey }
-    : error;
+  const key = repoErrorKey(error);
+  return key !== null ? { key } : error;
 }
 
 /**
@@ -925,11 +934,12 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   showRepoError(repoId) {
     const message = get().repoStatus[repoId]?.error;
     if (message === undefined) return;
-    // Repo errors are raw git text, with the same ssh.* exception `notify`
-    // handles at the call site: re-derive it here too, since `repoStatus`
-    // only ever stores the plain string (the key, with `vars` already
-    // dropped -- these codes never carry any).
-    const key = sshErrorKey(message);
+    // Repo errors are raw git text, with the key exceptions `repoErrorKey`
+    // knows: re-derive here too, since `repoStatus` only ever stores the plain
+    // string (the key, with `vars` already dropped -- these codes never carry
+    // any). Sharing the derivation is the point: this used to consult only the
+    // ssh codes, so re-opening an LFS error showed the bare identifier.
+    const key = repoErrorKey(message);
     const entry: NotificationEntry = {
       id: crypto.randomUUID(),
       level: 'error',
@@ -1107,19 +1117,24 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           },
         },
       }));
-      // A branch checkout changes the current branch; refresh the card badge.
-      const info = await bridgeClient.describeRepository(id);
-      set((s) => ({ repoInfo: { ...s.repoInfo, [id]: info } }));
-      // A checkout swaps the whole working tree, so the repository's skills and
-      // MCP presets are those of a different commit now. Refresh the catalogs
-      // exactly as `addRepository` and `syncRepository` do -- without this the
-      // card shows the new branch while the Skills and MCP pages still hold the
-      // previous branch's contents, which reads as "I switched branch and its
-      // MCP servers went missing".
-      await get().refreshAvailableSkills();
-      await get().refreshMcpPresets();
-      await get().reconcileSkills();
-      await get().reconcileMcp();
+      // The caller `void`s this promise, so an unhandled rejection here is a
+      // silently closed modal. `syncRepository` guards its identical chain the
+      // same way; this one has five ways to reject now, not one.
+      try {
+        // A branch checkout changes the current branch; refresh the card badge.
+        const info = await bridgeClient.describeRepository(id);
+        set((s) => ({ repoInfo: { ...s.repoInfo, [id]: info } }));
+        // A checkout swaps the whole working tree, so the repository's skills
+        // and MCP presets are those of a different commit now. Refresh the
+        // catalogs exactly as `addRepository` and `syncRepository` do --
+        // without this the card shows the new branch while the Skills and MCP
+        // pages still hold the previous branch's contents, which reads as "I
+        // switched branch and its MCP servers went missing".
+        await Promise.all([get().refreshAvailableSkills(), get().refreshMcpPresets()]);
+        await Promise.all([get().reconcileSkills(), get().reconcileMcp()]);
+      } catch (err) {
+        get().notify(repoErrorMessage(err instanceof Error ? err.message : String(err)), 'error', id);
+      }
     })();
   },
 

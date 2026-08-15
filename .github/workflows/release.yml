@@ -144,9 +144,13 @@ jobs:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo apt-get update -o DPkg::Lock::Timeout=300
-          # patchelf is dropped: the AppImage bundler needs it, but it already
-          # ships in the ubuntu runner image, so installing it is pure download.
+          # patchelf is installed explicitly: the AppImage bundler needs it,
+          # and while the x64 runner image ships it, the arm64 images carry a
+          # documented subset. A missing patchelf fails the arm64 leg, and
+          # `publish` needs every leg -- so the whole release is blocked to save
+          # one small download.
           sudo apt-get install -y -o DPkg::Lock::Timeout=300 \
+            patchelf \
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev
@@ -303,7 +307,7 @@ jobs:
           # them. Take the exact path this leg's `tauri build` wrote to:
           # target/<triple>/release when --target was passed, target/release
           # otherwise.
-          $releaseDir = if ("${{ matrix.args }}") { "target/${{ matrix.target }}/release" } else { "target/release" }
+          $releaseDir = if ("${{ matrix.args }}" -match "--target") { "target/${{ matrix.target }}/release" } else { "target/release" }
           $exePath = Join-Path $releaseDir "skillkeeper.exe"
           if (-not (Test-Path $exePath)) {
             Write-Warning "skillkeeper.exe not found at $exePath; skipping MSIX packaging."

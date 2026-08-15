@@ -9,8 +9,26 @@
 use std::fs;
 use std::io;
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::ports::{FileStat, FsPort, PathState, PortError, PortResult};
+
+/// Distinguishes concurrent writes within this process; the pid separates
+/// processes. See [`temp_path`].
+static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+/// A sibling temp path for an atomic write of `path`.
+///
+/// The name must be unique, not merely `<path>.tmp`. A skill body is arbitrary
+/// author-supplied content now, so `icon.png` and `icon.png.tmp` can both be
+/// real files in the same skill -- writing the first would destroy the second.
+/// The desktop app and the CLI can also install to the same global destination
+/// at once, where a shared temp name lets one rename the other's half-written
+/// file into place.
+fn temp_path(path: &str) -> String {
+    let n = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
+    format!("{path}.{}.{n}.sk-tmp", std::process::id())
+}
 
 /// Owner-executable permission bit (`0o100`).
 #[cfg(unix)]
@@ -68,7 +86,7 @@ impl FsPort for StdFs {
             }
         }
         // Atomic write: temp file in the same directory, then rename over target.
-        let temp = format!("{path}.tmp");
+        let temp = temp_path(path);
         fs::write(&temp, content).map_err(|e| map_err(&temp, e))?;
         fs::rename(&temp, path).map_err(|e| {
             // Best-effort cleanup of the temp file on a failed rename.

@@ -44,8 +44,11 @@ Every user-visible change gets a bullet under `## Development` in
 
 **Rules:**
 
-- Keep each bullet to 25 words or fewer. Wrap at the file's usual width, with
-  continuation lines indented two spaces.
+- Keep each bullet to 25 words or fewer, counted as whitespace-separated
+  tokens; a code span counts as one word whatever it contains. Wrap at the
+  file's usual width, with continuation lines indented two spaces.
+- The cap applies to `### Added`, `### Changed`, and `### Fixed` alike, and
+  only to `## Development`. A section is frozen once released.
 - English, and describe the change, not the code that made it.
 - One bullet per change. Two changes that need separate wording are two
   bullets, never one longer one.

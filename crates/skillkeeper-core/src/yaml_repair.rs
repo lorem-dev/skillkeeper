@@ -73,30 +73,125 @@ fn starts_yaml_construct(value: &str) -> bool {
         .is_some_and(|c| matches!(c, '&' | '*' | '!' | '{' | '[' | '#' | '%' | '@' | '`'))
 }
 
+/// Byte offset just past a quoted key at the start of `s`, or `None` when `s`
+/// does not open with a quote. Handles `''` and `\"` escapes; an unterminated
+/// quote yields `None`.
+fn quoted_key_end(s: &str) -> Option<usize> {
+    let quote = match s.as_bytes().first() {
+        Some(b'"') => b'"',
+        Some(b'\'') => b'\'',
+        _ => return None,
+    };
+    let bytes = s.as_bytes();
+    let mut i = 1;
+    while i < bytes.len() {
+        if bytes[i] == b'\\' && quote == b'"' {
+            i += 2;
+            continue;
+        }
+        if bytes[i] == quote {
+            // A doubled single quote is an escaped quote, not the terminator.
+            if quote == b'\'' && bytes.get(i + 1) == Some(&b'\'') {
+                i += 2;
+                continue;
+            }
+            return Some(i + 1);
+        }
+        i += 1;
+    }
+    None
+}
+
 /// Split `line` at the `key:` separator: the first colon that ends the line or
 /// is followed by a space. Returns `(indent_and_key, value)`, or `None` when
-/// the line is not a `key: value` mapping entry.
+/// the line is not a `key: value` mapping entry we may rewrite.
 fn split_key_value(line: &str) -> Option<(&str, &str)> {
-    let key_end = line.char_indices().find_map(|(i, c)| {
-        if c != ':' {
-            return None;
-        }
-        match line[i + 1..].chars().next() {
-            None | Some(' ') | Some('\t') => Some(i),
-            Some(_) => None,
-        }
-    })?;
-    let key = &line[..key_end];
-    let trimmed = key.trim_start();
+    let indent = line.len() - line.trim_start_matches([' ', '\t']).len();
+    let trimmed = &line[indent..];
     // A list item, comment, or empty key is not a plain mapping key we can
-    // safely rewrite.
+    // safely rewrite. A sequence item's own block scalar is still TRACKED --
+    // see `block_scalar_indent` -- just never repaired.
     if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with('-') {
         return None;
     }
-    Some((key, line[key_end + 1..].trim_start_matches([' ', '\t'])))
+    // Start the separator hunt after a quoted key, so `"a: b": 1` is not split
+    // inside its own key -- which would mangle a perfectly valid line and cost
+    // the whole file its chance at repair.
+    let search_from = indent + quoted_key_end(trimmed).unwrap_or(0);
+    let key_end = line[search_from..].char_indices().find_map(|(i, c)| {
+        if c != ':' {
+            return None;
+        }
+        let at = search_from + i;
+        match line[at + 1..].chars().next() {
+            None | Some(' ') | Some('\t') => Some(at),
+            Some(_) => None,
+        }
+    })?;
+    Some((
+        &line[..key_end],
+        line[key_end + 1..].trim_start_matches([' ', '\t']),
+    ))
 }
 
-/// Indentation width of `line`, in characters.
+/// The indentation a block scalar's content must exceed, when `line` opens one.
+///
+/// Detected independently of whether the line is repairable: `- rules: |`
+/// introduces a block on a sequence item, and missing that leaves the literal
+/// content to be read as YAML and rewritten. Accepts the `|-`/`|+`/`>-` chomping
+/// and indentation indicators, and a trailing comment.
+fn block_scalar_indent(line: &str) -> Option<usize> {
+    let mut indent = line.len() - line.trim_start_matches([' ', '\t']).len();
+    let mut body = strip_comment(&line[indent..]).0.trim_end();
+    // A sequence marker shifts the mapping in by its own width: in
+    // `  - rules: |` the key sits at column 4, and so do its siblings. Measure
+    // the block against THAT, or the next sibling key looks like block content
+    // and is swallowed.
+    while let Some(rest) = body.strip_prefix("- ") {
+        indent += 2;
+        let trimmed = rest.trim_start_matches([' ', '\t']);
+        indent += rest.len() - trimmed.len();
+        body = trimmed;
+    }
+    // Everything after the last `: ` separator on the line; for `- rules: |`
+    // that is `|`, for a bare `- |` (a sequence of blocks) it is also `|`.
+    let after_colon = match body.rfind(": ") {
+        Some(at) => body[at + 2..].trim_start(),
+        None => body.strip_suffix(':').map_or(body, |_| "").trim_start(),
+    };
+    let mut chars = after_colon.chars();
+    match chars.next() {
+        Some('|' | '>') => {}
+        _ => return None,
+    }
+    // Only the chomping/indentation indicators may follow the marker.
+    if chars.all(|c| matches!(c, '-' | '+' | '0'..='9')) {
+        Some(indent)
+    } else {
+        None
+    }
+}
+
+/// Split a plain scalar from a trailing `#` comment, using YAML's own rule: a
+/// comment starts at a `#` preceded by a space or tab. `{tok}#x` has no such
+/// break and stays one value.
+///
+/// Without this the comment is swallowed into the quoted string, so
+/// `X-Token: {tok}  # from the vault` would install a header whose value ends
+/// in ` # from the vault` -- valid YAML, silently wrong data, where the file
+/// used to be rejected outright.
+fn strip_comment(value: &str) -> (&str, &str) {
+    let bytes = value.as_bytes();
+    for i in 1..bytes.len() {
+        if bytes[i] == b'#' && matches!(bytes[i - 1], b' ' | b'\t') {
+            return (&value[..i], &value[i..]);
+        }
+    }
+    (value, "")
+}
+
+/// Indentation width of `line`, in bytes. Only 1-byte space and tab are
+/// trimmed, so this equals the character count for any line YAML accepts.
 fn indent_of(line: &str) -> usize {
     line.len() - line.trim_start_matches([' ', '\t']).len()
 }
@@ -145,27 +240,38 @@ pub fn repair(yaml: &str) -> Option<Repaired> {
             block_indent = None;
         }
 
+        // Block detection comes FIRST and is independent of repairability: a
+        // sequence item can open one (`- rules: |`), and treating its literal
+        // content as YAML would rewrite the author's prose.
+        if let Some(indent) = block_scalar_indent(line) {
+            block_indent = Some(indent);
+            out.push(raw.to_string());
+            continue;
+        }
+
         let Some((key, value)) = split_key_value(line) else {
             out.push(raw.to_string());
             continue;
         };
-        if value.starts_with('|') || value.starts_with('>') {
-            block_indent = Some(indent_of(line));
-            out.push(raw.to_string());
-            continue;
-        }
-        let value = value.trim_end_matches([' ', '\t']);
-        if !needs_quoting(value) {
+        let (scalar, comment) = strip_comment(value);
+        let scalar = scalar.trim_end_matches([' ', '\t']);
+        if !needs_quoting(scalar) {
             out.push(raw.to_string());
             continue;
         }
         repairs.push(Repair {
             line: index + 1,
             key: key.trim().to_string(),
-            value: value.to_string(),
+            value: scalar.to_string(),
         });
-        let escaped = value.replace('\\', "\\\\").replace('"', "\\\"");
-        out.push(format!("{key}: \"{escaped}\"{eol}"));
+        let escaped = scalar.replace('\\', "\\\\").replace('"', "\\\"");
+        // The comment is re-appended verbatim, still separated from the value.
+        let tail = if comment.is_empty() {
+            String::new()
+        } else {
+            format!("  {comment}")
+        };
+        out.push(format!("{key}: \"{escaped}\"{tail}{eol}"));
     }
 
     if repairs.is_empty() {
@@ -214,6 +320,73 @@ mod tests {
         assert_eq!(
             text_of("url: {host}/mcp/v2").as_deref(),
             Some("url: \"{host}/mcp/v2\"")
+        );
+    }
+
+    #[test]
+    fn keeps_a_trailing_comment_out_of_the_value() {
+        // Swallowing it would install a header whose value ends in the comment
+        // -- valid YAML, silently wrong data, where the file used to be
+        // rejected outright.
+        assert_eq!(
+            text_of("X-Token: {tok}  # from the vault").as_deref(),
+            Some("X-Token: \"{tok}\"  # from the vault")
+        );
+        assert_eq!(
+            text_of("description: Covers the tool: run it # reword").as_deref(),
+            Some("description: \"Covers the tool: run it\"  # reword")
+        );
+    }
+
+    #[test]
+    fn treats_a_hash_without_leading_space_as_part_of_the_value() {
+        // YAML's own rule: a comment needs whitespace before the `#`.
+        assert_eq!(
+            text_of("X-Token: {tok}#fragment").as_deref(),
+            Some("X-Token: \"{tok}#fragment\"")
+        );
+    }
+
+    #[test]
+    fn does_not_rewrite_a_block_scalar_opened_on_a_sequence_item() {
+        // `- rules: |` was not recognized as opening a block, so its literal
+        // content was read as YAML and rewritten -- injecting quote characters
+        // into prose that ships to the agent's guidance file.
+        let yaml = "servers:\n  - rules: |\n      Use this when: the tool needs auth: pass a token\n    url: {host}/mcp\n";
+        let out = repair(yaml).unwrap();
+        assert!(
+            out.text
+                .contains("Use this when: the tool needs auth: pass a token"),
+            "block content was rewritten: {}",
+            out.text
+        );
+        // The real offender on the last line is still repaired.
+        assert!(out.text.contains("url: \"{host}/mcp\""), "{}", out.text);
+        assert_eq!(out.repairs.len(), 1);
+    }
+
+    #[test]
+    fn tracks_block_scalars_with_chomping_indicators() {
+        for opener in ["rules: |-", "rules: |+", "rules: >-", "rules: |2"] {
+            let yaml = format!("{opener}\n  a: b: c\nname: x\n");
+            assert_eq!(text_of(&yaml), None, "rewrote the body of `{opener}`");
+        }
+    }
+
+    #[test]
+    fn leaves_a_quoted_key_containing_a_colon_alone() {
+        // Splitting inside the key mangled a valid line, and the mangled
+        // document then never parsed -- so one such key cost the whole file
+        // its chance at repair.
+        assert_eq!(text_of("\"a: b\": 1"), None);
+        assert_eq!(text_of("'a: b': 1"), None);
+    }
+
+    #[test]
+    fn still_repairs_the_value_of_a_quoted_key() {
+        assert_eq!(
+            text_of("\"a: b\": c: d").as_deref(),
+            Some("\"a: b\": \"c: d\"")
         );
     }
 

@@ -26,7 +26,7 @@ use std::collections::HashSet;
 use serde_json::{json, Value};
 
 use crate::glob::matches_any;
-use crate::hashing::{content_hash, hash_tree, sha256, HashEntry, SKID_FILE};
+use crate::hashing::{content_hash, hash_tree, sha256, sha256_bytes, HashEntry, SKID_FILE};
 use crate::hooks::json::{
     canonical_json, encapsulate_foreign_markers, merge_hook_node, remove_hook_node, MergeOptions,
     MARKER_FIELD,
@@ -230,11 +230,17 @@ fn apply_hook(
             let hooks_prefix = format!("{}/hooks/", skill.root_path);
             let within = &payload_path[hooks_prefix.len()..];
             let dest_rel = format!("{}/hooks/{within}", skill.id.name);
-            let content = fs.read_file(&format!("{}/{payload_path}", opts.source_root))?;
-            fs.write_file(&format!("{dest_root}/{dest_rel}"), &content)?;
+            // Bytes, like a body file: a hook payload is author-supplied
+            // content too, and `hooks/` is excluded from `skill.files`, so this
+            // is the ONLY path that copies it. Verification already re-hashes
+            // it through `read_bytes` (it is recorded as a managed file), so
+            // reading it as text here left the two sides disagreeing about
+            // what kind of file it is.
+            let content = fs.read_bytes(&format!("{}/{payload_path}", opts.source_root))?;
+            fs.write_bytes(&format!("{dest_root}/{dest_rel}"), &content)?;
             Ok(Some(ManagedHookEdit::File {
                 rel_path: dest_rel,
-                sha256: sha256(&content),
+                sha256: sha256_bytes(&content),
                 executable: false,
             }))
         }

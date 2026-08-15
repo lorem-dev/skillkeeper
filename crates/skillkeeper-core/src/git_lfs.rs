@@ -56,14 +56,31 @@ pub fn requires_lfs(fs: &dyn FsPort, root: &str) -> PortResult<bool> {
 
 /// Whether a `.gitattributes` file routes anything through the LFS filter.
 /// A comment line is ignored, so a commented-out rule does not count.
+///
+/// Read as BYTES, then decoded lossily. `.gitattributes` is not required to be
+/// UTF-8 -- a pattern naming a file in a legacy encoding is valid to git -- and
+/// answering "no LFS" because the file would not decode is the silent-pointer
+/// install this module exists to prevent. The token searched for is pure ASCII,
+/// so a replacement character inside a filename pattern cannot hide it.
 fn declares_lfs(fs: &dyn FsPort, path: &str) -> bool {
-    let Ok(text) = fs.read_file(path) else {
+    let Ok(bytes) = fs.read_bytes(path) else {
         return false;
     };
-    text.lines().any(|line| {
-        let line = line.trim();
-        !line.starts_with('#') && line.contains(LFS_FILTER)
-    })
+    String::from_utf8_lossy(&bytes)
+        .lines()
+        .any(declares_lfs_line)
+}
+
+/// Whether one `.gitattributes` line routes its pattern through the LFS filter.
+/// Matched as a whole whitespace-separated token, so `filter=lfs-custom` (a
+/// different filter) does not count, and `[attr]` macro DEFINITIONS are skipped
+/// -- defining a macro is not the same as applying it to a path.
+fn declares_lfs_line(line: &str) -> bool {
+    let line = line.trim();
+    if line.starts_with('#') || line.starts_with("[attr]") {
+        return false;
+    }
+    line.split_whitespace().any(|token| token == LFS_FILTER)
 }
 
 #[cfg(test)]

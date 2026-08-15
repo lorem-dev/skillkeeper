@@ -2,6 +2,24 @@
 
 ## Development
 
+### Changed
+
+- A hook's own payload file may be binary too, like the rest of a skill body.
+
+### Fixed
+
+- A trailing `#` comment is no longer folded into a re-quoted YAML value.
+- A `|` block under a list item keeps its literal text; it was being rewritten
+  as if it were YAML.
+- An `mcp.yml` that exists but cannot be read is reported, not skipped in
+  silence.
+- Installing git-lfs and syncing now really fetches the assets; the check was
+  frozen at the moment the repository was added.
+- Clicking a repository's error dot shows the message, not its internal
+  identifier.
+- The editor schema for `mcp.yml` no longer accepts an empty `name` or a blank
+  `url`, and no longer rejects an unknown top-level key.
+
 ## Version 0.4.1-rc.3
 
 ### Added
@@ -13,8 +31,8 @@
 
 - One unreadable skill no longer takes every skill after it in the repository
   with it. It is skipped alone, and named.
-- Cloning a repository that stores files with Git LFS is refused when git-lfs
-  is missing, rather than filling every such file with a placeholder.
+- Cloning a repository that needs Git LFS now fails when git-lfs is missing,
+  instead of quietly leaving pointer files in place of every asset.
 
 ## Version 0.4.1-rc.2
 
@@ -32,8 +50,8 @@
 
 ### Fixed
 
-- An `mcp.yml` that cannot be read now says so in the app's notifications and
-  on the CLI's standard error, instead of vanishing with its presets.
+- An `mcp.yml` that cannot be parsed now says so in the app's notifications
+  and on the CLI's standard error, instead of vanishing with its presets.
 - A rejected `mcp.yml` names what the parser objected to, not just which
   server it gave up on.
 - The Windows MSIX now always packages the desktop app; it picked between two

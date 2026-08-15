@@ -178,7 +178,13 @@ fn read_mcp_defs(fs: &dyn FsPort, dir: &str, err: &mut dyn Write) -> Vec<McpServ
         }
         let text = match fs.read_file(&path) {
             Ok(t) => t,
-            Err(_) => return Vec::new(),
+            // Present but unreadable (permissions, I/O, not valid UTF-8). This
+            // used to return silently, making a skipped file look like an
+            // absent one.
+            Err(e) => {
+                let _ = writeln!(err, "[mcp] Could not read \"{path}\": {e}");
+                return Vec::new();
+            }
         };
         return match parse_mcp_config(&text) {
             Ok(cfg) => {

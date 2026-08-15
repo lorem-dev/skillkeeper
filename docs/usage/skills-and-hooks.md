@@ -15,7 +15,10 @@ declared hook names) and a Markdown body for human documentation.
 Only `name` is required. Fields SkillKeeper does not know -- another agent's
 own keys, say -- are ignored, and a known field written in another shape
 (`version: 1.0` as a number, a lone `executables` entry with no list) is read
-as intended rather than costing the skill.
+as intended rather than costing the skill. A known field that cannot be read
+at all is dropped with a warning; the skill still installs without it. A
+`HOOK.md` is stricter: its `target` and `strategy` must be well formed, since
+they decide where and how the hook edits an agent's configuration.
 
 ```
 my-skill/

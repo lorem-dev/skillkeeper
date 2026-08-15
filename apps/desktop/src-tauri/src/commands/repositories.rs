@@ -347,35 +347,64 @@ pub fn clone(ctx: &AppContext, id: String) -> RepoResult {
     if let Err(e) = clone_op(ctx, &options) {
         return RepoResult::err(e);
     }
-    if let Err(e) = check_lfs_usable(ctx, &repo.local_path) {
-        return RepoResult::err(e);
-    }
+    let uses_lfs = match settle_lfs(ctx, &repo.local_path) {
+        Ok(used) => used,
+        Err(e) => {
+            // Drop the clone this call just made. Leaving it would report the
+            // failure and still list every skill in it for install, carrying
+            // pointer files -- the refusal's cost without its benefit. The
+            // directory is SkillKeeper's own and holds nothing the user wrote,
+            // so removing it makes the state honestly "not cloned" and lets a
+            // retry work once git-lfs is installed.
+            let _ = std::fs::remove_dir_all(&repo.local_path);
+            return RepoResult::err(e);
+        }
+    };
     let stamp = now_iso(ctx);
     persist_repo(ctx, &id, move |mut r| {
         r.last_fetched = Some(stamp);
+        r.lfs = uses_lfs;
         r
     })
 }
 
-/// Refuse a repository that needs Git LFS on a machine without the extension.
+/// Settle Git LFS for a working tree that has just been materialized or moved,
+/// and report whether the repository needs LFS at all.
 ///
-/// Cloning such a repository succeeds regardless: git writes each tracked file
-/// as its pointer, three lines of text standing in for an image or an archive.
-/// The skills then install, carrying placeholders, and nothing anywhere says
-/// so -- which is why this is an error rather than a warning. A repository that
-/// does not use LFS is unaffected, whether or not the extension is installed.
-fn check_lfs_usable(ctx: &AppContext, local_path: &str) -> Result<(), String> {
-    if ctx.git.lfs_available() {
-        return Ok(());
+/// Called after EVERY operation that changes the tree -- clone, both arms of
+/// sync, and a branch checkout -- because all three can be the moment LFS first
+/// applies: a fresh clone, a re-clone after the directory was deleted, or a
+/// branch that introduces tracked assets.
+///
+/// Three outcomes:
+///
+/// - The repository does not use LFS: nothing happens, installed or not.
+/// - It does, and `git-lfs` is present: pull the objects. This runs even when
+///   the stored `lfs` flag says otherwise, which is what makes the error's own
+///   advice work -- the flag was written when the repository was ADDED, so a
+///   user who installs git-lfs afterwards would otherwise never get a pull, and
+///   `reset --hard` cannot help because the pointer text IS the committed blob.
+/// - It does, and `git-lfs` is absent: refuse. The clone otherwise succeeds
+///   with each tracked file left as its pointer -- three lines of text standing
+///   in for an image -- and the skills install carrying placeholders with
+///   nothing anywhere saying so.
+fn settle_lfs(ctx: &AppContext, local_path: &str) -> Result<bool, String> {
+    // An unreadable tree is a different failure, reported by whatever reads it
+    // next; do not turn it into an LFS complaint.
+    let needed = requires_lfs(&ctx.fs, local_path).unwrap_or(false);
+    if !needed {
+        return Ok(false);
     }
-    match requires_lfs(&ctx.fs, local_path) {
-        // An unreadable clone is a different failure, reported by whatever
-        // reads it next; do not turn it into an LFS complaint.
-        Err(_) => Ok(()),
-        Ok(false) => Ok(()),
-        Ok(true) => Err("repo.lfsRequired".to_string()),
+    if !ctx.git.lfs_available() {
+        return Err(LFS_REQUIRED.to_string());
     }
+    lfs_pull_op(ctx, local_path)?;
+    Ok(true)
 }
+
+/// Message key for "this repository needs Git LFS and it is not installed".
+/// The renderer translates it; see `repoErrorKey` in the store.
+const LFS_REQUIRED: &str = "repo.lfsRequired";
 
 /// `repositories:update` -- edit name and/or remote. Changing the URL re-points
 /// origin and re-derives kind/transport; a branch is force-checked-out.
@@ -398,12 +427,20 @@ pub fn update(
     }
     let (kind, transport) = parse_remote(&url);
     let branch = branch.filter(|b| !b.is_empty());
+    // A checkout swaps the whole tree, so the branch being switched TO may be
+    // the one that introduces LFS-tracked assets. Settled here for the same
+    // reason clone and sync settle it: wherever the tree changes.
+    let mut lfs = None;
     if let Some(b) = &branch {
         if ctx.fs.exists(&repo.local_path).unwrap_or(false) {
             // Force-checkout in the terminal (visible, discards local edits);
             // falls back to the direct GitPort headless.
             if let Err(e) = checkout_op(ctx, &repo.local_path, b) {
                 return RepoResult::err(e);
+            }
+            match settle_lfs(ctx, &repo.local_path) {
+                Ok(used) => lfs = Some(used),
+                Err(e) => return RepoResult::err(e),
             }
         }
     }
@@ -419,6 +456,9 @@ pub fn update(
         r.transport = transport;
         if let Some(b) = branch {
             r.branch = Some(b);
+        }
+        if let Some(used) = lfs {
+            r.lfs = used;
         }
         r
     })
@@ -484,14 +524,6 @@ pub fn sync(ctx: &AppContext, id: String) -> RepoResult {
         if let Err(e) = force_pull_op(ctx, &repo.local_path) {
             return RepoResult::err(e);
         }
-        if let Err(e) = check_lfs_usable(ctx, &repo.local_path) {
-            return RepoResult::err(e);
-        }
-        if repo.lfs {
-            if let Err(e) = lfs_pull_op(ctx, &repo.local_path) {
-                return RepoResult::err(e);
-            }
-        }
     } else {
         if let Err(e) = ctx.fs.mkdir(&ctx.paths.repositories_dir) {
             return RepoResult::err(e.to_string());
@@ -512,9 +544,16 @@ pub fn sync(ctx: &AppContext, id: String) -> RepoResult {
             }
         }
     }
+    // One call, after either arm: both end with a tree that just changed, and
+    // the re-clone arm used to skip the check entirely.
+    let uses_lfs = match settle_lfs(ctx, &repo.local_path) {
+        Ok(used) => used,
+        Err(e) => return RepoResult::err(e),
+    };
     let stamp = now_iso(ctx);
     persist_repo(ctx, &id, move |mut r| {
         r.last_fetched = Some(stamp);
+        r.lfs = uses_lfs;
         r
     })
 }
