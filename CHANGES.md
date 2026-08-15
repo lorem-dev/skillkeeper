@@ -2,6 +2,18 @@
 
 ## Development
 
+### Added
+
+- Skills may ship binary files. An image, font, or compiled helper is copied,
+  hashed, and verified like any other file.
+
+### Fixed
+
+- One unreadable skill no longer takes every skill after it in the repository
+  with it. It is skipped alone, and named.
+- Cloning a repository that stores files with Git LFS is refused when git-lfs
+  is missing, rather than filling every such file with a placeholder.
+
 ## Version 0.4.1-rc.2
 
 ### Added

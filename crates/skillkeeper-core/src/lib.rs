@@ -6,6 +6,7 @@
 
 pub mod adapters;
 pub mod frontmatter;
+pub mod git_lfs;
 pub mod git_remote;
 pub mod glob;
 pub mod hashing;

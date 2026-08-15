@@ -1208,6 +1208,9 @@ msgstr "Navedena datoteka SSH ključa nije nađena."
 msgid "ssh.noAgent"
 msgstr "ssh-agent nije pokrenut, pa Git svaki put traži frazu ključa. Podesite ga da biste je uneli samo jednom."
 
+msgid "repo.lfsRequired"
+msgstr "Ovo spremište čuva datoteke pomoću Git LFS-a, koji nije instaliran. Bez njega svaka takva datoteka stiže samo kao čuvar mesta. Instalirajte git-lfs, pa sinhronizujte spremište."
+
 msgid "ssh.notAPrivateKey"
 msgstr "Navedena datoteka SSH ključa nije privatni ključ."
 

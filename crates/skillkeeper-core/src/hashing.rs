@@ -55,11 +55,11 @@ pub fn hash_tree(
     let mut out = Vec::with_capacity(sorted.len());
     for rel_path in sorted {
         let full = format!("{root}/{rel_path}");
-        let content = fs.read_file(&full)?;
+        let content = fs.read_bytes(&full)?;
         let stat = fs.stat(&full)?;
         out.push(ManagedFile {
             rel_path: rel_path.to_string(),
-            sha256: sha256(&content),
+            sha256: sha256_bytes(&content),
             executable: stat.map(|s| s.executable).unwrap_or(false),
         });
     }
@@ -118,10 +118,10 @@ pub fn resolved_content_hash(
     let mut entries: Vec<HashEntry> = Vec::with_capacity(resolved.files.len());
     for rel in &resolved.files {
         let within = &rel[prefix_len..];
-        let content = fs.read_file(&format!("{source_root}/{rel}"))?;
+        let content = fs.read_bytes(&format!("{source_root}/{rel}"))?;
         entries.push(HashEntry {
             rel_path: within.to_string(),
-            sha256: sha256(&content),
+            sha256: sha256_bytes(&content),
         });
     }
     Ok(content_hash(&entries))
@@ -180,6 +180,25 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn hashes_a_binary_file_instead_of_refusing_it() {
+        // Bytes 0x89/0xFF are not valid UTF-8. Reading this as text failed,
+        // and that failure used to cost a whole repository's catalog.
+        let png: &[u8] = &[0x89, 0x50, 0x4E, 0x47, 0xFF, 0xFE];
+        let fs = MemFs::new().with_bytes("/root/icon.png", png);
+        let result = hash_tree(&fs, "/root", &["icon.png"]).unwrap();
+        assert_eq!(result[0].sha256, sha256_bytes(png));
+    }
+
+    #[test]
+    fn hashes_text_identically_before_and_after_the_move_to_bytes() {
+        // Same digest either way, so no installed skill needs rehashing: a
+        // string's bytes ARE its UTF-8 encoding.
+        let fs = MemFs::new().with_file("/root/a.txt", "abc");
+        let result = hash_tree(&fs, "/root", &["a.txt"]).unwrap();
+        assert_eq!(result[0].sha256, ABC_SHA256);
     }
 
     #[test]

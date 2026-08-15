@@ -114,8 +114,10 @@ fn copy_body(
     for rel in &body {
         let within = &rel[prefix_len..];
         let dest_rel = format!("{skill_dir_name}/{within}");
-        let content = fs.read_file(&format!("{}/{rel}", opts.source_root))?;
-        fs.write_file(&format!("{dest_root}/{dest_rel}"), &content)?;
+        // Bytes, not text: a body file is whatever the skill author shipped,
+        // and plenty of skills carry an image or another binary asset.
+        let content = fs.read_bytes(&format!("{}/{rel}", opts.source_root))?;
+        fs.write_bytes(&format!("{dest_root}/{dest_rel}"), &content)?;
         if declared.contains(within) || matches_any(within, &opts.executable_globs) {
             fs.chmod(&format!("{dest_root}/{dest_rel}"), true)?;
         }
@@ -429,6 +431,31 @@ mod tests {
     }
 
     // --- body ---
+
+    /// A PNG header: bytes 0x89 and 0x50 are not valid UTF-8 on their own, so
+    /// this stands in for any binary asset a skill ships.
+    const PNG_HEADER: &[u8] = &[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0xFF, 0xFE];
+
+    #[test]
+    fn copies_a_binary_body_file_byte_for_byte() {
+        // Reading a body as text used to fail here, which took the whole
+        // repository's catalog down with it.
+        let fs = MemFs::new()
+            .with_file("repo/s/SKILL.md", &skill_md("s", ""))
+            .with_bytes("repo/s/assets/icon.png", PNG_HEADER);
+        let skill = only_skill(&fs, "repo");
+        let opts = make_opts(skill, Scope::Global);
+        let manifest = install_skill(&fs, &opts, "/dest", None, NOW).unwrap();
+
+        assert_eq!(
+            fs.read_bytes("/dest/s/assets/icon.png").unwrap(),
+            PNG_HEADER
+        );
+        assert!(manifest
+            .files
+            .iter()
+            .any(|f| f.rel_path == "s/assets/icon.png"));
+    }
 
     #[test]
     fn copies_body_files_records_hashes_and_skips_hooks_by_default() {

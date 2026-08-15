@@ -1253,6 +1253,9 @@ msgstr "O ficheiro de chave SSH indicado não foi encontrado."
 msgid "ssh.noAgent"
 msgstr "Nenhum ssh-agent em execução, por isso o Git pede a frase-passe da chave todas as vezes. Configure um para a introduzir apenas uma vez."
 
+msgid "repo.lfsRequired"
+msgstr "Este repositório guarda ficheiros com Git LFS, que não está instalado. Sem ele, cada um desses ficheiros chega apenas como marcador de posição. Instale o git-lfs e depois sincronize o repositório."
+
 msgid "ssh.notAPrivateKey"
 msgstr "O ficheiro de chave SSH indicado não é uma chave privada."
 

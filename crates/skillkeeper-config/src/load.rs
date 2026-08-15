@@ -678,6 +678,12 @@ notifications:
         fn write_file(&self, path: &str, content: &str) -> PortResult<()> {
             self.inner.write_file(path, content)
         }
+        fn read_bytes(&self, path: &str) -> PortResult<Vec<u8>> {
+            self.inner.read_bytes(path)
+        }
+        fn write_bytes(&self, path: &str, content: &[u8]) -> PortResult<()> {
+            self.inner.write_bytes(path, content)
+        }
         fn list(&self, path: &str) -> PortResult<Vec<String>> {
             self.inner.list(path)
         }

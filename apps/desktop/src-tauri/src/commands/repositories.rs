@@ -36,6 +36,7 @@ use skillkeeper_core::adapters::system_git::{
     build_clean_args, build_clone_args, build_fetch_args, build_force_checkout_args,
     build_lfs_pull_args, build_reset_hard_args,
 };
+use skillkeeper_core::git_lfs::requires_lfs;
 use skillkeeper_core::git_remote::parse_remote;
 use skillkeeper_core::models::{AppState, Repository, Transport};
 use skillkeeper_core::ports::{Clock, CloneOptions, FsPort, GitPort, PortResult};
@@ -301,7 +302,12 @@ pub fn add(ctx: &AppContext, url: String, name: String) -> RepoResult {
         url,
         kind,
         transport,
-        lfs: false,
+        // On whenever git-lfs is installed, matching `skillkeeper repo add`.
+        // This was hardcoded off, so the desktop cloned an LFS repository and
+        // left every tracked asset as its pointer file -- a few lines of text
+        // where an image should be. Nothing failed; the skill just installed
+        // with a placeholder in place of its content.
+        lfs: ctx.git.lfs_available(),
         local_path: local_path_for(ctx, &id),
         last_fetched: None,
         branch: None,
@@ -341,11 +347,34 @@ pub fn clone(ctx: &AppContext, id: String) -> RepoResult {
     if let Err(e) = clone_op(ctx, &options) {
         return RepoResult::err(e);
     }
+    if let Err(e) = check_lfs_usable(ctx, &repo.local_path) {
+        return RepoResult::err(e);
+    }
     let stamp = now_iso(ctx);
     persist_repo(ctx, &id, move |mut r| {
         r.last_fetched = Some(stamp);
         r
     })
+}
+
+/// Refuse a repository that needs Git LFS on a machine without the extension.
+///
+/// Cloning such a repository succeeds regardless: git writes each tracked file
+/// as its pointer, three lines of text standing in for an image or an archive.
+/// The skills then install, carrying placeholders, and nothing anywhere says
+/// so -- which is why this is an error rather than a warning. A repository that
+/// does not use LFS is unaffected, whether or not the extension is installed.
+fn check_lfs_usable(ctx: &AppContext, local_path: &str) -> Result<(), String> {
+    if ctx.git.lfs_available() {
+        return Ok(());
+    }
+    match requires_lfs(&ctx.fs, local_path) {
+        // An unreadable clone is a different failure, reported by whatever
+        // reads it next; do not turn it into an LFS complaint.
+        Err(_) => Ok(()),
+        Ok(false) => Ok(()),
+        Ok(true) => Err("repo.lfsRequired".to_string()),
+    }
 }
 
 /// `repositories:update` -- edit name and/or remote. Changing the URL re-points
@@ -453,6 +482,9 @@ pub fn sync(ctx: &AppContext, id: String) -> RepoResult {
             }
         }
         if let Err(e) = force_pull_op(ctx, &repo.local_path) {
+            return RepoResult::err(e);
+        }
+        if let Err(e) = check_lfs_usable(ctx, &repo.local_path) {
             return RepoResult::err(e);
         }
         if repo.lfs {
@@ -920,7 +952,10 @@ mod tests {
         assert_eq!(repo.name, "Skills");
         assert_eq!(repo.kind, RepositoryKind::Github);
         assert_eq!(repo.transport, Transport::Ssh);
-        assert!(!repo.lfs);
+        // LFS follows whether git-lfs is installed on this machine, so assert
+        // the rule rather than a fixed value: a runner with the extension and
+        // one without must both pass.
+        assert_eq!(repo.lfs, app.ctx.git.lfs_available());
         assert!(repo.local_path.ends_with(&repo.id));
 
         // Persisted into state.

@@ -48,6 +48,7 @@ import type { StepId } from '@/systems/onboarding';
 // that one re-exports `ui/SshKeyField.tsx`, which imports `@/app/store` --
 // importing it here would be a cycle (store -> feature UI barrel -> store).
 import { sshErrorKey } from '@/features/sshKey/lib';
+import type { MessageKey } from '@skillkeeper/i18n';
 
 // Re-export the bridge-compatible config result shape for consumers.
 export type { SectionValidity, SkillKeeperConfig };
@@ -668,15 +669,21 @@ function makeNotificationEntry(
 }
 
 /**
- * Repository errors are raw git text today, with one exception: a refusal from
+ * Repository errors are raw git text today, with two exceptions: a refusal from
  * the SSH gate (`require_unlocked` in the Rust backend) is one of the stable
- * `ssh.*` codes, not git output. Route through {@link sshErrorKey} so a known
- * code still translates while everything else (real git text) passes through
- * untouched, exactly as it always has.
+ * `ssh.*` codes, and a clone or sync of an LFS repository on a machine without
+ * git-lfs answers `repo.lfsRequired`. Both are message keys rather than git
+ * output, so route them through translation while everything else (real git
+ * text) passes through untouched, exactly as it always has.
  */
+const REPO_ERROR_KEYS = ['repo.lfsRequired'] as const;
+
 function repoErrorMessage(error: string): NotificationMessage {
   const key = sshErrorKey(error);
-  return key !== null ? { key } : error;
+  if (key !== null) return { key };
+  return (REPO_ERROR_KEYS as readonly string[]).includes(error)
+    ? { key: error as MessageKey }
+    : error;
 }
 
 /**

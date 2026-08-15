@@ -8,7 +8,7 @@
 
 use std::collections::HashSet;
 
-use crate::hashing::sha256;
+use crate::hashing::{sha256, sha256_bytes};
 use crate::hooks::json::{canonical_json, find_owned_node};
 use crate::hooks::region::extract_region;
 use crate::install::install::{install_skill, remove_and_prune, HookSupport};
@@ -153,7 +153,10 @@ pub fn verify_install(fs: &dyn FsPort, manifest: &InstallManifest) -> PortResult
             });
             continue;
         }
-        let actual = sha256(&fs.read_file(&abs)?);
+        // Bytes: an installed body file is whatever the skill shipped, and
+        // reading it as text would report a binary asset as unverifiable
+        // rather than as intact.
+        let actual = sha256_bytes(&fs.read_bytes(&abs)?);
         files.push(FileVerification {
             rel_path: rel_path.clone(),
             status: if actual == *expected {
@@ -616,6 +619,35 @@ mod tests {
             .files
             .iter()
             .any(|f| &f.rel_path == rel_path && f.status == VerifyStatus::Ok));
+    }
+
+    #[test]
+    fn verifies_a_binary_body_file_as_intact() {
+        let png: &[u8] = &[0x89, 0x50, 0x4E, 0x47, 0xFF, 0xFE];
+        let fs = MemFs::new()
+            .with_file("repo/s/SKILL.md", "---\nname: s\n---\nbody\n")
+            .with_bytes("repo/s/icon.png", png);
+        let opts = make_opts(only_skill(&fs, "repo"), Scope::Global);
+        let manifest = install_skill(&fs, &opts, "/dest", None, NOW).unwrap();
+
+        let report = verify_install(&fs, &manifest).unwrap();
+        assert!(report.ok, "{report:?}");
+    }
+
+    #[test]
+    fn reports_a_changed_binary_body_file_as_modified() {
+        let fs = MemFs::new()
+            .with_file("repo/s/SKILL.md", "---\nname: s\n---\nbody\n")
+            .with_bytes("repo/s/icon.png", &[0x89, 0x50]);
+        let opts = make_opts(only_skill(&fs, "repo"), Scope::Global);
+        let manifest = install_skill(&fs, &opts, "/dest", None, NOW).unwrap();
+        fs.write_bytes("/dest/s/icon.png", &[0x89, 0x51]).unwrap();
+
+        let report = verify_install(&fs, &manifest).unwrap();
+        assert!(report
+            .files
+            .iter()
+            .any(|f| f.rel_path == "s/icon.png" && f.status == VerifyStatus::Modified));
     }
 
     // --- repair ---

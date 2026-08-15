@@ -54,6 +54,14 @@ impl FsPort for StdFs {
     }
 
     fn write_file(&self, path: &str, content: &str) -> PortResult<()> {
+        self.write_bytes(path, content.as_bytes())
+    }
+
+    fn read_bytes(&self, path: &str) -> PortResult<Vec<u8>> {
+        fs::read(path).map_err(|e| map_err(path, e))
+    }
+
+    fn write_bytes(&self, path: &str, content: &[u8]) -> PortResult<()> {
         if let Some(parent) = Path::new(path).parent() {
             if !parent.as_os_str().is_empty() {
                 fs::create_dir_all(parent).map_err(|e| map_err(&parent.to_string_lossy(), e))?;

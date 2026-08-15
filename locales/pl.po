@@ -1253,6 +1253,9 @@ msgstr "Nie znaleziono wskazanego pliku klucza SSH."
 msgid "ssh.noAgent"
 msgstr "ssh-agent nie jest uruchomiony, więc Git pyta o hasło klucza za każdym razem. Skonfiguruj go, aby podać hasło tylko raz."
 
+msgid "repo.lfsRequired"
+msgstr "To repozytorium przechowuje pliki w Git LFS, który nie jest zainstalowany. Bez niego każdy taki plik trafia tu tylko jako symbol zastępczy. Zainstaluj git-lfs, a następnie zsynchronizuj repozytorium."
+
 msgid "ssh.notAPrivateKey"
 msgstr "Wskazany plik klucza SSH nie jest kluczem prywatnym."
 
