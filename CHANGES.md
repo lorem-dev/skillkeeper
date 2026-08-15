@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.4.1-rc.4
+
 ### Changed
 
 - A hook's own payload file may be binary too, like the rest of a skill body.
