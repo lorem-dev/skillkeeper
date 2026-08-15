@@ -12,6 +12,11 @@ files. `SKILL.md` carries YAML frontmatter (name, optional version, optional
 description, optional license, optional declared executables, optional
 declared hook names) and a Markdown body for human documentation.
 
+Only `name` is required. Fields SkillKeeper does not know -- another agent's
+own keys, say -- are ignored, and a known field written in another shape
+(`version: 1.0` as a number, a lone `executables` entry with no list) is read
+as intended rather than costing the skill.
+
 ```
 my-skill/
   SKILL.md          frontmatter + documentation
