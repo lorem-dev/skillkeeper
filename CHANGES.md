@@ -2,41 +2,7 @@
 
 ## Development
 
-## Version 0.4.1-rc.4
-
-### Changed
-
-- A hook's own payload file may be binary too, like the rest of a skill body.
-
-### Fixed
-
-- A trailing `#` comment is no longer folded into a re-quoted YAML value.
-- A `|` block under a list item keeps its literal text; it was being rewritten
-  as if it were YAML.
-- An `mcp.yml` that exists but cannot be read is reported, not skipped in
-  silence.
-- Installing git-lfs and syncing now really fetches the assets; the check was
-  frozen at the moment the repository was added.
-- Clicking a repository's error dot shows the message, not its internal
-  identifier.
-- The editor schema for `mcp.yml` no longer accepts an empty `name` or a blank
-  `url`, and no longer rejects an unknown top-level key.
-
-## Version 0.4.1-rc.3
-
-### Added
-
-- Skills may ship binary files. An image, font, or compiled helper is copied,
-  hashed, and verified like any other file.
-
-### Fixed
-
-- One unreadable skill no longer takes every skill after it in the repository
-  with it. It is skipped alone, and named.
-- Cloning a repository that needs Git LFS now fails when git-lfs is missing,
-  instead of quietly leaving pointer files in place of every asset.
-
-## Version 0.4.1-rc.2
+## Version 0.4.1
 
 ### Added
 
@@ -44,38 +10,32 @@
   and the one-line installers, alongside the existing x64 and macOS ones.
 - A JSON Schema for `mcp.yml`, published with every release: point an editor at
   it for completion, hover documentation, and validation as you type.
-
-### Changed
-
-- A bare `{param}` in a header or `env` value is read as a placeholder, not as
-  the YAML mapping a leading `{` normally opens.
-
-### Fixed
-
-- An `mcp.yml` that cannot be parsed now says so in the app's notifications
-  and on the CLI's standard error, instead of vanishing with its presets.
-- A rejected `mcp.yml` names what the parser objected to, not just which
-  server it gave up on.
-- The Windows MSIX now always packages the desktop app; it picked between two
-  binaries sharing a file name.
-
-## Version 0.4.1-rc.1
+- Skills may ship binary files. An image, font, or compiled helper is copied,
+  hashed, and verified like any other file.
 
 ### Changed
 
 - A skill with extra or oddly typed frontmatter fields installs instead of
-  being dropped: `version: 1.0` and `executables: run.sh` now read as intended.
-- A one-line `description:` may hold a second colon, as prose often does. It
-  used to be read as a nested mapping and rejected the skill.
+  being dropped: only `name` is required.
+- A one-line `description:` may hold a second colon, and a header or `env`
+  value may be a bare `{param}`.
 
 ### Fixed
 
 - "Invalid YAML frontmatter" now says what is wrong and on which line of the
   file, instead of naming only the file.
+- An `mcp.yml` that cannot be read or parsed says so, in the app's
+  notifications and on the CLI's standard error.
+- One unreadable skill no longer takes every skill after it in the repository
+  with it. It is skipped alone, and named.
 - Switching a repository's branch refreshes its skills and MCP servers, instead
-  of leaving the Skills and MCP pages on the previous branch's contents.
+  of leaving both pages on the previous branch's contents.
 - Syncing a repository refreshes the MCP catalog too, which it had left to the
   next visit to an MCP page.
+- Cloning a repository that needs Git LFS fails when git-lfs is missing,
+  instead of quietly leaving pointer files in place.
+- The Windows MSIX packages the desktop app; it used to pick between two
+  binaries sharing a file name.
 
 ## Version 0.4.0
 
