@@ -565,6 +565,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#editor-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Editor support
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#example-repository-root" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -599,6 +610,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quote-a-value-that-starts-with-a-placeholder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quote a value that starts with a placeholder
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1044,6 +1072,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#editor-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Editor support
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#example-repository-root" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1078,6 +1117,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quote-a-value-that-starts-with-a-placeholder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quote a value that starts with a placeholder
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1230,6 +1286,11 @@ file:</p>
 <code>mcp.yaml</code> is ignored entirely, even if <code>mcp.yml</code> fails to parse (this is a
 precedence rule, not a fallback). A file that fails to parse is skipped with
 a warning; it never fails the rest of the sync.</p>
+<p>That warning is visible: it appears in the app's notifications log, named
+against the repository it came from, and on the CLI's standard error whenever
+it lists or installs MCP presets. The same goes for a file that exists but
+cannot be read at all. A skipped file is the one case where presets are
+missing for a reason nothing else shows, so it is never dropped silently.</p>
 <p>Schema:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="nt">servers</span><span class="p">:</span>
@@ -1246,8 +1307,22 @@ a warning; it never fails the rest of the sync.</p>
 </code></pre></div>
 <p><code>stdio</code> requires <code>command</code>; <code>http</code> and <code>sse</code> require <code>url</code>. A server missing
 the field its transport needs fails validation for the whole file.</p>
+<h3 id="editor-support">Editor support<a class="headerlink" href="#editor-support" title="Permanent link">&para;</a></h3>
+<p>Every release publishes a JSON Schema for this format. Point an editor at it
+with a <code>yaml-language-server</code> comment on the first line and you get
+completion, hover documentation, and validation as you type - including the
+quoting rule above, which the schema reports as a type error on the value:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json</span>
+</code></pre></div>
+<p><code>releases/latest/download</code> resolves to the newest final release, so the line
+needs no maintenance; pre-release builds are not served by it. Field names,
+types, and descriptions are generated from the same Rust types the parser
+uses, and CI fails if the committed schema drifts from them. The schema is
+deliberately stricter in one place: it flags an unquoted <code>{param}</code>, which the
+parser tolerates with a warning.</p>
 <h3 id="example-repository-root">Example: repository root<a class="headerlink" href="#example-repository-root" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># mcp.yml at the repository root</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json</span>
+<span class="c1"># mcp.yml at the repository root</span>
 <span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="nt">servers</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docs-http</span>
@@ -1266,7 +1341,8 @@ the field its transport needs fails validation for the whole file.</p>
 <span class="w">      </span><span class="nt">FS_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{token}&quot;</span>
 </code></pre></div>
 <h3 id="example-inside-a-skill-group">Example: inside a skill group<a class="headerlink" href="#example-inside-a-skill-group" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># tooling/mcp.yml -- group &quot;tooling&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json</span>
+<span class="c1"># tooling/mcp.yml -- group &quot;tooling&quot;</span>
 <span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="nt">servers</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tooling-sse</span>
@@ -1298,6 +1374,16 @@ typed or secret fields exist yet). The rendering step substitutes each
 <code>rules</code>. Rendering fails if any referenced parameter has no value.</p>
 <p>Example: the <code>docs-http</code> server above has two parameters, <code>host</code> and
 <code>token</code> (<code>host</code> appears in both <code>url</code> and <code>rules</code>; it still counts once).</p>
+<h3 id="quote-a-value-that-starts-with-a-placeholder">Quote a value that starts with a placeholder<a class="headerlink" href="#quote-a-value-that-starts-with-a-placeholder" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">headers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">X-Token</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{personal_token}&quot;</span><span class="w">   </span><span class="c1"># quoted -- a string</span>
+<span class="w">  </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bearer {token}</span><span class="w"> </span><span class="c1"># fine unquoted: `{` is not the first character</span>
+</code></pre></div>
+<p>In YAML a leading <code>{</code> opens a flow mapping, so an unquoted <code>{personal_token}</code>
+is read as the map <code>{personal_token: null}</code> rather than as text. SkillKeeper
+recovers the intended string and reads the file anyway, but it reports a
+warning naming the line, because the same spelling means something else to
+every other YAML tool. Quoting silences it.</p>
 <h2 id="install-update-and-remove">Install, update, and remove<a class="headerlink" href="#install-update-and-remove" title="Permanent link">&para;</a></h2>
 <h3 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h3>
 <p>Installing a preset for one agent:</p>
