@@ -35,6 +35,7 @@ vi.mock('@/services/bridge', () => ({
     promptSshUnlock: vi.fn(),
     addRepository: vi.fn(),
     cloneRepository: vi.fn(),
+    updateRepository: vi.fn(),
     listAvailableSkills: vi.fn(),
     reconcileSkills: vi.fn(),
     reconcileMcp: vi.fn(),
@@ -878,12 +879,39 @@ describe('useSkillkeeperStore', () => {
       vi.mocked(bridgeClient.cloneRepository).mockResolvedValue({ ok: true, repository: added } as RepoResult);
       vi.mocked(bridgeClient.describeRepository).mockResolvedValue({ branch: 'main', skillCount: 9 });
       vi.mocked(bridgeClient.listAvailableSkills).mockResolvedValue({ skills: [], warnings: [] });
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue([]);
       vi.mocked(bridgeClient.reconcileSkills).mockResolvedValue([]);
       vi.mocked(bridgeClient.reconcileMcp).mockResolvedValue([]);
 
       await useSkillkeeperStore.getState().addRepository(added.url, added.name);
 
       expect(bridgeClient.listAvailableSkills).toHaveBeenCalled();
+      expect(bridgeClient.listAvailableMcp).toHaveBeenCalled();
+      expect(bridgeClient.reconcileSkills).toHaveBeenCalled();
+      expect(bridgeClient.reconcileMcp).toHaveBeenCalled();
+    });
+
+    it('refreshes both catalogs after a branch switch', async () => {
+      // A checkout swaps the working tree, so the previous branch's skills and
+      // MCP presets must not survive in the store: the card would show the new
+      // branch while the Skills/MCP pages still list the old branch's contents.
+      const switched = { ...mockRepo, branch: 'release' };
+      vi.mocked(bridgeClient.updateRepository).mockResolvedValue({
+        ok: true,
+        repository: switched,
+      } as RepoResult);
+      vi.mocked(bridgeClient.describeRepository).mockResolvedValue({ branch: 'release', skillCount: 3 });
+      vi.mocked(bridgeClient.listAvailableSkills).mockResolvedValue({ skills: [], warnings: [] });
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue([]);
+      vi.mocked(bridgeClient.reconcileSkills).mockResolvedValue([]);
+      vi.mocked(bridgeClient.reconcileMcp).mockResolvedValue([]);
+
+      await useSkillkeeperStore
+        .getState()
+        .updateRepository(mockRepo.id, mockRepo.name, mockRepo.url, 'release');
+
+      expect(bridgeClient.listAvailableSkills).toHaveBeenCalled();
+      expect(bridgeClient.listAvailableMcp).toHaveBeenCalled();
       expect(bridgeClient.reconcileSkills).toHaveBeenCalled();
       expect(bridgeClient.reconcileMcp).toHaveBeenCalled();
     });

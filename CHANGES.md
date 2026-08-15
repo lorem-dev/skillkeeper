@@ -2,6 +2,27 @@
 
 ## Development
 
+### Changed
+
+- A skill whose frontmatter carries extra or oddly typed fields installs
+  instead of being dropped. `version: 1.0` (a number to YAML) and
+  `executables: run.sh` (one entry, no list) are read as intended; a field that
+  cannot be read at all is skipped with a note rather than costing the skill.
+  Only `name` is still required. Fields from other agents were already ignored
+  and stay that way.
+- A one-line `description:` may contain a second colon, as prose constantly
+  does ("Covers the tool: how to run it"). It used to be read as a nested
+  mapping and rejected the whole skill.
+
+### Fixed
+
+- "Invalid YAML frontmatter" now says what is wrong and on which line of the
+  file, instead of naming only the file.
+- Switching a repository's branch refreshes its skills and MCP servers. The
+  card showed the new branch while the Skills and MCP pages still listed the
+  previous branch's contents. Syncing a repository now refreshes the MCP
+  catalog too, which it had left to the next visit to an MCP page.
+
 ## Version 0.4.0
 
 ### Added

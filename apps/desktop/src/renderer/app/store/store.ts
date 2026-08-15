@@ -1075,6 +1075,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       // the catalog from before the repository existed, which reads as "the
       // repository was added but its skills went missing".
       await get().refreshAvailableSkills();
+      await get().refreshMcpPresets();
       await get().reconcileSkills();
       await get().reconcileMcp();
     })();
@@ -1102,6 +1103,16 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       // A branch checkout changes the current branch; refresh the card badge.
       const info = await bridgeClient.describeRepository(id);
       set((s) => ({ repoInfo: { ...s.repoInfo, [id]: info } }));
+      // A checkout swaps the whole working tree, so the repository's skills and
+      // MCP presets are those of a different commit now. Refresh the catalogs
+      // exactly as `addRepository` and `syncRepository` do -- without this the
+      // card shows the new branch while the Skills and MCP pages still hold the
+      // previous branch's contents, which reads as "I switched branch and its
+      // MCP servers went missing".
+      await get().refreshAvailableSkills();
+      await get().refreshMcpPresets();
+      await get().reconcileSkills();
+      await get().reconcileMcp();
     })();
   },
 
@@ -1189,9 +1200,12 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
             repoInfo: { ...s.repoInfo, [id]: info },
             ...idle(s, { hasUpdate: false, error: undefined }),
           }));
-          // A synced repo may add/remove/change skills: refresh the catalog and
-          // reconcile installs so project-mode update dots recompute.
+          // A synced repo may add/remove/change skills and MCP presets: refresh
+          // both catalogs and reconcile installs so project-mode update dots
+          // recompute. The MCP pages otherwise only refresh presets on mount,
+          // so a sync while sitting on one leaves it showing the old catalog.
           await get().refreshAvailableSkills();
+          await get().refreshMcpPresets();
           await get().reconcileSkills();
           await get().reconcileMcp();
           setTaskStatus('done');
