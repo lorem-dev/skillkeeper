@@ -14,6 +14,7 @@ pub mod install;
 pub mod model;
 pub mod naming;
 pub mod params;
+pub mod schema;
 pub mod skmcp;
 pub mod writers;
 

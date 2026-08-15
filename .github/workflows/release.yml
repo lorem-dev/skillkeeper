@@ -507,6 +507,16 @@ jobs:
           echo "Staged $(find dist -type f | wc -l) files:"
           ls -1 dist
 
+      # The mcp.yml JSON Schema is generated from the Rust types by `cargo test`
+      # and committed, so it ships straight from the checkout -- no build leg
+      # produces it. It must be attached to EVERY release: the docs tell editors
+      # to read it from `releases/latest/download/mcp.schema.json`, and that URL
+      # resolves against whichever release is newest.
+      - name: Stage the mcp.yml JSON Schema
+        run: |
+          test -f schemas/mcp.schema.json
+          cp schemas/mcp.schema.json dist/mcp.schema.json
+
       # Checksum every staged asset. Written outside dist/ first so the glob
       # cannot include the (empty) checksums.txt the redirection would create.
       - name: Generate SHA-256 checksums

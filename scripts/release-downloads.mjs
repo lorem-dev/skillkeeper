@@ -89,6 +89,14 @@ for (const name of readdirSync(distDir).sort()) {
     continue;
   }
 
+  // The mcp.yml JSON Schema. Labelled rather than left to "Other" because it
+  // is something a reader goes looking for, not a build by-product -- an
+  // mcp.yml points its editor at this exact asset.
+  if (name === 'mcp.schema.json') {
+    other.push({ name, label: 'JSON Schema for mcp.yml' });
+    continue;
+  }
+
   const cliMatch = /^skillkeeper-cli-(.+?)\.(tar\.gz|zip)$/.exec(name);
   if (cliMatch) {
     const triple = cliMatch[1];

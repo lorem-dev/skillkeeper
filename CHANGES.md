@@ -6,6 +6,8 @@
 
 - Prebuilt arm64 builds for Linux and Windows: desktop bundles, CLI archives,
   and the one-line installers, alongside the existing x64 and macOS ones.
+- A JSON Schema for `mcp.yml`, published with every release: point an editor at
+  it for completion, hover documentation, and validation as you type.
 
 ### Changed
 

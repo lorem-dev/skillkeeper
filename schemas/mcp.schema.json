@@ -1,0 +1,144 @@
+{
+  "$defs": {
+    "McpServerDef": {
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "stdio"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "command"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "http",
+                  "sse"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "url"
+            ]
+          }
+        }
+      ],
+      "description": "A single MCP server definition. `type` selects the transport; the remaining\nfields are populated per transport (`url`/`headers` for `http`/`sse`,\n`command`/`args`/`env` for `stdio`). `rules` carries optional free-form\nusage guidance.\nAny string field may carry `{name}` placeholders; their values are asked for\nat install time. Quote a value that STARTS with one -- a leading `{` opens a\nflow mapping in YAML, so `X-Token: {tok}` is a map, not text.",
+      "properties": {
+        "args": {
+          "description": "Arguments passed to `command`, for `stdio`.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "command": {
+          "description": "Executable to launch. Required for `stdio`; ignored otherwise.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Environment variables for the launched process, for `stdio`. Quote any\nvalue that starts with a `{placeholder}`.",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Request headers, for `http` and `sse`. Quote any value that starts with\na `{placeholder}`.",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "Preset name, unique within the file. Becomes the basis of the installed\ninstance's name.",
+          "type": "string"
+        },
+        "rules": {
+          "description": "Usage guidance written into the agent's guidance file on install, the\nsame way skill guidance is.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "$ref": "#/$defs/McpTransport",
+          "description": "Transport: `stdio`, `http`, or `sse`. Selects which of the fields below\napply."
+        },
+        "url": {
+          "description": "Server URL. Required for `http` and `sse`; ignored for `stdio`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "type": "object"
+    },
+    "McpTransport": {
+      "description": "The transport used to reach an MCP server. `stdio` launches a local\nprocess; `http` and `sse` connect to a URL.",
+      "enum": [
+        "stdio",
+        "http",
+        "sse"
+      ],
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "MCP server presets declared by a repository, at its root or in a skill-group directory. See https://github.com/lorem-dev/skillkeeper/blob/main/docs/usage/mcp.md",
+  "properties": {
+    "servers": {
+      "description": "The MCP server presets this file declares.",
+      "items": {
+        "$ref": "#/$defs/McpServerDef"
+      },
+      "type": "array"
+    },
+    "version": {
+      "const": 1,
+      "description": "Schema version. Always 1."
+    }
+  },
+  "required": [
+    "version",
+    "servers"
+  ],
+  "title": "SkillKeeper mcp.yml",
+  "type": "object"
+}

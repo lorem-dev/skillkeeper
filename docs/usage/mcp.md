@@ -65,9 +65,25 @@ servers:
 `stdio` requires `command`; `http` and `sse` require `url`. A server missing
 the field its transport needs fails validation for the whole file.
 
+### Editor support
+
+Every release publishes a JSON Schema for this format. Point an editor at it
+with a `yaml-language-server` comment on the first line and you get
+completion, hover documentation, and validation as you type - including the
+quoting rule above, which the schema catches as "not of type string":
+
+```yaml
+# yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json
+```
+
+`releases/latest/download` always resolves to the newest release, so the line
+needs no maintenance. The schema is generated from the same Rust types the
+parser uses, so it cannot describe a format SkillKeeper does not accept.
+
 ### Example: repository root
 
 ```yaml
+# yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json
 # mcp.yml at the repository root
 version: 1
 servers:
@@ -90,6 +106,7 @@ servers:
 ### Example: inside a skill group
 
 ```yaml
+# yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json
 # tooling/mcp.yml -- group "tooling"
 version: 1
 servers:
