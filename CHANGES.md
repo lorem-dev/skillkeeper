@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.4.1-rc.2
+
 ### Added
 
 - Prebuilt arm64 builds for Linux and Windows: desktop bundles, CLI archives,
