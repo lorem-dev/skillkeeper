@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.4.1-rc.3
+
 ### Added
 
 - Skills may ship binary files. An image, font, or compiled helper is copied,
