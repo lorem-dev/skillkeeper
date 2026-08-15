@@ -2,6 +2,16 @@
 
 ## Development
 
+### Added
+
+- Prebuilt arm64 builds for Linux and Windows: desktop bundles, CLI archives,
+  and the one-line installers, alongside the existing x64 and macOS ones.
+
+### Fixed
+
+- The Windows MSIX now always packages the desktop app; it picked between two
+  binaries sharing a file name.
+
 ## Version 0.4.1-rc.1
 
 ### Changed

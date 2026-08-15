@@ -67,9 +67,11 @@ jobs:
         run: node scripts/check-version.mjs
 
   # ---------------------------------------------------------------------------
-  # Build: one matrix leg per (os, target). macOS covers both arches via cross
-  # targets on the arm64 runner. Linux arm64 and Windows arm64 can be added as
-  # further legs once cross-toolchains / arm runners are wired (see NOTE below).
+  # Build: one matrix leg per (os, target), covering x64 and arm64 on all three
+  # platforms. macOS and Windows reach their second arch by cross-compiling on
+  # the x64/arm64 runner they already use; Linux gets a native arm64 runner,
+  # because Tauri links the system WebKitGTK stack and cross-compiling it would
+  # mean carrying an arm64 sysroot.
   # ---------------------------------------------------------------------------
   build:
     name: Build ${{ matrix.target }}
@@ -104,15 +106,22 @@ jobs:
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             args: ""
+          # Linux arm64, built natively on the arm64 runner (free for public
+          # repositories). Same 22.04 image as the x64 leg, so both AppImages
+          # share a glibc floor.
+          - os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+            args: ""
           # Windows x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             args: ""
-          # NOTE: per-arch left as documented best-effort:
-          #   - Linux arm64 (aarch64-unknown-linux-gnu) needs a cross toolchain
-          #     or an arm64 runner and the arm64 webkit dev packages.
-          #   - Windows arm64 (aarch64-pc-windows-msvc) needs the arm64 MSVC
-          #     target; MakeAppx would also need ProcessorArchitecture="arm64".
+          # Windows arm64 (cross-compiled on the x64 runner, as macOS Intel is).
+          # Only the Rust target changes; Node, pnpm and the frontend build stay
+          # on the x64 image.
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            args: "--target aarch64-pc-windows-msvc"
 
     steps:
       - name: Checkout repository
@@ -250,36 +259,15 @@ jobs:
           args: ${{ matrix.args }}
 
       # -----------------------------------------------------------------------
-      # Standalone CLI (skillkeeper): build and archive it for this target so it
-      # can be installed with the one-line install script (scripts/install.*),
-      # independent of the desktop bundle. The archive holds just the binary at
-      # its root and is named by target triple, so the script builds the
-      # download URL straight from the detected platform.
-      # -----------------------------------------------------------------------
-      - name: Build the CLI
-        shell: bash
-        run: cargo build --release -p skillkeeper-cli --target ${{ matrix.target }}
-
-      - name: Archive the CLI (tar.gz)
-        if: matrix.os != 'windows-latest'
-        shell: bash
-        run: |
-          mkdir -p dist-cli
-          tar -czf "dist-cli/skillkeeper-cli-${{ matrix.target }}.tar.gz" \
-            -C "target/${{ matrix.target }}/release" skillkeeper
-
-      - name: Archive the CLI (zip)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path dist-cli | Out-Null
-          Compress-Archive -Path "target/${{ matrix.target }}/release/skillkeeper.exe" -DestinationPath "dist-cli/skillkeeper-cli-${{ matrix.target }}.zip" -Force
-
-      # -----------------------------------------------------------------------
       # Windows MSIX (MakeAppx): package the built exe + tile assets into an
       # MSIX using the appx identity dev.lorem.SkillKeeper / CN=Lorem Dev.
       # Best-effort: authored manifest + MakeAppx pack; unsigned (Store signs
       # on ingest). Does not fail the build if MakeAppx/exe are unavailable.
+      #
+      # Runs BEFORE the CLI build, and must stay there: the CLI crate's binary
+      # is also named skillkeeper.exe and lands in target/<triple>/release, the
+      # very path `tauri build --target` wrote the desktop app to. Build the CLI
+      # first and the MSIX would ship the CLI instead of the app.
       # -----------------------------------------------------------------------
       - name: Package Windows MSIX (MakeAppx)
         if: matrix.os == 'windows-latest'
@@ -303,19 +291,29 @@ jobs:
           }
           Write-Host "MSIX version: $msixVersion"
 
-          # Locate the built executable (target name = crate name skillkeeper).
-          $exe = Get-ChildItem -Path "target" -Recurse -Filter "skillkeeper.exe" |
-            Where-Object { $_.FullName -match "release" -and $_.FullName -notmatch "deps" } |
-            Select-Object -First 1
-          if (-not $exe) {
-            Write-Warning "skillkeeper.exe not found; skipping MSIX packaging."
+          # Both Windows legs package an MSIX, so the architecture has to reach
+          # the manifest AND the file name -- the publish job refuses two assets
+          # sharing a basename, and an arm64 package declaring x64 would install
+          # on neither.
+          $arch = if ("${{ matrix.target }}".StartsWith("aarch64")) { "arm64" } else { "x64" }
+          Write-Host "MSIX architecture: $arch"
+
+          # The desktop app crate and the CLI crate BOTH produce a binary named
+          # skillkeeper.exe, so a recursive search would be a coin toss between
+          # them. Take the exact path this leg's `tauri build` wrote to:
+          # target/<triple>/release when --target was passed, target/release
+          # otherwise.
+          $releaseDir = if ("${{ matrix.args }}") { "target/${{ matrix.target }}/release" } else { "target/release" }
+          $exePath = Join-Path $releaseDir "skillkeeper.exe"
+          if (-not (Test-Path $exePath)) {
+            Write-Warning "skillkeeper.exe not found at $exePath; skipping MSIX packaging."
             exit 0
           }
 
           $stage = Join-Path $env:RUNNER_TEMP "msix"
           $assets = Join-Path $stage "Assets"
           New-Item -ItemType Directory -Force -Path $assets | Out-Null
-          Copy-Item $exe.FullName (Join-Path $stage "skillkeeper.exe") -Force
+          Copy-Item $exePath (Join-Path $stage "skillkeeper.exe") -Force
 
           # Tile assets from the Tauri icons dir (Square* + StoreLogo).
           $iconDir = "apps/desktop/src-tauri/icons"
@@ -342,7 +340,7 @@ jobs:
             '  <Identity Name="dev.lorem.SkillKeeper"',
             '            Publisher="CN=Lorem Dev"',
             ('            Version="' + $msixVersion + '"'),
-            '            ProcessorArchitecture="x64" />',
+            ('            ProcessorArchitecture="' + $arch + '" />'),
             '  <Properties>',
             '    <DisplayName>SkillKeeper</DisplayName>',
             '    <PublisherDisplayName>Lorem Dev</PublisherDisplayName>',
@@ -378,7 +376,9 @@ jobs:
           ) -join "`r`n"
           Set-Content -Path (Join-Path $stage "AppxManifest.xml") -Value $manifest -Encoding UTF8
 
-          # Locate MakeAppx.exe from the installed Windows SDK.
+          # Locate MakeAppx.exe from the installed Windows SDK. The x64 filter
+          # picks the HOST tool, which stays x64 on both legs -- the package's
+          # own architecture is the manifest's ProcessorArchitecture, above.
           $makeappx = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter "makeappx.exe" -ErrorAction SilentlyContinue |
             Where-Object { $_.FullName -match "x64" } |
             Sort-Object FullName -Descending | Select-Object -First 1
@@ -389,7 +389,7 @@ jobs:
 
           $outDir = "apps/desktop/dist-msix"
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-          $msix = Join-Path $outDir "SkillKeeper-$msixVersion.msix"
+          $msix = Join-Path $outDir "SkillKeeper-$msixVersion-$arch.msix"
           & $makeappx.FullName pack /d $stage /p $msix /o
           # Native tools do not trip $ErrorActionPreference; check the exit code
           # explicitly so a failed pack is a real (visible) step failure instead
@@ -400,6 +400,32 @@ jobs:
             exit 1
           }
           Write-Host "Built MSIX: $msix"
+
+      # -----------------------------------------------------------------------
+      # Standalone CLI (skillkeeper): build and archive it for this target so it
+      # can be installed with the one-line install script (scripts/install.*),
+      # independent of the desktop bundle. The archive holds just the binary at
+      # its root and is named by target triple, so the script builds the
+      # download URL straight from the detected platform.
+      # -----------------------------------------------------------------------
+      - name: Build the CLI
+        shell: bash
+        run: cargo build --release -p skillkeeper-cli --target ${{ matrix.target }}
+
+      - name: Archive the CLI (tar.gz)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          mkdir -p dist-cli
+          tar -czf "dist-cli/skillkeeper-cli-${{ matrix.target }}.tar.gz" \
+            -C "target/${{ matrix.target }}/release" skillkeeper
+
+      - name: Archive the CLI (zip)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist-cli | Out-Null
+          Compress-Archive -Path "target/${{ matrix.target }}/release/skillkeeper.exe" -DestinationPath "dist-cli/skillkeeper-cli-${{ matrix.target }}.zip" -Force
 
       # -----------------------------------------------------------------------
       # Upload per-target bundles + the MSIX. Covers both the default target

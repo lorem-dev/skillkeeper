@@ -38,6 +38,7 @@ case "$os" in
   Linux)
     case "$arch" in
       x86_64 | amd64) target="x86_64-unknown-linux-gnu" ;;
+      aarch64 | arm64) target="aarch64-unknown-linux-gnu" ;;
       *) err "no prebuilt CLI for Linux $arch (build from source: cargo install --path crates/skillkeeper-cli)" ;;
     esac
     ;;

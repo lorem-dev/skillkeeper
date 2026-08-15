@@ -29,7 +29,7 @@ $version = if ($env:SKILLKEEPER_VERSION) { $env:SKILLKEEPER_VERSION } else { 'la
 # asset names (skillkeeper-cli-<target>.zip).
 switch ($env:PROCESSOR_ARCHITECTURE) {
   'AMD64' { $target = 'x86_64-pc-windows-msvc' }
-  'ARM64' { throw 'No prebuilt CLI for Windows arm64 yet; build from source: cargo install --path crates/skillkeeper-cli' }
+  'ARM64' { $target = 'aarch64-pc-windows-msvc' }
   default { throw "Unsupported Windows architecture: $($env:PROCESSOR_ARCHITECTURE)" }
 }
 
