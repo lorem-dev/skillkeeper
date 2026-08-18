@@ -8,8 +8,8 @@ passphrase `skillkeeper-test`.
 Each `<name>.ppk` has a `<name>.openssh` sibling: the same key as written by
 `puttygen -O private-openssh-new`. That file is the expected output of our own
 conversion, so a mismatch means our conversion is wrong, not that the fixture
-is stale. Regenerate both together with the script in Task 1 of
-`.superpowers/plans/2026-08-18-ppk-key-support.md`.
+is stale. Regenerate both together with `./regenerate.sh` in this directory
+(requires `puttygen` on `PATH`).
 
 `dsa-v2-plain.ppk` has no `.openssh` sibling: DSA is a rejection fixture, and
 the only test that reads it asserts the algorithm is rejected before any
