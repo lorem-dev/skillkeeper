@@ -333,4 +333,32 @@ mod tests {
         ssh_string(&mut out, b"abc");
         assert_eq!(out, vec![0, 0, 0, 3, b'a', b'b', b'c']);
     }
+
+    #[test]
+    fn unlocks_a_v2_encrypted_key() {
+        let f = parse(fixtures::ED25519_V2_ENC).unwrap();
+        let plain = unlock(&f, fixtures::PASSPHRASE).expect("correct passphrase");
+        assert_eq!(&plain[..4], &[0, 0, 0, 32]);
+    }
+
+    #[test]
+    fn unlocks_an_unencrypted_v2_key() {
+        let f = parse(fixtures::ED25519_V2_PLAIN).unwrap();
+        assert!(unlock(&f, "").is_ok());
+    }
+
+    #[test]
+    fn a_wrong_v2_passphrase_is_reported_as_such() {
+        let f = parse(fixtures::ED25519_V2_ENC).unwrap();
+        assert!(matches!(
+            unlock(&f, "not-it"),
+            Err(PpkError::WrongPassphrase)
+        ));
+    }
+
+    #[test]
+    fn unlocks_a_v2_rsa_key() {
+        let f = parse(fixtures::RSA_V2_ENC).unwrap();
+        assert!(unlock(&f, fixtures::PASSPHRASE).is_ok());
+    }
 }
