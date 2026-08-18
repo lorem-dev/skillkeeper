@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 use skillkeeper_agents::{register_builtin_agents, AdapterRegistry};
 use skillkeeper_config::SkillKeeperConfig;
 use skillkeeper_core::adapters::{StdFs, SystemClock, SystemGit, SystemHostEnv};
+use skillkeeper_core::key_format::{sniff, KeyFormat};
 use skillkeeper_core::ports::HostEnv;
 
 /// OS-specific application-data paths for SkillKeeper.
@@ -119,13 +120,38 @@ impl Wiring {
 
 /// Extra git environment for a configured SSH key, or nothing when unset. The
 /// CLI holds no passphrase: `ssh` prompts in the terminal it already owns.
+///
+/// A PuTTY-format key yields nothing at all. `ssh -i` cannot read that format,
+/// so naming the file would turn every SSH remote into an error; saying nothing
+/// leaves the user's own agent and `~/.ssh/config` exactly as they were. The
+/// desktop app supports these keys directly, and the warning says so.
 fn git_env_for(ssh_key_path: Option<String>) -> Vec<(String, String)> {
     match ssh_key_path {
         Some(path) if !path.trim().is_empty() => {
-            skillkeeper_core::ssh_env::ssh_env_vars(path.trim(), None)
+            let path = path.trim();
+            if is_putty_key(path) {
+                eprintln!(
+                    "warning: {path} is a PuTTY-format key, which ssh cannot read. \
+                     The SkillKeeper desktop app supports it directly; for the CLI, \
+                     convert it once:\n  \
+                     puttygen {path} -O private-openssh-new -o <new-key>\n  \
+                     then set repositories.sshKeyPath to <new-key>."
+                );
+                return Vec::new();
+            }
+            skillkeeper_core::ssh_env::ssh_env_vars(path, None)
         }
         _ => Vec::new(),
     }
+}
+
+/// Whether the file at `path` is a PuTTY key. An unreadable file is not: the
+/// key may simply be on a disk that is not mounted yet, and that case must keep
+/// its existing behaviour of offering the identity and letting `ssh` decide.
+fn is_putty_key(path: &str) -> bool {
+    std::fs::read_to_string(path)
+        .map(|text| sniff(&text) == KeyFormat::Putty)
+        .unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -235,5 +261,32 @@ mod tests {
         );
         // The CLI never has a passphrase to give; ssh asks in its own terminal.
         assert!(vars.iter().all(|(k, _)| k != "SSH_ASKPASS"));
+    }
+
+    #[test]
+    fn a_putty_key_yields_no_variables() {
+        // `ssh -i` cannot read a .ppk, so pointing git at one would break every
+        // SSH remote. Offering nothing leaves the user's agent and ~/.ssh/config
+        // to work as they always did.
+        let dir = std::env::temp_dir().join("sk-ppk-wiring-test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let key = dir.join("id.ppk");
+        std::fs::write(
+            &key,
+            "PuTTY-User-Key-File-3: ssh-ed25519\nEncryption: none\n",
+        )
+        .unwrap();
+        let vars = git_env_for(Some(key.to_string_lossy().into_owned()));
+        assert!(vars.is_empty(), "expected no variables, got {vars:?}");
+        std::fs::remove_file(&key).ok();
+    }
+
+    #[test]
+    fn a_missing_key_file_still_yields_the_identity() {
+        // Unreadable is not the same as PuTTY-formatted: the key may live on a
+        // disk that is not mounted yet, and the existing behaviour (offer it,
+        // let ssh decide) must survive.
+        let vars = git_env_for(Some("/nonexistent/id_ed25519".to_string()));
+        assert!(vars.iter().any(|(k, _)| k == "GIT_SSH_COMMAND"));
     }
 }

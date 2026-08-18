@@ -12,6 +12,7 @@ pub mod glob;
 pub mod hashing;
 pub mod hooks;
 pub mod install;
+pub mod key_format;
 pub mod mcp;
 pub mod models;
 pub mod ports;
