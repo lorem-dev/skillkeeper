@@ -65,14 +65,20 @@ impl PpkFile {
 
 /// Parse `text` into its fields, decoding the base64 bodies and the hex MAC.
 pub fn parse(text: &str) -> Result<PpkFile, PpkError> {
-    let mut lines = text.lines().map(str::trim_end);
+    // Strip only a trailing carriage return (a CRLF file), not all trailing
+    // whitespace: `Comment` is MACed byte-for-byte as PuTTY wrote it, and
+    // puttygen accepts a comment with trailing whitespace.
+    let mut lines = text.lines().map(|line| line.trim_end_matches('\r'));
 
     let header = lines.next().ok_or(PpkError::NotPpk)?.trim();
     let rest = header
         .strip_prefix("PuTTY-User-Key-File-")
         .ok_or(PpkError::NotPpk)?;
     let (version, algorithm) = rest.split_once(':').ok_or(PpkError::Malformed)?;
-    let version: u8 = version.trim().parse().map_err(|_| PpkError::UnsupportedVersion)?;
+    let version: u8 = version
+        .trim()
+        .parse()
+        .map_err(|_| PpkError::UnsupportedVersion)?;
     if version != 2 && version != 3 {
         return Err(PpkError::UnsupportedVersion);
     }
@@ -93,11 +99,15 @@ pub fn parse(text: &str) -> Result<PpkFile, PpkError> {
         if line.trim().is_empty() {
             continue;
         }
-        let (key, value) = line.split_once(':').ok_or(PpkError::Malformed)?;
-        let value = value.trim();
+        let (key, raw_value) = line.split_once(':').ok_or(PpkError::Malformed)?;
+        let value = raw_value.trim();
         match key {
             "Encryption" => encryption = Some(value.to_string()),
-            "Comment" => comment = value.to_string(),
+            // Every other field is numeric or a single token, where `.trim()`
+            // is correct and harmless; `Comment` is free text that PuTTY MACs
+            // byte-for-byte, so only the one mandatory space after the colon
+            // is stripped, not any whitespace the user's comment itself has.
+            "Comment" => comment = raw_value.strip_prefix(' ').unwrap_or(raw_value).to_string(),
             "Key-Derivation" => flavour = Some(value.to_string()),
             "Argon2-Memory" => memory_kib = Some(value.parse().map_err(|_| PpkError::Malformed)?),
             "Argon2-Passes" => passes = Some(value.parse().map_err(|_| PpkError::Malformed)?),
@@ -246,6 +256,28 @@ mod tests {
     }
 
     #[test]
+    fn a_comment_with_trailing_whitespace_survives_parsing() {
+        // The MAC covers the comment byte-for-byte as PuTTY wrote it, and
+        // puttygen accepts a comment with trailing whitespace. A parser that
+        // trims the line, or trims the header value, would silently change
+        // what gets MACed and turn a correct passphrase into a reported
+        // "wrong passphrase". Build a variant of the fixture with a trailing
+        // space added to the `Comment` line and confirm it survives.
+        let modified = fixtures::ED25519_V3_PLAIN.replacen(
+            "Comment: skillkeeper-test\n",
+            "Comment: skillkeeper-test \n",
+            1,
+        );
+        assert_ne!(
+            modified,
+            fixtures::ED25519_V3_PLAIN,
+            "the fixture's Comment line has an unexpected shape"
+        );
+        let f = parse(&modified).expect("parses");
+        assert_eq!(f.comment, "skillkeeper-test ");
+    }
+
+    #[test]
     fn parses_rsa_and_ecdsa_headers() {
         assert_eq!(parse(fixtures::RSA_V3_ENC).unwrap().algorithm, "ssh-rsa");
         assert_eq!(
@@ -287,7 +319,10 @@ mod tests {
     #[test]
     fn an_unknown_cipher_is_rejected() {
         let swapped = fixtures::ED25519_V3_ENC.replace("aes256-cbc", "rot13-cbc");
-        assert!(matches!(parse(&swapped), Err(PpkError::UnsupportedEncryption)));
+        assert!(matches!(
+            parse(&swapped),
+            Err(PpkError::UnsupportedEncryption)
+        ));
     }
 
     #[test]

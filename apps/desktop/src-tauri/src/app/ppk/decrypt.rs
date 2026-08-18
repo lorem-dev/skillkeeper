@@ -23,6 +23,18 @@ type Aes256CbcDec = cbc::Decryptor<Aes256>;
 /// machine out of memory before any authentication has happened.
 const MAX_ARGON2_MEMORY_KIB: u32 = 1024 * 1024;
 
+/// Upper bound on Argon2 passes. Generous next to what puttygen writes, and
+/// far below what would let a hostile file burn CPU indefinitely with no
+/// cancellation -- the same denial of service the memory cap exists to
+/// prevent, on the time axis instead of the space one.
+const MAX_ARGON2_PASSES: u32 = 64;
+
+/// Upper bound on Argon2 parallelism. Also keeps `parallelism` well clear of
+/// the range where `argon2` 0.5's own validation (`m_cost < p_cost * 8`,
+/// checked before its own parallelism ceiling) could overflow the
+/// multiplication on a hostile value.
+const MAX_ARGON2_PARALLELISM: u32 = 16;
+
 /// Decrypt (if needed) and verify the private blob of `file`.
 ///
 /// Returns the plaintext private blob, which still carries PuTTY's trailing
@@ -78,8 +90,20 @@ pub fn unlock(file: &PpkFile, passphrase: &str) -> Result<Zeroizing<Vec<u8>>, Pp
 }
 
 /// The five SSH strings the MAC is taken over, in PuTTY's order.
-fn mac_data(file: &PpkFile, private_plain: &[u8]) -> Vec<u8> {
-    let mut data = Vec::new();
+///
+/// Pre-sized to its exact final length: `private_plain` is the decrypted
+/// private key, and a plain `Vec` that reallocates while growing leaves
+/// partial copies of it scattered in freed heap that no later `Zeroizing`
+/// can reach. The whole buffer is `Zeroizing` for the same reason -- it ends
+/// up holding that plaintext too, via the last `ssh_string` call.
+fn mac_data(file: &PpkFile, private_plain: &[u8]) -> Zeroizing<Vec<u8>> {
+    let capacity = 20
+        + file.algorithm.len()
+        + file.encryption.len()
+        + file.comment.len()
+        + file.public_blob.len()
+        + private_plain.len();
+    let mut data = Zeroizing::new(Vec::with_capacity(capacity));
     ssh_string(&mut data, file.algorithm.as_bytes());
     ssh_string(&mut data, file.encryption.as_bytes());
     ssh_string(&mut data, file.comment.as_bytes());
@@ -124,7 +148,10 @@ fn verify_sha1(key: &[u8], data: &[u8], expected: &[u8]) -> bool {
 fn derive_v3(params: &Argon2Params, passphrase: &str) -> Result<Zeroizing<Vec<u8>>, PpkError> {
     use argon2::{Algorithm, Argon2, Params, Version};
 
-    if params.memory_kib > MAX_ARGON2_MEMORY_KIB {
+    if params.memory_kib > MAX_ARGON2_MEMORY_KIB
+        || params.passes > MAX_ARGON2_PASSES
+        || params.parallelism > MAX_ARGON2_PARALLELISM
+    {
         return Err(PpkError::Malformed);
     }
     let algorithm = match params.flavour.as_str() {
@@ -181,8 +208,7 @@ fn aes_cbc_decrypt(key: &[u8], iv: &[u8], data: &[u8]) -> Result<Zeroizing<Vec<u
         return Err(PpkError::Malformed);
     }
     let mut buffer = Zeroizing::new(data.to_vec());
-    let decryptor =
-        Aes256CbcDec::new_from_slices(key, iv).map_err(|_| PpkError::Malformed)?;
+    let decryptor = Aes256CbcDec::new_from_slices(key, iv).map_err(|_| PpkError::Malformed)?;
     let length = decryptor
         .decrypt_padded_mut::<NoPadding>(&mut buffer)
         .map_err(|_| PpkError::Malformed)?
@@ -212,7 +238,10 @@ mod tests {
         let f = parse(fixtures::ED25519_V3_ENC).unwrap();
         // `matches!` rather than `assert_eq!`: the Ok side is key material, and
         // a failing equality assert would print it into the test log.
-        assert!(matches!(unlock(&f, "not-it"), Err(PpkError::WrongPassphrase)));
+        assert!(matches!(
+            unlock(&f, "not-it"),
+            Err(PpkError::WrongPassphrase)
+        ));
     }
 
     #[test]
@@ -230,8 +259,39 @@ mod tests {
     }
 
     #[test]
+    fn a_comment_with_trailing_whitespace_verifies_with_its_real_mac() {
+        // A real round trip through `unlock`, not just parsing: a parser that
+        // trimmed the comment would still parse this file, but the MAC PuTTY
+        // wrote was computed over the untrimmed comment, so verification
+        // would fail and a correct (empty) passphrase would be reported as
+        // wrong on an unencrypted key -- `Damaged`, per `unlock`'s contract.
+        let modified = fixtures::ED25519_V3_PLAIN.replacen(
+            "Comment: skillkeeper-test\n",
+            "Comment: skillkeeper-test \n",
+            1,
+        );
+        let mut f = parse(&modified).expect("parses");
+        assert_eq!(f.comment, "skillkeeper-test ");
+
+        // The fixture's own MAC was computed over the original comment, so it
+        // no longer matches; replace it with the MAC this exact (untrimmed)
+        // file would really carry, the same way `unlock` computes it.
+        let data = mac_data(&f, &f.private_blob);
+        let mut mac = <Hmac<Sha256> as Mac>::new_from_slice(&[]).expect("empty key is valid");
+        mac.update(&data);
+        f.mac = mac.finalize().into_bytes().to_vec();
+
+        let plain = unlock(&f, "").expect("the real MAC for this comment must verify");
+        assert_eq!(&plain[..4], &[0, 0, 0, 32]);
+    }
+
+    #[test]
     fn unlocks_v3_rsa_and_ecdsa() {
-        for text in [fixtures::RSA_V3_ENC, fixtures::ECDSA_V3_ENC, fixtures::ECDSA_V3_P384] {
+        for text in [
+            fixtures::RSA_V3_ENC,
+            fixtures::ECDSA_V3_ENC,
+            fixtures::ECDSA_V3_P384,
+        ] {
             let f = parse(text).unwrap();
             assert!(unlock(&f, fixtures::PASSPHRASE).is_ok(), "{}", f.algorithm);
         }
@@ -241,7 +301,30 @@ mod tests {
     fn absurd_argon2_parameters_are_rejected_not_run() {
         let mut f = parse(fixtures::ED25519_V3_ENC).unwrap();
         f.kdf.as_mut().unwrap().memory_kib = 8_000_000; // 8 GiB
-        assert!(matches!(unlock(&f, fixtures::PASSPHRASE), Err(PpkError::Malformed)));
+        assert!(matches!(
+            unlock(&f, fixtures::PASSPHRASE),
+            Err(PpkError::Malformed)
+        ));
+    }
+
+    #[test]
+    fn an_absurd_argon2_pass_count_is_rejected_not_run() {
+        let mut f = parse(fixtures::ED25519_V3_ENC).unwrap();
+        f.kdf.as_mut().unwrap().passes = u32::MAX;
+        assert!(matches!(
+            unlock(&f, fixtures::PASSPHRASE),
+            Err(PpkError::Malformed)
+        ));
+    }
+
+    #[test]
+    fn an_absurd_argon2_parallelism_is_rejected_not_run() {
+        let mut f = parse(fixtures::ED25519_V3_ENC).unwrap();
+        f.kdf.as_mut().unwrap().parallelism = 4_000_000_000;
+        assert!(matches!(
+            unlock(&f, fixtures::PASSPHRASE),
+            Err(PpkError::Malformed)
+        ));
     }
 
     #[test]
