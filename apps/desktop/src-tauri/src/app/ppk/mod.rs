@@ -6,6 +6,7 @@
 //! on strings and bytes so every step is unit-testable, and so key material
 //! never has a path to be written to.
 
+pub mod decrypt;
 #[cfg(test)]
 pub mod fixtures;
 pub mod parse;
