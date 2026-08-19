@@ -61,8 +61,8 @@ catalogs.
 ## Running the Gates
 
 Prerequisites: a stable Rust toolchain via rustup (pinned in
-`rust-toolchain.toml`, with `rustfmt` and `clippy`), Node 22.13+, and pnpm via
-`corepack enable`. On Linux the desktop app also needs the platform webview and
+`rust-toolchain.toml`, with `rustfmt` and `clippy`), Node 24+ (the active LTS
+line, which CI also runs), and pnpm via `corepack enable`. On Linux the desktop app also needs the platform webview and
 GTK development libraries Tauri builds against (webkit2gtk 4.1, GTK 3, libsoup3
 and related `-dev` packages).
 

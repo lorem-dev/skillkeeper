@@ -49,7 +49,7 @@ jobs:
       - name: Set up Node.js 22
         uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           # This job only runs node scripts/check-version.mjs and never installs
           # deps. Disable setup-node's package-manager cache: it otherwise
           # auto-detects the pnpm packageManager field and fails locating pnpm
@@ -179,7 +179,7 @@ jobs:
       - name: Set up Node.js 22 with pnpm cache
         uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
 
       - name: Install dependencies (frozen lockfile)
@@ -475,7 +475,7 @@ jobs:
       - name: Set up Node.js 22
         uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           # This job runs only node scripts (release notes) plus gh/gpg and
           # never installs deps. Disable the package-manager cache so setup-node
           # does not try to locate pnpm before corepack is enabled.

@@ -16,7 +16,7 @@
   },
   "packageManager": "pnpm@11.9.0",
   "engines": {
-    "node": ">=22.13"
+    "node": ">=24"
   },
   "scripts": {
     "postinstall": "node scripts/gen-i18n.mjs",
@@ -43,7 +43,7 @@
     "@eslint/js": "10.0.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/jest": "30.0.0",
-    "@types/node": "26.0.1",
+    "@types/node": "24.13.3",
     "@vitest/coverage-v8": "4.1.11",
     "eslint": "10.8.1",
     "eslint-config-prettier": "10.1.8",

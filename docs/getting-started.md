@@ -8,7 +8,7 @@
   error when LFS is required but absent).
 - To build from source: a Rust toolchain (the pinned stable is installed
   automatically by rustup from `rust-toolchain.toml` on first `cargo` build).
-  Node.js 22.13+ and pnpm 11 are only needed to build the desktop app's
+  Node.js 24+ and pnpm 11 are only needed to build the desktop app's
   renderer, not the CLI.
 
 ## Installation
