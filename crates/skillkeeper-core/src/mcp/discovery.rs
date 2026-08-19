@@ -68,6 +68,26 @@ mod tests {
     }
 
     #[test]
+    fn a_repository_with_no_resolved_skills_has_no_group_dirs() {
+        // The contract this pins: candidates come from skills that RESOLVED, so
+        // a directory holding a stray `mcp.yml` and nothing else contributes
+        // nothing. Both the module doc and docs/usage/mcp.md assert this, and an
+        // asserted contract with no test is what drifts.
+        assert!(preset_group_dirs(&[]).is_empty());
+    }
+
+    #[test]
+    fn an_unrelated_subtree_contributes_no_group_dir() {
+        // Only `a/b/c/deep` resolved. A stray `mcp.yml` living under `vendor/x`
+        // is unreachable here because `vendor/x` is not an ancestor of any
+        // resolved skill -- so it can never become a preset group.
+        let dirs = preset_group_dirs(&[skill("a/b/c/deep")]);
+
+        assert_eq!(dirs, vec!["a", "a/b", "a/b/c"]);
+        assert!(!dirs.iter().any(|d| d.starts_with("vendor")));
+    }
+
+    #[test]
     fn lists_every_ancestor_of_every_skill_shallowest_first() {
         let dirs = preset_group_dirs(&[skill("a/b/c/deep"), skill("z/flat")]);
 
