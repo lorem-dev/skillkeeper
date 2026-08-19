@@ -2,7 +2,8 @@
 //!
 //! Port of `packages/cli/src/commands/mcp.ts`. MCP presets come from two
 //! origins: repository `mcp.yml`/`mcp.yaml` files (the repo root, no group, plus
-//! one per skill-group directory) and manual presets recorded in
+//! one per group directory found via `preset_group_dirs`, however deeply
+//! nested) and manual presets recorded in
 //! `config.mcp.servers`. Installing an instance renders `{param}` placeholders
 //! and writes the target agent's native MCP config, tracking the install in the
 //! `.skmcp.yml` / `.skmcp.params.yml` ledgers under that agent's skills
@@ -19,6 +20,7 @@ use clap::Subcommand;
 use skillkeeper_agents::AdapterRegistry;
 use skillkeeper_config::{McpPreset, McpTransport as ConfigTransport};
 use skillkeeper_core::git_remote::normalize_remote;
+use skillkeeper_core::mcp::discovery::preset_group_dirs;
 use skillkeeper_core::mcp::{
     hash_mcp_def, install_mcp_instance, mcp_destination, missing_params, parse_mcp_config,
     parse_skmcp, parse_skmcp_params, remove_mcp_instance, supports_transport, InstallMcpArgs,
@@ -233,14 +235,7 @@ fn list_presets(ctx: &McpCtx, err: &mut dyn Write) -> Vec<PresetEntry> {
         // worth reporting here, not only from the skill commands.
         let resolved = resolve_skills(ctx.fs, &repo.local_path);
         let _ = print_resolve_warnings(err, &repo.name, &resolved.warnings);
-        let mut groups: Vec<String> = Vec::new();
-        for skill in &resolved.skills {
-            let parts: Vec<&str> = skill.root_path.split('/').collect();
-            if parts.len() >= 2 && !groups.iter().any(|g| g == parts[0]) {
-                groups.push(parts[0].to_string());
-            }
-        }
-        for group in groups {
+        for group in preset_group_dirs(&resolved.skills) {
             let dir = format!("{}/{}", repo.local_path, group);
             for def in read_mcp_defs(ctx.fs, &dir, err) {
                 out.push(PresetEntry {
@@ -1011,6 +1006,30 @@ mod tests {
         let out = String::from_utf8(out).unwrap();
         assert!(out.contains("github  origin=repo  type=stdio"));
         assert!(out.contains("git@github.com:acme/mcps.git"));
+    }
+
+    #[test]
+    fn lists_a_preset_from_a_nested_group_directory() {
+        // A skill three group levels down with an mcp.yml beside it: the preset
+        // must be discovered and labelled by its full group path.
+        let fs = seeded_fs()
+            .with_file("/repos/r1/a/b/c/deep/SKILL.md", "---\nname: deep\n---\n# deep\n")
+            .with_file(
+                "/repos/r1/a/b/c/mcp.yml",
+                "version: 1\nservers:\n  - name: deep-registry\n    type: stdio\n    command: npx\n",
+            );
+        let app = TestApp::new(fs);
+        seed_state(&app.fs);
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        list(&app.ctx(), &mut out, &mut err).unwrap();
+        let out = String::from_utf8(out).unwrap();
+
+        assert!(
+            out.contains("a/b/c/deep-registry"),
+            "expected a nested preset label, got:\n{out}"
+        );
     }
 
     #[test]
