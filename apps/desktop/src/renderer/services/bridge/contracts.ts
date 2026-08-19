@@ -45,7 +45,7 @@ export interface AvailableSkill {
   readonly repoName: string;
   /** Source repository remote URL; the stable identity for matching installs. */
   readonly remote: string;
-  /** Optional one-level group (SkillId.group). */
+  /** Optional group path, up to three levels deep (SkillId.group). */
   readonly group?: string;
   readonly name: string;
   readonly version?: string;
@@ -61,9 +61,9 @@ export interface AvailableSkill {
  *
  * Resolution never fails: it reports warnings instead. A warning is the only
  * signal that a `SKILL.md` exists but cannot be installed -- nested deeper than
- * one group level, a malformed manifest, an unparsable `skillkeeper.repo.yaml`.
- * Without surfacing it, such a skill is simply absent from the tree with no
- * explanation.
+ * the maximum group depth, a malformed manifest, an unparsable
+ * `skillkeeper.repo.yaml`. Without surfacing it, such a skill is simply absent
+ * from the tree with no explanation.
  */
 export interface SkillResolveWarning {
   readonly repoId: string;
