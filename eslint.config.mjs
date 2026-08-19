@@ -14,6 +14,12 @@ export default tseslint.config(
       '**/coverage/**',
       '**/node_modules/**',
       '**/storybook-static/**',
+      // Cargo build output, both the workspace's and the desktop crate's.
+      // `cargo doc` writes rustdoc's own JavaScript in there, which is written
+      // for a browser and fails `no-undef` on `window` by the thousand -- so
+      // without this, running `cargo doc` before `pnpm lint` buries the real
+      // lint output under generated code nobody edits.
+      '**/target/**',
       // Tool configuration files, including CommonJS ones (jest.config.cjs):
       // they run under their tool's own loader, not the app's module system.
       '**/*.config.{js,cjs,mjs,ts}',
