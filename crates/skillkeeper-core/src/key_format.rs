@@ -20,7 +20,9 @@ pub enum KeyFormat {
 /// Classify `contents` by its first meaningful line.
 ///
 /// Cheap and total: no allocation, no parsing beyond the header, and no error
-/// case -- an unreadable or truncated file is simply [`KeyFormat::Other`].
+/// case -- text this recognises nothing in is simply [`KeyFormat::Other`].
+/// Nothing here touches the filesystem, so a file that cannot be read is its
+/// caller's business, not this function's.
 pub fn sniff(contents: &str) -> KeyFormat {
     for line in contents.lines() {
         let line = line.trim();

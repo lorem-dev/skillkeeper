@@ -64,7 +64,8 @@ pub fn unlock(file: &PpkFile, passphrase: &str) -> Result<Zeroizing<Vec<u8>>, Pp
             }
         }
     } else {
-        let plain = Zeroizing::new(file.private_blob.clone());
+        // Already `Zeroizing`, and stays so through the clone.
+        let plain = file.private_blob.clone();
         let mac_key = match file.version {
             // An unencrypted v3 key has no KDF output to take a MAC key from,
             // so the MAC is keyed with nothing at all.

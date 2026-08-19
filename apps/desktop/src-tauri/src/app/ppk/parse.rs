@@ -5,8 +5,13 @@
 //! comes back exactly as stored: ciphertext for an encrypted key, plaintext for
 //! an unencrypted one.
 
+use zeroize::Zeroizing;
+
 /// Everything a `.ppk` file carries, with the bodies decoded from base64.
-#[derive(Debug, Clone)]
+///
+/// Deliberately not `Debug`: for an unencrypted key `private_blob` is the
+/// plaintext private key, and one `{:?}` anywhere would put it in a log.
+#[derive(Clone)]
 pub struct PpkFile {
     /// 2 or 3.
     pub version: u8,
@@ -18,8 +23,11 @@ pub struct PpkFile {
     pub comment: String,
     /// SSH-wire public key blob.
     pub public_blob: Vec<u8>,
-    /// The private blob as stored: ciphertext when encrypted.
-    pub private_blob: Vec<u8>,
+    /// The private blob as stored: ciphertext when encrypted -- and the
+    /// plaintext private key when it is not, which is why it is zeroized on
+    /// drop rather than left in freed heap by every parse that only wanted a
+    /// header field.
+    pub private_blob: Zeroizing<Vec<u8>>,
     /// `Private-MAC`, hex-decoded: 32 bytes for v3, 20 for v2.
     pub mac: Vec<u8>,
     /// v3 encrypted keys only.
@@ -157,7 +165,7 @@ pub fn parse(text: &str) -> Result<PpkFile, PpkError> {
         encryption,
         comment,
         public_blob: public_blob.ok_or(PpkError::Malformed)?,
-        private_blob: private_blob.ok_or(PpkError::Malformed)?,
+        private_blob: Zeroizing::new(private_blob.ok_or(PpkError::Malformed)?),
         mac,
         kdf,
     })

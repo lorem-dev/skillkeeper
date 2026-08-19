@@ -296,6 +296,13 @@ fn inspect(path: &str) -> Inspected {
     {
         // Only the container is read here: whether it is encrypted is a header
         // field, and no key material is touched until the user asks for it.
+        // The whole file is parsed rather than just that header, because the
+        // answer this owes its callers is not only "encrypted?" but "a key at
+        // all?": a `.ppk` that does not parse can never be unlocked, so it is
+        // `NotAKey` (see `a_truncated_putty_file_is_not_a_key`) rather than a
+        // padlock the user can only ever fail to open. The plaintext an
+        // unencrypted key's blob carries is zeroized when the parsed file
+        // drops.
         return match crate::app::ppk::parse::parse(&text) {
             Ok(file) => Inspected::Putty {
                 encrypted: file.is_encrypted(),
