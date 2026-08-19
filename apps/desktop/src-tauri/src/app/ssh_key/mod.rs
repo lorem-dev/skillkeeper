@@ -12,11 +12,13 @@
 //! dropped -- there is no per-invocation decryption left for anything to need
 //! it for.
 //!
-//! This module also owns [`gate_for`], the pure decision table that tells a
-//! git operation whether it may proceed with the chosen key as-is, must show
-//! the unlock prompt, or must fail outright -- and the wait/notify pair
+//! This module also owns the wait/notify pair
 //! ([`SshKeyStore::wait_for_unlock`] / [`SshKeyStore::notify_unlock_result`])
 //! that lets a blocked operation resume the moment an unlock window resolves.
+//!
+//! The decision a git operation actually asks about -- proceed, prompt, load,
+//! or fail -- lives in [`gate`], which is pure and re-exported here, so it can
+//! be read without reading a mutex.
 
 use std::sync::{Condvar, Mutex};
 use std::time::{Duration, Instant};
@@ -24,57 +26,15 @@ use std::time::{Duration, Instant};
 use ssh_key::PrivateKey;
 use zeroize::Zeroizing;
 
+use crate::app::openssh_pem::normalize_openssh_pem;
 use crate::app::ppk::parse::PpkError;
 
-/// Error key surfaced by [`gate_for`] and returned by
-/// [`SshKeyStore::wait_for_unlock`] when a non-interactive caller finds the
-/// key still locked, or when an unlock in progress is cancelled or times out.
-pub const KEY_LOCKED_ERROR: &str = "ssh.keyLocked";
-/// Error key surfaced by [`gate_for`] when the configured key path no longer
-/// resolves to a file.
-pub const KEY_MISSING_ERROR: &str = "ssh.keyMissing";
-/// Error key surfaced by [`gate_for`] when the configured key path's contents
-/// are not a recognisable private key.
-pub const NOT_A_KEY_ERROR: &str = "ssh.notAPrivateKey";
-/// Error key surfaced when a PuTTY key is chosen but no ssh-agent is available
-/// to hold it. The only state the export action exists for.
-pub const PUTTY_NEEDS_AGENT_ERROR: &str = "ssh.puttyNeedsAgent";
-/// Error key for a PuTTY key whose algorithm cannot be re-encoded (ssh-dss).
-pub const PUTTY_UNSUPPORTED_ERROR: &str = "ssh.puttyUnsupportedAlgorithm";
-/// Error key for a PuTTY key whose MAC does not match without a passphrase in
-/// play: the file is corrupt.
-pub const PUTTY_DAMAGED_ERROR: &str = "ssh.puttyDamaged";
-/// Error key for an export that could not be written or re-encrypted.
-pub const EXPORT_FAILED_ERROR: &str = "ssh.puttyExportFailed";
+pub mod gate;
 
-/// What the chosen key's file looks like right now, as far as the renderer
-/// needs to know: nothing configured, gone, unusable, or usable (locked or
-/// already unlocked for this session).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum KeyState {
-    /// No key path has been chosen in Settings.
-    NotConfigured,
-    /// A path is chosen but no file exists there.
-    Missing,
-    /// A path is chosen and the file exists, but it is not a private key.
-    NotAKey,
-    /// A private key that needs no passphrase.
-    Unencrypted,
-    /// A passphrase-protected private key with no passphrase held for it.
-    Locked,
-    /// A passphrase-protected private key with its passphrase held for the
-    /// remainder of this session.
-    Unlocked,
-    /// A PuTTY key with a passphrase, not yet in the agent.
-    PuttyLocked,
-    /// A PuTTY key with no passphrase, not yet in the agent.
-    PuttyUnencrypted,
-    /// A PuTTY key this session loaded into the agent.
-    PuttyInAgent,
-    /// A PuTTY key with no agent to hold it, which is the one thing it needs.
-    PuttyNoAgent,
-}
+pub use gate::{
+    gate_for, Gate, KeyState, EXPORT_FAILED_ERROR, KEY_LOCKED_ERROR, KEY_MISSING_ERROR,
+    NOT_A_KEY_ERROR, PUTTY_DAMAGED_ERROR, PUTTY_NEEDS_AGENT_ERROR, PUTTY_UNSUPPORTED_ERROR,
+};
 
 /// Why [`SshKeyStore::unlock`] refused a passphrase.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -131,72 +91,6 @@ impl From<PpkError> for UnlockError {
     }
 }
 
-/// The decision [`gate_for`] hands back for one prospective git operation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Gate {
-    /// Run the operation now; nothing to unlock.
-    Proceed,
-    /// Show the unlock prompt and retry once the user answers it.
-    Prompt,
-    /// Refuse outright, with the renderer-facing error key to show.
-    Fail(&'static str),
-    /// Load the key into the agent and then run the operation. Unlike
-    /// [`Gate::Prompt`] this asks the user nothing, so it is valid for a
-    /// scheduled operation too.
-    LoadIntoAgent,
-}
-
-/// Decide whether a git operation over `transport_is_ssh` may run as-is,
-/// given the chosen key's `state` and whether the caller is `interactive` (a
-/// user-initiated action, as opposed to a scheduled background check).
-///
-/// | transport | state           | interactive | decision                  |
-/// |-----------|-----------------|-------------|---------------------------|
-/// | not ssh   | any             | any         | `Proceed`                 |
-/// | ssh       | `NotConfigured` | any         | `Proceed`                 |
-/// | ssh       | `Unencrypted`   | any         | `Proceed`                 |
-/// | ssh       | `Unlocked`      | any         | `Proceed`                 |
-/// | ssh       | `Locked`        | `true`      | `Prompt`                  |
-/// | ssh       | `Locked`        | `false`     | `Fail(KEY_LOCKED_ERROR)`  |
-/// | ssh       | `Missing`       | any         | `Proceed`                 |
-/// | ssh       | `NotAKey`       | any         | `Fail(NOT_A_KEY_ERROR)`   |
-/// | ssh       | `PuttyNoAgent`  | any         | `Fail(PUTTY_NEEDS_AGENT_ERROR)` |
-/// | ssh       | `PuttyUnencrypted` | any      | `LoadIntoAgent`           |
-/// | ssh       | `PuttyInAgent`  | any         | `Proceed`                 |
-/// | ssh       | `PuttyLocked`   | `true`      | `Prompt`                  |
-/// | ssh       | `PuttyLocked`   | `false`     | `Fail(KEY_LOCKED_ERROR)`  |
-///
-/// A scheduled (non-interactive) operation never resolves to `Prompt`: it
-/// either proceeds or fails outright, so a background check can never pop a
-/// passphrase window with nobody there to answer it.
-///
-/// `Missing` proceeds rather than failing, because the key is offered and not
-/// enforced (see `ssh_env_vars`): with no key to offer, the right behaviour is
-/// the behaviour without this feature -- `ssh` picks an identity as it always
-/// did. Refusing instead breaks a repository for a reason that is often
-/// temporary: a key on a removable disk, a network share, or inside a WSL
-/// distribution whose virtual machine has shut itself down after a few idle
-/// minutes. The lease builder leaves the environment empty for this state, so
-/// nothing points `ssh` at a path that is not there, and the settings row still
-/// reports the key as missing.
-pub fn gate_for(transport_is_ssh: bool, state: KeyState, interactive: bool) -> Gate {
-    if !transport_is_ssh {
-        return Gate::Proceed;
-    }
-    match state {
-        KeyState::NotConfigured | KeyState::Unencrypted | KeyState::Unlocked => Gate::Proceed,
-        KeyState::Locked if interactive => Gate::Prompt,
-        KeyState::Locked => Gate::Fail(KEY_LOCKED_ERROR),
-        KeyState::Missing => Gate::Proceed,
-        KeyState::NotAKey => Gate::Fail(NOT_A_KEY_ERROR),
-        KeyState::PuttyNoAgent => Gate::Fail(PUTTY_NEEDS_AGENT_ERROR),
-        KeyState::PuttyUnencrypted => Gate::LoadIntoAgent,
-        KeyState::PuttyInAgent => Gate::Proceed,
-        KeyState::PuttyLocked if interactive => Gate::Prompt,
-        KeyState::PuttyLocked => Gate::Fail(KEY_LOCKED_ERROR),
-    }
-}
-
 /// What inspecting the key file on disk found, before folding in whether a
 /// passphrase happens to be held for it.
 enum Inspected {
@@ -212,62 +106,6 @@ enum Inspected {
     Putty {
         encrypted: bool,
     },
-}
-
-/// The PEM line width `ssh-encoding` hard-codes -- for its DECODER as well as
-/// its encoder, which is what makes the rewrap below necessary.
-const PEM_LINE_WIDTH: usize = 70;
-
-/// The only PEM label [`PrivateKey::from_openssh`] accepts.
-const OPENSSH_PEM_BEGIN: &str = "-----BEGIN OPENSSH PRIVATE KEY-----";
-const OPENSSH_PEM_END: &str = "-----END OPENSSH PRIVATE KEY-----";
-
-/// Rewrap an OpenSSH-format PEM body to the 70 columns `ssh-key` insists on,
-/// leaving anything that is not one alone.
-///
-/// `ssh-encoding` uses one hard-coded `PEM_LINE_WIDTH` for both directions, so
-/// `ssh-key` reads only 70-column PEM -- which is what OpenSSH itself writes.
-/// `puttygen -O private-openssh-new` writes **64** columns, and that is exactly
-/// the command this project's own CLI warning tells users to run. Without this,
-/// such a key never parses: [`inspect`] falls through to the legacy-PEM branch,
-/// where an OpenSSH-format encrypted key (whose body carries neither
-/// `ENCRYPTED` nor `DEK-Info`, both being legacy-PEM headers) is classified
-/// `Unencrypted`. Git still works, because `ssh` reads the file itself, but the
-/// app never offers to hold the passphrase.
-///
-/// Layout only: the base64 body is passed through character for character, so
-/// a body that is not valid base64 still fails in the parser rather than here.
-fn normalize_openssh_pem(text: &str) -> std::borrow::Cow<'_, str> {
-    let mut body = String::new();
-    let mut in_body = false;
-    let mut terminated = false;
-    for line in text.lines() {
-        let line = line.trim();
-        if line == OPENSSH_PEM_BEGIN {
-            in_body = true;
-        } else if line == OPENSSH_PEM_END {
-            terminated = in_body;
-            break;
-        } else if in_body {
-            body.push_str(line);
-        }
-    }
-    if !terminated {
-        return std::borrow::Cow::Borrowed(text);
-    }
-    let mut out = String::with_capacity(body.len() + OPENSSH_PEM_BEGIN.len() * 2 + 8);
-    out.push_str(OPENSSH_PEM_BEGIN);
-    out.push('\n');
-    for (i, ch) in body.chars().enumerate() {
-        if i > 0 && i % PEM_LINE_WIDTH == 0 {
-            out.push('\n');
-        }
-        out.push(ch);
-    }
-    out.push('\n');
-    out.push_str(OPENSSH_PEM_END);
-    out.push('\n');
-    std::borrow::Cow::Owned(out)
 }
 
 /// Inspect the file at `path` and classify it, without regard to any
@@ -1004,83 +842,6 @@ mod tests {
         assert_eq!(store.state(), KeyState::Unlocked);
     }
 
-    #[test]
-    fn the_gate_only_prompts_for_user_initiated_ssh_work() {
-        // Not an SSH remote: nothing to unlock, whatever the key state.
-        assert_eq!(gate_for(false, KeyState::Locked, true), Gate::Proceed);
-        // No key configured: today's behaviour, the system agent decides.
-        assert_eq!(gate_for(true, KeyState::NotConfigured, true), Gate::Proceed);
-        assert_eq!(gate_for(true, KeyState::Unencrypted, true), Gate::Proceed);
-        assert_eq!(gate_for(true, KeyState::Unlocked, false), Gate::Proceed);
-        // Locked: ask, but only when the user asked for this operation. A
-        // scheduled update check must never pop a passphrase window.
-        assert_eq!(gate_for(true, KeyState::Locked, true), Gate::Prompt);
-        assert_eq!(
-            gate_for(true, KeyState::Locked, false),
-            Gate::Fail("ssh.keyLocked")
-        );
-        // A key that cannot be read right now (a network share, a stopped WSL
-        // distribution) must not break the repository: with nothing to offer,
-        // ssh chooses an identity exactly as it would without this feature.
-        assert_eq!(gate_for(true, KeyState::Missing, true), Gate::Proceed);
-        assert_eq!(gate_for(true, KeyState::Missing, false), Gate::Proceed);
-        assert_eq!(
-            gate_for(true, KeyState::NotAKey, true),
-            Gate::Fail("ssh.notAPrivateKey")
-        );
-    }
-
-    #[test]
-    fn a_putty_key_without_an_agent_fails_with_its_own_code() {
-        assert_eq!(
-            gate_for(true, KeyState::PuttyNoAgent, true),
-            Gate::Fail(PUTTY_NEEDS_AGENT_ERROR)
-        );
-        assert_eq!(
-            gate_for(true, KeyState::PuttyNoAgent, false),
-            Gate::Fail(PUTTY_NEEDS_AGENT_ERROR)
-        );
-    }
-
-    #[test]
-    fn an_unencrypted_putty_key_loads_without_a_prompt() {
-        // No window is involved, so a scheduled check may do this on its own.
-        assert_eq!(
-            gate_for(true, KeyState::PuttyUnencrypted, true),
-            Gate::LoadIntoAgent
-        );
-        assert_eq!(
-            gate_for(true, KeyState::PuttyUnencrypted, false),
-            Gate::LoadIntoAgent
-        );
-    }
-
-    #[test]
-    fn a_locked_putty_key_prompts_only_for_a_user() {
-        assert_eq!(gate_for(true, KeyState::PuttyLocked, true), Gate::Prompt);
-        assert_eq!(
-            gate_for(true, KeyState::PuttyLocked, false),
-            Gate::Fail(KEY_LOCKED_ERROR)
-        );
-    }
-
-    #[test]
-    fn a_loaded_putty_key_proceeds() {
-        assert_eq!(gate_for(true, KeyState::PuttyInAgent, false), Gate::Proceed);
-    }
-
-    #[test]
-    fn no_putty_state_affects_a_non_ssh_transport() {
-        for state in [
-            KeyState::PuttyLocked,
-            KeyState::PuttyUnencrypted,
-            KeyState::PuttyInAgent,
-            KeyState::PuttyNoAgent,
-        ] {
-            assert_eq!(gate_for(false, state, false), Gate::Proceed);
-        }
-    }
-
     /// Every PPK failure's unlock failure, in the one table that decides it.
     ///
     /// The mapping used to be written out three times -- here, in the export
@@ -1360,21 +1121,6 @@ mod tests {
             "the passphrase must actually verify against puttygen's own output"
         );
         assert_eq!(store.state(), KeyState::Unlocked);
-    }
-
-    /// Normalization is for PEM-shaped OpenSSH keys only: a legacy PEM key and
-    /// anything that is not a key at all must reach the parser unchanged.
-    #[test]
-    fn normalizing_leaves_everything_but_an_openssh_pem_alone() {
-        let legacy = "-----BEGIN RSA PRIVATE KEY-----\nbogus\n-----END RSA PRIVATE KEY-----\n";
-        assert_eq!(normalize_openssh_pem(legacy).as_ref(), legacy);
-        assert_eq!(
-            normalize_openssh_pem("just some text\n").as_ref(),
-            "just some text\n"
-        );
-        // A begin line with no end line is not a body this can rewrap.
-        let unterminated = "-----BEGIN OPENSSH PRIVATE KEY-----\nAAAA\n";
-        assert_eq!(normalize_openssh_pem(unterminated).as_ref(), unterminated);
     }
 
     #[test]

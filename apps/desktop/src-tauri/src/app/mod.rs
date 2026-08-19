@@ -14,6 +14,7 @@ pub mod editor_launch;
 pub mod i18n;
 pub mod icon_sanitize;
 pub mod menu;
+pub mod openssh_pem;
 pub mod ppk;
 pub mod ssh_agent;
 pub mod ssh_git;
