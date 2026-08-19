@@ -30,6 +30,7 @@ use std::sync::{Arc, OnceLock};
 use skillkeeper_core::ssh_env::{ssh_env_vars, AskpassRef};
 
 use super::askpass::{AskpassServer, Refusal, RetiredReason};
+use super::ssh_agent::AgentKeyStatus;
 use super::ssh_key::{KeyState, SshKeyStore};
 use crate::state::AppContext;
 
@@ -147,13 +148,26 @@ pub fn run_git_in_terminal(ctx: &AppContext, cwd: &str, args: &[String]) -> Resu
 /// Everyone else pays a lock and a clone: with no key recorded there is nothing
 /// to correct, so that test comes before the one that reads the key file.
 fn drop_a_key_the_agent_no_longer_holds(ctx: &AppContext) {
+    drop_stale_putty_record(ctx, super::ssh_agent::key_status);
+}
+
+/// The rule above, with asking the agent as a parameter so the decision can be
+/// tested without one.
+///
+/// Only [`AgentKeyStatus::Absent`] clears the record, and that is the whole
+/// point of the three states: an agent that could not be reached for a moment,
+/// or an `ssh-add` briefly unresolvable, answers
+/// [`Unknown`](AgentKeyStatus::Unknown), and acting on that would evict a key
+/// that is loaded and working -- costing the user a passphrase they already
+/// gave, for a git failure that had nothing to do with the key.
+fn drop_stale_putty_record(ctx: &AppContext, ask: impl Fn(&str) -> AgentKeyStatus) {
     let Some(public_line) = ctx.ssh_key.putty_public_line() else {
         return;
     };
     if ctx.ssh_key.state() != KeyState::PuttyInAgent {
         return;
     }
-    if !super::ssh_agent::holds_key(&public_line) {
+    if ask(&public_line) == AgentKeyStatus::Absent {
         ctx.ssh_key.unload_putty();
     }
 }
@@ -350,6 +364,52 @@ mod tests {
         assert_eq!(
             refusal_error(&Refusal::NoPassphraseHeld),
             "ssh.askpassForgotten"
+        );
+    }
+
+    /// Only an agent that ANSWERED, and did not list our key, may clear the
+    /// record.
+    ///
+    /// The other two answers are the defect this pins: an agent that cannot be
+    /// reached for a moment, or an `ssh-add` briefly unresolvable, must not
+    /// evict a key that is loaded and working -- the user would be asked for a
+    /// passphrase they already gave.
+    #[test]
+    fn a_record_is_cleared_only_by_an_answer_that_does_not_list_the_key() {
+        // A public line of the right shape whose blob is nothing any real agent
+        // could be holding.
+        const LOADED: &str =
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKfake0000000000000000000000000000000 skillkeeper";
+
+        let app = TempAppData::new();
+        let path = app.dir().join("loaded.ppk");
+        std::fs::write(&path, crate::app::ppk::fixtures::ED25519_V3_PLAIN).unwrap();
+        let path = path.to_string_lossy().into_owned();
+        app.ctx.ssh_key.set_path(Some(path.clone()));
+        app.ctx
+            .ssh_key
+            .record_putty_loaded(path, LOADED.to_string());
+        assert_eq!(app.ctx.ssh_key.state(), KeyState::PuttyInAgent);
+
+        drop_stale_putty_record(&app.ctx, |_| AgentKeyStatus::Unknown);
+        assert_eq!(
+            app.ctx.ssh_key.state(),
+            KeyState::PuttyInAgent,
+            "an agent that could not be asked must not cost the user the key"
+        );
+
+        drop_stale_putty_record(&app.ctx, |_| AgentKeyStatus::Held);
+        assert_eq!(
+            app.ctx.ssh_key.state(),
+            KeyState::PuttyInAgent,
+            "the agent still has it: the failure was something else"
+        );
+
+        drop_stale_putty_record(&app.ctx, |_| AgentKeyStatus::Absent);
+        assert_ne!(
+            app.ctx.ssh_key.state(),
+            KeyState::PuttyInAgent,
+            "the agent answered and our key was not there: the record is stale"
         );
     }
 

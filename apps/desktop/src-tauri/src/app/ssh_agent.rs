@@ -228,7 +228,7 @@ fn key_material(line: &str) -> Option<(&str, &str)> {
 
 /// Whether `listing` -- the stdout of `ssh-add -L` -- contains `public_line`.
 ///
-/// Split out from [`holds_key`] so the comparison is testable with no agent to
+/// Split out from [`key_status`] so the comparison is testable with no agent to
 /// talk to, the same way [`add_args`] and [`parse_agent_env`] are.
 fn lists_key(listing: &str, public_line: &str) -> bool {
     let Some(wanted) = key_material(public_line) else {
@@ -239,13 +239,56 @@ fn lists_key(listing: &str, public_line: &str) -> bool {
         .any(|line| key_material(line) == Some(wanted))
 }
 
-/// Whether the agent currently holds the key with this `public_line`.
+/// What asking the agent about one key established.
 ///
-/// `false` for every way of not being sure -- no agent, no `ssh-add` on PATH,
-/// a non-zero exit, unreadable output -- because the caller acts on "this key
-/// is no longer usable", and an agent that cannot even be asked is not one
-/// holding a usable key.
-pub fn holds_key(public_line: &str) -> bool {
+/// Three states rather than a boolean because the caller clears a persistent
+/// record with the answer, and "the agent says no" and "the agent could not be
+/// asked" must not lead to the same act: evicting a key that is loaded and
+/// working costs the user a passphrase they already gave.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AgentKeyStatus {
+    /// The agent answered, and it is holding this key.
+    Held,
+    /// The agent answered, and it is not.
+    Absent,
+    /// Nothing was established: no agent, no `ssh-add`, or no exit code.
+    Unknown,
+}
+
+/// What `ssh-add -L`'s exit `code` and `listing` amount to for `public_line`.
+///
+/// The mapping is the substance of the check, so it is split from the
+/// subprocess and tested directly:
+///
+/// - **0** -- the agent produced a listing. Whether our key is in it is the
+///   answer.
+/// - **1** -- the agent answered that it holds nothing at all (it prints
+///   "The agent has no identities."). That is a real answer, and our key is
+///   certainly not among nothing, so it is [`Absent`](AgentKeyStatus::Absent)
+///   and may clear a record.
+/// - **anything else** -- 2 is `ssh-add`'s "could not open a connection to your
+///   authentication agent", and `None` is a process killed by a signal. Neither
+///   established anything, so neither may clear a record.
+fn status_from_exit(code: Option<i32>, listing: &str, public_line: &str) -> AgentKeyStatus {
+    match code {
+        Some(0) => {
+            if lists_key(listing, public_line) {
+                AgentKeyStatus::Held
+            } else {
+                AgentKeyStatus::Absent
+            }
+        }
+        Some(1) => AgentKeyStatus::Absent,
+        _ => AgentKeyStatus::Unknown,
+    }
+}
+
+/// Ask the agent whether it is holding the key with this `public_line`.
+///
+/// Never panics and never blocks on input: `ssh-add` that cannot be run at all
+/// is [`AgentKeyStatus::Unknown`], exactly like an agent that cannot be
+/// reached. See [`status_from_exit`] for what each outcome means.
+pub fn key_status(public_line: &str) -> AgentKeyStatus {
     let mut command = Command::new("ssh-add");
     command
         .arg("-L")
@@ -253,14 +296,16 @@ pub fn holds_key(public_line: &str) -> bool {
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
     crate::util::hide_console(&mut command);
-    match command.output() {
-        // `ssh-add -L` exits non-zero both for an agent with no identities and
-        // for one it cannot reach; neither is a listing worth reading.
-        Ok(output) if output.status.success() => {
-            lists_key(&String::from_utf8_lossy(&output.stdout), public_line)
-        }
-        _ => false,
-    }
+    // Not spawned at all: `ssh-add` is missing from PATH, or the OS refused.
+    // Nothing was established.
+    let Ok(output) = command.output() else {
+        return AgentKeyStatus::Unknown;
+    };
+    status_from_exit(
+        output.status.code(),
+        &String::from_utf8_lossy(&output.stdout),
+        public_line,
+    )
 }
 
 /// Remove a key from the agent by its public line, again over a pipe.
@@ -350,6 +395,40 @@ mod tests {
     fn a_malformed_public_line_matches_nothing() {
         assert!(!lists_key(&format!("{OURS}\n"), ""));
         assert!(!lists_key(&format!("{OURS}\n"), "ssh-ed25519"));
+    }
+
+    /// The exit code is what separates "the agent answered and does not have
+    /// it" from "the agent could not be asked", and only the first may clear a
+    /// record. `ssh-add -L` exits 1 when it holds nothing -- a real answer --
+    /// and 2 when it cannot reach an agent at all.
+    #[test]
+    fn only_an_answer_from_the_agent_counts_as_one() {
+        let listing = format!("{THEIRS}\n{OURS}\n");
+        assert_eq!(
+            status_from_exit(Some(0), &listing, OURS),
+            AgentKeyStatus::Held
+        );
+        assert_eq!(
+            status_from_exit(Some(0), &format!("{THEIRS}\n"), OURS),
+            AgentKeyStatus::Absent
+        );
+        // Exit 0 with nothing to show is still an answer.
+        assert_eq!(status_from_exit(Some(0), "", OURS), AgentKeyStatus::Absent);
+        // "The agent has no identities." -- it answered, and our key is not
+        // among the nothing it holds.
+        assert_eq!(
+            status_from_exit(Some(1), "The agent has no identities.\n", OURS),
+            AgentKeyStatus::Absent
+        );
+        // Could not connect to an agent: nothing was established, so nothing
+        // may be concluded.
+        assert_eq!(status_from_exit(Some(2), "", OURS), AgentKeyStatus::Unknown);
+        assert_eq!(
+            status_from_exit(Some(255), "", OURS),
+            AgentKeyStatus::Unknown
+        );
+        // Killed by a signal: no exit code, no answer.
+        assert_eq!(status_from_exit(None, "", OURS), AgentKeyStatus::Unknown);
     }
 
     #[test]

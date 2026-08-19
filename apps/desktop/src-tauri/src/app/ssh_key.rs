@@ -579,7 +579,7 @@ impl SshKeyStore {
     /// is recorded.
     ///
     /// Public material only, and the one thing needed to ask the agent whether
-    /// it still holds that key (see [`super::ssh_agent::holds_key`]). Cheap and
+    /// it still holds that key (see [`super::ssh_agent::key_status`]). Cheap and
     /// non-blocking, like every accessor here: a lock and a clone, no I/O.
     pub(crate) fn putty_public_line(&self) -> Option<String> {
         self.inner
@@ -587,6 +587,19 @@ impl SshKeyStore {
             .expect("ssh key store lock poisoned")
             .putty_public
             .clone()
+    }
+
+    /// Record `public_line` as loaded for `path`, without an agent to load it
+    /// into.
+    ///
+    /// Test-only: the fields are private to this module, so this is the only
+    /// way a test outside it (the git-failure path's, in `ssh_git`) can set up
+    /// a store that reports [`KeyState::PuttyInAgent`].
+    #[cfg(test)]
+    pub(crate) fn record_putty_loaded(&self, path: String, public_line: String) {
+        let mut inner = self.inner.lock().expect("ssh key store lock poisoned");
+        inner.putty_public = Some(public_line);
+        inner.putty_loaded_for = Some(path);
     }
 
     /// Take this session's PuTTY key back out of the agent, if one is there.
