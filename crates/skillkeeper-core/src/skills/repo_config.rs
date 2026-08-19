@@ -10,6 +10,8 @@
 use serde_yaml_ng::Value;
 use thiserror::Error;
 
+use crate::skills::group_path;
+
 /// A single skill entry in a repo config.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RepoSkillEntry {
@@ -58,6 +60,15 @@ impl RepoConfigError {
             field_path: String::new(),
         }
     }
+
+    /// Same field path, with the reason appended. A bare path does not say what
+    /// was wrong with the value, which for a group path ("too deep", "empty
+    /// segment") is the only useful half of the message.
+    fn schema_detailed(field_path: &str, detail: &str) -> Self {
+        let mut err = Self::schema(field_path);
+        err.message = format!("{}: {detail}", err.message);
+        err
+    }
 }
 
 fn expect_string(value: &Value, field_path: &str) -> Result<String, RepoConfigError> {
@@ -78,6 +89,21 @@ fn optional_string(
         None => Ok(None),
         Some(v) => Ok(Some(expect_string(v, field_path)?)),
     }
+}
+
+/// Read an optional group at `field_path` and check it against the group-path
+/// rules. An absent group is fine; a present but invalid one is a schema error
+/// naming both the field and the reason.
+fn optional_group(
+    parent: &Value,
+    key: &str,
+    field_path: &str,
+) -> Result<Option<String>, RepoConfigError> {
+    let group = optional_string(parent, key, field_path)?;
+    if let Some(g) = &group {
+        group_path::validate(g).map_err(|detail| RepoConfigError::schema_detailed(field_path, &detail))?;
+    }
+    Ok(group)
 }
 
 fn optional_string_array(
@@ -122,7 +148,7 @@ pub fn validate_repo_config(data: &Value) -> Result<RepoConfig, RepoConfigError>
                 return Err(RepoConfigError::schema("defaults"));
             }
             Some(RepoDefaults {
-                group: optional_string(d, "group", "defaults.group")?,
+                group: optional_group(d, "group", "defaults.group")?,
             })
         }
     };
@@ -151,7 +177,7 @@ pub fn validate_repo_config(data: &Value) -> Result<RepoConfig, RepoConfigError>
                     None => return Err(RepoConfigError::schema(&path_fp)),
                 };
                 let name = optional_string(elem, "name", &format!("skills.{i}.name"))?;
-                let group = optional_string(elem, "group", &format!("skills.{i}.group"))?;
+                let group = optional_group(elem, "group", &format!("skills.{i}.group"))?;
                 entries.push(RepoSkillEntry { path, name, group });
             }
             Some(entries)
@@ -273,5 +299,54 @@ mod tests {
     fn exposes_the_schema_for_reuse() {
         let value: Value = serde_yaml_ng::from_str("version: 1").unwrap();
         assert!(validate_repo_config(&value).is_ok());
+    }
+
+    #[test]
+    fn accepts_a_nested_group_in_an_entry_and_in_defaults() {
+        let text = [
+            "version: 1",
+            "defaults:",
+            "  group: platform/lint",
+            "skills:",
+            "  - path: x/y",
+            "    group: platform/lint/rust",
+        ]
+        .join("\n");
+
+        let cfg = parse_repo_config(&text).unwrap();
+
+        assert_eq!(
+            cfg.defaults.as_ref().unwrap().group.as_deref(),
+            Some("platform/lint")
+        );
+        assert_eq!(
+            cfg.skills.as_ref().unwrap()[0].group.as_deref(),
+            Some("platform/lint/rust")
+        );
+    }
+
+    #[test]
+    fn rejects_an_entry_group_deeper_than_the_limit() {
+        let text = [
+            "version: 1",
+            "skills:",
+            "  - path: x/y",
+            "    group: a/b/c/d",
+        ]
+        .join("\n");
+
+        let err = parse_repo_config(&text).unwrap_err();
+
+        assert_eq!(err.field_path, "skills.0.group");
+        assert!(err.message.contains("at most 3"), "unhelpful: {}", err.message);
+    }
+
+    #[test]
+    fn rejects_a_malformed_default_group() {
+        let text = ["version: 1", "defaults:", "  group: a//b"].join("\n");
+
+        let err = parse_repo_config(&text).unwrap_err();
+
+        assert_eq!(err.field_path, "defaults.group");
     }
 }
