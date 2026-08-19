@@ -12,6 +12,8 @@
   runs.
 - Dependencies refreshed across both ecosystems; every advisory cleared was in
   build or test tooling, not in shipped code.
+- The renderer's architectural layer boundaries are now enforced by ESLint
+  instead of documented only.
 
 ## Version 0.5.0-rc.2
 

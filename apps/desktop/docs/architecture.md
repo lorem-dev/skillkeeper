@@ -344,7 +344,16 @@ domain   | must NOT import from: app, systems, features, entities, pages
 ```
 
 `eslint-plugin-boundaries` in `eslint.config.mjs` enforces the boundaries; whenever this matrix
-and that config disagree, the config is authoritative.
+and that config disagree, the config is authoritative. The config expresses this
+table as its `LAYER_MAY_IMPORT` map, so the two are meant to be read side by side.
+
+Two things about that enforcement are worth knowing. It needs a TypeScript-aware
+resolver (`eslint-import-resolver-typescript`) to follow the `@/` alias; without
+one every aliased import classifies as an unknown dependency and the rules pass
+on everything, silently. And `*.stories.tsx` files are exempt: a story is a
+development harness that never enters the app bundle, and showing a primitive in
+its real context legitimately reaches across layers -- the `TreeView` story pulls
+the Skills page's node-decoration stylesheet for exactly that reason.
 
 ---
 
