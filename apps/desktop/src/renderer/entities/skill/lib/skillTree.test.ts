@@ -7,11 +7,13 @@ import {
   buildRepoTree,
   installedAgentsByProject,
   installedLeafIds,
+  parseProjectSkillKey,
   parseRepoSkillKey,
   projectGroupNodeId,
   projectNodeId,
   projectSkillKey,
   repoGroupNodeId,
+  repoSkillKey,
 } from './skillTree';
 
 const repo: Repository = {
@@ -298,5 +300,53 @@ describe('buildProjectModel update roll-up', () => {
 
     // The old code emitted a bogus `projectGroupNodeId(scope, repo, '')` here.
     expect([...model.updatesByNode.keys()]).not.toContain(projectGroupNodeId('p1', 'r1', ''));
+  });
+});
+
+describe('key encoding against separator collisions', () => {
+  // The separator alone was not enough: nothing forbids `::` inside a group
+  // segment or a skill name, so these two DIFFERENT skills used to produce one
+  // identical key -- sharing a tree node and a checkbox, and making it
+  // impossible to select either independently.
+  it('gives two skills distinct keys when one carries the separator in its group', () => {
+    const a = repoSkillKey('r1', 'a::b', 'c');
+    const b = repoSkillKey('r1', 'a', 'b::c');
+
+    expect(a).not.toBe(b);
+  });
+
+  it('round-trips a group containing the separator', () => {
+    const key = repoSkillKey('r1', 'std::vec', 'parser');
+
+    expect(parseRepoSkillKey(key)).toEqual({
+      repoId: 'r1',
+      group: 'std::vec',
+      name: 'parser',
+    });
+  });
+
+  it('round-trips a name containing the separator', () => {
+    const key = repoSkillKey('r1', 'tooling', 'fmt::check');
+
+    expect(parseRepoSkillKey(key)).toEqual({
+      repoId: 'r1',
+      group: 'tooling',
+      name: 'fmt::check',
+    });
+  });
+
+  it('round-trips a nested group alongside a separator-bearing name', () => {
+    const key = projectSkillKey('p1', 'r1', 'platform/lint/rust', 'clippy::fixups');
+
+    expect(parseProjectSkillKey(key)).toEqual({
+      projectId: 'p1',
+      repoId: 'r1',
+      group: 'platform/lint/rust',
+      name: 'clippy::fixups',
+    });
+  });
+
+  it('keeps an absent group distinguishable from an empty one', () => {
+    expect(parseRepoSkillKey(repoSkillKey('r1', undefined, 'solo')).group).toBeUndefined();
   });
 });

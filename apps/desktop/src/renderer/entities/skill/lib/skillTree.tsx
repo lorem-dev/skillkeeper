@@ -24,6 +24,25 @@ import type {
 
 const SEP = '::';
 
+/**
+ * Escape one field before it joins a `::`-separated key.
+ *
+ * The separator alone is not enough: nothing forbids a group segment or a skill
+ * name from containing `::` (the core validates depth, empty segments, `.`/`..`,
+ * backslashes and stray whitespace, but no character set). Without escaping,
+ * `{group: 'a::b', name: 'c'}` and `{group: 'a', name: 'b::c'}` produce the SAME
+ * key, so two different skills share one tree node and one checkbox, and a
+ * fixed-arity split silently truncates a name.
+ *
+ * `encodeURIComponent` escapes `:` to `%3A`, so no encoded field can contain the
+ * separator and the split is exact. It also escapes the `/` inside a group path,
+ * which `dec` restores.
+ */
+const enc = (part: string): string => encodeURIComponent(part);
+
+/** Reverse {@link enc} for one field of a parsed key. */
+const dec = (part: string): string => decodeURIComponent(part);
+
 const repoIcon = <Icon name="repositories" size={18} />;
 const groupIcon = <Icon name="skill-group" size={18} />;
 const skillIcon = <Icon name="skills" size={18} />;
@@ -32,8 +51,14 @@ const globalIcon = <Icon name="global" size={18} />;
 
 /** Stable checkbox key for a repo-mode skill leaf. */
 export function repoSkillKey(repoId: string, group: string | undefined, name: string): string {
-  return [repoId, group ?? '', name].join(SEP);
+  return [repoId, group ?? '', name].map(enc).join(SEP);
 }
+
+// The branch-node ids below deliberately do NOT encode their fields. They are
+// never parsed back, and their non-group fields are generated UUIDs, which
+// cannot contain the separator -- so the group is the only free field and no two
+// distinct inputs can collide. Leaving them raw keeps an id readable while
+// debugging (`<uuid>::platform/lint`, not `<uuid>::platform%2Flint`).
 
 /** Stable id for a repo-mode repository root node. */
 export function repoNodeId(repoId: string): string {
@@ -67,7 +92,7 @@ export function projectSkillKey(
   group: string | undefined,
   name: string,
 ): string {
-  return [projectId, repoId, group ?? '', name].join(SEP);
+  return [projectId, repoId, group ?? '', name].map(enc).join(SEP);
 }
 
 /** A skill reference parsed from a checkbox key. */
@@ -77,15 +102,15 @@ export interface ParsedSkillRef {
   readonly name: string;
 }
 
-/** Parse a repo-mode key `repoId::group::name`. */
+/** Parse a repo-mode key `repoId::group::name`. Each field is percent-encoded. */
 export function parseRepoSkillKey(key: string): ParsedSkillRef {
-  const [repoId = '', group = '', name = ''] = key.split(SEP);
+  const [repoId = '', group = '', name = ''] = key.split(SEP).map(dec);
   return { repoId, group: group === '' ? undefined : group, name };
 }
 
-/** Parse a project-mode key `projectId::repoId::group::name`. */
+/** Parse a project-mode key `projectId::repoId::group::name`, each field encoded. */
 export function parseProjectSkillKey(key: string): ParsedSkillRef & { readonly projectId: string } {
-  const [projectId = '', repoId = '', group = '', name = ''] = key.split(SEP);
+  const [projectId = '', repoId = '', group = '', name = ''] = key.split(SEP).map(dec);
   return { projectId, repoId, group: group === '' ? undefined : group, name };
 }
 
