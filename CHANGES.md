@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.5.0-rc.1
+
 ### Added
 
 - Desktop: PuTTY-format private keys (`.ppk`, versions 2 and 3) can now be
