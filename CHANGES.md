@@ -8,6 +8,10 @@
   as in `platform/lint/rust/clippy-skill`.
 - A `group` declared in `skillkeeper.repo.yaml` is now validated against the
   depth limit and the segment rules.
+- Building from source now needs Node 24 or later, the active LTS line that CI
+  runs.
+- Dependencies refreshed across both ecosystems; every advisory cleared was in
+  build or test tooling, not in shipped code.
 
 ## Version 0.5.0-rc.2
 
