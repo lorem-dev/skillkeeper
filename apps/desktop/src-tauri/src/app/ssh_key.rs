@@ -288,6 +288,57 @@ fn inspect(path: &str) -> Inspected {
     }
 }
 
+/// Fold what [`inspect`] found on disk together with what the store holds and
+/// whether an ssh-agent is available into the one state the renderer and the
+/// gate both read.
+///
+/// | inspected              | unlocked | putty_loaded | agent | state              |
+/// |------------------------|----------|--------------|-------|--------------------|
+/// | `Missing`              | any      | any          | any   | `Missing`          |
+/// | `NotAKey`              | any      | any          | any   | `NotAKey`          |
+/// | `Unencrypted`          | any      | any          | any   | `Unencrypted`      |
+/// | `Encrypted`            | `true`   | any          | any   | `Unlocked`         |
+/// | `Encrypted`            | `false`  | any          | any   | `Locked`           |
+/// | `EncryptedUnverifiable`| `true`   | any          | any   | `Unlocked`         |
+/// | `EncryptedUnverifiable`| `false`  | any          | any   | `Locked`           |
+/// | `Putty`                | any      | `true`       | any   | `PuttyInAgent`     |
+/// | `Putty`                | any      | `false`      | `false` | `PuttyNoAgent`   |
+/// | `Putty { encrypted: true }`  | any | `false`     | `true`  | `PuttyLocked`    |
+/// | `Putty { encrypted: false }` | any | `false`     | `true`  | `PuttyUnencrypted` |
+///
+/// Pure, and every input is a parameter -- including `agent`, which
+/// [`state`](SshKeyStore::state) supplies from
+/// [`ssh_agent::is_available`](super::ssh_agent::is_available). That is what
+/// makes each row above testable exactly, rather than as an "or" of whatever
+/// the machine running the test happens to have.
+fn classify(inspected: Inspected, unlocked: bool, putty_loaded: bool, agent: bool) -> KeyState {
+    match inspected {
+        Inspected::Missing => KeyState::Missing,
+        Inspected::NotAKey => KeyState::NotAKey,
+        Inspected::Unencrypted => KeyState::Unencrypted,
+        Inspected::Encrypted | Inspected::EncryptedUnverifiable => {
+            if unlocked {
+                KeyState::Unlocked
+            } else {
+                KeyState::Locked
+            }
+        }
+        // Order matters: a key already in the agent stays reported as such
+        // even if agent detection flickers.
+        Inspected::Putty { encrypted } => {
+            if putty_loaded {
+                KeyState::PuttyInAgent
+            } else if !agent {
+                KeyState::PuttyNoAgent
+            } else if encrypted {
+                KeyState::PuttyLocked
+            } else {
+                KeyState::PuttyUnencrypted
+            }
+        }
+    }
+}
+
 /// Try to decrypt the OpenSSH-format key at `path` with `passphrase`,
 /// re-reading and re-parsing it (cheaply -- a local key file) since
 /// [`Inspected`] does not carry the parsed key along.
@@ -471,6 +522,9 @@ impl SshKeyStore {
 
     /// Inspect the chosen key file and fold in whether a passphrase is
     /// currently held for it.
+    ///
+    /// The file read and the agent probe both run with the lock released;
+    /// [`classify`] is the pure fold over what they found.
     pub fn state(&self) -> KeyState {
         let (path, unlocked, putty_loaded) = {
             let inner = self.inner.lock().expect("ssh key store lock poisoned");
@@ -483,31 +537,12 @@ impl SshKeyStore {
                 && inner.putty_loaded_for.as_deref() == Some(path.as_str());
             (path, unlocked, putty_loaded)
         };
-        match inspect(&path) {
-            Inspected::Missing => KeyState::Missing,
-            Inspected::NotAKey => KeyState::NotAKey,
-            Inspected::Unencrypted => KeyState::Unencrypted,
-            Inspected::Encrypted | Inspected::EncryptedUnverifiable => {
-                if unlocked {
-                    KeyState::Unlocked
-                } else {
-                    KeyState::Locked
-                }
-            }
-            // Order matters: a key already in the agent stays reported as such
-            // even if agent detection flickers.
-            Inspected::Putty { encrypted } => {
-                if putty_loaded {
-                    KeyState::PuttyInAgent
-                } else if !crate::app::ssh_agent::is_available() {
-                    KeyState::PuttyNoAgent
-                } else if encrypted {
-                    KeyState::PuttyLocked
-                } else {
-                    KeyState::PuttyUnencrypted
-                }
-            }
-        }
+        classify(
+            inspect(&path),
+            unlocked,
+            putty_loaded,
+            crate::app::ssh_agent::is_available(),
+        )
     }
 
     /// Verify `passphrase` against the chosen key and, on success, hold it
@@ -1015,6 +1050,147 @@ mod tests {
         }
     }
 
+    /// Every row of the state fold, asserted exactly.
+    ///
+    /// `state` folds in whether this machine happens to run an ssh-agent, so
+    /// a test that went through it could only ever assert an "or" of the four
+    /// PuTTY states -- and would pass whether the code worked or not. Every
+    /// input is a parameter here, so nothing is left to the environment, and
+    /// every [`Inspected`] and every [`KeyState`] is named: a new variant of
+    /// either has to be decided about in this table.
+    #[test]
+    fn the_state_fold_answers_every_row_exactly() {
+        // (inspected, unlocked, putty_loaded, agent) -> state
+        let rows = [
+            // A file that is gone or unreadable answers the same whatever is
+            // held for it.
+            (Inspected::Missing, false, false, false, KeyState::Missing),
+            (Inspected::Missing, true, true, true, KeyState::Missing),
+            (Inspected::NotAKey, false, false, false, KeyState::NotAKey),
+            (Inspected::NotAKey, true, true, true, KeyState::NotAKey),
+            // A key with no passphrase is never "unlocked": there was nothing
+            // to unlock, whatever a stale flag might say.
+            (
+                Inspected::Unencrypted,
+                false,
+                false,
+                false,
+                KeyState::Unencrypted,
+            ),
+            (
+                Inspected::Unencrypted,
+                true,
+                true,
+                true,
+                KeyState::Unencrypted,
+            ),
+            (Inspected::Encrypted, false, false, false, KeyState::Locked),
+            (Inspected::Encrypted, true, false, false, KeyState::Unlocked),
+            // A legacy PEM key cannot be verified locally, but it locks and
+            // unlocks exactly like a modern one.
+            (
+                Inspected::EncryptedUnverifiable,
+                false,
+                false,
+                false,
+                KeyState::Locked,
+            ),
+            (
+                Inspected::EncryptedUnverifiable,
+                true,
+                false,
+                false,
+                KeyState::Unlocked,
+            ),
+            // A PuTTY key in the agent stays reported as such even if agent
+            // detection flickers, and whether it carries a passphrase no
+            // longer matters once it is loaded.
+            (
+                Inspected::Putty { encrypted: true },
+                false,
+                true,
+                false,
+                KeyState::PuttyInAgent,
+            ),
+            (
+                Inspected::Putty { encrypted: false },
+                false,
+                true,
+                false,
+                KeyState::PuttyInAgent,
+            ),
+            (
+                Inspected::Putty { encrypted: true },
+                false,
+                true,
+                true,
+                KeyState::PuttyInAgent,
+            ),
+            (
+                Inspected::Putty { encrypted: false },
+                false,
+                true,
+                true,
+                KeyState::PuttyInAgent,
+            ),
+            // No agent to hold it: the one thing a PuTTY key needs, and the
+            // state the export action exists for.
+            (
+                Inspected::Putty { encrypted: true },
+                false,
+                false,
+                false,
+                KeyState::PuttyNoAgent,
+            ),
+            (
+                Inspected::Putty { encrypted: false },
+                false,
+                false,
+                false,
+                KeyState::PuttyNoAgent,
+            ),
+            // An agent, but the key is not in it yet.
+            (
+                Inspected::Putty { encrypted: true },
+                false,
+                false,
+                true,
+                KeyState::PuttyLocked,
+            ),
+            (
+                Inspected::Putty { encrypted: false },
+                false,
+                false,
+                true,
+                KeyState::PuttyUnencrypted,
+            ),
+            // A held OpenSSH passphrase says nothing about a PuTTY key: the
+            // PuTTY path never records one (see `unlock`).
+            (
+                Inspected::Putty { encrypted: true },
+                true,
+                false,
+                true,
+                KeyState::PuttyLocked,
+            ),
+            (
+                Inspected::Putty { encrypted: false },
+                true,
+                false,
+                true,
+                KeyState::PuttyUnencrypted,
+            ),
+        ];
+        for (inspected, unlocked, putty_loaded, agent, expected) in rows {
+            assert_eq!(
+                classify(inspected, unlocked, putty_loaded, agent),
+                expected,
+                "unlocked={unlocked} putty_loaded={putty_loaded} agent={agent} \
+                 must classify as {expected:?}"
+            );
+        }
+    }
+
     #[test]
     fn loading_a_putty_key_keeps_no_passphrase() {
         // The whole point of the agent path: after loading, there is nothing
@@ -1024,26 +1200,25 @@ mod tests {
         std::fs::write(&path, crate::app::ppk::fixtures::ED25519_V3_PLAIN).unwrap();
         let store = SshKeyStore::new();
         store.set_path(Some(path.to_string_lossy().into_owned()));
-        // No agent is guaranteed in a test environment, so this asserts the
-        // state machine, not the load: an unencrypted PuTTY key is never
-        // reported as holding a passphrase.
+        // The exact state is `classify`'s to answer (see the table above);
+        // what a real file pins here is the other half -- that an unencrypted
+        // `.ppk` is read as a PuTTY key carrying no passphrase, and that
+        // nothing about it is ever held.
         assert!(matches!(
-            store.state(),
-            KeyState::PuttyUnencrypted | KeyState::PuttyNoAgent | KeyState::PuttyInAgent
+            inspect(&path.to_string_lossy()),
+            Inspected::Putty { encrypted: false }
         ));
         assert!(store.passphrase().is_none());
     }
 
     #[test]
-    fn an_encrypted_putty_key_is_reported_as_locked() {
+    fn an_encrypted_putty_file_is_read_as_encrypted() {
         let dir = tmp();
         let path = dir.join("enc.ppk");
         std::fs::write(&path, crate::app::ppk::fixtures::ED25519_V3_ENC).unwrap();
-        let store = SshKeyStore::new();
-        store.set_path(Some(path.to_string_lossy().into_owned()));
         assert!(matches!(
-            store.state(),
-            KeyState::PuttyLocked | KeyState::PuttyNoAgent
+            inspect(&path.to_string_lossy()),
+            Inspected::Putty { encrypted: true }
         ));
     }
 
