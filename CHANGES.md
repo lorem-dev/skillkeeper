@@ -2,6 +2,14 @@
 
 ## Development
 
+### Changed
+
+- The PuTTY key conversion action in Settings is a warning icon with a tooltip
+  rather than a full-width labelled button, so it no longer crowds the key row.
+- The PuTTY key strings are translated into Belarusian, Spanish, Italian,
+  Polish, Portuguese, Russian and Ukrainian, the catalogs that were complete
+  before this feature landed.
+
 ## Version 0.5.0-rc.1
 
 ### Added
