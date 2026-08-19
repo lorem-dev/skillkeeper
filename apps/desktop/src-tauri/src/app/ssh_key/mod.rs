@@ -138,9 +138,14 @@ fn inspect(path: &str) -> Inspected {
         // answer this owes its callers is not only "encrypted?" but "a key at
         // all?": a `.ppk` that does not parse can never be unlocked, so it is
         // `NotAKey` (see `a_truncated_putty_file_is_not_a_key`) rather than a
-        // padlock the user can only ever fail to open. The plaintext an
-        // unencrypted key's blob carries is zeroized when the parsed file
-        // drops.
+        // padlock the user can only ever fail to open. The parsed file's
+        // private blob is zeroized when it drops -- but note that this
+        // function still holds the whole file as a plain `String`, and
+        // `read_body` builds a plain `String` of the base64 body, so for an
+        // unencrypted key the plaintext is present in this call in a
+        // reversible encoding regardless. Narrowing that is a separate change:
+        // classifying from the header alone would reclassify every
+        // unparseable `.ppk` away from `NotAKey`.
         return match crate::app::ppk::parse::parse(&text) {
             Ok(file) => Inspected::Putty {
                 encrypted: file.is_encrypted(),
@@ -878,8 +883,10 @@ mod tests {
     /// a test that went through it could only ever assert an "or" of the four
     /// PuTTY states -- and would pass whether the code worked or not. Every
     /// input is a parameter here, so nothing is left to the environment, and
-    /// every [`Inspected`] and every [`KeyState`] is named: a new variant of
-    /// either has to be decided about in this table.
+    /// every [`Inspected`] is named: a new variant of it has to be decided
+    /// about in this table. That guarantee does not extend to [`KeyState`],
+    /// which this table names nine of ten -- `NotConfigured` is returned
+    /// before the fold is reached, so a new state would not break it.
     #[test]
     fn the_state_fold_answers_every_row_exactly() {
         // (inspected, unlocked, putty_loaded, agent) -> state
