@@ -25,8 +25,11 @@ pub fn segments(group: &str) -> Vec<&str> {
 }
 
 /// Join segments back into a group path.
-pub fn join(segments: &[&str]) -> String {
-    segments.join("/")
+///
+/// The parameter is `parts` rather than `segments` so it does not shadow this
+/// module's own [`segments`] function for readers of the body.
+pub fn join(parts: &[&str]) -> String {
+    parts.join("/")
 }
 
 /// How many segments a group path has.

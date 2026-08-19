@@ -229,7 +229,9 @@ fn list_presets(ctx: &McpCtx, err: &mut dyn Write) -> Vec<PresetEntry> {
                 local_id: None,
             });
         }
-        // Group candidates: the on-disk directory holding each resolved skill.
+        // Group candidates: every ancestor directory of each resolved skill, so
+        // `a/b` counts even when the only skill is at `a/b/c/deep` and that
+        // directory holds no skill of its own.
         // A skill that fails to resolve cannot contribute its directory as a
         // group, so an unresolved path can also hide a group's `mcp.yml` --
         // worth reporting here, not only from the skill commands.
