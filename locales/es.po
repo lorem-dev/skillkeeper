@@ -1321,3 +1321,31 @@ msgstr "Agentes para {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "Ningún agente seleccionado"
+
+msgid "settings.ssh.state.puttyLocked"
+msgstr "Clave PuTTY, bloqueada."
+
+msgid "settings.ssh.state.puttyUnencrypted"
+msgstr "Clave PuTTY, sin contraseña."
+
+msgid "settings.ssh.state.puttyInAgent"
+msgstr "Clave PuTTY, cargada en el agente durante esta sesión."
+
+msgid "settings.ssh.state.puttyNoAgent"
+msgstr "Clave PuTTY, pero no hay ningún ssh-agent en ejecución que la guarde."
+
+msgid "settings.ssh.convert"
+msgstr "Convertir a una clave OpenSSH"
+
+msgid "ssh.puttyNeedsAgent"
+msgstr "Esta clave PuTTY necesita un ssh-agent que la guarde. Inicia uno o convierte la clave al formato OpenSSH."
+
+msgid "ssh.puttyUnsupportedAlgorithm"
+msgstr "Esta clave PuTTY usa un algoritmo que OpenSSH ya no admite."
+
+msgid "ssh.puttyDamaged"
+msgstr "El archivo de clave PuTTY está dañado."
+
+msgid "ssh.puttyExportFailed"
+msgstr "No se pudo convertir la clave."
+

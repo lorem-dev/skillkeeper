@@ -1321,3 +1321,31 @@ msgstr "Агенты для {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "Агенты не выбраны"
+
+msgid "settings.ssh.state.puttyLocked"
+msgstr "Ключ PuTTY, заблокирован."
+
+msgid "settings.ssh.state.puttyUnencrypted"
+msgstr "Ключ PuTTY, без пароля."
+
+msgid "settings.ssh.state.puttyInAgent"
+msgstr "Ключ PuTTY, загружен в агент на эту сессию."
+
+msgid "settings.ssh.state.puttyNoAgent"
+msgstr "Ключ PuTTY, но запущенного ssh-agent для него нет."
+
+msgid "settings.ssh.convert"
+msgstr "Преобразовать в ключ OpenSSH"
+
+msgid "ssh.puttyNeedsAgent"
+msgstr "Этому ключу PuTTY нужен ssh-agent. Запустите его или преобразуйте ключ в формат OpenSSH."
+
+msgid "ssh.puttyUnsupportedAlgorithm"
+msgstr "Этот ключ PuTTY использует алгоритм, который OpenSSH больше не поддерживает."
+
+msgid "ssh.puttyDamaged"
+msgstr "Файл ключа PuTTY повреждён."
+
+msgid "ssh.puttyExportFailed"
+msgstr "Не удалось преобразовать ключ."
+
