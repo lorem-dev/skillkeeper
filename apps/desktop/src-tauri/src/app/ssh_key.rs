@@ -42,6 +42,8 @@ pub const PUTTY_UNSUPPORTED_ERROR: &str = "ssh.puttyUnsupportedAlgorithm";
 /// Error key for a PuTTY key whose MAC does not match without a passphrase in
 /// play: the file is corrupt.
 pub const PUTTY_DAMAGED_ERROR: &str = "ssh.puttyDamaged";
+/// Error key for an export that could not be written or re-encrypted.
+pub const EXPORT_FAILED_ERROR: &str = "ssh.puttyExportFailed";
 
 /// What the chosen key's file looks like right now, as far as the renderer
 /// needs to know: nothing configured, gone, unusable, or usable (locked or
@@ -318,6 +320,10 @@ struct Inner {
     unlock_generation: u64,
     /// The result carried by the most recent generation bump.
     last_unlock_ok: bool,
+    /// A destination the user has asked to export the chosen PuTTY key to,
+    /// waiting for the unlock window to supply the passphrase. Cleared when it
+    /// is taken, and whenever the chosen path changes.
+    pending_export: Option<String>,
 }
 
 /// Owns the chosen SSH key's path and, for at most one session, the
@@ -353,6 +359,7 @@ impl SshKeyStore {
                 putty_loaded_for: None,
                 unlock_generation: 0,
                 last_unlock_ok: false,
+                pending_export: None,
             }),
             unlock_cvar: Condvar::new(),
         }
@@ -379,6 +386,7 @@ impl SshKeyStore {
         if inner.unlocked_for != path {
             inner.passphrase = None;
             inner.unlocked_for = None;
+            inner.pending_export = None;
         }
         inner.path = path;
     }
@@ -390,6 +398,24 @@ impl SshKeyStore {
             .expect("ssh key store lock poisoned")
             .path
             .clone()
+    }
+
+    /// Record where the next successful passphrase entry should export to.
+    pub fn set_pending_export(&self, dest: Option<String>) {
+        self.inner
+            .lock()
+            .expect("ssh key store lock poisoned")
+            .pending_export = dest;
+    }
+
+    /// Take the pending export destination, leaving none behind. A passphrase
+    /// answers exactly one export: a second attempt has to be asked for again.
+    pub fn take_pending_export(&self) -> Option<String> {
+        self.inner
+            .lock()
+            .expect("ssh key store lock poisoned")
+            .pending_export
+            .take()
     }
 
     /// Inspect the chosen key file and fold in whether a passphrase is
