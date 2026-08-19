@@ -8,8 +8,8 @@
 
 use aes::Aes256;
 use cipher::block_padding::NoPadding;
-use cipher::{BlockDecryptMut, KeyIvInit};
-use hmac::{Hmac, Mac};
+use cipher::{BlockModeDecrypt, KeyIvInit};
+use hmac::{Hmac, KeyInit, Mac};
 use sha1::Sha1;
 use sha2::Sha256;
 use zeroize::Zeroizing;
@@ -136,7 +136,7 @@ pub(crate) fn ssh_string(out: &mut Vec<u8>, data: &[u8]) {
 /// form needs bounds from the `digest` crate, which is not a dependency of this
 /// crate and is not worth becoming one for four lines.
 fn verify_sha256(key: &[u8], data: &[u8], expected: &[u8]) -> bool {
-    match <Hmac<Sha256> as Mac>::new_from_slice(key) {
+    match <Hmac<Sha256> as KeyInit>::new_from_slice(key) {
         Ok(mut mac) => {
             mac.update(data);
             mac.verify_slice(expected).is_ok()
@@ -147,7 +147,7 @@ fn verify_sha256(key: &[u8], data: &[u8], expected: &[u8]) -> bool {
 
 /// Constant-time HMAC-SHA-1 check (PPK v2).
 fn verify_sha1(key: &[u8], data: &[u8], expected: &[u8]) -> bool {
-    match <Hmac<Sha1> as Mac>::new_from_slice(key) {
+    match <Hmac<Sha1> as KeyInit>::new_from_slice(key) {
         Ok(mut mac) => {
             mac.update(data);
             mac.verify_slice(expected).is_ok()
@@ -238,7 +238,7 @@ fn aes_cbc_decrypt(key: &[u8], iv: &[u8], data: &[u8]) -> Result<Zeroizing<Vec<u
     let mut buffer = Zeroizing::new(data.to_vec());
     let decryptor = Aes256CbcDec::new_from_slices(key, iv).map_err(|_| PpkError::Malformed)?;
     let length = decryptor
-        .decrypt_padded_mut::<NoPadding>(&mut buffer)
+        .decrypt_padded::<NoPadding>(&mut buffer)
         .map_err(|_| PpkError::Malformed)?
         .len();
     buffer.truncate(length);

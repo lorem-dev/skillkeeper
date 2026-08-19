@@ -14,6 +14,8 @@
   build or test tooling, not in shipped code.
 - The renderer's architectural layer boundaries are now enforced by ESLint
   instead of documented only.
+- PuTTY key decryption moved to the current RustCrypto releases, with no change
+  to the formats it accepts.
 
 ## Version 0.5.0-rc.2
 

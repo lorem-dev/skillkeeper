@@ -365,13 +365,14 @@ mod tests {
     /// dependency.
     fn aes256_ctr(key: &[u8], iv: &[u8], data: &[u8]) -> Vec<u8> {
         use aes::Aes256;
-        use cipher::{BlockEncrypt, KeyInit};
+        use cipher::{BlockCipherEncrypt, KeyInit};
 
         let cipher = Aes256::new_from_slice(key).expect("32-byte key");
         let mut counter = u128::from_be_bytes(iv.try_into().expect("16-byte iv"));
         let mut out = Vec::with_capacity(data.len());
         for chunk in data.chunks(16) {
-            let mut block = cipher::Block::<Aes256>::clone_from_slice(&counter.to_be_bytes());
+            let mut block = cipher::Block::<Aes256>::try_from(&counter.to_be_bytes()[..])
+                .expect("a u128 is exactly one AES block");
             cipher.encrypt_block(&mut block);
             for (byte, pad) in chunk.iter().zip(block.iter()) {
                 out.push(byte ^ pad);
