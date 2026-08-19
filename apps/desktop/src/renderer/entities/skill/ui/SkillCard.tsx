@@ -16,7 +16,9 @@ export function SkillCard({ skill, versionLabel, agentLabels, onOpen }: SkillCar
     <Card className="sk-skill-card">
       <button type="button" className="sk-skill-card__btn" onClick={onOpen}>
         <span className="sk-skill-card__title">
-          {skill.group !== undefined ? `${skill.group}/${skill.name}` : skill.name}
+          <span className="sk-skill-card__name">
+            {skill.group !== undefined ? `${skill.group}/${skill.name}` : skill.name}
+          </span>
           {versionLabel !== null && <Badge tone="neutral">{versionLabel}</Badge>}
         </span>
         <span className="sk-skill-card__agents">
