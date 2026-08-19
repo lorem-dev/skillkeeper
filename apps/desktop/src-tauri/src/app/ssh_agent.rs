@@ -9,7 +9,8 @@
 //! blocking on a passphrase. No passphrase prompting (deferred), matching the
 //! TypeScript.
 
-use std::process::Command;
+use std::io::Write;
+use std::process::{Command, Stdio};
 use std::sync::Mutex;
 
 /// PID of an agent WE spawned (`None` when reusing an inherited one). Killed on
@@ -153,6 +154,84 @@ pub fn stop_ssh_agent() {
     let _ = Command::new("ssh-agent").arg("-k").output();
 }
 
+/// How long a key loaded from a PuTTY file stays in the agent: twelve hours.
+///
+/// Long enough never to expire inside a working session, short enough that a
+/// process that dies without running its teardown does not leave the key in a
+/// long-lived user agent indefinitely. The app removes the key on exit anyway;
+/// this is the backstop for the case where it cannot.
+pub const AGENT_KEY_TTL_SECS: u64 = 12 * 60 * 60;
+
+/// The arguments for adding a key from stdin. Split out so the shape is
+/// testable without an agent to talk to.
+pub(crate) fn add_args(ttl_secs: u64) -> Vec<String> {
+    vec!["-t".to_string(), ttl_secs.to_string(), "-".to_string()]
+}
+
+/// Add an OpenSSH-format private key to the session agent, reading it from a
+/// pipe so it never becomes a file.
+///
+/// # Errors
+///
+/// The agent's own message when `ssh-add` fails, or the spawn error when it
+/// cannot be run at all. Both are diagnostics for the log, not renderer-facing
+/// codes -- the caller maps them.
+pub fn add_from_memory(openssh: &str, ttl_secs: u64) -> Result<(), String> {
+    let mut command = Command::new("ssh-add");
+    command
+        .args(add_args(ttl_secs))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped());
+    crate::util::hide_console(&mut command);
+    let mut child = command.spawn().map_err(|e| e.to_string())?;
+    {
+        let mut stdin = child.stdin.take().ok_or("ssh-add stdin unavailable")?;
+        stdin
+            .write_all(openssh.as_bytes())
+            .map_err(|e| e.to_string())?;
+        // Dropping the handle closes the pipe; ssh-add reads to EOF, so without
+        // this it would wait forever and so would we.
+    }
+    let output = child.wait_with_output().map_err(|e| e.to_string())?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
+}
+
+/// Remove a key from the agent by its public line, again over a pipe.
+///
+/// Best-effort by nature: the agent may be gone, the key may have expired, or
+/// the user may have cleared it by hand. All of those are the desired end
+/// state, so the caller ignores the error.
+pub fn remove(public_line: &str) -> Result<(), String> {
+    let mut command = Command::new("ssh-add");
+    command
+        .args(["-d", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    crate::util::hide_console(&mut command);
+    let mut child = command.spawn().map_err(|e| e.to_string())?;
+    {
+        let mut stdin = child.stdin.take().ok_or("ssh-add stdin unavailable")?;
+        stdin
+            .write_all(public_line.as_bytes())
+            .map_err(|e| e.to_string())?;
+        stdin.write_all(b"\n").map_err(|e| e.to_string())?;
+        // Same reasoning as add_from_memory: drop before waiting so ssh-add
+        // sees EOF instead of blocking forever.
+    }
+    let status = child.wait().map_err(|e| e.to_string())?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err("ssh-add -d failed".to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -205,5 +284,17 @@ mod tests {
         // assignment is captured.
         let stdout = "SSH_AUTH_SOCK=/run/x; export SSH_AUTH_SOCK;";
         assert_eq!(parse_agent_env(stdout).sock, Some("/run/x".to_string()));
+    }
+
+    #[test]
+    fn add_args_ask_for_a_ttl_and_read_from_stdin() {
+        // `-` is what makes ssh-add read the key from stdin, which is the whole
+        // point: the converted key must never become a file.
+        assert_eq!(add_args(43_200), vec!["-t", "43200", "-"]);
+    }
+
+    #[test]
+    fn the_default_ttl_is_twelve_hours() {
+        assert_eq!(AGENT_KEY_TTL_SECS, 12 * 60 * 60);
     }
 }
