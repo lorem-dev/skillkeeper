@@ -228,9 +228,14 @@ this list current and accurate.
 
 | Package | Ecosystem | Version | License | Copyright |
 |---|---|---|---|---|
+| aes | cargo | 0.8.4 | MIT OR Apache-2.0 | Copyright (c) RustCrypto Developers |
+| argon2 | cargo | 0.5.3 | MIT OR Apache-2.0 | Copyright (c) RustCrypto Developers |
+| cbc | cargo | 0.1.2 | MIT OR Apache-2.0 | Copyright (c) RustCrypto Developers |
+| cipher | cargo | 0.4.4 | MIT OR Apache-2.0 | Copyright (c) RustCrypto Developers |
 | clap | cargo | 4.6.2 | MIT OR Apache-2.0 | Copyright (c) clap contributors |
 | gettext | cargo | 0.4.0 | MIT | Copyright (c) Justinas Stankevicius |
 | hex | cargo | 0.4.3 | MIT OR Apache-2.0 | Copyright (c) KokaKiwi |
+| hmac | cargo | 0.12.1 | MIT OR Apache-2.0 | Copyright (c) RustCrypto Developers |
 | interprocess | cargo | 2.4.2 | 0BSD OR Apache-2.0 | Copyright (c) Goat |
 | objc2 | cargo | 0.6.4 | MIT | Copyright (c) Mads Marquart |
 | objc2-app-kit | cargo | 0.3.2 | Zlib OR Apache-2.0 OR MIT | Copyright (c) Mads Marquart |
@@ -241,6 +246,7 @@ this list current and accurate.
 | serde | cargo | 1.0.228 | MIT OR Apache-2.0 | Copyright (c) Erick Tryzelaar and David Tolnay |
 | serde_json | cargo | 1.0.150 | MIT OR Apache-2.0 | Copyright (c) Erick Tryzelaar and David Tolnay |
 | serde_yaml_ng | cargo | 0.10.0 | MIT | Copyright (c) Antoine Catton |
+| sha1 | cargo | 0.10.7 | MIT OR Apache-2.0 | Copyright (c) RustCrypto Developers |
 | sha2 | cargo | 0.10.9 | MIT OR Apache-2.0 | Copyright (c) RustCrypto Developers |
 | ssh-key | cargo | 0.6.7 | Apache-2.0 OR MIT | Copyright (c) RustCrypto Developers |
 | tauri | cargo | 2.11.5 | Apache-2.0 OR MIT | Copyright (c) Tauri Programme within The Commons Conservancy |

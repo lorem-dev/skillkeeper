@@ -121,6 +121,12 @@ export interface BridgeClient {
   cancelSshKeyUnlock(): Promise<void>;
   /** Native file picker for choosing a private key file. */
   pickSshKeyFile(): Promise<string | null>;
+  /** Native save dialog for the converted OpenSSH key. */
+  saveSshKeyFile(): Promise<string | null>;
+  /** Convert the chosen PuTTY key to an OpenSSH key at `dest` and use it. An
+   *  encrypted key raises the unlock window for its passphrase; the row learns
+   *  the outcome from `onSshUnlockResolved`, as it does for any unlock. */
+  beginSshKeyExport(dest: string): Promise<SshKeyDto>;
   /** Raise the unlock prompt on demand (or join the one a blocked git
    *  operation is already waiting behind) and return as soon as the window is
    *  up -- it does not wait for the answer. A no-op for a key that needs no
@@ -253,6 +259,8 @@ export const bridgeClient: BridgeClient = {
   forgetSshKey: () => invoke<void>('ssh_key_forget'),
   cancelSshKeyUnlock: () => invoke<void>('ssh_key_cancel_unlock'),
   pickSshKeyFile: () => invoke<string | null>('dialog_select_ssh_key'),
+  saveSshKeyFile: () => invoke<string | null>('dialog_save_ssh_key'),
+  beginSshKeyExport: (dest) => invoke<SshKeyDto>('ssh_key_begin_export', { dest }),
   promptSshUnlock: () => invoke<void>('ssh_key_prompt'),
   onSshUnlockRequired: (callback) => {
     // Same shape as onTerminalRequestOpen: start the listen(), keep the

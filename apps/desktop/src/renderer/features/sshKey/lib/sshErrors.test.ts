@@ -15,4 +15,11 @@ describe('sshErrorKey', () => {
     expect(sshErrorKey('fatal: could not read from remote repository')).toBeNull();
     expect(sshErrorKey('')).toBeNull();
   });
+
+  it('translates the putty codes', () => {
+    expect(sshErrorKey('ssh.puttyNeedsAgent')).toBe('ssh.puttyNeedsAgent');
+    expect(sshErrorKey('ssh.puttyUnsupportedAlgorithm')).toBe('ssh.puttyUnsupportedAlgorithm');
+    expect(sshErrorKey('ssh.puttyDamaged')).toBe('ssh.puttyDamaged');
+    expect(sshErrorKey('ssh.puttyExportFailed')).toBe('ssh.puttyExportFailed');
+  });
 });

@@ -14,6 +14,8 @@ pub mod editor_launch;
 pub mod i18n;
 pub mod icon_sanitize;
 pub mod menu;
+pub mod openssh_pem;
+pub mod ppk;
 pub mod ssh_agent;
 pub mod ssh_git;
 pub mod ssh_key;
@@ -34,10 +36,64 @@ pub fn quit<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> ! {
 
     if let Some(ctx) = app.try_state::<std::sync::Arc<crate::state::AppContext>>() {
         ctx.terminal.shutdown();
+        // Before the agent is stopped, because a user's own long-lived agent is
+        // not stopped at all: without this the converted key would sit in it
+        // until the TTL ran out, long after the app that put it there had gone.
+        unload_putty_bounded(&ctx.ssh_key);
     }
     ssh_agent::stop_ssh_agent();
     std::process::exit(0);
 }
+
+/// How long an exit path waits for the agent to give the session's PuTTY key
+/// up before leaving it to the key's TTL.
+///
+/// A live local agent answers `ssh-add -d` in single-digit milliseconds, so
+/// this is never reached in practice; it exists for the agent that cannot
+/// answer at all -- a gpg-agent still starting, a stale `SSH_AUTH_SOCK` whose
+/// peer is gone, a third-party agent wedged on something of its own.
+const UNLOAD_ON_EXIT_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(500);
+
+/// Take the session's PuTTY key back out of the agent, but never let a wedged
+/// agent hold up the exit.
+///
+/// [`SshKeyStore::unload_putty`](ssh_key::SshKeyStore::unload_putty) waits for
+/// an `ssh-add -d` subprocess with no deadline of its own, which is right
+/// everywhere else -- it runs on the blocking pool there -- and wrong on an
+/// exit path: on macOS this runs on the main thread inside
+/// `applicationShouldTerminate:`, with the window still on screen. So the
+/// removal runs on a thread of its own and this waits only
+/// [`UNLOAD_ON_EXIT_TIMEOUT`] for it. Both callers `process::exit` immediately
+/// after, which takes the thread and any `ssh-add` still running with them;
+/// what is lost in that case is only the removal the TTL would have made
+/// anyway.
+fn unload_putty_bounded(ssh_key: &std::sync::Arc<ssh_key::SshKeyStore>) {
+    let store = std::sync::Arc::clone(ssh_key);
+    let (done_tx, done_rx) = std::sync::mpsc::channel();
+    // A failed spawn leaves the key to the TTL, which is exactly what this
+    // whole function degrades to on a timeout.
+    if std::thread::Builder::new()
+        .spawn(move || {
+            store.unload_putty();
+            let _ = done_tx.send(());
+        })
+        .is_err()
+    {
+        return;
+    }
+    let _ = done_rx.recv_timeout(UNLOAD_ON_EXIT_TIMEOUT);
+}
+
+/// The key store the macOS fast-terminate path takes the session's PuTTY key
+/// out of the agent through.
+///
+/// A global because `applicationShouldTerminate:` is a plain C function with
+/// nowhere to put a captured handle and no `AppHandle` of its own to read the
+/// managed state from, unlike [`quit`]. Written once, in
+/// [`install_fast_terminate`].
+#[cfg(target_os = "macos")]
+static QUIT_SSH_KEY: std::sync::OnceLock<std::sync::Arc<ssh_key::SshKeyStore>> =
+    std::sync::OnceLock::new();
 
 /// Make every AppKit `terminate:` path (Cmd+Q, the Quit menu item, Dock > Quit)
 /// exit fast.
@@ -51,10 +107,16 @@ pub fn quit<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> ! {
 /// the slow unwind begins.
 ///
 /// The shell child is reaped by the kernel closing the PTY master on exit
-/// (SIGHUP), so no context is needed here beyond stopping a self-spawned
-/// ssh-agent.
+/// (SIGHUP), so the only context needed here is `ssh_key`: the session's PuTTY
+/// key has to come back out of the agent, which a user's own long-lived agent
+/// would otherwise hold until its TTL expired. It is taken as a parameter and
+/// stashed in [`QUIT_SSH_KEY`] because the replacement method below is a plain
+/// C function that can capture nothing. The removal costs a lock and, only when
+/// a key really is loaded, one `ssh-add -d` against a live local agent -- and
+/// it is bounded by [`unload_putty_bounded`], so this path stays as fast as it
+/// was even against an agent that never answers.
 #[cfg(target_os = "macos")]
-pub fn install_fast_terminate() {
+pub fn install_fast_terminate(ssh_key: &std::sync::Arc<ssh_key::SshKeyStore>) {
     use objc2::runtime::{AnyClass, AnyObject, Sel};
     use objc2::sel;
     use objc2_app_kit::NSApplication;
@@ -65,10 +127,14 @@ pub fn install_fast_terminate() {
         _cmd: Sel,
         _sender: *mut AnyObject,
     ) -> usize {
+        if let Some(store) = QUIT_SSH_KEY.get() {
+            unload_putty_bounded(store);
+        }
         ssh_agent::stop_ssh_agent();
         std::process::exit(0);
     }
 
+    let _ = QUIT_SSH_KEY.set(std::sync::Arc::clone(ssh_key));
     let Some(mtm) = MainThreadMarker::new() else {
         return;
     };

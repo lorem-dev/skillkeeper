@@ -308,5 +308,9 @@ export interface SshKeyDto {
     | 'notAKey'
     | 'unencrypted'
     | 'locked'
-    | 'unlocked';
+    | 'unlocked'
+    | 'puttyLocked'
+    | 'puttyUnencrypted'
+    | 'puttyInAgent'
+    | 'puttyNoAgent';
 }

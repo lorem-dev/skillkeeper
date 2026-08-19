@@ -180,16 +180,24 @@ export function App() {
       if (sshAgentWarned.current) return;
       // A held (unlocked) or unencrypted key already answers passphrase
       // prompts on the app's behalf, so the agent advice would be wrong --
-      // check the key's state alongside the agent before deciding to warn.
-      // A failed key-state read must not suppress the notice: fall back to
-      // `null` (treated as "cannot rule it out") rather than letting the
-      // whole `Promise.all` reject and silently drop the check.
+      // check the key's state alongside the agent before deciding to warn. A
+      // PuTTY key already loaded into an agent (`puttyInAgent`) is the same
+      // case by another name; the other PuTTY states still need an agent, so
+      // they are not included here. A failed key-state read must not
+      // suppress the notice: fall back to `null` (treated as "cannot rule it
+      // out") rather than letting the whole `Promise.all` reject and
+      // silently drop the check.
       void Promise.all([
         bridgeClient.sshAgentAvailable(),
         bridgeClient.sshKeyState().catch(() => null),
       ]).then(([available, keyState]) => {
         if (available || sshAgentWarned.current) return;
-        if (keyState !== null && (keyState.state === 'unlocked' || keyState.state === 'unencrypted')) {
+        if (
+          keyState !== null &&
+          (keyState.state === 'unlocked' ||
+            keyState.state === 'unencrypted' ||
+            keyState.state === 'puttyInAgent')
+        ) {
           return;
         }
         sshAgentWarned.current = true;

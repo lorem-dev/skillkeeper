@@ -36,6 +36,14 @@ function stateMessageKey(state: SshKeyDto['state']): MessageKey {
       return 'settings.ssh.state.locked';
     case 'unlocked':
       return 'settings.ssh.state.unlocked';
+    case 'puttyLocked':
+      return 'settings.ssh.state.puttyLocked';
+    case 'puttyUnencrypted':
+      return 'settings.ssh.state.puttyUnencrypted';
+    case 'puttyInAgent':
+      return 'settings.ssh.state.puttyInAgent';
+    case 'puttyNoAgent':
+      return 'settings.ssh.state.puttyNoAgent';
   }
 }
 
@@ -191,10 +199,37 @@ export function SshKeyField() {
     }
   }
 
+  // Picks a destination and hands it to the backend. An encrypted key then
+  // raises the unlock window for its passphrase, and the row settles on the new
+  // OpenSSH path through the existing `onSshUnlockResolved` effect -- exactly
+  // the path an ordinary unlock takes, which is why there is no passphrase
+  // handling here.
+  async function convertKey(): Promise<void> {
+    setBusy(true);
+    try {
+      const dest = await bridgeClient.saveSshKeyFile();
+      if (dest === null) return;
+      setDto(await bridgeClient.beginSshKeyExport(dest));
+    } catch (error) {
+      reportFailure(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (dto === null) return null;
 
   const displayPath = shownPath ?? dto.path ?? t('settings.ssh.notSet');
   const stateKey = stateMessageKey(dto.state);
+  // Shown for any PuTTY key that is not already usable through an agent:
+  // `puttyInAgent` needs nothing to work right now, so there is nothing to
+  // offer for it here. The command itself accepts that state -- a git
+  // operation can load the key between this render and the click, and a
+  // conversion asked for a moment earlier must not then be refused.
+  const isPutty =
+    dto.state === 'puttyLocked' ||
+    dto.state === 'puttyUnencrypted' ||
+    dto.state === 'puttyNoAgent';
 
   return (
     <FormRow
@@ -223,7 +258,7 @@ export function SshKeyField() {
                 {t('settings.ssh.choose')}
               </Button>
             )}
-            {dto.state === 'locked' && (
+            {(dto.state === 'locked' || dto.state === 'puttyLocked') && (
               <Tooltip content={t('settings.ssh.unlock')}>
                 <Button
                   variant="secondary"
@@ -236,7 +271,7 @@ export function SshKeyField() {
                 </Button>
               </Tooltip>
             )}
-            {dto.state === 'unlocked' && (
+            {(dto.state === 'unlocked' || dto.state === 'puttyInAgent') && (
               <Tooltip content={t('settings.ssh.forget')}>
                 <Button
                   variant="secondary"
@@ -247,6 +282,11 @@ export function SshKeyField() {
                   <Icon name="unlock" size={16} />
                 </Button>
               </Tooltip>
+            )}
+            {isPutty && (
+              <Button variant="secondary" loading={busy} onClick={() => void convertKey()}>
+                {t('settings.ssh.convert')}
+              </Button>
             )}
           </div>
         </div>

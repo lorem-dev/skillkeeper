@@ -2,6 +2,14 @@
 
 ## Development
 
+### Added
+
+- Desktop: PuTTY-format private keys (`.ppk`, versions 2 and 3) can now be
+  chosen as the SSH key. They are decrypted in memory and loaded into the
+  ssh-agent; where no agent is available, Settings offers a one-time conversion
+  to an OpenSSH key. The CLI reports such a key with the command that converts
+  it.
+
 ## Version 0.4.1
 
 ### Added
