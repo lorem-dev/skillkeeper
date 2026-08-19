@@ -11,8 +11,9 @@
  * `selectable: false` (typically the root repository/project) cannot be
  * selected; clicking them only toggles their branch.
  *
- * Checkbox mode (`checkable`): a trailing checkbox selects nodes. Which levels
- * show a checkbox is controlled by `checkboxLevels` (all levels by default). A
+ * Checkbox mode (`checkable`): a trailing checkbox selects nodes. By default
+ * every node that is not `selectable: false` gets one, at any depth;
+ * `checkboxLevels` is an explicit override to pin specific depths instead. A
  * branch's checkbox is tri-state -- checked when all of its descendant leaves
  * are checked, "mixed" (a dash) when only some are, unchecked otherwise;
  * toggling it checks/unchecks all of them. `checkedIds` (the checked leaves) is
@@ -71,9 +72,10 @@ export interface TreeViewProps {
   /** Turn on checkbox selection. */
   readonly checkable?: boolean;
   /**
-   * Depths (0-based) that render a checkbox. Defaults to every level when
-   * `checkable` is on. Use e.g. `[1, 2]` to show checkboxes on groups and
-   * skills but not the repository/project root.
+   * Explicit override for which depths show a checkbox when `checkable` is on.
+   * Leave it unset in product code: the default checkboxes every node that is
+   * not `selectable: false`, which follows a nested group path correctly where a
+   * fixed depth list cannot. Use e.g. `[1, 2]` only to pin specific levels.
    */
   readonly checkboxLevels?: readonly number[];
   /** Checked leaf ids. Controlled. */
@@ -211,8 +213,14 @@ export function TreeView({
   const visible = useMemo(() => flattenVisible(nodes, expanded), [nodes, expanded]);
   const checkedSet = useMemo(() => new Set(checkedIds ?? []), [checkedIds]);
 
-  function checkboxAtDepth(depth: number): boolean {
-    return checkable && (checkboxLevels === undefined || checkboxLevels.includes(depth));
+  // Which rows carry a checkbox. By default every node that is not explicitly
+  // non-selectable does, at any depth -- structure, not arithmetic, because a
+  // group path can nest and a depth list cannot follow it. `checkboxLevels`
+  // stays as an explicit override for generic use.
+  function checkboxFor(node: TreeNode, depth: number): boolean {
+    if (!checkable) return false;
+    if (checkboxLevels !== undefined) return checkboxLevels.includes(depth);
+    return node.selectable !== false;
   }
 
   // A node's controllable leaves: the checkbox-bearing leaves in its subtree
@@ -223,7 +231,7 @@ export function TreeView({
   function checkableLeaves(node: TreeNode, depth: number, acc: string[] = []): string[] {
     const kids = node.children;
     if (kids === undefined || kids.length === 0) {
-      if (checkboxAtDepth(depth) && node.trailing === undefined) acc.push(node.id);
+      if (checkboxFor(node, depth) && node.trailing === undefined) acc.push(node.id);
       return acc;
     }
     for (const child of kids) checkableLeaves(child, depth + 1, acc);
@@ -233,7 +241,7 @@ export function TreeView({
   type CheckState = 'checked' | 'unchecked' | 'indeterminate';
 
   function checkStateFor(node: TreeNode, depth: number): CheckState | null {
-    if (!checkboxAtDepth(depth)) return null;
+    if (!checkboxFor(node, depth)) return null;
     const hasChildren = node.children !== undefined && node.children.length > 0;
     if (!hasChildren) return node.trailing !== undefined ? null : (checkedSet.has(node.id) ? 'checked' : 'unchecked');
     const leaves = checkableLeaves(node, depth);
@@ -373,7 +381,7 @@ export function TreeView({
         e.preventDefault();
         // Space toggles the checkbox when this row has one; otherwise it mirrors
         // Enter (select, or expand a branch).
-        if (checkboxAtDepth(item.depth)) toggleCheck(item.node, item.depth);
+        if (checkboxFor(item.node, item.depth)) toggleCheck(item.node, item.depth);
         else activateRow(item.node, item.depth, item.hasChildren);
         break;
       }

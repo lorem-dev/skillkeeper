@@ -518,7 +518,6 @@ export function SkillsManagementPage() {
             className="sk-skills-tree"
             nodes={decorated}
             checkable
-            checkboxLevels={[1, 2, 3]}
             checkedIds={projectChecked}
             onCheckedChange={setProjectChecked}
             defaultExpandedIds={expandedIds}

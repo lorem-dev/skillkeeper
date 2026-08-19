@@ -232,7 +232,6 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             <TreeView
               nodes={decorated}
               checkable
-              checkboxLevels={[1, 2, 3]}
               checkedIds={checked}
               onCheckedChange={setChecked}
               defaultExpandedIds={expandedIds}

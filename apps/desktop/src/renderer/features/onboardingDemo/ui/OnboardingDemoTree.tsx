@@ -130,7 +130,6 @@ export function OnboardingDemoTree({ variant }: OnboardingDemoTreeProps) {
       <TreeView
         nodes={nodes}
         checkable
-        checkboxLevels={[1, 2, 3]}
         checkedIds={checkedIds}
         onCheckedChange={() => {}}
         defaultExpandedIds={['demo-project', 'demo-repo', 'demo-group']}
