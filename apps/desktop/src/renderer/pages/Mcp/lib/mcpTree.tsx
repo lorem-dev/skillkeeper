@@ -37,21 +37,25 @@
  * can never collide with a node id):
  *   - manual preset leaf (both modes, top level):  `mcp-manual::<presetId>`
  *   - repo mode repo root:                         `mcp-repo::<repoId>`
- *   - repo mode group node:                        `mcp-repo::<repoId>::<group>`
+ *   - repo mode group node:                        `mcp-repo::<repoId>::<groupPath>`
  *   - repo mode preset leaf:                       `mcp-repo::leaf::<presetId>`
  *   - project mode project root:                   `mcp-project::<projectId>`
  *   - project mode repo node:                       `mcp-repo::<projectId>::<repoId>`
- *   - project mode group node:                      `mcp-repo::<projectId>::<repoId>::<group>`
+ *   - project mode group node:                      `mcp-repo::<projectId>::<repoId>::<groupPath>`
  *   - project mode repo-preset install-row leaf:    `mcp-repo::leaf::<projectId>::<presetId>`
  *   - project mode installed-instance leaf:         `mcp-inst::<projectId>::<instanceKey>`
  *   - project mode unlinked synthetic node:         `mcp-unlinked::<projectId>::<groupKey>`
  *   - project mode unlinked leaf:                   `mcp-inst::<projectId>::unlinked::<instanceKey>`
+ *
+ * `<groupPath>` is the full `/`-joined group prefix up to that level (e.g.
+ * `platform` then `platform/lint`), not just the last segment, so a branch
+ * at each nesting level gets a distinct id.
  */
 import { Icon } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import type { McpPreset } from '@/app/store';
 import { normalizeMcpRemote, mcpInstallHasUpdate } from '@/app/store';
-import { GLOBAL_SCOPE_ID } from '@/domain';
+import { GLOBAL_SCOPE_ID, nestByGroup } from '@/domain';
 import type { McpInstall, Repository, Project } from '@/services/bridge';
 
 const SEP = '::';
@@ -236,35 +240,24 @@ export function buildMcpRepoTree(presets: readonly McpPreset[], repos: readonly 
     const ps = byRepo.get(repo.id);
     if (ps === undefined || ps.length === 0) continue;
 
-    const groups = new Map<string, RepoPreset[]>();
-    const ungrouped: RepoPreset[] = [];
-    for (const p of ps) {
-      if (p.group !== undefined && p.group !== '') {
-        const list = groups.get(p.group);
-        if (list !== undefined) list.push(p);
-        else groups.set(p.group, [p]);
-      } else ungrouped.push(p);
-    }
-
     const makeLeaf = (p: RepoPreset): TreeNode => {
       const id = mcpRepoPresetLeafId(p.id);
       items.set(id, { kind: 'repo-preset', preset: p });
       return { id, label: p.name, icon: mcpIcon };
     };
 
-    const children: TreeNode[] = [];
-    for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-      children.push({
-        id: mcpRepoGroupId(repo.id, group),
-        label: group,
+    const children = nestByGroup(ps, {
+      groupOf: (p) => p.group,
+      compare: byName,
+      makeLeaves: (p) => [makeLeaf(p)],
+      makeGroup: (path, label, kids) => ({
+        id: mcpRepoGroupId(repo.id, path),
+        label,
         icon: groupIcon,
         selectable: false,
-        children: [...gs].sort(byName).map(makeLeaf),
-      });
-    }
-    for (const p of [...ungrouped].sort(byName)) {
-      children.push(makeLeaf(p));
-    }
+        children: kids,
+      }),
+    });
 
     repoNodes.push({ id: mcpRepoRootId(repo.id), label: repo.name, icon: repoIcon, selectable: false, children });
   }
@@ -374,29 +367,18 @@ export function buildMcpProjectTree(
       const ps = byRepo.get(repo.id);
       if (ps === undefined || ps.length === 0) continue;
 
-      const groups = new Map<string, RepoPreset[]>();
-      const ungrouped: RepoPreset[] = [];
-      for (const p of ps) {
-        if (p.group !== undefined && p.group !== '') {
-          const list = groups.get(p.group);
-          if (list !== undefined) list.push(p);
-          else groups.set(p.group, [p]);
-        } else ungrouped.push(p);
-      }
-
-      const children: TreeNode[] = [];
-      for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-        children.push({
-          id: mcpProjectGroupNodeId(scope.id, repo.id, group),
-          label: group,
+      const children = nestByGroup(ps, {
+        groupOf: (p) => p.group,
+        compare: byName,
+        makeLeaves: (p) => rowsFor(p),
+        makeGroup: (path, label, kids) => ({
+          id: mcpProjectGroupNodeId(scope.id, repo.id, path),
+          label,
           icon: groupIcon,
           selectable: false,
-          children: [...gs].sort(byName).flatMap(rowsFor),
-        });
-      }
-      for (const p of [...ungrouped].sort(byName)) {
-        children.push(...rowsFor(p));
-      }
+          children: kids,
+        }),
+      });
 
       repoChildren.push({ id: mcpProjectRepoNodeId(scope.id, repo.id), label: repo.name, icon: repoIcon, selectable: false, children });
     }

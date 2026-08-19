@@ -428,3 +428,47 @@ describe('branch nodes are not selectable', () => {
     expect(findNode(nodes, mcpProjectGroupNodeId('pr1', 'r1', 'devtools'))?.selectable).toBe(false);
   });
 });
+
+describe('nested preset groups', () => {
+  const nested = preset({
+    id: 'p-lint',
+    name: 'lint-registry',
+    origin: 'repo',
+    repoId: 'r1',
+    group: 'platform/lint',
+  });
+
+  it('nests a two-level preset group as two branches', () => {
+    const { nodes } = buildMcpRepoTree([nested], [repo({ id: 'r1', name: 'Repo One' })]);
+
+    const platform = findNode(nodes, mcpRepoGroupId('r1', 'platform'))!;
+    expect(platform.label).toBe('platform');
+
+    const lint = findNode(nodes, mcpRepoGroupId('r1', 'platform/lint'))!;
+    expect(lint.label).toBe('lint');
+    expect(lint.children![0]!.label).toBe('lint-registry');
+
+    // The deep branch is nested under the shallow one, not a sibling of it.
+    expect(platform.children!.map((n) => n.id)).toEqual([mcpRepoGroupId('r1', 'platform/lint')]);
+  });
+
+  it('keeps every nested group branch non-selectable', () => {
+    const { nodes } = buildMcpRepoTree([nested], [repo({ id: 'r1', name: 'Repo One' })]);
+
+    expect(findNode(nodes, mcpRepoGroupId('r1', 'platform'))?.selectable).toBe(false);
+    expect(findNode(nodes, mcpRepoGroupId('r1', 'platform/lint'))?.selectable).toBe(false);
+  });
+
+  it('project mode nests the same way', () => {
+    const { nodes } = buildMcpProjectTree(
+      [nested],
+      [],
+      [project({ id: 'pr1', name: 'Proj' })],
+      [repo({ id: 'r1', name: 'Repo One' })],
+      'Global',
+    );
+
+    expect(findNode(nodes, mcpProjectGroupNodeId('pr1', 'r1', 'platform'))?.label).toBe('platform');
+    expect(findNode(nodes, mcpProjectGroupNodeId('pr1', 'r1', 'platform/lint'))?.label).toBe('lint');
+  });
+});
