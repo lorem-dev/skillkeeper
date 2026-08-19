@@ -67,8 +67,9 @@ Manage skills.
 
 Every `<id>` argument below accepts a full `group/name` (or bare `name`), or any
 unique prefix of one -- Docker-container-id style: `ab` resolves to `abba` when
-it is the only skill id starting with `ab`. An ambiguous prefix is rejected with
-the list of matches.
+it is the only skill id starting with `ab`. The `group` half may itself be a
+nested path up to three levels deep (`platform/lint/rust/clippy-skill`). An
+ambiguous prefix is rejected with the list of matches.
 
 ### skill list
 

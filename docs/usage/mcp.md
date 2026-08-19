@@ -32,8 +32,16 @@ A repository may declare MCP server presets in an `mcp.yml` (or `mcp.yaml`)
 file:
 
 - at the repository root - these presets have no group, and
-- inside any skill-group directory - the directory name becomes the
-  preset's group.
+- inside any ancestor directory of a resolved skill - the directory's path
+  relative to the repository root becomes the preset's group (a repository
+  holding `a/b/c/skill` is read at the root plus `a`, `a/b`, and `a/b/c`, so
+  an `mcp.yml` at `a/b/c` yields presets grouped `a/b/c`).
+
+Each `mcp.yml`/`mcp.yaml` is independent: a nested file does not inherit
+presets from a shallower one, and a shallower file is never overridden by a
+deeper one. A directory only counts when it leads to a skill that actually
+resolves, so a stray `mcp.yml` in a subtree with no resolved skill
+contributes nothing.
 
 If a directory has both `mcp.yml` and `mcp.yaml`, `mcp.yml` is read and
 `mcp.yaml` is ignored entirely, even if `mcp.yml` fails to parse (this is a
