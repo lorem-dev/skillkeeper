@@ -7,7 +7,13 @@ import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { read, readJson, Sandbox } from '../src/cli';
 
-/** The eight skills that install for claude. `text-hook-skill` is opencode's. */
+/**
+ * The eleven skills that install for claude. `text-hook-skill` is opencode's.
+ *
+ * The last three share one group tree at three different depths, which is what
+ * proves a group path may nest: `platform/release-skill` sits beside the `lint`
+ * subgroup, which itself holds a skill and the deeper `rust` subgroup.
+ */
 const CLAUDE_SKILLS = [
   'minimal-skill',
   'documented-skill',
@@ -17,6 +23,9 @@ const CLAUDE_SKILLS = [
   'tooling/format-skill',
   'docs-writing/changelog-skill',
   'docs-writing/readme-skill',
+  'platform/release-skill',
+  'platform/lint/style-skill',
+  'platform/lint/rust/clippy-skill',
 ];
 
 describe('skill install', () => {
@@ -64,6 +73,22 @@ describe('skill install', () => {
     expect(read(join(skillsRoot(), 'minimal-skill', '.skid.yml'))).not.toContain('group:');
   });
 
+  it('records a nested group as one slash-joined path, and keeps the install flat', () => {
+    // The deepest group a skill can carry. Identity holds the whole path, while
+    // the destination directory is still named after the skill alone -- the two
+    // halves of the decision that nesting is taxonomy, not layout.
+    const skid = read(join(skillsRoot(), 'clippy-skill', '.skid.yml'));
+    expect(skid).toContain('name: clippy-skill');
+    expect(skid).toContain('group: platform/lint/rust');
+    expect(existsSync(join(skillsRoot(), 'platform'))).toBe(false);
+
+    // Its one-level sibling under the same tree, to pin that both depths work
+    // side by side rather than only the deepest.
+    expect(read(join(skillsRoot(), 'release-skill', '.skid.yml'))).toContain(
+      'group: platform',
+    );
+  });
+
   it('recreates nested body paths instead of flattening them', () => {
     expect(existsSync(join(skillsRoot(), 'documented-skill', 'reference', 'notes.md'))).toBe(true);
     expect(existsSync(join(skillsRoot(), 'format-skill', 'config', 'format.toml'))).toBe(true);
@@ -86,7 +111,8 @@ describe('skill install', () => {
     it('writes one marked block per skill that ships guidance', () => {
       const blocks = guidance().match(/SKILLKEEPER_START/g) ?? [];
       // documented-skill, script-skill, json-hooks-skill, tooling/lint-skill,
-      // docs-writing/changelog-skill. The other three ship neither file.
+      // docs-writing/changelog-skill. Every other installed skill ships neither
+      // file -- including the three nested ones, which exist to test depth only.
       expect(blocks).toHaveLength(5);
     });
 
@@ -157,7 +183,7 @@ describe('skill install', () => {
   });
 
   describe('resolution warnings', () => {
-    it('does not resolve a skill nested deeper than one group level', () => {
+    it('does not resolve a skill nested deeper than three group levels', () => {
       const result = sandbox.run([
         'skill',
         'install',
@@ -181,7 +207,8 @@ describe('skill install', () => {
         '--project',
         project,
       ]);
-      expect(result.stderr).toContain('deep-nesting/level-two/too-deep-skill');
+      expect(result.stderr).toContain('deep-nesting/l2/l3/l4/too-deep-skill');
+      expect(result.stderr).toContain('nesting is deeper than 3 group levels');
       expect(result.stderr).toContain('[fixture]');
     });
 

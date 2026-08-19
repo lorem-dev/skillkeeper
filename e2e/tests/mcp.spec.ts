@@ -28,7 +28,11 @@ describe('mcp', () => {
     // least one *resolvable* skill, so this failing points at group resolution
     // rather than at MCP parsing.
     expect(listed).toContain('tooling/tooling-registry');
-    expect(listed.trim().split('\n')).toHaveLength(6);
+    // Discovery walks EVERY ancestor directory of a resolved skill, not just the
+    // first path segment, so a preset's group is the full directory path.
+    expect(listed).toContain('platform/lint/lint-registry');
+    expect(listed).toContain('platform/lint/rust/rust-registry');
+    expect(listed.trim().split('\n')).toHaveLength(8);
   });
 
   describe('install', () => {
