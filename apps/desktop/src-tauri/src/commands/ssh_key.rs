@@ -2110,6 +2110,117 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
     }
 
+    /// The one path in this feature that writes key material to disk, end to
+    /// end: Convert parks the destination, the user answers the window, and
+    /// `unlock` spends that passphrase on the export instead of on an agent
+    /// load. The `export_openssh` tests above pin the writer, not this -- they
+    /// call a `#[cfg(test)]` replica and would all still pass if
+    /// `finish_export` were deleted.
+    ///
+    /// The destination deliberately exists beforehand, so this covers the
+    /// convert-then-delete-then-write ordering as well: the save dialog has
+    /// already asked about replacing it, and `write_private_file` creates the
+    /// file fresh, so a successful export that failed to remove the old one
+    /// would fail outright here.
+    #[test]
+    fn answering_the_window_writes_the_export_and_switches_to_it() {
+        let app = TempAppData::new();
+        let path = write_putty_key(&app, "enc.ppk", crate::app::ppk::fixtures::ED25519_V3_ENC);
+        select(&app.ctx, path).unwrap();
+
+        let dir = export_test_dir("sk-ppk-finish-export-test");
+        let dest = dir.join("converted");
+        std::fs::write(&dest, b"replaced").unwrap();
+
+        begin_export(&app.ctx, dest.to_string_lossy().into_owned(), || Ok(()))
+            .expect("an encrypted source parks the export and raises the window");
+        assert!(app.ctx.ssh_key.has_pending_export());
+
+        // Every value the resolution carried, in order: the announcement this
+        // branch makes explicitly, because the attempt is never retried in
+        // place and a parked operation must hear about it now.
+        let resolutions = Mutex::new(Vec::new());
+        let result = unlock(
+            &app.ctx,
+            crate::app::ppk::fixtures::PASSPHRASE.to_string(),
+            |unlocked| resolutions.lock().unwrap().push(unlocked),
+        );
+        assert_eq!(result, Ok(()));
+
+        let text = std::fs::read_to_string(&dest).expect("the converted key is written");
+        assert!(text.starts_with("-----BEGIN OPENSSH PRIVATE KEY-----"));
+        let key = ssh_key::PrivateKey::from_openssh(&text).expect("a readable OpenSSH key");
+        assert!(
+            key.is_encrypted(),
+            "the source was encrypted, so this must be"
+        );
+        assert!(key.decrypt(crate::app::ppk::fixtures::PASSPHRASE).is_ok());
+
+        // The chosen key is now the file that was just written.
+        assert_eq!(
+            state(&app.ctx).path.as_deref(),
+            Some(dest.to_string_lossy().as_ref())
+        );
+        // A passphrase answers exactly one export; a second would have to be
+        // asked for again.
+        assert!(!app.ctx.ssh_key.has_pending_export());
+        // Nothing was held: this passphrase was spent on the conversion, and
+        // the new file has not been unlocked.
+        assert!(app.ctx.ssh_key.passphrase().is_none());
+        // Resolved exactly once, with `false`: the export succeeded, but the
+        // key it wrote is an encrypted OpenSSH key with no passphrase held for
+        // it, so it is `Locked` and not usable yet. Saying `true` here would
+        // release a waiting git operation onto a key it cannot use.
+        assert_eq!(
+            *resolutions.lock().unwrap(),
+            vec![false],
+            "a successful export is a resolution, but not a usable key"
+        );
+        assert_eq!(state(&app.ctx).state, KeyState::Locked);
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// The guarantee `finish_export`'s convert-before-delete ordering exists
+    /// for: the likeliest failure is a mistyped passphrase, and it must cost
+    /// the user nothing. The destination is a file they already had, and a
+    /// failed export must leave every byte of it where it was.
+    #[test]
+    fn a_failed_export_leaves_an_existing_destination_untouched() {
+        const EXISTING: &[u8] = b"the user's own file, not ours to delete\n";
+
+        let app = TempAppData::new();
+        let source = write_putty_key(&app, "enc.ppk", crate::app::ppk::fixtures::ED25519_V3_ENC);
+        select(&app.ctx, source.clone()).unwrap();
+
+        let dir = export_test_dir("sk-ppk-export-keeps-dest-test");
+        let dest = dir.join("precious");
+        std::fs::write(&dest, EXISTING).unwrap();
+
+        begin_export(&app.ctx, dest.to_string_lossy().into_owned(), || Ok(())).unwrap();
+        assert!(app.ctx.ssh_key.has_pending_export());
+
+        let resolutions = Mutex::new(Vec::new());
+        let error = unlock(&app.ctx, "not-the-passphrase".to_string(), |unlocked| {
+            resolutions.lock().unwrap().push(unlocked)
+        })
+        .expect_err("a wrong passphrase cannot convert the key");
+        assert_eq!(error, WRONG_PASSPHRASE_ERROR);
+
+        assert_eq!(
+            std::fs::read(&dest).unwrap(),
+            EXISTING,
+            "a failed export must not touch what was already there"
+        );
+        // The chosen key is still the PuTTY one: nothing was switched to.
+        assert_eq!(state(&app.ctx).path.as_deref(), Some(source.as_str()));
+        // Spent either way -- a retry has to be asked for again.
+        assert!(!app.ctx.ssh_key.has_pending_export());
+        assert_eq!(*resolutions.lock().unwrap(), vec![false]);
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
     /// The `KeyState` is not the right question for whether the window is
     /// needed: it folds in agent availability, so on a no-agent machine even
     /// an unencrypted source reports `PuttyNoAgent`. Only the source file's
