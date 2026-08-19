@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.5.0-rc.2
+
 ### Changed
 
 - The PuTTY key conversion action in Settings is a warning icon with a tooltip
