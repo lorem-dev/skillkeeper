@@ -575,6 +575,20 @@ impl SshKeyStore {
         Ok(())
     }
 
+    /// The public line of the PuTTY key this session put in the agent, if one
+    /// is recorded.
+    ///
+    /// Public material only, and the one thing needed to ask the agent whether
+    /// it still holds that key (see [`super::ssh_agent::holds_key`]). Cheap and
+    /// non-blocking, like every accessor here: a lock and a clone, no I/O.
+    pub(crate) fn putty_public_line(&self) -> Option<String> {
+        self.inner
+            .lock()
+            .expect("ssh key store lock poisoned")
+            .putty_public
+            .clone()
+    }
+
     /// Take this session's PuTTY key back out of the agent, if one is there.
     ///
     /// Best-effort: an agent that is gone, or a key that already expired, is

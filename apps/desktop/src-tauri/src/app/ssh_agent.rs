@@ -212,6 +212,57 @@ pub fn add_from_memory(openssh: &str, ttl_secs: u64) -> Result<(), String> {
     }
 }
 
+/// The algorithm and key blob of a public-key line, dropping the comment.
+///
+/// The comment is the agent's business: `ssh-add -L` prints whatever comment
+/// the key was added with, which a user can change, so the key material is the
+/// only part that says whether two lines are the same key. `None` for a line
+/// with fewer than two fields, which is how the prose `ssh-add` prints when it
+/// holds nothing ("The agent has no identities.") fails to match anything.
+fn key_material(line: &str) -> Option<(&str, &str)> {
+    let mut fields = line.split_whitespace();
+    let algorithm = fields.next()?;
+    let blob = fields.next()?;
+    Some((algorithm, blob))
+}
+
+/// Whether `listing` -- the stdout of `ssh-add -L` -- contains `public_line`.
+///
+/// Split out from [`holds_key`] so the comparison is testable with no agent to
+/// talk to, the same way [`add_args`] and [`parse_agent_env`] are.
+fn lists_key(listing: &str, public_line: &str) -> bool {
+    let Some(wanted) = key_material(public_line) else {
+        return false;
+    };
+    listing
+        .lines()
+        .any(|line| key_material(line) == Some(wanted))
+}
+
+/// Whether the agent currently holds the key with this `public_line`.
+///
+/// `false` for every way of not being sure -- no agent, no `ssh-add` on PATH,
+/// a non-zero exit, unreadable output -- because the caller acts on "this key
+/// is no longer usable", and an agent that cannot even be asked is not one
+/// holding a usable key.
+pub fn holds_key(public_line: &str) -> bool {
+    let mut command = Command::new("ssh-add");
+    command
+        .arg("-L")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    crate::util::hide_console(&mut command);
+    match command.output() {
+        // `ssh-add -L` exits non-zero both for an agent with no identities and
+        // for one it cannot reach; neither is a listing worth reading.
+        Ok(output) if output.status.success() => {
+            lists_key(&String::from_utf8_lossy(&output.stdout), public_line)
+        }
+        _ => false,
+    }
+}
+
 /// Remove a key from the agent by its public line, again over a pipe.
 ///
 /// Best-effort by nature: the agent may be gone, the key may have expired, or
@@ -253,6 +304,53 @@ pub fn remove(public_line: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A public line as `ssh-add -L` prints it.
+    const OURS: &str =
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKfake0000000000000000000000000000000 skillkeeper";
+    const THEIRS: &str =
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQother000000000000000000000000000000 someone@host";
+
+    #[test]
+    fn our_key_is_found_among_the_agents_other_identities() {
+        let listing = format!("{THEIRS}\n{OURS}\n");
+        assert!(lists_key(&listing, OURS));
+    }
+
+    /// The comment is the agent's business, not ours: `ssh-add -L` prints
+    /// whatever comment the key was added with, and the key material is what
+    /// says whether this is the same key.
+    #[test]
+    fn a_different_comment_is_still_our_key() {
+        let listing = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKfake0000000000000000000000000000000 renamed-by-someone\n";
+        assert!(lists_key(listing, OURS));
+    }
+
+    #[test]
+    fn a_listing_without_our_key_does_not_hold_it() {
+        assert!(!lists_key(&format!("{THEIRS}\n"), OURS));
+    }
+
+    #[test]
+    fn an_empty_listing_holds_nothing() {
+        assert!(!lists_key("", OURS));
+        assert!(!lists_key("\n\n", OURS));
+    }
+
+    /// What `ssh-add -L` prints when the agent is running but empty. It is
+    /// prose, not a key line, and must never be mistaken for one.
+    #[test]
+    fn an_agent_with_no_identities_holds_nothing() {
+        assert!(!lists_key("The agent has no identities.\n", OURS));
+    }
+
+    /// A public line we could not have produced answers no rather than
+    /// matching the first prose line it happens to line up with.
+    #[test]
+    fn a_malformed_public_line_matches_nothing() {
+        assert!(!lists_key(&format!("{OURS}\n"), ""));
+        assert!(!lists_key(&format!("{OURS}\n"), "ssh-ed25519"));
+    }
 
     #[test]
     fn parses_both_sock_and_pid() {

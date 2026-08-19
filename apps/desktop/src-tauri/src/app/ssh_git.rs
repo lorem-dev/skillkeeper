@@ -120,34 +120,42 @@ pub fn run_git_in_terminal(ctx: &AppContext, cwd: &str, args: &[String]) -> Resu
     match result {
         Ok(output) => Ok(output),
         Err(error) => {
-            // The agent may have dropped our key (TTL expiry, `ssh-add -D`)
-            // while the store still records it as loaded. Authentication
-            // failure is the only evidence we get, so it is where the record is
-            // corrected -- the next operation then prompts instead of failing
-            // the same way again. The cheap string test comes first, so the
-            // ordinary failure (a bad path, a missing remote) does not pay for
-            // a key-file read it has no use for.
-            if is_auth_failure(&error) && ctx.ssh_key.state() == KeyState::PuttyInAgent {
-                ctx.ssh_key.unload_putty();
-            }
+            drop_a_key_the_agent_no_longer_holds(ctx);
             Err(refusal.map_or(error, |r| refusal_error(&r).to_string()))
         }
     }
 }
 
-/// Whether `error` is `ssh` reporting that the server rejected every identity
-/// it offered -- the one failure that means the agent may no longer be holding
-/// this session's key.
+/// After a failed git invocation, correct the store if the agent has let go of
+/// the PuTTY key it records as loaded.
 ///
-/// Deliberately narrow. `error` is arbitrary git and OS output, and a bare
-/// `Permission denied` is also how git reports a file it cannot open
-/// (`os error 13`), a config it cannot lock, and a file Windows has locked.
-/// Treating one of those as an authentication failure would evict a perfectly
-/// good key from the agent and cost the user a passphrase prompt for a problem
-/// that has nothing to do with the key -- so the method list `ssh` always
-/// prints has to be there, and `publickey` has to be in it.
-fn is_auth_failure(error: &str) -> bool {
-    error.contains("Permission denied (publickey")
+/// The agent can drop our key without telling anyone -- `ssh-add -D`, the
+/// 12-hour TTL expiring mid-session, an agent restart -- and the store would go
+/// on reporting [`KeyState::PuttyInAgent`], so the gate would go on saying
+/// `Proceed` and every operation would fail the same way with no way back but
+/// re-selecting the key. A failed invocation is the cue to check.
+///
+/// The agent is ASKED rather than the error string read. It is worth saying why,
+/// because inferring from the text is the obvious thing to write and it cannot
+/// work here: the error this arm receives is built by the PTY layer and is only
+/// ever `git exited with code N` (`pty::manager`), since git's own stderr goes
+/// to the terminal scrollback rather than into the returned string. A
+/// `Permission denied (publickey)` test against it is dead code that reads like
+/// a working guard.
+///
+/// Costs one `ssh-add -L` per FAILED invocation while a PuTTY key is loaded.
+/// Everyone else pays a lock and a clone: with no key recorded there is nothing
+/// to correct, so that test comes before the one that reads the key file.
+fn drop_a_key_the_agent_no_longer_holds(ctx: &AppContext) {
+    let Some(public_line) = ctx.ssh_key.putty_public_line() else {
+        return;
+    };
+    if ctx.ssh_key.state() != KeyState::PuttyInAgent {
+        return;
+    }
+    if !super::ssh_agent::holds_key(&public_line) {
+        ctx.ssh_key.unload_putty();
+    }
 }
 
 /// The renderer-facing code for a refusal.
@@ -343,28 +351,6 @@ mod tests {
             refusal_error(&Refusal::NoPassphraseHeld),
             "ssh.askpassForgotten"
         );
-    }
-
-    /// The stale-record clear must fire on an SSH authentication failure and on
-    /// nothing else. `Permission denied` on its own is also how git reports a
-    /// file it cannot open and how Windows reports a locked one; evicting a
-    /// perfectly good key from the agent for one of those would cost the user a
-    /// passphrase prompt for a problem that has nothing to do with the key.
-    #[test]
-    fn only_an_ssh_authentication_failure_looks_like_one() {
-        assert!(is_auth_failure(
-            "git@github.com: Permission denied (publickey)."
-        ));
-        assert!(is_auth_failure(
-            "Permission denied (publickey,gssapi-keyex,password)."
-        ));
-        assert!(!is_auth_failure(
-            "fatal: could not open '/etc/x': Permission denied (os error 13)"
-        ));
-        assert!(!is_auth_failure(
-            "error: could not lock config file .git/config: Permission denied"
-        ));
-        assert!(!is_auth_failure("fatal: repository 'x' not found"));
     }
 
     /// The diagnostic switch reads as on for the spellings a user would try and
