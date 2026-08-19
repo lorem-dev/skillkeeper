@@ -526,6 +526,11 @@ mod tests {
     /// chosen, whatever the key's state.
     #[test]
     fn a_putty_key_is_never_named_on_the_ssh_command_line() {
+        // A public line of the right shape whose blob is nothing any real
+        // agent could be holding.
+        const LOADED: &str =
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKfake0000000000000000000000000000000 skillkeeper";
+
         let app = TempAppData::new();
         for (name, contents) in [
             ("plain.ppk", crate::app::ppk::fixtures::ED25519_V3_PLAIN),
@@ -541,6 +546,23 @@ mod tests {
                 "{name} must leave the environment alone"
             );
         }
+
+        // And the state git actually runs in with a PuTTY key: loaded into the
+        // agent, where `ssh` finds it without being told anything. The two
+        // cases above leave the environment empty because the key is unusable;
+        // this one leaves it empty even though the key works, which is the
+        // property that matters. `record_putty_loaded` is the only way to
+        // reach it without an agent -- see its doc comment.
+        let path = app.dir().join("plain.ppk").to_string_lossy().into_owned();
+        app.ctx.ssh_key.set_path(Some(path.clone()));
+        app.ctx
+            .ssh_key
+            .record_putty_loaded(path, LOADED.to_string());
+        assert_eq!(app.ctx.ssh_key.state(), KeyState::PuttyInAgent);
+        assert!(
+            git_env_lease(&app.ctx).vars().is_empty(),
+            "a loaded PuTTY key must leave the environment alone too"
+        );
     }
 
     #[test]

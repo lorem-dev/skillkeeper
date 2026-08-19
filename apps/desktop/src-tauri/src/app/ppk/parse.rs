@@ -83,10 +83,10 @@ pub fn parse(text: &str) -> Result<PpkFile, PpkError> {
         .strip_prefix("PuTTY-User-Key-File-")
         .ok_or(PpkError::NotPpk)?;
     let (version, algorithm) = rest.split_once(':').ok_or(PpkError::Malformed)?;
-    let version: u8 = version
-        .trim()
-        .parse()
-        .map_err(|_| PpkError::UnsupportedVersion)?;
+    // A version that is not a number at all is a broken header, not a PuTTY
+    // release this build is too old for: saying `UnsupportedVersion` would
+    // send the user looking for a newer build that does not exist.
+    let version: u8 = version.trim().parse().map_err(|_| PpkError::Malformed)?;
     if version != 2 && version != 3 {
         return Err(PpkError::UnsupportedVersion);
     }
@@ -109,6 +109,14 @@ pub fn parse(text: &str) -> Result<PpkFile, PpkError> {
         }
         let (key, raw_value) = line.split_once(':').ok_or(PpkError::Malformed)?;
         let value = raw_value.trim();
+        // A repeated field is last-write-wins, deliberately: PuTTY writes none,
+        // and every field whose value could change what this file means --
+        // algorithm, encryption, comment, and both bodies -- is covered by the
+        // MAC computed over the values read here, so a duplicate that altered
+        // any of them fails verification rather than being honoured. The same
+        // goes for the KDF parameters, which decide the key the MAC is checked
+        // with. Rejecting duplicates outright would buy nothing the MAC does
+        // not already give.
         match key {
             "Encryption" => encryption = Some(value.to_string()),
             // Every other field is numeric or a single token, where `.trim()`
@@ -201,7 +209,10 @@ fn read_body<'a>(
 }
 
 /// Decode standard base64, ignoring padding and whitespace. `None` on any
-/// character outside the alphabet.
+/// character outside the alphabet, and on an input whose alphabet characters
+/// number 1 more than a multiple of 4 -- a single leftover character encodes
+/// no whole byte, so accepting it would silently drop it and hand back a body
+/// shorter than the file claims.
 fn b64_decode(input: &str) -> Option<Vec<u8>> {
     let mut out = Vec::with_capacity(input.len() / 4 * 3);
     let mut acc: u32 = 0;
@@ -222,6 +233,11 @@ fn b64_decode(input: &str) -> Option<Vec<u8>> {
             bits -= 8;
             out.push((acc >> bits) as u8);
         }
+    }
+    // 6 leftover bits is exactly one trailing alphabet character: no base64
+    // encoder produces it, so the input is truncated or corrupt.
+    if bits == 6 {
+        return None;
     }
     Some(out)
 }
@@ -335,6 +351,21 @@ mod tests {
         ));
     }
 
+    /// A version that is not a number is a broken file, not a PuTTY release
+    /// from the future: telling the user their build is too old would send
+    /// them looking for a newer one that does not exist.
+    #[test]
+    fn a_non_numeric_version_is_malformed() {
+        assert!(matches!(
+            parse("PuTTY-User-Key-File-x: ssh-rsa\n"),
+            Err(PpkError::Malformed)
+        ));
+        assert!(matches!(
+            parse("PuTTY-User-Key-File-: ssh-rsa\n"),
+            Err(PpkError::Malformed)
+        ));
+    }
+
     #[test]
     fn a_truncated_body_is_malformed() {
         let truncated: String = fixtures::ED25519_V3_ENC
@@ -416,6 +447,22 @@ mod tests {
         assert_eq!(b64_decode("Zg==").unwrap(), b"f");
         assert_eq!(b64_decode("").unwrap(), b"");
         assert!(b64_decode("!!!!").is_none());
+    }
+
+    /// One trailing character encodes no whole byte. Accepting it would drop
+    /// it silently and return a body shorter than the file's own bytes say --
+    /// a corrupt file read as a valid, shorter one.
+    #[test]
+    fn base64_rejects_a_lone_trailing_character() {
+        assert!(b64_decode("Zm9vYmFyA").is_none());
+        assert!(b64_decode("A").is_none());
+        // Whitespace and padding are not alphabet characters, so they neither
+        // create nor cure the condition.
+        assert!(b64_decode("Zm9v YmFy A").is_none());
+        assert_eq!(b64_decode("Zm9v\nYmFy\n").unwrap(), b"foobar");
+        // Two and three trailing characters are the ordinary padded shapes.
+        assert_eq!(b64_decode("Zm9vYmFyZg==").unwrap(), b"foobarf");
+        assert_eq!(b64_decode("Zm9vYmFyZm8=").unwrap(), b"foobarfo");
     }
 
     #[test]

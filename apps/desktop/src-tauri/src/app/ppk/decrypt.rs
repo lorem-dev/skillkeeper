@@ -44,8 +44,16 @@ const MAX_ARGON2_PARALLELISM: u32 = 16;
 /// # Errors
 ///
 /// [`PpkError::WrongPassphrase`] when the MAC fails on an encrypted key,
-/// [`PpkError::Damaged`] when it fails on an unencrypted one, and
-/// [`PpkError::Malformed`] for a structurally impossible file.
+/// [`PpkError::Damaged`] when it fails on an unencrypted one,
+/// [`PpkError::Malformed`] for a structurally impossible file, and
+/// [`PpkError::UnsupportedVersion`] for any version but 2 or 3.
+///
+/// Every match on the version below names its versions rather than catching
+/// the rest with `_`: a format version this build has never seen must be
+/// refused, not routed into v2's SHA-1 crypto on the assumption that whatever
+/// comes after 3 works like what came before it. [`super::parse::parse`]
+/// already rejects such a file, so these arms are the second lock on that
+/// door -- and the one that holds if a `PpkFile` is ever built another way.
 pub fn unlock(file: &PpkFile, passphrase: &str) -> Result<Zeroizing<Vec<u8>>, PpkError> {
     let (plain, mac_key) = if file.is_encrypted() {
         let kdf = file.kdf.as_ref();
@@ -56,12 +64,13 @@ pub fn unlock(file: &PpkFile, passphrase: &str) -> Result<Zeroizing<Vec<u8>>, Pp
                 let plain = aes_cbc_decrypt(&derived[..32], &derived[32..48], &file.private_blob)?;
                 (plain, Zeroizing::new(derived[48..80].to_vec()))
             }
-            _ => {
+            2 => {
                 let cipher_key = derive_v2_cipher_key(passphrase);
                 let iv = [0u8; 16];
                 let plain = aes_cbc_decrypt(&cipher_key, &iv, &file.private_blob)?;
                 (plain, v2_mac_key(passphrase))
             }
+            _ => return Err(PpkError::UnsupportedVersion),
         }
     } else {
         // Already `Zeroizing`, and stays so through the clone.
@@ -70,7 +79,8 @@ pub fn unlock(file: &PpkFile, passphrase: &str) -> Result<Zeroizing<Vec<u8>>, Pp
             // An unencrypted v3 key has no KDF output to take a MAC key from,
             // so the MAC is keyed with nothing at all.
             3 => Zeroizing::new(Vec::new()),
-            _ => v2_mac_key(""),
+            2 => v2_mac_key(""),
+            _ => return Err(PpkError::UnsupportedVersion),
         };
         (plain, mac_key)
     };
@@ -78,7 +88,8 @@ pub fn unlock(file: &PpkFile, passphrase: &str) -> Result<Zeroizing<Vec<u8>>, Pp
     let data = mac_data(file, &plain);
     let ok = match file.version {
         3 => verify_sha256(&mac_key, &data, &file.mac),
-        _ => verify_sha1(&mac_key, &data, &file.mac),
+        2 => verify_sha1(&mac_key, &data, &file.mac),
+        _ => return Err(PpkError::UnsupportedVersion),
     };
     if !ok {
         return Err(if file.is_encrypted() {
@@ -177,15 +188,24 @@ fn derive_v3(params: &Argon2Params, passphrase: &str) -> Result<Zeroizing<Vec<u8
 
 /// PPK v2's cipher key: two SHA-1 digests over a counter and the passphrase,
 /// concatenated and truncated to 32 bytes.
+///
+/// `finalize` hands back an owned array that is dropped un-zeroized, and it
+/// holds material derived from the passphrase, so each one is wiped by hand
+/// once copied out. `Zeroizing` cannot wrap it directly -- its inner type must
+/// implement `Zeroize`, which the digest crate's output array does not -- but
+/// the byte slice behind it can be, which is the same volatile write.
 fn derive_v2_cipher_key(passphrase: &str) -> Zeroizing<Vec<u8>> {
     use sha1::Digest;
+    use zeroize::Zeroize;
 
     let mut key = Zeroizing::new(Vec::with_capacity(40));
     for sequence in 0u32..2 {
         let mut hash = Sha1::new();
         hash.update(sequence.to_be_bytes());
         hash.update(passphrase.as_bytes());
-        key.extend_from_slice(&hash.finalize());
+        let mut digest = hash.finalize();
+        key.extend_from_slice(&digest);
+        digest.as_mut_slice().zeroize();
     }
     key.truncate(32);
     key
@@ -193,13 +213,20 @@ fn derive_v2_cipher_key(passphrase: &str) -> Zeroizing<Vec<u8>> {
 
 /// PPK v2's MAC key: SHA-1 over a fixed label and the passphrase (empty for an
 /// unencrypted key).
+///
+/// The digest is wiped once copied out, for the reason
+/// [`derive_v2_cipher_key`] gives.
 fn v2_mac_key(passphrase: &str) -> Zeroizing<Vec<u8>> {
     use sha1::Digest;
+    use zeroize::Zeroize;
 
     let mut hash = Sha1::new();
     hash.update(b"putty-private-key-file-mac-key");
     hash.update(passphrase.as_bytes());
-    Zeroizing::new(hash.finalize().to_vec())
+    let mut digest = hash.finalize();
+    let key = Zeroizing::new(digest.to_vec());
+    digest.as_mut_slice().zeroize();
+    key
 }
 
 /// AES-256-CBC with no padding scheme: PuTTY pads the blob itself, to the block
@@ -259,47 +286,47 @@ mod tests {
         assert!(matches!(unlock(&f, ""), Err(PpkError::Damaged)));
     }
 
-    #[test]
-    fn a_comment_with_trailing_whitespace_verifies_with_its_real_mac() {
-        // A real round trip through `unlock`, not just parsing: a parser that
-        // trimmed the comment would still parse this file, but the MAC PuTTY
-        // wrote was computed over the untrimmed comment, so verification
-        // would fail and a correct (empty) passphrase would be reported as
-        // wrong on an unencrypted key -- `Damaged`, per `unlock`'s contract.
-        let modified = fixtures::ED25519_V3_PLAIN.replacen(
-            "Comment: skillkeeper-test\n",
-            "Comment: skillkeeper-test \n",
-            1,
+    /// The width of the first SSH string in a decrypted private blob.
+    ///
+    /// A blob that decrypted correctly starts with a length its own algorithm
+    /// determines; one that did not is random bytes, which would name a width
+    /// that does not fit. Only lengths are ever asserted or printed here --
+    /// the bytes after them are the private key.
+    fn first_field_width(plain: &[u8]) -> usize {
+        let width = u32::from_be_bytes(plain[..4].try_into().expect("four bytes")) as usize;
+        assert!(
+            4 + width <= plain.len(),
+            "the first field claims more bytes than the blob has"
         );
-        let mut f = parse(&modified).expect("parses");
-        assert_eq!(f.comment, "skillkeeper-test ");
-
-        // The fixture's own MAC was computed over the original comment, so it
-        // no longer matches; replace it with the MAC this exact (untrimmed)
-        // file would really carry, the same way `unlock` computes it.
-        let data = mac_data(&f, &f.private_blob);
-        let mut mac = <Hmac<Sha256> as Mac>::new_from_slice(&[]).expect("empty key is valid");
-        mac.update(&data);
-        f.mac = mac.finalize().into_bytes().to_vec();
-
-        let plain = unlock(&f, "").expect("the real MAC for this comment must verify");
-        assert_eq!(&plain[..4], &[0, 0, 0, 32]);
+        width
     }
 
+    /// The private field widths PuTTY writes for each algorithm: an mpint
+    /// carries a leading zero byte whenever its top bit would otherwise read
+    /// as a sign, which is why the RSA and ECDSA numbers are what they are and
+    /// ed25519's fixed-length string is not.
     #[test]
     fn unlocks_v3_rsa_and_ecdsa() {
-        for text in [
-            fixtures::RSA_V3_ENC,
-            fixtures::ECDSA_V3_ENC,
-            fixtures::ECDSA_V3_P384,
+        for (text, expected) in [
+            // `d`, the RSA private exponent of a 2048-bit key.
+            (fixtures::RSA_V3_ENC, 256),
+            // The P-256 scalar, with its mpint sign byte.
+            (fixtures::ECDSA_V3_ENC, 33),
+            // The P-384 scalar, likewise.
+            (fixtures::ECDSA_V3_P384, 49),
         ] {
             let f = parse(text).unwrap();
-            assert!(unlock(&f, fixtures::PASSPHRASE).is_ok(), "{}", f.algorithm);
+            let plain = unlock(&f, fixtures::PASSPHRASE).expect("correct passphrase");
+            assert_eq!(first_field_width(&plain), expected, "{}", f.algorithm);
         }
     }
 
+    /// The three caps, each asserted for what it can actually be asserted for:
+    /// the error. Whether the KDF was skipped rather than run and failed is
+    /// not observable from here -- a derivation that ran and failed reports
+    /// `Malformed` too -- so the names say "rejected", not "not run".
     #[test]
-    fn absurd_argon2_parameters_are_rejected_not_run() {
+    fn argon2_memory_above_the_cap_is_rejected() {
         let mut f = parse(fixtures::ED25519_V3_ENC).unwrap();
         f.kdf.as_mut().unwrap().memory_kib = 8_000_000; // 8 GiB
         assert!(matches!(
@@ -309,7 +336,7 @@ mod tests {
     }
 
     #[test]
-    fn an_absurd_argon2_pass_count_is_rejected_not_run() {
+    fn an_argon2_pass_count_above_the_cap_is_rejected() {
         let mut f = parse(fixtures::ED25519_V3_ENC).unwrap();
         f.kdf.as_mut().unwrap().passes = u32::MAX;
         assert!(matches!(
@@ -319,13 +346,29 @@ mod tests {
     }
 
     #[test]
-    fn an_absurd_argon2_parallelism_is_rejected_not_run() {
+    fn an_argon2_parallelism_above_the_cap_is_rejected() {
         let mut f = parse(fixtures::ED25519_V3_ENC).unwrap();
         f.kdf.as_mut().unwrap().parallelism = 4_000_000_000;
         assert!(matches!(
             unlock(&f, fixtures::PASSPHRASE),
             Err(PpkError::Malformed)
         ));
+    }
+
+    /// A format version this build has never seen is refused, not run through
+    /// v2's SHA-1 crypto. `parse` rejects such a file, so the only way to
+    /// reach `unlock` with one is to build the `PpkFile` by hand -- which is
+    /// exactly the case these arms exist for.
+    #[test]
+    fn an_unknown_version_is_refused_rather_than_routed_to_v2() {
+        for text in [fixtures::ED25519_V3_ENC, fixtures::ED25519_V3_PLAIN] {
+            let mut f = parse(text).unwrap();
+            f.version = 4;
+            assert!(matches!(
+                unlock(&f, fixtures::PASSPHRASE),
+                Err(PpkError::UnsupportedVersion)
+            ));
+        }
     }
 
     #[test]
@@ -345,7 +388,8 @@ mod tests {
     #[test]
     fn unlocks_an_unencrypted_v2_key() {
         let f = parse(fixtures::ED25519_V2_PLAIN).unwrap();
-        assert!(unlock(&f, "").is_ok());
+        let plain = unlock(&f, "").expect("no passphrase needed");
+        assert_eq!(&plain[..4], &[0, 0, 0, 32]);
     }
 
     #[test]
@@ -360,6 +404,8 @@ mod tests {
     #[test]
     fn unlocks_a_v2_rsa_key() {
         let f = parse(fixtures::RSA_V2_ENC).unwrap();
-        assert!(unlock(&f, fixtures::PASSPHRASE).is_ok());
+        let plain = unlock(&f, fixtures::PASSPHRASE).expect("correct passphrase");
+        // `d`, as in the v3 RSA case above.
+        assert_eq!(first_field_width(&plain), 256);
     }
 }

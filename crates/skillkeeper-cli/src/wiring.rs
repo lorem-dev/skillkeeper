@@ -290,7 +290,9 @@ mod tests {
         // `ssh -i` cannot read a .ppk, so pointing git at one would break every
         // SSH remote. Offering nothing leaves the user's agent and ~/.ssh/config
         // to work as they always did.
-        let dir = std::env::temp_dir().join("sk-ppk-wiring-test");
+        // Per-run unique: a fixed name is shared with a concurrent or crashed
+        // prior run, and this one is left behind for the next.
+        let dir = std::env::temp_dir().join(format!("sk-ppk-wiring-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let key = dir.join("id.ppk");
         std::fs::write(
@@ -304,7 +306,7 @@ mod tests {
             let vars = git_env_for(Some(key.to_string_lossy().into_owned()));
             assert!(vars.is_empty(), "expected no variables, got {vars:?}");
         }
-        std::fs::remove_file(&key).ok();
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     /// `git_env_for` is the `with_env` closure, evaluated once per git

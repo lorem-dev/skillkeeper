@@ -269,14 +269,14 @@ mod tests {
     /// key/IV with Python's `bcrypt.kdf` and AES-256-CTR: the plaintext is
     /// well-formed, `ssh-key` just refuses to parse it).
     ///
-    /// For an encrypted ECDSA fixture, this derives the key/IV and decrypts
-    /// with `ssh-key`'s own public `Kdf::derive_key_and_iv` (so the KDF
-    /// itself is never reimplemented here), then parses the private section
-    /// by hand with the same `Reader`/`left_pad`/`decode_as` path
-    /// `keypair_data` uses in production, instead of asking `ssh-key` to
-    /// decode it. Every other case (unencrypted, or encrypted but not
-    /// ECDSA) goes through `ssh-key`'s own `decrypt()` as before, since
-    /// those do not hit this limitation.
+    /// So `ssh-key`'s own `decrypt()` is always tried first, and the
+    /// hand-rolled path below runs only for the fixtures it actually refuses
+    /// -- in practice P-521, leaving P-256 and P-384 with a decode that owes
+    /// nothing to this file's code. When it does run, this derives the key/IV
+    /// with `ssh-key`'s own public `Kdf::derive_key_and_iv` (so the KDF itself
+    /// is never reimplemented here), then parses the private section by hand
+    /// with the same `Reader`/`left_pad`/`decode_as` path `keypair_data` uses
+    /// in production.
     fn puttygen_keypair_data(
         theirs: &ssh_key::PrivateKey,
         passphrase: &str,
@@ -284,12 +284,20 @@ mod tests {
         if !theirs.is_encrypted() {
             return (theirs.key_data().clone(), theirs.comment().to_string());
         }
-        if !matches!(theirs.algorithm(), ssh_key::Algorithm::Ecdsa { .. }) {
-            let decrypted = theirs.decrypt(passphrase).expect("fixture decrypts");
-            return (
-                decrypted.key_data().clone(),
-                decrypted.comment().to_string(),
-            );
+        match theirs.decrypt(passphrase) {
+            Ok(decrypted) => {
+                return (
+                    decrypted.key_data().clone(),
+                    decrypted.comment().to_string(),
+                )
+            }
+            // Only an ECDSA scalar may defeat `ssh-key`'s decoder (see above);
+            // any other refusal means the fixture or the passphrase is wrong,
+            // and falling back would hide that.
+            Err(e) => assert!(
+                matches!(theirs.algorithm(), ssh_key::Algorithm::Ecdsa { .. }),
+                "only an ECDSA fixture may need the hand-rolled path: {e}"
+            ),
         }
 
         let ciphertext = theirs
@@ -313,8 +321,21 @@ mod tests {
         };
 
         let mut reader = Reader::new(&plaintext);
-        reader.u32().expect("checkint1");
-        reader.u32().expect("checkint2");
+        // OpenSSH writes one random value twice at the head of the private
+        // section precisely so a reader can tell a good decryption from a bad
+        // one. It is the only integrity signal on this hand-rolled path --
+        // every other field would decode into *something* -- so a wrong key or
+        // IV says so here instead of surfacing as a confusing key mismatch at
+        // the end of the test. The values themselves are never printed: they
+        // come out of the same plaintext the key does.
+        let (check1, check2) = (
+            reader.u32().expect("checkint1"),
+            reader.u32().expect("checkint2"),
+        );
+        assert!(
+            check1 == check2,
+            "the hand-rolled decrypt produced garbage: the two checkints differ"
+        );
         reader.string().expect("algorithm name");
         reader.string().expect("curve name");
         let point = reader.string().expect("public point");

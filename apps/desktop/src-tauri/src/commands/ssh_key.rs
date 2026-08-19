@@ -1059,8 +1059,8 @@ fn convert_to_openssh(source: &str, passphrase: &str) -> Result<Zeroizing<String
     let text = std::fs::read_to_string(source).map_err(|_| KEY_MISSING_ERROR.to_string())?;
     let file = crate::app::ppk::parse::parse(&text).map_err(|_| NOT_A_KEY_ERROR.to_string())?;
     // Through the same two tables every other PPK failure is reported with:
-    // `From<PpkError>` and then [`unlock_error_key`]. A third table here would
-    // be one nothing keeps in step with the other two.
+    // `From<PpkError>` and then `unlock_error_key`. A third table here would be
+    // one nothing keeps in step with the other two.
     let converted = crate::app::ppk::convert::convert(&file, passphrase)
         .map_err(|e| unlock_error_key(UnlockError::from(e)).to_string())?;
 

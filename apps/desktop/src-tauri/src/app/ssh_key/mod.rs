@@ -242,6 +242,15 @@ struct Inner {
     /// The public key line of the PuTTY key this session put in the agent, and
     /// the path it was loaded for. Public material only -- the private half
     /// left this process the moment it was piped to `ssh-add`.
+    ///
+    /// Both are written together, and only by
+    /// [`load_putty`](SshKeyStore::load_putty), which sets them after a load
+    /// and only while `path` still names the key it loaded -- so a pair
+    /// recorded here always describes a key that really is in the agent and
+    /// really is the chosen one. The single exception is
+    /// [`record_putty_loaded`](SshKeyStore::record_putty_loaded), which is
+    /// `#[cfg(test)]` and bypasses both halves of that on purpose, so a test
+    /// can reach [`KeyState::PuttyInAgent`] on a machine with no agent.
     putty_public: Option<String>,
     putty_loaded_for: Option<String>,
     /// Bumped by every [`SshKeyStore::notify_unlock_result`] call; a waiter
