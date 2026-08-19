@@ -8,6 +8,7 @@
 //! same files.
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use skillkeeper_agents::{register_builtin_agents, AdapterRegistry};
 use skillkeeper_config::SkillKeeperConfig;
@@ -118,25 +119,46 @@ impl Wiring {
     }
 }
 
+/// Whether this process has already told the user about a PuTTY key.
+///
+/// Process-wide, because the advice is too: it names a one-off `puttygen`
+/// command to run, and it is the same command however many repositories the
+/// current invocation touches.
+static PUTTY_WARNED: AtomicBool = AtomicBool::new(false);
+
+/// Whether this is the first PuTTY key this process has seen, marking it seen.
+///
+/// [`git_env_for`] is the `with_env` closure, so it runs once per git
+/// subprocess -- an update across N repositories would otherwise print the
+/// same four-line advice N times. Takes the flag as an argument rather than
+/// reading the static, so the once-ness can be tested without depending on
+/// what the rest of the process has already printed.
+fn first_putty_warning(warned: &AtomicBool) -> bool {
+    !warned.swap(true, Ordering::Relaxed)
+}
+
 /// Extra git environment for a configured SSH key, or nothing when unset. The
 /// CLI holds no passphrase: `ssh` prompts in the terminal it already owns.
 ///
-/// A PuTTY-format key yields nothing at all. `ssh -i` cannot read that format,
-/// so naming the file would turn every SSH remote into an error; saying nothing
-/// leaves the user's own agent and `~/.ssh/config` exactly as they were. The
-/// desktop app supports these keys directly, and the warning says so.
+/// A PuTTY-format key yields nothing at all -- every time, not just the first.
+/// `ssh -i` cannot read that format, so naming the file would turn every SSH
+/// remote into an error; saying nothing leaves the user's own agent and
+/// `~/.ssh/config` exactly as they were. The desktop app supports these keys
+/// directly, and the warning says so, once per process.
 fn git_env_for(ssh_key_path: Option<String>) -> Vec<(String, String)> {
     match ssh_key_path {
         Some(path) if !path.trim().is_empty() => {
             let path = path.trim();
             if is_putty_key(path) {
-                eprintln!(
-                    "warning: {path} is a PuTTY-format key, which ssh cannot read. \
-                     The SkillKeeper desktop app supports it directly; for the CLI, \
-                     convert it once:\n  \
-                     puttygen {path} -O private-openssh-new -o <new-key>\n  \
-                     then set repositories.sshKeyPath to <new-key>."
-                );
+                if first_putty_warning(&PUTTY_WARNED) {
+                    eprintln!(
+                        "warning: {path} is a PuTTY-format key, which ssh cannot read. \
+                         The SkillKeeper desktop app supports it directly; for the CLI, \
+                         convert it once:\n  \
+                         puttygen {path} -O private-openssh-new -o <new-key>\n  \
+                         then set repositories.sshKeyPath to <new-key>."
+                    );
+                }
                 return Vec::new();
             }
             skillkeeper_core::ssh_env::ssh_env_vars(path, None)
@@ -276,9 +298,26 @@ mod tests {
             "PuTTY-User-Key-File-3: ssh-ed25519\nEncryption: none\n",
         )
         .unwrap();
-        let vars = git_env_for(Some(key.to_string_lossy().into_owned()));
-        assert!(vars.is_empty(), "expected no variables, got {vars:?}");
+        // Every invocation, not just the first: only the warning is once, and
+        // returning the identity on a later call would break every SSH remote.
+        for _ in 0..3 {
+            let vars = git_env_for(Some(key.to_string_lossy().into_owned()));
+            assert!(vars.is_empty(), "expected no variables, got {vars:?}");
+        }
         std::fs::remove_file(&key).ok();
+    }
+
+    /// `git_env_for` is the `with_env` closure, evaluated once per git
+    /// subprocess, so an update across N repositories would print the same
+    /// four-line `puttygen` advice N times. The flag is passed in rather than
+    /// read from the static so this does not depend on what the rest of the
+    /// process has already printed.
+    #[test]
+    fn the_putty_warning_is_printed_only_once_per_process() {
+        let warned = AtomicBool::new(false);
+        assert!(first_putty_warning(&warned));
+        assert!(!first_putty_warning(&warned));
+        assert!(!first_putty_warning(&warned));
     }
 
     #[test]

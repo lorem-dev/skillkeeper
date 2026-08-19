@@ -141,6 +141,16 @@ pub fn parse(text: &str) -> Result<PpkFile, PpkError> {
         None
     };
 
+    // A MAC of the wrong length is a broken file, and it has to be caught
+    // here. `verify_slice` simply answers `Err` for a slice that is not its
+    // digest's size, which the callers read as "the MAC did not match" and so
+    // as a wrong passphrase -- leaving the user retyping a correct passphrase
+    // forever, with no way to learn the file is damaged.
+    let mac = mac.ok_or(PpkError::Malformed)?;
+    if mac.len() != mac_len(version) {
+        return Err(PpkError::Malformed);
+    }
+
     Ok(PpkFile {
         version,
         algorithm,
@@ -148,9 +158,20 @@ pub fn parse(text: &str) -> Result<PpkFile, PpkError> {
         comment,
         public_blob: public_blob.ok_or(PpkError::Malformed)?,
         private_blob: private_blob.ok_or(PpkError::Malformed)?,
-        mac: mac.ok_or(PpkError::Malformed)?,
+        mac,
         kdf,
     })
+}
+
+/// The `Private-MAC` length a key of `version` must carry: v3 MACs are
+/// HMAC-SHA-256, v2 MACs HMAC-SHA-1. Only the two versions [`parse`] accepts
+/// ever reach here.
+fn mac_len(version: u8) -> usize {
+    if version == 3 {
+        32
+    } else {
+        20
+    }
 }
 
 /// Read `count` base64 lines and decode them as one body.
@@ -323,6 +344,62 @@ mod tests {
             parse(&swapped),
             Err(PpkError::UnsupportedEncryption)
         ));
+    }
+
+    /// Replace the `Private-MAC` value, keeping every other byte of the file
+    /// as it was.
+    fn with_mac(text: &str, mac: &str) -> String {
+        let mut out = String::new();
+        for line in text.lines() {
+            if line.starts_with("Private-MAC:") {
+                out.push_str(&format!("Private-MAC: {mac}"));
+            } else {
+                out.push_str(line);
+            }
+            out.push('\n');
+        }
+        out
+    }
+
+    /// A short MAC is a broken file, not a wrong passphrase. Without the
+    /// length check the digest comparison just answers "no match", which every
+    /// caller reads as a bad passphrase -- so the user retypes a correct one
+    /// forever and never learns the file is damaged.
+    /// A v3 MAC is 32 bytes. 16 is a truncated file and 20 is a v2-length one;
+    /// both are structurally broken and must say so.
+    #[test]
+    fn a_v3_mac_of_the_wrong_length_is_malformed() {
+        let short = with_mac(fixtures::ED25519_V3_ENC, "7f85ae68ca4e5f096f214d088ec3320b");
+        assert!(matches!(parse(&short), Err(PpkError::Malformed)));
+        let v2_length = with_mac(
+            fixtures::ED25519_V3_ENC,
+            "bf199050c139436703106665b7476dcbb8556e2e",
+        );
+        assert!(matches!(parse(&v2_length), Err(PpkError::Malformed)));
+        // Rewriting the line is not itself what makes those fail: the real MAC
+        // put back through the same helper still parses.
+        let rewritten = with_mac(
+            fixtures::ED25519_V3_ENC,
+            "7f85ae68ca4e5f096f214d088ec3320b3be6574843b0356edca70e0287c88853",
+        );
+        assert!(parse(&rewritten).is_ok());
+    }
+
+    /// The same for v2, whose MAC is 20 bytes.
+    #[test]
+    fn a_v2_mac_of_the_wrong_length_is_malformed() {
+        let short = with_mac(fixtures::ED25519_V2_ENC, "bf199050c139436703106665");
+        assert!(matches!(parse(&short), Err(PpkError::Malformed)));
+        let v3_length = with_mac(
+            fixtures::ED25519_V2_ENC,
+            "7f85ae68ca4e5f096f214d088ec3320b3be6574843b0356edca70e0287c88853",
+        );
+        assert!(matches!(parse(&v3_length), Err(PpkError::Malformed)));
+        let rewritten = with_mac(
+            fixtures::ED25519_V2_ENC,
+            "bf199050c139436703106665b7476dcbb8556e2e",
+        );
+        assert!(parse(&rewritten).is_ok());
     }
 
     #[test]

@@ -221,9 +221,11 @@ export function SshKeyField() {
 
   const displayPath = shownPath ?? dto.path ?? t('settings.ssh.notSet');
   const stateKey = stateMessageKey(dto.state);
-  // Shown for any PuTTY key that is not already usable through an agent --
-  // `puttyInAgent` is refused server-side with a not-a-private-key error, so
-  // it must not be offered here.
+  // Shown for any PuTTY key that is not already usable through an agent:
+  // `puttyInAgent` needs nothing to work right now, so there is nothing to
+  // offer for it here. The command itself accepts that state -- a git
+  // operation can load the key between this render and the click, and a
+  // conversion asked for a moment earlier must not then be refused.
   const isPutty =
     dto.state === 'puttyLocked' ||
     dto.state === 'puttyUnencrypted' ||

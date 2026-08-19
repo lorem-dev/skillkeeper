@@ -424,7 +424,17 @@ fn state_error_key(state: KeyState) -> Option<&'static str> {
         // even the unencrypted one, which needs no passphrase but does need
         // the load.
         KeyState::PuttyInAgent => None,
-        KeyState::PuttyLocked | KeyState::PuttyUnencrypted => Some(KEY_LOCKED_ERROR),
+        KeyState::PuttyLocked => Some(KEY_LOCKED_ERROR),
+        // Not locked: this key has no passphrase, so there is nothing to
+        // unlock and `SshKeyField` offers no Unlock button for the state --
+        // reporting it as locked would be a dead end with a false
+        // explanation. Reaching here means the load into the agent was
+        // attempted and did not take: `SSH_AUTH_SOCK` is named (or this state
+        // would be `PuttyNoAgent`) but nothing live answers it, or there is no
+        // `ssh-add` on PATH. The agent is the missing piece, exactly as
+        // `unlock_error_key` already says for `UnlockError::AgentUnavailable`,
+        // and Convert is offered for this state.
+        KeyState::PuttyUnencrypted => Some(PUTTY_NEEDS_AGENT_ERROR),
         KeyState::PuttyNoAgent => Some(PUTTY_NEEDS_AGENT_ERROR),
     }
 }
@@ -458,14 +468,20 @@ fn dismiss_prompt(
     store: &crate::app::ssh_key::SshKeyStore,
     resolved: impl Fn(bool),
 ) -> bool {
+    // Ahead of the idempotence guard, and deliberately: a cancelled or closed
+    // prompt answers no pending export either, and leaving one parked would
+    // let a later, unrelated passphrase -- typed after the agent came back and
+    // the key unlocked the ordinary way -- be spent exporting instead. The
+    // slot can be parked against a prompt that was ALREADY answered, because
+    // `join_or_build_prompt` joins an answered prompt whose window is still on
+    // screen; behind the guard this call would never run for exactly that
+    // slot, and it would survive to spend the next passphrase on the one act
+    // in this feature that must be asked for each time. Clearing twice is
+    // harmless: by the second call the slot has either been taken or is stale.
+    store.clear_pending_export();
     if answered.swap(true, Ordering::AcqRel) {
         return false;
     }
-    // A cancelled or closed prompt answers no pending export either: leaving
-    // one parked would let a later, unrelated passphrase -- typed after the
-    // agent came back and the key unlocked the ordinary way -- be spent
-    // exporting instead.
-    store.clear_pending_export();
     let usable = key_is_usable(store.state());
     // Nothing to release when the prompt did its job: the successful unlock
     // has already woken everyone waiting.
@@ -937,15 +953,14 @@ pub async fn ssh_key_begin_export(
 /// a parameter so it can be tested without a window system -- the same shape
 /// [`raise_prompt`] already uses for [`prompt`].
 ///
-/// Refuses up front for any key state outside the three this action makes
-/// sense for: anything else parking a pending export would let a stray
-/// invoke hijack the very next unrelated passphrase entry (see [`unlock`]'s
-/// guard). Whether the *source file* itself carries a passphrase -- not the
-/// `KeyState` -- decides whether the window is needed at all: `KeyState`
-/// folds in agent availability, so `PuttyNoAgent` covers an unencrypted `.ppk`
-/// exactly as often as an encrypted one, and asking for a passphrase nobody
-/// needs to type would be answered with whatever they typed silently being
-/// ignored.
+/// Refuses up front for any key state [`export_applies`] rules out: anything
+/// else parking a pending export would let a stray invoke hijack the very
+/// next unrelated passphrase entry (see [`unlock`]'s guard). Whether the
+/// *source file* itself carries a passphrase -- not the `KeyState` -- decides
+/// whether the window is needed at all: `KeyState` folds in agent
+/// availability, so `PuttyNoAgent` covers an unencrypted `.ppk` exactly as
+/// often as an encrypted one, and asking for a passphrase nobody needs to type
+/// would be answered with whatever they typed silently being ignored.
 fn begin_export(
     ctx: &AppContext,
     dest: String,
@@ -955,9 +970,8 @@ fn begin_export(
         .ssh_key
         .path()
         .ok_or_else(|| KEY_MISSING_ERROR.to_string())?;
-    match ctx.ssh_key.state() {
-        KeyState::PuttyNoAgent | KeyState::PuttyLocked | KeyState::PuttyUnencrypted => {}
-        _ => return Err(NOT_A_KEY_ERROR.to_string()),
+    if !export_applies(ctx.ssh_key.state()) {
+        return Err(NOT_A_KEY_ERROR.to_string());
     }
     let text = std::fs::read_to_string(&source).map_err(|_| KEY_MISSING_ERROR.to_string())?;
     let file = crate::app::ppk::parse::parse(&text).map_err(|_| NOT_A_KEY_ERROR.to_string())?;
@@ -974,6 +988,36 @@ fn begin_export(
         return Err(e);
     }
     Ok(state(ctx))
+}
+
+/// Whether converting the chosen key to an OpenSSH file is a thing this key
+/// state can mean.
+///
+/// Every PuTTY state, and nothing else. `PuttyInAgent` is included even though
+/// that key is loaded and working: what the agent holds lasts one session,
+/// while the file the user asked for lasts, and `ssh` and the CLI can both
+/// read it -- so there is no true reason to refuse, and every code this
+/// function's caller could return about such a key would be false. It is also
+/// reachable without Settings ever offering it, since a git operation can load
+/// the key between the render and the click.
+///
+/// Nothing else may pass: a state outside this set parking a pending export
+/// would let a stray invoke hijack the very next unrelated passphrase entry
+/// (see [`unlock`]'s guard). Matched exhaustively rather than with a
+/// catch-all, so a new [`KeyState`] has to be decided about here.
+fn export_applies(state: KeyState) -> bool {
+    match state {
+        KeyState::PuttyNoAgent
+        | KeyState::PuttyLocked
+        | KeyState::PuttyUnencrypted
+        | KeyState::PuttyInAgent => true,
+        KeyState::NotConfigured
+        | KeyState::Missing
+        | KeyState::NotAKey
+        | KeyState::Unencrypted
+        | KeyState::Locked
+        | KeyState::Unlocked => false,
+    }
 }
 
 /// Write the converted key and switch to it. Shared by the immediate path in
@@ -1942,9 +1986,12 @@ mod tests {
             state_error_key(KeyState::PuttyLocked),
             Some("ssh.keyLocked")
         );
+        // Not "locked": the key has no passphrase, so there is nothing to
+        // unlock and no Unlock button to press. Reaching here means the load
+        // into the agent failed, which is what the user is told.
         assert_eq!(
             state_error_key(KeyState::PuttyUnencrypted),
-            Some("ssh.keyLocked")
+            Some("ssh.puttyNeedsAgent")
         );
         assert_eq!(
             state_error_key(KeyState::PuttyNoAgent),
@@ -1963,6 +2010,10 @@ mod tests {
         assert!(!key_is_usable(KeyState::Missing));
         assert!(!key_is_usable(KeyState::NotAKey));
         assert!(!key_is_usable(KeyState::NotConfigured));
+        assert!(key_is_usable(KeyState::PuttyInAgent));
+        assert!(!key_is_usable(KeyState::PuttyLocked));
+        assert!(!key_is_usable(KeyState::PuttyUnencrypted));
+        assert!(!key_is_usable(KeyState::PuttyNoAgent));
     }
 
     #[test]
@@ -2091,7 +2142,32 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
     }
 
-    /// A key state outside the three this action makes sense for must not
+    /// Every PuTTY state may be converted, and no other state may. The set is
+    /// pinned here rather than only through `begin_export`, because
+    /// `PuttyInAgent` needs a live agent holding the key to reach at all --
+    /// and a test must never put a key in the developer's own agent.
+    ///
+    /// `PuttyInAgent` is in the set deliberately. Refusing it reported the
+    /// file as "not a private key" about a key that was loaded and working,
+    /// and no other code would have been true either: the conversion needs no
+    /// agent, the agent's copy lasts one session while the file lasts, and the
+    /// state is reachable without Settings ever offering the action -- a git
+    /// operation can load the key between the render and the click.
+    #[test]
+    fn every_putty_state_can_be_converted_and_nothing_else_can() {
+        assert!(export_applies(KeyState::PuttyNoAgent));
+        assert!(export_applies(KeyState::PuttyLocked));
+        assert!(export_applies(KeyState::PuttyUnencrypted));
+        assert!(export_applies(KeyState::PuttyInAgent));
+        assert!(!export_applies(KeyState::NotConfigured));
+        assert!(!export_applies(KeyState::Missing));
+        assert!(!export_applies(KeyState::NotAKey));
+        assert!(!export_applies(KeyState::Unencrypted));
+        assert!(!export_applies(KeyState::Locked));
+        assert!(!export_applies(KeyState::Unlocked));
+    }
+
+    /// A key state outside the set this action makes sense for must not
     /// park a pending export: a stray invoke for an ordinary, already-usable
     /// OpenSSH key must not be able to hijack the next unrelated passphrase.
     #[test]
@@ -2133,6 +2209,40 @@ mod tests {
         assert!(
             !app.ctx.ssh_key.has_pending_export(),
             "a cancelled or closed prompt must not leave an export for a later passphrase to spend"
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// The same guarantee for a prompt that was answered before it was
+    /// dismissed. `join_or_build_prompt` joins an answered prompt whose window
+    /// is still on screen, so `begin_export` can park a slot against one; with
+    /// the clear behind the idempotence guard, `dismiss_prompt` returns early
+    /// and the slot survives to spend the next passphrase on an export nobody
+    /// asked for again.
+    #[test]
+    fn an_already_answered_prompt_still_clears_a_pending_export() {
+        let app = TempAppData::new();
+        let path = write_putty_key(&app, "enc.ppk", crate::app::ppk::fixtures::ED25519_V3_ENC);
+        select(&app.ctx, path).unwrap();
+
+        let dir = export_test_dir("sk-ppk-answered-prompt-test");
+        let dest = dir.join("converted");
+        begin_export(&app.ctx, dest.to_string_lossy().into_owned(), || Ok(())).unwrap();
+        assert!(app.ctx.ssh_key.has_pending_export());
+
+        // Answered already: the window is still tearing down, and this is the
+        // second call for the same prompt.
+        let answered = Arc::new(AtomicBool::new(true));
+        assert!(
+            !dismiss_prompt(&answered, &app.ctx.ssh_key, |_| {
+                panic!("an already-answered prompt must not resolve twice")
+            }),
+            "the second dismissal must still report that it did not answer the prompt"
+        );
+        assert!(
+            !app.ctx.ssh_key.has_pending_export(),
+            "a slot parked against an answered prompt must not outlive it"
         );
 
         std::fs::remove_dir_all(&dir).ok();

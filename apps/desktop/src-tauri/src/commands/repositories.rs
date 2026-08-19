@@ -47,7 +47,7 @@ use skillkeeper_core::time::iso_from_millis;
 use std::sync::Arc;
 
 use super::blocking;
-use crate::app::ssh_key::{gate_for, Gate, KEY_LOCKED_ERROR};
+use crate::app::ssh_key::{gate_for, Gate, KEY_LOCKED_ERROR, PUTTY_NEEDS_AGENT_ERROR};
 use crate::commands::ssh_key::require_unlocked;
 use crate::state::AppContext;
 
@@ -690,8 +690,12 @@ fn gate_offline(ctx: &AppContext, repo: &Repository, interactive: bool) -> Resul
         // Same reasoning as `Gate::Prompt`, for the other thing `offer_unlock`
         // does: it loads a PuTTY key into the agent whether or not the caller
         // is interactive, so a key still waiting for that load by the time this
-        // runs is one whose load failed, and the operation cannot use it.
-        Gate::LoadIntoAgent => Err(KEY_LOCKED_ERROR.to_string()),
+        // runs is one whose load already failed, and the operation cannot use
+        // it. The code says so rather than "locked": this state is the
+        // unencrypted PuTTY key, which has no passphrase to be locked by and
+        // no Unlock button to offer. The load failed for want of a usable
+        // agent, and converting the key is the way out.
+        Gate::LoadIntoAgent => Err(PUTTY_NEEDS_AGENT_ERROR.to_string()),
     }
 }
 
@@ -1197,6 +1201,42 @@ mod tests {
             .expect("added");
         std::fs::create_dir_all(&repo.local_path).expect("create clone dir");
         repo.id
+    }
+
+    /// Configure an unencrypted PuTTY key, the state the gate answers with
+    /// `Gate::LoadIntoAgent`.
+    fn with_unencrypted_putty_key(app: &TempAppData) {
+        let path = app.dir().join("plain.ppk");
+        std::fs::write(&path, crate::app::ppk::fixtures::ED25519_V3_PLAIN).expect("write key");
+        app.ctx
+            .ssh_key
+            .set_path(Some(path.to_string_lossy().into_owned()));
+    }
+
+    /// A PuTTY key with no passphrase must never be reported as locked: there
+    /// is nothing to unlock, and Settings offers no Unlock button for it, so
+    /// "unlock it to continue" would be a dead end with a false explanation.
+    /// Reaching `gate_offline` still needing the load means `offer_unlock`
+    /// already tried it and the agent would not take the key -- which is what
+    /// the user is told, and what the Convert action exists for.
+    ///
+    /// Pinned as one code for both agent-detection outcomes on purpose: with
+    /// no agent named the state is `PuttyNoAgent` and the gate fails outright,
+    /// with one named it is `PuttyUnencrypted` and the gate asks for a load.
+    /// Both now report the same true thing, so this does not depend on
+    /// whatever `SSH_AUTH_SOCK` happens to say on the machine running it.
+    #[test]
+    fn an_unencrypted_putty_key_reports_the_missing_agent_not_a_locked_key() {
+        let app = TempAppData::new();
+        with_unencrypted_putty_key(&app);
+        let id = added_and_cloned(&app, "git@example.com:acme/skills.git");
+        for interactive in [false, true] {
+            assert_eq!(
+                has_update_gated(&app.ctx, &id, interactive),
+                Err("ssh.puttyNeedsAgent".to_string()),
+                "interactive={interactive}"
+            );
+        }
     }
 
     #[test]
