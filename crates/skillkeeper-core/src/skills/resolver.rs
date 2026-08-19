@@ -218,6 +218,17 @@ fn note_leniencies(path: &str, notes: Vec<String>, warnings: &mut Vec<String>) {
     }
 }
 
+/// The warning for a `SKILL.md` nested deeper than [`group_path::MAX_SKILL_DEPTH`].
+/// Shared by every auto-detect path (scheme 2, and scheme 3's auto-detect
+/// branch) so both emit the byte-identical string.
+fn too_deep_warning(path: &str) -> String {
+    format!(
+        "Unresolved {SKILL_FILE} at \"{path}\": nesting is deeper than {} group levels; \
+         declare it in {REPO_CONFIG} to install it.",
+        group_path::MAX_GROUP_DEPTH
+    )
+}
+
 /// Resolve the hooks declared under a skill's `hooks/` directory.
 fn resolve_hooks(
     fs: &dyn FsPort,
@@ -358,7 +369,7 @@ fn resolve_from_config(
     }
 
     // No explicit list: auto-detect, then apply include/exclude filters.
-    let SkillDirs { dirs, .. } = find_skill_dirs(fs, repo_root, 2);
+    let SkillDirs { dirs, too_deep } = find_skill_dirs(fs, repo_root, group_path::MAX_SKILL_DEPTH);
     for dir in dirs {
         if let Some(include) = config.include.as_ref() {
             if !matches_any(&dir, include) {
@@ -381,6 +392,9 @@ fn resolve_from_config(
         };
         skills.push(ResolvedSkill { id, ..base });
     }
+    for deep in too_deep {
+        warnings.push(too_deep_warning(&deep));
+    }
     skills
 }
 
@@ -388,7 +402,8 @@ fn resolve_from_config(
 ///
 /// Precedence: if `skillkeeper.repo.yaml` is present at the repo root it is
 /// authoritative (scheme 3). Otherwise skills are auto-detected by locating
-/// `SKILL.md` at depth 1 (scheme 1, flat) or depth 2 (scheme 2, grouped).
+/// `SKILL.md` at depth 1 (scheme 1, flat) or nested up to
+/// [`group_path::MAX_GROUP_DEPTH`] levels below it (scheme 2, grouped).
 pub fn resolve_skills(fs: &dyn FsPort, repo_root: &str) -> ResolveResult {
     let mut warnings: Vec<String> = Vec::new();
 
@@ -409,11 +424,7 @@ pub fn resolve_skills(fs: &dyn FsPort, repo_root: &str) -> ResolveResult {
         }
     }
     for deep in too_deep {
-        warnings.push(format!(
-            "Unresolved {SKILL_FILE} at \"{deep}\": nesting is deeper than {} group levels; \
-             declare it in {REPO_CONFIG} to install it.",
-            group_path::MAX_GROUP_DEPTH
-        ));
+        warnings.push(too_deep_warning(&deep));
     }
     ResolveResult { skills, warnings }
 }
@@ -690,6 +701,27 @@ mod tests {
                 name: "inner".to_string()
             }
         );
+    }
+
+    #[test]
+    fn resolves_deeply_grouped_skills_and_warns_about_too_deep_ones_in_config_auto_detect_mode() {
+        let fs = MemFs::new()
+            .with_file(
+                "repo/skillkeeper.repo.yaml",
+                "version: 1\ninclude:\n  - \"**\"\n",
+            )
+            .with_file("repo/a/b/c/deep/SKILL.md", &skill_md("deep"))
+            .with_file("repo/x/y/z/w/tooDeep/SKILL.md", &skill_md("tooDeep"));
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(
+            result.skills[0].id,
+            SkillId {
+                group: Some("a/b/c".to_string()),
+                name: "deep".to_string()
+            }
+        );
+        assert_eq!(result.warnings.len(), 1);
+        assert!(result.warnings[0].contains("x/y/z/w/tooDeep"));
     }
 
     #[test]
