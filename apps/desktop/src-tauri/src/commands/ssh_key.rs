@@ -1058,15 +1058,11 @@ fn finish_export(
 fn convert_to_openssh(source: &str, passphrase: &str) -> Result<Zeroizing<String>, String> {
     let text = std::fs::read_to_string(source).map_err(|_| KEY_MISSING_ERROR.to_string())?;
     let file = crate::app::ppk::parse::parse(&text).map_err(|_| NOT_A_KEY_ERROR.to_string())?;
-    let converted = crate::app::ppk::convert::convert(&file, passphrase).map_err(|e| {
-        match e {
-            crate::app::ppk::parse::PpkError::WrongPassphrase => WRONG_PASSPHRASE_ERROR,
-            crate::app::ppk::parse::PpkError::UnsupportedAlgorithm => PUTTY_UNSUPPORTED_ERROR,
-            crate::app::ppk::parse::PpkError::Damaged => PUTTY_DAMAGED_ERROR,
-            _ => NOT_A_KEY_ERROR,
-        }
-        .to_string()
-    })?;
+    // Through the same two tables every other PPK failure is reported with:
+    // `From<PpkError>` and then [`unlock_error_key`]. A third table here would
+    // be one nothing keeps in step with the other two.
+    let converted = crate::app::ppk::convert::convert(&file, passphrase)
+        .map_err(|e| unlock_error_key(UnlockError::from(e)).to_string())?;
 
     let key = ssh_key::PrivateKey::from_openssh(converted.openssh.as_str())
         .map_err(|_| EXPORT_FAILED_ERROR.to_string())?;

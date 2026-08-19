@@ -24,6 +24,8 @@ use std::time::{Duration, Instant};
 use ssh_key::PrivateKey;
 use zeroize::Zeroizing;
 
+use crate::app::ppk::parse::PpkError;
+
 /// Error key surfaced by [`gate_for`] and returned by
 /// [`SshKeyStore::wait_for_unlock`] when a non-interactive caller finds the
 /// key still locked, or when an unlock in progress is cancelled or times out.
@@ -95,6 +97,38 @@ pub enum UnlockError {
     /// a socket is NAMED, so this is a steady state on a machine with a stale
     /// or forwarded socket and no usable `ssh-add`, not a corner case.
     AgentUnavailable,
+}
+
+/// The one table from a PPK failure to an unlock failure: every caller that
+/// reports a PPK failure to the user -- [`SshKeyStore::load_putty`] and the
+/// export path in `commands::ssh_key` alike -- comes through here, and then
+/// through that module's `unlock_error_key`, so there is one table from
+/// [`PpkError`] and one from [`UnlockError`] rather than three that merely
+/// agree today.
+///
+/// Not the universal mapping, though: two sites deliberately collapse any PPK
+/// failure to [`NOT_A_KEY_ERROR`] instead of routing through here. [`inspect`]
+/// only asks whether the file is a readable key at all, and `begin_export`'s
+/// up-front read only asks whether a passphrase is needed -- neither is
+/// reporting an unlock, and both are coarse on purpose.
+impl From<PpkError> for UnlockError {
+    fn from(error: PpkError) -> Self {
+        match error {
+            PpkError::WrongPassphrase => Self::WrongPassphrase,
+            // These two are why `UnlockError` grows: flattening them into
+            // `NotAKey` would tell a user with a DSA key or a corrupt file
+            // to go looking for a problem that is not theirs.
+            PpkError::UnsupportedAlgorithm => Self::Unsupported,
+            PpkError::Damaged => Self::Damaged,
+            // Everything structural reads the same to a user: the file is not
+            // a key this build can use. Named rather than caught by a `_`, so
+            // a new `PpkError` has to be decided about here.
+            PpkError::NotPpk
+            | PpkError::UnsupportedVersion
+            | PpkError::Malformed
+            | PpkError::UnsupportedEncryption => Self::NotAKey,
+        }
+    }
 }
 
 /// The decision [`gate_for`] hands back for one prospective git operation.
@@ -636,18 +670,8 @@ impl SshKeyStore {
         // recorded under it.
         let text = std::fs::read_to_string(&path).map_err(|_| UnlockError::Missing)?;
         let file = crate::app::ppk::parse::parse(&text).map_err(|_| UnlockError::NotAKey)?;
-        let converted = crate::app::ppk::convert::convert(&file, passphrase).map_err(|e| {
-            use crate::app::ppk::parse::PpkError;
-            match e {
-                PpkError::WrongPassphrase => UnlockError::WrongPassphrase,
-                // These two are why `UnlockError` grows: flattening them into
-                // `NotAKey` would tell a user with a DSA key or a corrupt file
-                // to go looking for a problem that is not theirs.
-                PpkError::UnsupportedAlgorithm => UnlockError::Unsupported,
-                PpkError::Damaged => UnlockError::Damaged,
-                _ => UnlockError::NotAKey,
-            }
-        })?;
+        let converted =
+            crate::app::ppk::convert::convert(&file, passphrase).map_err(UnlockError::from)?;
         crate::app::ssh_agent::add_from_memory(
             &converted.openssh,
             crate::app::ssh_agent::AGENT_KEY_TTL_SECS,
@@ -1047,6 +1071,27 @@ mod tests {
             KeyState::PuttyNoAgent,
         ] {
             assert_eq!(gate_for(false, state, false), Gate::Proceed);
+        }
+    }
+
+    /// Every PPK failure's unlock failure, in the one table that decides it.
+    ///
+    /// The mapping used to be written out three times -- here, in the export
+    /// path and in the renderer-key table -- with nothing keeping them in
+    /// step. Now they are one table each, and this pins the first.
+    #[test]
+    fn every_ppk_failure_maps_to_an_unlock_failure() {
+        let table = [
+            (PpkError::WrongPassphrase, UnlockError::WrongPassphrase),
+            (PpkError::UnsupportedAlgorithm, UnlockError::Unsupported),
+            (PpkError::Damaged, UnlockError::Damaged),
+            (PpkError::NotPpk, UnlockError::NotAKey),
+            (PpkError::UnsupportedVersion, UnlockError::NotAKey),
+            (PpkError::Malformed, UnlockError::NotAKey),
+            (PpkError::UnsupportedEncryption, UnlockError::NotAKey),
+        ];
+        for (ppk, expected) in table {
+            assert_eq!(UnlockError::from(ppk), expected, "{ppk:?}");
         }
     }
 
