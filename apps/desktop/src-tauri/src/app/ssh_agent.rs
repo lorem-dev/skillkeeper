@@ -7,7 +7,8 @@
 //! Windows relies on the OS OpenSSH agent (a named pipe) and is only reused,
 //! never spawned. Default keys are loaded once, best-effort, without ever
 //! blocking on a passphrase. No passphrase prompting (deferred), matching the
-//! TypeScript.
+//! TypeScript. Also loads and unloads individual keys (e.g. converted from a
+//! PuTTY file) by piping them to `ssh-add`, so they never touch disk.
 
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -185,13 +186,23 @@ pub fn add_from_memory(openssh: &str, ttl_secs: u64) -> Result<(), String> {
         .stderr(Stdio::piped());
     crate::util::hide_console(&mut command);
     let mut child = command.spawn().map_err(|e| e.to_string())?;
-    {
+    let write_result: Result<(), String> = (|| {
         let mut stdin = child.stdin.take().ok_or("ssh-add stdin unavailable")?;
         stdin
             .write_all(openssh.as_bytes())
             .map_err(|e| e.to_string())?;
-        // Dropping the handle closes the pipe; ssh-add reads to EOF, so without
-        // this it would wait forever and so would we.
+        Ok(())
+        // The handle drops here, at the end of this closure, which closes the
+        // pipe; ssh-add reads to EOF, so without this it would wait forever
+        // and so would we.
+    })();
+    if let Err(e) = write_result {
+        // Reap the child on every error path: `Child` is not waited on drop,
+        // so skipping this (e.g. on the EPIPE from ssh-add exiting before it
+        // reads) would leave a zombie process behind. The wait outcome itself
+        // is discarded -- the write error is the one worth reporting.
+        let _ = child.wait();
+        return Err(e);
     }
     let output = child.wait_with_output().map_err(|e| e.to_string())?;
     if output.status.success() {
@@ -215,14 +226,21 @@ pub fn remove(public_line: &str) -> Result<(), String> {
         .stderr(Stdio::null());
     crate::util::hide_console(&mut command);
     let mut child = command.spawn().map_err(|e| e.to_string())?;
-    {
+    let write_result: Result<(), String> = (|| {
         let mut stdin = child.stdin.take().ok_or("ssh-add stdin unavailable")?;
         stdin
             .write_all(public_line.as_bytes())
             .map_err(|e| e.to_string())?;
         stdin.write_all(b"\n").map_err(|e| e.to_string())?;
-        // Same reasoning as add_from_memory: drop before waiting so ssh-add
-        // sees EOF instead of blocking forever.
+        Ok(())
+        // Same reasoning as add_from_memory: the handle drops here, before we
+        // reap the child, so ssh-add sees EOF instead of blocking forever.
+    })();
+    if let Err(e) = write_result {
+        // Same reasoning as add_from_memory: always reap the child so a
+        // write failure never leaves a zombie process behind.
+        let _ = child.wait();
+        return Err(e);
     }
     let status = child.wait().map_err(|e| e.to_string())?;
     if status.success() {
