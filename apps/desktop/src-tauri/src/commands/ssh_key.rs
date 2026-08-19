@@ -265,16 +265,22 @@ pub fn unlock(ctx: &AppContext, passphrase: String, resolved: impl Fn(bool)) -> 
 
     // A pending export claims this passphrase: the user asked to convert the
     // key, and the window they just answered was raised for that, not for an
-    // agent load.
-    if let Some(dest) = ctx.ssh_key.take_pending_export() {
-        let source = ctx
-            .ssh_key
-            .path()
-            .ok_or_else(|| KEY_MISSING_ERROR.to_string())?;
+    // agent load. `take_pending_export` silently drops a slot whose source no
+    // longer matches the chosen key, falling through to the ordinary routing
+    // below instead of exporting a key that is no longer current.
+    if let Some((source, dest)) = ctx.ssh_key.take_pending_export() {
         let outcome = finish_export(ctx, &source, &dest, &passphrase);
-        // The window is waiting on a resolution either way; without this a
-        // failed export would leave it up with nothing happening.
-        resolved(outcome.is_ok());
+        // The freshly-written key is not itself held, so a successful export
+        // does not by itself mean "usable now" -- compute it the way
+        // `dismiss_prompt` does rather than assuming success means unlocked.
+        // And notify explicitly, unlike the ordinary passphrase paths below:
+        // this attempt is never retried in place (the slot is already spent
+        // either way), so its outcome is final, and an operation parked in
+        // `wait_for_unlock` must hear about it now rather than only once the
+        // window eventually closes.
+        let usable = outcome.is_ok() && key_is_usable(ctx.ssh_key.state());
+        ctx.ssh_key.notify_unlock_result(usable);
+        resolved(usable);
         return outcome;
     }
 
@@ -455,6 +461,11 @@ fn dismiss_prompt(
     if answered.swap(true, Ordering::AcqRel) {
         return false;
     }
+    // A cancelled or closed prompt answers no pending export either: leaving
+    // one parked would let a later, unrelated passphrase -- typed after the
+    // agent came back and the key unlocked the ordinary way -- be spent
+    // exporting instead.
+    store.clear_pending_export();
     let usable = key_is_usable(store.state());
     // Nothing to release when the prompt did its job: the successful unlock
     // has already woken everyone waiting.
@@ -917,49 +928,90 @@ pub async fn ssh_key_begin_export(
     dest: String,
 ) -> Result<SshKeyDto, String> {
     blocking(&ctx, move |c| {
-        let source = c
-            .ssh_key
-            .path()
-            .ok_or_else(|| KEY_MISSING_ERROR.to_string())?;
-        if c.ssh_key.state() == KeyState::PuttyUnencrypted {
-            finish_export(c, &source, &dest, "")?;
-            return Ok(state(c));
-        }
-        c.ssh_key.set_pending_export(Some(dest));
-        open_unlock_window(&app, c)?;
-        Ok(state(c))
+        begin_export(c, dest, || open_unlock_window(&app, c).map(|_| ()))
     })
     .await?
 }
 
-/// Write the converted key and switch to it. Shared by the immediate path
-/// above and the after-the-passphrase path in [`unlock`].
+/// The decision half of [`ssh_key_begin_export`], with raising the window as
+/// a parameter so it can be tested without a window system -- the same shape
+/// [`raise_prompt`] already uses for [`prompt`].
+///
+/// Refuses up front for any key state outside the three this action makes
+/// sense for: anything else parking a pending export would let a stray
+/// invoke hijack the very next unrelated passphrase entry (see [`unlock`]'s
+/// guard). Whether the *source file* itself carries a passphrase -- not the
+/// `KeyState` -- decides whether the window is needed at all: `KeyState`
+/// folds in agent availability, so `PuttyNoAgent` covers an unencrypted `.ppk`
+/// exactly as often as an encrypted one, and asking for a passphrase nobody
+/// needs to type would be answered with whatever they typed silently being
+/// ignored.
+fn begin_export(
+    ctx: &AppContext,
+    dest: String,
+    raise: impl FnOnce() -> Result<(), String>,
+) -> Result<SshKeyDto, String> {
+    let source = ctx
+        .ssh_key
+        .path()
+        .ok_or_else(|| KEY_MISSING_ERROR.to_string())?;
+    match ctx.ssh_key.state() {
+        KeyState::PuttyNoAgent | KeyState::PuttyLocked | KeyState::PuttyUnencrypted => {}
+        _ => return Err(NOT_A_KEY_ERROR.to_string()),
+    }
+    let text = std::fs::read_to_string(&source).map_err(|_| KEY_MISSING_ERROR.to_string())?;
+    let file = crate::app::ppk::parse::parse(&text).map_err(|_| NOT_A_KEY_ERROR.to_string())?;
+    if !file.is_encrypted() {
+        finish_export(ctx, &source, &dest, "")?;
+        return Ok(state(ctx));
+    }
+    ctx.ssh_key.set_pending_export(source, dest);
+    if let Err(e) = raise() {
+        // Raising failed outright: nothing is left waiting on this window, so
+        // the slot must not either, or a later, unrelated passphrase would be
+        // spent trying to export a key nobody is answering a prompt for.
+        ctx.ssh_key.clear_pending_export();
+        return Err(e);
+    }
+    Ok(state(ctx))
+}
+
+/// Write the converted key and switch to it. Shared by the immediate path in
+/// [`begin_export`] and the after-the-passphrase path in [`unlock`].
+///
+/// Converts before touching an existing destination: the likeliest failure
+/// (a mistyped passphrase) then costs the user nothing, because `dest` is
+/// deleted only once a usable replacement is ready to take its place.
 fn finish_export(
     ctx: &AppContext,
     source: &str,
     dest: &str,
     passphrase: &str,
 ) -> Result<(), String> {
+    let text = convert_to_openssh(source, passphrase)?;
     if Path::new(dest).exists() {
         // The save dialog already asked about replacing it; honouring that
         // answer is the only way to write where the user pointed.
         std::fs::remove_file(dest).map_err(|_| EXPORT_FAILED_ERROR.to_string())?;
     }
-    let written = export_openssh(source, dest, passphrase)?;
-    write_path(ctx, Some(written.to_string_lossy().into_owned()))
+    let path = PathBuf::from(dest);
+    write_private_file(&path, text.as_bytes()).map_err(|_| EXPORT_FAILED_ERROR.to_string())?;
+    write_path(ctx, Some(path.to_string_lossy().into_owned()))
 }
 
-/// Convert the PuTTY key at `source` into an OpenSSH key at `dest`, encrypted
-/// with the same passphrase.
+/// Convert the PuTTY key at `source` into OpenSSH text, encrypted with the
+/// same passphrase whenever the source was.
+///
+/// Returns the encoded text without writing anything: the write step is a
+/// separate, later concern (see [`finish_export`]'s ordering, and
+/// [`export_openssh`] for the tested write-included path).
 ///
 /// The escape hatch for a machine with no ssh-agent -- notably Windows, where
 /// the OpenSSH agent service ships disabled. Everything about it is explicit:
 /// the user asks for it, picks the destination, and types the passphrase.
 /// What lands on disk is encrypted whenever the source was; an unencrypted
 /// PuTTY key is written unencrypted rather than given an invented passphrase.
-///
-/// Split from the command so it can be tested without a window system.
-fn export_openssh(source: &str, dest: &str, passphrase: &str) -> Result<PathBuf, String> {
+fn convert_to_openssh(source: &str, passphrase: &str) -> Result<Zeroizing<String>, String> {
     let text = std::fs::read_to_string(source).map_err(|_| KEY_MISSING_ERROR.to_string())?;
     let file = crate::app::ppk::parse::parse(&text).map_err(|_| NOT_A_KEY_ERROR.to_string())?;
     let converted = crate::app::ppk::convert::convert(&file, passphrase).map_err(|e| {
@@ -974,16 +1026,29 @@ fn export_openssh(source: &str, dest: &str, passphrase: &str) -> Result<PathBuf,
 
     let key = ssh_key::PrivateKey::from_openssh(converted.openssh.as_str())
         .map_err(|_| EXPORT_FAILED_ERROR.to_string())?;
-    let out = if file.is_encrypted() {
+    if file.is_encrypted() {
         key.encrypt(&mut ssh_key::rand_core::OsRng, passphrase)
             .and_then(|k| k.to_openssh(ssh_key::LineEnding::LF))
-            .map_err(|_| EXPORT_FAILED_ERROR.to_string())?
+            .map_err(|_| EXPORT_FAILED_ERROR.to_string())
     } else {
-        converted.openssh
-    };
+        Ok(converted.openssh)
+    }
+}
 
+/// Convert the PuTTY key at `source` into an OpenSSH key at `dest`, encrypted
+/// with the same passphrase.
+///
+/// Test-only: [`finish_export`] no longer calls this (it needs to convert
+/// before deciding whether to delete an existing `dest`), but it is the shape
+/// the tests below exercise, combining [`convert_to_openssh`] and
+/// [`write_private_file`] in the order that always used to run. Deliberately
+/// never deletes an existing `dest` -- convert-then-maybe-delete is
+/// `finish_export`'s ordering decision, not this one's.
+#[cfg(test)]
+fn export_openssh(source: &str, dest: &str, passphrase: &str) -> Result<PathBuf, String> {
+    let text = convert_to_openssh(source, passphrase)?;
     let path = PathBuf::from(dest);
-    write_private_file(&path, out.as_bytes()).map_err(|_| EXPORT_FAILED_ERROR.to_string())?;
+    write_private_file(&path, text.as_bytes()).map_err(|_| EXPORT_FAILED_ERROR.to_string())?;
     Ok(path)
 }
 
@@ -994,6 +1059,11 @@ fn export_openssh(source: &str, dest: &str, passphrase: &str) -> Result<PathBuf,
 /// inherits the directory ACL, which for a user's own profile is already
 /// owner-only; if `ssh` ever judges it too permissive, the fix is `icacls`,
 /// documented in docs/usage/repositories.md.
+///
+/// A failed write or sync removes whatever was just created rather than
+/// leaving a partial key file at `path`: `create_new` guarantees this call is
+/// the only writer, so anything left behind on error would be this call's own
+/// wreckage, not another process's file.
 fn write_private_file(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     use std::io::Write;
 
@@ -1005,8 +1075,11 @@ fn write_private_file(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
         options.mode(0o600);
     }
     let mut file = options.open(path)?;
-    file.write_all(bytes)?;
-    file.sync_all()
+    let result = file.write_all(bytes).and_then(|()| file.sync_all());
+    if result.is_err() {
+        let _ = std::fs::remove_file(path);
+    }
+    result
 }
 
 #[cfg(test)]
@@ -1023,6 +1096,15 @@ mod tests {
         let path = app.dir().join(name);
         std::fs::write(&path, contents).unwrap();
         path.to_string_lossy().into_owned()
+    }
+
+    /// A fresh, uniquely-named temp directory for a single test run -- a
+    /// fixed shared name plus `create_new(true)` in `write_private_file`
+    /// would flake under a concurrent or crashed prior run.
+    fn export_test_dir(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("{name}-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
     }
 
     /// The `load` hook for [`raise_prompt`] cases that must never touch the
@@ -1895,10 +1977,12 @@ mod tests {
         assert_eq!(after.state, KeyState::Locked);
     }
 
+    /// Pure write half: does not exercise the path switch (nothing at this
+    /// level touches the store) -- see `beginning_an_export_...` below for
+    /// that.
     #[test]
-    fn export_writes_an_encrypted_key_and_switches_the_path() {
-        let dir = std::env::temp_dir().join("sk-ppk-export-test");
-        std::fs::create_dir_all(&dir).unwrap();
+    fn export_writes_an_encrypted_key() {
+        let dir = export_test_dir("sk-ppk-export-test");
         let source = dir.join("k.ppk");
         let dest = dir.join("k-openssh");
         std::fs::write(&source, crate::app::ppk::fixtures::ED25519_V3_ENC).unwrap();
@@ -1930,14 +2014,12 @@ mod tests {
             );
         }
 
-        std::fs::remove_file(&source).ok();
-        std::fs::remove_file(&dest).ok();
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]
     fn export_refuses_a_wrong_passphrase_without_writing_anything() {
-        let dir = std::env::temp_dir().join("sk-ppk-export-refuse-test");
-        std::fs::create_dir_all(&dir).unwrap();
+        let dir = export_test_dir("sk-ppk-export-refuse-test");
         let source = dir.join("k.ppk");
         let dest = dir.join("never-written");
         std::fs::write(&source, crate::app::ppk::fixtures::ED25519_V3_ENC).unwrap();
@@ -1947,6 +2029,163 @@ mod tests {
         );
         assert!(!dest.exists(), "a failed export must leave no file behind");
 
-        std::fs::remove_file(&source).ok();
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// A wrong passphrase alone cannot prove the write step cleans up after
+    /// itself: `convert` fails before `write_private_file` is ever called, so
+    /// "no file behind" would hold even if the writer were deleted entirely.
+    /// Force the failure to land after a successful conversion instead -- a
+    /// destination whose parent directory does not exist -- so this only
+    /// passes if the write step itself leaves nothing behind.
+    #[test]
+    fn export_fails_after_a_successful_conversion_leaves_no_file_behind() {
+        let dir = export_test_dir("sk-ppk-export-bad-dest-test");
+        let source = dir.join("k.ppk");
+        let dest = dir.join("no-such-directory").join("never-written");
+        std::fs::write(&source, crate::app::ppk::fixtures::ED25519_V3_ENC).unwrap();
+
+        assert!(export_openssh(
+            &source.to_string_lossy(),
+            &dest.to_string_lossy(),
+            crate::app::ppk::fixtures::PASSPHRASE,
+        )
+        .is_err());
+        assert!(
+            !dest.exists(),
+            "a write failure after a successful conversion must still leave nothing behind"
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// The `KeyState` is not the right question for whether the window is
+    /// needed: it folds in agent availability, so on a no-agent machine even
+    /// an unencrypted source reports `PuttyNoAgent`. Only the source file's
+    /// own encryption bit decides, and this pins that the immediate path
+    /// really does switch the configured key, not just that it returns `Ok`.
+    #[test]
+    fn beginning_an_export_for_an_unencrypted_source_needs_no_window_and_switches_the_path() {
+        let app = TempAppData::new();
+        let path = write_putty_key(
+            &app,
+            "plain.ppk",
+            crate::app::ppk::fixtures::ED25519_V3_PLAIN,
+        );
+        select(&app.ctx, path).unwrap();
+
+        let dir = export_test_dir("sk-ppk-begin-export-plain-test");
+        let dest = dir.join("converted");
+        let result = begin_export(&app.ctx, dest.to_string_lossy().into_owned(), || {
+            panic!("an unencrypted source needs no window")
+        })
+        .expect("exports immediately");
+
+        assert_eq!(
+            result.path.as_deref(),
+            Some(dest.to_string_lossy().as_ref())
+        );
+        assert!(dest.exists(), "the converted key must actually be written");
+        assert!(!app.ctx.ssh_key.has_pending_export());
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// A key state outside the three this action makes sense for must not
+    /// park a pending export: a stray invoke for an ordinary, already-usable
+    /// OpenSSH key must not be able to hijack the next unrelated passphrase.
+    #[test]
+    fn beginning_an_export_for_an_unrelated_key_state_is_refused() {
+        let app = TempAppData::new();
+        let path = write_encrypted_key(&app, "topsecret");
+        select(&app.ctx, path).unwrap();
+        unlock(&app.ctx, "topsecret".to_string(), |_| {}).unwrap();
+        assert_eq!(state(&app.ctx).state, KeyState::Unlocked);
+
+        let result = begin_export(&app.ctx, "irrelevant".to_string(), || {
+            panic!("must not raise a window for a key this action does not apply to")
+        });
+        assert!(result.is_err());
+        assert!(!app.ctx.ssh_key.has_pending_export());
+    }
+
+    /// Cancel and window-close both funnel through `dismiss_prompt`; neither
+    /// must leave an export parked for a later, unrelated passphrase to spend
+    /// -- the scenario is a user starting Convert, thinking better of it, and
+    /// later unlocking the same key normally once an agent becomes available.
+    #[test]
+    fn a_cancelled_export_leaves_no_pending_export_behind() {
+        let app = TempAppData::new();
+        let path = write_putty_key(&app, "enc.ppk", crate::app::ppk::fixtures::ED25519_V3_ENC);
+        select(&app.ctx, path).unwrap();
+
+        let dir = export_test_dir("sk-ppk-begin-export-cancel-test");
+        let dest = dir.join("converted");
+        let result = begin_export(&app.ctx, dest.to_string_lossy().into_owned(), || Ok(()));
+        assert!(result.is_ok());
+        assert!(
+            app.ctx.ssh_key.has_pending_export(),
+            "an encrypted source parks a pending export while the window is up"
+        );
+
+        let answered = Arc::new(AtomicBool::new(false));
+        dismiss_prompt(&answered, &app.ctx.ssh_key, |_| {});
+        assert!(
+            !app.ctx.ssh_key.has_pending_export(),
+            "a cancelled or closed prompt must not leave an export for a later passphrase to spend"
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// If a window build failure ever left a pending export parked, the very
+    /// next unrelated unlock -- for a different key entirely -- would be
+    /// hijacked into exporting one nobody is answering a prompt for.
+    #[test]
+    fn a_failed_window_raise_leaves_no_pending_export_behind() {
+        let app = TempAppData::new();
+        let path = write_putty_key(&app, "enc.ppk", crate::app::ppk::fixtures::ED25519_V3_ENC);
+        select(&app.ctx, path).unwrap();
+
+        let result = begin_export(&app.ctx, "irrelevant".to_string(), || {
+            Err("ssh.keyLocked".to_string())
+        });
+        assert!(result.is_err());
+        assert!(!app.ctx.ssh_key.has_pending_export());
+    }
+
+    /// The end-to-end guarantee `take_pending_export`'s staleness check
+    /// exists for: the user starts an export, then chooses a different key
+    /// before answering the window. The next passphrase must be routed
+    /// normally for the newly-chosen key, never spent trying to export the
+    /// abandoned one.
+    #[test]
+    fn a_pending_export_is_ignored_once_the_chosen_key_has_changed() {
+        let app = TempAppData::new();
+        let putty_path =
+            write_putty_key(&app, "enc.ppk", crate::app::ppk::fixtures::ED25519_V3_ENC);
+        select(&app.ctx, putty_path).unwrap();
+
+        let dir = export_test_dir("sk-ppk-stale-pending-export-test");
+        let dest = dir.join("converted");
+        begin_export(&app.ctx, dest.to_string_lossy().into_owned(), || Ok(())).unwrap();
+        assert!(app.ctx.ssh_key.has_pending_export());
+
+        let new_path = write_encrypted_key(&app, "topsecret");
+        select(&app.ctx, new_path).unwrap();
+        assert!(!app.ctx.ssh_key.has_pending_export());
+
+        assert_eq!(
+            unlock(&app.ctx, "topsecret".to_string(), |_| {}),
+            Ok(()),
+            "the passphrase must unlock the newly-chosen key, not be spent on the abandoned export"
+        );
+        assert_eq!(state(&app.ctx).state, KeyState::Unlocked);
+        assert!(
+            !dest.exists(),
+            "no export must have happened for the abandoned key"
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
     }
 }

@@ -320,10 +320,24 @@ struct Inner {
     unlock_generation: u64,
     /// The result carried by the most recent generation bump.
     last_unlock_ok: bool,
-    /// A destination the user has asked to export the chosen PuTTY key to,
-    /// waiting for the unlock window to supply the passphrase. Cleared when it
-    /// is taken, and whenever the chosen path changes.
-    pending_export: Option<String>,
+    /// An export the user has asked for, waiting for the unlock window to
+    /// supply the passphrase. Cleared when it is taken, when the chosen path
+    /// changes, and whenever the window it was parked for is answered by a
+    /// cancel or a close rather than a submitted passphrase.
+    pending_export: Option<PendingExport>,
+}
+
+/// The source path and destination of an export waiting on a passphrase.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PendingExport {
+    /// The key path this export was started for. Checked against the
+    /// store's current path before the export runs (see
+    /// [`SshKeyStore::take_pending_export`]), so a slot left over from a key
+    /// that has since changed is inert rather than exporting -- or being
+    /// asked to export -- the wrong key.
+    source: String,
+    /// Where the converted key should be written.
+    dest: String,
 }
 
 /// Owns the chosen SSH key's path and, for at most one session, the
@@ -386,6 +400,11 @@ impl SshKeyStore {
         if inner.unlocked_for != path {
             inner.passphrase = None;
             inner.unlocked_for = None;
+        }
+        // A pending export is tied to the key it was started for, not to
+        // whether an OpenSSH passphrase happens to be held -- any actual path
+        // change invalidates it, independently of the check above.
+        if inner.path != path {
             inner.pending_export = None;
         }
         inner.path = path;
@@ -400,22 +419,54 @@ impl SshKeyStore {
             .clone()
     }
 
-    /// Record where the next successful passphrase entry should export to.
-    pub fn set_pending_export(&self, dest: Option<String>) {
+    /// Record where the next successful passphrase entry should export
+    /// `source` to.
+    pub fn set_pending_export(&self, source: String, dest: String) {
         self.inner
             .lock()
             .expect("ssh key store lock poisoned")
-            .pending_export = dest;
+            .pending_export = Some(PendingExport { source, dest });
     }
 
-    /// Take the pending export destination, leaving none behind. A passphrase
-    /// answers exactly one export: a second attempt has to be asked for again.
-    pub fn take_pending_export(&self) -> Option<String> {
+    /// Take the pending export, if it still applies to the currently chosen
+    /// path, leaving none behind either way.
+    ///
+    /// A passphrase answers exactly one export: a second attempt has to be
+    /// asked for again ([`set_pending_export`](Self::set_pending_export) is
+    /// what parks a fresh one). A slot whose source no longer matches the
+    /// chosen key is stale -- the key changed after Convert was clicked but
+    /// before the window was answered -- and is discarded here rather than
+    /// honoured, so a later, unrelated passphrase can never be spent
+    /// exporting a key that is no longer the current one.
+    pub fn take_pending_export(&self) -> Option<(String, String)> {
+        let mut inner = self.inner.lock().expect("ssh key store lock poisoned");
+        let pending = inner.pending_export.take()?;
+        (inner.path.as_deref() == Some(pending.source.as_str()))
+            .then_some((pending.source, pending.dest))
+    }
+
+    /// Drop a pending export without regard to whether it still applies.
+    ///
+    /// Used when the window it was waiting on is answered by a cancel or a
+    /// close instead of a submitted passphrase, and when raising that window
+    /// failed outright -- neither leaves a slot for a later, unrelated
+    /// passphrase to be spent on.
+    pub fn clear_pending_export(&self) {
+        self.inner
+            .lock()
+            .expect("ssh key store lock poisoned")
+            .pending_export = None;
+    }
+
+    /// Whether a pending export is currently parked. Test-only: the field is
+    /// private to this module.
+    #[cfg(test)]
+    pub(crate) fn has_pending_export(&self) -> bool {
         self.inner
             .lock()
             .expect("ssh key store lock poisoned")
             .pending_export
-            .take()
+            .is_some()
     }
 
     /// Inspect the chosen key file and fold in whether a passphrase is
@@ -818,6 +869,36 @@ mod tests {
             inner.passphrase = Some(Zeroizing::new("stale".to_string()));
         }
         assert!(store.passphrase().is_none());
+    }
+
+    #[test]
+    fn choosing_a_different_key_drops_a_pending_export() {
+        let store = SshKeyStore::new();
+        store.set_path(Some("first".to_string()));
+        store.set_pending_export("first".to_string(), "dest".to_string());
+        store.set_path(Some("second".to_string()));
+        assert!(
+            !store.has_pending_export(),
+            "an export parked for a key that is no longer chosen must not linger"
+        );
+    }
+
+    #[test]
+    fn a_pending_export_whose_source_no_longer_matches_the_chosen_key_is_ignored() {
+        // Mirrors `passphrase_is_withheld_when_held_for_a_different_path_than_the_current_one`
+        // directly at the `Inner` level: regardless of how a slot surviving a
+        // key change could ever arise, `take_pending_export` must never hand
+        // one back for a source that is no longer the chosen key.
+        let store = SshKeyStore::new();
+        {
+            let mut inner = store.inner.lock().unwrap();
+            inner.path = Some("current".to_string());
+            inner.pending_export = Some(PendingExport {
+                source: "previous".to_string(),
+                dest: "dest".to_string(),
+            });
+        }
+        assert_eq!(store.take_pending_export(), None);
     }
 
     #[test]
