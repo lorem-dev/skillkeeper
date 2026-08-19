@@ -261,22 +261,17 @@ pub fn unlock(ctx: &AppContext, passphrase: String, resolved: impl Fn(bool)) -> 
     // and this one -- the last hop of the value that came over the bridge --
     // must not outlive the call that used it.
     let passphrase = Zeroizing::new(passphrase);
-    // What answering the prompt means depends on the key's format: an OpenSSH
-    // key has its passphrase verified and held, while a PuTTY key is decrypted,
-    // converted and handed to the agent, with the passphrase dropped after --
-    // `ssh` cannot read the format at all, so there is nothing to hold one for.
-    match ctx.ssh_key.state() {
-        // No agent to load into: `load_putty` would fail here with a code about
-        // the key, when the missing piece is the agent.
-        KeyState::PuttyNoAgent => return Err(PUTTY_NEEDS_AGENT_ERROR.to_string()),
-        KeyState::PuttyLocked | KeyState::PuttyUnencrypted => {
-            load_into_agent(ctx, &passphrase)?;
-        }
-        _ => ctx
+    match unlock_route(ctx.ssh_key.state()) {
+        UnlockRoute::Refuse(code) => return Err(code.to_string()),
+        UnlockRoute::LoadIntoAgent => load_into_agent(ctx, &passphrase)?,
+        UnlockRoute::HoldPassphrase => ctx
             .ssh_key
             .unlock(&passphrase)
             .map_err(unlock_error_key)
             .map_err(str::to_string)?,
+        // Nothing to do, and nothing to check by hand: the state re-read below
+        // is what confirms the key really is usable.
+        UnlockRoute::AlreadyUsable => {}
     }
     // `SshKeyStore::unlock` reports success for a passphrase it verified, but
     // records nothing if the chosen key changed while it was verifying -- so
@@ -328,6 +323,53 @@ fn unlock_error_key(error: UnlockError) -> &'static str {
         UnlockError::NotAKey => NOT_A_KEY_ERROR,
         UnlockError::Unsupported => PUTTY_UNSUPPORTED_ERROR,
         UnlockError::Damaged => PUTTY_DAMAGED_ERROR,
+        // Nothing is wrong with the key: it read, decrypted and converted. The
+        // agent is the missing piece, and the export action exists for exactly
+        // this.
+        UnlockError::AgentUnavailable => PUTTY_NEEDS_AGENT_ERROR,
+    }
+}
+
+/// What answering the unlock window means for the chosen key.
+///
+/// The two acts are quite different -- an OpenSSH key has its passphrase
+/// verified and held for the session, while a PuTTY key is decrypted, converted
+/// and handed to the agent with the passphrase dropped after -- so which one a
+/// passphrase is spent on is a decision in its own right, kept pure and matched
+/// exhaustively rather than left to a catch-all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum UnlockRoute {
+    /// Verify the passphrase against the key file and hold it for the session.
+    HoldPassphrase,
+    /// Decrypt and convert the key and put it in the agent; hold nothing.
+    LoadIntoAgent,
+    /// The key is already usable; the answer changes nothing.
+    AlreadyUsable,
+    /// Refuse, with the renderer-facing code to report.
+    Refuse(&'static str),
+}
+
+/// Which act answering the window means for a key in `state`.
+fn unlock_route(state: KeyState) -> UnlockRoute {
+    match state {
+        // Every OpenSSH-format case, including the ones the store answers with
+        // an error of its own (a path that is gone, a file that is not a key):
+        // it owns those messages and reports them the same way it always has.
+        KeyState::NotConfigured
+        | KeyState::Missing
+        | KeyState::NotAKey
+        | KeyState::Unencrypted
+        | KeyState::Locked
+        | KeyState::Unlocked => UnlockRoute::HoldPassphrase,
+        KeyState::PuttyLocked | KeyState::PuttyUnencrypted => UnlockRoute::LoadIntoAgent,
+        // Already in the agent: the OpenSSH path would inspect the file, find a
+        // PPK and report it as not a private key -- about a key that is working.
+        // Reachable from a double-submit on the unlock window, whose first
+        // answer loaded the key.
+        KeyState::PuttyInAgent => UnlockRoute::AlreadyUsable,
+        // No agent to load into: `load_putty` would fail with a code about the
+        // key, when the missing piece is the agent.
+        KeyState::PuttyNoAgent => UnlockRoute::Refuse(PUTTY_NEEDS_AGENT_ERROR),
     }
 }
 
@@ -1564,6 +1606,44 @@ mod tests {
             "ssh.puttyUnsupportedAlgorithm"
         );
         assert_eq!(unlock_error_key(UnlockError::Damaged), "ssh.puttyDamaged");
+        // The key parsed and converted; it is the agent that could not take it,
+        // and that is what the user needs to hear.
+        assert_eq!(
+            unlock_error_key(UnlockError::AgentUnavailable),
+            "ssh.puttyNeedsAgent"
+        );
+    }
+
+    /// Every key state's answer to the unlock window, in one table.
+    ///
+    /// The routing decides which of two quite different acts the passphrase
+    /// just typed is spent on, and a state nobody listed silently taking the
+    /// OpenSSH path is exactly how a PuTTY key already in the agent came to
+    /// answer "not a private key" about itself.
+    #[test]
+    fn every_key_state_routes_to_the_act_that_fits_it() {
+        use UnlockRoute::{AlreadyUsable, HoldPassphrase, LoadIntoAgent, Refuse};
+        // Every variant of `KeyState`: a new one has to be added here to be
+        // covered, and `unlock_route`'s own match makes forgetting it a compile
+        // error rather than a wrong answer in production.
+        let table = [
+            (KeyState::NotConfigured, HoldPassphrase),
+            (KeyState::Missing, HoldPassphrase),
+            (KeyState::NotAKey, HoldPassphrase),
+            (KeyState::Unencrypted, HoldPassphrase),
+            (KeyState::Locked, HoldPassphrase),
+            (KeyState::Unlocked, HoldPassphrase),
+            (KeyState::PuttyLocked, LoadIntoAgent),
+            (KeyState::PuttyUnencrypted, LoadIntoAgent),
+            // Already in the agent and working: answering the window again must
+            // not hand it to the OpenSSH path, which would inspect the file,
+            // find a PPK and call it not a private key.
+            (KeyState::PuttyInAgent, AlreadyUsable),
+            (KeyState::PuttyNoAgent, Refuse(PUTTY_NEEDS_AGENT_ERROR)),
+        ];
+        for (state, expected) in table {
+            assert_eq!(unlock_route(state), expected, "{state:?}");
+        }
     }
 
     /// A PuTTY key with no passphrase needs the agent, not a window: pressing

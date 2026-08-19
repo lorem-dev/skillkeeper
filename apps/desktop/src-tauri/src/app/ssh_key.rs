@@ -86,6 +86,13 @@ pub enum UnlockError {
     /// The key file's MAC does not match with no passphrase in play: it is
     /// corrupt, and no passphrase will fix it.
     Damaged,
+    /// The key was read and converted, but the agent would not take it:
+    /// `ssh-add` is missing, the socket named by `SSH_AUTH_SOCK` has no live
+    /// agent behind it, or the agent refused. Distinct from [`NotAKey`](Self::NotAKey)
+    /// because nothing is wrong with the key -- `is_available` only checks that
+    /// a socket is NAMED, so this is a steady state on a machine with a stale
+    /// or forwarded socket and no usable `ssh-add`, not a corner case.
+    AgentUnavailable,
 }
 
 /// The decision [`gate_for`] hands back for one prospective git operation.
@@ -502,11 +509,12 @@ impl SshKeyStore {
     /// # Errors
     ///
     /// [`UnlockError::Missing`] when the file is gone, [`UnlockError::NotAKey`]
-    /// when it is not a PuTTY key (or the agent refused it),
-    /// [`UnlockError::WrongPassphrase`], [`UnlockError::Unsupported`] for an
-    /// algorithm with no OpenSSH form, and [`UnlockError::Damaged`] for a file
-    /// whose MAC does not match with no passphrase in play. No part of the key
-    /// or the passphrase appears in any of them.
+    /// when it is not a PuTTY key at all, [`UnlockError::WrongPassphrase`], [`UnlockError::Unsupported`] for an
+    /// algorithm with no OpenSSH form, [`UnlockError::Damaged`] for a file
+    /// whose MAC does not match with no passphrase in play, and
+    /// [`UnlockError::AgentUnavailable`] when the key converted but `ssh-add`
+    /// would not take it. No part of the key or the passphrase appears in any
+    /// of them.
     pub fn load_putty(&self, passphrase: &str) -> Result<(), UnlockError> {
         let Some(path) = self.path() else {
             return Err(UnlockError::Missing);
@@ -532,18 +540,38 @@ impl SshKeyStore {
             &converted.openssh,
             crate::app::ssh_agent::AGENT_KEY_TTL_SECS,
         )
-        .map_err(|_| UnlockError::NotAKey)?;
+        .map_err(|_| UnlockError::AgentUnavailable)?;
+        // The private half is done with: it went down the pipe and the
+        // `Zeroizing` copy is dropped here with the rest of `converted`.
+        let public_line = converted.public_line;
 
-        let mut inner = self.inner.lock().expect("ssh key store lock poisoned");
         // The chosen key can change while the conversion runs (an Argon2
         // derivation is not instant), and a key loaded for a path that is no
         // longer current must not be recorded as the current one.
-        if inner.path.as_deref() == Some(path.as_str()) {
-            inner.putty_public = Some(converted.public_line);
-            inner.putty_loaded_for = Some(path);
+        let orphaned = {
+            let mut inner = self.inner.lock().expect("ssh key store lock poisoned");
+            if inner.path.as_deref() == Some(path.as_str()) {
+                inner.putty_public = Some(public_line);
+                inner.putty_loaded_for = Some(path);
+                None
+            } else {
+                Some(public_line)
+            }
+        };
+        match orphaned {
+            // Recorded, so this unlock applies to the current key: release
+            // whatever was waiting on it. Inside the guard, like `unlock`'s
+            // own notify -- the branch below recorded nothing and succeeded at
+            // nothing the waiters care about.
+            None => self.notify_unlock_result(true),
+            // Nothing records this key now, so nothing could ever remove it:
+            // without this, key material would sit in the agent until the
+            // 12-hour TTL expired, outliving the session that put it there.
+            // Outside the lock, as every agent call is.
+            Some(line) => {
+                let _ = crate::app::ssh_agent::remove(&line);
+            }
         }
-        drop(inner);
-        self.notify_unlock_result(true);
         Ok(())
     }
 
@@ -553,7 +581,13 @@ impl SshKeyStore {
     /// the outcome this asks for.
     pub fn unload_putty(&self) {
         let public = {
-            let mut inner = self.inner.lock().expect("ssh key store lock poisoned");
+            // Deliberately not `expect`: this runs on the exit paths, one of
+            // which is inside an Objective-C termination frame on macOS where
+            // unwinding a panic is undefined. Taking the guard from a poisoned
+            // lock still gets the key out, which is the whole point of the
+            // call, and the two fields read here are plain `Option<String>`s
+            // that no panic can leave half-written.
+            let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
             inner.putty_loaded_for = None;
             inner.putty_public.take()
         };
