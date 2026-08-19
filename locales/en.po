@@ -1132,6 +1132,21 @@ msgstr "Locked. Asked when first needed."
 msgid "settings.ssh.state.unlocked"
 msgstr "Unlocked for this session."
 
+msgid "settings.ssh.state.puttyLocked"
+msgstr "PuTTY key, locked."
+
+msgid "settings.ssh.state.puttyUnencrypted"
+msgstr "PuTTY key, no passphrase."
+
+msgid "settings.ssh.state.puttyInAgent"
+msgstr "PuTTY key, loaded into the agent for this session."
+
+msgid "settings.ssh.state.puttyNoAgent"
+msgstr "PuTTY key, but no ssh-agent is running to hold it."
+
+msgid "settings.ssh.convert"
+msgstr "Convert to an OpenSSH key"
+
 msgid "ssh.unlock.title"
 msgstr "Unlock SSH key"
 
@@ -1179,6 +1194,18 @@ msgstr "The passphrase request came from an operation that had already finished.
 
 msgid "ssh.askpassForgotten"
 msgstr "The passphrase is no longer held. Unlock the key again."
+
+msgid "ssh.puttyNeedsAgent"
+msgstr "This PuTTY key needs an ssh-agent to hold it. Start one, or convert the key to OpenSSH format."
+
+msgid "ssh.puttyUnsupportedAlgorithm"
+msgstr "This PuTTY key uses an algorithm OpenSSH no longer supports."
+
+msgid "ssh.puttyDamaged"
+msgstr "This PuTTY key file is damaged."
+
+msgid "ssh.puttyExportFailed"
+msgstr "The key could not be converted."
 
 
 msgid "settings.updates.mode"

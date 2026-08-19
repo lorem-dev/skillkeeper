@@ -12,4 +12,17 @@ describe('shouldPromptOnSelect', () => {
       expect(shouldPromptOnSelect(state)).toBe(false);
     }
   });
+
+  it('prompts for a freshly chosen locked putty key', () => {
+    expect(shouldPromptOnSelect('puttyLocked')).toBe(true);
+  });
+
+  it('does not prompt for putty states with nothing to ask', () => {
+    // An unencrypted key needs no passphrase, and one already in the agent has
+    // been dealt with; a missing agent is a different problem, and a window
+    // asking for a passphrase would not fix it.
+    expect(shouldPromptOnSelect('puttyUnencrypted')).toBe(false);
+    expect(shouldPromptOnSelect('puttyInAgent')).toBe(false);
+    expect(shouldPromptOnSelect('puttyNoAgent')).toBe(false);
+  });
 });

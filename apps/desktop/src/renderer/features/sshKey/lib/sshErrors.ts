@@ -11,6 +11,10 @@ const SSH_ERROR_KEYS = [
   'ssh.askpassExpired',
   'ssh.askpassStale',
   'ssh.askpassForgotten',
+  'ssh.puttyNeedsAgent',
+  'ssh.puttyUnsupportedAlgorithm',
+  'ssh.puttyDamaged',
+  'ssh.puttyExportFailed',
 ] as const satisfies readonly MessageKey[];
 
 /**
