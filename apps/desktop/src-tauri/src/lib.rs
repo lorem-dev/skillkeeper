@@ -70,7 +70,7 @@ pub fn run() {
             // macOS: make Cmd+Q / Dock-Quit / the Quit menu item exit fast
             // instead of dragging through AppKit's ~15s terminate: teardown.
             #[cfg(target_os = "macos")]
-            app::install_fast_terminate();
+            app::install_fast_terminate(&app.state::<Arc<AppContext>>().ssh_key);
             app::watcher::start(app.handle().clone());
             // Pump the terminal reader thread's output to the frontend. The
             // manager can only hand out its event receiver once; `setup` is the

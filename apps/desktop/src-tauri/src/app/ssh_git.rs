@@ -119,7 +119,20 @@ pub fn run_git_in_terminal(ctx: &AppContext, cwd: &str, args: &[String]) -> Resu
     let refusal = ctx.askpass.get().and_then(AskpassServer::take_refusal);
     match result {
         Ok(output) => Ok(output),
-        Err(error) => Err(refusal.map_or(error, |r| refusal_error(&r).to_string())),
+        Err(error) => {
+            // The agent may have dropped our key (TTL expiry, `ssh-add -D`)
+            // while the store still records it as loaded. Authentication
+            // failure is the only evidence we get, so it is where the record is
+            // corrected -- the next operation then prompts instead of failing
+            // the same way again. The cheap string test comes first, so the
+            // ordinary failure (a bad path, a missing remote) does not pay for
+            // a key-file read it has no use for.
+            if error.contains("Permission denied") && ctx.ssh_key.state() == KeyState::PuttyInAgent
+            {
+                ctx.ssh_key.unload_putty();
+            }
+            Err(refusal.map_or(error, |r| refusal_error(&r).to_string()))
+        }
     }
 }
 
@@ -213,6 +226,14 @@ fn lease_for_state(
             Some(path) => unlocked_lease(&path, ssh_key, askpass),
             None => GitEnvLease::empty(),
         },
+        // A PuTTY key is in the agent, not in a file ssh can read: naming it
+        // with `-i` would break every operation, and there is no passphrase to
+        // answer an askpass request with. An empty lease is exactly right --
+        // it is the "let ssh use what it has" case.
+        KeyState::PuttyInAgent
+        | KeyState::PuttyLocked
+        | KeyState::PuttyUnencrypted
+        | KeyState::PuttyNoAgent => GitEnvLease::empty(),
     }
 }
 
@@ -416,6 +437,28 @@ mod tests {
             .vars()
             .iter()
             .any(|(k, v)| k == "SSH_ASKPASS_REQUIRE" && v == "force"));
+    }
+
+    /// A PuTTY key never reaches `ssh` as a file: `ssh -i` cannot read the
+    /// format, so naming it would break every operation the moment one is
+    /// chosen, whatever the key's state.
+    #[test]
+    fn a_putty_key_is_never_named_on_the_ssh_command_line() {
+        let app = TempAppData::new();
+        for (name, contents) in [
+            ("plain.ppk", crate::app::ppk::fixtures::ED25519_V3_PLAIN),
+            ("enc.ppk", crate::app::ppk::fixtures::ED25519_V3_ENC),
+        ] {
+            let path = app.dir().join(name);
+            std::fs::write(&path, contents).unwrap();
+            app.ctx
+                .ssh_key
+                .set_path(Some(path.to_string_lossy().into_owned()));
+            assert!(
+                git_env_lease(&app.ctx).vars().is_empty(),
+                "{name} must leave the environment alone"
+            );
+        }
     }
 
     #[test]

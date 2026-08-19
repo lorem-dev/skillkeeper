@@ -35,10 +35,25 @@ pub fn quit<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> ! {
 
     if let Some(ctx) = app.try_state::<std::sync::Arc<crate::state::AppContext>>() {
         ctx.terminal.shutdown();
+        // Before the agent is stopped, because a user's own long-lived agent is
+        // not stopped at all: without this the converted key would sit in it
+        // until the TTL ran out, long after the app that put it there had gone.
+        ctx.ssh_key.unload_putty();
     }
     ssh_agent::stop_ssh_agent();
     std::process::exit(0);
 }
+
+/// The key store the macOS fast-terminate path takes the session's PuTTY key
+/// out of the agent through.
+///
+/// A global because `applicationShouldTerminate:` is a plain C function with
+/// nowhere to put a captured handle and no `AppHandle` of its own to read the
+/// managed state from, unlike [`quit`]. Written once, in
+/// [`install_fast_terminate`].
+#[cfg(target_os = "macos")]
+static QUIT_SSH_KEY: std::sync::OnceLock<std::sync::Arc<ssh_key::SshKeyStore>> =
+    std::sync::OnceLock::new();
 
 /// Make every AppKit `terminate:` path (Cmd+Q, the Quit menu item, Dock > Quit)
 /// exit fast.
@@ -52,10 +67,15 @@ pub fn quit<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> ! {
 /// the slow unwind begins.
 ///
 /// The shell child is reaped by the kernel closing the PTY master on exit
-/// (SIGHUP), so no context is needed here beyond stopping a self-spawned
-/// ssh-agent.
+/// (SIGHUP), so the only context needed here is `ssh_key`: the session's PuTTY
+/// key has to come back out of the agent, which a user's own long-lived agent
+/// would otherwise hold until its TTL expired. It is taken as a parameter and
+/// stashed in [`QUIT_SSH_KEY`] because the replacement method below is a plain
+/// C function that can capture nothing. The removal costs a lock and, only when
+/// a key really is loaded, one `ssh-add -d` against a live local agent -- so
+/// this path stays as fast as it was.
 #[cfg(target_os = "macos")]
-pub fn install_fast_terminate() {
+pub fn install_fast_terminate(ssh_key: &std::sync::Arc<ssh_key::SshKeyStore>) {
     use objc2::runtime::{AnyClass, AnyObject, Sel};
     use objc2::sel;
     use objc2_app_kit::NSApplication;
@@ -66,10 +86,14 @@ pub fn install_fast_terminate() {
         _cmd: Sel,
         _sender: *mut AnyObject,
     ) -> usize {
+        if let Some(store) = QUIT_SSH_KEY.get() {
+            store.unload_putty();
+        }
         ssh_agent::stop_ssh_agent();
         std::process::exit(0);
     }
 
+    let _ = QUIT_SSH_KEY.set(std::sync::Arc::clone(ssh_key));
     let Some(mtm) = MainThreadMarker::new() else {
         return;
     };

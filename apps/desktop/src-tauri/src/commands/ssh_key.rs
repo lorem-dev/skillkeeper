@@ -13,10 +13,10 @@
 //!
 //! The passphrase crosses the bridge in exactly one direction, once: as the
 //! argument of [`ssh_key_unlock`]. It is never returned, never logged, and
-//! never part of an error -- every key-related failure is one of the four
-//! stable codes the renderer translates ([`WRONG_PASSPHRASE_ERROR`] and the
-//! three [`crate::app::ssh_key`] exports), never a message from `ssh`, the
-//! window system, or the key parser.
+//! never part of an error -- every key-related failure is one of the stable
+//! codes the renderer translates ([`WRONG_PASSPHRASE_ERROR`] and the
+//! [`crate::app::ssh_key`] exports), never a message from `ssh`, the window
+//! system, or the key parser.
 //!
 //! Two entry points raise the unlock window, and no others:
 //!
@@ -43,6 +43,7 @@ use zeroize::Zeroizing;
 
 use crate::app::ssh_key::{
     gate_for, Gate, KeyState, UnlockError, KEY_LOCKED_ERROR, KEY_MISSING_ERROR, NOT_A_KEY_ERROR,
+    PUTTY_DAMAGED_ERROR, PUTTY_NEEDS_AGENT_ERROR, PUTTY_UNSUPPORTED_ERROR,
 };
 use crate::state::AppContext;
 
@@ -251,18 +252,32 @@ fn write_path(ctx: &AppContext, path: Option<String>) -> Result<(), String> {
 ///
 /// Returns [`WRONG_PASSPHRASE_ERROR`], [`KEY_MISSING_ERROR`],
 /// [`NOT_A_KEY_ERROR`], or [`KEY_LOCKED_ERROR`] when the passphrase verified
-/// but the chosen key changed underneath it (see the body). Nothing is
-/// announced on any of those paths. The passphrase itself never appears in
-/// the error.
+/// but the chosen key changed underneath it (see the body), plus, for a PuTTY
+/// key, [`PUTTY_NEEDS_AGENT_ERROR`], [`PUTTY_UNSUPPORTED_ERROR`] and
+/// [`PUTTY_DAMAGED_ERROR`]. Nothing is announced on any of those paths. The
+/// passphrase itself never appears in the error.
 pub fn unlock(ctx: &AppContext, passphrase: String, resolved: impl Fn(bool)) -> Result<(), String> {
     // Scrubbed when this call returns: the store keeps its own zeroizing copy,
     // and this one -- the last hop of the value that came over the bridge --
     // must not outlive the call that used it.
     let passphrase = Zeroizing::new(passphrase);
-    ctx.ssh_key
-        .unlock(&passphrase)
-        .map_err(unlock_error_key)
-        .map_err(str::to_string)?;
+    // What answering the prompt means depends on the key's format: an OpenSSH
+    // key has its passphrase verified and held, while a PuTTY key is decrypted,
+    // converted and handed to the agent, with the passphrase dropped after --
+    // `ssh` cannot read the format at all, so there is nothing to hold one for.
+    match ctx.ssh_key.state() {
+        // No agent to load into: `load_putty` would fail here with a code about
+        // the key, when the missing piece is the agent.
+        KeyState::PuttyNoAgent => return Err(PUTTY_NEEDS_AGENT_ERROR.to_string()),
+        KeyState::PuttyLocked | KeyState::PuttyUnencrypted => {
+            load_into_agent(ctx, &passphrase)?;
+        }
+        _ => ctx
+            .ssh_key
+            .unlock(&passphrase)
+            .map_err(unlock_error_key)
+            .map_err(str::to_string)?,
+    }
     // `SshKeyStore::unlock` reports success for a passphrase it verified, but
     // records nothing if the chosen key changed while it was verifying -- so
     // `Ok` alone does not mean the key is usable now. Report what the store
@@ -303,12 +318,27 @@ pub fn cancel_unlock(ctx: &AppContext, resolved: impl Fn(bool)) {
 }
 
 /// The renderer-facing error key for an [`UnlockError`].
+///
+/// The one table: every reporting site for an unlock failure -- the passphrase
+/// path and the PuTTY load path alike -- goes through here.
 fn unlock_error_key(error: UnlockError) -> &'static str {
     match error {
         UnlockError::WrongPassphrase => WRONG_PASSPHRASE_ERROR,
         UnlockError::Missing => KEY_MISSING_ERROR,
         UnlockError::NotAKey => NOT_A_KEY_ERROR,
+        UnlockError::Unsupported => PUTTY_UNSUPPORTED_ERROR,
+        UnlockError::Damaged => PUTTY_DAMAGED_ERROR,
     }
+}
+
+/// Put the chosen PuTTY key in the session agent, which is what "unlocking" it
+/// means: `ssh` cannot read the format at all, so there is no file to point it
+/// at (see [`crate::app::ssh_key::SshKeyStore::load_putty`]).
+fn load_into_agent(ctx: &AppContext, passphrase: &str) -> Result<(), String> {
+    ctx.ssh_key
+        .load_putty(passphrase)
+        .map_err(unlock_error_key)
+        .map_err(str::to_string)
 }
 
 /// The error key for a key state that cannot be used right now, or `None` when
@@ -324,6 +354,13 @@ fn state_error_key(state: KeyState) -> Option<&'static str> {
         KeyState::Missing => Some(KEY_MISSING_ERROR),
         KeyState::NotAKey => Some(NOT_A_KEY_ERROR),
         KeyState::Locked | KeyState::NotConfigured => Some(KEY_LOCKED_ERROR),
+        // A PuTTY key is usable exactly when the agent holds it: `ssh` cannot
+        // read the file, so one that is merely readable is not yet ready --
+        // even the unencrypted one, which needs no passphrase but does need
+        // the load.
+        KeyState::PuttyInAgent => None,
+        KeyState::PuttyLocked | KeyState::PuttyUnencrypted => Some(KEY_LOCKED_ERROR),
+        KeyState::PuttyNoAgent => Some(PUTTY_NEEDS_AGENT_ERROR),
     }
 }
 
@@ -405,6 +442,9 @@ pub fn require_unlocked(
     match gate_for(is_ssh, ctx.ssh_key.state(), interactive) {
         Gate::Proceed => Ok(()),
         Gate::Fail(code) => Err(code.to_string()),
+        // No passphrase to ask for, so no window and no waiting: an unencrypted
+        // PuTTY key just needs to be in the agent before `ssh` runs.
+        Gate::LoadIntoAgent => load_into_agent(ctx, ""),
         Gate::Prompt => wait_for_usable_key(ctx, Instant::now() + UNLOCK_TIMEOUT, || {
             open_unlock_window(app, ctx)
         }),
@@ -432,22 +472,34 @@ pub fn require_unlocked(
 ///
 /// # Errors
 ///
-/// Returns [`KEY_MISSING_ERROR`], [`NOT_A_KEY_ERROR`], or [`KEY_LOCKED_ERROR`]
-/// when the prompt could not be raised. Never a raw window-system message.
+/// Returns [`KEY_MISSING_ERROR`], [`NOT_A_KEY_ERROR`] or [`KEY_LOCKED_ERROR`]
+/// when the prompt could not be raised, and [`PUTTY_NEEDS_AGENT_ERROR`] for a
+/// PuTTY key with no agent to load it into -- the one thing no window can fix.
+/// Never a raw window-system message.
 pub fn prompt(app: &AppHandle, ctx: &AppContext) -> Result<(), String> {
-    raise_prompt(ctx.ssh_key.state(), || open_unlock_window(app, ctx))
+    raise_prompt(
+        ctx.ssh_key.state(),
+        || load_into_agent(ctx, ""),
+        || open_unlock_window(app, ctx),
+    )
 }
 
-/// The decision half of [`prompt`], with raising the window as a parameter so
-/// it can be tested without a window system.
+/// The decision half of [`prompt`], with raising the window and loading the
+/// agent as parameters so it can be tested without a window system or an agent.
 ///
 /// `raise` is [`open_unlock_window`], which joins the prompt already on screen
 /// rather than building a second one and announces it only if it can still be
 /// answered -- so a prompt raised here and a prompt raised by a blocked git
 /// operation are always the same window, with the same answered flag, whoever
 /// got there first.
+///
+/// `load` is [`load_into_agent`]: a user pressing Unlock on an unencrypted
+/// PuTTY key is asking for the one thing that key needs, and answering that
+/// with silence would leave every operation failing for want of a load nobody
+/// ever triggers.
 fn raise_prompt(
     state: KeyState,
+    load: impl FnOnce() -> Result<(), String>,
     raise: impl FnOnce() -> Result<Arc<AtomicBool>, String>,
 ) -> Result<(), String> {
     // A git operation over a key it cannot read carries on without one (the key
@@ -465,6 +517,7 @@ fn raise_prompt(
     match gate_for(true, state, true) {
         Gate::Proceed => Ok(()),
         Gate::Fail(code) => Err(code.to_string()),
+        Gate::LoadIntoAgent => load(),
         Gate::Prompt => raise().map(|_| ()),
     }
 }
@@ -799,6 +852,19 @@ mod tests {
         crate::commands::test_support::write_key(app.dir(), "encrypted_key", Some(passphrase))
     }
 
+    /// Write a PuTTY-format key next to the config and return its path.
+    fn write_putty_key(app: &TempAppData, name: &str, contents: &str) -> String {
+        let path = app.dir().join(name);
+        std::fs::write(&path, contents).unwrap();
+        path.to_string_lossy().into_owned()
+    }
+
+    /// The `load` hook for [`raise_prompt`] cases that must never touch the
+    /// agent: only a PuTTY key with no passphrase is loaded without asking.
+    fn never_loaded() -> Result<(), String> {
+        panic!("this key state must not be loaded into the agent")
+    }
+
     #[test]
     fn selecting_a_key_persists_it_and_reports_the_state() {
         let app = TempAppData::new();
@@ -1022,7 +1088,7 @@ mod tests {
         let raises = std::sync::atomic::AtomicUsize::new(0);
         let fresh = Arc::new(AtomicBool::new(false));
 
-        let result = raise_prompt(KeyState::Locked, || {
+        let result = raise_prompt(KeyState::Locked, never_loaded, || {
             raises.fetch_add(1, Ordering::AcqRel);
             Ok(Arc::clone(&fresh))
         });
@@ -1044,7 +1110,7 @@ mod tests {
         let raises = std::sync::atomic::AtomicUsize::new(0);
         let announcements = std::sync::atomic::AtomicUsize::new(0);
 
-        let result = raise_prompt(KeyState::Locked, || {
+        let result = raise_prompt(KeyState::Locked, never_loaded, || {
             raises.fetch_add(1, Ordering::AcqRel);
             // Exactly what `open_unlock_window` does: take whatever is on
             // record instead of building, and announce it only if it can still
@@ -1082,7 +1148,7 @@ mod tests {
         let spent = Arc::new(AtomicBool::new(true));
         let announcements = std::sync::atomic::AtomicUsize::new(0);
 
-        let result = raise_prompt(KeyState::Locked, || {
+        let result = raise_prompt(KeyState::Locked, never_loaded, || {
             join_and_announce(
                 || Ok(Arc::clone(&spent)),
                 || {
@@ -1107,7 +1173,7 @@ mod tests {
             KeyState::NotConfigured,
         ] {
             let raises = std::sync::atomic::AtomicUsize::new(0);
-            let result = raise_prompt(state, || {
+            let result = raise_prompt(state, never_loaded, || {
                 raises.fetch_add(1, Ordering::AcqRel);
                 Ok(Arc::new(AtomicBool::new(false)))
             });
@@ -1123,11 +1189,11 @@ mod tests {
             panic!("a key that cannot be used must not raise a prompt")
         };
         assert_eq!(
-            raise_prompt(KeyState::Missing, never_raised).unwrap_err(),
+            raise_prompt(KeyState::Missing, never_loaded, never_raised).unwrap_err(),
             "ssh.keyMissing"
         );
         assert_eq!(
-            raise_prompt(KeyState::NotAKey, never_raised).unwrap_err(),
+            raise_prompt(KeyState::NotAKey, never_loaded, never_raised).unwrap_err(),
             "ssh.notAPrivateKey"
         );
     }
@@ -1136,7 +1202,7 @@ mod tests {
     /// translate, never as the window system's own message.
     #[test]
     fn a_prompt_that_cannot_be_raised_fails_with_a_stable_code() {
-        let result = raise_prompt(KeyState::Locked, || {
+        let result = raise_prompt(KeyState::Locked, never_loaded, || {
             // What `build_unlock_window` returns for any builder failure.
             Err(unlock_window_failed())
         });
@@ -1490,6 +1556,79 @@ mod tests {
         );
         assert_eq!(unlock_error_key(UnlockError::Missing), "ssh.keyMissing");
         assert_eq!(unlock_error_key(UnlockError::NotAKey), "ssh.notAPrivateKey");
+        // A DSA key and a corrupt file get codes of their own: flattening them
+        // into "not a private key" would send the user looking for a problem
+        // that is not theirs.
+        assert_eq!(
+            unlock_error_key(UnlockError::Unsupported),
+            "ssh.puttyUnsupportedAlgorithm"
+        );
+        assert_eq!(unlock_error_key(UnlockError::Damaged), "ssh.puttyDamaged");
+    }
+
+    /// A PuTTY key with no passphrase needs the agent, not a window: pressing
+    /// Unlock on one must load it rather than silently do nothing.
+    #[test]
+    fn an_unencrypted_putty_key_is_loaded_rather_than_asked_about() {
+        let loads = std::sync::atomic::AtomicUsize::new(0);
+        let result = raise_prompt(
+            KeyState::PuttyUnencrypted,
+            || {
+                loads.fetch_add(1, Ordering::AcqRel);
+                Ok(())
+            },
+            || panic!("nothing to ask about: this key has no passphrase"),
+        );
+        assert_eq!(result, Ok(()));
+        assert_eq!(loads.load(Ordering::Acquire), 1);
+    }
+
+    /// An encrypted one is the other way round: it needs the passphrase first,
+    /// so it takes exactly the window a locked OpenSSH key takes.
+    #[test]
+    fn a_locked_putty_key_raises_the_same_prompt_as_any_other() {
+        let fresh = Arc::new(AtomicBool::new(false));
+        let raises = std::sync::atomic::AtomicUsize::new(0);
+        let result = raise_prompt(KeyState::PuttyLocked, never_loaded, || {
+            raises.fetch_add(1, Ordering::AcqRel);
+            Ok(Arc::clone(&fresh))
+        });
+        assert_eq!(result, Ok(()));
+        assert_eq!(raises.load(Ordering::Acquire), 1);
+    }
+
+    /// With no agent there is nowhere to put the key, so neither a window nor a
+    /// load helps: the user is told the one thing that would.
+    #[test]
+    fn a_putty_key_with_no_agent_is_reported_rather_than_asked_about() {
+        let never_raised =
+            || -> Result<Arc<AtomicBool>, String> { panic!("no agent to unlock into") };
+        assert_eq!(
+            raise_prompt(KeyState::PuttyNoAgent, never_loaded, never_raised).unwrap_err(),
+            "ssh.puttyNeedsAgent"
+        );
+    }
+
+    /// The passphrase for a PuTTY key is spent on the load and dropped: it is
+    /// never held, because `ssh` reads the key from the agent rather than from
+    /// a file it must decrypt again per invocation.
+    ///
+    /// Deliberately a WRONG passphrase, so the conversion fails before anything
+    /// reaches `ssh-add`: a test must never put a key in the developer's own
+    /// agent. Either code below proves the routing, since the OpenSSH path this
+    /// used to take answers `ssh.notAPrivateKey` for a PPK file.
+    #[test]
+    fn unlocking_a_putty_key_holds_no_passphrase() {
+        let app = TempAppData::new();
+        let path = write_putty_key(&app, "enc.ppk", crate::app::ppk::fixtures::ED25519_V3_ENC);
+        select(&app.ctx, path).unwrap();
+
+        let error = unlock(&app.ctx, "nope".to_string(), |_| {}).unwrap_err();
+        assert!(
+            error == "ssh.wrongPassphrase" || error == "ssh.puttyNeedsAgent",
+            "unexpected code for a PuTTY key: {error}"
+        );
+        assert!(app.ctx.ssh_key.passphrase().is_none());
     }
 
     /// The guard behind `unlock` reporting the store's actual state rather
@@ -1508,6 +1647,22 @@ mod tests {
         assert_eq!(
             state_error_key(KeyState::NotAKey),
             Some("ssh.notAPrivateKey")
+        );
+        // A PuTTY key counts as usable only once the agent holds it: `ssh`
+        // cannot read the file, so even the unencrypted one is not ready until
+        // it is loaded.
+        assert_eq!(state_error_key(KeyState::PuttyInAgent), None);
+        assert_eq!(
+            state_error_key(KeyState::PuttyLocked),
+            Some("ssh.keyLocked")
+        );
+        assert_eq!(
+            state_error_key(KeyState::PuttyUnencrypted),
+            Some("ssh.keyLocked")
+        );
+        assert_eq!(
+            state_error_key(KeyState::PuttyNoAgent),
+            Some("ssh.puttyNeedsAgent")
         );
     }
 

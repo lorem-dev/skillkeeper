@@ -687,6 +687,11 @@ fn gate_offline(ctx: &AppContext, repo: &Repository, interactive: bool) -> Resul
         Gate::Proceed => Ok(()),
         Gate::Fail(code) => Err(code.to_string()),
         Gate::Prompt => Err(KEY_LOCKED_ERROR.to_string()),
+        // Same reasoning as `Gate::Prompt`, for the other thing `offer_unlock`
+        // does: it loads a PuTTY key into the agent whether or not the caller
+        // is interactive, so a key still waiting for that load by the time this
+        // runs is one whose load failed, and the operation cannot use it.
+        Gate::LoadIntoAgent => Err(KEY_LOCKED_ERROR.to_string()),
     }
 }
 
