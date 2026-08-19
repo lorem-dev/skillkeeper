@@ -70,9 +70,7 @@ pub fn validate(group: &str) -> Result<(), String> {
             return Err("group segment must not be \".\" or \"..\"".to_string());
         }
         if part.trim() != *part {
-            return Err(
-                "group segment must not have leading or trailing whitespace".to_string(),
-            );
+            return Err("group segment must not have leading or trailing whitespace".to_string());
         }
     }
     Ok(())
@@ -113,7 +111,10 @@ mod tests {
     #[test]
     fn rejects_a_group_deeper_than_the_limit() {
         let err = validate("a/b/c/d").unwrap_err();
-        assert!(err.contains("4"), "error should name the actual depth: {err}");
+        assert!(
+            err.contains("4"),
+            "error should name the actual depth: {err}"
+        );
         assert!(err.contains("3"), "error should name the limit: {err}");
     }
 

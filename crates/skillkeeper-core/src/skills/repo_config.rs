@@ -101,7 +101,8 @@ fn optional_group(
 ) -> Result<Option<String>, RepoConfigError> {
     let group = optional_string(parent, key, field_path)?;
     if let Some(g) = &group {
-        group_path::validate(g).map_err(|detail| RepoConfigError::schema_detailed(field_path, &detail))?;
+        group_path::validate(g)
+            .map_err(|detail| RepoConfigError::schema_detailed(field_path, &detail))?;
     }
     Ok(group)
 }
@@ -338,7 +339,11 @@ mod tests {
         let err = parse_repo_config(&text).unwrap_err();
 
         assert_eq!(err.field_path, "skills.0.group");
-        assert!(err.message.contains("at most 3"), "unhelpful: {}", err.message);
+        assert!(
+            err.message.contains("at most 3"),
+            "unhelpful: {}",
+            err.message
+        );
     }
 
     #[test]

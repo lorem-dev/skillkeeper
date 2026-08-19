@@ -541,7 +541,11 @@ mod tests {
 
         let result = resolve_skills(&fs, "repo");
 
-        assert!(result.warnings.is_empty(), "unexpected: {:?}", result.warnings);
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected: {:?}",
+            result.warnings
+        );
         assert_eq!(
             result.skills[0].id,
             SkillId {
@@ -558,7 +562,11 @@ mod tests {
 
         let result = resolve_skills(&fs, "repo");
 
-        assert!(result.warnings.is_empty(), "unexpected: {:?}", result.warnings);
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected: {:?}",
+            result.warnings
+        );
         assert_eq!(
             result.skills[0].id,
             SkillId {
@@ -587,11 +595,18 @@ mod tests {
 
         let result = resolve_skills(&fs, "repo");
 
-        assert!(result.warnings.is_empty(), "unexpected: {:?}", result.warnings);
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected: {:?}",
+            result.warnings
+        );
         let mut groups: Vec<Option<String>> =
             result.skills.iter().map(|s| s.id.group.clone()).collect();
         groups.sort();
-        assert_eq!(groups, vec![Some("a".to_string()), Some("a/b/c".to_string())]);
+        assert_eq!(
+            groups,
+            vec![Some("a".to_string()), Some("a/b/c".to_string())]
+        );
     }
 
     #[test]
@@ -603,7 +618,11 @@ mod tests {
         let result = resolve_skills(&fs, "repo");
 
         assert!(result.skills.is_empty());
-        assert!(result.warnings.is_empty(), "unexpected: {:?}", result.warnings);
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected: {:?}",
+            result.warnings
+        );
     }
 
     // --- scheme 3 (repo config) ---
