@@ -22,4 +22,7 @@ pub const ECDSA_V3_PLAIN: &str = include_str!("testdata/ecdsa-v3-plain.ppk");
 pub const ECDSA_V3_PLAIN_OPENSSH: &str = include_str!("testdata/ecdsa-v3-plain.openssh");
 pub const ECDSA_V3_P384: &str = include_str!("testdata/ecdsa-v3-p384.ppk");
 pub const ECDSA_V3_P384_OPENSSH: &str = include_str!("testdata/ecdsa-v3-p384.openssh");
+pub const ECDSA_V3_P521: &str = include_str!("testdata/ecdsa-v3-p521.ppk");
+pub const ECDSA_V3_P521_OPENSSH: &str = include_str!("testdata/ecdsa-v3-p521.openssh");
 pub const DSA_V2_PLAIN: &str = include_str!("testdata/dsa-v2-plain.ppk");
+pub const DSA_V2_ENC: &str = include_str!("testdata/dsa-v2-enc.ppk");

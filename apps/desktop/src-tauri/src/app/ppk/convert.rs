@@ -10,7 +10,7 @@ use ssh_key::private::KeypairData;
 use ssh_key::{LineEnding, PrivateKey};
 use zeroize::Zeroizing;
 
-use super::decrypt::unlock;
+use super::decrypt::{ssh_string, unlock};
 use super::parse::{PpkError, PpkFile};
 
 /// A PuTTY key re-encoded for OpenSSH.
@@ -129,10 +129,12 @@ fn keypair_data(file: &PpkFile, plain: &[u8]) -> Result<KeypairData, PpkError> {
             // which `&[u8]` does, unconditionally, in `ssh-key`'s own
             // dependency. So the wire-format bytes for "curve name, point,
             // scalar" (the same layout `EcdsaKeypair`'s own `Decode` impl
-            // reads) get built by hand and decoded through that.
-            let mut wire = wire_string(curve.as_str().as_bytes());
-            wire.extend(wire_string(point));
-            wire.extend(wire_string(&scalar));
+            // reads) get built by hand, using the same `ssh_string` writer
+            // `decrypt::mac_data` uses, and decoded through that.
+            let mut wire = Vec::new();
+            ssh_string(&mut wire, curve.as_str().as_bytes());
+            ssh_string(&mut wire, point);
+            ssh_string(&mut wire, &scalar);
             let mut wire_reader: &[u8] = &wire;
             let keypair = KeypairData::decode_as(&mut wire_reader, Algorithm::Ecdsa { curve })
                 .map_err(|_| PpkError::Malformed)?;
@@ -160,15 +162,6 @@ fn left_pad(bytes: &[u8], width: usize) -> Result<Vec<u8>, PpkError> {
     Ok(out)
 }
 
-/// Encode `bytes` as an SSH wire "string": a 4-byte big-endian length prefix
-/// followed by the bytes.
-fn wire_string(bytes: &[u8]) -> Vec<u8> {
-    let mut out = Vec::with_capacity(4 + bytes.len());
-    out.extend_from_slice(&(bytes.len() as u32).to_be_bytes());
-    out.extend_from_slice(bytes);
-    out
-}
-
 /// A cursor over SSH-wire strings.
 struct Reader<'a> {
     data: &'a [u8],
@@ -192,6 +185,20 @@ impl<'a> Reader<'a> {
         let end = start.checked_add(length).ok_or(PpkError::Malformed)?;
         let value = self.data.get(start..end).ok_or(PpkError::Malformed)?;
         self.offset = end;
+        Ok(value)
+    }
+
+    /// The next raw big-endian `u32`, unlike `string` not length-prefixed.
+    /// Only the test-only OpenSSH-fixture reader below needs this, to skip
+    /// past the two `checkint`s.
+    #[cfg(test)]
+    fn u32(&mut self) -> Result<u32, PpkError> {
+        let bytes = self
+            .data
+            .get(self.offset..self.offset + 4)
+            .ok_or(PpkError::Malformed)?;
+        let value = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+        self.offset += 4;
         Ok(value)
     }
 }
@@ -218,34 +225,145 @@ mod tests {
     /// OpenSSH, so the fixture (unlike our own output, which is always
     /// unencrypted) needs decrypting with the same passphrase first. It is
     /// parsed via [`ssh_key::PrivateKey::from_bytes`] on the base64 body
-    /// rather than [`ssh_key::PrivateKey::from_openssh`]: `ssh-key` 0.6.7's
-    /// PEM decoder (`pem-rfc7468` 0.7.0) mis-decodes bodies wrapped at
-    /// exactly 64 columns -- the width both puttygen and `ssh-key`'s own
-    /// encoder use -- so `from_openssh` cannot read these fixtures at all.
-    /// Decoding the base64 by hand and calling `from_bytes` skips that broken
-    /// layer; it is test-only code, so it does not need to be a general PEM
-    /// parser.
+    /// rather than [`ssh_key::PrivateKey::from_openssh`]: `ssh-encoding`
+    /// 0.2.0 hard-codes `PEM_LINE_WIDTH = 70` and uses it for both encoding
+    /// and decoding, so `ssh-key`'s own PEM reader only accepts 70-column
+    /// bodies -- which is what `to_openssh` (and real OpenSSH) produce, so
+    /// there is nothing wrong with `from_openssh` itself. puttygen wraps at
+    /// 64 columns, though, so its fixtures are the ones `from_openssh` cannot
+    /// read. Decoding the base64 by hand and calling `from_bytes` sidesteps
+    /// the PEM layer's column requirement entirely; it is test-only code, so
+    /// it does not need to be a general PEM parser.
     fn assert_matches_puttygen(ppk: &str, expected: &str, passphrase: &str) {
         let file = parse(ppk).unwrap();
         let converted = convert(&file, passphrase).expect("converts");
         let body = pem_body_bytes(expected);
         let theirs = ssh_key::PrivateKey::from_bytes(&body).expect("fixture decodes");
-        let theirs = if theirs.is_encrypted() {
-            theirs.decrypt(passphrase).expect("fixture decrypts")
-        } else {
-            theirs
-        };
-        let normalized = ssh_key::PrivateKey::new(theirs.key_data().clone(), theirs.comment())
+        let (their_keypair, comment) = puttygen_keypair_data(&theirs, passphrase);
+        let normalized = ssh_key::PrivateKey::new(their_keypair, comment)
             .expect("rebuilds")
             .to_openssh(ssh_key::LineEnding::LF)
             .expect("re-encodes");
         assert_eq!(converted.openssh.as_str(), normalized.as_str());
     }
 
+    /// Get puttygen's own `KeypairData` and comment out of its parsed OpenSSH
+    /// fixture.
+    ///
+    /// OpenSSH only stores the comment inside the (possibly encrypted)
+    /// private section, unlike a `.ppk`'s cleartext `Comment:` header, so for
+    /// an encrypted key `theirs.comment()` is empty until decryption actually
+    /// runs -- it has to come out of the same plaintext the keypair fields
+    /// do, which is why this returns both together instead of letting the
+    /// caller read `theirs.comment()` independently.
+    ///
+    /// `ssh-key`'s own `PrivateKey::decrypt` also decodes the private section
+    /// too strictly for ECDSA: `EcdsaPrivateKey<SIZE>::decode` only accepts a
+    /// scalar of exactly `SIZE` bytes, or `SIZE + 1` bytes with an explicit
+    /// leading zero. P-521's order is only just over 2^520, so a uniformly
+    /// random private scalar routinely serializes to 65 bytes in mpint form
+    /// against `ssh-key`'s fixed 66-byte field -- exactly the width mismatch
+    /// `left_pad` exists to fix on the way into `ssh-key`. `decrypt()` has no
+    /// equivalent leniency on the way out, so it fails on such a key even
+    /// with the correct passphrase (confirmed by hand-deriving the same
+    /// key/IV with Python's `bcrypt.kdf` and AES-256-CTR: the plaintext is
+    /// well-formed, `ssh-key` just refuses to parse it).
+    ///
+    /// For an encrypted ECDSA fixture, this derives the key/IV and decrypts
+    /// with `ssh-key`'s own public `Kdf::derive_key_and_iv` (so the KDF
+    /// itself is never reimplemented here), then parses the private section
+    /// by hand with the same `Reader`/`left_pad`/`decode_as` path
+    /// `keypair_data` uses in production, instead of asking `ssh-key` to
+    /// decode it. Every other case (unencrypted, or encrypted but not
+    /// ECDSA) goes through `ssh-key`'s own `decrypt()` as before, since
+    /// those do not hit this limitation.
+    fn puttygen_keypair_data(
+        theirs: &ssh_key::PrivateKey,
+        passphrase: &str,
+    ) -> (KeypairData, String) {
+        if !theirs.is_encrypted() {
+            return (theirs.key_data().clone(), theirs.comment().to_string());
+        }
+        if !matches!(theirs.algorithm(), ssh_key::Algorithm::Ecdsa { .. }) {
+            let decrypted = theirs.decrypt(passphrase).expect("fixture decrypts");
+            return (
+                decrypted.key_data().clone(),
+                decrypted.comment().to_string(),
+            );
+        }
+
+        let ciphertext = theirs
+            .key_data()
+            .encrypted()
+            .expect("encrypted key holds ciphertext");
+        let (key, iv) = theirs
+            .kdf()
+            .derive_key_and_iv(theirs.cipher(), passphrase)
+            .expect("derives key/iv");
+        let plaintext = aes256_ctr(&key, &iv, ciphertext);
+
+        let curve = match theirs.algorithm() {
+            ssh_key::Algorithm::Ecdsa { curve } => curve,
+            _ => unreachable!("checked above"),
+        };
+        let width = match curve {
+            ssh_key::EcdsaCurve::NistP256 => 32,
+            ssh_key::EcdsaCurve::NistP384 => 48,
+            ssh_key::EcdsaCurve::NistP521 => 66,
+        };
+
+        let mut reader = Reader::new(&plaintext);
+        reader.u32().expect("checkint1");
+        reader.u32().expect("checkint2");
+        reader.string().expect("algorithm name");
+        reader.string().expect("curve name");
+        let point = reader.string().expect("public point");
+        let scalar = reader.string().expect("private scalar");
+        let scalar = left_pad(scalar, width).expect("scalar fits the field");
+        let comment = reader.string().expect("comment");
+        let comment = std::str::from_utf8(comment)
+            .expect("comment is utf-8")
+            .to_string();
+
+        let mut wire = Vec::new();
+        ssh_string(&mut wire, curve.as_str().as_bytes());
+        ssh_string(&mut wire, point);
+        ssh_string(&mut wire, &scalar);
+        let mut wire_reader: &[u8] = &wire;
+        let keypair = KeypairData::decode_as(&mut wire_reader, ssh_key::Algorithm::Ecdsa { curve })
+            .expect("decodes");
+        (keypair, comment)
+    }
+
+    /// AES-256 in CTR mode, treating `iv` as the initial 128-bit big-endian
+    /// counter and incrementing by one per 16-byte block -- the construction
+    /// `aes256-ctr` uses in both the OpenSSH and PuTTY ecosystems. Test-only:
+    /// it exists so `puttygen_keypair_data` can get at the plaintext without
+    /// going through `ssh-key`'s own decrypt-then-strictly-decode path. Built
+    /// from the `aes`/`cipher` crates already in this workspace, not a new
+    /// dependency.
+    fn aes256_ctr(key: &[u8], iv: &[u8], data: &[u8]) -> Vec<u8> {
+        use aes::Aes256;
+        use cipher::{BlockEncrypt, KeyInit};
+
+        let cipher = Aes256::new_from_slice(key).expect("32-byte key");
+        let mut counter = u128::from_be_bytes(iv.try_into().expect("16-byte iv"));
+        let mut out = Vec::with_capacity(data.len());
+        for chunk in data.chunks(16) {
+            let mut block = cipher::Block::<Aes256>::clone_from_slice(&counter.to_be_bytes());
+            cipher.encrypt_block(&mut block);
+            for (byte, pad) in chunk.iter().zip(block.iter()) {
+                out.push(byte ^ pad);
+            }
+            counter = counter.wrapping_add(1);
+        }
+        out
+    }
+
     /// Strip a `-----BEGIN ... -----`/`-----END ... -----` PEM armor and
-    /// base64-decode the body, without going through `ssh-key`'s own (broken,
-    /// for 64-column bodies) PEM decoder. Good enough for trusted test
-    /// fixtures only.
+    /// base64-decode the body, without going through `ssh-key`'s own PEM
+    /// decoder (which requires 70-column bodies, not puttygen's 64). Good
+    /// enough for trusted test fixtures only.
     fn pem_body_bytes(pem: &str) -> Vec<u8> {
         let body: String = pem
             .lines()
@@ -320,7 +438,7 @@ mod tests {
     }
 
     #[test]
-    fn converts_ecdsa_p256_and_p384() {
+    fn converts_ecdsa_p256_p384_and_p521() {
         assert_matches_puttygen(
             fixtures::ECDSA_V3_ENC,
             fixtures::ECDSA_V3_ENC_OPENSSH,
@@ -329,6 +447,15 @@ mod tests {
         assert_matches_puttygen(
             fixtures::ECDSA_V3_P384,
             fixtures::ECDSA_V3_P384_OPENSSH,
+            fixtures::PASSPHRASE,
+        );
+        // P-521's scalar is the one where the mpint/field-width interaction
+        // actually exercises `left_pad`'s zero-extension path: its top byte
+        // is 0x00 or 0x01 far more often than not, so PuTTY's mpint encoding
+        // of it is routinely 65 bytes against ssh-key's fixed 66-byte field.
+        assert_matches_puttygen(
+            fixtures::ECDSA_V3_P521,
+            fixtures::ECDSA_V3_P521_OPENSSH,
             fixtures::PASSPHRASE,
         );
     }
@@ -350,6 +477,21 @@ mod tests {
         ));
     }
 
+    /// A plain DSA key can't tell "refused before decrypting" apart from
+    /// "rejected for some other reason": there is nothing to decrypt, so any
+    /// ordering of the `is_supported` guard and `unlock` produces the same
+    /// observable result. An *encrypted* DSA key can: if the guard ran after
+    /// `unlock`, a wrong passphrase would fail the MAC first and this would
+    /// see `WrongPassphrase` instead.
+    #[test]
+    fn dsa_is_refused_before_a_wrong_passphrase_is_even_checked() {
+        let file = parse(fixtures::DSA_V2_ENC).unwrap();
+        assert!(matches!(
+            convert(&file, "definitely-not-the-passphrase"),
+            Err(PpkError::UnsupportedAlgorithm)
+        ));
+    }
+
     #[test]
     fn a_wrong_passphrase_propagates_from_unlock() {
         let file = parse(fixtures::ED25519_V3_ENC).unwrap();
@@ -357,5 +499,31 @@ mod tests {
             convert(&file, "not-it"),
             Err(PpkError::WrongPassphrase)
         ));
+    }
+
+    #[test]
+    fn left_pad_leaves_an_exact_width_input_untouched() {
+        let bytes = [1u8, 2, 3, 4];
+        assert_eq!(left_pad(&bytes, 4).unwrap(), bytes.to_vec());
+    }
+
+    #[test]
+    fn left_pad_zero_extends_a_short_input() {
+        let bytes = [1u8, 2];
+        assert_eq!(left_pad(&bytes, 4).unwrap(), vec![0, 0, 1, 2]);
+    }
+
+    #[test]
+    fn left_pad_trims_a_sign_zero_prefix_down_to_the_width() {
+        // A leading zero byte disambiguating a positive mpint whose next byte
+        // has its high bit set; once stripped the rest is exactly `width`.
+        let bytes = [0u8, 0x80, 2, 3, 4];
+        assert_eq!(left_pad(&bytes, 4).unwrap(), vec![0x80, 2, 3, 4]);
+    }
+
+    #[test]
+    fn left_pad_rejects_input_wider_than_the_target() {
+        let bytes = [1u8, 2, 3, 4, 5];
+        assert!(left_pad(&bytes, 4).is_err());
     }
 }

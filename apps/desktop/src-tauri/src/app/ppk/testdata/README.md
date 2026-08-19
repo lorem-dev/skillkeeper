@@ -11,6 +11,9 @@ conversion, so a mismatch means our conversion is wrong, not that the fixture
 is stale. Regenerate both together with `./regenerate.sh` in this directory
 (requires `puttygen` on `PATH`).
 
-`dsa-v2-plain.ppk` has no `.openssh` sibling: DSA is a rejection fixture, and
-the only test that reads it asserts the algorithm is rejected before any
-crypto runs, so no converted form is needed.
+`dsa-v2-plain.ppk` and `dsa-v2-enc.ppk` have no `.openssh` sibling: DSA is a
+rejection fixture, and the only tests that read them assert the algorithm is
+rejected before any crypto runs, so no converted form is needed. The encrypted
+one exists specifically so "rejected before decrypting" can be told apart from
+"rejected because the passphrase was wrong": only a key that actually has
+something to decrypt can distinguish the two.

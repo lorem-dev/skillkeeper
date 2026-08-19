@@ -78,12 +78,19 @@ gen rsa-v2-enc       rsa     2048 2 enc
 gen ecdsa-v3-enc     ecdsa   256  3 enc
 gen ecdsa-v3-plain   ecdsa   256  3 plain
 gen ecdsa-v3-p384    ecdsa   384  3 enc
+gen ecdsa-v3-p521    ecdsa   521  3 enc
 
 # DSA is a rejection fixture only: puttygen does generate it (with a
 # "keys shorter than 2048 bits are probably not secure" warning), but no
 # test needs an OpenSSH form of it, so that sibling is removed again.
 gen dsa-v2-plain     dsa     1024 2 plain
 rm -f dsa-v2-plain.openssh
+
+# Same reasoning, encrypted: this one exists only so a test can tell "refused
+# before decrypting" apart from "the passphrase happened to be wrong" -- a
+# plain DSA key can't distinguish the two, since there is nothing to decrypt.
+gen dsa-v2-enc       dsa     1024 2 enc
+rm -f dsa-v2-enc.openssh
 
 echo "Regenerated fixtures in $script_dir"
 ls -1 -- *.ppk *.openssh
