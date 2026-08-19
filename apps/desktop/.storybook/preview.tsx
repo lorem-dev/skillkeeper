@@ -1,5 +1,8 @@
 import type { Preview } from '@storybook/react';
 import '@/styles/index.scss';
+// Canvas overrides; must load after the app styles. See the file for why
+// Storybook's centered layout clips a tall story instead of scrolling it.
+import './preview.scss';
 
 // Canvas backdrops, selectable from the toolbar. A colorful/patterned backdrop
 // behind a glass element shows how its blur/refraction reacts to surroundings.
