@@ -284,9 +284,17 @@ export function SshKeyField() {
               </Tooltip>
             )}
             {isPutty && (
-              <Button variant="secondary" loading={busy} onClick={() => void convertKey()}>
-                {t('settings.ssh.convert')}
-              </Button>
+              <Tooltip content={t('settings.ssh.convert')}>
+                <Button
+                  variant="secondary"
+                  className="sk-ssh-key__icon-btn"
+                  loading={busy}
+                  aria-label={t('settings.ssh.convert')}
+                  onClick={() => void convertKey()}
+                >
+                  <Icon name="warning" size={16} />
+                </Button>
+              </Tooltip>
             )}
           </div>
         </div>

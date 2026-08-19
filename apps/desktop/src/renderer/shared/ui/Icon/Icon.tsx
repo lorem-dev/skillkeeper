@@ -40,6 +40,7 @@ import viewTree from './assets/view-tree.svg?raw';
 import filter from './assets/filter.svg?raw';
 import info from './assets/info.svg?raw';
 import global from './assets/global.svg?raw';
+import warning from './assets/warning.svg?raw';
 
 export type IconName =
   | 'repositories'
@@ -69,7 +70,8 @@ export type IconName =
   | 'view-tree'
   | 'filter'
   | 'info'
-  | 'global';
+  | 'global'
+  | 'warning';
 
 const ICONS: Record<IconName, string> = {
   repositories: stripSvgRoot(repositories),
@@ -100,6 +102,7 @@ const ICONS: Record<IconName, string> = {
   filter: stripSvgRoot(filter),
   info: stripSvgRoot(info),
   global: stripSvgRoot(global),
+  warning: stripSvgRoot(warning),
 };
 
 /**

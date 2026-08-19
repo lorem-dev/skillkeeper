@@ -29,6 +29,7 @@ import viewTree from './assets/view-tree.svg?raw';
 import filter from './assets/filter.svg?raw';
 import info from './assets/info.svg?raw';
 import global from './assets/global.svg?raw';
+import warning from './assets/warning.svg?raw';
 
 const assets: Record<string, string> = {
   repositories,
@@ -59,6 +60,7 @@ const assets: Record<string, string> = {
   filter,
   info,
   global,
+  warning,
 };
 
 describe('Icon assets', () => {
