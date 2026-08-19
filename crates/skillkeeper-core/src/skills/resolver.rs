@@ -766,7 +766,7 @@ mod tests {
     fn resolves_shallow_skills_while_warning_about_a_sibling_that_is_too_deep() {
         let fs = MemFs::new()
             .with_file("repo/ok/SKILL.md", &skill_md("ok"))
-            .with_file("repo/a/b/c/SKILL.md", &skill_md("deep"));
+            .with_file("repo/a/b/c/d/e/SKILL.md", &skill_md("deep"));
         let result = resolve_skills(&fs, "repo");
         let names: Vec<String> = result.skills.iter().map(|s| s.id.name.clone()).collect();
         assert_eq!(names, vec!["ok".to_string()]);
