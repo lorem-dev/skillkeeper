@@ -4,13 +4,10 @@
 
 ### Changed
 
-- Skills and MCP presets may be organized in a namespace nested up to three
-  group levels instead of just one (`platform/lint/rust/clippy-skill`);
-  declared groups in `skillkeeper.repo.yaml` are now validated (segment
-  count, empty segments, `.`/`..`, backslashes, and leading or trailing
-  whitespace); and the skills tree's checkboxes now follow selectability, so
-  a skill nested several group levels deep stays selectable instead of
-  showing an inert checkbox.
+- Skills and MCP presets may nest up to three group levels instead of one,
+  as in `platform/lint/rust/clippy-skill`.
+- A `group` declared in `skillkeeper.repo.yaml` is now validated against the
+  depth limit and the segment rules.
 
 ## Version 0.5.0-rc.2
 

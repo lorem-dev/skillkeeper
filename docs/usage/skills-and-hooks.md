@@ -90,10 +90,11 @@ A malformed or schema-invalid `skillkeeper.repo.yaml` raises a
 surface that (the desktop app skips the repository for that operation rather
 than crash).
 
-A declared `group` (in `defaults.group` or a per-skill entry) is validated:
-at most three segments, no empty segment, no `.` or `..` segment, no
-backslash, and no leading or trailing whitespace in a segment. An invalid one
-raises the same `RepoConfigError`, naming the field.
+A declared `group` (in `defaults.group` or a per-skill entry) is validated: at
+most three segments; neither the whole value nor any single segment may be
+empty; no `.` or `..` segment; no backslash; and no leading or trailing
+whitespace in a segment. An invalid one raises the same `RepoConfigError`,
+naming the field.
 
 ### Scheme 1 - flat layout
 
@@ -107,9 +108,11 @@ nested up to three levels deep (for example
 `g1/g2/g3/<SKILL_NAME>/SKILL.md`). Group depth is at most three levels.
 Hooks live under `<SKILL_GROUP>/<SKILL_NAME>/hooks/`.
 
-Schemes 1 and 2 are auto-detected by scanning up to four directory levels
-deep for `SKILL.md` files; anything nested deeper produces the
-unresolved-path warning mentioned above instead of a guessed install.
+Schemes 1 and 2 are auto-detected by scanning for `SKILL.md` files. The scan
+does not stop at the depth limit -- it has to look deeper in order to report
+what it finds there -- so a `SKILL.md` more than four directory levels down is
+located and then reported as an unresolved path, rather than being missed
+silently or installed under a guessed group.
 
 The scan skips two families of directory outright, resolving nothing from them
 and raising no warning: **hidden** directories (any name starting with `.`) and
