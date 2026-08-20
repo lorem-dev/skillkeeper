@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-08-20T13:37:26.671Z",
+  "versions": [
+    {
+      "version": "0.5.0-rc.12",
+      "prerelease": true,
+      "tag": "v0.5.0-rc.12",
+      "notes": "### Changed\n\n- A verification candidate, cut only to exercise the self-updater against a real\n  published release. It carries no change of its own and is squashed away before\n  the final release.",
+      "assets": {
+        "linux-aarch64": [
+          {
+            "kind": "appimage",
+            "name": "SkillKeeper_0.5.0-rc.12_aarch64.AppImage",
+            "sha256": "c09fbb6ca8dd0b525be366d0c5d6688dda638c2e9e9c4cd538af460d818d4b84"
+          },
+          {
+            "kind": "deb",
+            "name": "SkillKeeper_0.5.0-rc.12_arm64.deb",
+            "sha256": "46405f03cd9ad383fa7970b31852ea972772a8e6f78358b3162cdfcb2a039969"
+          }
+        ],
+        "macos-aarch64": [
+          {
+            "kind": "dmg",
+            "name": "SkillKeeper_0.5.0-rc.12_aarch64.dmg",
+            "sha256": "537219fb545c0149f93779797033ffd2facbdeb880b24da63bfc66fc63835ba4"
+          }
+        ],
+        "linux-x86_64": [
+          {
+            "kind": "appimage",
+            "name": "SkillKeeper_0.5.0-rc.12_amd64.AppImage",
+            "sha256": "6fc576025e4e9d47ab21977889418883e20a5e9406fbe4621ec351a453607267"
+          },
+          {
+            "kind": "deb",
+            "name": "SkillKeeper_0.5.0-rc.12_amd64.deb",
+            "sha256": "29d6ef0e9bbcca363a78267b945338155006cac04bca6e5932e7e3ee46192a66"
+          }
+        ],
+        "windows-aarch64": [
+          {
+            "kind": "nsis",
+            "name": "SkillKeeper_0.5.0-rc.12_arm64-setup.exe",
+            "sha256": "62865565e92b398360bf95a81073edd0de78de66b9c00524458eb4d5def75538"
+          },
+          {
+            "kind": "msi",
+            "name": "SkillKeeper_0.5.0-rc.12_arm64_en-US.msi",
+            "sha256": "b9d0d4be9ce89404befafcd206bddd1ce1659e141365504417939be9a748d4ac"
+          }
+        ],
+        "windows-x86_64": [
+          {
+            "kind": "nsis",
+            "name": "SkillKeeper_0.5.0-rc.12_x64-setup.exe",
+            "sha256": "3d14730b85b2a404b4522c04ebe09a89d05b4ddaf271372930974097bc851cd1"
+          },
+          {
+            "kind": "msi",
+            "name": "SkillKeeper_0.5.0-rc.12_x64_en-US.msi",
+            "sha256": "6d57abcbc87fa0e45044628139dc652389f2d699200f5fea42928ac5d3a75d14"
+          }
+        ],
+        "macos-x86_64": [
+          {
+            "kind": "dmg",
+            "name": "SkillKeeper_0.5.0-rc.12_x64.dmg",
+            "sha256": "05894fd2fbb0641e01445ad7d74478a2211584d21a29dc0f87fb8a725f240f5c"
+          }
+        ]
+      }
+    },
+    {
+      "version": "0.5.0-rc.2",
+      "prerelease": true,
+      "tag": "v0.5.0-rc.2",
+      "notes": "### Added\n\n- The desktop app updates itself. It checks for a newer release on startup and\n  once a day, offers it in the status bar, and can download the right artifact\n  for the platform, verify its checksum, and install it. A dialog appears for a\n  new major or minor version; a patch is offered by the badge alone. A release\n  candidate is offered newer candidates as well as final releases, while a\n  stable build is offered only final ones.\n- An update check can also be started by hand, from About, from the new\n  Application updates section at the end of Settings, or from Check for Updates\n  in the macOS Help menu. Every check appears in the task list with its outcome,\n  so a check that found nothing is distinguishable from one that never ran.\n- `skillkeeper update` prints how to update the CLI on the current platform.\n- Desktop: PuTTY-format private keys (`.ppk`, versions 2 and 3) can now be\n  chosen as the SSH key. They are decrypted in memory and loaded into the\n  ssh-agent; where no agent is available, Settings offers a one-time conversion\n  to an OpenSSH key. The CLI reports such a key with the command that converts\n  it.\n\n### Changed\n\n- Skills and MCP presets may nest up to three group levels instead of one,\n  as in `platform/lint/rust/clippy-skill`.\n- A `group` declared in `skillkeeper.repo.yaml` is now validated against the\n  depth limit and the segment rules.\n- The PuTTY key conversion action in Settings is a warning icon with a tooltip\n  rather than a full-width labelled button, so it no longer crowds the key row.\n- Pages leave more room below their last element, which previously finished\n  flush against the bottom edge and read as clipped.\n- Building from source now needs Node 24 or later, the active LTS line that CI\n  runs.\n- The Rust toolchain is pinned to an exact version instead of the floating\n  stable channel, so a local check and CI run the same linter.\n- The renderer's architectural layer boundaries are now enforced by ESLint\n  instead of documented only.\n- Dependencies refreshed across both ecosystems; every advisory cleared was in\n  build or test tooling, not in shipped code.\n- PuTTY key decryption moved to the current RustCrypto releases, with no change\n  to the formats it accepts.\n- The releasing guide records that GitHub orders releases by tag name as text\n  rather than by date, so nothing comes to depend on that order again.\n\n### Removed\n\n- Three Settings section headings no display had used since those sections were\n  reorganised, in all eighteen catalogues. Translators were maintaining strings\n  nobody could see."
+    },
+    {
+      "version": "0.4.1",
+      "prerelease": false,
+      "tag": "v0.4.1",
+      "notes": "### Added\n\n- Prebuilt arm64 builds for Linux and Windows: desktop bundles, CLI archives,\n  and the one-line installers, alongside the existing x64 and macOS ones.\n- A JSON Schema for `mcp.yml`, published with every release: point an editor at\n  it for completion, hover documentation, and validation as you type.\n- Skills may ship binary files. An image, font, or compiled helper is copied,\n  hashed, and verified like any other file.\n\n### Changed\n\n- A skill with extra or oddly typed frontmatter fields installs instead of\n  being dropped: only `name` is required.\n- A one-line `description:` may hold a second colon, and a header or `env`\n  value may be a bare `{param}`.\n\n### Fixed\n\n- \"Invalid YAML frontmatter\" now says what is wrong and on which line of the\n  file, instead of naming only the file.\n- An `mcp.yml` that cannot be read or parsed says so, in the app's\n  notifications and on the CLI's standard error.\n- One unreadable skill no longer takes every skill after it in the repository\n  with it. It is skipped alone, and named.\n- Switching a repository's branch refreshes its skills and MCP servers, instead\n  of leaving both pages on the previous branch's contents.\n- Syncing a repository refreshes the MCP catalog too, which it had left to the\n  next visit to an MCP page.\n- Cloning a repository that needs Git LFS fails when git-lfs is missing,\n  instead of quietly leaving pointer files in place.\n- The Windows MSIX packages the desktop app; it used to pick between two\n  binaries sharing a file name."
+    },
+    {
+      "version": "0.4.0",
+      "prerelease": false,
+      "tag": "v0.4.0",
+      "notes": "### Added\n\n- A Global scope in the app, listed first wherever projects are: install skills\n  and MCP servers for the whole user, in every project, exactly as the CLI's\n  `skill install --global` does.\n- `--global` on `mcp install`, `mcp remove`, and `mcp update`, and user-wide MCP\n  config paths for every agent (only Codex had one before).\n- The Global scope as an entry in the projects filter on both management pages\n  (skills and MCP), so filtering to one project no longer leaves the Global\n  root standing on its own.\n\n### Changed\n\n- Codex MCP servers are offered only in the Global scope. Their config was never\n  per project, so a project row promised something it could not do.\n- Codex MCP instances are visible and removable at last: they now appear under\n  Global instead of belonging to no listed project.\n- `mcp update --agent codex` without `--global` is refused, as `mcp install`\n  already was: it used to write the user-wide config while adding the parameter\n  files to the current repository's `.gitignore`.\n\n### Fixed\n\n- A global OpenCode MCP install no longer fails, and no longer destroys the hook\n  block of a globally installed skill: at that scope both write to the same\n  `~/.config/opencode/opencode.json`, and the block is now carried through every\n  MCP write untouched. OpenCode itself still cannot read a file holding both, so\n  keep global OpenCode hooks and global OpenCode MCP servers apart for now.\n- Checking skills for a project with no agent selected no longer saves nothing:\n  the app asks which agents to install for before showing the change review.\n- The status bar version no longer highlights as selectable text on a stray\n  drag across the bar. The About dialog's version can be selected and copied\n  instead, for pasting into a bug report.\n- Removing a project or a repository no longer leaves it named in a management\n  page's filter, where it hid the rest of the tree behind an empty page. An empty\n  tree a filter caused now says so and offers the reset.\n- Missing accents are back in seven catalogs: French, Polish, German, Italian,\n  Serbian in Latin script, Russian and Ukrainian each had older entries whose\n  diacritics had been stripped, so the same word appeared spelled two ways in one\n  interface.\n- A project folder the system will not let the app read is no longer reported as\n  deleted. macOS withholds Desktop, Documents, Downloads and removable or\n  network volumes until access is granted, and the card used to answer that with\n  \"The folder was deleted or moved\", which sends the user looking for the wrong\n  thing. The two cases are now told apart and the second says what to allow.\n- Projects on a network volume can be reached at all: that is a protected\n  category of its own on macOS, and the app never declared it."
+    },
+    {
+      "version": "0.3.0",
+      "prerelease": false,
+      "tag": "v0.3.0",
+      "notes": "### Added\n\n- A dedicated SSH key for git over SSH: point the app at one private key\n  (`repositories.sshKeyPath`, honoured by the CLI too) instead of letting `ssh`\n  pick. The key is offered, not enforced, so hosts it has no access to keep\n  working through your own config and agent.\n- The passphrase for that key, held for one run of the app. Asked for in a\n  window of its own, verified at once, never written anywhere, and asked again\n  after a restart. `SKILLKEEPER_SSH_VERBOSE=1` traces the `ssh` it runs.\n- The SSH key on the first onboarding screen, beside language and theme, plus a\n  Skip button: a private repository needs the key before anything can be added.\n- The running version on the status bar.\n- A warning when a repository URL writes the port after a colon, which the\n  `user@host:path` form silently reads as part of the path.\n\n### Changed\n\n- The interface is fully translated again in all 18 languages.\n- An update check postponed by a locked key is listed as \"Postponed\", not failed.\n\n### Fixed\n\n- Adding a repository shows its skills straight away.\n- MCP cards and badges stay inside their bounds with long commands or names."
+    },
+    {
+      "version": "0.2.2",
+      "prerelease": false,
+      "tag": "v0.2.2",
+      "notes": "### Added\n\n- A documentation section on setting up an ssh-agent, with per-platform\n  instructions and a note on pinentry. When the terminal is raised for a\n  passphrase and no agent is running, the app now says so once per session and\n  links to it -- otherwise being asked on every single operation reads as the\n  app being broken rather than as a machine that needs setting up. The Windows\n  instructions call out that Git for Windows uses its own bundled `ssh`, which\n  ignores the Windows agent service until `core.sshCommand` points at the system\n  client.\n- A right-click menu in the terminal with Copy, Paste and Select all. Copying\n  was previously reachable only through a keyboard shortcut that differs per\n  platform (and where a bare Ctrl+C sends an interrupt instead), so getting text\n  out was easy to miss. Select all also covers the case where a full-screen\n  program has taken over the mouse and dragging cannot select.\n\n### Fixed\n\n- The terminal is raised for every prompt that needs an answer, not just the\n  first one of a session, and the caret lands in it so the answer can be typed\n  straight away instead of after a click nobody expects. Credential prompts over\n  HTTPS (`Username for ...`, `Password for ...`) now count as prompts too; only\n  an SSH passphrase and a host-key confirmation did before.\n- The update check skips a repository that was never cloned instead of fetching\n  in a directory that does not exist. Such a repository has no local commit to\n  compare against, so the check could only ever answer \"no update\" -- but it\n  answered it by running git first, which reported a fatal error into the\n  terminal on every startup, once per uncloned repository.\n- Windows: an SSH key passphrase can finally be entered, so cloning a repository\n  that needs one works. Git used to run in a pseudo-terminal of its own there,\n  and the passphrase prompt never surfaced in it -- git simply waited forever,\n  printing nothing. It now runs in the interactive terminal the user is already\n  looking at, exactly as it does on macOS and Linux: the prompt appears in the\n  terminal and can be answered. Because Windows shells take no prompt hook, the\n  command reports its exit code by printing a sentinel that is stripped from the\n  output before it is shown. An ssh-agent is still used when one holds the key,\n  in which case nothing is asked at all.\n- A git command that blocks on a prompt no longer wedges every later one. Git\n  runs in the terminal through its own pseudo-terminal, and the app waited for\n  it to exit without any bound -- so a clone stuck on an SSH key passphrase (a\n  prompt that does not reach that pseudo-terminal on Windows) held the git queue\n  for the rest of the session, and each following clone, sync or update check\n  blocked silently before it could print anything. The wait is now bounded by\n  SILENCE rather than runtime -- a large clone reports progress throughout, so\n  it is never affected -- and a command that produces nothing at all while still\n  running is stopped, with a message naming the likely cause.\n- Windows: the first repository operation that ran git in the terminal never\n  finished, and every later one silently did nothing. After git exited, the app\n  waited for the output reader to reach end-of-file while still holding the\n  command's pseudo-terminal open -- and Windows keeps a copy of the write handle\n  alive for exactly that long, so the end-of-file could never arrive. The call\n  never returned, its slot in the git queue was never released, and each\n  following clone, sync or update check blocked before it could print anything:\n  the terminal accepted typing but showed no git, an update check sat unfinished,\n  and adding a repository looked like nothing happened. The pseudo-terminal is\n  now released before the wait, and the wait itself is bounded.\n- A terminal that cannot start now says so instead of staying blank. The\n  renderer used to issue the start as a floating promise, so a failed shell\n  spawn produced no error anywhere -- and because repository git only runs\n  through the terminal while a session is live, the same dead session silently\n  reverted clone/sync to a headless git that prints nothing. The failure is now\n  shown in the terminal view, logged as a warning that explains git is still\n  running without visible output, and reported by a new `terminal_status`\n  command. Starting is retried up to three times before it is reported.\n- A pseudo-terminal backend that panics rather than returning an error -- Windows\n  hosts older than Windows 10 1809, where `CreatePseudoConsole` is not exported --\n  no longer unwinds through the command's worker task into an opaque join error.\n  The panic is caught and its message kept, so the terminal is unavailable with a\n  readable reason instead of failing anonymously.\n- Git launch failures on the standalone-process path (Windows and unintegrated\n  shells) are printed to the terminal instead of being swallowed into a bare\n  exit code, and a `git` that cannot be spawned names the likely cause: it is not\n  on the PATH this application inherited. Shell spawn errors likewise name the\n  shell and working directory they tried."
+    },
+    {
+      "version": "0.2.1",
+      "prerelease": false,
+      "tag": "v0.2.1",
+      "notes": "### Added\n\n- Skill-resolution warnings are surfaced instead of discarded, so a `SKILL.md`\n  that cannot be installed no longer goes missing without explanation. The CLI\n  prints them to stderr per repository; the desktop app logs them under a new\n  `warning` level, shown by default alongside errors and deliberately without a\n  toast. The bell badge counts warnings in orange, or errors in red -- errors\n  only, whenever there are any -- and clamps to `9+`.\n- Hindi (`hi`) and Thai (`th`), bringing the total to 18 languages. Hindi carries\n  the `one`/`other` plural categories, Thai only `other`, per CLDR.\n- `pnpm run i18n` takes an optional language list (`-- ru de`, or\n  `--langs=ru,de`) instead of always regenerating all 18 catalogs.\n- `examples/test-repo`: a submodule tracking the fixture repository that covers\n  every skill/group/hook/MCP-preset resolution path.\n- `pnpm test:e2e`: an end-to-end suite (Jest, in `e2e/`) that drives the built CLI\n  against that fixture and asserts on the files it writes -- the layer the\n  in-memory unit tests cannot reach. It runs in CI and via the new\n  `check-fixture-repo` skill, which `pre-release-check` now includes.\n- Release pages now group their assets: a Downloads section lists the Desktop App\n  first, then the CLI App, each entry labelled by platform and format (\"Desktop\n  Windows x64 (msi)\") instead of showing only bundler-generated file names. The\n  section is generated from the assets actually staged, and nothing is renamed, so\n  the one-line installers are unaffected.\n- Release-candidate tags are cut from `develop` and final tags from `main`;\n  `scripts/check-tag-branch.mjs` enforces that in the release pipeline's first\n  job, before anything is built or published.\n\n### Fixed\n\n- `skill repair` removes the `extraneous` files it used to leave behind, so a\n  repaired install finally verifies clean, and reports each deleted path. The\n  deletion is bounded: files recorded by another install sharing the destination\n  directory are protected, and a recorded path that could resolve outside that\n  directory disables pruning rather than being followed.\n- Skill resolution skips hidden directories and dependency or build trees\n  (`node_modules`, `vendor`, `target`, `dist`) entirely. Every agent keeps its\n  *installed* skills under a hidden directory, so a repository that itself uses\n  SkillKeeper warned about skills it consumes rather than publishes. An explicit\n  `path` in `skillkeeper.repo.yaml` still reaches them.\n- A pre-release tag no longer publishes documentation at all. The bare docs URL\n  redirects to the `latest` alias, so tagging a release candidate used to make it\n  the documentation every visitor landed on; and a candidate's docs are\n  in-progress docs, already served under `dev`. Publishing them only added\n  throwaway entries to the version switcher that had to be deleted by hand.\n\n### Changed\n\n- `homepage` in all three workspace manifests points at the documentation site,\n  alongside new `repository` and `bugs` entries."
+    },
+    {
+      "version": "0.2.0",
+      "prerelease": false,
+      "tag": "v0.2.0",
+      "notes": "### Added\n\n- Desktop: a first-run tutorial (guided onboarding) - a welcome screen\n  (language/theme) with preloader, guided steps that spotlight the\n  Add-project/Add-repository buttons and illustrate the skills-management\n  tree and per-project agent picker, a thank-you screen, \"Start the tutorial\n  again\" in Settings and (macOS) the Help menu, ESC/Skip to end, with\n  progress persisted to onboarding.json.\n\n### Fixed\n\n- Desktop: the embedded terminal keeps its colors in sync with the active\n  theme -- previously it kept the theme it was created with, so switching\n  theme left it inverted until restart."
+    },
+    {
+      "version": "0.1.1",
+      "prerelease": false,
+      "tag": "v0.1.1",
+      "notes": "### Features\n\n- Add a `skillkeeper version` CLI subcommand, and accept `-v` as an alias for the\n  existing `-V` / `--version` flags, all printing `skillkeeper <version>`.\n- Make the native folder picker for adding a project window-modal (parented to\n  the main window) so the app window cannot be used while it is open, and closes\n  with it.\n\n### Fixes\n\n- Fall back to the name-keyed colour gradient on project cards that have an icon\n  where blur is not painted (software compositing), matching the cards without\n  an icon.\n- Focus and raise the main window once the app finishes launching, so it is not\n  left unfocused behind other windows when the launch completes in the\n  background.\n- Localize the title-bar window controls, the About copyright line, the MCP\n  \"no matching project\" empty state, and the hook-consent notice across the\n  supported languages, and translate the macOS application menu title.\n- Restore the Page toolbar shading wash on Windows/Linux as a gradient from the\n  standard page background color to transparent (instead of the dropped macOS\n  theme tint)."
+    },
+    {
+      "version": "0.1.0",
+      "prerelease": false,
+      "tag": "v0.1.0",
+      "notes": "### Features\n\n- Add the domain core: skill resolution (flat, grouped, and repo-config schemes),\n  SHA-256 hashing, hook management (delimited-text and JSON-merge strategies),\n  install, uninstall, verify, and repair, the agent adapter framework, the system\n  git port, the application state store, and the update scheduler.\n- Add agent adapters for Claude (skills and hooks), Codex, Copilot, Cursor, and\n  OpenCode.\n- Add the CLI with repo, skill, project, config, and check commands.\n- Add the desktop shell with a sandboxed, typed IPC bridge.\n- Build the desktop screens (Repositories, Projects, Skills, Settings) on the\n  shared UI kit with real read-only data via a renderer services layer, entity\n  cards, a skills search/filter and details view, and a light/dark theme toggle.\n- Rebuild the desktop Settings screen on the Form kit and persist changes to the\n  config file: live language switch, theme (system/light/dark) via a segmented\n  control, and the git executable path, with a new config write path and a\n  repositories config section.\n- Watch the config file (polled once per second) and live-reload it in the app\n  when it changes on disk, so external edits are reflected without a restart.\n- Add a control on the Settings screen to open the config file in an editor: a\n  split button listing detected editors with their system icons (macOS/Windows),\n  a default-app fallback, and the selected editor remembered locally.\n- Add a native macOS application menu (SkillKeeper, Edit, View, MCP, Settings,\n  Window, Help) that mirrors the sidebar navigation, shows glyph icons, localizes\n  its items in every supported language, adds a custom About dialog, and binds a\n  Cmd+, (Ctrl+, elsewhere) shortcut matched by physical key so it works under\n  non-Latin layouts. The menu is disabled on Windows and Linux.\n- Add per-section YAML configuration with validation and default fallback.\n- Add localization for English, German, and Russian.\n- Add Storybook to the desktop app with stories for the shared UI kit\n  (Button, Badge, Alert, Toggle, TextField, Select, Slider, Modal) and a\n  light/dark theme toggle.\n- Scaffold the pnpm and TypeScript monorepo with shared ESLint, Prettier, and a\n  90% Vitest coverage gate.\n- Add the mkdocs documentation site.\n- Add five local development skills: changelog, docs, tests and linters, licenses,\n  and pre-release checks.\n- Add continuous integration and release workflows, including a Microsoft Store\n  MSIX build for Windows.\n- Publish releases with a signed checksum file: the release workflow attaches a\n  SHA-256 `checksums.txt` and a detached GPG signature (`checksums.txt.asc`)\n  verifiable against the public key committed at `.github/release-key.asc`.\n\n### Fixes\n\n- Make the desktop app launch reliably: resolve the main-process entry paths\n  correctly and allow inline styles in the production CSP.\n- Fix Windows rendering: correct WebView2 rendering and app-title placement, and\n  the page chrome and glass borders on Windows and Linux.\n- Remove the startup flash, open with a smaller initial window, and add sidebar\n  top padding.\n- Show notifications above overlays and make alerts more opaque.\n- Generate the localization catalogs before `dev`/`build` so a fresh or cleaned\n  checkout no longer fails to build with missing i18n catalog modules.\n- Restrict macOS packaging to arm64; the x64 target is not supported in CI.\n- Attribute the bundled Inter and Cormorant Garamond fonts (OFL-1.1) in LICENSE."
+    }
+  ]
+}

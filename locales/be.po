@@ -94,6 +94,9 @@ msgstr "Пачаць навучанне"
 msgid "menu.onboarding.skip"
 msgstr "Прапусціць навучанне"
 
+msgid "menu.checkForUpdates"
+msgstr "Праверыць абнаўленні"
+
 msgid "about.version"
 msgstr "Версія {version}"
 
@@ -219,6 +222,9 @@ msgstr "Абнавіць навык"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "Абнавіць праекты"
+
+msgid "tasks.kind.app-update-check"
+msgstr "Праверка абнаўленняў праграмы"
 
 msgid "tasks.status.queued"
 msgstr "У чарзе"
@@ -943,14 +949,8 @@ msgstr "Экран налад хутка з’явіцца."
 msgid "settings.section.general"
 msgstr "Агульныя"
 
-msgid "settings.section.updates"
-msgstr "Абнаўленні"
 
-msgid "settings.section.agents"
-msgstr "Агенты"
 
-msgid "settings.section.executables"
-msgstr "Выканальныя файлы"
 
 msgid "settings.section.security"
 msgstr "Бяспека"
@@ -1059,6 +1059,12 @@ msgstr "Сістэмныя апавяшчэнні"
 
 msgid "settings.section.onboarding"
 msgstr "Навучанне"
+
+msgid "settings.section.appUpdates"
+msgstr "Абнаўленні праграмы"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper правярае наяўнасць новай версіі пры запуску і раз на дзень."
 
 msgid "settings.onboarding.restartHint"
 msgstr "Прайсці навучальны тур з самага пачатку."
@@ -1321,6 +1327,72 @@ msgstr "Агенты для {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "Агенты не выбраны"
+
+msgid "appUpdate.badge"
+msgstr "Абнавіць да {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "Даступная новая версія"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} гатовы да спампоўкі."
+
+msgid "appUpdate.updateNow"
+msgstr "Абнавіць зараз"
+
+msgid "appUpdate.cancel"
+msgstr "Скасаваць"
+
+msgid "appUpdate.readyTitle"
+msgstr "Абнаўленне спампавана"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} спампаваны і правераны."
+
+msgid "appUpdate.readyPath"
+msgstr "Спампавана: {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "Усталяванне закрые SkillKeeper і запусціць інсталятар."
+
+msgid "appUpdate.installNow"
+msgstr "Усталяваць зараз"
+
+msgid "appUpdate.notesFooter"
+msgstr "Больш ранейшыя заметкі выпуску тут не паказаны. Поўную гісторыю глядзіце на старонцы рэлізаў."
+
+msgid "appUpdate.downloadFailed"
+msgstr "Не ўдалося спампаваць абнаўленне: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "Не ўдалося ўсталяваць абнаўленне: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "Магчыма, macOS адмаўляецца замяніць усталяваную праграму. Выканайце гэту каманду ў Terminal, а потым зноў націсніце «{action}»:"
+
+msgid "appUpdate.copyCommand"
+msgstr "Скапіяваць каманду"
+
+msgid "appUpdate.commandCopied"
+msgstr "Каманда скапіявана ў буфер абмену."
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "Не ўдалося скапіяваць каманду. Вылучыце яе і скапіюйце ўручную."
+
+msgid "appUpdate.checkNow"
+msgstr "Праверыць абнаўленні"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper абноўлены да апошняй версіі."
+
+msgid "appUpdate.checkFailed"
+msgstr "Не ўдалося праверыць абнаўленні: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "Спампаваць зноў"
 
 msgid "settings.ssh.state.puttyLocked"
 msgstr "Ключ PuTTY, заблакаваны."

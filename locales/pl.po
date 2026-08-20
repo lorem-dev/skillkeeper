@@ -94,6 +94,9 @@ msgstr "Rozpocznij samouczek"
 msgid "menu.onboarding.skip"
 msgstr "Pomiń samouczek"
 
+msgid "menu.checkForUpdates"
+msgstr "Sprawdź aktualizacje"
+
 msgid "about.version"
 msgstr "Wersja {version}"
 
@@ -219,6 +222,9 @@ msgstr "Zaktualizuj umiejętność"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "Odśwież projekty"
+
+msgid "tasks.kind.app-update-check"
+msgstr "Sprawdzanie aktualizacji aplikacji"
 
 msgid "tasks.status.queued"
 msgstr "W kolejce"
@@ -943,14 +949,8 @@ msgstr "Ekran ustawień będzie dostępny wkrótce."
 msgid "settings.section.general"
 msgstr "Ogólne"
 
-msgid "settings.section.updates"
-msgstr "Aktualizacje"
 
-msgid "settings.section.agents"
-msgstr "Agenci"
 
-msgid "settings.section.executables"
-msgstr "Pliki wykonywalne"
 
 msgid "settings.section.security"
 msgstr "Bezpieczeństwo"
@@ -1059,6 +1059,12 @@ msgstr "Powiadomienia systemowe"
 
 msgid "settings.section.onboarding"
 msgstr "Samouczek"
+
+msgid "settings.section.appUpdates"
+msgstr "Aktualizacje aplikacji"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper sprawdza dostępność nowej wersji przy uruchomieniu i raz dziennie."
 
 msgid "settings.onboarding.restartHint"
 msgstr "Odtwórz samouczek z przewodnikiem od początku."
@@ -1321,6 +1327,72 @@ msgstr "Agenci dla {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "Nie wybrano agentów"
+
+msgid "appUpdate.badge"
+msgstr "Zaktualizuj do {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "Dostępna jest nowa wersja"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} jest gotowy do pobrania."
+
+msgid "appUpdate.updateNow"
+msgstr "Zaktualizuj teraz"
+
+msgid "appUpdate.cancel"
+msgstr "Anuluj"
+
+msgid "appUpdate.readyTitle"
+msgstr "Aktualizacja pobrana"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} został pobrany i zweryfikowany."
+
+msgid "appUpdate.readyPath"
+msgstr "Pobrano do: {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "Instalacja zamknie SkillKeeper i uruchomi instalator."
+
+msgid "appUpdate.installNow"
+msgstr "Zainstaluj teraz"
+
+msgid "appUpdate.notesFooter"
+msgstr "Starsze uwagi do wydania nie są tutaj uwzględnione. Pełna historia dostępna jest na stronie wydań."
+
+msgid "appUpdate.downloadFailed"
+msgstr "Nie udało się pobrać aktualizacji: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "Nie udało się zainstalować aktualizacji: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "System macOS może odmawiać zastąpienia zainstalowanej aplikacji. Uruchom to polecenie w Terminal, a następnie ponownie kliknij {action}:"
+
+msgid "appUpdate.copyCommand"
+msgstr "Skopiuj polecenie"
+
+msgid "appUpdate.commandCopied"
+msgstr "Polecenie skopiowane do schowka."
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "Nie udało się skopiować polecenia. Zaznacz je i skopiuj ręcznie."
+
+msgid "appUpdate.checkNow"
+msgstr "Sprawdź aktualizacje"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper jest aktualny."
+
+msgid "appUpdate.checkFailed"
+msgstr "Nie udało się sprawdzić aktualizacji: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "Pobierz ponownie"
 
 msgid "settings.ssh.state.puttyLocked"
 msgstr "Klucz PuTTY, zablokowany."

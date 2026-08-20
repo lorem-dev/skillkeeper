@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { useAnimationsEnabled, useAnimationScale, SK_DURATION, SK_EASE } from '@/shared/lib';
 import { useOnboardingActions } from '@/systems/onboarding';
 import { LanguageThemeFields } from '@/systems/settings';
+import { AppUpdateCheckButton } from '@/systems/appUpdate';
 import { SshKeyField } from '@/features/sshKey';
 import type { UpdatesConfig } from '@/services/bridge';
 import {
@@ -50,10 +51,28 @@ export function SettingsPage() {
   const config = useSkillkeeperStore((s) => s.config);
   const updateConfig = useSkillkeeperStore((s) => s.updateConfig);
   const openAbout = useSkillkeeperStore((s) => s.openAbout);
+  const settingsAppUpdatesNav = useSkillkeeperStore((s) => s.settingsAppUpdatesNav);
+  const clearAppUpdatesSettingsFocus = useSkillkeeperStore((s) => s.clearAppUpdatesSettingsFocus);
   const animate = useAnimationsEnabled();
   const scale = useAnimationScale();
   const t = useTranslator();
   const { start } = useOnboardingActions();
+  const appUpdatesSectionRef = useRef<HTMLDivElement>(null);
+
+  // The macOS Help menu's "Check for Updates" item bumps this nonce (via
+  // `focusAppUpdatesSettings`); App switches the active view to Settings for
+  // it, and this scrolls the section into view -- mirroring how `repoFocus`
+  // scrolls its target card (RepositoriesPage). Runs on mount too, so landing
+  // here from the menu (a fresh mount) still scrolls once the nonce is
+  // already set.
+  useEffect(() => {
+    if (settingsAppUpdatesNav === 0) return;
+    appUpdatesSectionRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    // Consume the request. The nonce would otherwise only ever grow, and this
+    // page remounts on every navigation, so an ordinary sidebar visit later
+    // would scroll again unasked.
+    clearAppUpdatesSettingsFocus();
+  }, [settingsAppUpdatesNav, clearAppUpdatesSettingsFocus]);
 
   if (config === null) return null;
 
@@ -164,6 +183,20 @@ export function SettingsPage() {
             </Button>
           </FormRow>
         </FormSection>
+
+        <div ref={appUpdatesSectionRef} data-settings-section="app-updates">
+          <FormSection title={t('settings.section.appUpdates')}>
+            {/* The cadence belongs on the row, not in a section footer: the row
+                would otherwise be an empty expanse with a button pinned to its
+                right edge, and the explanation would float loose underneath
+                it. This is the shape the Tutorial section above already uses. */}
+            <FormRow description={t('settings.appUpdates.hint')}>
+              <div className="sk-settings-app-update-actions">
+                <AppUpdateCheckButton offerUpdateNow />
+              </div>
+            </FormRow>
+          </FormSection>
+        </div>
       </motion.div>
     </Page>
   );

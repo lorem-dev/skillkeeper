@@ -94,6 +94,9 @@ msgstr "Почати навчання"
 msgid "menu.onboarding.skip"
 msgstr "Пропустити навчання"
 
+msgid "menu.checkForUpdates"
+msgstr "Перевірити оновлення"
+
 msgid "about.version"
 msgstr "Версія {version}"
 
@@ -219,6 +222,9 @@ msgstr "Оновити навичку"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "Оновити проєкти"
+
+msgid "tasks.kind.app-update-check"
+msgstr "Перевірка оновлень програми"
 
 msgid "tasks.status.queued"
 msgstr "У черзі"
@@ -943,14 +949,8 @@ msgstr "Екран налаштувань з’явиться незабаром
 msgid "settings.section.general"
 msgstr "Загальні"
 
-msgid "settings.section.updates"
-msgstr "Оновлення"
 
-msgid "settings.section.agents"
-msgstr "Агенти"
 
-msgid "settings.section.executables"
-msgstr "Виконувані файли"
 
 msgid "settings.section.security"
 msgstr "Безпека"
@@ -1059,6 +1059,12 @@ msgstr "Системні сповіщення"
 
 msgid "settings.section.onboarding"
 msgstr "Навчання"
+
+msgid "settings.section.appUpdates"
+msgstr "Оновлення застосунку"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper перевіряє наявність нової версії під час запуску і раз на день."
 
 msgid "settings.onboarding.restartHint"
 msgstr "Пройти навчальний тур із самого початку."
@@ -1321,6 +1327,72 @@ msgstr "Агенти для {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "Агентів не вибрано"
+
+msgid "appUpdate.badge"
+msgstr "Оновити до {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "Доступна нова версія"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} готовий до завантаження."
+
+msgid "appUpdate.updateNow"
+msgstr "Оновити зараз"
+
+msgid "appUpdate.cancel"
+msgstr "Скасувати"
+
+msgid "appUpdate.readyTitle"
+msgstr "Оновлення завантажено"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} завантажено та перевірено."
+
+msgid "appUpdate.readyPath"
+msgstr "Завантажено: {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "Встановлення закриє SkillKeeper і запустить інсталятор."
+
+msgid "appUpdate.installNow"
+msgstr "Встановити зараз"
+
+msgid "appUpdate.notesFooter"
+msgstr "Старіші нотатки випуску тут не наведено. Повну історію дивіться на сторінці релізів."
+
+msgid "appUpdate.downloadFailed"
+msgstr "Не вдалося завантажити оновлення: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "Не вдалося встановити оновлення: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "Можливо, macOS відмовляється замінити встановлену програму. Виконайте цю команду в Terminal, а потім знову натисніть «{action}»:"
+
+msgid "appUpdate.copyCommand"
+msgstr "Скопіювати команду"
+
+msgid "appUpdate.commandCopied"
+msgstr "Команду скопійовано в буфер обміну."
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "Не вдалося скопіювати команду. Виділіть її та скопіюйте вручну."
+
+msgid "appUpdate.checkNow"
+msgstr "Перевірити оновлення"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper оновлено до останньої версії."
+
+msgid "appUpdate.checkFailed"
+msgstr "Не вдалося перевірити оновлення: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "Завантажити знову"
 
 msgid "settings.ssh.state.puttyLocked"
 msgstr "Ключ PuTTY, заблоковано."

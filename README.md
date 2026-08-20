@@ -101,6 +101,13 @@ skillkeeper skill verify <skill-id>
 skillkeeper skill repair <skill-id>
 ```
 
+Print the command that updates the CLI itself to the latest release, without
+remembering the installer URL:
+
+```shell
+skillkeeper update
+```
+
 Supported agents are `claude`, `codex`, `copilot`, `cursor`, and `opencode`.
 Run `skillkeeper --help` (or `<command> --help`) for the full command set, also
 documented in the

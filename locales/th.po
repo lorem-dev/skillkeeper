@@ -94,6 +94,9 @@ msgstr "เริ่มบทแนะนำ"
 msgid "menu.onboarding.skip"
 msgstr "ข้ามบทแนะนำ"
 
+msgid "menu.checkForUpdates"
+msgstr "ตรวจหาการอัปเดต"
+
 msgid "about.version"
 msgstr "เวอร์ชัน {version}"
 
@@ -252,6 +255,9 @@ msgstr "อัปเดตสกิล"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "รีเฟรชโปรเจกต์"
+
+msgid "tasks.kind.app-update-check"
+msgstr "ตรวจหาการอัปเดตแอป"
 
 msgid "tasks.status.queued"
 msgstr "อยู่ในคิว"
@@ -844,14 +850,8 @@ msgstr "หน้าการตั้งค่าจะมาเร็ว ๆ �
 msgid "settings.section.general"
 msgstr "ทั่วไป"
 
-msgid "settings.section.updates"
-msgstr "การอัปเดต"
 
-msgid "settings.section.agents"
-msgstr "เอเจนต์"
 
-msgid "settings.section.executables"
-msgstr "ไฟล์ปฏิบัติการ"
 
 msgid "settings.section.security"
 msgstr "ความปลอดภัย"
@@ -960,6 +960,12 @@ msgstr "การแจ้งเตือนของระบบ"
 
 msgid "settings.section.onboarding"
 msgstr "บทแนะนำ"
+
+msgid "settings.section.appUpdates"
+msgstr "การอัปเดตแอป"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper ตรวจสอบเวอร์ชันใหม่เมื่อเริ่มต้นและวันละครั้ง"
 
 msgid "settings.onboarding.restartHint"
 msgstr "เล่นบทแนะนำตั้งแต่ต้นอีกครั้ง"
@@ -1186,3 +1192,69 @@ msgstr "เอเจนต์สำหรับ {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "ยังไม่ได้เลือกเอเจนต์"
+
+msgid "appUpdate.badge"
+msgstr "อัปเดตเป็น {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "มีเวอร์ชันใหม่ให้ใช้งาน"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} พร้อมให้ดาวน์โหลดแล้ว"
+
+msgid "appUpdate.updateNow"
+msgstr "อัปเดตตอนนี้"
+
+msgid "appUpdate.cancel"
+msgstr "ยกเลิก"
+
+msgid "appUpdate.readyTitle"
+msgstr "ดาวน์โหลดอัปเดตแล้ว"
+
+msgid "appUpdate.readyBody"
+msgstr "ดาวน์โหลดและตรวจสอบ SkillKeeper {version} แล้ว"
+
+msgid "appUpdate.readyPath"
+msgstr "ดาวน์โหลดไปที่ {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "การติดตั้งจะปิด SkillKeeper และเริ่มตัวติดตั้ง"
+
+msgid "appUpdate.installNow"
+msgstr "ติดตั้งตอนนี้"
+
+msgid "appUpdate.notesFooter"
+msgstr "บันทึกการเปลี่ยนแปลงเวอร์ชันเก่าไม่ได้รวมไว้ที่นี่ ดูประวัติทั้งหมดได้ที่หน้ารีลีส"
+
+msgid "appUpdate.downloadFailed"
+msgstr "ดาวน์โหลดอัปเดตไม่สำเร็จ: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "ติดตั้งอัปเดตไม่สำเร็จ: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "macOS อาจปฏิเสธการแทนที่แอปที่ติดตั้งไว้ ให้รันคำสั่งนี้ใน Terminal แล้วเลือก \"{action}\" อีกครั้ง:"
+
+msgid "appUpdate.copyCommand"
+msgstr "คัดลอกคำสั่ง"
+
+msgid "appUpdate.commandCopied"
+msgstr "คัดลอกคำสั่งไปยังคลิปบอร์ดแล้ว"
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "คัดลอกคำสั่งไม่สำเร็จ กรุณาเลือกและคัดลอกด้วยตนเอง"
+
+msgid "appUpdate.checkNow"
+msgstr "ตรวจหาการอัปเดต"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper เป็นเวอร์ชันล่าสุดแล้ว"
+
+msgid "appUpdate.checkFailed"
+msgstr "ตรวจหาการอัปเดตไม่สำเร็จ: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "ดาวน์โหลดอีกครั้ง"

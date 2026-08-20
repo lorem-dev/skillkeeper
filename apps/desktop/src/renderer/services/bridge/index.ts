@@ -52,4 +52,9 @@ export type {
   McpIdentity,
   McpPresetOrigin,
   SshKeyDto,
+  AppUpdateOffer,
+  CheckOutcome,
+  AppUpdateProgress,
+  AppUpdateReady,
+  AppUpdateFailed,
 } from './types';

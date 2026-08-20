@@ -58,6 +58,28 @@ development:
 cargo run -p skillkeeper-cli -- --version
 ```
 
+## Updating
+
+The desktop app checks for a new release on startup and once a day. When one
+is available, a badge appears in the status bar; for a major or minor
+version it also opens a dialog on its own (a patch update stays badge-only).
+The dialog shows the release notes and an "Update now" button that downloads
+the release in the background. Once the download is verified, a second
+dialog's "Install now" quits the app and installs it: on macOS by mounting
+the dmg and replacing the running app bundle; on Linux by replacing the
+running AppImage in place, or handing a deb to the system installer; on
+Windows by launching the downloaded installer.
+
+A check can also be started by hand, which ignores the once-a-day interval:
+from the Application updates section at the end of Settings, from the About
+window, or from Check for Updates in the macOS Help menu (which opens Settings
+at that section). Every check, scheduled or manual, appears in the task list
+with its result, so a check that found nothing is distinguishable from one that
+never ran.
+
+If macOS refuses to replace the installed app, the dialog says so and shows the
+`xattr` command that clears the block, with a button to copy it.
+
 ## Add a skill repository
 
 A skill repository is any Git remote that contains one or more skills. Add one

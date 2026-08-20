@@ -94,6 +94,9 @@ msgstr "Avvia il tutorial"
 msgid "menu.onboarding.skip"
 msgstr "Salta il tutorial"
 
+msgid "menu.checkForUpdates"
+msgstr "Cerca aggiornamenti"
+
 msgid "about.version"
 msgstr "Versione {version}"
 
@@ -219,6 +222,9 @@ msgstr "Aggiorna competenza"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "Aggiorna progetti"
+
+msgid "tasks.kind.app-update-check"
+msgstr "Verifica aggiornamenti dell'app"
 
 msgid "tasks.status.queued"
 msgstr "In coda"
@@ -943,14 +949,8 @@ msgstr "La schermata delle impostazioni arriverà a breve."
 msgid "settings.section.general"
 msgstr "Generale"
 
-msgid "settings.section.updates"
-msgstr "Aggiornamenti"
 
-msgid "settings.section.agents"
-msgstr "Agenti"
 
-msgid "settings.section.executables"
-msgstr "Eseguibili"
 
 msgid "settings.section.security"
 msgstr "Sicurezza"
@@ -1059,6 +1059,12 @@ msgstr "Notifiche di sistema"
 
 msgid "settings.section.onboarding"
 msgstr "Tutorial"
+
+msgid "settings.section.appUpdates"
+msgstr "Aggiornamenti dell'applicazione"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper cerca una nuova versione all'avvio e una volta al giorno."
 
 msgid "settings.onboarding.restartHint"
 msgstr "Riproduci di nuovo il tutorial guidato dall'inizio."
@@ -1348,4 +1354,70 @@ msgstr "Il file della chiave PuTTY è danneggiato."
 
 msgid "ssh.puttyExportFailed"
 msgstr "Non è stato possibile convertire la chiave."
+
+msgid "appUpdate.badge"
+msgstr "Aggiorna a {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "È disponibile una nuova versione"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} è pronto per il download."
+
+msgid "appUpdate.updateNow"
+msgstr "Aggiorna ora"
+
+msgid "appUpdate.cancel"
+msgstr "Annulla"
+
+msgid "appUpdate.readyTitle"
+msgstr "Aggiornamento scaricato"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} è stato scaricato e verificato."
+
+msgid "appUpdate.readyPath"
+msgstr "Scaricato in {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "L'installazione chiude SkillKeeper e avvia il programma di installazione."
+
+msgid "appUpdate.installNow"
+msgstr "Installa ora"
+
+msgid "appUpdate.notesFooter"
+msgstr "Le note di rilascio precedenti non sono incluse qui. Consulta la pagina delle release per la cronologia completa."
+
+msgid "appUpdate.downloadFailed"
+msgstr "Non è stato possibile scaricare l'aggiornamento: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "Non è stato possibile installare l'aggiornamento: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "macOS potrebbe rifiutarsi di sostituire l'app installata. Esegui questo comando nel Terminale, poi scegli di nuovo \"{action}\":"
+
+msgid "appUpdate.copyCommand"
+msgstr "Copia comando"
+
+msgid "appUpdate.commandCopied"
+msgstr "Comando copiato negli appunti."
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "Non è stato possibile copiare il comando. Selezionalo e copialo manualmente."
+
+msgid "appUpdate.checkNow"
+msgstr "Verifica aggiornamenti"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper è aggiornato."
+
+msgid "appUpdate.checkFailed"
+msgstr "Non è stato possibile verificare gli aggiornamenti: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "Scarica di nuovo"
 

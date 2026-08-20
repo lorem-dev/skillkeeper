@@ -156,7 +156,7 @@ jobs:
             librsvg2-dev
 
       - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.97.1
         with:
           targets: ${{ matrix.target }}
 
@@ -520,6 +520,17 @@ jobs:
         run: |
           test -f schemas/mcp.schema.json
           cp schemas/mcp.schema.json dist/mcp.schema.json
+
+      # The self-updater reads this manifest to decide whether a newer release
+      # exists and which asset to fetch. Generated on EVERY tag, RC included:
+      # `releases/latest` resolves only to non-prereleases, so an RC's manifest
+      # is never served to stable clients, while the RC still exercises this
+      # whole path. Needs GH_TOKEN to ask which releases still exist, so a
+      # deleted one stops being advertised.
+      - name: Generate the version manifest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/gen-versions-json.mjs "$GITHUB_REF_NAME" dist
 
       # Checksum every staged asset. Written outside dist/ first so the glob
       # cannot include the (empty) checksums.txt the redirection would create.

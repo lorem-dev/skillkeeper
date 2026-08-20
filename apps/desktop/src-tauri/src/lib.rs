@@ -17,6 +17,12 @@ use crate::state::AppContext;
 pub fn run() {
     let context = AppContext::new().expect("failed to build the SkillKeeper app context");
 
+    // A crash or forced quit can leave a stale (possibly 150 MB) update
+    // download behind; the OS temp reaper cannot help since the download
+    // lives in app-data, not the OS temp dir. Sweep it before anything else
+    // touches the directory.
+    commands::app_update::sweep_stale_downloads(&context);
+
     // Override the process UI language before AppKit initializes so the standard
     // menu items macOS injects itself (the Window tiling group) localize to the
     // configured language, not the system one. Mirrors `menu::current_lang`, but
@@ -108,6 +114,12 @@ pub fn run() {
             commands::onboarding::onboarding_get,
             commands::onboarding::onboarding_set,
             commands::onboarding::onboarding_menu_sync,
+            commands::app_update::app_update_check,
+            commands::app_update::app_update_check_now,
+            commands::app_update::app_update_download,
+            commands::app_update::app_update_install,
+            commands::app_update::app_update_discard,
+            commands::app_update::app_update_dismiss,
             commands::state_read::repositories_list,
             commands::state_read::projects_list,
             commands::state_read::skills_list,

@@ -1232,6 +1232,7 @@ mod tests {
             let paths = AppPaths {
                 config_yaml: app.join("config.yaml").to_string_lossy().into_owned(),
                 state_json: app.join("state.json").to_string_lossy().into_owned(),
+                app_update_json: app.join("app-update.json").to_string_lossy().into_owned(),
                 repositories_dir: app.join("repositories").to_string_lossy().into_owned(),
             };
             let ctx = AppContext::with_paths(env, paths).unwrap();

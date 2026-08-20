@@ -5,6 +5,7 @@
 //! [`adapters`]. [`testing`] provides in-memory fakes for unit tests.
 
 pub mod adapters;
+pub mod app_update;
 pub mod frontmatter;
 pub mod git_lfs;
 pub mod git_remote;

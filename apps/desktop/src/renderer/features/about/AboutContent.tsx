@@ -5,6 +5,7 @@
  * (links/copyright); the onboarding welcome screen reuses those two pieces
  * directly so it can place the identity and the footer separately.
  */
+import { AppUpdateCheckButton } from '@/systems/appUpdate';
 import { AboutIdentity } from './AboutIdentity';
 import { AboutFooter } from './AboutFooter';
 import './AboutDialog.scss';
@@ -13,6 +14,9 @@ export function AboutContent() {
   return (
     <div className="sk-about__body">
       <AboutIdentity />
+      <div className="sk-about__actions">
+        <AppUpdateCheckButton />
+      </div>
       <AboutFooter />
     </div>
   );

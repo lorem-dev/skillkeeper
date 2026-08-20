@@ -1,8 +1,9 @@
 //! macOS application menu (a port of `apps/desktop/src/main/menu.ts`).
 //!
 //! Builds the mac-only application menu and emits `menu:navigate` (with a view
-//! target string) or `menu:about` when a navigable item is clicked, mirroring
-//! the Electron `onNavigate`/`onAbout` relays. On non-macOS platforms no
+//! target string), `menu:about`, `menu:onboarding-toggle`, or
+//! `menu:check-for-updates` when the matching item is clicked, mirroring the
+//! Electron `onNavigate`/`onAbout` relays. On non-macOS platforms no
 //! application menu is installed (matching the Electron `Menu.setApplicationMenu(null)`).
 //!
 //! i18n: the renderer's translation catalogs are TypeScript and are not
@@ -271,8 +272,15 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let onboarding_label = tr.t(onboarding_toggle_label_key(onboarding_active));
     let onboarding_item =
         MenuItemBuilder::with_id("onboarding.toggle", onboarding_label).build(app)?;
+    // Entry point to the desktop self-updater: opens Settings and scrolls to
+    // its "Application updates" section, which carries the actual "Check for
+    // updates" / "Update now" controls (see `SettingsPage.tsx`). Placed after
+    // the onboarding toggle, as this Help submenu's second and last item.
+    let check_for_updates_item =
+        MenuItemBuilder::with_id("appUpdate.check", tr.t("menu.checkForUpdates")).build(app)?;
     let help_menu = SubmenuBuilder::with_id(app, HELP_SUBMENU_ID, tr.t("menu.help"))
         .item(&onboarding_item)
+        .item(&check_for_updates_item)
         .build()?;
 
     MenuBuilder::new(app)
@@ -308,6 +316,8 @@ pub fn handle_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         let _ = app.emit("menu:about", ());
     } else if id == "onboarding.toggle" {
         let _ = app.emit("menu:onboarding-toggle", ());
+    } else if id == "appUpdate.check" {
+        let _ = app.emit("menu:check-for-updates", ());
     } else if let Some(target) = nav_target(id) {
         let _ = app.emit("menu:navigate", target);
     }
@@ -431,6 +441,7 @@ pub fn sync_onboarding<R: Runtime>(app: &AppHandle<R>, active: bool) {
         "nav.mcp-management",
         "nav.settings",
         "nav.openSettings",
+        "appUpdate.check",
         "edit.undo",
         "edit.redo",
         "edit.cut",
@@ -531,6 +542,13 @@ mod tests {
         assert_eq!(nav_target("nav.about"), None);
         assert_eq!(nav_target("undo"), None);
         assert_eq!(nav_target(""), None);
+    }
+
+    #[test]
+    fn check_for_updates_id_is_not_a_nav_target() {
+        // Handled by its own branch in `handle_event` (like "nav.about" and
+        // "onboarding.toggle"), not by the generic `nav_target` navigation map.
+        assert_eq!(nav_target("appUpdate.check"), None);
     }
 
     #[test]

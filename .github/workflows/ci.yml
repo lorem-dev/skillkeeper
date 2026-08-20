@@ -150,7 +150,7 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" .apt-cache
 
       - name: Set up Rust toolchain (stable + rustfmt + clippy)
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.97.1
         with:
           components: rustfmt, clippy
 
@@ -234,7 +234,7 @@ jobs:
           submodules: true
 
       - name: Set up Rust toolchain (stable)
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.97.1
 
       - name: Cache cargo registry and target
         uses: Swatinem/rust-cache@v2
