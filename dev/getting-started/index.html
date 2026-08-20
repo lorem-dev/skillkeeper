@@ -399,6 +399,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#updating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Updating
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#add-a-skill-repository" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1041,6 +1052,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#updating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Updating
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#add-a-skill-repository" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1146,7 +1168,7 @@
   error when LFS is required but absent).</li>
 <li>To build from source: a Rust toolchain (the pinned stable is installed
   automatically by rustup from <code>rust-toolchain.toml</code> on first <code>cargo</code> build).
-  Node.js 22.13+ and pnpm 11 are only needed to build the desktop app's
+  Node.js 24+ and pnpm 11 are only needed to build the desktop app's
   renderer, not the CLI.</li>
 </ul>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
@@ -1179,6 +1201,24 @@ release with <code>SKILLKEEPER_VERSION</code> (for example <code>v0.1.1</code>).
 development:</p>
 <div class="highlight"><pre><span></span><code>cargo run -p skillkeeper-cli -- --version
 </code></pre></div>
+<h2 id="updating">Updating<a class="headerlink" href="#updating" title="Permanent link">&para;</a></h2>
+<p>The desktop app checks for a new release on startup and once a day. When one
+is available, a badge appears in the status bar; for a major or minor
+version it also opens a dialog on its own (a patch update stays badge-only).
+The dialog shows the release notes and an "Update now" button that downloads
+the release in the background. Once the download is verified, a second
+dialog's "Install now" quits the app and installs it: on macOS by mounting
+the dmg and replacing the running app bundle; on Linux by replacing the
+running AppImage in place, or handing a deb to the system installer; on
+Windows by launching the downloaded installer.</p>
+<p>A check can also be started by hand, which ignores the once-a-day interval:
+from the Application updates section at the end of Settings, from the About
+window, or from Check for Updates in the macOS Help menu (which opens Settings
+at that section). Every check, scheduled or manual, appears in the task list
+with its result, so a check that found nothing is distinguishable from one that
+never ran.</p>
+<p>If macOS refuses to replace the installed app, the dialog says so and shows the
+<code>xattr</code> command that clears the block, with a button to copy it.</p>
 <h2 id="add-a-skill-repository">Add a skill repository<a class="headerlink" href="#add-a-skill-repository" title="Permanent link">&para;</a></h2>
 <p>A skill repository is any Git remote that contains one or more skills. Add one
 with:</p>

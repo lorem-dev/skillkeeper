@@ -1094,6 +1094,11 @@ any log, and never transmitted. Only the path is persisted. <code>ssh</code> rec
 passphrase over a local socket private to the user's account, authorised by a
 token minted per git invocation and revoked when that invocation ends. See
 <a href="../repositories/#using-a-dedicated-ssh-key">Using a dedicated SSH key</a>.</p>
+<p>A PuTTY-format key is handled differently, and holds less: the app decrypts it
+in memory, hands the result to your ssh-agent, and discards the passphrase
+immediately. Nothing is kept for the rest of the session, because nothing needs
+it -- <code>ssh</code> gets the key from the agent. Only the path is persisted, as for any
+other key.</p>
 <h2 id="hook-consent-policy">Hook-consent policy<a class="headerlink" href="#hook-consent-policy" title="Permanent link">&para;</a></h2>
 <p>The <code>security.hookConsent</code> setting in <code>config.yaml</code> controls the hook-consent
 policy. The default and recommended value is <code>always-ask</code>, which requires

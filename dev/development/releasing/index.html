@@ -894,6 +894,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#versionsjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        versions.json
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-ordering-is-not-chronological" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release ordering is not chronological
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#macos-signing-and-notarization" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1045,6 +1067,28 @@
     <span class="md-ellipsis">
       
         CHANGES.md
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#versionsjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        versions.json
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-ordering-is-not-chronological" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release ordering is not chronological
       
     </span>
   </a>
@@ -1230,8 +1274,8 @@ is built or published.</p>
 <p>Cutting an RC therefore looks like:</p>
 <div class="highlight"><pre><span></span><code>git checkout develop
 node scripts/bump-version.mjs 1.0.0-rc.1
-git commit -am &quot;release: 1.0.0-rc.1&quot;
-git tag -a v1.0.0-rc.1 -m &quot;SkillKeeper 1.0.0-rc.1&quot;
+git commit -am "release: 1.0.0-rc.1"
+git tag -a v1.0.0-rc.1 -m "SkillKeeper 1.0.0-rc.1"
 git push origin develop
 git push origin v1.0.0-rc.1
 </code></pre></div>
@@ -1245,6 +1289,37 @@ git push origin v1.0.0-rc.1
 <p>New work lands under a top <code>Development</code> heading during development. At
 release, those bullets are moved under the new version heading. Each bullet is
 short; large items link to documentation rather than describing details inline.</p>
+<h2 id="versionsjson">versions.json<a class="headerlink" href="#versionsjson" title="Permanent link">&para;</a></h2>
+<p>Every release also publishes <code>versions.json</code>
+(<code>scripts/gen-versions-json.mjs</code>), the manifest the desktop app's
+self-updater reads: one entry per version with its tag, whether it is a
+prerelease, and release notes, plus, on the newest entry only, the
+per-platform download assets and their SHA-256. It is generated on every tag,
+release candidates included; that is safe because
+<code>releases/latest/download/...</code> never resolves to a prerelease, so an RC's
+manifest is never served to a stable build (a candidate build instead queries
+the GitHub API for the newest release, prereleases included, by design). A
+version whose GitHub release was later deleted drops out of the manifest on
+the next release, rather than lingering as an advertised download that 404s.</p>
+<h2 id="release-ordering-is-not-chronological">Release ordering is not chronological<a class="headerlink" href="#release-ordering-is-not-chronological" title="Permanent link">&para;</a></h2>
+<p>GitHub orders both the releases page and <code>GET /repos/{owner}/{repo}/releases</code>
+LEXICOGRAPHICALLY by tag name, not by date, and the order is not configurable.
+So <code>v0.5.0-rc.10</code> sorts below <code>v0.5.0-rc.3</code>, because as text <code>1</code> is less than
+<code>3</code>. This is not a release-candidate quirk: <code>v0.10.0</code> will sort below <code>v0.9.0</code>
+for exactly the same reason.</p>
+<p>Do not rely on that order for anything. The self-updater does not: it reads
+several pages, drops drafts, and picks the greatest tag with its own version
+parser (<code>app_update::fetch::greatest_tag</code>), which compares the numbers as
+numbers. Sorting by date would be wrong anyway -- we want the highest version,
+and a re-published older release is the newest by time while being the wrong
+answer.</p>
+<p>The one ordering-adjacent thing that IS controllable is which release carries
+the "Latest" designation, through the <code>make_latest</code> field on release creation.
+It needs no setting here: a candidate is published with <code>prerelease: true</code> and
+so can never take it, and a final release takes it by default. That designation,
+not the list order, is what <code>releases/latest/download/...</code> resolves against,
+which is why a stable build reading that URL was never affected by any of this.</p>
+<p>Treat the page's own order as decoration.</p>
 <h2 id="macos-signing-and-notarization">macOS signing and notarization<a class="headerlink" href="#macos-signing-and-notarization" title="Permanent link">&para;</a></h2>
 <p>macOS dmg builds are signed and notarized in CI. Signing certificates and
 notarization credentials are provided as encrypted CI secrets. Notarization is
@@ -1307,11 +1382,11 @@ gpg<span class="w"> </span>--list-keys<span class="w"> </span>--fingerprint<span
 
 <span class="c1"># 2. Download the checksum file, its signature, and the artifact you want.</span>
 <span class="nv">TAG</span><span class="o">=</span>v1.0.0
-<span class="nv">BASE</span><span class="o">=</span><span class="s2">&quot;https://github.com/lorem-dev/skillkeeper/releases/download/</span><span class="si">${</span><span class="nv">TAG</span><span class="si">}</span><span class="s2">&quot;</span>
-curl<span class="w"> </span>-fsSLO<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">BASE</span><span class="si">}</span><span class="s2">/checksums.txt&quot;</span>
-curl<span class="w"> </span>-fsSLO<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">BASE</span><span class="si">}</span><span class="s2">/checksums.txt.asc&quot;</span>
+<span class="nv">BASE</span><span class="o">=</span><span class="s2">"https://github.com/lorem-dev/skillkeeper/releases/download/</span><span class="si">${</span><span class="nv">TAG</span><span class="si">}</span><span class="s2">"</span>
+curl<span class="w"> </span>-fsSLO<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">BASE</span><span class="si">}</span><span class="s2">/checksums.txt"</span>
+curl<span class="w"> </span>-fsSLO<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">BASE</span><span class="si">}</span><span class="s2">/checksums.txt.asc"</span>
 <span class="c1"># ...and one artifact, e.g. the Linux AppImage:</span>
-curl<span class="w"> </span>-fsSLO<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">BASE</span><span class="si">}</span><span class="s2">/SkillKeeper_1.0.0_amd64.AppImage&quot;</span>
+curl<span class="w"> </span>-fsSLO<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">BASE</span><span class="si">}</span><span class="s2">/SkillKeeper_1.0.0_amd64.AppImage"</span>
 
 <span class="c1"># 3. Verify the signature over the checksum file.</span>
 gpg<span class="w"> </span>--verify<span class="w"> </span>checksums.txt.asc<span class="w"> </span>checksums.txt

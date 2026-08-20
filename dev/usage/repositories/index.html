@@ -571,6 +571,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Using a dedicated SSH key">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#putty-keys-ppk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PuTTY keys (.ppk)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1172,6 +1189,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Using a dedicated SSH key">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#putty-keys-ppk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PuTTY keys (.ppk)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1357,10 +1391,10 @@ system keychain:</p>
 <h3 id="linux">Linux<a class="headerlink" href="#linux" title="Permanent link">&para;</a></h3>
 <p>Most desktop environments start an agent at login (GNOME Keyring, KDE Wallet).
 Check with:</p>
-<div class="highlight"><pre><span></span><code>echo &quot;$SSH_AUTH_SOCK&quot;
+<div class="highlight"><pre><span></span><code>echo "$SSH_AUTH_SOCK"
 </code></pre></div>
 <p>If it prints nothing, start one for the session:</p>
-<div class="highlight"><pre><span></span><code>eval &quot;$(ssh-agent -s)&quot;
+<div class="highlight"><pre><span></span><code>eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
 </code></pre></div>
 <p>To make that permanent, enable the user service shipped with OpenSSH:</p>
@@ -1377,7 +1411,7 @@ ssh-add $env:USERPROFILE\.ssh\id_ed25519
 <p><strong>Important:</strong> Git for Windows uses its own bundled <code>ssh</code> by default, and that
 one does not talk to the Windows agent service. Point Git at the system client
 so the key you just added is actually used:</p>
-<div class="highlight"><pre><span></span><code>git config --global core.sshCommand &quot;C:/Windows/System32/OpenSSH/ssh.exe&quot;
+<div class="highlight"><pre><span></span><code>git config --global core.sshCommand "C:/Windows/System32/OpenSSH/ssh.exe"
 </code></pre></div>
 <p>Without this, the agent holds your key but Git keeps asking for the
 passphrase.</p>
@@ -1396,7 +1430,7 @@ pinentry-program /usr/bin/pinentry-gtk-2
 <p>Use <code>pinentry-mac</code> on macOS (<code>brew install pinentry-mac</code>) and
 <code>pinentry-gtk-2</code>, <code>pinentry-qt</code> or <code>pinentry-curses</code> on Linux, then point
 <code>SSH_AUTH_SOCK</code> at the gpg-agent socket:</p>
-<div class="highlight"><pre><span></span><code>export SSH_AUTH_SOCK=&quot;$(gpgconf --list-dirs agent-ssh-socket)&quot;
+<div class="highlight"><pre><span></span><code>export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
 </code></pre></div>
 <p>If you are not using GnuPG, you do not need pinentry at all -- a plain
 ssh-agent is enough.</p>
@@ -1427,6 +1461,28 @@ blocks on it -- it raises the same window and resumes once the key is unlocked.<
   <code>SKILLKEEPER_SSH_VERBOSE=1</code> to run every git operation as <code>ssh -v</code>, and the
   terminal shows which it is.</li>
 </ul>
+<h3 id="putty-keys-ppk">PuTTY keys (.ppk)<a class="headerlink" href="#putty-keys-ppk" title="Permanent link">&para;</a></h3>
+<p>The desktop app reads PuTTY-format keys directly. Choose the <code>.ppk</code> in Settings
+as you would any other key; on the first SSH operation the app asks for its
+passphrase, decrypts the key in memory, and loads it into your ssh-agent for
+twelve hours. The key file is never rewritten and no converted copy is stored:
+the decrypted key goes straight from memory into the agent, and the app removes
+it again when it quits.</p>
+<p>This needs a running ssh-agent, because that is where the key lives once it is
+loaded. On Windows the OpenSSH Authentication Agent service ships disabled --
+see "Setting up an ssh-agent" above for how to start it.</p>
+<p>Settings also offers <strong>Convert to an OpenSSH key</strong> -- the warning icon beside
+the key path -- for any PuTTY key that is not currently loaded in the agent. That is the way out when no agent is
+available, and it is offered the rest of the time too, since an agent can be
+present and still refuse the key. It writes a new key file where you choose,
+encrypted with the same passphrase, and switches <code>repositories.sshKeyPath</code> to
+it. If <code>ssh</code> then reports that the new
+file's permissions are too open on Windows, restrict it with:</p>
+<div class="highlight"><pre><span></span><code>icacls "%USERPROFILE%\.ssh\id_converted" /inheritance:r /grant:r "%USERNAME%:R"
+</code></pre></div>
+<p>The CLI does not read PuTTY keys. With one configured it prints the <code>puttygen</code>
+command that converts it and otherwise leaves your agent and <code>~/.ssh/config</code> to
+work as usual.</p>
 <h2 id="git-lfs">Git LFS<a class="headerlink" href="#git-lfs" title="Permanent link">&para;</a></h2>
 <p>If a repository declares Git LFS usage, SkillKeeper runs <code>git lfs</code> steps
 during clone and sync. If the <code>git-lfs</code> client is absent, SkillKeeper reports

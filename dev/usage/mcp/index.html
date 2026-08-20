@@ -1279,9 +1279,16 @@ written.</p>
 file:</p>
 <ul>
 <li>at the repository root - these presets have no group, and</li>
-<li>inside any skill-group directory - the directory name becomes the
-  preset's group.</li>
+<li>inside any ancestor directory of a resolved skill - the directory's path
+  relative to the repository root becomes the preset's group (a repository
+  holding <code>a/b/c/skill</code> is read at the root plus <code>a</code>, <code>a/b</code>, and <code>a/b/c</code>, so
+  an <code>mcp.yml</code> at <code>a/b/c</code> yields presets grouped <code>a/b/c</code>).</li>
 </ul>
+<p>Each <code>mcp.yml</code>/<code>mcp.yaml</code> is independent: a nested file does not inherit
+presets from a shallower one, and a shallower file is never overridden by a
+deeper one. A directory only counts when it leads to a skill that actually
+resolves, so a stray <code>mcp.yml</code> in a subtree with no resolved skill
+contributes nothing.</p>
 <p>If a directory has both <code>mcp.yml</code> and <code>mcp.yaml</code>, <code>mcp.yml</code> is read and
 <code>mcp.yaml</code> is ignored entirely, even if <code>mcp.yml</code> fails to parse (this is a
 precedence rule, not a fallback). A file that fails to parse is skipped with
@@ -1327,29 +1334,29 @@ parser tolerates with a warning.</p>
 <span class="nt">servers</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docs-http</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
-<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://{host}/mcp&quot;</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">"https://{host}/mcp"</span>
 <span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bearer</span><span class="nv"> </span><span class="s">{token}&quot;</span>
+<span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">"Bearer</span><span class="nv"> </span><span class="s">{token}"</span>
 <span class="w">    </span><span class="nt">rules</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">      </span><span class="no">Prefer the docs-http MCP for {host} lookups.</span>
 <span class="w">      </span><span class="no">Cite the source path for every answer.</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local-fs</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdio</span>
 <span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">npx</span>
-<span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-y&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;@acme/fs&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;--root&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;{root}&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"-y"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"@acme/fs"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"--root"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"{root}"</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">env</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">FS_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{token}&quot;</span>
+<span class="w">      </span><span class="nt">FS_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="s">"{token}"</span>
 </code></pre></div>
 <h3 id="example-inside-a-skill-group">Example: inside a skill group<a class="headerlink" href="#example-inside-a-skill-group" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json</span>
-<span class="c1"># tooling/mcp.yml -- group &quot;tooling&quot;</span>
+<span class="c1"># tooling/mcp.yml -- group "tooling"</span>
 <span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="nt">servers</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tooling-sse</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sse</span>
-<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://{host}/tooling/sse&quot;</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">"https://{host}/tooling/sse"</span>
 <span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">X-Api-Key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{api_key}&quot;</span>
+<span class="w">      </span><span class="nt">X-Api-Key</span><span class="p">:</span><span class="w"> </span><span class="s">"{api_key}"</span>
 </code></pre></div>
 <p>Both files exist for real in the
 <a href="https://github.com/lorem-dev/skillkeeper-test-repo">skillkeeper-test-repo</a>
@@ -1376,7 +1383,7 @@ typed or secret fields exist yet). The rendering step substitutes each
 <code>token</code> (<code>host</code> appears in both <code>url</code> and <code>rules</code>; it still counts once).</p>
 <h3 id="quote-a-value-that-starts-with-a-placeholder">Quote a value that starts with a placeholder<a class="headerlink" href="#quote-a-value-that-starts-with-a-placeholder" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">headers</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">X-Token</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{personal_token}&quot;</span><span class="w">   </span><span class="c1"># quoted -- a string</span>
+<span class="w">  </span><span class="nt">X-Token</span><span class="p">:</span><span class="w"> </span><span class="s">"{personal_token}"</span><span class="w">   </span><span class="c1"># quoted -- a string</span>
 <span class="w">  </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bearer {token}</span><span class="w"> </span><span class="c1"># fine unquoted: `{` is not the first character</span>
 </code></pre></div>
 <p>In YAML a leading <code>{</code> opens a flow mapping, so an unquoted <code>{personal_token}</code>

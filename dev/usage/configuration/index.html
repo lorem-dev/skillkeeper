@@ -1225,8 +1225,8 @@ in your editor.</p>
 <p>Controls when SkillKeeper checks for skill and repository updates.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">updates</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">on-startup</span><span class="w">      </span><span class="c1"># manual | on-startup | scheduled</span>
-<span class="w">  </span><span class="nt">intervalMinutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">720</span><span class="w">  </span><span class="c1"># used when mode is &quot;scheduled&quot;; 1 minute .. 23 hours</span>
-<span class="w">  </span><span class="nt">checkOnStartup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"> </span><span class="c1"># for &quot;scheduled&quot; mode: also check at startup</span>
+<span class="w">  </span><span class="nt">intervalMinutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">720</span><span class="w">  </span><span class="c1"># used when mode is "scheduled"; 1 minute .. 23 hours</span>
+<span class="w">  </span><span class="nt">checkOnStartup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"> </span><span class="c1"># for "scheduled" mode: also check at startup</span>
 </code></pre></div>
 <p>Default: <code>mode: on-startup</code>, <code>intervalMinutes: 720</code> (12 hours),
 <code>checkOnStartup: false</code>.</p>
@@ -1252,8 +1252,8 @@ in your editor.</p>
 install, in addition to files declared executable in the skill manifest.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">executables</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">globs</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;**/*.sh&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;**/run&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"**/*.sh"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"**/run"</span>
 </code></pre></div>
 <p>Default: empty list (only manifest-declared executables are marked <code>+x</code>).</p>
 <h3 id="security">security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>

@@ -963,6 +963,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#skillkeeper-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skillkeeper update
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1541,6 +1552,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#skillkeeper-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skillkeeper update
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1607,8 +1629,9 @@ installed skills.</p>
 <p>Manage skills.</p>
 <p>Every <code>&lt;id&gt;</code> argument below accepts a full <code>group/name</code> (or bare <code>name</code>), or any
 unique prefix of one -- Docker-container-id style: <code>ab</code> resolves to <code>abba</code> when
-it is the only skill id starting with <code>ab</code>. An ambiguous prefix is rejected with
-the list of matches.</p>
+it is the only skill id starting with <code>ab</code>. The <code>group</code> half may itself be a
+nested path up to three levels deep (<code>platform/lint/rust/clippy-skill</code>). An
+ambiguous prefix is rejected with the list of matches.</p>
 <h3 id="skill-list">skill list<a class="headerlink" href="#skill-list" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>skillkeeper skill list
 </code></pre></div>
@@ -1793,6 +1816,15 @@ for any newly required placeholders.</p>
 <p>Print the version, for example <code>skillkeeper 0.1.2-rc.1</code>. The same string is
 printed by the global <code>-V</code>, <code>-v</code>, and <code>--version</code> flags (e.g.
 <code>skillkeeper --version</code>).</p>
+<hr />
+<h2 id="skillkeeper-update">skillkeeper update<a class="headerlink" href="#skillkeeper-update" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>skillkeeper update
+</code></pre></div>
+<p>Print the current CLI version and the one-line install command that
+reinstalls the latest release for the host platform. This prints instructions
+only -- no network access, no version check against GitHub, no files changed.
+It is a different command from <code>repo update</code>, <code>skill update</code>, and <code>mcp
+update</code>, which check or refresh already-installed content.</p>
 
 
 

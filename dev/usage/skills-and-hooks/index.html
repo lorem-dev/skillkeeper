@@ -1469,13 +1469,23 @@ they decide where and how the hook edits an agent's configuration.</p>
 hooks and are never included in the skill body. Running a skill is the
 agent's job; SkillKeeper only installs files and edits config regions.</p>
 <h2 id="skill-groups">Skill groups<a class="headerlink" href="#skill-groups" title="Permanent link">&para;</a></h2>
-<p>Skills may be organized in a one-level namespace (group):</p>
+<p>Skills may be organized in a namespace (group) nested up to three levels
+deep:</p>
 <div class="highlight"><pre><span></span><code>my-group/
   my-skill/
     SKILL.md
 </code></pre></div>
-<p>Group depth is exactly one. Deeper nesting not declared in the repository
-config yields an unresolved-path warning, not a silently guessed install.</p>
+<div class="highlight"><pre><span></span><code>platform/
+  lint/
+    rust/
+      clippy-skill/
+        SKILL.md
+</code></pre></div>
+<p>Group depth is at most three levels. Deeper nesting not declared in the
+repository config yields an unresolved-path warning, not a silently guessed
+install. The warning reads exactly:</p>
+<div class="highlight"><pre><span></span><code>Unresolved SKILL.md at "&lt;path&gt;": nesting is deeper than 3 group levels; declare it in skillkeeper.repo.yaml to install it.
+</code></pre></div>
 <h2 id="skill-resolution-schemes">Skill resolution schemes<a class="headerlink" href="#skill-resolution-schemes" title="Permanent link">&para;</a></h2>
 <p>SkillKeeper discovers skills in a cloned repository working tree using one of
 three schemes, applied in this order:</p>
@@ -1490,22 +1500,31 @@ optional metadata overrides:</p>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">relative/path/to/skill</span><span class="w">   </span><span class="c1"># directory containing SKILL.md</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">optional-name-override</span>
 <span class="w">    </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">optional-group-override</span>
-<span class="nt">include</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;glob&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w">             </span><span class="c1"># optional allowlist of skill dirs</span>
-<span class="nt">exclude</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;glob&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w">             </span><span class="c1"># optional denylist</span>
+<span class="nt">include</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"glob"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w">             </span><span class="c1"># optional allowlist of skill dirs</span>
+<span class="nt">exclude</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"glob"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w">             </span><span class="c1"># optional denylist</span>
 </code></pre></div>
 <p>A malformed or schema-invalid <code>skillkeeper.repo.yaml</code> raises a
 <code>RepoConfigError</code> naming the first offending field; the caller decides how to
 surface that (the desktop app skips the repository for that operation rather
 than crash).</p>
+<p>A declared <code>group</code> (in <code>defaults.group</code> or a per-skill entry) is validated: at
+most three segments; neither the whole value nor any single segment may be
+empty; no <code>.</code> or <code>..</code> segment; no backslash; and no leading or trailing
+whitespace in a segment. An invalid one raises the same <code>RepoConfigError</code>,
+naming the field.</p>
 <h3 id="scheme-1-flat-layout">Scheme 1 - flat layout<a class="headerlink" href="#scheme-1-flat-layout" title="Permanent link">&para;</a></h3>
 <p><code>&lt;SKILL_NAME&gt;/SKILL.md</code> at the root of the repository. No group. Hooks live
 under <code>&lt;SKILL_NAME&gt;/hooks/</code>.</p>
 <h3 id="scheme-2-grouped-layout">Scheme 2 - grouped layout<a class="headerlink" href="#scheme-2-grouped-layout" title="Permanent link">&para;</a></h3>
-<p><code>&lt;SKILL_GROUP&gt;/&lt;SKILL_NAME&gt;/SKILL.md</code>. Group depth is exactly one. Hooks live
-under <code>&lt;SKILL_GROUP&gt;/&lt;SKILL_NAME&gt;/hooks/</code>.</p>
-<p>Schemes 1 and 2 are auto-detected by scanning up to two directory levels deep
-for <code>SKILL.md</code> files; anything nested deeper produces the unresolved-path
-warning mentioned above instead of a guessed install.</p>
+<p><code>&lt;SKILL_GROUP&gt;/&lt;SKILL_NAME&gt;/SKILL.md</code>, where <code>&lt;SKILL_GROUP&gt;</code> may itself be
+nested up to three levels deep (for example
+<code>g1/g2/g3/&lt;SKILL_NAME&gt;/SKILL.md</code>). Group depth is at most three levels.
+Hooks live under <code>&lt;SKILL_GROUP&gt;/&lt;SKILL_NAME&gt;/hooks/</code>.</p>
+<p>Schemes 1 and 2 are auto-detected by scanning for <code>SKILL.md</code> files. The scan
+does not stop at the depth limit -- it has to look deeper in order to report
+what it finds there -- so a <code>SKILL.md</code> more than four directory levels down is
+located and then reported as an unresolved path, rather than being missed
+silently or installed under a guessed group.</p>
 <p>The scan skips two families of directory outright, resolving nothing from them
 and raising no warning: <strong>hidden</strong> directories (any name starting with <code>.</code>) and
 dependency or build trees (<code>node_modules</code>, <code>vendor</code>, <code>target</code>, <code>dist</code>). Hidden
@@ -1522,10 +1541,15 @@ fixture repository: a flat skill at
 <a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/minimal-skill/SKILL.md"><code>minimal-skill/SKILL.md</code></a>,
 a grouped one at
 <a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/lint-skill/SKILL.md"><code>tooling/lint-skill/SKILL.md</code></a>,
+two more deeply nested ones at
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/platform/lint/style-skill/SKILL.md"><code>platform/lint/style-skill/SKILL.md</code></a>
+(two group levels) and
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/platform/lint/rust/clippy-skill/SKILL.md"><code>platform/lint/rust/clippy-skill/SKILL.md</code></a>
+(three group levels, the deepest that resolves),
 an inert scheme-3 sample at
 <a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/skillkeeper.repo.yaml.example"><code>skillkeeper.repo.yaml.example</code></a>,
 and a too-deeply-nested skill at
-<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/deep-nesting/level-two/too-deep-skill/SKILL.md"><code>deep-nesting/level-two/too-deep-skill/SKILL.md</code></a>
+<a href="https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/deep-nesting/l2/l3/l4/too-deep-skill/SKILL.md"><code>deep-nesting/l2/l3/l4/too-deep-skill/SKILL.md</code></a>
 that must not resolve.</p>
 <hr />
 <h2 id="what-is-a-hook">What is a hook?<a class="headerlink" href="#what-is-a-hook" title="Permanent link">&para;</a></h2>
@@ -1558,12 +1582,12 @@ target <code>opencode.json</code>).</p>
 into the correct array (by a dotted <code>keyPath</code>, <code>hooks</code> by default) and tags
 each inserted node with a reserved ownership marker:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;hooks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;PreToolUse&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"hooks"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"PreToolUse"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;_skillkeeper&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;group/name:hookName&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;matcher&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;hooks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span>
+<span class="w">        </span><span class="nt">"_skillkeeper"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span><span class="w"> </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">"group/name:hookName"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">"matcher"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"hooks"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="w">  </span><span class="p">}</span>
