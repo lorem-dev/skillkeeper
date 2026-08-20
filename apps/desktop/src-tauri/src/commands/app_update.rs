@@ -26,14 +26,14 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 
 use skillkeeper_core::app_update::{
-    bump_between, decide, host_asset_key, preferred_kinds, should_show_dialog, Artifact, Bump,
+    asset_key, bump_between, decide, preferred_kinds, should_show_dialog, Artifact, Bump,
     DecideInput, Manifest, UpdateOffer, Version,
 };
 use skillkeeper_core::ports::Clock;
 
 use super::blocking;
 use crate::app::app_update::session::AppUpdateSession;
-use crate::app::app_update::{fetch, install, store, verify};
+use crate::app::app_update::{fetch, host, install, store, verify};
 use crate::state::AppContext;
 
 /// The self-update offer sent to the renderer.
@@ -320,7 +320,11 @@ fn decide_and_record(
     state.last_check_at = Some(ctx.clock.now() / 1000);
     state.last_check_version = Some(current.to_string());
 
-    let asset_key = host_asset_key();
+    // The MACHINE's architecture, not the one this binary was compiled for: an
+    // Intel build under Rosetta on Apple Silicon reports x86_64 and would
+    // otherwise fetch Intel artifacts forever, never moving to the native
+    // build. See `app_update::host`.
+    let asset_key = asset_key(std::env::consts::OS, host::host_arch());
     let appimage = std::env::var("APPIMAGE").is_ok();
     let kinds = preferred_kinds(std::env::consts::OS, appimage);
 

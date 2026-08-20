@@ -2,6 +2,15 @@
 
 ## Development
 
+### Fixed
+
+- The updater downloads the build for the machine's own architecture rather than
+  the one the running build was compiled for. An Intel build on Apple Silicon
+  runs under Rosetta and reports itself as Intel, so it kept fetching Intel
+  artifacts and never moved the user to the native build; the same held for an
+  x64 build under the arm64 Windows emulation. The architecture is now probed
+  from the system.
+
 ## Version 0.5.0
 
 ### Added

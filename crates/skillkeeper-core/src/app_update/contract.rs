@@ -59,7 +59,10 @@ fn the_running_hosts_key_is_one_the_manifest_carries() {
     // Ties the consumer's own lookup to the producer's output on whatever
     // machine runs the suite, rather than trusting the table above.
     let m = manifest();
-    let key = crate::app_update::host_asset_key();
+    // The compile-time target is the right thing HERE: this test asks whether
+    // the manifest covers the host the suite is running on, and the suite runs
+    // as the binary it was built as.
+    let key = crate::app_update::asset_key(std::env::consts::OS, std::env::consts::ARCH);
     assert!(
         m.versions[0].assets.contains_key(&key),
         "the published manifest has no artifacts for this host key: {key}"

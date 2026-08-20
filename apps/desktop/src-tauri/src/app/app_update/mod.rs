@@ -5,6 +5,7 @@
 //! side-effecting shell around it.
 
 pub mod fetch;
+pub mod host;
 pub mod install;
 pub mod session;
 pub mod store;
