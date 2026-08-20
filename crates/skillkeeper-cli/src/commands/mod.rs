@@ -8,4 +8,5 @@ pub mod project;
 pub mod repo;
 pub mod resolvewarnings;
 pub mod skill;
+pub mod update;
 pub mod version;

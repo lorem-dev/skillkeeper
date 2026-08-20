@@ -12,6 +12,7 @@ import type {
   McpIdentity,
   Scope,
 } from './generated/core';
+import type { AppUpdateOffer } from './generated/AppUpdateOffer';
 
 // -- editors -----------------------------------------------------------------
 
@@ -45,7 +46,7 @@ export interface AvailableSkill {
   readonly repoName: string;
   /** Source repository remote URL; the stable identity for matching installs. */
   readonly remote: string;
-  /** Optional one-level group (SkillId.group). */
+  /** Optional group path, up to three levels deep (SkillId.group). */
   readonly group?: string;
   readonly name: string;
   readonly version?: string;
@@ -61,9 +62,9 @@ export interface AvailableSkill {
  *
  * Resolution never fails: it reports warnings instead. A warning is the only
  * signal that a `SKILL.md` exists but cannot be installed -- nested deeper than
- * one group level, a malformed manifest, an unparsable `skillkeeper.repo.yaml`.
- * Without surfacing it, such a skill is simply absent from the tree with no
- * explanation.
+ * the maximum group depth, a malformed manifest, an unparsable
+ * `skillkeeper.repo.yaml`. Without surfacing it, such a skill is simply absent
+ * from the tree with no explanation.
  */
 export interface SkillResolveWarning {
   readonly repoId: string;
@@ -293,6 +294,70 @@ export interface TerminalStatus {
   readonly error?: string;
 }
 
+// -- app update ----------------------------------------------------------
+
+// The DTO itself IS ts-rs generated (see `commands/app_update.rs`), unlike the
+// rest of this file -- re-exported from its single generated file (there is no
+// barrel for it the way `generated/core` and `generated/config` have one,
+// since it is the only ts-rs type the Tauri crate itself exports).
+export type { AppUpdateOffer } from './generated/AppUpdateOffer';
+
+/**
+ * `app_update_check`'s result: the decided offer (if any) plus whether this
+ * attempt actually reached the network. Not ts-rs generated: a plain
+ * `Serialize` struct in `commands/app_update.rs`, same as `AppUpdateProgress`
+ * below.
+ *
+ * `suppressed` is `true` for either of the backend's automatic-check gates: a
+ * request inside the 24-hour interval since the last real
+ * attempt. Either way `offer` is whatever was already known rather than a
+ * fresh decision, which is why the task list shows this outcome as `skipped`
+ * rather than `done` -- see `runAppUpdateCheck` in `app/store/store.ts`.
+ */
+export interface CheckOutcome {
+  readonly offer: AppUpdateOffer | null;
+  readonly suppressed: boolean;
+}
+
+/** `appUpdate:progress` payload. Not ts-rs generated: a private struct in
+ *  `commands/app_update.rs`, same as `SshKeyDto` below. */
+export interface AppUpdateProgress {
+  readonly percent: number;
+}
+
+/** `appUpdate:ready` payload. */
+export interface AppUpdateReady {
+  readonly version: string;
+  readonly path: string;
+}
+
+/** `appUpdate:failed` payload. `phase` says which half failed, so the
+ *  renderer can tell a network/verification failure downloading the artifact
+ *  apart from a failure installing one already verified (e.g. macOS refusing
+ *  to copy the app into place).
+ *
+ *  `path`/`offer` are present ONLY for a marker-based install failure
+ *  discovered on a fresh launch: on the two platforms where an install
+ *  replaces the running application, a failure like this happened inside a
+ *  helper script after the PREVIOUS run had already exited, so the ready
+ *  dialog carrying the manual fallback never opened in this session at all.
+ *  These two fields are what `useAppUpdateSchedule` needs to reopen it
+ *  itself. Absent for a download failure, and for a same-session install
+ *  failure, where the ready dialog is already open.
+ *
+ *  `installReady` says whether the backend re-verified the preserved
+ *  artifact and rehydrated its session, so a same-click "Install now" from
+ *  the reopened dialog can retry without a fresh download. Always present
+ *  (defaults to `false` when irrelevant, e.g. a download failure); only
+ *  meaningful together with `path`. */
+export interface AppUpdateFailed {
+  readonly message: string;
+  readonly phase: 'download' | 'install';
+  readonly path?: string;
+  readonly offer?: AppUpdateOffer;
+  readonly installReady: boolean;
+}
+
 // -- ssh key -------------------------------------------------------------
 
 /**
@@ -308,5 +373,9 @@ export interface SshKeyDto {
     | 'notAKey'
     | 'unencrypted'
     | 'locked'
-    | 'unlocked';
+    | 'unlocked'
+    | 'puttyLocked'
+    | 'puttyUnencrypted'
+    | 'puttyInAgent'
+    | 'puttyNoAgent';
 }

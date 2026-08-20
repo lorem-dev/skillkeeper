@@ -1,0 +1,37 @@
+// The update badge sits beside the version on the status bar's leading edge
+// (see StatusBar.scss's .sk-statusbar__lead).
+//
+// There is deliberately NO percentage max-width here. A percentage resolves
+// against the containing block, which for this flex item is `.sk-statusbar__lead`
+// -- and that wrapper has no width of its own, being sized by its own content.
+// So `max-width: 40%` was self-referential: the badge asked for 40% of a box
+// whose width the badge itself determined, which collapsed it to a few
+// characters at EVERY window width, not just narrow ones.
+//
+// Sizing is left to flex instead. The badge takes its content width while the
+// bar has room; when the bar runs short, the wrapper's `min-width: 0` lets the
+// leading region shrink and the label below ellipsizes. The trailing buttons
+// carry `flex: none` so the shrinking lands here rather than on them.
+.sk-update-badge {
+  font-size: 11px;
+  height: 18px;
+  padding: 0 var(--sk-space-2);
+  border-radius: var(--sk-radius-pill);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+// `Button` lays its content out as a centred flex row, so the label needs its
+// own block-level element to truncate against: `text-overflow: ellipsis` only
+// ever applies to a block container's own inline content, never to an
+// overflowing flex child. `min-width: 0` overrides the flex default (`auto`,
+// which refuses to shrink below content size) so this element can actually
+// shrink to the button's max-width and trigger the ellipsis on the trailing
+// edge, instead of the label spilling past both edges of the centred button.
+.sk-update-badge__label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

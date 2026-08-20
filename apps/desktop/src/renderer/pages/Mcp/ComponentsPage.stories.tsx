@@ -74,6 +74,16 @@ const AVAILABLE: AvailableMcp[] = [
     def: { name: 'live-feed', type: 'sse', url: 'https://mcp.example.com/sse/stream' },
     hash: 'sha256:repo-feed',
   },
+  // A nested group: renders as a "platform" branch containing a "lint"
+  // branch, exercising the multi-level nesting `buildMcpRepoTree` now
+  // produces from a `/`-joined group path.
+  {
+    repoId: 'repo-1',
+    remote: 'git@github.com:acme/team-skills.git',
+    group: 'platform/lint',
+    def: { name: 'rustfmt-check', type: 'stdio', command: 'rustfmt-mcp', args: ['--check'] },
+    hash: 'sha256:repo-rustfmt',
+  },
 ];
 
 // This page never compares an install's hash to a preset's (no Update badge

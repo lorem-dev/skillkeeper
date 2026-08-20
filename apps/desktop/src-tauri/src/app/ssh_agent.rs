@@ -7,9 +7,11 @@
 //! Windows relies on the OS OpenSSH agent (a named pipe) and is only reused,
 //! never spawned. Default keys are loaded once, best-effort, without ever
 //! blocking on a passphrase. No passphrase prompting (deferred), matching the
-//! TypeScript.
+//! TypeScript. Also loads and unloads individual keys (e.g. converted from a
+//! PuTTY file) by piping them to `ssh-add`, so they never touch disk.
 
-use std::process::Command;
+use std::io::Write;
+use std::process::{Command, Stdio};
 use std::sync::Mutex;
 
 /// PID of an agent WE spawned (`None` when reusing an inherited one). Killed on
@@ -153,9 +155,281 @@ pub fn stop_ssh_agent() {
     let _ = Command::new("ssh-agent").arg("-k").output();
 }
 
+/// How long a key loaded from a PuTTY file stays in the agent: twelve hours.
+///
+/// Long enough never to expire inside a working session, short enough that a
+/// process that dies without running its teardown does not leave the key in a
+/// long-lived user agent indefinitely. The app removes the key on exit anyway;
+/// this is the backstop for the case where it cannot.
+pub const AGENT_KEY_TTL_SECS: u64 = 12 * 60 * 60;
+
+/// The arguments for adding a key from stdin. Split out so the shape is
+/// testable without an agent to talk to.
+pub(crate) fn add_args(ttl_secs: u64) -> Vec<String> {
+    vec!["-t".to_string(), ttl_secs.to_string(), "-".to_string()]
+}
+
+/// Add an OpenSSH-format private key to the session agent, reading it from a
+/// pipe so it never becomes a file.
+///
+/// # Errors
+///
+/// The agent's own message when `ssh-add` fails, or the spawn error when it
+/// cannot be run at all. Both are diagnostics for the log, not renderer-facing
+/// codes -- the caller maps them.
+pub fn add_from_memory(openssh: &str, ttl_secs: u64) -> Result<(), String> {
+    let mut command = Command::new("ssh-add");
+    command
+        .args(add_args(ttl_secs))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped());
+    crate::util::hide_console(&mut command);
+    let mut child = command.spawn().map_err(|e| e.to_string())?;
+    let write_result: Result<(), String> = (|| {
+        let mut stdin = child.stdin.take().ok_or("ssh-add stdin unavailable")?;
+        stdin
+            .write_all(openssh.as_bytes())
+            .map_err(|e| e.to_string())?;
+        Ok(())
+        // The handle drops here, at the end of this closure, which closes the
+        // pipe; ssh-add reads to EOF, so without this it would wait forever
+        // and so would we.
+    })();
+    if let Err(e) = write_result {
+        // Reap the child on every error path: `Child` is not waited on drop,
+        // so skipping this (e.g. on the EPIPE from ssh-add exiting before it
+        // reads) would leave a zombie process behind. The wait outcome itself
+        // is discarded -- the write error is the one worth reporting.
+        let _ = child.wait();
+        return Err(e);
+    }
+    let output = child.wait_with_output().map_err(|e| e.to_string())?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
+}
+
+/// The algorithm and key blob of a public-key line, dropping the comment.
+///
+/// The comment is the agent's business: `ssh-add -L` prints whatever comment
+/// the key was added with, which a user can change, so the key material is the
+/// only part that says whether two lines are the same key. `None` for a line
+/// with fewer than two fields, which is how the prose `ssh-add` prints when it
+/// holds nothing ("The agent has no identities.") fails to match anything.
+fn key_material(line: &str) -> Option<(&str, &str)> {
+    let mut fields = line.split_whitespace();
+    let algorithm = fields.next()?;
+    let blob = fields.next()?;
+    Some((algorithm, blob))
+}
+
+/// Whether `listing` -- the stdout of `ssh-add -L` -- contains `public_line`.
+///
+/// Split out from [`key_status`] so the comparison is testable with no agent to
+/// talk to, the same way [`add_args`] and [`parse_agent_env`] are.
+fn lists_key(listing: &str, public_line: &str) -> bool {
+    let Some(wanted) = key_material(public_line) else {
+        return false;
+    };
+    listing
+        .lines()
+        .any(|line| key_material(line) == Some(wanted))
+}
+
+/// What asking the agent about one key established.
+///
+/// Three states rather than a boolean because the caller clears a persistent
+/// record with the answer, and "the agent says no" and "the agent could not be
+/// asked" must not lead to the same act: evicting a key that is loaded and
+/// working costs the user a passphrase they already gave.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AgentKeyStatus {
+    /// The agent answered, and it is holding this key.
+    Held,
+    /// The agent answered, and it is not.
+    Absent,
+    /// Nothing was established: no agent, no `ssh-add`, or no exit code.
+    Unknown,
+}
+
+/// What `ssh-add -L`'s exit `code` and `listing` amount to for `public_line`.
+///
+/// The mapping is the substance of the check, so it is split from the
+/// subprocess and tested directly:
+///
+/// - **0** -- the agent produced a listing. Whether our key is in it is the
+///   answer.
+/// - **1** -- the agent answered that it holds nothing at all (it prints
+///   "The agent has no identities."). That is a real answer, and our key is
+///   certainly not among nothing, so it is [`Absent`](AgentKeyStatus::Absent)
+///   and may clear a record.
+/// - **anything else** -- 2 is `ssh-add`'s "could not open a connection to your
+///   authentication agent", and `None` is a process killed by a signal. Neither
+///   established anything, so neither may clear a record.
+fn status_from_exit(code: Option<i32>, listing: &str, public_line: &str) -> AgentKeyStatus {
+    match code {
+        Some(0) => {
+            if lists_key(listing, public_line) {
+                AgentKeyStatus::Held
+            } else {
+                AgentKeyStatus::Absent
+            }
+        }
+        Some(1) => AgentKeyStatus::Absent,
+        _ => AgentKeyStatus::Unknown,
+    }
+}
+
+/// Ask the agent whether it is holding the key with this `public_line`.
+///
+/// Never panics and never blocks on input: `ssh-add` that cannot be run at all
+/// is [`AgentKeyStatus::Unknown`], exactly like an agent that cannot be
+/// reached. See [`status_from_exit`] for what each outcome means.
+pub fn key_status(public_line: &str) -> AgentKeyStatus {
+    let mut command = Command::new("ssh-add");
+    command
+        .arg("-L")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    crate::util::hide_console(&mut command);
+    // Not spawned at all: `ssh-add` is missing from PATH, or the OS refused.
+    // Nothing was established.
+    let Ok(output) = command.output() else {
+        return AgentKeyStatus::Unknown;
+    };
+    status_from_exit(
+        output.status.code(),
+        &String::from_utf8_lossy(&output.stdout),
+        public_line,
+    )
+}
+
+/// Remove a key from the agent by its public line, again over a pipe.
+///
+/// Best-effort by nature: the agent may be gone, the key may have expired, or
+/// the user may have cleared it by hand. All of those are the desired end
+/// state, so the caller ignores the error.
+pub fn remove(public_line: &str) -> Result<(), String> {
+    let mut command = Command::new("ssh-add");
+    command
+        .args(["-d", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    crate::util::hide_console(&mut command);
+    let mut child = command.spawn().map_err(|e| e.to_string())?;
+    let write_result: Result<(), String> = (|| {
+        let mut stdin = child.stdin.take().ok_or("ssh-add stdin unavailable")?;
+        stdin
+            .write_all(public_line.as_bytes())
+            .map_err(|e| e.to_string())?;
+        stdin.write_all(b"\n").map_err(|e| e.to_string())?;
+        Ok(())
+        // Same reasoning as add_from_memory: the handle drops here, before we
+        // reap the child, so ssh-add sees EOF instead of blocking forever.
+    })();
+    if let Err(e) = write_result {
+        // Same reasoning as add_from_memory: always reap the child so a
+        // write failure never leaves a zombie process behind.
+        let _ = child.wait();
+        return Err(e);
+    }
+    let status = child.wait().map_err(|e| e.to_string())?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err("ssh-add -d failed".to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A public line as `ssh-add -L` prints it.
+    const OURS: &str =
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKfake0000000000000000000000000000000 skillkeeper";
+    const THEIRS: &str =
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQother000000000000000000000000000000 someone@host";
+
+    #[test]
+    fn our_key_is_found_among_the_agents_other_identities() {
+        let listing = format!("{THEIRS}\n{OURS}\n");
+        assert!(lists_key(&listing, OURS));
+    }
+
+    /// The comment is the agent's business, not ours: `ssh-add -L` prints
+    /// whatever comment the key was added with, and the key material is what
+    /// says whether this is the same key.
+    #[test]
+    fn a_different_comment_is_still_our_key() {
+        let listing = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKfake0000000000000000000000000000000 renamed-by-someone\n";
+        assert!(lists_key(listing, OURS));
+    }
+
+    #[test]
+    fn a_listing_without_our_key_does_not_hold_it() {
+        assert!(!lists_key(&format!("{THEIRS}\n"), OURS));
+    }
+
+    #[test]
+    fn an_empty_listing_holds_nothing() {
+        assert!(!lists_key("", OURS));
+        assert!(!lists_key("\n\n", OURS));
+    }
+
+    /// What `ssh-add -L` prints when the agent is running but empty. It is
+    /// prose, not a key line, and must never be mistaken for one.
+    #[test]
+    fn an_agent_with_no_identities_holds_nothing() {
+        assert!(!lists_key("The agent has no identities.\n", OURS));
+    }
+
+    /// A public line we could not have produced answers no rather than
+    /// matching the first prose line it happens to line up with.
+    #[test]
+    fn a_malformed_public_line_matches_nothing() {
+        assert!(!lists_key(&format!("{OURS}\n"), ""));
+        assert!(!lists_key(&format!("{OURS}\n"), "ssh-ed25519"));
+    }
+
+    /// The exit code is what separates "the agent answered and does not have
+    /// it" from "the agent could not be asked", and only the first may clear a
+    /// record. `ssh-add -L` exits 1 when it holds nothing -- a real answer --
+    /// and 2 when it cannot reach an agent at all.
+    #[test]
+    fn only_an_answer_from_the_agent_counts_as_one() {
+        let listing = format!("{THEIRS}\n{OURS}\n");
+        assert_eq!(
+            status_from_exit(Some(0), &listing, OURS),
+            AgentKeyStatus::Held
+        );
+        assert_eq!(
+            status_from_exit(Some(0), &format!("{THEIRS}\n"), OURS),
+            AgentKeyStatus::Absent
+        );
+        // Exit 0 with nothing to show is still an answer.
+        assert_eq!(status_from_exit(Some(0), "", OURS), AgentKeyStatus::Absent);
+        // "The agent has no identities." -- it answered, and our key is not
+        // among the nothing it holds.
+        assert_eq!(
+            status_from_exit(Some(1), "The agent has no identities.\n", OURS),
+            AgentKeyStatus::Absent
+        );
+        // Could not connect to an agent: nothing was established, so nothing
+        // may be concluded.
+        assert_eq!(status_from_exit(Some(2), "", OURS), AgentKeyStatus::Unknown);
+        assert_eq!(
+            status_from_exit(Some(255), "", OURS),
+            AgentKeyStatus::Unknown
+        );
+        // Killed by a signal: no exit code, no answer.
+        assert_eq!(status_from_exit(None, "", OURS), AgentKeyStatus::Unknown);
+    }
 
     #[test]
     fn parses_both_sock_and_pid() {
@@ -205,5 +479,17 @@ mod tests {
         // assignment is captured.
         let stdout = "SSH_AUTH_SOCK=/run/x; export SSH_AUTH_SOCK;";
         assert_eq!(parse_agent_env(stdout).sock, Some("/run/x".to_string()));
+    }
+
+    #[test]
+    fn add_args_ask_for_a_ttl_and_read_from_stdin() {
+        // `-` is what makes ssh-add read the key from stdin, which is the whole
+        // point: the converted key must never become a file.
+        assert_eq!(add_args(43_200), vec!["-t", "43200", "-"]);
+    }
+
+    #[test]
+    fn the_default_ttl_is_twelve_hours() {
+        assert_eq!(AGENT_KEY_TTL_SECS, 12 * 60 * 60);
     }
 }

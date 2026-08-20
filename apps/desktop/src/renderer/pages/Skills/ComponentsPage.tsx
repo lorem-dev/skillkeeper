@@ -201,7 +201,6 @@ export function SkillsComponentsPage() {
             className="sk-skills-tree"
             nodes={decorated}
             checkable
-            checkboxLevels={[1, 2]}
             checkedIds={repoChecked}
             onCheckedChange={setRepoChecked}
             defaultExpandedIds={expandedIds}

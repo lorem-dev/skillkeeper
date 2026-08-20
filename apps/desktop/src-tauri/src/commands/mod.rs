@@ -6,6 +6,7 @@
 //! Electron IPC channels (dots replaced by underscores) for a mechanical
 //! frontend rewire in Phase 4.
 
+pub mod app_update;
 pub mod config;
 pub mod dialog;
 pub mod editors;
@@ -95,6 +96,7 @@ pub(crate) mod test_support {
             let paths = AppPaths {
                 config_yaml: dir.join("config.yaml").to_string_lossy().into_owned(),
                 state_json: dir.join("state.json").to_string_lossy().into_owned(),
+                app_update_json: dir.join("app-update.json").to_string_lossy().into_owned(),
                 repositories_dir: dir.join("repositories").to_string_lossy().into_owned(),
             };
             // Point the host home at an isolated dir so global-scope agent

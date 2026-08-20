@@ -17,6 +17,12 @@ use crate::state::AppContext;
 pub fn run() {
     let context = AppContext::new().expect("failed to build the SkillKeeper app context");
 
+    // A crash or forced quit can leave a stale (possibly 150 MB) update
+    // download behind; the OS temp reaper cannot help since the download
+    // lives in app-data, not the OS temp dir. Sweep it before anything else
+    // touches the directory.
+    commands::app_update::sweep_stale_downloads(&context);
+
     // Override the process UI language before AppKit initializes so the standard
     // menu items macOS injects itself (the Window tiling group) localize to the
     // configured language, not the system one. Mirrors `menu::current_lang`, but
@@ -70,7 +76,7 @@ pub fn run() {
             // macOS: make Cmd+Q / Dock-Quit / the Quit menu item exit fast
             // instead of dragging through AppKit's ~15s terminate: teardown.
             #[cfg(target_os = "macos")]
-            app::install_fast_terminate();
+            app::install_fast_terminate(&app.state::<Arc<AppContext>>().ssh_key);
             app::watcher::start(app.handle().clone());
             // Pump the terminal reader thread's output to the frontend. The
             // manager can only hand out its event receiver once; `setup` is the
@@ -108,6 +114,12 @@ pub fn run() {
             commands::onboarding::onboarding_get,
             commands::onboarding::onboarding_set,
             commands::onboarding::onboarding_menu_sync,
+            commands::app_update::app_update_check,
+            commands::app_update::app_update_check_now,
+            commands::app_update::app_update_download,
+            commands::app_update::app_update_install,
+            commands::app_update::app_update_discard,
+            commands::app_update::app_update_dismiss,
             commands::state_read::repositories_list,
             commands::state_read::projects_list,
             commands::state_read::skills_list,
@@ -140,6 +152,7 @@ pub fn run() {
             commands::projects::projects_detect_agents,
             commands::dialog::dialog_select_folder,
             commands::dialog::dialog_select_ssh_key,
+            commands::dialog::dialog_save_ssh_key,
             commands::ssh_key::ssh_key_state,
             commands::ssh_key::ssh_key_select,
             commands::ssh_key::ssh_key_clear,
@@ -147,6 +160,7 @@ pub fn run() {
             commands::ssh_key::ssh_key_unlock,
             commands::ssh_key::ssh_key_forget,
             commands::ssh_key::ssh_key_cancel_unlock,
+            commands::ssh_key::ssh_key_begin_export,
             commands::terminal::terminal_start,
             commands::terminal::terminal_status,
             commands::terminal::terminal_input,

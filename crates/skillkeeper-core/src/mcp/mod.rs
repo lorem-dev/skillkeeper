@@ -8,6 +8,7 @@
 //! surface of the TypeScript `packages/core/src/mcp/index.ts` barrel.
 
 pub mod config;
+pub mod discovery;
 pub mod gitignore_ensure;
 pub mod hashing;
 pub mod install;

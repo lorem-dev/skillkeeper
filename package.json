@@ -1,6 +1,6 @@
 {
   "name": "skillkeeper",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "Install and manage skills and hooks for AI coding agents",
@@ -16,7 +16,7 @@
   },
   "packageManager": "pnpm@11.9.0",
   "engines": {
-    "node": ">=22.13"
+    "node": ">=24"
   },
   "scripts": {
     "postinstall": "node scripts/gen-i18n.mjs",
@@ -43,21 +43,22 @@
     "@eslint/js": "10.0.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/jest": "30.0.0",
-    "@types/node": "26.0.1",
-    "@vitest/coverage-v8": "4.1.9",
-    "eslint": "10.6.0",
+    "@types/node": "24.13.3",
+    "@vitest/coverage-v8": "4.1.11",
+    "eslint": "10.8.1",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-boundaries": "6.0.2",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-boundaries": "7.2.0",
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "7.1.1",
-    "eslint-plugin-react-refresh": "0.5.3",
-    "gettext-parser": "^8.0.0",
+    "eslint-plugin-react-refresh": "0.5.4",
+    "gettext-parser": "^9.1.1",
     "jest": "30.4.2",
     "jimp": "^1.6.1",
-    "prettier": "3.9.0",
+    "prettier": "3.9.6",
     "ts-jest": "29.4.12",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.62.0",
-    "vitest": "4.1.9"
+    "typescript-eslint": "8.67.0",
+    "vitest": "4.1.11"
   }
 }

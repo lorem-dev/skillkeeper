@@ -11,7 +11,7 @@
 import { Icon } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { fuzzyMatches } from '@/shared/lib';
-import { GLOBAL_SCOPE_ID, applyScope, scopeIdOf } from '@/domain';
+import { GLOBAL_SCOPE_ID, applyScope, groupSegments, nestByGroup, scopeIdOf } from '@/domain';
 import type { ApplyScope } from '@/domain';
 import type {
   AgentKind,
@@ -24,6 +24,25 @@ import type {
 
 const SEP = '::';
 
+/**
+ * Escape one field before it joins a `::`-separated key.
+ *
+ * The separator alone is not enough: nothing forbids a group segment or a skill
+ * name from containing `::` (the core validates depth, empty segments, `.`/`..`,
+ * backslashes and stray whitespace, but no character set). Without escaping,
+ * `{group: 'a::b', name: 'c'}` and `{group: 'a', name: 'b::c'}` produce the SAME
+ * key, so two different skills share one tree node and one checkbox, and a
+ * fixed-arity split silently truncates a name.
+ *
+ * `encodeURIComponent` escapes `:` to `%3A`, so no encoded field can contain the
+ * separator and the split is exact. It also escapes the `/` inside a group path,
+ * which `dec` restores.
+ */
+const enc = (part: string): string => encodeURIComponent(part);
+
+/** Reverse {@link enc} for one field of a parsed key. */
+const dec = (part: string): string => decodeURIComponent(part);
+
 const repoIcon = <Icon name="repositories" size={18} />;
 const groupIcon = <Icon name="skill-group" size={18} />;
 const skillIcon = <Icon name="skills" size={18} />;
@@ -32,8 +51,14 @@ const globalIcon = <Icon name="global" size={18} />;
 
 /** Stable checkbox key for a repo-mode skill leaf. */
 export function repoSkillKey(repoId: string, group: string | undefined, name: string): string {
-  return [repoId, group ?? '', name].join(SEP);
+  return [repoId, group ?? '', name].map(enc).join(SEP);
 }
+
+// The branch-node ids below deliberately do NOT encode their fields. They are
+// never parsed back, and their non-group fields are generated UUIDs, which
+// cannot contain the separator -- so the group is the only free field and no two
+// distinct inputs can collide. Leaving them raw keeps an id readable while
+// debugging (`<uuid>::platform/lint`, not `<uuid>::platform%2Flint`).
 
 /** Stable id for a repo-mode repository root node. */
 export function repoNodeId(repoId: string): string {
@@ -67,7 +92,7 @@ export function projectSkillKey(
   group: string | undefined,
   name: string,
 ): string {
-  return [projectId, repoId, group ?? '', name].join(SEP);
+  return [projectId, repoId, group ?? '', name].map(enc).join(SEP);
 }
 
 /** A skill reference parsed from a checkbox key. */
@@ -77,15 +102,15 @@ export interface ParsedSkillRef {
   readonly name: string;
 }
 
-/** Parse a repo-mode key `repoId::group::name`. */
+/** Parse a repo-mode key `repoId::group::name`. Each field is percent-encoded. */
 export function parseRepoSkillKey(key: string): ParsedSkillRef {
-  const [repoId = '', group = '', name = ''] = key.split(SEP);
+  const [repoId = '', group = '', name = ''] = key.split(SEP).map(dec);
   return { repoId, group: group === '' ? undefined : group, name };
 }
 
-/** Parse a project-mode key `projectId::repoId::group::name`. */
+/** Parse a project-mode key `projectId::repoId::group::name`, each field encoded. */
 export function parseProjectSkillKey(key: string): ParsedSkillRef & { readonly projectId: string } {
-  const [projectId = '', repoId = '', group = '', name = ''] = key.split(SEP);
+  const [projectId = '', repoId = '', group = '', name = ''] = key.split(SEP).map(dec);
   return { projectId, repoId, group: group === '' ? undefined : group, name };
 }
 
@@ -140,29 +165,19 @@ export function buildRepoTree(available: readonly AvailableSkill[], repos: reado
     const skills = byRepo.get(repo.id);
     if (skills === undefined || skills.length === 0) continue;
 
-    const groups = new Map<string, AvailableSkill[]>();
-    const ungrouped: AvailableSkill[] = [];
-    for (const s of skills) {
-      if (s.group !== undefined && s.group !== '') pushTo(groups, s.group, s);
-      else ungrouped.push(s);
-    }
-
-    const children: TreeNode[] = [];
-    for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-      children.push({
-        id: repoGroupNodeId(repo.id, group),
-        label: group,
+    const children = nestByGroup(skills, {
+      groupOf: (s) => s.group,
+      compare: byName,
+      makeLeaves: (s) => [
+        { id: repoSkillKey(repo.id, s.group, s.name), label: s.name, icon: skillIcon },
+      ],
+      makeGroup: (path, label, kids) => ({
+        id: repoGroupNodeId(repo.id, path),
+        label,
         icon: groupIcon,
-        children: [...gs].sort(byName).map((s) => ({
-          id: repoSkillKey(repo.id, s.group, s.name),
-          label: s.name,
-          icon: skillIcon,
-        })),
-      });
-    }
-    for (const s of [...ungrouped].sort(byName)) {
-      children.push({ id: repoSkillKey(repo.id, undefined, s.name), label: s.name, icon: skillIcon });
-    }
+        children: kids,
+      }),
+    });
 
     nodes.push({ id: repoNodeId(repo.id), label: repo.name, icon: repoIcon, selectable: false, children });
   }
@@ -191,29 +206,23 @@ export function buildProjectTree(
       const skills = byRepo.get(repo.id);
       if (skills === undefined || skills.length === 0) continue;
 
-      const groups = new Map<string, AvailableSkill[]>();
-      const ungrouped: AvailableSkill[] = [];
-      for (const s of skills) {
-        if (s.group !== undefined && s.group !== '') pushTo(groups, s.group, s);
-        else ungrouped.push(s);
-      }
-
-      const children: TreeNode[] = [];
-      for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-        children.push({
-          id: projectGroupNodeId(scope.id, repo.id, group),
-          label: group,
-          icon: groupIcon,
-          children: [...gs].sort(byName).map((s) => ({
+      const children = nestByGroup(skills, {
+        groupOf: (s) => s.group,
+        compare: byName,
+        makeLeaves: (s) => [
+          {
             id: projectSkillKey(scope.id, repo.id, s.group, s.name),
             label: s.name,
             icon: skillIcon,
-          })),
-        });
-      }
-      for (const s of [...ungrouped].sort(byName)) {
-        children.push({ id: projectSkillKey(scope.id, repo.id, undefined, s.name), label: s.name, icon: skillIcon });
-      }
+          },
+        ],
+        makeGroup: (path, label, kids) => ({
+          id: projectGroupNodeId(scope.id, repo.id, path),
+          label,
+          icon: groupIcon,
+          children: kids,
+        }),
+      });
 
       repoNodes.push({ id: projectRepoNodeId(scope.id, repo.id), label: repo.name, icon: repoIcon, children });
     }
@@ -429,7 +438,12 @@ export function buildProjectModel(
             repoId,
             repoName,
           };
-          for (const nid of [leafId, projectGroupNodeId(scope.id, repoId, entry.group ?? ''), repoBranchId]) {
+          // Every ancestor group branch, so an update badge on `a` counts a skill
+          // under `a/b/c`. Previously this walked one group level only.
+          const groupNodeIds = groupSegments(entry.group).map((_, i, segs) =>
+            projectGroupNodeId(scope.id, repoId, segs.slice(0, i + 1).join('/')),
+          );
+          for (const nid of [leafId, ...groupNodeIds, repoBranchId]) {
             addUpdate(nid, upd);
           }
         }
@@ -441,30 +455,18 @@ export function buildProjectModel(
         };
       };
 
-      const groups = new Map<string, { leafId: string; entry: LeafEntry }[]>();
-      const ungrouped: { leafId: string; entry: LeafEntry }[] = [];
-      for (const it of items) {
-        if (it.entry.group !== undefined && it.entry.group !== '') {
-          const list = groups.get(it.entry.group);
-          if (list !== undefined) list.push(it);
-          else groups.set(it.entry.group, [it]);
-        } else ungrouped.push(it);
-      }
-
-      const children: TreeNode[] = [];
-      for (const [group, gs] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-        const leaves = [...gs].sort((a, b) => a.entry.name.localeCompare(b.entry.name)).map(makeLeaf);
-        children.push({
-          id: projectGroupNodeId(scope.id, repoId, group),
-          label: group,
+      const children = nestByGroup(items, {
+        groupOf: (it) => it.entry.group,
+        compare: (a, b) => a.entry.name.localeCompare(b.entry.name),
+        makeLeaves: (it) => [makeLeaf(it)],
+        makeGroup: (path, label, kids) => ({
+          id: projectGroupNodeId(scope.id, repoId, path),
+          label,
           icon: groupIcon,
-          muted: leaves.every((l) => l.muted === true),
-          children: leaves,
-        });
-      }
-      for (const it of [...ungrouped].sort((a, b) => a.entry.name.localeCompare(b.entry.name))) {
-        children.push(makeLeaf(it));
-      }
+          muted: kids.every((k) => k.muted === true),
+          children: kids,
+        }),
+      });
 
       repoNodes.push({
         id: repoBranchId,

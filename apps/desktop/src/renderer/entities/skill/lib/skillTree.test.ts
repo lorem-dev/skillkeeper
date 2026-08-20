@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { GLOBAL_SCOPE_ID } from '@/domain';
-import type { AvailableSkill, InstallManifest, Project, Repository } from '@/services/bridge';
+import type { AgentTarget, AvailableSkill, InstallManifest, Project, Repository } from '@/services/bridge';
 import {
   buildProjectModel,
   buildProjectTree,
+  buildRepoTree,
   installedAgentsByProject,
   installedLeafIds,
+  parseProjectSkillKey,
+  parseRepoSkillKey,
+  projectGroupNodeId,
   projectNodeId,
   projectSkillKey,
+  repoGroupNodeId,
+  repoSkillKey,
 } from './skillTree';
 
 const repo: Repository = {
@@ -176,5 +182,171 @@ describe('installedAgentsByProject', () => {
     expect(installedAgentsByProject([manifest('global')])).toEqual({
       [GLOBAL_SCOPE_ID]: ['claude'],
     });
+  });
+});
+
+function repoFixture(over: Partial<Repository> & { id: string; name: string }): Repository {
+  return {
+    url: `git@example.com:acme/${over.id}.git`,
+    kind: 'generic',
+    transport: 'ssh',
+    lfs: false,
+    localPath: `/repos/${over.id}`,
+    ...over,
+  };
+}
+
+const r1 = repoFixture({ id: 'r1', name: 'acme/skills' });
+
+function skill(name: string, group?: string, contentHash = 'sha256:a'): AvailableSkill {
+  return {
+    repoId: 'r1',
+    repoName: 'acme/skills',
+    remote: r1.url,
+    group,
+    name,
+    contentHash,
+    hasGuidance: false,
+  };
+}
+
+describe('buildRepoTree with nested groups', () => {
+  it('nests a three-level group as three branches under the repo', () => {
+    const [repoNode] = buildRepoTree([skill('clippy', 'platform/lint/rust')], [r1]);
+
+    const platform = repoNode!.children![0]!;
+    expect(platform.label).toBe('platform');
+    expect(platform.id).toBe(repoGroupNodeId('r1', 'platform'));
+
+    const lint = platform.children![0]!;
+    expect(lint.label).toBe('lint');
+    expect(lint.id).toBe(repoGroupNodeId('r1', 'platform/lint'));
+
+    const rust = lint.children![0]!;
+    expect(rust.label).toBe('rust');
+    expect(rust.children![0]!.label).toBe('clippy');
+  });
+
+  it('keeps a nested leaf key parseable back to its full group path', () => {
+    const [repoNode] = buildRepoTree([skill('clippy', 'platform/lint/rust')], [r1]);
+    const leaf = repoNode!.children![0]!.children![0]!.children![0]!.children![0]!;
+
+    expect(parseRepoSkillKey(leaf.id)).toEqual({
+      repoId: 'r1',
+      group: 'platform/lint/rust',
+      name: 'clippy',
+    });
+  });
+
+  it('shares a branch between a one-level and a three-level skill', () => {
+    const [repoNode] = buildRepoTree(
+      [skill('clippy', 'platform/lint/rust'), skill('style', 'platform')],
+      [r1],
+    );
+
+    expect(repoNode!.children).toHaveLength(1);
+    // Inside `platform`: the `lint` branch, then `platform`'s own leaf.
+    expect(repoNode!.children![0]!.children!.map((n) => n.label)).toEqual(['lint', 'style']);
+  });
+});
+
+describe('buildProjectModel update roll-up', () => {
+  const project: Project = {
+    id: 'p1',
+    name: 'app',
+    path: '/projects/p1',
+    addedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  const target: AgentTarget = { agent: 'claude', scope: 'project', projectId: 'p1' };
+
+  const installed: InstallManifest = {
+    skillId: { group: 'a/b/c', name: 'clippy' },
+    target,
+    destinationRoot: '/projects/p1/.claude/skills',
+    sourceRepoId: 'r1',
+    sourceRemote: r1.url,
+    contentHash: 'sha256:old',
+    installedAt: '2026-01-01T00:00:00.000Z',
+    files: [],
+    hookEdits: [],
+  };
+
+  it('rolls an update up through every ancestor group node', () => {
+    const model = buildProjectModel(
+      [skill('clippy', 'a/b/c', 'sha256:new')],
+      [r1],
+      [r1],
+      [project],
+      [installed],
+      null,
+    );
+
+    const ids = [...model.updatesByNode.keys()];
+    expect(ids).toContain(projectGroupNodeId('p1', 'r1', 'a'));
+    expect(ids).toContain(projectGroupNodeId('p1', 'r1', 'a/b'));
+    expect(ids).toContain(projectGroupNodeId('p1', 'r1', 'a/b/c'));
+  });
+
+  it('records no group node for an ungrouped skill', () => {
+    const model = buildProjectModel(
+      [skill('minimal', undefined, 'sha256:new')],
+      [r1],
+      [r1],
+      [project],
+      [{ ...installed, skillId: { name: 'minimal' } }],
+      null,
+    );
+
+    // The old code emitted a bogus `projectGroupNodeId(scope, repo, '')` here.
+    expect([...model.updatesByNode.keys()]).not.toContain(projectGroupNodeId('p1', 'r1', ''));
+  });
+});
+
+describe('key encoding against separator collisions', () => {
+  // The separator alone was not enough: nothing forbids `::` inside a group
+  // segment or a skill name, so these two DIFFERENT skills used to produce one
+  // identical key -- sharing a tree node and a checkbox, and making it
+  // impossible to select either independently.
+  it('gives two skills distinct keys when one carries the separator in its group', () => {
+    const a = repoSkillKey('r1', 'a::b', 'c');
+    const b = repoSkillKey('r1', 'a', 'b::c');
+
+    expect(a).not.toBe(b);
+  });
+
+  it('round-trips a group containing the separator', () => {
+    const key = repoSkillKey('r1', 'std::vec', 'parser');
+
+    expect(parseRepoSkillKey(key)).toEqual({
+      repoId: 'r1',
+      group: 'std::vec',
+      name: 'parser',
+    });
+  });
+
+  it('round-trips a name containing the separator', () => {
+    const key = repoSkillKey('r1', 'tooling', 'fmt::check');
+
+    expect(parseRepoSkillKey(key)).toEqual({
+      repoId: 'r1',
+      group: 'tooling',
+      name: 'fmt::check',
+    });
+  });
+
+  it('round-trips a nested group alongside a separator-bearing name', () => {
+    const key = projectSkillKey('p1', 'r1', 'platform/lint/rust', 'clippy::fixups');
+
+    expect(parseProjectSkillKey(key)).toEqual({
+      projectId: 'p1',
+      repoId: 'r1',
+      group: 'platform/lint/rust',
+      name: 'clippy::fixups',
+    });
+  });
+
+  it('keeps an absent group distinguishable from an empty one', () => {
+    expect(parseRepoSkillKey(repoSkillKey('r1', undefined, 'solo')).group).toBeUndefined();
   });
 });

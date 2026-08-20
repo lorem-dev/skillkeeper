@@ -28,6 +28,7 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use skillkeeper_agents::PROJECT_DIR_ENV;
+use skillkeeper_core::mcp::discovery::preset_group_dirs;
 use skillkeeper_core::mcp::{
     hash_mcp_def, install_mcp_instance, mcp_destination, missing_params, parse_mcp_config,
     parse_skmcp, parse_skmcp_params, remove_mcp_instance, serialize_skmcp, serialize_skmcp_params,
@@ -566,9 +567,9 @@ pub fn list_available(ctx: &AppContext) -> AvailableMcpResult {
                 hash,
             });
         }
-        // Group candidates are the on-disk directory holding each resolved skill
-        // (rootPath's first segment when nested one level), not the skill's
-        // declared `id.group` -- an mcp.yml sits in the actual directory.
+        // Group candidates are every ancestor directory of each resolved skill,
+        // as computed by `preset_group_dirs`, not the skill's declared
+        // `id.group` -- an mcp.yml sits in the actual directory.
         let resolved = resolve_skills(&ctx.fs, &repo.local_path);
         // Carry the resolution warnings, as the CLI already does: a skill that
         // fails to resolve cannot contribute its directory as a group, so a
@@ -578,17 +579,7 @@ pub fn list_available(ctx: &AppContext) -> AvailableMcpResult {
         for message in &resolved.warnings {
             note(message.clone());
         }
-        let mut groups: Vec<String> = Vec::new();
-        for skill in &resolved.skills {
-            let parts: Vec<&str> = skill.root_path.split('/').collect();
-            if parts.len() >= 2 {
-                let group = parts[0].to_string();
-                if !groups.contains(&group) {
-                    groups.push(group);
-                }
-            }
-        }
-        for group in groups {
+        for group in preset_group_dirs(&resolved.skills) {
             let dir = format!("{}/{}", repo.local_path, group);
             let (defs, notes) = read_mcp_defs(&ctx.fs, &dir);
             for message in notes {
@@ -1241,6 +1232,7 @@ mod tests {
             let paths = AppPaths {
                 config_yaml: app.join("config.yaml").to_string_lossy().into_owned(),
                 state_json: app.join("state.json").to_string_lossy().into_owned(),
+                app_update_json: app.join("app-update.json").to_string_lossy().into_owned(),
                 repositories_dir: app.join("repositories").to_string_lossy().into_owned(),
             };
             let ctx = AppContext::with_paths(env, paths).unwrap();

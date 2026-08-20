@@ -37,7 +37,8 @@ agent's job; SkillKeeper only installs files and edits config regions.
 
 ## Skill groups
 
-Skills may be organized in a one-level namespace (group):
+Skills may be organized in a namespace (group) nested up to three levels
+deep:
 
 ```
 my-group/
@@ -45,8 +46,21 @@ my-group/
     SKILL.md
 ```
 
-Group depth is exactly one. Deeper nesting not declared in the repository
-config yields an unresolved-path warning, not a silently guessed install.
+```
+platform/
+  lint/
+    rust/
+      clippy-skill/
+        SKILL.md
+```
+
+Group depth is at most three levels. Deeper nesting not declared in the
+repository config yields an unresolved-path warning, not a silently guessed
+install. The warning reads exactly:
+
+```
+Unresolved SKILL.md at "<path>": nesting is deeper than 3 group levels; declare it in skillkeeper.repo.yaml to install it.
+```
 
 ## Skill resolution schemes
 
@@ -76,6 +90,12 @@ A malformed or schema-invalid `skillkeeper.repo.yaml` raises a
 surface that (the desktop app skips the repository for that operation rather
 than crash).
 
+A declared `group` (in `defaults.group` or a per-skill entry) is validated: at
+most three segments; neither the whole value nor any single segment may be
+empty; no `.` or `..` segment; no backslash; and no leading or trailing
+whitespace in a segment. An invalid one raises the same `RepoConfigError`,
+naming the field.
+
 ### Scheme 1 - flat layout
 
 `<SKILL_NAME>/SKILL.md` at the root of the repository. No group. Hooks live
@@ -83,12 +103,16 @@ under `<SKILL_NAME>/hooks/`.
 
 ### Scheme 2 - grouped layout
 
-`<SKILL_GROUP>/<SKILL_NAME>/SKILL.md`. Group depth is exactly one. Hooks live
-under `<SKILL_GROUP>/<SKILL_NAME>/hooks/`.
+`<SKILL_GROUP>/<SKILL_NAME>/SKILL.md`, where `<SKILL_GROUP>` may itself be
+nested up to three levels deep (for example
+`g1/g2/g3/<SKILL_NAME>/SKILL.md`). Group depth is at most three levels.
+Hooks live under `<SKILL_GROUP>/<SKILL_NAME>/hooks/`.
 
-Schemes 1 and 2 are auto-detected by scanning up to two directory levels deep
-for `SKILL.md` files; anything nested deeper produces the unresolved-path
-warning mentioned above instead of a guessed install.
+Schemes 1 and 2 are auto-detected by scanning for `SKILL.md` files. The scan
+does not stop at the depth limit -- it has to look deeper in order to report
+what it finds there -- so a `SKILL.md` more than four directory levels down is
+located and then reported as an unresolved path, rather than being missed
+silently or installed under a guessed group.
 
 The scan skips two families of directory outright, resolving nothing from them
 and raising no warning: **hidden** directories (any name starting with `.`) and
@@ -107,10 +131,15 @@ fixture repository: a flat skill at
 [`minimal-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/minimal-skill/SKILL.md),
 a grouped one at
 [`tooling/lint-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/lint-skill/SKILL.md),
+two more deeply nested ones at
+[`platform/lint/style-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/platform/lint/style-skill/SKILL.md)
+(two group levels) and
+[`platform/lint/rust/clippy-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/platform/lint/rust/clippy-skill/SKILL.md)
+(three group levels, the deepest that resolves),
 an inert scheme-3 sample at
 [`skillkeeper.repo.yaml.example`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/skillkeeper.repo.yaml.example),
 and a too-deeply-nested skill at
-[`deep-nesting/level-two/too-deep-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/deep-nesting/level-two/too-deep-skill/SKILL.md)
+[`deep-nesting/l2/l3/l4/too-deep-skill/SKILL.md`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/deep-nesting/l2/l3/l4/too-deep-skill/SKILL.md)
 that must not resolve.
 
 ---

@@ -12,6 +12,7 @@ use skillkeeper_agents::{register_builtin_agents, AdapterRegistry};
 use skillkeeper_core::adapters::{GitEnv, StdFs, SystemClock, SystemGit, SystemHostEnv};
 use skillkeeper_core::ports::HostEnv;
 
+use crate::app::app_update::session::AppUpdateSession;
 use crate::app::watcher::ConfigWatcher;
 use crate::pty::{resolve_shell, TerminalManager};
 
@@ -26,6 +27,8 @@ pub struct AppPaths {
     pub config_yaml: String,
     /// Absolute path to `state.json`.
     pub state_json: String,
+    /// Absolute path to `app-update.json`.
+    pub app_update_json: String,
     /// Absolute path to the directory holding repository clones.
     pub repositories_dir: String,
 }
@@ -55,6 +58,7 @@ impl AppPaths {
         Self {
             config_yaml: base.join("config.yaml").to_string_lossy().into_owned(),
             state_json: base.join("state.json").to_string_lossy().into_owned(),
+            app_update_json: base.join("app-update.json").to_string_lossy().into_owned(),
             repositories_dir: base.join("repositories").to_string_lossy().into_owned(),
         }
     }
@@ -97,6 +101,10 @@ pub struct AppContext {
     /// The askpass local-socket server, started at most once per app session
     /// on first use (its accept thread runs for the process lifetime).
     pub askpass: Arc<OnceLock<crate::app::askpass::AskpassServer>>,
+    /// The self-updater's current offer and downloaded-artifact path, if any,
+    /// so `app_update_download`/`app_update_install` never re-fetch or
+    /// re-decide what `app_update_check` already resolved.
+    pub app_update: Mutex<AppUpdateSession>,
 }
 
 impl AppContext {
@@ -157,6 +165,7 @@ impl AppContext {
             terminal,
             ssh_key,
             askpass,
+            app_update: Mutex::new(AppUpdateSession::default()),
         })
     }
 }
@@ -217,6 +226,10 @@ mod tests {
         let paths = AppPaths::resolve(&env);
         assert_eq!(paths.config_yaml, "/home/bob/.xdg/skillkeeper/config.yaml");
         assert_eq!(paths.state_json, "/home/bob/.xdg/skillkeeper/state.json");
+        assert_eq!(
+            paths.app_update_json,
+            "/home/bob/.xdg/skillkeeper/app-update.json"
+        );
         assert_eq!(
             paths.repositories_dir,
             "/home/bob/.xdg/skillkeeper/repositories"

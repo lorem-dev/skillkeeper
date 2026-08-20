@@ -215,6 +215,33 @@ A few things worth knowing:
   `SKILLKEEPER_SSH_VERBOSE=1` to run every git operation as `ssh -v`, and the
   terminal shows which it is.
 
+### PuTTY keys (.ppk)
+
+The desktop app reads PuTTY-format keys directly. Choose the `.ppk` in Settings
+as you would any other key; on the first SSH operation the app asks for its
+passphrase, decrypts the key in memory, and loads it into your ssh-agent for
+twelve hours. The key file is never rewritten and no converted copy is stored:
+the decrypted key goes straight from memory into the agent, and the app removes
+it again when it quits.
+
+This needs a running ssh-agent, because that is where the key lives once it is
+loaded. On Windows the OpenSSH Authentication Agent service ships disabled --
+see "Setting up an ssh-agent" above for how to start it.
+
+Settings also offers **Convert to an OpenSSH key** -- the warning icon beside
+the key path -- for any PuTTY key that is not currently loaded in the agent. That is the way out when no agent is
+available, and it is offered the rest of the time too, since an agent can be
+present and still refuse the key. It writes a new key file where you choose,
+encrypted with the same passphrase, and switches `repositories.sshKeyPath` to
+it. If `ssh` then reports that the new
+file's permissions are too open on Windows, restrict it with:
+
+    icacls "%USERPROFILE%\.ssh\id_converted" /inheritance:r /grant:r "%USERNAME%:R"
+
+The CLI does not read PuTTY keys. With one configured it prints the `puttygen`
+command that converts it and otherwise leaves your agent and `~/.ssh/config` to
+work as usual.
+
 ## Git LFS
 
 If a repository declares Git LFS usage, SkillKeeper runs `git lfs` steps

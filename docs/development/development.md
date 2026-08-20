@@ -4,7 +4,8 @@
 
 - A stable Rust toolchain via `rustup`. The channel is pinned in
   `rust-toolchain.toml` (`stable`, with the `rustfmt` and `clippy` components).
-- Node.js 22.13 or later (`engines.node >= 22.13` is enforced).
+- Node.js 24 or later, the active LTS line (`engines.node >= 24` is
+  enforced, and CI runs 24).
 - pnpm via `corepack enable` (`packageManager` is pinned in `package.json`).
 - System `git`.
 - On Linux, the platform webview and GTK development libraries Tauri v2 needs

@@ -66,3 +66,26 @@ pub async fn dialog_select_ssh_key(
     let file = dialog.blocking_pick_file();
     Ok(file.map(|path| path.to_string()))
 }
+
+/// `dialog:saveSshKey` -- open a native save dialog for the converted OpenSSH
+/// key; resolve to the chosen path or `None` when cancelled.
+///
+/// Starts in `~/.ssh` with a plain default name, since that is where `ssh`
+/// looks and where the user's other keys already are. No extension: OpenSSH
+/// private keys conventionally have none.
+#[tauri::command]
+pub async fn dialog_save_ssh_key(
+    app: AppHandle,
+    ctx: State<'_, Arc<AppContext>>,
+) -> Result<Option<String>, String> {
+    let mut dialog = app.dialog().file();
+    if let Some(window) = app.get_webview_window("main") {
+        dialog = dialog.set_parent(&window);
+    }
+    let ssh_dir = Path::new(ctx.env.home_dir()).join(".ssh");
+    if ssh_dir.is_dir() {
+        dialog = dialog.set_directory(&ssh_dir);
+    }
+    let file = dialog.set_file_name("id_converted").blocking_save_file();
+    Ok(file.map(|path| path.to_string()))
+}

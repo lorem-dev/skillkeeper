@@ -1056,9 +1056,16 @@ mod tests {
         let src = SkillRepo::new();
         let proj = ProjectDir::new();
         seed_state(&app, &src, &proj);
-        // A SKILL.md nested deeper than one group level resolves to nothing and
-        // raises a warning; the rest of the repository still resolves.
-        let deep = src.path.join("group").join("sub").join("too-deep");
+        // A SKILL.md nested deeper than three group levels resolves to nothing
+        // and raises a warning; the rest of the repository still resolves. Four
+        // group levels here, one past the limit -- three would resolve.
+        let deep = src
+            .path
+            .join("a")
+            .join("b")
+            .join("c")
+            .join("d")
+            .join("too-deep");
         std::fs::create_dir_all(&deep).unwrap();
         std::fs::write(deep.join("SKILL.md"), "---\nname: too-deep\n---\n").unwrap();
 
@@ -1068,7 +1075,7 @@ mod tests {
         let w = &listed.warnings[0];
         assert_eq!(w.repo_id, "repo-1");
         assert_eq!(w.repo_name, "skills");
-        assert!(w.message.contains("group/sub/too-deep"), "{}", w.message);
+        assert!(w.message.contains("a/b/c/d/too-deep"), "{}", w.message);
     }
 
     #[test]

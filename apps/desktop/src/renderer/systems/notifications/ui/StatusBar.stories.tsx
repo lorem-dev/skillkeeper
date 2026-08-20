@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useSkillkeeperStore } from '@/app/store';
+import { makeAppUpdateOffer } from '@/systems/appUpdate/storyFixtures';
 import { StatusBar } from './StatusBar';
 import { seedStore } from '@/app/store/storyState';
 
@@ -94,6 +95,20 @@ export const WarningOverflowCount: Story = {
             message: `Unresolved SKILL.md at "group/sub/x${i}"`,
           })),
         );
+      });
+    }, []);
+    return <StatusBar />;
+  },
+};
+
+/** An update offer seeded so the badge renders inside the real bar, in context. */
+export const WithUpdate: Story = {
+  render: () => {
+    useEffect(() => {
+      seedStore(() => {
+        useSkillkeeperStore.setState({
+          appUpdate: { offer: makeAppUpdateOffer(), downloading: false, percent: 0 },
+        });
       });
     }, []);
     return <StatusBar />;

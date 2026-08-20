@@ -84,6 +84,8 @@ enum Command {
     },
     /// Print the version.
     Version,
+    /// Show how to update the SkillKeeper CLI itself.
+    Update,
 }
 
 /// The current working directory as a string (project-scope default), empty when
@@ -163,6 +165,7 @@ fn dispatch(
             commands::mcp::run(action, &ctx, out, err)
         }
         Command::Version => commands::version::run(out),
+        Command::Update => commands::update::run(out, std::env::consts::OS),
     }
 }
 
@@ -175,6 +178,15 @@ fn run(cli: &Cli) -> Result<i32, CliError> {
     if matches!(cli.command, Command::Version) {
         let stdout = io::stdout();
         return commands::version::run(&mut stdout.lock());
+    }
+
+    // `update` only prints static instructions -- no config or network -- and
+    // needs neither for the same reason `version` does not: a user with a
+    // broken config is precisely the user who wants update instructions, and
+    // those must not depend on a working one.
+    if matches!(cli.command, Command::Update) {
+        let stdout = io::stdout();
+        return commands::update::run(&mut stdout.lock(), std::env::consts::OS);
     }
 
     // Load config with a bare fs before wiring (wiring itself needs the config).

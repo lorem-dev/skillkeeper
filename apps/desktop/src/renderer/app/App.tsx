@@ -14,6 +14,7 @@ import { useTranslator } from '@/systems/i18n';
 import { useTheme } from '@/systems/theme';
 import { useConfigWatch } from '@/systems/config';
 import { useUpdateSchedule } from '@/systems/updates';
+import { useAppUpdateSchedule, UpdateAvailableDialog, UpdateReadyDialog } from '@/systems/appUpdate';
 import { useProjectCheckSchedule } from '@/systems/projects';
 import { ConfigBanner } from '@/features/configBanner';
 import { WindowChrome } from './WindowChrome';
@@ -78,6 +79,7 @@ export function App() {
   useTheme();
   useConfigWatch();
   useUpdateSchedule();
+  useAppUpdateSchedule();
   useProjectCheckSchedule();
   const [activeView, setActiveView] = useState<View>('projects');
   const animationMode = useSkillkeeperStore((s) => s.config?.general.animations ?? 'normal');
@@ -88,6 +90,8 @@ export function App() {
   const skillsNav = useSkillkeeperStore((s) => s.skillsNav);
   const mcpNav = useSkillkeeperStore((s) => s.mcpNav);
   const repoFocus = useSkillkeeperStore((s) => s.repoFocus);
+  const appUpdateNav = useSkillkeeperStore((s) => s.appUpdateNav);
+  const settingsAppUpdatesNav = useSkillkeeperStore((s) => s.settingsAppUpdatesNav);
   const onboardingActive = useOnboardingActive();
   const onboardingStep = useOnboardingStep();
   const t = useTranslator();
@@ -164,6 +168,21 @@ export function App() {
     if (repoFocus !== null) goTo('repositories');
   }, [repoFocus, goTo]);
 
+  // An update dialog takes over the window: it closes the other overlays (the
+  // store's open actions do that) and brings the backdrop to Projects, so the
+  // user is not left looking at a page that is about to be replaced.
+  useEffect(() => {
+    if (appUpdateNav > 0) goTo('projects');
+  }, [appUpdateNav, goTo]);
+
+  // The macOS Help menu's "Check for Updates" item requests Settings; the
+  // page itself scrolls its "Application updates" section into view (see
+  // `settingsAppUpdatesNav` in the store), mirroring `repoFocus`'s
+  // nonce-plus-self-scroll shape.
+  useEffect(() => {
+    if (settingsAppUpdatesNav > 0) goTo('settings');
+  }, [settingsAppUpdatesNav, goTo]);
+
   // A background ssh auth failure requests the terminal (for the passphrase
   // prompt); subscribed once for the app's lifetime.
   //
@@ -180,16 +199,24 @@ export function App() {
       if (sshAgentWarned.current) return;
       // A held (unlocked) or unencrypted key already answers passphrase
       // prompts on the app's behalf, so the agent advice would be wrong --
-      // check the key's state alongside the agent before deciding to warn.
-      // A failed key-state read must not suppress the notice: fall back to
-      // `null` (treated as "cannot rule it out") rather than letting the
-      // whole `Promise.all` reject and silently drop the check.
+      // check the key's state alongside the agent before deciding to warn. A
+      // PuTTY key already loaded into an agent (`puttyInAgent`) is the same
+      // case by another name; the other PuTTY states still need an agent, so
+      // they are not included here. A failed key-state read must not
+      // suppress the notice: fall back to `null` (treated as "cannot rule it
+      // out") rather than letting the whole `Promise.all` reject and
+      // silently drop the check.
       void Promise.all([
         bridgeClient.sshAgentAvailable(),
         bridgeClient.sshKeyState().catch(() => null),
       ]).then(([available, keyState]) => {
         if (available || sshAgentWarned.current) return;
-        if (keyState !== null && (keyState.state === 'unlocked' || keyState.state === 'unencrypted')) {
+        if (
+          keyState !== null &&
+          (keyState.state === 'unlocked' ||
+            keyState.state === 'unencrypted' ||
+            keyState.state === 'puttyInAgent')
+        ) {
           return;
         }
         sshAgentWarned.current = true;
@@ -239,6 +266,15 @@ export function App() {
       const s = useSkillkeeperStore.getState();
       if (s.onboarding.active) s.skipOnboarding();
       else s.startOnboarding();
+    });
+    return off;
+  }, []);
+
+  // macOS Help menu's "Check for Updates" item; subscribed once for the app's
+  // lifetime, mirroring onMenuOnboardingToggle.
+  useEffect(() => {
+    const off = bridgeClient.onMenuCheckForUpdates(() => {
+      useSkillkeeperStore.getState().focusAppUpdatesSettings();
     });
     return off;
   }, []);
@@ -404,6 +440,8 @@ export function App() {
       <TerminalPage />
       <TasksPage />
       <AboutDialog />
+      <UpdateAvailableDialog />
+      <UpdateReadyDialog />
       <OnboardingOverlay
         aboutIdentity={<AboutIdentity showTagline={false} />}
         aboutFooter={<AboutFooter />}

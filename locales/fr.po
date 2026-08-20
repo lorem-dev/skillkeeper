@@ -94,6 +94,9 @@ msgstr "Démarrer le tutoriel"
 msgid "menu.onboarding.skip"
 msgstr "Passer le tutoriel"
 
+msgid "menu.checkForUpdates"
+msgstr "Rechercher les mises à jour"
+
 msgid "about.version"
 msgstr "Version {version}"
 
@@ -219,6 +222,9 @@ msgstr "Mettre à jour la compétence"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "Actualiser les projets"
+
+msgid "tasks.kind.app-update-check"
+msgstr "Vérifier les mises à jour de l'application"
 
 msgid "tasks.status.queued"
 msgstr "En attente"
@@ -898,14 +904,8 @@ msgstr "L'écran des paramètres arrive bientôt."
 msgid "settings.section.general"
 msgstr "Général"
 
-msgid "settings.section.updates"
-msgstr "Mises à jour"
 
-msgid "settings.section.agents"
-msgstr "Agents"
 
-msgid "settings.section.executables"
-msgstr "Exécutables"
 
 msgid "settings.section.security"
 msgstr "Sécurité"
@@ -1014,6 +1014,12 @@ msgstr "Notifications système"
 
 msgid "settings.section.onboarding"
 msgstr "Tutoriel"
+
+msgid "settings.section.appUpdates"
+msgstr "Mises à jour de l'application"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper recherche une nouvelle version au démarrage et une fois par jour."
 
 msgid "settings.onboarding.restartHint"
 msgstr "Rejouer le tutoriel guidé depuis le début."
@@ -1276,3 +1282,69 @@ msgstr "Agents pour {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "Aucun agent sélectionné"
+
+msgid "appUpdate.badge"
+msgstr "Mise à jour {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "Une nouvelle version est disponible"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} est prêt à télécharger."
+
+msgid "appUpdate.updateNow"
+msgstr "Mettre à jour maintenant"
+
+msgid "appUpdate.cancel"
+msgstr "Annuler"
+
+msgid "appUpdate.readyTitle"
+msgstr "Mise à jour téléchargée"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} a été téléchargé et vérifié."
+
+msgid "appUpdate.readyPath"
+msgstr "Téléchargé vers {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "L'installation ferme SkillKeeper et lance le programme d'installation."
+
+msgid "appUpdate.installNow"
+msgstr "Installer maintenant"
+
+msgid "appUpdate.notesFooter"
+msgstr "Les anciennes notes de version ne sont pas incluses ici. Consultez la page des versions pour l'historique complet."
+
+msgid "appUpdate.downloadFailed"
+msgstr "La mise à jour n'a pas pu être téléchargée : {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "La mise à jour n'a pas pu être installée : {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "macOS refuse peut-être de remplacer l'application installée. Exécutez cette commande dans le Terminal, puis choisissez de nouveau \"{action}\" :"
+
+msgid "appUpdate.copyCommand"
+msgstr "Copier la commande"
+
+msgid "appUpdate.commandCopied"
+msgstr "Commande copiée dans le presse-papiers."
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "La commande n'a pas pu être copiée. Sélectionnez-la et copiez-la manuellement."
+
+msgid "appUpdate.checkNow"
+msgstr "Vérifier les mises à jour"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper est à jour."
+
+msgid "appUpdate.checkFailed"
+msgstr "La vérification des mises à jour n'a pas pu être effectuée : {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "Télécharger à nouveau"

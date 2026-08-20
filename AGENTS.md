@@ -61,8 +61,8 @@ catalogs.
 ## Running the Gates
 
 Prerequisites: a stable Rust toolchain via rustup (pinned in
-`rust-toolchain.toml`, with `rustfmt` and `clippy`), Node 22.13+, and pnpm via
-`corepack enable`. On Linux the desktop app also needs the platform webview and
+`rust-toolchain.toml`, with `rustfmt` and `clippy`), Node 24+ (the active LTS
+line, which CI also runs), and pnpm via `corepack enable`. On Linux the desktop app also needs the platform webview and
 GTK development libraries Tauri builds against (webkit2gtk 4.1, GTK 3, libsoup3
 and related `-dev` packages).
 
@@ -97,6 +97,24 @@ a real working tree. Run it after touching resolution, install, hooks, guidance,
 or MCP. Specs live in `e2e/tests/`, the harness in `e2e/src/cli.ts`; the runner is
 Jest (not Vitest) and the suite is scoped to CommonJS -- see
 [docs/development/development.md](./docs/development/development.md#end-to-end-tests).
+
+**Build the CLI with `cargo build -p skillkeeper-cli`, never a bare
+`cargo build`.** Two crates in this workspace produce a binary named
+`skillkeeper`: the CLI declares it as `[[bin]]`, and the desktop app crate
+(`apps/desktop/src-tauri`) is itself named `skillkeeper`. Both write
+`target/debug/skillkeeper`, so whichever built last owns that path -- and a bare
+`cargo build --bin skillkeeper` does not reliably pick the one you meant.
+
+Run the desktop app from that path expecting the CLI and you get a GUI process
+waiting in the window event loop: no output, no error, indistinguishable from a
+hang. Building the CLI package puts the right binary back, cache or not, so
+`pnpm test:e2e` is safe on this (it builds the CLI package and then asserts the
+binary answers `--version`). A hand-run `./target/debug/skillkeeper` right after
+working on the desktop app is where this bites.
+
+Both names are load-bearing -- the release workflow's MSIX step packages
+`skillkeeper.exe` by that exact name -- so this is a hazard to know, not one to
+rename away.
 
 ### Verification workflow
 

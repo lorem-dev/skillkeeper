@@ -59,4 +59,12 @@ describe('countInstalledLeaves', () => {
     const items = new Map<string, McpTreeItem>();
     expect(countInstalledLeaves(branch('root', []), items)).toBe(0);
   });
+
+  it('rolls an installed row two group levels down up to the outermost branch', () => {
+    const items = new Map<string, McpTreeItem>([
+      ['i1', { kind: 'installed', installs: [], updatable: false }],
+    ]);
+    const tree = branch('platform', [branch('platform/lint', [leaf('i1')])]);
+    expect(countInstalledLeaves(tree, items)).toBe(1);
+  });
 });

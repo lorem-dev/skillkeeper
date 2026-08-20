@@ -94,6 +94,9 @@ msgstr "チュートリアルを開始"
 msgid "menu.onboarding.skip"
 msgstr "チュートリアルをスキップ"
 
+msgid "menu.checkForUpdates"
+msgstr "アップデートを確認"
+
 msgid "about.version"
 msgstr "バージョン {version}"
 
@@ -219,6 +222,9 @@ msgstr "スキルを更新"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "プロジェクトを更新"
+
+msgid "tasks.kind.app-update-check"
+msgstr "アプリの更新を確認"
 
 msgid "tasks.status.queued"
 msgstr "待機中"
@@ -808,14 +814,8 @@ msgstr "設定画面は近日公開予定です。"
 msgid "settings.section.general"
 msgstr "一般"
 
-msgid "settings.section.updates"
-msgstr "更新"
 
-msgid "settings.section.agents"
-msgstr "エージェント"
 
-msgid "settings.section.executables"
-msgstr "実行ファイル"
 
 msgid "settings.section.security"
 msgstr "セキュリティ"
@@ -924,6 +924,12 @@ msgstr "システム通知"
 
 msgid "settings.section.onboarding"
 msgstr "チュートリアル"
+
+msgid "settings.section.appUpdates"
+msgstr "アプリの更新"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper は起動時と1日1回、新しいバージョンを確認します。"
 
 msgid "settings.onboarding.restartHint"
 msgstr "ガイド付きチュートリアルを最初から再生します。"
@@ -1186,3 +1192,69 @@ msgstr "{scope} のエージェント"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "エージェントが選択されていません"
+
+msgid "appUpdate.badge"
+msgstr "{version} に更新"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "新しいバージョンがあります"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} がダウンロード可能です。"
+
+msgid "appUpdate.updateNow"
+msgstr "今すぐ更新"
+
+msgid "appUpdate.cancel"
+msgstr "キャンセル"
+
+msgid "appUpdate.readyTitle"
+msgstr "更新をダウンロードしました"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} のダウンロードと検証が完了しました。"
+
+msgid "appUpdate.readyPath"
+msgstr "ダウンロード先: {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "インストールすると SkillKeeper が終了し、インストーラーが起動します。"
+
+msgid "appUpdate.installNow"
+msgstr "今すぐインストール"
+
+msgid "appUpdate.notesFooter"
+msgstr "以前のリリースノートはここには含まれていません。全履歴はリリースページをご覧ください。"
+
+msgid "appUpdate.downloadFailed"
+msgstr "更新をダウンロードできませんでした: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "更新をインストールできませんでした: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "macOS がインストール済みのアプリの置き換えを拒否している可能性があります。Terminal で次のコマンドを実行してから、もう一度「{action}」を選択してください:"
+
+msgid "appUpdate.copyCommand"
+msgstr "コマンドをコピー"
+
+msgid "appUpdate.commandCopied"
+msgstr "コマンドをクリップボードにコピーしました。"
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "コマンドをコピーできませんでした。選択して手動でコピーしてください。"
+
+msgid "appUpdate.checkNow"
+msgstr "更新を確認"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper は最新の状態です。"
+
+msgid "appUpdate.checkFailed"
+msgstr "更新を確認できませんでした: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "もう一度ダウンロード"

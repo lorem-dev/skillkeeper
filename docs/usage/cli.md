@@ -67,8 +67,9 @@ Manage skills.
 
 Every `<id>` argument below accepts a full `group/name` (or bare `name`), or any
 unique prefix of one -- Docker-container-id style: `ab` resolves to `abba` when
-it is the only skill id starting with `ab`. An ambiguous prefix is rejected with
-the list of matches.
+it is the only skill id starting with `ab`. The `group` half may itself be a
+nested path up to three levels deep (`platform/lint/rust/clippy-skill`). An
+ambiguous prefix is rejected with the list of matches.
 
 ### skill list
 
@@ -333,3 +334,17 @@ skillkeeper version
 Print the version, for example `skillkeeper 0.1.2-rc.1`. The same string is
 printed by the global `-V`, `-v`, and `--version` flags (e.g.
 `skillkeeper --version`).
+
+---
+
+## skillkeeper update
+
+```
+skillkeeper update
+```
+
+Print the current CLI version and the one-line install command that
+reinstalls the latest release for the host platform. This prints instructions
+only -- no network access, no version check against GitHub, no files changed.
+It is a different command from `repo update`, `skill update`, and `mcp
+update`, which check or refresh already-installed content.

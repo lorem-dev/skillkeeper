@@ -84,11 +84,15 @@
 // Scrollable content column below the header. Grows to fill the viewport when
 // content is short (so a trailing element can sit at the bottom) and grows with
 // its content when long (so the whole column scrolls).
+// The trailing padding is deliberately larger than the leading gap: the bottom
+// fade is 64px tall, so at 16px the last element finished flush against the
+// edge and read as clipped rather than ended. A docked page overrides this
+// wholesale below, since it has a bar to clear instead.
 .sk-page__body {
   display: flex;
   flex-direction: column;
   gap: var(--sk-space-5);
-  padding: 0 var(--sk-space-5) var(--sk-space-5);
+  padding: 0 var(--sk-space-5) var(--sk-space-8);
   flex: 1 0 auto;
 }
 

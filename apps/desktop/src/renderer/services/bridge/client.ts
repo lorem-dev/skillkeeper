@@ -30,6 +30,11 @@ import type {
   OnboardingState,
   TerminalStatus,
   SshKeyDto,
+  AppUpdateOffer,
+  CheckOutcome,
+  AppUpdateProgress,
+  AppUpdateReady,
+  AppUpdateFailed,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the Rust backend. */
@@ -68,6 +73,9 @@ export interface BridgeClient {
   onMenuAbout(callback: () => void): () => void;
   /** Subscribe to the macOS Help menu's onboarding toggle. Returns an unsubscribe fn. */
   onMenuOnboardingToggle(callback: () => void): () => void;
+  /** Subscribe to the macOS Help menu's "Check for Updates" item. Returns an
+   *  unsubscribe fn. */
+  onMenuCheckForUpdates(callback: () => void): () => void;
   /** Reflect onboarding mode in the native menu (label + enabled state). */
   onboardingMenuSync(active: boolean): void;
   /** The app version string. */
@@ -121,6 +129,12 @@ export interface BridgeClient {
   cancelSshKeyUnlock(): Promise<void>;
   /** Native file picker for choosing a private key file. */
   pickSshKeyFile(): Promise<string | null>;
+  /** Native save dialog for the converted OpenSSH key. */
+  saveSshKeyFile(): Promise<string | null>;
+  /** Convert the chosen PuTTY key to an OpenSSH key at `dest` and use it. An
+   *  encrypted key raises the unlock window for its passphrase; the row learns
+   *  the outcome from `onSshUnlockResolved`, as it does for any unlock. */
+  beginSshKeyExport(dest: string): Promise<SshKeyDto>;
   /** Raise the unlock prompt on demand (or join the one a blocked git
    *  operation is already waiting behind) and return as soon as the window is
    *  up -- it does not wait for the answer. A no-op for a key that needs no
@@ -139,6 +153,47 @@ export interface BridgeClient {
    *  as a cue to re-read, not as truth in itself: it is not emitted at all
    *  for a cancel with no prompt on record. Returns an unsubscribe fn. */
   onSshUnlockResolved(callback: (unlocked: boolean) => void): () => void;
+  /**
+   * Fetch the release manifest and decide whether an update is worth
+   * offering -- the renderer's own 24-hour scheduled/startup check.
+   * `suppressed` is true when the backend refused to reach the network at
+   * all (a request inside the 24-hour interval); in that
+   * case `offer` is whatever was already known rather than a fresh decision.
+   * See `checkAppUpdateNow` for the explicit, user-initiated check that
+   * bypasses both of those gates.
+   */
+  checkAppUpdate(): Promise<CheckOutcome>;
+  /**
+   * Explicit, user-initiated update check (the About dialog's "Check for
+   * updates" button): bypasses both of `checkAppUpdate`'s gates. Resolves to
+   * the offer (or null when nothing newer is available); rejects with a
+   * message when the manifest fetch itself failed, rather than folding a
+   * failure into a silent cached-offer fallback.
+   */
+  checkAppUpdateNow(): Promise<AppUpdateOffer | null>;
+  /** Download and verify the artifact for the held offer (the one `checkAppUpdate`
+   *  last resolved). Ends in exactly one of `onAppUpdateReady` or `onAppUpdateFailed`. */
+  downloadAppUpdate(): Promise<void>;
+  /** Install the artifact `downloadAppUpdate` already verified, then quit the app.
+   *  A failed install does not quit -- it fires `onAppUpdateFailed` instead. */
+  installAppUpdate(): Promise<void>;
+  /** Delete the downloaded artifact and forget it, so a later `downloadAppUpdate`
+   *  starts fresh. A no-op when nothing was downloaded. */
+  discardAppUpdate(): Promise<void>;
+  /** Remember `version` as refused, so the dialog stays down until a newer
+   *  minor or major line appears. */
+  dismissAppUpdate(version: string): Promise<void>;
+  /** Subscribe to download progress. Returns an unsubscribe fn. */
+  onAppUpdateProgress(callback: (progress: AppUpdateProgress) => void): () => void;
+  /** Subscribe to a verified download becoming ready to install. Returns an
+   *  unsubscribe fn. */
+  onAppUpdateReady(callback: (ready: AppUpdateReady) => void): () => void;
+  /** Subscribe to a download or install failure; `failed.phase` says which
+   *  one. `failed.path`/`failed.offer` are set only for an install failure
+   *  discovered on a fresh launch, with no ready dialog open this session to
+   *  carry the manual fallback (see `AppUpdateFailed`). Returns an
+   *  unsubscribe fn. */
+  onAppUpdateFailed(callback: (failed: AppUpdateFailed) => void): () => void;
   /** The host platform (`process.platform`), for choosing the window-control chrome. */
   readonly platform: string;
   /** Minimize the window (frameless title bar). */
@@ -209,6 +264,8 @@ export const bridgeClient: BridgeClient = {
   onMenuAbout: (callback) => subscribe<void>('menu:about', () => callback()),
   onMenuOnboardingToggle: (callback) =>
     subscribe<void>('menu:onboarding-toggle', () => callback()),
+  onMenuCheckForUpdates: (callback) =>
+    subscribe<void>('menu:check-for-updates', () => callback()),
   onboardingMenuSync: (active) => {
     void invoke('onboarding_menu_sync', { active });
   },
@@ -253,6 +310,8 @@ export const bridgeClient: BridgeClient = {
   forgetSshKey: () => invoke<void>('ssh_key_forget'),
   cancelSshKeyUnlock: () => invoke<void>('ssh_key_cancel_unlock'),
   pickSshKeyFile: () => invoke<string | null>('dialog_select_ssh_key'),
+  saveSshKeyFile: () => invoke<string | null>('dialog_save_ssh_key'),
+  beginSshKeyExport: (dest) => invoke<SshKeyDto>('ssh_key_begin_export', { dest }),
   promptSshUnlock: () => invoke<void>('ssh_key_prompt'),
   onSshUnlockRequired: (callback) => {
     // Same shape as onTerminalRequestOpen: start the listen(), keep the
@@ -286,6 +345,15 @@ export const bridgeClient: BridgeClient = {
       off?.();
     };
   },
+  checkAppUpdate: () => invoke<CheckOutcome>('app_update_check'),
+  checkAppUpdateNow: () => invoke<AppUpdateOffer | null>('app_update_check_now'),
+  downloadAppUpdate: () => invoke<void>('app_update_download'),
+  installAppUpdate: () => invoke<void>('app_update_install'),
+  discardAppUpdate: () => invoke<void>('app_update_discard'),
+  dismissAppUpdate: (version) => invoke<void>('app_update_dismiss', { version }),
+  onAppUpdateProgress: (callback) => subscribe<AppUpdateProgress>('appUpdate:progress', callback),
+  onAppUpdateReady: (callback) => subscribe<AppUpdateReady>('appUpdate:ready', callback),
+  onAppUpdateFailed: (callback) => subscribe<AppUpdateFailed>('appUpdate:failed', callback),
   // Resolved once by `init()` at startup and cached; read synchronously here so
   // the public interface stays sync (the App reads it during the first render).
   get platform() {

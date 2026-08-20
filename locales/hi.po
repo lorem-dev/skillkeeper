@@ -94,6 +94,9 @@ msgstr "ट्यूटोरियल शुरू करें"
 msgid "menu.onboarding.skip"
 msgstr "ट्यूटोरियल छोड़ें"
 
+msgid "menu.checkForUpdates"
+msgstr "अपडेट जाँचें"
+
 msgid "about.version"
 msgstr "संस्करण {version}"
 
@@ -252,6 +255,9 @@ msgstr "स्किल अपडेट करें"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "प्रोजेक्ट रिफ़्रेश करें"
+
+msgid "tasks.kind.app-update-check"
+msgstr "ऐप अपडेट जाँचें"
 
 msgid "tasks.status.queued"
 msgstr "कतार में"
@@ -889,14 +895,8 @@ msgstr "सेटिंग्स स्क्रीन जल्द आ रह�
 msgid "settings.section.general"
 msgstr "सामान्य"
 
-msgid "settings.section.updates"
-msgstr "अपडेट"
 
-msgid "settings.section.agents"
-msgstr "एजेंट"
 
-msgid "settings.section.executables"
-msgstr "निष्पादन योग्य फ़ाइलें"
 
 msgid "settings.section.security"
 msgstr "सुरक्षा"
@@ -1005,6 +1005,12 @@ msgstr "सिस्टम सूचनाएँ"
 
 msgid "settings.section.onboarding"
 msgstr "ट्यूटोरियल"
+
+msgid "settings.section.appUpdates"
+msgstr "ऐप अपडेट"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper शुरू होने पर और दिन में एक बार नए संस्करण की जांच करता है।"
 
 msgid "settings.onboarding.restartHint"
 msgstr "निर्देशित ट्यूटोरियल शुरुआत से दोबारा चलाएँ।"
@@ -1231,3 +1237,69 @@ msgstr "{scope} के लिए एजेंट"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "कोई एजेंट नहीं चुना गया"
+
+msgid "appUpdate.badge"
+msgstr "अपडेट {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "नया संस्करण उपलब्ध है"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} डाउनलोड के लिए तैयार है।"
+
+msgid "appUpdate.updateNow"
+msgstr "अभी अपडेट करें"
+
+msgid "appUpdate.cancel"
+msgstr "रद्द करें"
+
+msgid "appUpdate.readyTitle"
+msgstr "अपडेट डाउनलोड हो गया"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} डाउनलोड और सत्यापित हो चुका है।"
+
+msgid "appUpdate.readyPath"
+msgstr "डाउनलोड: {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "इंस्टॉल करने पर SkillKeeper बंद हो जाएगा और इंस्टॉलर शुरू होगा।"
+
+msgid "appUpdate.installNow"
+msgstr "अभी इंस्टॉल करें"
+
+msgid "appUpdate.notesFooter"
+msgstr "पुराने रिलीज़ नोट यहाँ शामिल नहीं हैं। पूरा इतिहास देखने के लिए रिलीज़ पेज देखें।"
+
+msgid "appUpdate.downloadFailed"
+msgstr "अपडेट डाउनलोड नहीं हो सका: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "अपडेट इंस्टॉल नहीं हो सका: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "हो सकता है कि macOS इंस्टॉल किए गए ऐप को बदलने से मना कर रहा हो। Terminal में यह कमांड चलाएँ, फिर दोबारा \"{action}\" चुनें:"
+
+msgid "appUpdate.copyCommand"
+msgstr "कमांड कॉपी करें"
+
+msgid "appUpdate.commandCopied"
+msgstr "कमांड क्लिपबोर्ड पर कॉपी हुआ।"
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "कमांड कॉपी नहीं हो सका। इसे चुनकर हाथ से कॉपी करें।"
+
+msgid "appUpdate.checkNow"
+msgstr "अपडेट जाँचें"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper नवीनतम है।"
+
+msgid "appUpdate.checkFailed"
+msgstr "अपडेट जाँच नहीं हो सकी: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "फिर से डाउनलोड करें"

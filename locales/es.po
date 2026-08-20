@@ -94,6 +94,9 @@ msgstr "Iniciar el tutorial"
 msgid "menu.onboarding.skip"
 msgstr "Omitir el tutorial"
 
+msgid "menu.checkForUpdates"
+msgstr "Buscar actualizaciones"
+
 msgid "about.version"
 msgstr "Versión {version}"
 
@@ -219,6 +222,9 @@ msgstr "Actualizar habilidad"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "Actualizar proyectos"
+
+msgid "tasks.kind.app-update-check"
+msgstr "Buscar actualizaciones de la aplicación"
 
 msgid "tasks.status.queued"
 msgstr "En cola"
@@ -943,14 +949,8 @@ msgstr "La pantalla de ajustes llegará pronto."
 msgid "settings.section.general"
 msgstr "General"
 
-msgid "settings.section.updates"
-msgstr "Actualizaciones"
 
-msgid "settings.section.agents"
-msgstr "Agentes"
 
-msgid "settings.section.executables"
-msgstr "Ejecutables"
 
 msgid "settings.section.security"
 msgstr "Seguridad"
@@ -1059,6 +1059,12 @@ msgstr "Notificaciones del sistema"
 
 msgid "settings.section.onboarding"
 msgstr "Tutorial"
+
+msgid "settings.section.appUpdates"
+msgstr "Actualizaciones de la aplicación"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper busca una nueva versión al iniciarse y una vez al día."
 
 msgid "settings.onboarding.restartHint"
 msgstr "Vuelve a reproducir el tutorial guiado desde el principio."
@@ -1321,3 +1327,97 @@ msgstr "Agentes para {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "Ningún agente seleccionado"
+
+msgid "settings.ssh.state.puttyLocked"
+msgstr "Clave PuTTY, bloqueada."
+
+msgid "settings.ssh.state.puttyUnencrypted"
+msgstr "Clave PuTTY, sin contraseña."
+
+msgid "settings.ssh.state.puttyInAgent"
+msgstr "Clave PuTTY, cargada en el agente durante esta sesión."
+
+msgid "settings.ssh.state.puttyNoAgent"
+msgstr "Clave PuTTY, pero no hay ningún ssh-agent en ejecución que la guarde."
+
+msgid "settings.ssh.convert"
+msgstr "Convertir a una clave OpenSSH"
+
+msgid "ssh.puttyNeedsAgent"
+msgstr "Esta clave PuTTY necesita un ssh-agent que la guarde. Inicia uno o convierte la clave al formato OpenSSH."
+
+msgid "ssh.puttyUnsupportedAlgorithm"
+msgstr "Esta clave PuTTY usa un algoritmo que OpenSSH ya no admite."
+
+msgid "ssh.puttyDamaged"
+msgstr "El archivo de clave PuTTY está dañado."
+
+msgid "ssh.puttyExportFailed"
+msgstr "No se pudo convertir la clave."
+
+msgid "appUpdate.badge"
+msgstr "Actualizar a {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "Hay una nueva versión disponible"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} está listo para descargar."
+
+msgid "appUpdate.updateNow"
+msgstr "Actualizar ahora"
+
+msgid "appUpdate.cancel"
+msgstr "Cancelar"
+
+msgid "appUpdate.readyTitle"
+msgstr "Actualización descargada"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} se ha descargado y verificado."
+
+msgid "appUpdate.readyPath"
+msgstr "Descargado en {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "La instalación cierra SkillKeeper e inicia el instalador."
+
+msgid "appUpdate.installNow"
+msgstr "Instalar ahora"
+
+msgid "appUpdate.notesFooter"
+msgstr "Las notas de versiones anteriores no se incluyen aquí. Consulta la página de versiones para ver el historial completo."
+
+msgid "appUpdate.downloadFailed"
+msgstr "No se pudo descargar la actualización: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "No se pudo instalar la actualización: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "Es posible que macOS se niegue a reemplazar la aplicación instalada. Ejecuta este comando en Terminal y, después, vuelve a elegir \"{action}\":"
+
+msgid "appUpdate.copyCommand"
+msgstr "Copiar comando"
+
+msgid "appUpdate.commandCopied"
+msgstr "Comando copiado al portapapeles."
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "No se pudo copiar el comando. Selecciónalo y cópialo manualmente."
+
+msgid "appUpdate.checkNow"
+msgstr "Buscar actualizaciones"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper está actualizado."
+
+msgid "appUpdate.checkFailed"
+msgstr "No se pudo buscar actualizaciones: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "Descargar de nuevo"
+

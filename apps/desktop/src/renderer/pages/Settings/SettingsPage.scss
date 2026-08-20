@@ -18,3 +18,11 @@
   padding: 0;
   border-radius: var(--sk-radius-pill);
 }
+
+// Application updates section: "Check for updates" and, once an update is
+// found, "Update now" sit side by side rather than stacking as separate rows.
+.sk-settings-app-update-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-3);
+}

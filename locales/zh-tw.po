@@ -94,6 +94,9 @@ msgstr "開始教學"
 msgid "menu.onboarding.skip"
 msgstr "略過教學"
 
+msgid "menu.checkForUpdates"
+msgstr "檢查更新"
+
 msgid "about.version"
 msgstr "版本 {version}"
 
@@ -219,6 +222,9 @@ msgstr "更新技能"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "重新整理專案"
+
+msgid "tasks.kind.app-update-check"
+msgstr "檢查應用程式更新"
 
 msgid "tasks.status.queued"
 msgstr "已排入佇列"
@@ -808,14 +814,8 @@ msgstr "設定畫面即將推出。"
 msgid "settings.section.general"
 msgstr "一般"
 
-msgid "settings.section.updates"
-msgstr "更新"
 
-msgid "settings.section.agents"
-msgstr "代理"
 
-msgid "settings.section.executables"
-msgstr "執行檔"
 
 msgid "settings.section.security"
 msgstr "安全性"
@@ -924,6 +924,12 @@ msgstr "系統通知"
 
 msgid "settings.section.onboarding"
 msgstr "教學"
+
+msgid "settings.section.appUpdates"
+msgstr "應用程式更新"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper 會在啟動時和每天檢查一次新版本。"
 
 msgid "settings.onboarding.restartHint"
 msgstr "從頭重新播放導覽教學。"
@@ -1186,3 +1192,69 @@ msgstr "{scope} 的代理"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "未選取代理"
+
+msgid "appUpdate.badge"
+msgstr "更新至 {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "有新版本可用"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} 已可供下載。"
+
+msgid "appUpdate.updateNow"
+msgstr "立即更新"
+
+msgid "appUpdate.cancel"
+msgstr "取消"
+
+msgid "appUpdate.readyTitle"
+msgstr "更新已下載"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} 已下載並完成驗證。"
+
+msgid "appUpdate.readyPath"
+msgstr "下載位置：{path}"
+
+msgid "appUpdate.readyHint"
+msgstr "安裝將關閉 SkillKeeper 並啟動安裝程式。"
+
+msgid "appUpdate.installNow"
+msgstr "立即安裝"
+
+msgid "appUpdate.notesFooter"
+msgstr "這裡未包含較舊的發行說明。完整歷史記錄請參閱發行頁面。"
+
+msgid "appUpdate.downloadFailed"
+msgstr "無法下載更新：{message}"
+
+msgid "appUpdate.installFailed"
+msgstr "無法安裝更新：{message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "macOS 可能拒絕取代已安裝的應用程式。請在 Terminal 中執行以下指令，然後再次選擇「{action}」："
+
+msgid "appUpdate.copyCommand"
+msgstr "複製指令"
+
+msgid "appUpdate.commandCopied"
+msgstr "指令已複製到剪貼簿。"
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "無法複製指令。請手動選取並複製。"
+
+msgid "appUpdate.checkNow"
+msgstr "檢查更新"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper 已是最新版本。"
+
+msgid "appUpdate.checkFailed"
+msgstr "無法檢查更新：{message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "重新下載"

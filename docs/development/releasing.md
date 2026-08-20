@@ -115,6 +115,44 @@ New work lands under a top `Development` heading during development. At
 release, those bullets are moved under the new version heading. Each bullet is
 short; large items link to documentation rather than describing details inline.
 
+## versions.json
+
+Every release also publishes `versions.json`
+(`scripts/gen-versions-json.mjs`), the manifest the desktop app's
+self-updater reads: one entry per version with its tag, whether it is a
+prerelease, and release notes, plus, on the newest entry only, the
+per-platform download assets and their SHA-256. It is generated on every tag,
+release candidates included; that is safe because
+`releases/latest/download/...` never resolves to a prerelease, so an RC's
+manifest is never served to a stable build (a candidate build instead queries
+the GitHub API for the newest release, prereleases included, by design). A
+version whose GitHub release was later deleted drops out of the manifest on
+the next release, rather than lingering as an advertised download that 404s.
+
+## Release ordering is not chronological
+
+GitHub orders both the releases page and `GET /repos/{owner}/{repo}/releases`
+LEXICOGRAPHICALLY by tag name, not by date, and the order is not configurable.
+So `v0.5.0-rc.10` sorts below `v0.5.0-rc.3`, because as text `1` is less than
+`3`. This is not a release-candidate quirk: `v0.10.0` will sort below `v0.9.0`
+for exactly the same reason.
+
+Do not rely on that order for anything. The self-updater does not: it reads
+several pages, drops drafts, and picks the greatest tag with its own version
+parser (`app_update::fetch::greatest_tag`), which compares the numbers as
+numbers. Sorting by date would be wrong anyway -- we want the highest version,
+and a re-published older release is the newest by time while being the wrong
+answer.
+
+The one ordering-adjacent thing that IS controllable is which release carries
+the "Latest" designation, through the `make_latest` field on release creation.
+It needs no setting here: a candidate is published with `prerelease: true` and
+so can never take it, and a final release takes it by default. That designation,
+not the list order, is what `releases/latest/download/...` resolves against,
+which is why a stable build reading that URL was never affected by any of this.
+
+Treat the page's own order as decoration.
+
 ## macOS signing and notarization
 
 macOS dmg builds are signed and notarized in CI. Signing certificates and

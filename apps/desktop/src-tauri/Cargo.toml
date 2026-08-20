@@ -28,6 +28,15 @@ gettext = "0.4"
 interprocess = "2.4"
 ssh-key = { version = "0.6", features = ["encryption", "crypto", "getrandom"] }
 zeroize = "1"
+argon2 = { version = "0.5", default-features = false, features = ["alloc"] }
+sha1 = "0.11.0"
+sha2 = "0.11.0"
+hex = { workspace = true }
+hmac = "0.13.0"
+aes = { version = "0.9.2", features = ["zeroize"] }
+cbc = { version = "0.2.1", features = ["zeroize"] }
+cipher = { version = "0.5.2", features = ["block-padding"] }
+ureq = { version = "3", default-features = false, features = ["rustls", "json"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"

@@ -12,6 +12,22 @@
     cursor: pointer;
     color: inherit;
   }
-  &__title { display: inline-flex; align-items: center; gap: var(--sk-space-2); font-weight: 600; }
+  &__title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sk-space-2);
+    font-weight: 600;
+    min-width: 0;
+    width: 100%;
+  }
+  // A nested group path (e.g. "platform/lint/rust/name") is one unbreakable
+  // string, so it needs its own ellipsizing box; the version badge after it
+  // stays full-width and pinned.
+  &__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   &__agents { display: inline-flex; flex-wrap: wrap; gap: var(--sk-space-1); }
 }

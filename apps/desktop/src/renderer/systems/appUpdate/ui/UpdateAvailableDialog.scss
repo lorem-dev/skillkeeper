@@ -1,0 +1,106 @@
+// Update-available and update-ready dialogs share these classes (only this
+// file is co-located with a stylesheet; UpdateReadyDialog.tsx reuses it,
+// since both are always mounted in App.tsx and stylesheets here are global,
+// not scoped per component).
+.sk-update-body {
+  margin: 0 0 var(--sk-space-4);
+}
+
+.sk-update-hint {
+  margin: var(--sk-space-2) 0 0;
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
+// The downloaded artifact's path, shown in the ready dialog: the one piece of
+// information a user needs to run the installer by hand if the automated
+// install fails. Monospace (it is a filesystem path, not prose) and wrapped
+// the same way as `.sk-update-fallback-command` below, since an unbroken long
+// path would otherwise stretch the dialog sideways.
+.sk-update-path {
+  margin: var(--sk-space-2) 0 0;
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+  font-family: var(--sk-font-mono, monospace);
+  overflow-wrap: anywhere;
+  // Selectable for the same reason as the command block below: it is a path the
+  // user may need to hand to a shell or a Finder window.
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+// A local exception to Modal's rule that a dialog never scrolls internally:
+// release notes are unbounded, and letting them grow the dialog would push the
+// buttons off a short window. Half the viewport, scrolling inside.
+//
+// `overflow-wrap: anywhere` is the load-bearing part. React escapes the text,
+// so markup cannot get in; the real hazard is one very long unbroken line
+// stretching the dialog sideways.
+.sk-update-notes {
+  max-height: 50vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: var(--sk-space-3);
+  border-radius: var(--sk-radius-sm);
+  background: var(--sk-color-bg-secondary);
+  font-family: var(--sk-font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+// The manual-fallback block shown in UpdateReadyDialog on a macOS install
+// failure: a hint line plus the literal command, styled like `.sk-update-notes`
+// (mono, boxed) since it is also copy-paste text, not prose.
+.sk-update-fallback {
+  margin-top: var(--sk-space-3);
+}
+
+.sk-update-fallback-command-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sk-space-2);
+  margin: var(--sk-space-2) 0 0;
+}
+
+// Kept on ONE line and scrolled horizontally rather than wrapped. A wrapped
+// shell command is harder to read and harder to retype correctly, and the
+// whole point of this block is that the user runs it verbatim. `min-width: 0`
+// is what lets the flex child actually shrink far enough for the scroll to
+// engage instead of widening the dialog.
+//
+// `user-select` is not redundant: `_base.scss` sets `user-select: none` on
+// `body` so the app's chrome behaves like a native app's, and opts only
+// inputs back in. Without this the user could not select the command at all,
+// which for a command they must run by hand is the difference between a
+// usable instruction and a picture of one.
+.sk-update-fallback-command {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: var(--sk-space-3);
+  border-radius: var(--sk-radius-sm);
+  background: var(--sk-color-bg-secondary);
+  font-family: var(--sk-font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+// Fixed-size so the wrapped command text (flex: 1 1 auto, min-width: 0 above)
+// never squeezes it out of view at a narrow dialog width.
+.sk-update-fallback-copy {
+  flex: none;
+}
+
+.sk-update-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sk-space-3);
+  margin-top: var(--sk-space-5);
+}

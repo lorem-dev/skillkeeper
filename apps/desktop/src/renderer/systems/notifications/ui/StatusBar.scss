@@ -16,12 +16,24 @@
   z-index: var(--sk-z-statusbar);
 }
 
-// The version sits on the leading edge, with the buttons pushed to the trailing
-// one by the auto margin. Muted and small: it identifies the build without
-// competing with anything. Not selectable: it is chrome, like the buttons beside
-// it, and a stray drag across the bar should not leave text highlighted.
-.sk-statusbar__version {
+// The version and the update badge share the leading edge; the auto margin
+// moves here from the version so the pair travels together. `min-width: 0`
+// plus the badge's own ellipsis keep a narrow window from growing the bar or
+// pushing the trailing buttons out of it.
+.sk-statusbar__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2);
+  min-width: 0;
+  overflow: hidden;
   margin-right: auto;
+}
+
+// The version sits on the leading edge. Muted and small: it identifies the
+// build without competing with anything. Not selectable: it is chrome, like
+// the buttons beside it, and a stray drag across the bar should not leave
+// text highlighted.
+.sk-statusbar__version {
   padding-left: var(--sk-space-1);
   font-size: 11px;
   color: var(--sk-color-label-3);
@@ -32,12 +44,16 @@
 // Square icon buttons: drop the text-button height/padding to a small square
 // with a lightly rounded corner (distinct from the round action buttons), the
 // glyph centered. Colour + hover come from the plain Button variant.
+// `flex: none` is load-bearing, not decoration: without it these are shrinkable
+// flex items, so a long update badge in the leading region would steal width
+// from them instead of ellipsizing itself, and the glyphs would squash.
 .sk-statusbar__btn {
   width: 26px;
   height: 26px;
   min-width: 0;
   padding: 0;
   border-radius: var(--sk-radius-xs);
+  flex: none;
 }
 
 .sk-statusbar__tasks {

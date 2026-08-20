@@ -35,6 +35,7 @@ import type {
   ApplyMcpResult,
   UpdateMcpArgs,
   UpdateMcpResult,
+  AppUpdateOffer,
 } from '@/services/bridge';
 import { bridgeClient } from '@/services/bridge';
 import { applyScope } from '@/domain';
@@ -44,6 +45,7 @@ import { ensureCatalog, resolveLang } from '@/systems/i18n';
 import { ONBOARDING_ORDER } from '@/app/config/onboarding';
 import { nextStepId, prevStepId } from '@/systems/onboarding';
 import type { StepId } from '@/systems/onboarding';
+import { midDecision } from '@/systems/appUpdate';
 // From the feature's UI-free lib barrel, not its main barrel (`@/features/sshKey`):
 // that one re-exports `ui/SshKeyField.tsx`, which imports `@/app/store` --
 // importing it here would be a cycle (store -> feature UI barrel -> store).
@@ -278,8 +280,11 @@ export interface RepoTask {
   /** 'sync' force-pulls; 'check' fetches to refresh the update indicator;
    *  'update-skill' re-installs one project skill from its repository;
    *  'refresh-projects' re-scans tracked project folders + their skill counts
-   *  (not tied to a repository -- `repoName` is empty). */
-  readonly kind: 'sync' | 'check' | 'update-skill' | 'refresh-projects';
+   *  (not tied to a repository -- `repoName` is empty); 'app-update-check' is
+   *  a self-update check (automatic or the About dialog's manual button --
+   *  also not tied to a repository, see `runAppUpdateCheck`/
+   *  `checkAppUpdateNow`). */
+  readonly kind: 'sync' | 'check' | 'update-skill' | 'refresh-projects' | 'app-update-check';
   readonly status: RepoTaskStatus;
   /** ISO timestamp of when it was queued. */
   readonly at: string;
@@ -443,6 +448,64 @@ export interface SkillkeeperState {
   error: string | null;
   /** Guided-tour progress (persisted via the bridge's onboarding store). */
   onboarding: { active: boolean; step: StepId; completed: boolean };
+  /**
+   * Self-update: the held offer (if any) and the state of an in-flight
+   * download. The offer's own `version` is the single source of "what is
+   * ready" -- there is deliberately no separate ready-version field here (see
+   * `openAppUpdateReady`'s doc comment). The downloaded artifact's path is
+   * NOT duplicated into this object either; it lives in `appUpdateReadyPath`
+   * below, alongside the other ready-dialog-only fields.
+   */
+  appUpdate: {
+    offer: AppUpdateOffer | null;
+    downloading: boolean;
+    percent: number;
+  };
+  /** Whether the "update available" dialog is open. */
+  appUpdateAvailableOpen: boolean;
+  /** Whether the "update ready to install" dialog is open. */
+  appUpdateReadyOpen: boolean;
+  /**
+   * The downloaded artifact's absolute path, from the `appUpdate:ready` event
+   * that opened the ready dialog. Read by `UpdateReadyDialog` -- the spec
+   * requires the path be shown alongside the version, and it is the one piece
+   * of information a user needs to run the installer by hand when the
+   * automated install fails. Null before the first ready event, and cleared
+   * whenever the ready dialog closes, so it never survives past the download
+   * it describes.
+   */
+  appUpdateReadyPath: string | null;
+  /**
+   * True after `installAppUpdate` has failed at least once for the artifact
+   * currently on offer. Read by `UpdateReadyDialog` to surface the manual
+   * fallback (macOS: clearing the quarantine attribute) alongside the
+   * `appUpdate.installFailed` toast, since a plain error notification gives a
+   * user whose OS refuses the copy no way forward. Cleared whenever the ready
+   * dialog opens or closes, so it never survives past the attempt it
+   * describes.
+   */
+  appUpdateInstallFailed: boolean;
+  /**
+   * Whether "Install now" in the ready dialog will actually retry an install
+   * rather than fail with "no downloaded update to install". True whenever a
+   * real download just completed (`openAppUpdateReady` always sets this
+   * true -- there is no path to that event without a verified download
+   * backing it). Only ever false after `notePendingInstallFailure`, for a
+   * marker-based failure whose preserved artifact could not be re-verified:
+   * in that case `UpdateReadyDialog` must not offer a button that cannot
+   * work, and shows a route back to downloading instead. Reset to true on
+   * close, so a later, unrelated open never inherits a stale false.
+   */
+  appUpdateReadyCanInstall: boolean;
+  /** Nonce bumped by `openAppUpdateAvailable`/`openAppUpdateReady` so App
+   *  navigates to Projects, mirroring the `skillsNav`/`mcpNav`/`repoFocus`
+   *  nonce pattern. */
+  appUpdateNav: number;
+  /** Nonce bumped by `focusAppUpdatesSettings` (the macOS Help menu's "Check
+   *  for Updates" item) so App navigates to Settings and its "Application
+   *  updates" section scrolls itself into view. Mirrors the
+   *  `skillsNav`/`mcpNav`/`repoFocus`/`appUpdateNav` nonce pattern. */
+  settingsAppUpdatesNav: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -512,6 +575,19 @@ export interface SkillkeeperActions {
   /** Request focusing one repository (e.g. from an MCP preset's source badge);
    *  bumps `repoFocus.nonce` so a consuming page reacts even to repeat requests. */
   focusRepository(repoId: string): void;
+  /** Request navigating to Settings and scrolling to the "Application
+   *  updates" section (the macOS Help menu's "Check for Updates" item);
+   *  bumps `settingsAppUpdatesNav` so App navigates and the section reacts
+   *  even to repeat requests. */
+  focusAppUpdatesSettings(): void;
+  /**
+   * Consume that request once the section has been scrolled to. Without this
+   * the nonce only ever grows, and since SettingsPage remounts on every
+   * navigation its mount effect would scroll again on any later ordinary
+   * visit -- an auto-scroll nobody asked for. Mirrors
+   * {@link clearAddRepoRequest}.
+   */
+  clearAppUpdatesSettingsFocus(): void;
   setLoading(loading: boolean): void;
   setError(error: string | null): void;
   /** Load all data from the Rust backend via the bridge client. */
@@ -621,6 +697,106 @@ export interface SkillkeeperActions {
   skipOnboarding(): void;
   /** Mark the guided tour completed and hide it. */
   finishOnboarding(): void;
+  /**
+   * Run the renderer's own automatic (startup/scheduled) update check,
+   * tracked as an `app-update-check` task like every other queued
+   * operation -- so a check that ran and found nothing is never
+   * indistinguishable from a check that never ran at all. Skips entirely
+   * (no task queued) while the user is mid-decision on a previous offer
+   * (`midDecision`): a scheduled check must never disturb that. A response
+   * that arrives after the user became mid-decision while it was
+   * outstanding is not applied either, and the task is marked `skipped`
+   * rather than `done`/`error` for the same reason. Otherwise the task ends
+   * `skipped` when the backend reports `suppressed` (it refused to reach the
+   * network: inside the 24-hour interval), or `done` once
+   * it has actually reached the network and decided something.
+   */
+  runAppUpdateCheck(): Promise<void>;
+  /**
+   * Explicit, user-initiated update check (the About dialog's "Check for
+   * updates" button), tracked as an `app-update-check` task like
+   * {@link runAppUpdateCheck}. Bypasses the automatic check's gates
+   * entirely, so it always ends `done` or `error` -- never `skipped`. An
+   * offer reuses the existing "update available" flow via
+   * {@link noteAppUpdateOffer}; nothing newer notifies `appUpdate.upToDate`;
+   * a rejected check notifies `appUpdate.checkFailed` with the message, so a
+   * manual check can never end in silence.
+   */
+  checkAppUpdateNow(): Promise<void>;
+  /**
+   * Record the offer a check just resolved (or null when nothing is on
+   * offer). A fresh offer supersedes any in-flight download state, mirroring
+   * the backend's own `AppUpdateSession` replacement in `app_update_check`.
+   * Opens the "update available" dialog when the offer says to
+   * (`offer.showDialog`).
+   */
+  noteAppUpdateOffer(offer: AppUpdateOffer | null): void;
+  /**
+   * Open the "update available" dialog. Also closes the "ready" one: the two
+   * are mutually exclusive, and enforcing that here (rather than trusting
+   * every future caller to remember) means the invariant survives even a
+   * caller that forgets.
+   */
+  openAppUpdateAvailable(): void;
+  /** Close the "update available" dialog. */
+  closeAppUpdateAvailable(): void;
+  /**
+   * Mark a download as started, synchronously, the moment the user chooses
+   * "Update now" -- rather than waiting for the backend's first progress
+   * event. Without this, closing the "update available" dialog leaves a
+   * window where a download is in flight but `midDecision` cannot yet see it
+   * (nothing is `downloading` until the first progress tick), so a scheduled
+   * check could fire into it and clobber the in-flight state via
+   * `noteAppUpdateOffer`.
+   */
+  startAppUpdateDownload(): void;
+  /**
+   * Open the "ready to install" dialog for the currently held offer, at
+   * `path` (the downloaded artifact's location, from the `appUpdate:ready`
+   * event). Also closes the "update available" one (see
+   * `openAppUpdateAvailable`), clears `appUpdateInstallFailed`, so a fresh
+   * ready event never inherits a previous attempt's failure hint, and sets
+   * `appUpdateReadyCanInstall` true -- this event only ever fires after a
+   * download that just verified, so "Install now" always works here.
+   */
+  openAppUpdateReady(path: string): void;
+  /** Close the "ready to install" dialog and clear `appUpdateInstallFailed`,
+   *  `appUpdateReadyPath`, and `appUpdateReadyCanInstall`. */
+  closeAppUpdateReady(): void;
+  /**
+   * Reopen the "ready to install" dialog, already showing the manual
+   * fallback, for an install failure discovered on a FRESH launch -- one
+   * where the ready dialog never opened this session at all (see
+   * `useAppUpdateSchedule`'s `onAppUpdateFailed` handler: the copy ran, and
+   * failed, inside a helper script after the previous process had already
+   * exited, so there was no dialog open to leave the fallback showing in).
+   *
+   * Unlike `openAppUpdateReady`, this sets `appUpdateInstallFailed` to true
+   * immediately rather than clearing it -- the dialog is being opened BECAUSE
+   * of the failure, not ahead of a fresh attempt. `offer` may be null (this
+   * session never decided one); when given, it becomes the held offer so
+   * `readyBody` can show a version instead of a blank one. `canInstall`
+   * mirrors the backend's `installReady`: false when the preserved artifact
+   * could not be re-verified, in which case `UpdateReadyDialog` must not
+   * offer an "Install now" that cannot work.
+   */
+  notePendingInstallFailure(path: string, offer: AppUpdateOffer | null, canInstall: boolean): void;
+  /** Record download progress (marks the download in-flight). */
+  setAppUpdateProgress(percent: number): void;
+  /**
+   * Clear the in-flight download state (downloading/percent) without
+   * discarding the held offer -- mirrors the backend's `app_update_discard`,
+   * which forgets the downloaded artifact but keeps the offer session alive.
+   * Used after a discard, and to fall back to idle on a download/install
+   * failure.
+   */
+  resetAppUpdate(): void;
+  /**
+   * Record whether the artifact currently on offer has failed to install at
+   * least once. Set on an `appUpdate:failed` event whose `phase` is
+   * `"install"`; cleared by opening or closing the ready dialog.
+   */
+  setAppUpdateInstallFailed(failed: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -799,6 +975,14 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
   loading: false,
   error: null,
   onboarding: { active: false, step: 'welcome', completed: false },
+  appUpdate: { offer: null, downloading: false, percent: 0 },
+  appUpdateAvailableOpen: false,
+  appUpdateReadyOpen: false,
+  appUpdateReadyPath: null,
+  appUpdateInstallFailed: false,
+  appUpdateReadyCanInstall: true,
+  appUpdateNav: 0,
+  settingsAppUpdatesNav: 0,
 
   // Actions
   setConfig(config, validity, warnings) {
@@ -1480,6 +1664,14 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     set((s) => ({ repoFocus: { repoId, nonce: (s.repoFocus?.nonce ?? 0) + 1 } }));
   },
 
+  focusAppUpdatesSettings() {
+    set((s) => ({ settingsAppUpdatesNav: s.settingsAppUpdatesNav + 1 }));
+  },
+
+  clearAppUpdatesSettingsFocus() {
+    set({ settingsAppUpdatesNav: 0 });
+  },
+
   goToMcp(repoId) {
     set((s) => ({
       mcpUi: { ...s.mcpUi, componentsRepoFilter: [repoId] },
@@ -1741,5 +1933,172 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     const { step } = get().onboarding;
     set({ onboarding: { active: false, step, completed: true } });
     void bridgeClient.setOnboarding({ version: 1, completed: true, step });
+  },
+
+  runAppUpdateCheck() {
+    if (midDecision(get())) return Promise.resolve();
+    const taskId = crypto.randomUUID();
+    const setTaskStatus = (status: RepoTask['status']): void =>
+      set((s) => ({ tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)) }));
+    set((s) => ({
+      tasks: [
+        ...s.tasks,
+        {
+          id: taskId,
+          repoId: 'app-update',
+          repoName: '',
+          kind: 'app-update-check' as const,
+          status: 'queued' as const,
+          at: new Date().toISOString(),
+        },
+      ],
+    }));
+    return enqueue(async () => {
+      setTaskStatus('running');
+      try {
+        const outcome = await bridgeClient.checkAppUpdate();
+        if (midDecision(get())) {
+          // The user became mid-decision while this was outstanding: drop the
+          // response rather than clobber a dialog they are reading or a
+          // download in flight (see `midDecision`'s doc comment). The next
+          // scheduled check picks it up.
+          setTaskStatus('skipped');
+          return;
+        }
+        get().noteAppUpdateOffer(outcome.offer);
+        setTaskStatus(outcome.suppressed ? 'skipped' : 'done');
+      } catch {
+        setTaskStatus('error');
+      }
+    });
+  },
+
+  checkAppUpdateNow() {
+    const taskId = crypto.randomUUID();
+    const setTaskStatus = (status: RepoTask['status']): void =>
+      set((s) => ({ tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)) }));
+    set((s) => ({
+      tasks: [
+        ...s.tasks,
+        {
+          id: taskId,
+          repoId: 'app-update',
+          repoName: '',
+          kind: 'app-update-check' as const,
+          status: 'queued' as const,
+          at: new Date().toISOString(),
+        },
+      ],
+    }));
+    return enqueue(async () => {
+      setTaskStatus('running');
+      try {
+        const offer = await bridgeClient.checkAppUpdateNow();
+        get().noteAppUpdateOffer(offer);
+        // No offer at all means nothing newer is available; an offer that
+        // does not open the dialog itself (e.g. already dismissed, or no
+        // installable artifact for this host) still reused the existing
+        // flow above, so it is not "up to date" -- only a genuinely absent
+        // offer is.
+        if (offer === null) get().notify({ key: 'appUpdate.upToDate' }, 'info');
+        setTaskStatus('done');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        get().notify({ key: 'appUpdate.checkFailed', vars: { message } }, 'error');
+        setTaskStatus('error');
+      }
+    });
+  },
+
+  noteAppUpdateOffer(offer) {
+    set({ appUpdate: { offer, downloading: false, percent: 0 } });
+    // `installable` mirrors the badge's own gate (see `badgeState` in
+    // `model.ts`): a release that built nothing for this host has no
+    // "Update now" that can succeed, so the far more intrusive modal must not
+    // open for it either. Without this, an uninstallable offer shows a full
+    // dialog whose only action fails, with no badge left to retry or explain
+    // it -- and, since the offer is cached, that dialog reopens on every
+    // launch until the user happens to press Cancel.
+    if (offer !== null && offer.showDialog && offer.installable) get().openAppUpdateAvailable();
+  },
+
+  // The update-available and update-ready dialogs join the same mutually-
+  // exclusive overlay family as the logs/terminal/tasks/about full-screen
+  // pages: opening one closes those four in the same `set` call. They also
+  // clear EACH OTHER explicitly (not just relying on `midDecision`/callers to
+  // never open both), so the two can never stack even if a future caller
+  // forgets. Each also bumps `appUpdateNav`, mirroring `skillsNav`/`mcpNav`,
+  // so App navigates to Projects to show it.
+  openAppUpdateAvailable() {
+    set((s) => ({
+      appUpdateAvailableOpen: true,
+      appUpdateReadyOpen: false,
+      logsOpen: false,
+      terminalOpen: false,
+      tasksOpen: false,
+      aboutOpen: false,
+      appUpdateNav: s.appUpdateNav + 1,
+    }));
+  },
+
+  closeAppUpdateAvailable() {
+    set({ appUpdateAvailableOpen: false });
+  },
+
+  startAppUpdateDownload() {
+    set((s) => ({ appUpdate: { ...s.appUpdate, downloading: true } }));
+  },
+
+  openAppUpdateReady(path) {
+    set((s) => ({
+      appUpdate: { ...s.appUpdate, downloading: false },
+      appUpdateReadyOpen: true,
+      appUpdateReadyPath: path,
+      appUpdateAvailableOpen: false,
+      appUpdateInstallFailed: false,
+      appUpdateReadyCanInstall: true,
+      logsOpen: false,
+      terminalOpen: false,
+      tasksOpen: false,
+      aboutOpen: false,
+      appUpdateNav: s.appUpdateNav + 1,
+    }));
+  },
+
+  closeAppUpdateReady() {
+    set({
+      appUpdateReadyOpen: false,
+      appUpdateReadyPath: null,
+      appUpdateInstallFailed: false,
+      appUpdateReadyCanInstall: true,
+    });
+  },
+
+  notePendingInstallFailure(path, offer, canInstall) {
+    set((s) => ({
+      appUpdate: { ...s.appUpdate, offer: offer ?? s.appUpdate.offer, downloading: false },
+      appUpdateReadyOpen: true,
+      appUpdateReadyPath: path,
+      appUpdateAvailableOpen: false,
+      appUpdateInstallFailed: true,
+      appUpdateReadyCanInstall: canInstall,
+      logsOpen: false,
+      terminalOpen: false,
+      tasksOpen: false,
+      aboutOpen: false,
+      appUpdateNav: s.appUpdateNav + 1,
+    }));
+  },
+
+  setAppUpdateProgress(percent) {
+    set((s) => ({ appUpdate: { ...s.appUpdate, downloading: true, percent } }));
+  },
+
+  resetAppUpdate() {
+    set((s) => ({ appUpdate: { ...s.appUpdate, downloading: false, percent: 0 } }));
+  },
+
+  setAppUpdateInstallFailed(failed) {
+    set({ appUpdateInstallFailed: failed });
   },
 }));

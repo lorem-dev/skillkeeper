@@ -1,3 +1,7 @@
 [toolchain]
-channel = "stable"
+# Pinned to an exact version, not "stable". A floating channel meant the local
+# gate ran clippy 1.94 while CI's `stable` had moved to 1.97, so lints CI denies
+# were invisible locally and a release candidate reached the tag with a clippy
+# failure. Bump this deliberately, together with the workflows that install it.
+channel = "1.97.1"
 components = ["rustfmt", "clippy"]

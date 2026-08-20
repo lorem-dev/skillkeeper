@@ -1,0 +1,31 @@
+// Storybook canvas overrides. Loaded from `preview.tsx` after the app styles, so
+// these rules win over Storybook's own `base-preview-head.html` defaults.
+//
+// Storybook's `layout: 'centered'` ships two rules that together make a story
+// taller than the viewport unreachable:
+//
+//   .sb-show-main.sb-main-centered           { display: flex; align-items: center; }
+//   .sb-show-main.sb-main-centered #storybook-root { margin: auto; max-height: 100%; }
+//
+// `max-height: 100%` caps the root at the viewport, so tall content is clipped
+// instead of extending the page, and `align-items: center` pushes the overflow
+// above the container's start edge, where scrolling cannot reach it. An expanded
+// skill tree -- a group path may nest three levels, so a branch can hold many
+// more rows than a flat list -- hits both at once.
+//
+// The fix keeps centering for short stories and lets tall ones scroll. `margin:
+// auto` on the root (Storybook's own, kept) still absorbs free space in the cross
+// axis, so a short story stays centered even with the parent aligned to the
+// start; a tall one simply begins at the top and the page grows.
+//
+// `layout: 'fullscreen'` uses `.sb-main-fullscreen` instead, so nothing here
+// touches it.
+.sb-show-main.sb-main-centered {
+  align-items: flex-start;
+
+  #storybook-root {
+    // Let content taller than the viewport extend the page rather than be cut
+    // off at it. Without this, no amount of scrolling reveals the lower rows.
+    max-height: none;
+  }
+}

@@ -37,6 +37,12 @@
   color: var(--sk-color-label-2);
 }
 
+// Wraps the manual "Check for updates" button (AppUpdateCheckButton), between
+// the tagline and the link badges.
+.sk-about__actions {
+  margin-top: var(--sk-space-3);
+}
+
 // Documentation / repository links, shaped as badges in a row. Each button is
 // a bare reset so the inner Badge defines the pill; hover brightens it, and the
 // focus ring sits on the button.

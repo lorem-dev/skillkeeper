@@ -53,5 +53,10 @@ export type {
   McpUpdatePreflightResult,
   TerminalStatus,
   SshKeyDto,
+  AppUpdateOffer,
+  CheckOutcome,
+  AppUpdateProgress,
+  AppUpdateReady,
+  AppUpdateFailed,
 } from './contracts';
 export type { McpServerDef, McpTransport, McpIdentity, McpPresetOrigin } from './generated/core';

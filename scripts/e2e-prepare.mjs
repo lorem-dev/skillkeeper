@@ -104,6 +104,58 @@ if (process.env['SKILLKEEPER_E2E_PIN_FIXTURE'] === '1') {
 
 // 3. Build the binary the specs drive. Debug is enough and much faster; the suite
 //    exercises behaviour, not performance.
+//
+//    `-p skillkeeper-cli` is load-bearing, not tidiness: the desktop app crate is
+//    itself named `skillkeeper` and its binary lands at the same
+//    `target/debug/skillkeeper`, so a plain `cargo build` over the workspace
+//    leaves whichever crate finished last at that path. Building the CLI package
+//    explicitly puts the right one there.
 run('cargo', ['build', '-p', 'skillkeeper-cli']);
 
+// 4. Prove the binary at that path really is the CLI.
+//
+//    Step 3 normally guarantees this on its own: cargo re-links the CLI into
+//    `target/debug` from its fingerprint cache even when nothing needs
+//    recompiling, so it restores the right file after a desktop build put the GUI
+//    app there. Measured, not assumed.
+//
+//    The assertion is here for when that stops holding -- a partial or
+//    interrupted build, a hand-copied binary, a change in how cargo manages that
+//    path. The failure it prevents is expensive to diagnose: the GUI app answers
+//    nothing and waits in the window event loop, so every spec blocks with no
+//    output and no error, which reads as a hung test runner rather than a wrong
+//    binary.
+assertCliBinary();
+
 console.log('\ne2e prerequisites ready.');
+
+/**
+ * Fail loudly unless `target/debug/skillkeeper` answers `--version` like the CLI.
+ *
+ * The desktop app would instead open its event loop and never return, so the
+ * check is a timeout as much as a string match.
+ */
+function assertCliBinary() {
+  const bin = join(ROOT, 'target', 'debug', process.platform === 'win32' ? 'skillkeeper.exe' : 'skillkeeper');
+  console.log(`> ${bin} --version`);
+  const result = spawnSync(bin, ['--version'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    timeout: 20_000,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const printed = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim();
+  const looksLikeCli = /^skillkeeper \S/.test(printed);
+  if (result.error !== undefined || result.status !== 0 || !looksLikeCli) {
+    console.error(
+      `\n${bin} did not respond as the CLI.\n\n` +
+        `Got: ${printed === '' ? '(no output)' : printed}\n\n` +
+        'The desktop app crate is also named `skillkeeper` and writes the same\n' +
+        'path, so something rebuilt it over the CLI -- most likely a workspace-wide\n' +
+        '`cargo build` or `cargo test`. Rebuild the CLI and retry:\n\n' +
+        '    cargo build -p skillkeeper-cli\n',
+    );
+    process.exit(1);
+  }
+  console.log(printed);
+}

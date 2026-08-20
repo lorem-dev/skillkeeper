@@ -80,6 +80,12 @@ passphrase over a local socket private to the user's account, authorised by a
 token minted per git invocation and revoked when that invocation ends. See
 [Using a dedicated SSH key](repositories.md#using-a-dedicated-ssh-key).
 
+A PuTTY-format key is handled differently, and holds less: the app decrypts it
+in memory, hands the result to your ssh-agent, and discards the passphrase
+immediately. Nothing is kept for the rest of the session, because nothing needs
+it -- `ssh` gets the key from the agent. Only the path is persisted, as for any
+other key.
+
 ## Hook-consent policy
 
 The `security.hookConsent` setting in `config.yaml` controls the hook-consent

@@ -66,10 +66,15 @@ describe('fixture submodule', () => {
     const files = fixtureFiles();
     const skills = files.filter((f) => f.endsWith('SKILL.md'));
     const hooks = files.filter((f) => f.endsWith('HOOK.md'));
-    // 9 resolvable skills plus the deliberately unresolvable deep-nesting one.
-    expect(skills).toHaveLength(10);
+    // 12 resolvable skills plus the deliberately unresolvable deep-nesting one,
+    // which now sits four group levels down -- one past the limit of three.
+    expect(skills).toHaveLength(13);
     expect(hooks).toHaveLength(3);
-    expect(skills).toContain('deep-nesting/level-two/too-deep-skill/SKILL.md');
+    expect(skills).toContain('deep-nesting/l2/l3/l4/too-deep-skill/SKILL.md');
+    // One group tree carrying skills at one, two, and three levels at once.
+    expect(skills).toContain('platform/release-skill/SKILL.md');
+    expect(skills).toContain('platform/lint/style-skill/SKILL.md');
+    expect(skills).toContain('platform/lint/rust/clippy-skill/SKILL.md');
     // The scheme-3 sample must stay inert: the resolver reads
     // `skillkeeper.repo.yaml`, so the `.example` suffix is what keeps
     // auto-detection live in this fixture.

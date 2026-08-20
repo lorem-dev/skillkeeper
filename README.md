@@ -101,6 +101,13 @@ skillkeeper skill verify <skill-id>
 skillkeeper skill repair <skill-id>
 ```
 
+Print the command that updates the CLI itself to the latest release, without
+remembering the installer URL:
+
+```shell
+skillkeeper update
+```
+
 Supported agents are `claude`, `codex`, `copilot`, `cursor`, and `opencode`.
 Run `skillkeeper --help` (or `<command> --help`) for the full command set, also
 documented in the
@@ -126,8 +133,9 @@ for the repository format and authoring guide.
 
 [skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo) is a
 fixture repository that exercises every documented resolution path: flat and
-grouped skills, both hook layouts, guidance-file precedence, MCP presets at the
-repository root and inside a group, and a deliberately unresolvable skill. It is
+nested grouped skills (up to three levels), both hook layouts, guidance-file
+precedence, MCP presets at the repository root and inside nested group
+directories, and a deliberately unresolvable skill. It is
 wired into this repository as a Git submodule at `examples/test-repo`. Fetch it
 with `git submodule update --init` (the submodule uses an SSH remote, so this
 needs a GitHub SSH key; the fixture is not required by any build or test).
@@ -142,7 +150,7 @@ the submodule is checked out:
 - [`mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/mcp.yml)
   and
   [`tooling/mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/mcp.yml)
-  -- root and group-scoped MCP presets.
+  -- root and nested group-scoped MCP presets.
 
 Links into a submodule cannot be relative: this repository's tree stores
 `examples/test-repo` as a commit pointer, not as files, so a relative path would

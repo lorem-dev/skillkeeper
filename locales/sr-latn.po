@@ -94,6 +94,9 @@ msgstr "Pokreni vodič"
 msgid "menu.onboarding.skip"
 msgstr "Preskoči vodič"
 
+msgid "menu.checkForUpdates"
+msgstr "Proveri ažuriranja"
+
 msgid "about.version"
 msgstr "Verzija {version}"
 
@@ -219,6 +222,9 @@ msgstr "Ažuriraj veštinu"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "Osveži projekte"
+
+msgid "tasks.kind.app-update-check"
+msgstr "Proveri ažuriranja aplikacije"
 
 msgid "tasks.status.queued"
 msgstr "U redu"
@@ -898,14 +904,8 @@ msgstr "Ekran podešavanja uskoro stiže."
 msgid "settings.section.general"
 msgstr "Opšte"
 
-msgid "settings.section.updates"
-msgstr "Ažuriranja"
 
-msgid "settings.section.agents"
-msgstr "Agenti"
 
-msgid "settings.section.executables"
-msgstr "Izvršne datoteke"
 
 msgid "settings.section.security"
 msgstr "Bezbednost"
@@ -1014,6 +1014,12 @@ msgstr "Sistemska obaveštenja"
 
 msgid "settings.section.onboarding"
 msgstr "Vodič"
+
+msgid "settings.section.appUpdates"
+msgstr "Ažuriranja aplikacije"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper proverava da li postoji nova verzija pri pokretanju i jednom dnevno."
 
 msgid "settings.onboarding.restartHint"
 msgstr "Ponovo pogledajte vođeni vodič od početka."
@@ -1276,3 +1282,69 @@ msgstr "Agenti za {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "Nema izabranih agenata"
+
+msgid "appUpdate.badge"
+msgstr "Ažuriraj na {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "Dostupna je nova verzija"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} je spreman za preuzimanje."
+
+msgid "appUpdate.updateNow"
+msgstr "Ažuriraj sada"
+
+msgid "appUpdate.cancel"
+msgstr "Otkaži"
+
+msgid "appUpdate.readyTitle"
+msgstr "Ažuriranje preuzeto"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} je preuzet i proveren."
+
+msgid "appUpdate.readyPath"
+msgstr "Preuzeto u: {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "Instalacija će zatvoriti SkillKeeper i pokrenuti instalacioni program."
+
+msgid "appUpdate.installNow"
+msgstr "Instaliraj sada"
+
+msgid "appUpdate.notesFooter"
+msgstr "Starije beleške o izdanju nisu uključene ovde. Kompletnu istoriju pogledajte na stranici izdanja."
+
+msgid "appUpdate.downloadFailed"
+msgstr "Nije moguće preuzeti ažuriranje: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "Nije moguće instalirati ažuriranje: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "macOS možda odbija da zameni instaliranu aplikaciju. Pokrenite ovu komandu u Terminal, a zatim ponovo kliknite na {action}:"
+
+msgid "appUpdate.copyCommand"
+msgstr "Kopiraj komandu"
+
+msgid "appUpdate.commandCopied"
+msgstr "Komanda kopirana u ostavu."
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "Kopiranje komande nije uspelo. Izaberite je i kopirajte ručno."
+
+msgid "appUpdate.checkNow"
+msgstr "Proveri ažuriranja"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper je ažuran."
+
+msgid "appUpdate.checkFailed"
+msgstr "Nije moguće proveriti ažuriranja: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "Preuzmi ponovo"

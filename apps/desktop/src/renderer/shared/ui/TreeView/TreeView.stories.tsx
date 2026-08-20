@@ -131,6 +131,64 @@ const longLabels: TreeNode[] = [
   },
 ];
 
+// Project -> repository -> three nested skill-group levels -> skill. Depth 5,
+// the deepest shape the app can produce (group paths are capped at three
+// segments): a skill grouped `platform/lint/rust` renders as one branch per
+// segment, each labelled with just that segment.
+const deepNesting: TreeNode[] = [
+  {
+    id: 'proj-deep',
+    label: 'SkillKeeper',
+    icon: project,
+    detail: '2',
+    selectable: false,
+    children: [
+      {
+        id: 'repo-deep',
+        label: 'anthropic/skills',
+        icon: repo,
+        detail: '2',
+        children: [
+          {
+            id: 'grp-platform',
+            label: 'platform',
+            icon: group,
+            detail: '2',
+            children: [
+              {
+                id: 'grp-platform-lint',
+                label: 'lint',
+                icon: group,
+                detail: '2',
+                children: [
+                  {
+                    id: 'grp-platform-lint-rust',
+                    label: 'rust',
+                    icon: group,
+                    detail: '2',
+                    children: [
+                      { id: 'sk-deep-clippy', label: 'clippy-fixups', icon: skill },
+                      { id: 'sk-deep-fmt', label: 'rustfmt-check', icon: skill },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+];
+
+const DEEP_NESTING_EXPANDED = [
+  'proj-deep',
+  'repo-deep',
+  'grp-platform',
+  'grp-platform-lint',
+  'grp-platform-lint-rust',
+];
+
 function Checkable({
   nodes,
   expanded,
@@ -194,6 +252,13 @@ export const LongLabels: Story = {
   render: () => <Interactive nodes={longLabels} expanded={['repo-long', 'grp-long']} />,
 };
 
+// Project -> repository -> three group levels -> skill: depth 5, the deepest
+// shape the app can produce. Indentation should still leave every label
+// readable at the bottom level.
+export const DeepestNesting: Story = {
+  render: () => <Interactive nodes={deepNesting} expanded={DEEP_NESTING_EXPANDED} />,
+};
+
 // Checkbox selection on groups and skills (not the root). One skill is
 // pre-checked, so its group shows the "mixed" (dash) state.
 export const Checkboxes: Story = {
@@ -241,6 +306,20 @@ export const CheckboxesLeavesOnly: Story = {
       levels={[2]}
       initial={['sk-plans', 'sk-clear']}
     />
+  ),
+};
+
+// Checkboxes across all three nested group levels at once, with NO
+// `checkboxLevels` passed -- that omission is the point. The default checkboxes
+// every node that is not explicitly `selectable: false`, at any depth, which is
+// what a fixed list of depths could not do once group paths began to nest.
+// The deepest group has two skills; pre-checking one leaves each checkbox-bearing
+// ancestor (the three group levels and the repository) showing the tri-state
+// dash. The project root carries `selectable: false`, so it has no checkbox at
+// all -- that is the boundary this story pins.
+export const CheckboxesDeepNesting: Story = {
+  render: () => (
+    <Checkable nodes={deepNesting} expanded={DEEP_NESTING_EXPANDED} initial={['sk-deep-clippy']} />
   ),
 };
 

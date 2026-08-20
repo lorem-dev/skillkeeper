@@ -56,7 +56,7 @@ jobs:
       - name: Set up Node.js 22 with pnpm cache
         uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
 
       - name: Install dependencies (frozen lockfile)
@@ -150,7 +150,7 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" .apt-cache
 
       - name: Set up Rust toolchain (stable + rustfmt + clippy)
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.97.1
         with:
           components: rustfmt, clippy
 
@@ -173,7 +173,7 @@ jobs:
       - name: Set up Node.js 22 with pnpm cache
         uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
 
       - name: Install dependencies (frozen lockfile)
@@ -234,7 +234,7 @@ jobs:
           submodules: true
 
       - name: Set up Rust toolchain (stable)
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.97.1
 
       - name: Cache cargo registry and target
         uses: Swatinem/rust-cache@v2
@@ -247,7 +247,7 @@ jobs:
       - name: Set up Node.js 22 with pnpm cache
         uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
 
       - name: Install dependencies (frozen lockfile)

@@ -13,6 +13,7 @@ import { bridgeClient } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import { Button, Icon } from '@/shared/ui';
 import { cx } from '@/shared/lib';
+import { UpdateBadge } from '@/systems/appUpdate';
 import { resolveBellBadge } from '../bellBadge';
 import './StatusBar.scss';
 
@@ -125,11 +126,14 @@ export function StatusBar() {
   const label = t(badge.labelKey, { count: badge.labelCount });
   return (
     <footer className="sk-statusbar">
-      {version !== '' && (
-        <span className="sk-statusbar__version" title={t('about.version', { version })}>
-          {version}
-        </span>
-      )}
+      <div className="sk-statusbar__lead">
+        {version !== '' && (
+          <span className="sk-statusbar__version" title={t('about.version', { version })}>
+            {version}
+          </span>
+        )}
+        <UpdateBadge />
+      </div>
       <Button
         variant="plain"
         className={cx(

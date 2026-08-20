@@ -8,13 +8,14 @@
 //!    include/exclude globs.
 //! 2. **flat** (scheme 1): a directory at depth 1 directly containing
 //!    `SKILL.md`.
-//! 3. **grouped** (scheme 2): a directory at depth 2 directly containing
-//!    `SKILL.md`, whose parent becomes the skill group.
+//! 3. **grouped** (scheme 2): a directory nested one to three levels below the
+//!    repository root, whose parent directories become the skill's group path
+//!    (`platform/lint/rust/clippy-skill` has group `platform/lint/rust`).
 //!
 //! A directory is a skill if and only if it directly contains `SKILL.md`; the
 //! `hooks/` subdirectory is reserved and never scanned for skill bodies. A
-//! `SKILL.md` nested deeper than depth 2 (and not declared in config) yields an
-//! unresolved-path warning.
+//! `SKILL.md` nested deeper than [`group_path::MAX_SKILL_DEPTH`] (and not
+//! declared in config) yields an unresolved-path warning.
 //!
 //! The TypeScript resolver parses manifests via a zod-backed `manifest.ts`
 //! helper. That module is not yet ported; this port parses `SKILL.md`/`HOOK.md`
@@ -31,6 +32,7 @@ use crate::models::{
     HookManifest, ResolveResult, ResolvedHook, ResolvedSkill, SkillId, SkillManifest,
 };
 use crate::ports::{FsPort, PortResult};
+use crate::skills::group_path;
 use crate::skills::manifest::{self, Parsed};
 use crate::skills::repo_config::parse_repo_config;
 
@@ -164,19 +166,18 @@ fn walk(
     }
 }
 
-/// Build the [`SkillId`] for an auto-detected skill directory.
+/// Build the [`SkillId`] for an auto-detected skill directory: the last path
+/// segment is the name, everything before it is the group path.
 fn auto_skill_id(root_path: &str) -> SkillId {
-    let parts: Vec<&str> = root_path.split('/').collect();
-    if parts.len() == 2 {
-        SkillId {
-            group: Some(parts[0].to_string()),
-            name: parts[1].to_string(),
-        }
-    } else {
-        SkillId {
+    match root_path.rsplit_once('/') {
+        Some((group, name)) => SkillId {
+            group: Some(group.to_string()),
+            name: name.to_string(),
+        },
+        None => SkillId {
             group: None,
-            name: parts[0].to_string(),
-        }
+            name: root_path.to_string(),
+        },
     }
 }
 
@@ -215,6 +216,17 @@ fn note_leniencies(path: &str, notes: Vec<String>, warnings: &mut Vec<String>) {
     for note in notes {
         warnings.push(format!("In {path}: {note}"));
     }
+}
+
+/// The warning for a `SKILL.md` nested deeper than [`group_path::MAX_SKILL_DEPTH`].
+/// Shared by every auto-detect path (scheme 2, and scheme 3's auto-detect
+/// branch) so both emit the byte-identical string.
+fn too_deep_warning(path: &str) -> String {
+    format!(
+        "Unresolved {SKILL_FILE} at \"{path}\": nesting is deeper than {} group levels; \
+         declare it in {REPO_CONFIG} to install it.",
+        group_path::MAX_GROUP_DEPTH
+    )
 }
 
 /// Resolve the hooks declared under a skill's `hooks/` directory.
@@ -357,7 +369,7 @@ fn resolve_from_config(
     }
 
     // No explicit list: auto-detect, then apply include/exclude filters.
-    let SkillDirs { dirs, .. } = find_skill_dirs(fs, repo_root, 2);
+    let SkillDirs { dirs, too_deep } = find_skill_dirs(fs, repo_root, group_path::MAX_SKILL_DEPTH);
     for dir in dirs {
         if let Some(include) = config.include.as_ref() {
             if !matches_any(&dir, include) {
@@ -380,6 +392,9 @@ fn resolve_from_config(
         };
         skills.push(ResolvedSkill { id, ..base });
     }
+    for deep in too_deep {
+        warnings.push(too_deep_warning(&deep));
+    }
     skills
 }
 
@@ -387,7 +402,8 @@ fn resolve_from_config(
 ///
 /// Precedence: if `skillkeeper.repo.yaml` is present at the repo root it is
 /// authoritative (scheme 3). Otherwise skills are auto-detected by locating
-/// `SKILL.md` at depth 1 (scheme 1, flat) or depth 2 (scheme 2, grouped).
+/// `SKILL.md` at depth 1 (scheme 1, flat) or nested up to
+/// [`group_path::MAX_GROUP_DEPTH`] levels below it (scheme 2, grouped).
 pub fn resolve_skills(fs: &dyn FsPort, repo_root: &str) -> ResolveResult {
     let mut warnings: Vec<String> = Vec::new();
 
@@ -398,7 +414,7 @@ pub fn resolve_skills(fs: &dyn FsPort, repo_root: &str) -> ResolveResult {
         return ResolveResult { skills, warnings };
     }
 
-    let SkillDirs { dirs, too_deep } = find_skill_dirs(fs, repo_root, 2);
+    let SkillDirs { dirs, too_deep } = find_skill_dirs(fs, repo_root, group_path::MAX_SKILL_DEPTH);
     let mut skills = Vec::new();
     for dir in dirs {
         if let Ok(Some(skill)) =
@@ -408,10 +424,7 @@ pub fn resolve_skills(fs: &dyn FsPort, repo_root: &str) -> ResolveResult {
         }
     }
     for deep in too_deep {
-        warnings.push(format!(
-            "Unresolved {SKILL_FILE} at \"{deep}\": nesting is deeper than a single group; \
-             declare it in {REPO_CONFIG} to install it."
-        ));
+        warnings.push(too_deep_warning(&deep));
     }
     ResolveResult { skills, warnings }
 }
@@ -522,6 +535,96 @@ mod tests {
             .all(|s| s.id.group.as_deref() == Some("group")));
     }
 
+    #[test]
+    fn resolves_a_skill_two_group_levels_deep() {
+        let fs = MemFs::new().with_file("repo/a/b/mySkill/SKILL.md", &skill_md("mySkill"));
+
+        let result = resolve_skills(&fs, "repo");
+
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected: {:?}",
+            result.warnings
+        );
+        assert_eq!(
+            result.skills[0].id,
+            SkillId {
+                group: Some("a/b".to_string()),
+                name: "mySkill".to_string(),
+            }
+        );
+        assert_eq!(result.skills[0].root_path, "a/b/mySkill");
+    }
+
+    #[test]
+    fn resolves_a_skill_three_group_levels_deep() {
+        let fs = MemFs::new().with_file("repo/a/b/c/mySkill/SKILL.md", &skill_md("mySkill"));
+
+        let result = resolve_skills(&fs, "repo");
+
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected: {:?}",
+            result.warnings
+        );
+        assert_eq!(
+            result.skills[0].id,
+            SkillId {
+                group: Some("a/b/c".to_string()),
+                name: "mySkill".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn warns_instead_of_resolving_beyond_three_group_levels() {
+        let fs = MemFs::new().with_file("repo/a/b/c/d/tooDeep/SKILL.md", &skill_md("tooDeep"));
+
+        let result = resolve_skills(&fs, "repo");
+
+        assert!(result.skills.is_empty());
+        assert_eq!(result.warnings.len(), 1);
+        assert!(result.warnings[0].contains("a/b/c/d/tooDeep"));
+    }
+
+    #[test]
+    fn resolves_a_shallow_and_a_deep_skill_under_the_same_group() {
+        let fs = MemFs::new()
+            .with_file("repo/a/shallow/SKILL.md", &skill_md("shallow"))
+            .with_file("repo/a/b/c/deep/SKILL.md", &skill_md("deep"));
+
+        let result = resolve_skills(&fs, "repo");
+
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected: {:?}",
+            result.warnings
+        );
+        let mut groups: Vec<Option<String>> =
+            result.skills.iter().map(|s| s.id.group.clone()).collect();
+        groups.sort();
+        assert_eq!(
+            groups,
+            vec![Some("a".to_string()), Some("a/b/c".to_string())]
+        );
+    }
+
+    #[test]
+    fn never_treats_a_hidden_directory_as_a_group_at_any_depth() {
+        // A hidden directory is where agents keep INSTALLED skills. At depth 3 it
+        // would otherwise resolve as a group named `a/b/.claude`.
+        let fs = MemFs::new().with_file("repo/a/b/.claude/skills/x/SKILL.md", &skill_md("x"));
+
+        let result = resolve_skills(&fs, "repo");
+
+        assert!(result.skills.is_empty());
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected: {:?}",
+            result.warnings
+        );
+    }
+
     // --- scheme 3 (repo config) ---
 
     #[test]
@@ -620,6 +723,27 @@ mod tests {
     }
 
     #[test]
+    fn resolves_deeply_grouped_skills_and_warns_about_too_deep_ones_in_config_auto_detect_mode() {
+        let fs = MemFs::new()
+            .with_file(
+                "repo/skillkeeper.repo.yaml",
+                "version: 1\ninclude:\n  - \"**\"\n",
+            )
+            .with_file("repo/a/b/c/deep/SKILL.md", &skill_md("deep"))
+            .with_file("repo/x/y/z/w/tooDeep/SKILL.md", &skill_md("tooDeep"));
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(
+            result.skills[0].id,
+            SkillId {
+                group: Some("a/b/c".to_string()),
+                name: "deep".to_string()
+            }
+        );
+        assert_eq!(result.warnings.len(), 1);
+        assert!(result.warnings[0].contains("x/y/z/w/tooDeep"));
+    }
+
+    #[test]
     fn warns_when_a_declared_path_has_no_skill_md() {
         let fs = MemFs::new().with_file(
             "repo/skillkeeper.repo.yaml",
@@ -690,19 +814,10 @@ mod tests {
     }
 
     #[test]
-    fn emits_an_unresolved_path_warning_for_a_three_level_deep_skill_md() {
-        let fs = MemFs::new().with_file("repo/group/sub/tooDeep/SKILL.md", &skill_md("tooDeep"));
-        let result = resolve_skills(&fs, "repo");
-        assert_eq!(result.skills.len(), 0);
-        assert_eq!(result.warnings.len(), 1);
-        assert!(result.warnings[0].contains("group/sub/tooDeep"));
-    }
-
-    #[test]
     fn resolves_shallow_skills_while_warning_about_a_sibling_that_is_too_deep() {
         let fs = MemFs::new()
             .with_file("repo/ok/SKILL.md", &skill_md("ok"))
-            .with_file("repo/a/b/c/SKILL.md", &skill_md("deep"));
+            .with_file("repo/a/b/c/d/e/SKILL.md", &skill_md("deep"));
         let result = resolve_skills(&fs, "repo");
         let names: Vec<String> = result.skills.iter().map(|s| s.id.name.clone()).collect();
         assert_eq!(names, vec!["ok".to_string()]);

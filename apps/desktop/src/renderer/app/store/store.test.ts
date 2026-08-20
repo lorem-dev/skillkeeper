@@ -6,7 +6,7 @@
  * correctly without spinning up a browser or a Tauri runtime.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { McpServerDef, BridgeClient } from '@/services/bridge';
+import type { McpServerDef, BridgeClient, AppUpdateOffer } from '@/services/bridge';
 import {
   useSkillkeeperStore,
   mcpInstallHasUpdate,
@@ -43,6 +43,8 @@ vi.mock('@/services/bridge', () => ({
     setOnboarding: vi.fn(),
     removeProject: vi.fn(),
     removeRepository: vi.fn(),
+    checkAppUpdate: vi.fn(),
+    checkAppUpdateNow: vi.fn(),
   },
 }));
 
@@ -152,6 +154,15 @@ const projectInstall: InstallManifest = {
   installedAt: '2026-01-01T00:00:00.000Z',
   files: [],
   hookEdits: [],
+};
+
+const mockAppUpdateOffer: AppUpdateOffer = {
+  version: '1.4.2',
+  bump: 'minor',
+  notes: '',
+  truncatedHistory: false,
+  installable: true,
+  showDialog: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -494,6 +505,7 @@ describe('useSkillkeeperStore', () => {
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
         onMenuOnboardingToggle: () => () => {},
+        onMenuCheckForUpdates: () => () => {},
         onboardingMenuSync: () => {},
         getAppVersion: () => Promise.resolve('0.0.0-test'),
         addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
@@ -528,9 +540,20 @@ describe('useSkillkeeperStore', () => {
         forgetSshKey: async () => {},
         cancelSshKeyUnlock: async () => {},
         pickSshKeyFile: async () => null,
+        saveSshKeyFile: async () => null,
+        beginSshKeyExport: async () => ({ state: 'notConfigured' as const }),
         promptSshUnlock: async () => {},
         onSshUnlockRequired: () => () => {},
         onSshUnlockResolved: () => () => {},
+        checkAppUpdate: async () => ({ offer: null, suppressed: false }),
+        checkAppUpdateNow: async () => null,
+        downloadAppUpdate: async () => {},
+        installAppUpdate: async () => {},
+        discardAppUpdate: async () => {},
+        dismissAppUpdate: async () => {},
+        onAppUpdateProgress: () => () => {},
+        onAppUpdateReady: () => () => {},
+        onAppUpdateFailed: () => () => {},
         platform: 'darwin',
         minimizeWindow: () => {},
         toggleMaximizeWindow: () => {},
@@ -582,6 +605,7 @@ describe('useSkillkeeperStore', () => {
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
         onMenuOnboardingToggle: () => () => {},
+        onMenuCheckForUpdates: () => () => {},
         onboardingMenuSync: () => {},
         getAppVersion: () => Promise.resolve('0.0.0-test'),
         addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
@@ -616,9 +640,20 @@ describe('useSkillkeeperStore', () => {
         forgetSshKey: async () => {},
         cancelSshKeyUnlock: async () => {},
         pickSshKeyFile: async () => null,
+        saveSshKeyFile: async () => null,
+        beginSshKeyExport: async () => ({ state: 'notConfigured' as const }),
         promptSshUnlock: async () => {},
         onSshUnlockRequired: () => () => {},
         onSshUnlockResolved: () => () => {},
+        checkAppUpdate: async () => ({ offer: null, suppressed: false }),
+        checkAppUpdateNow: async () => null,
+        downloadAppUpdate: async () => {},
+        installAppUpdate: async () => {},
+        discardAppUpdate: async () => {},
+        dismissAppUpdate: async () => {},
+        onAppUpdateProgress: () => () => {},
+        onAppUpdateReady: () => () => {},
+        onAppUpdateFailed: () => () => {},
         platform: 'darwin',
         minimizeWindow: () => {},
         toggleMaximizeWindow: () => {},
@@ -1157,6 +1192,18 @@ describe('useSkillkeeperStore', () => {
     });
   });
 
+  describe('focusAppUpdatesSettings', () => {
+    it('bumps settingsAppUpdatesNav on every call, including repeats', () => {
+      useSkillkeeperStore.setState({ settingsAppUpdatesNav: 0 });
+
+      useSkillkeeperStore.getState().focusAppUpdatesSettings();
+      expect(useSkillkeeperStore.getState().settingsAppUpdatesNav).toBe(1);
+
+      useSkillkeeperStore.getState().focusAppUpdatesSettings();
+      expect(useSkillkeeperStore.getState().settingsAppUpdatesNav).toBe(2);
+    });
+  });
+
   describe('mcpInstallHasUpdate', () => {
     const preset: McpPreset = {
       id: 'repo:repo-1:devtools:linear',
@@ -1353,6 +1400,294 @@ describe('useSkillkeeperStore', () => {
           step: 'welcome',
           completed: false,
         });
+      });
+    });
+  });
+
+  describe('appUpdate actions', () => {
+    beforeEach(() => {
+      useSkillkeeperStore.setState({
+        appUpdate: { offer: null, downloading: false, percent: 0 },
+        appUpdateAvailableOpen: false,
+        appUpdateReadyOpen: false,
+        appUpdateReadyPath: null,
+        appUpdateInstallFailed: false,
+        appUpdateReadyCanInstall: true,
+      });
+    });
+
+    describe('noteAppUpdateOffer', () => {
+      it('opens the available dialog when the offer says to', () => {
+        useSkillkeeperStore.getState().noteAppUpdateOffer({ ...mockAppUpdateOffer, showDialog: true });
+
+        const state = useSkillkeeperStore.getState();
+        expect(state.appUpdate.offer).toEqual({ ...mockAppUpdateOffer, showDialog: true });
+        expect(state.appUpdateAvailableOpen).toBe(true);
+      });
+
+      it('does not open the dialog when the offer says not to', () => {
+        useSkillkeeperStore.getState().noteAppUpdateOffer({ ...mockAppUpdateOffer, showDialog: false });
+
+        expect(useSkillkeeperStore.getState().appUpdateAvailableOpen).toBe(false);
+      });
+
+      it('does not open the dialog when the host has no installable artifact', () => {
+        // A release that built nothing for this host has no "Update now" that
+        // can succeed -- mirrors the badge's own `installable` gate in
+        // `badgeState` (model.ts), so an unsupported host never sees a modal
+        // it cannot act on.
+        useSkillkeeperStore
+          .getState()
+          .noteAppUpdateOffer({ ...mockAppUpdateOffer, showDialog: true, installable: false });
+
+        expect(useSkillkeeperStore.getState().appUpdateAvailableOpen).toBe(false);
+      });
+
+      it('stores null and does not open the dialog when nothing is on offer', () => {
+        useSkillkeeperStore.setState({ appUpdateAvailableOpen: true });
+        useSkillkeeperStore.getState().noteAppUpdateOffer(null);
+
+        const state = useSkillkeeperStore.getState();
+        expect(state.appUpdate.offer).toBeNull();
+        // A null offer must not itself close a dialog already open for another
+        // reason -- only the (absent) `showDialog` gate is checked.
+        expect(state.appUpdateAvailableOpen).toBe(true);
+      });
+
+      it('resets downloading/percent, superseding any in-flight download', () => {
+        useSkillkeeperStore.setState({ appUpdate: { offer: null, downloading: true, percent: 42 } });
+        useSkillkeeperStore.getState().noteAppUpdateOffer(mockAppUpdateOffer);
+
+        const state = useSkillkeeperStore.getState();
+        expect(state.appUpdate.downloading).toBe(false);
+        expect(state.appUpdate.percent).toBe(0);
+      });
+    });
+
+    // C1: the two dialogs must never be open at once, even if a future caller
+    // forgets to close the other one first.
+    describe('the available and ready dialogs are mutually exclusive', () => {
+      it('openAppUpdateAvailable closes the ready dialog', () => {
+        useSkillkeeperStore.setState({ appUpdateReadyOpen: true });
+        useSkillkeeperStore.getState().openAppUpdateAvailable();
+
+        const state = useSkillkeeperStore.getState();
+        expect(state.appUpdateAvailableOpen).toBe(true);
+        expect(state.appUpdateReadyOpen).toBe(false);
+      });
+
+      it('openAppUpdateReady closes the available dialog', () => {
+        useSkillkeeperStore.setState({ appUpdateAvailableOpen: true });
+        useSkillkeeperStore.getState().openAppUpdateReady('/tmp/SkillKeeper-0.7.0.dmg');
+
+        const state = useSkillkeeperStore.getState();
+        expect(state.appUpdateReadyOpen).toBe(true);
+        expect(state.appUpdateAvailableOpen).toBe(false);
+      });
+    });
+
+    describe('appUpdateReadyPath', () => {
+      it('openAppUpdateReady records the path from the ready event', () => {
+        useSkillkeeperStore.getState().openAppUpdateReady('/tmp/SkillKeeper-0.7.0.dmg');
+        expect(useSkillkeeperStore.getState().appUpdateReadyPath).toBe('/tmp/SkillKeeper-0.7.0.dmg');
+      });
+
+      it('closeAppUpdateReady clears the path', () => {
+        useSkillkeeperStore.setState({ appUpdateReadyOpen: true, appUpdateReadyPath: '/tmp/SkillKeeper-0.7.0.dmg' });
+        useSkillkeeperStore.getState().closeAppUpdateReady();
+        expect(useSkillkeeperStore.getState().appUpdateReadyPath).toBeNull();
+      });
+    });
+
+    it('startAppUpdateDownload marks downloading before any progress event', () => {
+      // This is the gap B5 closes: "Update now" closes the available dialog
+      // before the backend's first progress event would otherwise flip
+      // `downloading`, leaving a scheduled check unable to see the in-flight
+      // download in that window.
+      useSkillkeeperStore.getState().startAppUpdateDownload();
+
+      const state = useSkillkeeperStore.getState();
+      expect(state.appUpdate.downloading).toBe(true);
+      expect(state.appUpdate.percent).toBe(0);
+    });
+
+    describe('appUpdateInstallFailed', () => {
+      it('setAppUpdateInstallFailed records the flag', () => {
+        useSkillkeeperStore.getState().setAppUpdateInstallFailed(true);
+        expect(useSkillkeeperStore.getState().appUpdateInstallFailed).toBe(true);
+      });
+
+      it('openAppUpdateReady clears a stale flag from a previous attempt', () => {
+        useSkillkeeperStore.setState({ appUpdateInstallFailed: true });
+        useSkillkeeperStore.getState().openAppUpdateReady('/tmp/SkillKeeper-0.7.0.dmg');
+        expect(useSkillkeeperStore.getState().appUpdateInstallFailed).toBe(false);
+      });
+
+      it('closeAppUpdateReady clears the flag', () => {
+        useSkillkeeperStore.setState({ appUpdateReadyOpen: true, appUpdateInstallFailed: true });
+        useSkillkeeperStore.getState().closeAppUpdateReady();
+        expect(useSkillkeeperStore.getState().appUpdateInstallFailed).toBe(false);
+      });
+    });
+
+    describe('notePendingInstallFailure', () => {
+      it('opens the ready dialog with the fallback flag already set', () => {
+        useSkillkeeperStore.getState().notePendingInstallFailure('/tmp/SkillKeeper-0.7.0.dmg', null, true);
+
+        const state = useSkillkeeperStore.getState();
+        expect(state.appUpdateReadyOpen).toBe(true);
+        expect(state.appUpdateReadyPath).toBe('/tmp/SkillKeeper-0.7.0.dmg');
+        expect(state.appUpdateInstallFailed).toBe(true);
+      });
+
+      it('closes the available dialog, mirroring openAppUpdateReady', () => {
+        useSkillkeeperStore.setState({ appUpdateAvailableOpen: true });
+        useSkillkeeperStore.getState().notePendingInstallFailure('/tmp/SkillKeeper-0.7.0.dmg', null, true);
+        expect(useSkillkeeperStore.getState().appUpdateAvailableOpen).toBe(false);
+      });
+
+      it('adopts the given offer so the dialog can show a version on a fresh session', () => {
+        useSkillkeeperStore
+          .getState()
+          .notePendingInstallFailure('/tmp/SkillKeeper-0.7.0.dmg', mockAppUpdateOffer, true);
+        expect(useSkillkeeperStore.getState().appUpdate.offer).toEqual(mockAppUpdateOffer);
+      });
+
+      it('keeps the previously held offer when none is given', () => {
+        useSkillkeeperStore.setState({
+          appUpdate: { offer: mockAppUpdateOffer, downloading: false, percent: 0 },
+        });
+        useSkillkeeperStore.getState().notePendingInstallFailure('/tmp/SkillKeeper-0.7.0.dmg', null, true);
+        expect(useSkillkeeperStore.getState().appUpdate.offer).toEqual(mockAppUpdateOffer);
+      });
+
+      it('records whether the preserved artifact can actually be installed', () => {
+        useSkillkeeperStore.getState().notePendingInstallFailure('/tmp/SkillKeeper-0.7.0.dmg', null, false);
+        expect(useSkillkeeperStore.getState().appUpdateReadyCanInstall).toBe(false);
+      });
+    });
+
+    describe('appUpdateReadyCanInstall', () => {
+      it('defaults to true so a normal ready dialog always offers a working Install now', () => {
+        expect(useSkillkeeperStore.getState().appUpdateReadyCanInstall).toBe(true);
+      });
+
+      it('openAppUpdateReady resets a stale false from a previous failed attempt', () => {
+        useSkillkeeperStore.setState({ appUpdateReadyCanInstall: false });
+        useSkillkeeperStore.getState().openAppUpdateReady('/tmp/SkillKeeper-0.7.0.dmg');
+        expect(useSkillkeeperStore.getState().appUpdateReadyCanInstall).toBe(true);
+      });
+
+      it('closeAppUpdateReady resets a stale false so a later open is not tainted by it', () => {
+        useSkillkeeperStore.setState({ appUpdateReadyOpen: true, appUpdateReadyCanInstall: false });
+        useSkillkeeperStore.getState().closeAppUpdateReady();
+        expect(useSkillkeeperStore.getState().appUpdateReadyCanInstall).toBe(true);
+      });
+    });
+
+    it('resetAppUpdate clears downloading/percent but keeps the held offer', () => {
+      useSkillkeeperStore.setState({ appUpdate: { offer: mockAppUpdateOffer, downloading: true, percent: 55 } });
+      useSkillkeeperStore.getState().resetAppUpdate();
+
+      const state = useSkillkeeperStore.getState();
+      expect(state.appUpdate.offer).toEqual(mockAppUpdateOffer);
+      expect(state.appUpdate.downloading).toBe(false);
+      expect(state.appUpdate.percent).toBe(0);
+    });
+
+    describe('runAppUpdateCheck (the automatic startup/scheduled check)', () => {
+      beforeEach(() => {
+        useSkillkeeperStore.setState({ tasks: [], notifications: [], toasts: [] });
+        vi.mocked(bridgeClient.checkAppUpdate).mockReset();
+      });
+
+      it('queues an app-update-check task and marks it done once it reaches the network', async () => {
+        vi.mocked(bridgeClient.checkAppUpdate).mockResolvedValue({ offer: null, suppressed: false });
+
+        await useSkillkeeperStore.getState().runAppUpdateCheck();
+
+        const { tasks } = useSkillkeeperStore.getState();
+        expect(tasks).toHaveLength(1);
+        expect(tasks[0]!.kind).toBe('app-update-check');
+        expect(tasks[0]!.status).toBe('done');
+      });
+
+      it('marks the task skipped, not done, when the backend reports suppressed', async () => {
+        // `suppressed` means the backend refused to reach the network at all
+        // (inside the 24-hour interval) -- the offer, if
+        // any, is only whatever was already known, not a fresh decision.
+        vi.mocked(bridgeClient.checkAppUpdate).mockResolvedValue({
+          offer: mockAppUpdateOffer,
+          suppressed: true,
+        });
+
+        await useSkillkeeperStore.getState().runAppUpdateCheck();
+
+        const state = useSkillkeeperStore.getState();
+        expect(state.tasks[0]!.status).toBe('skipped');
+        expect(state.appUpdate.offer).toEqual(mockAppUpdateOffer);
+      });
+
+      it('marks the task error when the request itself rejects', async () => {
+        vi.mocked(bridgeClient.checkAppUpdate).mockRejectedValue(new Error('IPC failure'));
+
+        await useSkillkeeperStore.getState().runAppUpdateCheck();
+
+        expect(useSkillkeeperStore.getState().tasks[0]!.status).toBe('error');
+      });
+
+      it('does not queue a task at all while the user is mid-decision', async () => {
+        useSkillkeeperStore.setState({ appUpdateAvailableOpen: true });
+
+        await useSkillkeeperStore.getState().runAppUpdateCheck();
+
+        expect(useSkillkeeperStore.getState().tasks).toHaveLength(0);
+        expect(bridgeClient.checkAppUpdate).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('checkAppUpdateNow (the About dialog\'s manual button)', () => {
+      beforeEach(() => {
+        useSkillkeeperStore.setState({ tasks: [], notifications: [], toasts: [] });
+        vi.mocked(bridgeClient.checkAppUpdateNow).mockReset();
+      });
+
+      it('opens the existing update-available flow when an offer is found', async () => {
+        vi.mocked(bridgeClient.checkAppUpdateNow).mockResolvedValue({
+          ...mockAppUpdateOffer,
+          showDialog: true,
+        });
+
+        await useSkillkeeperStore.getState().checkAppUpdateNow();
+
+        const state = useSkillkeeperStore.getState();
+        expect(state.appUpdateAvailableOpen).toBe(true);
+        expect(state.tasks[0]!.kind).toBe('app-update-check');
+        expect(state.tasks[0]!.status).toBe('done');
+      });
+
+      it('notifies appUpdate.upToDate when nothing newer is available', async () => {
+        vi.mocked(bridgeClient.checkAppUpdateNow).mockResolvedValue(null);
+
+        await useSkillkeeperStore.getState().checkAppUpdateNow();
+
+        const state = useSkillkeeperStore.getState();
+        expect(state.notifications.some((n) => n.key === 'appUpdate.upToDate')).toBe(true);
+        expect(state.tasks[0]!.status).toBe('done');
+      });
+
+      it('notifies appUpdate.checkFailed with the message and marks the task error on rejection', async () => {
+        // Unlike the automatic check, a manual one must never fold a fetch
+        // failure into silence -- someone who explicitly asked deserves to
+        // be told the request failed.
+        vi.mocked(bridgeClient.checkAppUpdateNow).mockRejectedValue(new Error('network unreachable'));
+
+        await useSkillkeeperStore.getState().checkAppUpdateNow();
+
+        const state = useSkillkeeperStore.getState();
+        const failure = state.notifications.find((n) => n.key === 'appUpdate.checkFailed');
+        expect(failure?.vars).toEqual({ message: 'network unreachable' });
+        expect(state.tasks[0]!.status).toBe('error');
       });
     });
   });

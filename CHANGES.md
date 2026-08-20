@@ -2,6 +2,56 @@
 
 ## Development
 
+## Version 0.5.0
+
+### Added
+
+- The desktop app updates itself. It checks for a newer release on startup and
+  once a day, offers it in the status bar, and can download the right artifact
+  for the platform, verify its checksum, and install it. A dialog appears for a
+  new major or minor version; a patch is offered by the badge alone. A release
+  candidate is offered newer candidates as well as final releases, while a
+  stable build is offered only final ones.
+- An update check can also be started by hand, from About, from the new
+  Application updates section at the end of Settings, or from Check for Updates
+  in the macOS Help menu. Every check appears in the task list with its outcome,
+  so a check that found nothing is distinguishable from one that never ran.
+- `skillkeeper update` prints how to update the CLI on the current platform.
+- Desktop: PuTTY-format private keys (`.ppk`, versions 2 and 3) can now be
+  chosen as the SSH key. They are decrypted in memory and loaded into the
+  ssh-agent; where no agent is available, Settings offers a one-time conversion
+  to an OpenSSH key. The CLI reports such a key with the command that converts
+  it.
+
+### Changed
+
+- Skills and MCP presets may nest up to three group levels instead of one,
+  as in `platform/lint/rust/clippy-skill`.
+- A `group` declared in `skillkeeper.repo.yaml` is now validated against the
+  depth limit and the segment rules.
+- The PuTTY key conversion action in Settings is a warning icon with a tooltip
+  rather than a full-width labelled button, so it no longer crowds the key row.
+- Pages leave more room below their last element, which previously finished
+  flush against the bottom edge and read as clipped.
+- Building from source now needs Node 24 or later, the active LTS line that CI
+  runs.
+- The Rust toolchain is pinned to an exact version instead of the floating
+  stable channel, so a local check and CI run the same linter.
+- The renderer's architectural layer boundaries are now enforced by ESLint
+  instead of documented only.
+- Dependencies refreshed across both ecosystems; every advisory cleared was in
+  build or test tooling, not in shipped code.
+- PuTTY key decryption moved to the current RustCrypto releases, with no change
+  to the formats it accepts.
+- The releasing guide records that GitHub orders releases by tag name as text
+  rather than by date, so nothing comes to depend on that order again.
+
+### Removed
+
+- Three Settings section headings no display had used since those sections were
+  reorganised, in all eighteen catalogues. Translators were maintaining strings
+  nobody could see.
+
 ## Version 0.4.1
 
 ### Added

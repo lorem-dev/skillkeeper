@@ -94,6 +94,9 @@ msgstr "튜토리얼 시작"
 msgid "menu.onboarding.skip"
 msgstr "튜토리얼 건너뛰기"
 
+msgid "menu.checkForUpdates"
+msgstr "업데이트 확인"
+
 msgid "about.version"
 msgstr "버전 {version}"
 
@@ -219,6 +222,9 @@ msgstr "스킬 업데이트"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "프로젝트 새로고침"
+
+msgid "tasks.kind.app-update-check"
+msgstr "앱 업데이트 확인"
 
 msgid "tasks.status.queued"
 msgstr "대기 중"
@@ -934,14 +940,8 @@ msgstr "설정 화면은 곧 제공됩니다."
 msgid "settings.section.general"
 msgstr "일반"
 
-msgid "settings.section.updates"
-msgstr "업데이트"
 
-msgid "settings.section.agents"
-msgstr "에이전트"
 
-msgid "settings.section.executables"
-msgstr "실행 파일"
 
 msgid "settings.section.security"
 msgstr "보안"
@@ -1050,6 +1050,12 @@ msgstr "시스템 알림"
 
 msgid "settings.section.onboarding"
 msgstr "튜토리얼"
+
+msgid "settings.section.appUpdates"
+msgstr "앱 업데이트"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper는 시작할 때와 하루에 한 번 새 버전을 확인합니다."
 
 msgid "settings.onboarding.restartHint"
 msgstr "가이드 튜토리얼을 처음부터 다시 재생합니다."
@@ -1312,3 +1318,69 @@ msgstr "{scope}의 에이전트"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "선택된 에이전트 없음"
+
+msgid "appUpdate.badge"
+msgstr "업데이트 {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "새 버전을 사용할 수 있습니다"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version}을 다운로드할 준비가 되었습니다."
+
+msgid "appUpdate.updateNow"
+msgstr "지금 업데이트"
+
+msgid "appUpdate.cancel"
+msgstr "취소"
+
+msgid "appUpdate.readyTitle"
+msgstr "업데이트 다운로드 완료"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version}을 다운로드하고 검증했습니다."
+
+msgid "appUpdate.readyPath"
+msgstr "다운로드 위치: {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "설치하면 SkillKeeper가 종료되고 설치 프로그램이 시작됩니다."
+
+msgid "appUpdate.installNow"
+msgstr "지금 설치"
+
+msgid "appUpdate.notesFooter"
+msgstr "이전 릴리스 노트는 여기에 포함되지 않습니다. 전체 기록은 릴리스 페이지에서 확인하세요."
+
+msgid "appUpdate.downloadFailed"
+msgstr "업데이트를 다운로드할 수 없습니다: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "업데이트를 설치할 수 없습니다: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "macOS가 설치된 앱 교체를 거부하고 있을 수 있습니다. Terminal에서 다음 명령을 실행한 다음 다시 '{action}'를 선택하세요:"
+
+msgid "appUpdate.copyCommand"
+msgstr "명령어 복사"
+
+msgid "appUpdate.commandCopied"
+msgstr "명령어를 클립보드에 복사했습니다."
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "명령어를 복사할 수 없습니다. 직접 선택하여 복사하세요."
+
+msgid "appUpdate.checkNow"
+msgstr "업데이트 확인"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper가 최신 상태입니다."
+
+msgid "appUpdate.checkFailed"
+msgstr "업데이트를 확인할 수 없습니다: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "다시 다운로드"

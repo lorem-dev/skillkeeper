@@ -94,6 +94,9 @@ msgstr "Начать обучение"
 msgid "menu.onboarding.skip"
 msgstr "Пропустить обучение"
 
+msgid "menu.checkForUpdates"
+msgstr "Проверить обновления"
+
 msgid "about.version"
 msgstr "Версия {version}"
 
@@ -237,6 +240,9 @@ msgstr "Обновить навык"
 
 msgid "tasks.kind.refresh-projects"
 msgstr "Обновление проектов"
+
+msgid "tasks.kind.app-update-check"
+msgstr "Проверка обновлений приложения"
 
 msgid "tasks.status.queued"
 msgstr "В очереди"
@@ -964,14 +970,8 @@ msgstr "Экран настроек скоро появится."
 msgid "settings.section.general"
 msgstr "Общие"
 
-msgid "settings.section.updates"
-msgstr "Обновления"
 
-msgid "settings.section.agents"
-msgstr "Агенты"
 
-msgid "settings.section.executables"
-msgstr "Исполняемые файлы"
 
 msgid "settings.section.security"
 msgstr "Безопасность"
@@ -1080,6 +1080,12 @@ msgstr "Системные уведомления"
 
 msgid "settings.section.onboarding"
 msgstr "Обучение"
+
+msgid "settings.section.appUpdates"
+msgstr "Обновления приложения"
+
+msgid "settings.appUpdates.hint"
+msgstr "SkillKeeper проверяет наличие новой версии при запуске и раз в день."
 
 msgid "settings.onboarding.restartHint"
 msgstr "Пройти обучающий тур с самого начала."
@@ -1321,3 +1327,97 @@ msgstr "Агенты для {scope}"
 
 msgid "skills.agentChoice.agentsPlaceholder"
 msgstr "Агенты не выбраны"
+
+msgid "appUpdate.badge"
+msgstr "Обновить до {version}"
+
+msgid "appUpdate.badgeProgress"
+msgstr "{percent}%"
+
+msgid "appUpdate.availableTitle"
+msgstr "Доступна новая версия"
+
+msgid "appUpdate.availableBody"
+msgstr "SkillKeeper {version} готов к загрузке."
+
+msgid "appUpdate.updateNow"
+msgstr "Обновить сейчас"
+
+msgid "appUpdate.cancel"
+msgstr "Отмена"
+
+msgid "appUpdate.readyTitle"
+msgstr "Обновление загружено"
+
+msgid "appUpdate.readyBody"
+msgstr "SkillKeeper {version} загружен и проверен."
+
+msgid "appUpdate.readyPath"
+msgstr "Загружено: {path}"
+
+msgid "appUpdate.readyHint"
+msgstr "Установка закроет SkillKeeper и запустит установщик."
+
+msgid "appUpdate.installNow"
+msgstr "Установить сейчас"
+
+msgid "appUpdate.notesFooter"
+msgstr "Более старые заметки о выпуске здесь не показаны. Полную историю смотрите на странице релизов."
+
+msgid "appUpdate.downloadFailed"
+msgstr "Не удалось загрузить обновление: {message}"
+
+msgid "appUpdate.installFailed"
+msgstr "Не удалось установить обновление: {message}"
+
+msgid "appUpdate.installFailedFallbackHint"
+msgstr "Возможно, macOS отказывается заменить установленное приложение. Выполните эту команду в Terminal, затем снова нажмите «{action}»:"
+
+msgid "appUpdate.copyCommand"
+msgstr "Скопировать команду"
+
+msgid "appUpdate.commandCopied"
+msgstr "Команда скопирована в буфер обмена."
+
+msgid "appUpdate.commandCopyFailed"
+msgstr "Не удалось скопировать команду. Выделите её и скопируйте вручную."
+
+msgid "appUpdate.checkNow"
+msgstr "Проверить обновления"
+
+msgid "appUpdate.upToDate"
+msgstr "SkillKeeper обновлён до последней версии."
+
+msgid "appUpdate.checkFailed"
+msgstr "Не удалось проверить обновления: {message}"
+
+msgid "appUpdate.downloadAgain"
+msgstr "Загрузить снова"
+
+msgid "settings.ssh.state.puttyLocked"
+msgstr "Ключ PuTTY, заблокирован."
+
+msgid "settings.ssh.state.puttyUnencrypted"
+msgstr "Ключ PuTTY, без пароля."
+
+msgid "settings.ssh.state.puttyInAgent"
+msgstr "Ключ PuTTY, загружен в агент на эту сессию."
+
+msgid "settings.ssh.state.puttyNoAgent"
+msgstr "Ключ PuTTY, но запущенного ssh-agent для него нет."
+
+msgid "settings.ssh.convert"
+msgstr "Преобразовать в ключ OpenSSH"
+
+msgid "ssh.puttyNeedsAgent"
+msgstr "Этому ключу PuTTY нужен ssh-agent. Запустите его или преобразуйте ключ в формат OpenSSH."
+
+msgid "ssh.puttyUnsupportedAlgorithm"
+msgstr "Этот ключ PuTTY использует алгоритм, который OpenSSH больше не поддерживает."
+
+msgid "ssh.puttyDamaged"
+msgstr "Файл ключа PuTTY повреждён."
+
+msgid "ssh.puttyExportFailed"
+msgstr "Не удалось преобразовать ключ."
+

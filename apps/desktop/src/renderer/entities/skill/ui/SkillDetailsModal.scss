@@ -6,6 +6,12 @@
   &__name {
     font-weight: 600;
     color: var(--sk-color-label);
+    // A nested group path (e.g. "platform/lint/rust/name") is one unbreakable
+    // string; ellipsize it instead of letting the modal's own overflow:hidden
+    // hard-clip it.
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__agents {

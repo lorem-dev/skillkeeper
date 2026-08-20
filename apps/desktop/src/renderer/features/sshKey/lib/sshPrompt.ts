@@ -9,7 +9,12 @@ import type { SshKeyDto } from '@/services/bridge';
  * `notConfigured` have nothing to ask about, and `missing`/`notAKey` have no
  * window to raise for them either -- `promptSshUnlock` would only report the
  * same code `selectSshKey` already surfaced.
+ *
+ * Of the PuTTY states, only `puttyLocked` prompts, for the same reason:
+ * `puttyUnencrypted` has no passphrase to ask for, `puttyInAgent` has already
+ * been loaded and dealt with, and `puttyNoAgent` is a missing ssh-agent, not
+ * a passphrase -- a prompt would not fix that.
  */
 export function shouldPromptOnSelect(state: SshKeyDto['state']): boolean {
-  return state === 'locked';
+  return state === 'locked' || state === 'puttyLocked';
 }

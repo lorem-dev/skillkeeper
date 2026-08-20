@@ -4,6 +4,24 @@ import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import prettier from 'eslint-config-prettier';
+import boundaries from 'eslint-plugin-boundaries';
+
+const RENDERER = 'apps/desktop/src/renderer';
+
+// Which layers each layer may import from -- the "Allowed" matrix in
+// apps/desktop/docs/architecture.md. A layer listing itself allows intra-layer
+// imports (one entity may use another); `pages` deliberately omits itself,
+// because a page composing another page is the coupling this forbids.
+const LAYER_MAY_IMPORT = {
+  app: ['app', 'pages', 'features', 'systems', 'entities', 'services', 'domain', 'shared'],
+  pages: ['features', 'systems', 'entities', 'services', 'domain', 'shared', 'app'],
+  features: ['features', 'systems', 'entities', 'services', 'domain', 'shared', 'app'],
+  systems: ['systems', 'services', 'domain', 'shared', 'app'],
+  entities: ['entities', 'services', 'domain', 'shared'],
+  domain: ['services', 'domain', 'shared'],
+  services: ['services', 'shared'],
+  shared: ['shared'],
+};
 
 export default tseslint.config(
   {
@@ -14,6 +32,12 @@ export default tseslint.config(
       '**/coverage/**',
       '**/node_modules/**',
       '**/storybook-static/**',
+      // Cargo build output, both the workspace's and the desktop crate's.
+      // `cargo doc` writes rustdoc's own JavaScript in there, which is written
+      // for a browser and fails `no-undef` on `window` by the thousand -- so
+      // without this, running `cargo doc` before `pnpm lint` buries the real
+      // lint output under generated code nobody edits.
+      '**/target/**',
       // Tool configuration files, including CommonJS ones (jest.config.cjs):
       // they run under their tool's own loader, not the app's module system.
       '**/*.config.{js,cjs,mjs,ts}',
@@ -57,6 +81,44 @@ export default tseslint.config(
       'react/no-danger': 'error',
     },
   },
+  // Architectural layer boundaries for the renderer, enforcing the matrix in
+  // apps/desktop/docs/architecture.md. That document is the source of truth for
+  // WHY each edge exists; `LAYER_MAY_IMPORT` below is the same table in code,
+  // and when the two disagree this config wins.
+  //
+  // One element per layer rather than one per module: the matrix is about
+  // layers, and finer granularity would forbid an entity importing a sibling
+  // entity, which the matrix explicitly allows.
+  {
+    files: [`${RENDERER}/**/*.{ts,tsx}`],
+    plugins: { boundaries },
+    settings: {
+      'boundaries/elements': Object.keys(LAYER_MAY_IMPORT).map((type) => ({
+        type,
+        pattern: `${RENDERER}/${type}/**`,
+      })),
+      // boundaries resolves specifiers through eslint-module-utils, so the `@/`
+      // alias needs a TypeScript-aware resolver. Without it every aliased
+      // import classifies as an unknown dependency and the rules pass on
+      // everything -- silently, which is the worst possible failure for a
+      // guard rail.
+      'import/resolver': {
+        typescript: { project: 'apps/desktop/tsconfig.json' },
+      },
+    },
+    rules: {
+      'boundaries/dependencies': [
+        'error',
+        {
+          default: 'disallow',
+          policies: Object.entries(LAYER_MAY_IMPORT).map(([from, to]) => ({
+            from: { element: { type: from } },
+            allow: { to: { element: { types: { anyOf: to } } } },
+          })),
+        },
+      ],
+    },
+  },
   // Story files legitimately export non-component values (the CSF default
   // meta and named story objects), and a CSF `render` function is invoked as a
   // component by Storybook's runtime even though it is syntactically a plain
@@ -66,6 +128,12 @@ export default tseslint.config(
     rules: {
       'react-refresh/only-export-components': 'off',
       'react-hooks/rules-of-hooks': 'off',
+      // A story is a development harness, not shipped code: it never enters the
+      // app bundle, and showing a primitive in its real context legitimately
+      // reaches across layers -- the TreeView story pulls the Skills page's
+      // node-decoration stylesheet so the rows look like they do in the app.
+      // The layer rule stays on for every file that does ship.
+      'boundaries/dependencies': 'off',
     },
   },
   // Keep this last: disable formatting rules that conflict with Prettier.
