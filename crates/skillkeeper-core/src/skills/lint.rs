@@ -10,6 +10,8 @@
 //!
 //! Reporting only. Nothing here changes what resolves or installs.
 
+use serde::Serialize;
+
 use crate::ports::FsPort;
 use crate::skills::group_path::skill_path;
 use crate::skills::requires::RequiresGraph;
@@ -20,7 +22,8 @@ use crate::skills::resolver::resolve_skills;
 /// `Error` is declared first so the derived [`Ord`] sorts errors before
 /// warnings, which is what [`lint_repository`] relies on to put the most
 /// serious findings first.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Severity {
     /// The repository does not install as written.
     Error,
@@ -28,8 +31,21 @@ pub enum Severity {
     Warning,
 }
 
+impl Severity {
+    /// Lowercase label, identical to the `Serialize` output (`"error"` /
+    /// `"warning"`). The single place a caller should get this text from, so
+    /// human rendering and the JSON wire format never drift apart.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Severity::Error => "error",
+            Severity::Warning => "warning",
+        }
+    }
+}
+
 /// One finding from [`lint_repository`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Diagnostic {
     /// The stable diagnostic code (`SK001`..`SK014`), fixed by the spec. A
     /// caller should match on this, not on `message`.
