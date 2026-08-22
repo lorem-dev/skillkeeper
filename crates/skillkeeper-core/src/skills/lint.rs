@@ -209,7 +209,7 @@ pub fn lint_repository(fs: &dyn FsPort, repo_root: &str) -> Vec<Diagnostic> {
         for declared in skill.manifest.executables.as_deref().unwrap_or(&[]) {
             let normalized = declared.strip_prefix("./").unwrap_or(declared);
             let expected = format!("{}/{normalized}", skill.root_path);
-            if !skill.files.iter().any(|f| *f == expected) {
+            if !skill.files.contains(&expected) {
                 out.push(Diagnostic {
                     code: "SK013",
                     severity: Severity::Warning,
@@ -244,7 +244,7 @@ pub fn lint_repository(fs: &dyn FsPort, repo_root: &str) -> Vec<Diagnostic> {
         a.severity
             .cmp(&b.severity)
             .then_with(|| a.path.cmp(&b.path))
-            .then_with(|| a.code.cmp(&b.code))
+            .then_with(|| a.code.cmp(b.code))
     });
     out
 }

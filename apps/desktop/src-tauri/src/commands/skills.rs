@@ -672,7 +672,7 @@ fn expand_requires(fs: &dyn FsPort, repos: &[Repository], refs: &[SkillRef]) -> 
                 group: skill.id.group.clone(),
                 name: skill.id.name.clone(),
             };
-            if !out.iter().any(|r| *r == candidate) {
+            if !out.contains(&candidate) {
                 out.push(candidate);
             }
         }

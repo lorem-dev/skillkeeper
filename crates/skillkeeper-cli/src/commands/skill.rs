@@ -468,7 +468,7 @@ pub fn install(
         .collect();
     let graph = RequiresGraph::build(&siblings);
     let root_path = skill_path(skill.id.group.as_deref(), &skill.id.name);
-    let order = graph.closure(&[root_path.clone()]);
+    let order = graph.closure(std::slice::from_ref(&root_path));
 
     // A reference with no skill behind it is named, not fatal: the skill the
     // user asked for still installs.
@@ -613,7 +613,7 @@ fn report_missing_requires(
     err: &mut dyn Write,
 ) -> Result<(), CliError> {
     for (referrer, missing) in graph.missing() {
-        if !order.iter().any(|path| *path == referrer) {
+        if !order.contains(&referrer) {
             continue;
         }
         writeln!(
@@ -750,7 +750,7 @@ fn report_broken_dependents(
         for m in &at_target {
             let path = skill_path(m.skill_id.group.as_deref(), &m.skill_id.name);
             let lost: Vec<String> = graph
-                .closure(&[path.clone()])
+                .closure(std::slice::from_ref(&path))
                 .into_iter()
                 .filter(|member| !graph.contains(member))
                 .filter(|member| removed_here.contains(member))
@@ -861,7 +861,7 @@ pub fn update(
         // same-repository by definition.
         let graph = RequiresGraph::build(&siblings);
         let root_path = skill_path(m.skill_id.group.as_deref(), &m.skill_id.name);
-        let order = graph.closure(&[root_path.clone()]);
+        let order = graph.closure(std::slice::from_ref(&root_path));
         report_missing_requires(&graph, &order, err)?;
         let is_global = m.target.scope == Scope::Global;
         let project_hint = project.or(m.target.project_id.as_deref());
