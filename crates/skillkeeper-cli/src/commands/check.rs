@@ -230,6 +230,7 @@ mod tests {
             // A hash that cannot match the resolved content, forcing an update.
             content_hash: Some("stale".to_string()),
             version: None,
+            requires: None,
             installed_at: "2026-07-17T00:00:00.000Z".to_string(),
             files: vec![],
             hook_edits: vec![],

@@ -320,6 +320,13 @@ fn adopt_skill(
         source_path: existing.and_then(|e| e.source_path.clone()),
         content_hash: Some(hash),
         version: existing.and_then(|e| e.version.clone()),
+        // Prefer the identity file: it is exactly the copy that survives a lost
+        // source repository. Fall back to the ledger for a schema-1 skid, which
+        // predates this field.
+        requires: skid
+            .as_ref()
+            .and_then(|s| s.requires.clone())
+            .or_else(|| existing.and_then(|e| e.requires.clone())),
         installed_at: existing
             .map(|e| e.installed_at.clone())
             .unwrap_or_else(|| iso_from_millis(now_ms)),
@@ -1453,5 +1460,211 @@ mod tests {
         std::fs::remove_dir_all(&proj.path).unwrap();
         let kept = reconcile(&app.ctx).unwrap();
         assert_eq!(kept.len(), 1);
+    }
+
+    // ---- adopt_skill: requires ----
+    //
+    // `adopt_skill` is what every `skills:reconcile` call runs for each managed
+    // skill directory, and `reconcile` wholesale-replaces the ledger with its
+    // return values (see `reconcile` above). If `adopt_skill` ever stopped
+    // carrying `requires` through, the first reconcile after any install would
+    // silently erase every recorded dependency. These tests pin that it does
+    // not.
+
+    /// A no-op rehome callback for tests that call `adopt_skill` directly and
+    /// do not care about repo re-homing.
+    fn no_rehome(_: Option<&str>) -> Option<String> {
+        None
+    }
+
+    /// The project-scope Claude target used by the direct `adopt_skill` tests.
+    fn project_target() -> AgentTarget {
+        AgentTarget {
+            agent: AgentKind::Claude,
+            scope: Scope::Project,
+            project_id: Some("proj-1".to_string()),
+        }
+    }
+
+    /// Write a minimal on-disk skill directly under `dest_root/dir_name`
+    /// (`SKILL.md` plus a `.skid.yml`), bypassing `apply`, for tests that
+    /// exercise `adopt_skill` in isolation. `skid_requires` controls the
+    /// identity file's `requires` list.
+    fn write_skill_dir(dest_root: &str, dir_name: &str, skid_requires: Option<&[&str]>) {
+        let dir = Path::new(dest_root).join(dir_name);
+        std::fs::create_dir_all(&dir).expect("create skill dir");
+        std::fs::write(dir.join("SKILL.md"), "---\nname: skill-a\n---\nbody\n")
+            .expect("write SKILL.md");
+        let requires_yaml = skid_requires
+            .map(|list| {
+                let items: String = list.iter().map(|r| format!("\n  - {r}")).collect();
+                format!("requires:{items}\n")
+            })
+            .unwrap_or_default();
+        std::fs::write(
+            dir.join(SKID_FILE),
+            format!("schema: 2\nname: skill-a\nversion: abc\n{requires_yaml}"),
+        )
+        .expect("write .skid.yml");
+    }
+
+    /// A stand-in for a prior install's ledger entry, for tests that pass
+    /// `existing` to `adopt_skill` directly. Only `requires` varies between
+    /// callers.
+    fn ledger_entry(requires: Option<Vec<String>>) -> InstallManifest {
+        InstallManifest {
+            skill_id: SkillId {
+                group: None,
+                name: "skill-a".to_string(),
+            },
+            target: project_target(),
+            destination_root: "/dest".to_string(),
+            source_repo_id: Some("repo-1".to_string()),
+            source_remote: None,
+            source_path: None,
+            content_hash: Some("old-hash".to_string()),
+            version: None,
+            requires,
+            installed_at: "2026-07-17T00:00:00.000Z".to_string(),
+            files: vec![],
+            hook_edits: vec![],
+        }
+    }
+
+    #[test]
+    fn adopt_skill_carries_requires_declared_in_skid_file() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        write_skill_dir(&proj.path(), "skill-a", Some(&["dep-a"]));
+
+        let manifest = adopt_skill(
+            &app.ctx.fs,
+            &proj.path(),
+            "skill-a",
+            &project_target(),
+            &no_rehome,
+            None,
+            0,
+        )
+        .unwrap()
+        .expect("skill-a recognized as a skill");
+        assert_eq!(manifest.requires, Some(vec!["dep-a".to_string()]));
+    }
+
+    #[test]
+    fn adopt_skill_falls_back_to_ledger_requires_when_skid_omits_it() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        write_skill_dir(&proj.path(), "skill-a", None);
+        let existing = ledger_entry(Some(vec!["dep-a".to_string()]));
+
+        let manifest = adopt_skill(
+            &app.ctx.fs,
+            &proj.path(),
+            "skill-a",
+            &project_target(),
+            &no_rehome,
+            Some(&existing),
+            0,
+        )
+        .unwrap()
+        .expect("skill-a recognized as a skill");
+        assert_eq!(
+            manifest.requires,
+            Some(vec!["dep-a".to_string()]),
+            "a schema-1 skid with no requires field must fall back to the ledger"
+        );
+    }
+
+    #[test]
+    fn adopt_skill_requires_is_none_when_neither_source_carries_it() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        write_skill_dir(&proj.path(), "skill-a", None);
+        let existing = ledger_entry(None);
+
+        let manifest = adopt_skill(
+            &app.ctx.fs,
+            &proj.path(),
+            "skill-a",
+            &project_target(),
+            &no_rehome,
+            Some(&existing),
+            0,
+        )
+        .unwrap()
+        .expect("skill-a recognized as a skill");
+        assert_eq!(manifest.requires, None);
+    }
+
+    #[test]
+    fn adopt_skill_prefers_skid_requires_over_a_disagreeing_ledger() {
+        // The identity file sits next to the skill on disk and survives a lost
+        // source repository; it must win over a stale ledger entry.
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        write_skill_dir(&proj.path(), "skill-a", Some(&["skid-dep"]));
+        let existing = ledger_entry(Some(vec!["ledger-dep".to_string()]));
+
+        let manifest = adopt_skill(
+            &app.ctx.fs,
+            &proj.path(),
+            "skill-a",
+            &project_target(),
+            &no_rehome,
+            Some(&existing),
+            0,
+        )
+        .unwrap()
+        .expect("skill-a recognized as a skill");
+        assert_eq!(
+            manifest.requires,
+            Some(vec!["skid-dep".to_string()]),
+            "the identity file must win over a disagreeing ledger entry"
+        );
+    }
+
+    #[test]
+    fn reconcile_preserves_requires_recorded_at_apply_time() {
+        // The end-to-end regression this whole section guards against:
+        // `reconcile` calls `adopt_skill` for every managed skill directory
+        // and replaces the ledger wholesale with the results (see `reconcile`
+        // above), so a `requires` that `adopt_skill` drops here is erased for
+        // good on the very first reconcile after install.
+        let app = TempAppData::new();
+        let src = SkillRepo::new();
+        // Declare a dependency in the skill's own frontmatter so `install_skill`
+        // writes it into both the `.skid.yml` identity file and the ledger.
+        std::fs::write(
+            src.path.join("skill-a").join("SKILL.md"),
+            "---\nname: skill-a\nrequires:\n  - dep-a\n---\nbody\n",
+        )
+        .expect("rewrite SKILL.md with a requires declaration");
+        let proj = ProjectDir::new();
+        let (repo_id, project_id) = seed_state(&app, &src, &proj);
+
+        let mut noop = |_p: ApplyProgress| {};
+        let applied = apply(
+            &app.ctx,
+            apply_args(&project_id, &proj, vec![install_ref(&repo_id)], vec![]),
+            &mut noop,
+        );
+        assert!(applied.ok, "apply failed: {:?}", applied.error);
+        let installed = load_state(&app.ctx.fs, &app.ctx.paths.state_json)
+            .unwrap()
+            .installs;
+        assert_eq!(
+            installed[0].requires,
+            Some(vec!["dep-a".to_string()]),
+            "apply did not record requires"
+        );
+
+        let kept = reconcile(&app.ctx).unwrap();
+        assert_eq!(kept.len(), 1);
+        assert_eq!(
+            kept[0].requires,
+            Some(vec!["dep-a".to_string()]),
+            "reconcile lost requires"
+        );
     }
 }

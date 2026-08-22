@@ -33,6 +33,12 @@ sourcePath?: string,
  */
 contentHash?: string, version?: string, 
 /**
+ * Skill paths this skill declared as dependencies at install time.
+ * Mirrors `.skid.yml`; the ledger copy is what the desktop reads to mark a
+ * skill whose dependency is gone.
+ */
+requires?: Array<string>, 
+/**
  * ISO-8601 install timestamp.
  */
 installedAt: string, files: Array<ManagedFile>, hookEdits: Array<ManagedHookEdit>, };
