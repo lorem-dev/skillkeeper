@@ -5,14 +5,22 @@
  * mirrors how the MCP page split into Components + Management.
  *
  * A tree of project -> ("repo / group" ->) skills, pre-checked where installed,
- * with a per-skill install-status badge (present / add / remove), non-clickable
- * update dots plus a hover "update" action where a newer version exists, and a
- * per-project agent picker. "Save" applies the diff via `SkillSaveModal`.
+ * with a per-skill install-status badge (present / add / add-as-dependency /
+ * remove / broken-dependency), non-clickable update dots plus a hover "update"
+ * action where a newer version exists, and a per-project agent picker. "Save"
+ * applies the diff via `SkillSaveModal`.
  * Project + repository multi-selects narrow which nodes appear; a search box
  * fuzzy-filters the tree; a footer summarizes the result and clears the
  * search/filters.
  *
- * View + selection state (query, filters, checked set, per-project agents, tree
+ * The stored selection is the user's HAND PICKS plus the repairs asked for; the
+ * dependency closure around them is derived per render (`entities/skill`'s
+ * selection model) and is what the tree, the badges, the pending counts and the
+ * save all read. Checking a skill therefore also checks what it requires, and
+ * an installed skill whose dependency has gone missing carries a clickable
+ * marker that arms the whole missing closure for reinstall.
+ *
+ * View + selection state (query, filters, hand picks, per-project agents, tree
  * expansion) lives in the store's shared `skillsUi` slice so it survives
  * navigating between the two sub-pages and away/back. On mount this page pins
  * `skillsUi.mode` to 'projects' so the store discriminator,
@@ -54,6 +62,14 @@ import {
   countLeaves,
   projectSkillKey,
   projectNodeId,
+  buildScopedGraph,
+  brokenLeaves,
+  closure,
+  contains,
+  deriveSelection,
+  dropMissing,
+  applyCheckChange,
+  restore,
 } from '@/entities/skill';
 import { SkillSaveModal, AgentChoiceModal } from '@/features/skillSave';
 import './SkillsPage.scss';
@@ -85,6 +101,7 @@ export function SkillsManagementPage() {
     repoFilter,
     projectFilter,
     projectChecked,
+    projectRestored,
     projectAgents,
     expandedIds: persistedExpandedIds,
   } = skillsUi;
@@ -107,7 +124,6 @@ export function SkillsManagementPage() {
   const setQuery = (value: string): void => setSkillsUi({ query: value });
   const setRepoFilter = (value: string[]): void => setSkillsUi({ repoFilter: value });
   const setProjectFilter = (value: string[]): void => setSkillsUi({ projectFilter: value });
-  const setProjectChecked = (ids: string[]): void => setSkillsUi({ projectChecked: ids });
 
   // The installed skills are the baseline the selection diffs against
   // (pre-checked leaves + each project's installed agents).
@@ -121,11 +137,94 @@ export function SkillsManagementPage() {
   // still need reviewing).
   const scopeIds = useMemo(() => [GLOBAL_SCOPE_ID, ...projects.map((p) => p.id)], [projects]);
 
+  // The dependency graph, drawn from the catalog UNIONED with the ledger, so an
+  // orphan (installed, repository gone) still contributes the edges it was
+  // installed with -- otherwise its broken state could not be detected. Keyed by
+  // project-mode leaf id, because that is what this tree's checkboxes are: the
+  // repo-mode graph would resolve none of them.
+  const graph = useMemo(
+    () => buildScopedGraph(scopeIds, availableSkills, installs),
+    [scopeIds, availableSkills, installs],
+  );
+
+  // The selection, derived ONCE per render from the hand picks plus whatever
+  // repairs were asked for. Everything below reads THIS value -- the tree's
+  // checked set, the badges, the pending counts, and the diff every checkbox
+  // change is computed against -- so the drawn state and the state clicks are
+  // interpreted against cannot drift apart.
+  const selection = useMemo(
+    () =>
+      dropMissing(
+        graph,
+        deriveSelection({ explicit: projectChecked, restored: projectRestored }, installedIds, graph),
+      ),
+    [projectChecked, projectRestored, installedIds, graph],
+  );
+  const shownSet = useMemo(() => new Set(selection.shown), [selection]);
+
+  /**
+   * Fold a checkbox change from the tree into the stored selection.
+   *
+   * Diffed against `selection.shown` -- the exact set the tree was drawn from,
+   * so the ids reported as changed are the ones the user really acted on. BOTH
+   * halves are written back: unchecking a leaf whose repair was pending has to
+   * clear that repair too, or the closure would keep re-seeding it and the box
+   * would refuse to clear.
+   */
+  const onCheckedChange = (next: string[]): void => {
+    const updated = applyCheckChange(
+      { explicit: projectChecked, restored: projectRestored },
+      installedIds,
+      graph,
+      selection.shown,
+      next,
+    );
+    setSkillsUi({ projectChecked: [...updated.explicit], projectRestored: [...updated.restored] });
+  };
+
+  // Installed leaves missing a dependency, per scope, mapped to the missing
+  // references. Evaluated over every scope the page reviews rather than only the
+  // filtered ones, matching how `scopeIds` is used for the save diff.
+  const brokenByLeaf = useMemo(() => {
+    const all = new Map<string, string[]>();
+    for (const scopeId of scopeIds) {
+      for (const [leaf, missing] of brokenLeaves({ scopeId, available: availableSkills, installs })) {
+        all.set(leaf, missing);
+      }
+    }
+    return all;
+  }, [scopeIds, availableSkills, installs]);
+
+  // Of the broken leaves, the ones a repair could actually do something for: at
+  // least one skill in their closure both exists (it is a node of the graph, so
+  // some repository or ledger entry knows it) and is not installed here yet.
+  //
+  // A leaf whose only missing reference names a skill that exists NOWHERE fails
+  // this test, and its marker is rendered without a click below. The badge must
+  // not offer a repair it cannot perform: the click would arm a closure that
+  // `dropMissing` then empties, so nothing would appear to happen -- or, before
+  // that filter existed, it would have built an apply plan with a row that has
+  // to fail. Where SOME of the missing references are installable the leaf stays
+  // clickable and the marker stays orange afterwards, which is exactly the
+  // truth: part of it was repaired, part of it cannot be.
+  const repairableLeaves = useMemo(() => {
+    const out = new Set<string>();
+    for (const leaf of brokenByLeaf.keys()) {
+      const canFix = closure(graph, [leaf]).some(
+        (id) => contains(graph, id) && !installedSet.has(id),
+      );
+      if (canFix) out.add(leaf);
+    }
+    return out;
+  }, [brokenByLeaf, graph, installedSet]);
+
   // Scopes whose checked skills would install nothing because no agent is
   // chosen -- Save opens the agent-choice modal first when this is non-empty.
+  // Reads the derived set: a scope holding nothing but dependencies still needs
+  // an agent to install them for.
   const needsAgents = useMemo(
-    () => scopesNeedingAgents(scopeIds, projectChecked, installedIds, projectAgents),
-    [scopeIds, projectChecked, installedIds, projectAgents],
+    () => scopesNeedingAgents(scopeIds, selection.shown, installedIds, projectAgents),
+    [scopeIds, selection, installedIds, projectAgents],
   );
 
   // Leaf ids whose skill ships a guidance file -> grey "rules" badge, keyed to
@@ -193,7 +292,7 @@ export function SkillsManagementPage() {
       </span>
     );
 
-    const checkedSet = new Set(projectChecked);
+    const dependencySet = new Set(selection.dependency);
     const { updatesByNode, orphanLeaves, statusByLeaf } = projectModel;
     // A node's label: name, then a non-interactive update dot when an update is
     // available, then a single action/status badge. The update action badge
@@ -274,14 +373,49 @@ export function SkillsManagementPage() {
         };
       }
       const wasInstalled = installedSet.has(node.id);
-      const isChecked = checkedSet.has(node.id);
+      const isChecked = shownSet.has(node.id);
+      const broken = brokenByLeaf.get(node.id);
+      const isDependency = dependencySet.has(node.id);
       let detail: ReactNode;
-      if (wasInstalled && isChecked)
+      // Broken outranks every pending change on the same row: it is a statement
+      // about what IS installed, which matters more than a queued diff. A leaf
+      // that is currently dependency-tinted is mid-repair, so it is excluded --
+      // the tint already says the missing piece is coming back.
+      if (broken !== undefined && !isDependency) {
+        // Clickable only where a repair would install something (see
+        // `repairableLeaves`); otherwise `ChangeBadge` falls back to its
+        // non-interactive form, which still carries the tooltip explaining the
+        // state. The badge stops its own click and its own Enter/Space, so the
+        // row behind it neither toggles nor expands -- hence no
+        // `sk-skills-badgewrap` here, which would take its keyboard handling out
+        // of the picture.
+        const repair = repairableLeaves.has(node.id)
+          ? () =>
+              setSkillsUi({
+                projectRestored: [
+                  ...restore({ explicit: projectChecked, restored: projectRestored }, node.id).restored,
+                ],
+              })
+          : undefined;
+        detail = (
+          <ChangeBadge kind="broken" label={t('skills.status.brokenRequires')} onClick={repair} />
+        );
+      }
+      // An installed skill held on by somebody else's dependency IS present --
+      // it stays installed, and the teal checkbox already says why it is held.
+      // No `!isDependency` guard here: it would leave that row the only
+      // installed row in the tree with no badge at all.
+      else if (wasInstalled && isChecked)
         detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
       else if (wasInstalled && !isChecked)
         detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
       else if (!wasInstalled && isChecked)
-        detail = <ChangeBadge kind="add" label={t('skills.status.add')} />;
+        detail = (
+          <ChangeBadge
+            kind={isDependency ? 'add-dependency' : 'add'}
+            label={isDependency ? t('skills.status.addDependency') : t('skills.status.add')}
+          />
+        );
       else detail = undefined;
       // Installed-from-a-tracked-repo leaves (present/update) render their glyph
       // in the accent color, matching how installed MCP instances render blue --
@@ -344,6 +478,11 @@ export function SkillsManagementPage() {
     shownTree,
     guidanceIds,
     projectChecked,
+    projectRestored,
+    selection,
+    shownSet,
+    brokenByLeaf,
+    repairableLeaves,
     installedSet,
     projectAgents,
     installedAgents,
@@ -365,12 +504,14 @@ export function SkillsManagementPage() {
     ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])]
     : baseExpandedIds;
 
-  // Pending change (drives the Save button + its notification).
-  const pendingAdd = projectChecked.filter((id) => !installedSet.has(id)).length;
-  const pendingRemove = useMemo(() => {
-    const checkedSet = new Set(projectChecked);
-    return [...installedSet].filter((id) => !checkedSet.has(id)).length;
-  }, [projectChecked, installedSet]);
+  // Pending change (drives the Save button + its notification). Counted from the
+  // derived set, so a selection consisting only of dependencies still shows the
+  // dock -- they are real installs.
+  const pendingAdd = selection.shown.filter((id) => !installedSet.has(id)).length;
+  const pendingRemove = useMemo(
+    () => [...installedSet].filter((id) => !shownSet.has(id)).length,
+    [shownSet, installedSet],
+  );
   // Agents changing (even with no skill change) is a saveable diff too -- the
   // global scope's row is a live `AgentSelect` same as any project's, so its
   // pending agent change must count here too, or Save/Reset never appears.
@@ -518,8 +659,9 @@ export function SkillsManagementPage() {
             className="sk-skills-tree"
             nodes={decorated}
             checkable
-            checkedIds={projectChecked}
-            onCheckedChange={setProjectChecked}
+            checkedIds={selection.shown}
+            dependencyIds={selection.dependency}
+            onCheckedChange={onCheckedChange}
             defaultExpandedIds={expandedIds}
             onExpandedChange={(ids) => setSkillsUi({ expandedIds: ids })}
             ariaLabel={t('skills.managementTitle')}
@@ -558,7 +700,7 @@ export function SkillsManagementPage() {
       <SkillSaveModal
         open={saveOpen}
         onClose={() => setSaveOpen(false)}
-        checkedIds={projectChecked}
+        checkedIds={selection.shown}
         projectAgents={projectAgents}
       />
     </Page>

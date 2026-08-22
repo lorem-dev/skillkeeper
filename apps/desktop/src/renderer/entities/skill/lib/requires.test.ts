@@ -5,6 +5,7 @@ import { projectSkillKey, repoSkillKey } from './skillTree';
 import {
   brokenLeaves,
   buildGraph,
+  buildScopedGraph,
   closure,
   contains,
   dependents,
@@ -478,5 +479,61 @@ describe('brokenLeaves', () => {
 
   it('is empty input safe', () => {
     expect(brokenLeaves({ scopeId: 'p1', available: [], installs: [] }).size).toBe(0);
+  });
+});
+
+describe('buildScopedGraph', () => {
+  it('keys its nodes by project-mode leaf id, per scope', () => {
+    const g = buildScopedGraph(['p1', 'p2'], chain, []);
+    expect(contains(g, pk('p1', 'a'))).toBe(true);
+    expect(contains(g, pk('p2', 'a'))).toBe(true);
+    // The repo-mode key is NOT a node: the key spaces do not overlap.
+    expect(contains(g, rk('a'))).toBe(false);
+  });
+
+  it('keeps each scope closure inside its own scope', () => {
+    const g = buildScopedGraph(['p1', 'p2'], chain, []);
+    expect(closure(g, [pk('p1', 'a')])).toEqual([pk('p1', 'a'), pk('p1', 'b'), pk('p1', 'c')]);
+    // Nothing in p1 depends on anything in p2, and vice versa.
+    expect(dependents(g, [pk('p2', 'c')])).toEqual([pk('p2', 'a'), pk('p2', 'b')].sort());
+  });
+
+  it('takes ledger edges from the manifests of the requested scopes only', () => {
+    // `a` is an orphan in p1 (absent from the catalog) whose manifest records
+    // the edge; the same manifest in p2 must not leak into p1.
+    const installs = [...inst('p1', 'a', ['claude'], ['b']), ...inst('p2', 'x', ['claude'], ['y'])];
+    const g = buildScopedGraph(['p1'], [], installs);
+    expect(requiresOf(g, pk('p1', 'a'))).toEqual([pk('p1', 'b')]);
+    expect(contains(g, pk('p2', 'x'))).toBe(false);
+  });
+
+  it('resolves a global-scope manifest into the global scope', () => {
+    const g = buildScopedGraph([GLOBAL_SCOPE_ID], [], inst(GLOBAL_SCOPE_ID, 'a', ['claude'], ['b']));
+    expect(requiresOf(g, pk(GLOBAL_SCOPE_ID, 'a'))).toEqual([pk(GLOBAL_SCOPE_ID, 'b')]);
+  });
+
+  it('merges a repeated scope rather than duplicating its edges', () => {
+    const g = buildScopedGraph(['p1', 'p1'], [mk('a', ['b']), mk('b')], []);
+    expect(requiresOf(g, pk('p1', 'a'))).toEqual([pk('p1', 'b')]);
+  });
+
+  it('is empty input safe', () => {
+    expect(contains(buildScopedGraph([], chain, []), pk('p1', 'a'))).toBe(false);
+  });
+
+  it('sorts a scoped dependents report by path, not by key', () => {
+    // The fixture inverts under the bug, which is the only kind worth having.
+    // A scoped key is `scope::repo::group::name`; a fixed three-field parse reads
+    // (scope, repo, group) and DROPS the name, so `p1::r1::a::z` reads as the
+    // path `r1/a` and `p1::r1::a-x::b` as `r1/a-x` -- and `r1/a` is a prefix, so
+    // it sorts first. Reading the trailing (group, name) pair instead gives the
+    // real paths `a/z` and `a-x/b`, where `-` (0x2D) precedes `/` (0x2F), so
+    // `a-x/b` sorts first. Opposite orders: the bug cannot pass this.
+    const g = buildScopedGraph(
+      ['p1'],
+      [mk('a/z', ['dep']), mk('a-x/b', ['dep']), mk('dep')],
+      [],
+    );
+    expect(dependents(g, [pk('p1', 'dep')])).toEqual([pk('p1', 'a-x/b'), pk('p1', 'a/z')]);
   });
 });

@@ -30,6 +30,7 @@ export type {
 } from './lib/skillTree';
 export {
   buildGraph,
+  buildScopedGraph,
   closure,
   dependents,
   contains,
@@ -38,7 +39,7 @@ export {
   brokenLeaves,
 } from './lib/requires';
 export type { RequiresGraph, BrokenArgs } from './lib/requires';
-export { deriveSelection, toggle, applyCheckChange, restore } from './lib/selection';
+export { deriveSelection, dropMissing, toggle, applyCheckChange, restore } from './lib/selection';
 export type { Selection, DerivedSelection } from './lib/selection';
 export { buildProjectPlan, scopesNeedingAgents } from './lib/applyPlan';
 export type { ProjectPlan, AgentOps, SkillChangeRow } from './lib/applyPlan';

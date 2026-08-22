@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AvailableSkill } from '@/services/bridge';
 import { repoSkillKey } from './skillTree';
 import { buildGraph } from './requires';
-import { applyCheckChange, deriveSelection, restore, toggle } from './selection';
+import { applyCheckChange, dropMissing, deriveSelection, restore, toggle } from './selection';
 
 /** The single repository every fixture skill belongs to. */
 const REPO = 'r1';
@@ -263,5 +263,33 @@ describe('restore', () => {
 
   it('leaves the explicit set untouched', () => {
     expect(restore(sel([K('a')]), K('a')).explicit).toEqual([K('a')]);
+  });
+});
+
+describe('dropMissing', () => {
+  // `x` requires `ghost`, which no repository and no ledger entry mentions.
+  const graph = buildGraph([mk('x', ['ghost']), mk('y')], []);
+  const X = 'r1::::x';
+  const GHOST = 'r1::::ghost';
+
+  it('keeps an unresolvable reference out of the checked set', () => {
+    const derived = deriveSelection({ explicit: [X], restored: [] }, [], graph);
+    // The derivation itself still reports it -- that is what makes the leaf
+    // visibly broken rather than silently fine.
+    expect(derived.shown).toEqual([X, GHOST]);
+    expect(derived.dependency).toEqual([GHOST]);
+
+    const real = dropMissing(graph, derived);
+    expect(real.shown).toEqual([X]);
+    expect(real.dependency).toEqual([]);
+  });
+
+  it('leaves a selection of real skills untouched', () => {
+    const derived = deriveSelection({ explicit: [X, 'r1::::y'], restored: [] }, [], graph);
+    expect(dropMissing(graph, derived).shown).toEqual([X, 'r1::::y']);
+  });
+
+  it('is empty input safe', () => {
+    expect(dropMissing(graph, { shown: [], dependency: [] })).toEqual({ shown: [], dependency: [] });
   });
 });

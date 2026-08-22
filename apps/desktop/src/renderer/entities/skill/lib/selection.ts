@@ -27,7 +27,7 @@
  * it before -- or instead of -- the skill that needs it, which
  * {@link deriveSelection} then honours by leaving it out of `dependency`.
  */
-import { closure, dependents } from './requires';
+import { closure, contains, dependents } from './requires';
 import type { RequiresGraph } from './requires';
 
 /** What the store keeps. Everything else about the selection is derived. */
@@ -70,6 +70,28 @@ export function deriveSelection(
   for (const id of closure(graph, [...new Set(seeds)])) shown.add(id);
   const shownList = [...shown];
   return { shown: shownList, dependency: shownList.filter((id) => !explicit.has(id)) };
+}
+
+/**
+ * Drop the ids that are not skills at all from a derived selection.
+ *
+ * {@link closure} deliberately keeps a reference it could not resolve, so that a
+ * caller can tell "this dependency is missing" from "this dependency was never
+ * mentioned". That is right for a report and wrong for a checkbox set: a
+ * reference naming a skill that exists in no repository and no ledger entry is
+ * not a row in any tree, and passing it on means counting a pending install that
+ * cannot happen and building an apply plan with a row that must fail.
+ *
+ * So every surface that turns a selection into something the user acts on files
+ * it through here first. `dependency` is filtered with the same predicate rather
+ * than recomputed, so the two lists stay in step by construction.
+ *
+ * This is a filter, not a repair: the leaf that named the missing reference is
+ * still broken, and still says so.
+ */
+export function dropMissing(graph: RequiresGraph, derived: DerivedSelection): DerivedSelection {
+  const real = (id: string): boolean => contains(graph, id);
+  return { shown: derived.shown.filter(real), dependency: derived.dependency.filter(real) };
 }
 
 /**

@@ -19,7 +19,7 @@
  */
 import type { AgentKind, AvailableSkill, InstallManifest } from '@/services/bridge';
 import { scopeIdOf } from '@/domain';
-import { parseRepoSkillKey, projectSkillKey, repoSkillKey } from './skillTree';
+import { parseRepoSkillKey, parseSkillKeyTail, projectSkillKey, repoSkillKey } from './skillTree';
 
 /** A skill's reference form: `group/name`, or `name` when ungrouped. */
 export function skillPath(group: string | undefined, name: string): string {
@@ -40,11 +40,17 @@ function keyOf(repoId: string, path: string): string {
 }
 
 /**
- * Render a repo-mode key back as the reference form an author would recognize,
- * so a tooltip or a message shows `group/name` rather than an internal key.
+ * Render a checkbox key back as the reference form an author would recognize, so
+ * a tooltip or a message shows `group/name` rather than an internal key.
+ *
+ * Arity-tolerant via {@link parseSkillKeyTail}, so it is correct for a
+ * project-mode key as well as a repo-mode one. That matters: a fixed three-field
+ * parse drops the name of a scoped key, which would collapse every leaf of one
+ * (scope, repo, group) onto the same path and leave {@link dependents} sorting a
+ * scoped graph in an arbitrary order.
  */
-function parseRepoKeyToPath(key: string): string {
-  const { group, name } = parseRepoSkillKey(key);
+function keyToPath(key: string): string {
+  const { group, name } = parseSkillKeyTail(key);
   return skillPath(group, name);
 }
 
@@ -77,11 +83,14 @@ function byCodePoint(a: string, b: string): number {
  * ordering: `/` is 0x2F and the `::` separator starts at 0x3A, so `a/b` sorts
  * before `a1/c` as paths and after it as keys. Ordering is therefore computed in
  * the path domain, with the key as a tiebreak so that the same path in two
- * repositories still has a total order.
+ * repositories -- or two scopes -- still has a total order.
+ *
+ * Works for the project-mode keys of a {@link buildScopedGraph} graph too, since
+ * {@link keyToPath} reads the path out of a key of either arity.
  */
 function sortByPath(keys: Iterable<string>): string[] {
   return [...keys]
-    .map((key) => [parseRepoKeyToPath(key), key] as const)
+    .map((key) => [keyToPath(key), key] as const)
     .sort((x, y) => {
       const byPath = byCodePoint(x[0], y[0]);
       return byPath !== 0 ? byPath : byCodePoint(x[1], y[1]);
@@ -212,6 +221,59 @@ export function buildGraph(
     edges.push([
       repoSkillKey(repoId, m.skillId.group, m.skillId.name),
       keysOf(repoId, m.requires ?? []),
+    ]);
+  }
+  return buildFromEdges(edges);
+}
+
+/**
+ * The same graph as {@link buildGraph}, but keyed by PROJECT-MODE leaf ids --
+ * one copy of the catalog per scope in `scopeIds`.
+ *
+ * {@link buildGraph}'s nodes are repo-mode keys, which is exactly what the
+ * repositories-mode tree checks. The Management page and the install modal check
+ * boxes whose ids carry a scope, so driving the selection model there from a
+ * repo-mode graph would resolve nothing at all -- silently, since a key that is
+ * not a node simply has no dependencies.
+ *
+ * Replicated per scope rather than translated per query, because that is what
+ * makes the scopes independent: a dependency is only ever satisfied inside its
+ * own scope, so one project's copy of a skill and another's are different nodes,
+ * and unchecking a dependency in one project cannot disturb the other. Edges
+ * never leave their scope by construction.
+ *
+ * Ledger edges are added for the manifests of those same scopes, so an orphan --
+ * installed, repository gone, hence absent from the catalog -- still carries the
+ * dependencies it was installed with. Manifests outside `scopeIds` are skipped:
+ * their nodes are not in the tree, and admitting them would put another scope's
+ * ids in a closure.
+ */
+export function buildScopedGraph(
+  scopeIds: readonly string[],
+  skills: readonly AvailableSkill[],
+  installs: readonly InstallManifest[],
+): RequiresGraph {
+  const scopes = [...new Set(scopeIds)];
+  const edges: Edge[] = [];
+  for (const scopeId of scopes) {
+    for (const s of skills) {
+      edges.push([
+        projectSkillKey(scopeId, s.repoId, s.group, s.name),
+        keysOf(s.repoId, s.requires ?? []).map((key) => projectKeyOf(scopeId, key)),
+      ]);
+    }
+  }
+  const wanted = new Set(scopes);
+  for (const m of installs) {
+    const repoId = m.sourceRepoId;
+    if (repoId === undefined) continue;
+    // A project-scoped target with no project id belongs to no scope at all, so
+    // there is no node to hang its edges off.
+    const scopeId = scopeIdOf(m.target);
+    if (scopeId === undefined || !wanted.has(scopeId)) continue;
+    edges.push([
+      projectSkillKey(scopeId, repoId, m.skillId.group, m.skillId.name),
+      keysOf(repoId, m.requires ?? []).map((key) => projectKeyOf(scopeId, key)),
     ]);
   }
   return buildFromEdges(edges);
@@ -388,7 +450,7 @@ export function brokenLeaves(args: BrokenArgs): Map<string, string[]> {
       if (unsatisfied.length === 0) continue;
       const leaf = projectKeyOf(scopeId, key);
       const seen = missingByLeaf.get(leaf) ?? new Set<string>();
-      for (const dep of unsatisfied) seen.add(parseRepoKeyToPath(dep));
+      for (const dep of unsatisfied) seen.add(keyToPath(dep));
       missingByLeaf.set(leaf, seen);
     }
   }
