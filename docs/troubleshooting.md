@@ -65,3 +65,23 @@ cargo install --path crates/skillkeeper-cli   # installs to ~/.cargo/bin
 Make sure the install directory is on your PATH, then verify with
 `skillkeeper version`. See the [CLI Reference](usage/cli.md) for the available
 commands.
+
+## Skills
+
+### An orange `!` marker on an installed skill
+
+The skill declares a dependency that is not installed for that agent. The skill
+itself is untouched: it is still installed and its files are intact. The marker
+is a statement about what is on disk, not a queued change, which is why it
+outranks any pending add or remove on the same row.
+
+Click the marker to queue the missing dependencies for install, then Save to
+apply. Where only some of the missing references can be installed, the marker
+stays orange afterwards -- part of it was repaired, part of it cannot be.
+
+The marker is not always clickable. When none of the skill's missing
+dependencies exists in any repository there is nothing to install, so the badge
+drops to its non-interactive form and the tooltip explains the state without
+offering a repair. Fix that at the source: the reference is wrong, or the skill
+it names is not published. Run
+[`repo lint`](usage/cli.md#repo-lint) against the repository to see which it is.

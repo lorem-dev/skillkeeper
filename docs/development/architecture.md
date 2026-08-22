@@ -15,7 +15,8 @@ skillkeeper-core       (no internal deps)   domain model, resolver, SHA-256
                                             hashing, install/uninstall/verify/
                                             repair engine, hooks, git port,
                                             update scheduler, adapter interface,
-                                            MCP model/install
+                                            MCP model/install, skill dependency
+                                            graph, repository lint
 
 skillkeeper-config     -> core              per-section config loading + serde
                                             validation with defaults
@@ -50,8 +51,8 @@ All types are defined in the `skillkeeper-core` crate.
 
 - `SkillId` - stable identity: `{ group?: string, name: string }`.
 - `SkillManifest` - parsed `SKILL.md` frontmatter: name, optional version,
-  optional description, optional license, optional declared executables, and
-  optional hook references.
+  optional description, optional license, optional declared executables,
+  optional hook references, and optional skill dependencies (`requires`).
 - `HookManifest` - parsed `HOOK.md` frontmatter: name, the target it edits
   (agent + file pattern or config key path), and the apply strategy
   (`delimited-text`, `json-merge`, or `file`).
@@ -70,6 +71,22 @@ All types are defined in the `skillkeeper-core` crate.
     a JSON config (such as Claude `settings.json`).
   - `{ kind: 'file', ...ManagedFile }` for hook-owned standalone files.
 - `Project` - a tracked directory: `{ id, path, name, addedAt }`.
+
+## Skill dependencies
+
+Two `skillkeeper-core` modules, both pure of I/O beyond the `FsPort`:
+
+- `skills::requires` - the skill dependency graph. The only place it is
+  traversed: transitive closure for install and update, reverse closure for what
+  breaks when a skill goes away, plus the missing-reference and cycle detectors.
+- `skills::lint` - the static repository pass behind
+  [`repo lint`](../usage/cli.md#repo-lint). Reporting only; nothing in it
+  changes what resolves or installs.
+
+The renderer carries a mirror of the graph (`entities/skill/lib/requires.ts`) so
+the skill tree can be drawn without a bridge round trip per click. It is a
+preview: the core stays authoritative at apply time, and both sides are covered
+by the same case table.
 
 ## State storage
 
