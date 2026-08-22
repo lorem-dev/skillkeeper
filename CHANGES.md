@@ -2,6 +2,23 @@
 
 ## Development
 
+### Added
+
+- A `SKILL.md` can declare the skills of its own repository that it needs, as
+  `skillkeeper.requires` or a flat `requires`.
+- Installing a skill installs its transitive dependencies. See
+  [Skills and Hooks](https://lorem-dev.github.io/skillkeeper/usage/skills-and-hooks/).
+- `skillkeeper repo lint` reports what is statically wrong in a skill
+  repository, with ten stable diagnostic codes and exit codes a CI gate can use.
+- `skill update` updates a skill's dependencies as well, and installs any the
+  new version newly declares.
+- `skill uninstall` never cascades, but reports the installed skills it left
+  depending on something that is gone.
+- Desktop: checking a skill also selects the skills it needs, marked so an
+  automatic pick is distinguishable from a hand pick.
+- Desktop: a skill whose dependency is gone, or is queued for removal, carries a
+  marker that selects the missing dependencies for install when clicked.
+
 ### Fixed
 
 - The updater downloads the build for the machine's own architecture rather than
