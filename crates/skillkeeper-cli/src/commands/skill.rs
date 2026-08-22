@@ -27,9 +27,12 @@ use skillkeeper_core::hooks::guidance::{
 use skillkeeper_core::install::install::{install_skill, uninstall_skill, HookSupport};
 use skillkeeper_core::install::verify::{repair_install, verify_install};
 use skillkeeper_core::models::{
-    AgentTarget, InstallManifest, InstallOptions, ManagedHookEdit, Scope, SkillId, VerifyStatus,
+    AgentKind, AgentTarget, AppState, InstallManifest, InstallOptions, ManagedHookEdit,
+    ResolvedSkill, Scope, SkillId, VerifyStatus,
 };
 use skillkeeper_core::ports::{Clock, FsPort, HostEnv, PortResult};
+use skillkeeper_core::skills::group_path::skill_path;
+use skillkeeper_core::skills::requires::RequiresGraph;
 use skillkeeper_core::skills::resolver::resolve_skills;
 use skillkeeper_core::state::state::{load_state, save_state};
 
@@ -450,24 +453,109 @@ pub fn install(
         }
     };
     let (source_root, source_repo_id, source_remote, skill) = all
-        .into_iter()
+        .iter()
         .find(|(_, _, _, s)| full_id(&s.id) == canonical)
+        .cloned()
         .expect("resolved id must be among the gathered skills");
 
+    // Dependencies are same-repository by definition, so the graph is built from
+    // this repository's skills alone -- mixing repositories here would let a
+    // reference resolve against a namesake somewhere else.
+    let siblings: Vec<ResolvedSkill> = all
+        .iter()
+        .filter(|(_, id, _, _)| *id == source_repo_id)
+        .map(|(_, _, _, s)| s.clone())
+        .collect();
+    let graph = RequiresGraph::build(&siblings);
+    let root_path = skill_path(skill.id.group.as_deref(), &skill.id.name);
+    let order = graph.closure(&[root_path.clone()]);
+
+    // A reference with no skill behind it is named, not fatal: the skill the
+    // user asked for still installs.
+    report_missing_requires(&graph, &order, err)?;
+
     let agent_kind = parse_agent(agent)?;
+    for path in &order {
+        let Some(member) = siblings
+            .iter()
+            .find(|s| skill_path(s.id.group.as_deref(), &s.id.name) == *path)
+        else {
+            // Already reported above.
+            continue;
+        };
+        install_one(
+            ctx,
+            &mut state.installs,
+            &source_root,
+            &source_repo_id,
+            &source_remote,
+            member,
+            agent_kind,
+            global,
+            project,
+            allow_hooks,
+            *path != root_path,
+            out,
+        )?;
+    }
+    save_state(ctx.fs, ctx.state_path, &state)?;
+    Ok(0)
+}
+
+/// Install one already-resolved skill and append its manifest to `installs`,
+/// without saving: the caller owns the ledger write, because one command may
+/// install a whole dependency closure and the state file is written once at the
+/// end. It takes the manifest list rather than the whole [`AppState`] because
+/// that is all it touches, and because `update` works on a detached list.
+///
+/// `as_dependency` only changes the line printed, never what is written -- a
+/// dependency install is an ordinary install that the user did not name.
+#[allow(clippy::too_many_arguments)]
+fn install_one(
+    ctx: &SkillCtx,
+    installs: &mut Vec<InstallManifest>,
+    source_root: &str,
+    source_repo_id: &str,
+    source_remote: &str,
+    skill: &ResolvedSkill,
+    agent_kind: AgentKind,
+    global: bool,
+    project: Option<&str>,
+    allow_hooks: bool,
+    as_dependency: bool,
+    out: &mut dyn Write,
+) -> Result<(), CliError> {
     let adapter = ctx.registry.get(agent_kind)?;
     let (env, target) = resolve_target(ctx.env, agent_kind, global, project, ctx.cwd)?;
+
+    // Already installed for this exact target: nothing to do. Without this,
+    // installing a skill whose dependency is present would duplicate the
+    // dependency's ledger entry. Reported rather than passed over in silence --
+    // the user named this skill, or the skill that needs it, and an operation
+    // that does nothing has to say so.
+    if let Some(present) = installs
+        .iter()
+        .find(|m| m.skill_id == skill.id && m.target == target)
+    {
+        writeln!(
+            out,
+            "Skill already installed: {} -> {}",
+            full_id(&skill.id),
+            present.destination_root
+        )?;
+        return Ok(());
+    }
 
     let dest_root = adapter.destination_root(&target, &env)?;
     let hook_support = resolve_hook_support(adapter, &target, &env);
     let opts = InstallOptions {
         target: target.clone(),
-        source_root: source_root.clone(),
+        source_root: source_root.to_string(),
         skill: skill.clone(),
         allow_hooks,
         executable_globs: ctx.executable_globs.to_vec(),
-        source_repo_id: Some(source_repo_id),
-        source_remote: Some(source_remote.clone()),
+        source_repo_id: Some(source_repo_id.to_string()),
+        source_remote: Some(source_remote.to_string()),
         source_path: Some(skill.root_path.clone()),
     };
     let manifest = install_skill(
@@ -486,21 +574,54 @@ pub fn install(
             adapter,
             &target,
             &env,
-            &source_remote,
+            source_remote,
             &skill.id,
             &body,
         )?;
     }
 
     let dest = manifest.destination_root.clone();
-    state.installs.push(manifest);
-    save_state(ctx.fs, ctx.state_path, &state)?;
+    installs.push(manifest);
 
+    // The skill is named: one command can print this notice once per closure
+    // member, and N identical lines would say only that something had hooks.
     if !allow_hooks && !skill.hooks.is_empty() {
-        writeln!(out, "{HOOKS_REQUIRE_CONSENT}")?;
+        writeln!(out, "{}: {HOOKS_REQUIRE_CONSENT}", full_id(&skill.id))?;
     }
-    writeln!(out, "Skill installed: {} -> {dest}", full_id(&skill.id))?;
-    Ok(0)
+    if as_dependency {
+        writeln!(
+            out,
+            "Skill installed as a dependency: {} -> {dest}",
+            full_id(&skill.id)
+        )?;
+    } else {
+        writeln!(out, "Skill installed: {} -> {dest}", full_id(&skill.id))?;
+    }
+    Ok(())
+}
+
+/// Report every `skillkeeper.requires` reference inside `order` that no skill of
+/// the repository satisfies, naming the skill that actually declared it.
+///
+/// Attribution is the whole point: a closure is a list of paths and has
+/// forgotten who reached them, so reporting per closure member would blame the
+/// root for a reference declared three hops down. `order` is used only to keep
+/// the report to the part of the repository this command touched.
+fn report_missing_requires(
+    graph: &RequiresGraph,
+    order: &[String],
+    err: &mut dyn Write,
+) -> Result<(), CliError> {
+    for (referrer, missing) in graph.missing() {
+        if !order.iter().any(|path| *path == referrer) {
+            continue;
+        }
+        writeln!(
+            err,
+            "Skill \"{referrer}\" requires \"{missing}\", which does not exist in this repository."
+        )?;
+    }
+    Ok(())
 }
 
 /// `skill uninstall <id>`.
@@ -563,12 +684,95 @@ pub fn uninstall(
         clear_skill_guidance(ctx.fs, adapter, &target, &env, remote, &m.skill_id)?;
     }
 
-    let next = skillkeeper_core::models::AppState {
+    let next = AppState {
         installs: surviving,
         ..state
     };
     save_state(ctx.fs, ctx.state_path, &next)?;
+
+    // Uninstall never cascades: another installed skill may need what was
+    // removed, and guessing is worse than saying so. Report, do not act -- the
+    // exit code does not change. The report is taken from the ledger as it
+    // stands after the removal, so a dependent removed in this same call is not
+    // reported as broken by it.
+    report_broken_dependents(&next.installs, &matched, err)?;
     Ok(0)
+}
+
+/// Report every still-installed skill that this command has just broken: one
+/// whose dependency closure has lost a member that `removed` took away.
+///
+/// A dependency is satisfied for a dependent only AT THE DEPENDENT'S OWN
+/// TARGET: a skill installed for one agent is invisible to a dependent
+/// installed for another, so the installs are grouped by target and each group
+/// is its own graph. Within a group, [`RequiresGraph::contains`] is exactly
+/// "installed for this target" -- a path that is only ever a reference is not
+/// a node -- so the unsatisfied members of a closure are the ones the graph
+/// does not contain.
+///
+/// Of those, only the ones this invocation removed at that same target are
+/// reported. The wording is causal, so the report has to be: a dependency that
+/// was already absent before this command ran is breakage the user did not
+/// cause, and blaming their `uninstall` for it would be noise. Pre-existing
+/// breakage is `repo lint`'s to report.
+///
+/// The edges come from the ledger's recorded `requires` rather than from the
+/// source repository: the question is what the installed skills were promised
+/// at install time, not what the repository declares today.
+fn report_broken_dependents(
+    installs: &[InstallManifest],
+    removed: &[InstallManifest],
+    err: &mut dyn Write,
+) -> Result<(), CliError> {
+    let mut targets: Vec<&AgentTarget> = Vec::new();
+    for m in installs {
+        if !targets.contains(&&m.target) {
+            targets.push(&m.target);
+        }
+    }
+    for target in targets {
+        let at_target: Vec<&InstallManifest> =
+            installs.iter().filter(|m| m.target == *target).collect();
+        let removed_here: Vec<String> = removed
+            .iter()
+            .filter(|m| m.target == *target)
+            .map(|m| skill_path(m.skill_id.group.as_deref(), &m.skill_id.name))
+            .collect();
+        if removed_here.is_empty() {
+            continue;
+        }
+        let graph = RequiresGraph::build_from_edges(at_target.iter().map(|m| {
+            (
+                skill_path(m.skill_id.group.as_deref(), &m.skill_id.name),
+                m.requires.clone().unwrap_or_default(),
+            )
+        }));
+        for m in &at_target {
+            let path = skill_path(m.skill_id.group.as_deref(), &m.skill_id.name);
+            let lost: Vec<String> = graph
+                .closure(&[path.clone()])
+                .into_iter()
+                .filter(|member| !graph.contains(member))
+                .filter(|member| removed_here.contains(member))
+                .map(|member| format!("\"{member}\""))
+                .collect();
+            if lost.is_empty() {
+                continue;
+            }
+            let verb = if lost.len() == 1 {
+                "which was"
+            } else {
+                "which were"
+            };
+            writeln!(
+                err,
+                "Skill \"{path}\" is still installed for {} and required {}, {verb} just removed; it may not work.",
+                target.agent,
+                lost.join(", ")
+            )?;
+        }
+    }
+    Ok(())
 }
 
 /// Build the `{ guidance_file -> {block_key} }` map of blocks that must be kept
@@ -649,63 +853,120 @@ pub fn update(
         };
         let resolve_result = resolve_skills(ctx.fs, &repo.local_path);
         print_resolve_warnings(err, &repo.name, &resolve_result.warnings)?;
-        let resolved = resolve_result
-            .skills
-            .into_iter()
-            .find(|s| full_id(&s.id) == canonical);
-        let Some(resolved) = resolved else {
-            writeln!(err, "Skill not found in source: {id}")?;
-            continue;
-        };
-        let adapter = ctx.registry.get(m.target.agent)?;
+        let siblings = resolve_result.skills;
+
+        // The closure is taken over the repository as it stands now, so a
+        // dependency the new version newly declares is part of the order. As at
+        // install time it is this repository's skills alone: dependencies are
+        // same-repository by definition.
+        let graph = RequiresGraph::build(&siblings);
+        let root_path = skill_path(m.skill_id.group.as_deref(), &m.skill_id.name);
+        let order = graph.closure(&[root_path.clone()]);
+        report_missing_requires(&graph, &order, err)?;
         let is_global = m.target.scope == Scope::Global;
         let project_hint = project.or(m.target.project_id.as_deref());
-        let (env, target) =
-            resolve_target(ctx.env, m.target.agent, is_global, project_hint, ctx.cwd)?;
 
-        uninstall_skill(ctx.fs, m)?;
-        let dest_root = adapter.destination_root(&target, &env)?;
-        let hook_support = resolve_hook_support(adapter, &target, &env);
-        let opts = InstallOptions {
-            target: target.clone(),
-            source_root: repo.local_path.clone(),
-            skill: resolved.clone(),
-            allow_hooks,
-            executable_globs: ctx.executable_globs.to_vec(),
-            source_repo_id: Some(repo.id.clone()),
-            source_remote: Some(repo.url.clone()),
-            source_path: Some(resolved.root_path.clone()),
-        };
-        let new_manifest = install_skill(
-            ctx.fs,
-            &opts,
-            &dest_root,
-            hook_support.as_ref(),
-            ctx.clock.now(),
-        )?;
-        installs.retain(|i| i != m);
-        installs.push(new_manifest.clone());
-        new_manifests.push(new_manifest.clone());
+        for path in &order {
+            let Some(resolved) = siblings
+                .iter()
+                .find(|s| skill_path(s.id.group.as_deref(), &s.id.name) == *path)
+            else {
+                // A missing root is not a `missing()` pair (nothing in the
+                // repository declares it), so it keeps its own message; a
+                // missing dependency was already reported by attribution.
+                if *path == root_path {
+                    writeln!(err, "Skill not found in source: {id}")?;
+                }
+                continue;
+            };
+            // A closure member with no install for this target is a dependency
+            // the current version declares and the installed one did not: it is
+            // installed rather than updated.
+            //
+            // The origin is part of the match. A skill id is `(group, name)`
+            // with no repository in it, so two repositories can hold the same
+            // name; updating from one of them must not silently re-home the
+            // other one's ledger entry. A same-named skill installed from
+            // elsewhere is left alone, and `install_one` then declines to
+            // install over it.
+            let Some(current) = installs
+                .iter()
+                .find(|i| {
+                    i.skill_id == resolved.id
+                        && i.target == m.target
+                        && i.source_repo_id.as_deref() == Some(repo.id.as_str())
+                })
+                .cloned()
+            else {
+                install_one(
+                    ctx,
+                    &mut installs,
+                    &repo.local_path,
+                    &repo.id,
+                    &repo.url,
+                    resolved,
+                    m.target.agent,
+                    is_global,
+                    project_hint,
+                    allow_hooks,
+                    true,
+                    out,
+                )?;
+                continue;
+            };
 
-        let guide_dir = format!("{}/{}", repo.local_path, resolved.root_path);
-        let guide = read_skill_guide(ctx.fs, &guide_dir)?;
-        if let Some(body) = &guide {
-            write_skill_guidance(
+            let adapter = ctx.registry.get(m.target.agent)?;
+            let (env, target) =
+                resolve_target(ctx.env, m.target.agent, is_global, project_hint, ctx.cwd)?;
+
+            uninstall_skill(ctx.fs, &current)?;
+            let dest_root = adapter.destination_root(&target, &env)?;
+            let hook_support = resolve_hook_support(adapter, &target, &env);
+            let opts = InstallOptions {
+                target: target.clone(),
+                source_root: repo.local_path.clone(),
+                skill: resolved.clone(),
+                allow_hooks,
+                executable_globs: ctx.executable_globs.to_vec(),
+                source_repo_id: Some(repo.id.clone()),
+                source_remote: Some(repo.url.clone()),
+                source_path: Some(resolved.root_path.clone()),
+            };
+            let new_manifest = install_skill(
                 ctx.fs,
-                adapter,
-                &target,
-                &env,
-                &repo.url,
-                &resolved.id,
-                body,
+                &opts,
+                &dest_root,
+                hook_support.as_ref(),
+                ctx.clock.now(),
+            )?;
+            installs.retain(|i| *i != current);
+            installs.push(new_manifest.clone());
+            new_manifests.push(new_manifest.clone());
+
+            let guide_dir = format!("{}/{}", repo.local_path, resolved.root_path);
+            let guide = read_skill_guide(ctx.fs, &guide_dir)?;
+            if let Some(body) = &guide {
+                write_skill_guidance(
+                    ctx.fs,
+                    adapter,
+                    &target,
+                    &env,
+                    &repo.url,
+                    &resolved.id,
+                    body,
+                )?;
+            }
+            updated_refs.push((new_manifest, guide.is_some()));
+
+            if !allow_hooks && !resolved.hooks.is_empty() {
+                writeln!(out, "{}: {HOOKS_REQUIRE_CONSENT}", full_id(&resolved.id))?;
+            }
+            writeln!(
+                out,
+                "Updated: {} ({})",
+                current.skill_id.name, current.target.agent
             )?;
         }
-        updated_refs.push((new_manifest, guide.is_some()));
-
-        if !allow_hooks && !resolved.hooks.is_empty() {
-            writeln!(out, "{HOOKS_REQUIRE_CONSENT}")?;
-        }
-        writeln!(out, "Updated: {} ({})", m.skill_id.name, m.target.agent)?;
     }
 
     // An updated skill that no longer ships a guide has its stale block removed,
@@ -785,7 +1046,7 @@ pub fn update(
         clear_skill_guidance(ctx.fs, adapter, &target, &env, remote, &manifest.skill_id)?;
     }
 
-    let next = skillkeeper_core::models::AppState { installs, ..state };
+    let next = AppState { installs, ..state };
     save_state(ctx.fs, ctx.state_path, &next)?;
     Ok(0)
 }
@@ -942,7 +1203,7 @@ pub fn repair(
         }
         writeln!(out, "Repaired: {} ({})", m.skill_id.name, m.target.agent)?;
     }
-    let next = skillkeeper_core::models::AppState { installs, ..state };
+    let next = AppState { installs, ..state };
     save_state(ctx.fs, ctx.state_path, &next)?;
     Ok(0)
 }
@@ -1115,6 +1376,18 @@ mod tests {
         }
     }
 
+    /// A second tracked repository, so a test can hold two skills of the same
+    /// name from different origins.
+    fn repo_other() -> Repository {
+        Repository {
+            id: "repo-2".to_string(),
+            name: "extras".to_string(),
+            url: "git@github.com:acme/extras.git".to_string(),
+            local_path: "/repos/r2".to_string(),
+            ..repo()
+        }
+    }
+
     /// A MemFs holding one repo skill (`skill-a`) with a body file and a guide.
     fn seeded_fs() -> MemFs {
         MemFs::new()
@@ -1142,6 +1415,43 @@ mod tests {
             installs,
         };
         save_state(fs, STATE_PATH, &state).unwrap();
+    }
+
+    /// A `SKILL.md` for `name` with `extra` spliced into the frontmatter, the
+    /// same shape the core install tests use.
+    fn skill_md(name: &str, extra: &str) -> String {
+        format!("---\nname: {name}\n{extra}---\nbody\n")
+    }
+
+    /// A ready-to-use [`SkillCtx`] over one repository holding `specs` as flat
+    /// skills, plus a state file naming that repository.
+    ///
+    /// The dependency tests want the context itself rather than the owning
+    /// [`TestCtx`], so the owner is leaked: a test process ends before the leak
+    /// matters, and the alternative (threading a `TestCtx` through every case)
+    /// buys nothing here.
+    fn install_ctx_with_skills(specs: &[(&str, &str)]) -> SkillCtx<'static> {
+        let mut fs = MemFs::new();
+        for (name, extra) in specs {
+            fs = fs.with_file(
+                &format!("/repos/r1/{name}/SKILL.md"),
+                &skill_md(name, extra),
+            );
+        }
+        let app: &'static TestCtx = Box::leak(Box::new(TestCtx::new(fs)));
+        seed_state(&app.fs, vec![]);
+        app.ctx()
+    }
+
+    /// Overwrite one repository `SKILL.md`, so a test can change what a skill
+    /// declares between two commands.
+    fn rewrite_skill(ctx: &SkillCtx, name: &str, extra: &str) {
+        ctx.fs
+            .write_file(
+                &format!("/repos/r1/{name}/SKILL.md"),
+                &skill_md(name, extra),
+            )
+            .unwrap();
     }
 
     fn install_a(app: &TestCtx) -> i32 {
@@ -1509,5 +1819,322 @@ mod tests {
         let code = uninstall(&app.ctx(), "sk", None, &mut out, &mut err).unwrap();
         assert_eq!(code, 0);
         assert!(load_state(&app.fs, STATE_PATH).unwrap().installs.is_empty());
+    }
+
+    #[test]
+    fn install_pulls_in_the_transitive_dependency_closure() {
+        // a -> b -> c: asking for `a` installs three skills, in closure order.
+        let ctx = install_ctx_with_skills(&[
+            ("a", "skillkeeper:\n  requires:\n    - b\n"),
+            ("b", "skillkeeper:\n  requires:\n    - c\n"),
+            ("c", ""),
+        ]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        assert_eq!(code, 0);
+        let text = String::from_utf8(out).unwrap();
+        assert!(text.contains("Skill installed: a"), "{text}");
+        assert!(text.contains("as a dependency: b"), "{text}");
+        assert!(text.contains("as a dependency: c"), "{text}");
+        let state = load_state(ctx.fs, ctx.state_path).unwrap();
+        assert_eq!(state.installs.len(), 3);
+    }
+
+    #[test]
+    fn install_names_a_dependency_that_does_not_exist_and_still_installs_the_skill() {
+        // Two hops, so the report has to name `b` as the referrer: `a` requires
+        // `b`, and it is `b` that requires the skill that is not there.
+        let ctx = install_ctx_with_skills(&[
+            ("a", "skillkeeper:\n  requires:\n    - b\n"),
+            ("b", "skillkeeper:\n  requires:\n    - ghost\n"),
+        ]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        assert_eq!(code, 0);
+        let state = load_state(ctx.fs, ctx.state_path).unwrap();
+        assert_eq!(state.installs.len(), 2);
+        let text = String::from_utf8(err).unwrap();
+        assert!(
+            text.contains("Skill \"b\" requires \"ghost\""),
+            "the referrer must be the skill that declared it: {text}"
+        );
+        assert!(
+            !text.contains("Skill \"a\" requires \"ghost\""),
+            "`a` never declared `ghost`: {text}"
+        );
+    }
+
+    #[test]
+    fn install_does_not_reinstall_a_dependency_already_installed_for_that_agent() {
+        let ctx =
+            install_ctx_with_skills(&[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "b", "claude", true, None, false, &mut out, &mut err).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        let state = load_state(ctx.fs, ctx.state_path).unwrap();
+        assert_eq!(state.installs.len(), 2, "b must not be installed twice");
+    }
+
+    #[test]
+    fn install_says_so_when_the_skill_is_already_installed() {
+        let ctx = install_ctx_with_skills(&[("a", "")]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        assert_eq!(code, 0);
+        let text = String::from_utf8(out).unwrap();
+        assert!(
+            text.contains("Skill already installed: a"),
+            "doing nothing has to be reported: {text}"
+        );
+        let state = load_state(ctx.fs, ctx.state_path).unwrap();
+        assert_eq!(state.installs.len(), 1, "and it must stay one entry");
+    }
+
+    #[test]
+    fn install_terminates_on_a_dependency_cycle() {
+        let ctx = install_ctx_with_skills(&[
+            ("a", "skillkeeper:\n  requires:\n    - b\n"),
+            ("b", "skillkeeper:\n  requires:\n    - a\n"),
+        ]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        assert_eq!(code, 0);
+        let state = load_state(ctx.fs, ctx.state_path).unwrap();
+        assert_eq!(state.installs.len(), 2);
+    }
+
+    #[test]
+    fn update_installs_a_newly_declared_dependency() {
+        let ctx = install_ctx_with_skills(&[("a", ""), ("b", "")]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        // The repository's `a` now requires `b`, which is not installed.
+        rewrite_skill(&ctx, "a", "skillkeeper:\n  requires:\n    - b\n");
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = update(&ctx, "a", None, None, false, &mut out, &mut err).unwrap();
+        assert_eq!(code, 0);
+        let state = load_state(ctx.fs, ctx.state_path).unwrap();
+        assert_eq!(
+            state.installs.len(),
+            2,
+            "the new dependency must be installed"
+        );
+        assert!(String::from_utf8(out)
+            .unwrap()
+            .contains("as a dependency: b"));
+    }
+
+    #[test]
+    fn update_refreshes_an_already_installed_dependency() {
+        let ctx =
+            install_ctx_with_skills(&[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        let before = load_state(ctx.fs, ctx.state_path).unwrap();
+        assert_eq!(before.installs.len(), 2);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        update(&ctx, "a", None, None, false, &mut out, &mut err).unwrap();
+        let text = String::from_utf8(out).unwrap();
+        assert!(text.contains("Updated: a"), "{text}");
+        assert!(text.contains("Updated: b"), "{text}");
+    }
+
+    #[test]
+    fn update_leaves_a_same_named_skill_from_another_repository_alone() {
+        // r1 holds `a` (requiring `b`) and its own `b`; r2 holds an unrelated
+        // skill also called `b`, and r2's is the one installed.
+        let fs = MemFs::new()
+            .with_file(
+                "/repos/r1/a/SKILL.md",
+                &skill_md("a", "skillkeeper:\n  requires:\n    - b\n"),
+            )
+            .with_file("/repos/r1/b/SKILL.md", &skill_md("b", ""))
+            .with_file("/repos/r2/b/SKILL.md", &skill_md("b", ""));
+        let app: &'static TestCtx = Box::leak(Box::new(TestCtx::new(fs)));
+        // Only r2 is tracked at first, so `b` resolves to r2 without ambiguity.
+        let seeded = AppState {
+            version: STATE_VERSION,
+            repositories: vec![repo_other()],
+            projects: vec![],
+            installs: vec![],
+        };
+        save_state(&app.fs, STATE_PATH, &seeded).unwrap();
+        let ctx = app.ctx();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "b", "claude", true, None, false, &mut out, &mut err).unwrap();
+
+        // Track r1 as well, then install its `a`, whose dependency `b` is
+        // already taken by r2's skill of that name.
+        let mut state = load_state(ctx.fs, ctx.state_path).unwrap();
+        state.repositories.push(repo());
+        save_state(ctx.fs, ctx.state_path, &state).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        assert_eq!(
+            load_state(ctx.fs, ctx.state_path).unwrap().installs.len(),
+            2
+        );
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        update(&ctx, "a", None, None, false, &mut out, &mut err).unwrap();
+        let state = load_state(ctx.fs, ctx.state_path).unwrap();
+        let b = state
+            .installs
+            .iter()
+            .find(|m| m.skill_id.name == "b")
+            .expect("r2's `b` must still be installed");
+        assert_eq!(
+            b.source_repo_id.as_deref(),
+            Some("repo-2"),
+            "updating r1's `a` must not re-home r2's `b`"
+        );
+    }
+
+    #[test]
+    fn uninstall_warns_about_installed_skills_that_depended_on_the_removed_one() {
+        let ctx =
+            install_ctx_with_skills(&[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = uninstall(&ctx, "b", None, &mut out, &mut err).unwrap();
+        assert_eq!(code, 0, "uninstall never cascades and never fails on this");
+        let text = String::from_utf8(err).unwrap();
+        assert!(text.contains("\"a\""), "{text}");
+        assert!(text.contains("still installed"), "{text}");
+        assert!(
+            text.contains("required \"b\", which was just removed"),
+            "the wording says what this command did: {text}"
+        );
+        // Only what was asked for is gone.
+        let state = load_state(ctx.fs, ctx.state_path).unwrap();
+        assert_eq!(state.installs.len(), 1);
+        assert_eq!(state.installs[0].skill_id.name, "a");
+    }
+
+    #[test]
+    fn uninstall_does_not_warn_when_the_dependent_keeps_its_own_dependency() {
+        // `a` and its dependency `b` are installed for codex; `b` is installed
+        // for claude too. Removing the claude copy leaves the codex pair whole,
+        // so there is nothing to report.
+        let ctx =
+            install_ctx_with_skills(&[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "codex", true, None, false, &mut out, &mut err).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "b", "claude", true, None, false, &mut out, &mut err).unwrap();
+        assert_eq!(
+            load_state(ctx.fs, ctx.state_path).unwrap().installs.len(),
+            3
+        );
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = uninstall(&ctx, "b", Some("claude"), &mut out, &mut err).unwrap();
+        assert_eq!(code, 0);
+        let text = String::from_utf8(err).unwrap();
+        assert!(text.is_empty(), "nothing lost its dependency: {text}");
+    }
+
+    #[test]
+    fn uninstall_warns_only_for_the_target_that_lost_the_dependency() {
+        // The same setup, removing the codex copy instead: `a` is installed for
+        // codex, and the surviving `b` is a claude install it cannot use.
+        let ctx =
+            install_ctx_with_skills(&[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "codex", true, None, false, &mut out, &mut err).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "b", "claude", true, None, false, &mut out, &mut err).unwrap();
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = uninstall(&ctx, "b", Some("codex"), &mut out, &mut err).unwrap();
+        assert_eq!(code, 0, "uninstall never cascades and never fails on this");
+        let text = String::from_utf8(err).unwrap();
+        assert_eq!(text.lines().count(), 1, "one line, for codex only: {text}");
+        assert!(text.contains("\"a\""), "{text}");
+        assert!(text.contains("still installed"), "{text}");
+        assert!(text.contains("codex"), "{text}");
+        assert!(text.contains("just removed"), "{text}");
+    }
+
+    #[test]
+    fn uninstall_does_not_report_breakage_it_did_not_cause() {
+        // `a` requires a skill that was never there, so `a` is already broken.
+        // Removing an unrelated `c` did not do that and must not claim it.
+        let ctx = install_ctx_with_skills(&[
+            ("a", "skillkeeper:\n  requires:\n    - ghost\n"),
+            ("c", ""),
+        ]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "c", "claude", true, None, false, &mut out, &mut err).unwrap();
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = uninstall(&ctx, "c", None, &mut out, &mut err).unwrap();
+        assert_eq!(code, 0);
+        let text = String::from_utf8(err).unwrap();
+        assert!(
+            text.is_empty(),
+            "`a` was broken before this command ran: {text}"
+        );
+    }
+
+    #[test]
+    fn uninstall_says_nothing_when_no_installed_skill_depended_on_it() {
+        let ctx = install_ctx_with_skills(&[("a", ""), ("b", "")]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "b", "claude", true, None, false, &mut out, &mut err).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        uninstall(&ctx, "b", None, &mut out, &mut err).unwrap();
+        assert!(String::from_utf8(err).unwrap().is_empty());
+    }
+
+    #[test]
+    fn uninstall_does_not_warn_about_a_dependent_that_is_already_gone() {
+        // `a` requires `b`. Once `a` is uninstalled, removing `b` breaks
+        // nothing: the report is built from the ledger, not from the source.
+        let ctx =
+            install_ctx_with_skills(&[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")]);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(&ctx, "a", "claude", true, None, false, &mut out, &mut err).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        uninstall(&ctx, "a", None, &mut out, &mut err).unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        uninstall(&ctx, "b", None, &mut out, &mut err).unwrap();
+        assert!(String::from_utf8(err).unwrap().is_empty());
     }
 }
