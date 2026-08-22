@@ -571,6 +571,18 @@ msgstr "Вештина ће бити уклоњена"
 msgid "skills.status.present"
 msgstr "Вештина је већ инсталирана"
 
+msgid "skills.status.addDependency"
+msgstr "Вештина ће бити инсталирана као зависност друге вештине"
+
+msgid "skills.status.brokenRequires"
+msgstr "Потребна вештина је уклоњена; ова вештина можда неће радити. Кликните да бисте је вратили."
+
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "Потребна вештина је уклоњена; ова вештина можда неће радити. Ниједан репозиторијум не пружа ту вештину."
+
+msgid "skills.status.brokenRequiresPending"
+msgstr "Потребна вештина ће бити уклоњена; ова вештина можда неће више радити. Кликните да бисте је вратили."
+
 msgid "skills.installPending"
 msgstr "Инсталирање вештина ускоро стиже ({count} изабрано)"
 

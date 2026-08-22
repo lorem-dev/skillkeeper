@@ -52,3 +52,9 @@ impl From<StateError> for CliError {
         CliError(value.to_string())
     }
 }
+
+impl From<serde_json::Error> for CliError {
+    fn from(value: serde_json::Error) -> Self {
+        CliError(value.to_string())
+    }
+}

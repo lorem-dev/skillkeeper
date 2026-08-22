@@ -17,6 +17,11 @@ export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement
    * Takes visual precedence over `checked`.
    */
   readonly indeterminate?: boolean;
+  /**
+   * Semantic tint. `dependency` marks a box that is checked because another
+   * skill needs it, matching the teal `add-dependency` badge.
+   */
+  readonly tone?: 'default' | 'dependency';
 }
 
 export function Checkbox({
@@ -25,6 +30,7 @@ export function Checkbox({
   disabled,
   indeterminate = false,
   checked,
+  tone = 'default',
   ...rest
 }: CheckboxProps) {
   // `indeterminate` is a DOM property, not an attribute, so it must be set on
@@ -44,6 +50,7 @@ export function Checkbox({
         // from the native `:checked` state (e.g. after leaving indeterminate);
         // uncontrolled checkboxes fall back to `:checked` below.
         checked === true && !indeterminate && 'sk-checkbox--checked',
+        tone !== 'default' && `sk-checkbox--${tone}`,
         className,
       )}
     >

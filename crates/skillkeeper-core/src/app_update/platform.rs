@@ -3,12 +3,17 @@
 //! The manifest keys artifacts by `<os>-<arch>` and tags each with a `kind`, so
 //! selection is two lookups rather than a per-platform branch in the caller.
 
-/// The manifest key for the running host, e.g. `macos-aarch64`.
+/// The manifest key for an os/arch pair, e.g. `macos-aarch64`.
 ///
-/// Uses Rust's own target constants rather than a hand-maintained table, so a
-/// new build target cannot drift from the key the release workflow writes.
-pub fn host_asset_key() -> String {
-    format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH)
+/// Takes both rather than reading `std::env::consts` itself, because ARCH is a
+/// COMPILE-TIME constant: it names the target the binary was built for, not the
+/// machine it is running on. An Intel build under Rosetta on Apple Silicon
+/// reports `x86_64` and would therefore fetch the Intel artifact forever,
+/// never moving the user to the native one. Deciding the real architecture
+/// needs to ask the system, which is the desktop backend's job (see its
+/// `app_update::host`), so this stays pure and is told the answer.
+pub fn asset_key(os: &str, arch: &str) -> String {
+    format!("{os}-{arch}")
 }
 
 /// Artifact kinds this OS accepts, most preferred first.
@@ -32,12 +37,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn host_key_joins_os_and_arch() {
-        let key = host_asset_key();
-        assert_eq!(
-            key,
-            format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH)
-        );
+    fn the_key_joins_os_and_arch() {
+        assert_eq!(asset_key("macos", "aarch64"), "macos-aarch64");
+        assert_eq!(asset_key("windows", "x86_64"), "windows-x86_64");
+        assert_eq!(asset_key("linux", "aarch64"), "linux-aarch64");
     }
 
     #[test]

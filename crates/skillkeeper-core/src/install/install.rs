@@ -275,6 +275,15 @@ pub fn install_skill(
         .collect();
     let hash = content_hash(&entries);
 
+    // Normalize "declared, but empty" to "nothing recorded" once, here, so the
+    // identity file and the ledger cannot disagree.
+    let requires = skill
+        .manifest
+        .requires
+        .as_ref()
+        .filter(|list| !list.is_empty())
+        .cloned();
+
     // Write our authoritative identity file, then record it as a managed file so
     // uninstall removes it and verify checks it.
     let skid_rel = format!("{skill_dir_name}/{SKID_FILE}");
@@ -283,6 +292,7 @@ pub fn install_skill(
         remote: opts.source_remote.clone(),
         name: skill.id.name.clone(),
         group: skill.id.group.clone(),
+        requires: requires.clone(),
         version: hash.clone(),
     });
     fs.write_file(&format!("{dest_root}/{skid_rel}"), &skid_text)?;
@@ -314,6 +324,7 @@ pub fn install_skill(
         source_path: opts.source_path.clone(),
         content_hash: Some(hash),
         version: skill.manifest.version.clone(),
+        requires,
         installed_at: iso_from_millis(now_ms),
         files,
         hook_edits,
@@ -376,6 +387,7 @@ pub fn uninstall_skill(fs: &dyn FsPort, manifest: &InstallManifest) -> PortResul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hashing::{manifest_content_hash, resolved_content_hash};
     use crate::models::{AgentKind, AgentTarget, ResolvedSkill, Scope};
     use crate::skills::resolver::resolve_skills;
     use crate::testing::MemFs;
@@ -888,5 +900,84 @@ mod tests {
         let manifest = install_skill(&fs, &opts, "/dest", Some(&support), NOW).unwrap();
         fs.remove("/proj/settings.json").unwrap();
         assert!(uninstall_skill(&fs, &manifest).is_ok());
+    }
+
+    // --- declared dependencies ---
+
+    #[test]
+    fn records_declared_dependencies_in_the_identity_file_and_the_manifest() {
+        let fs = MemFs::new().with_file(
+            "repo/s/SKILL.md",
+            &skill_md("s", "skillkeeper:\n  requires:\n    - g/dep\n"),
+        );
+        let skill = only_skill(&fs, "repo");
+        let opts = make_opts(skill, Scope::Global);
+        let manifest = install_skill(&fs, &opts, "/dest", None, NOW).unwrap();
+
+        assert_eq!(manifest.requires, Some(vec!["g/dep".to_string()]));
+        let skid = fs.read_file("/dest/s/.skid.yml").unwrap();
+        assert!(skid.contains("requires:"));
+        assert!(skid.contains("g/dep"));
+    }
+
+    #[test]
+    fn a_skill_without_dependencies_writes_no_requires_key() {
+        let fs = MemFs::new().with_file("repo/s/SKILL.md", &skill_md("s", ""));
+        let skill = only_skill(&fs, "repo");
+        let opts = make_opts(skill, Scope::Global);
+        let manifest = install_skill(&fs, &opts, "/dest", None, NOW).unwrap();
+
+        assert_eq!(manifest.requires, None);
+        let skid = fs.read_file("/dest/s/.skid.yml").unwrap();
+        assert!(!skid.contains("requires:"));
+    }
+
+    #[test]
+    fn an_empty_declared_list_is_recorded_in_neither_place() {
+        // The parser reports `requires: []` as an empty list, not as absent.
+        // Both sinks must normalize it identically, from the one decision.
+        let fs = MemFs::new().with_file(
+            "repo/s/SKILL.md",
+            &skill_md("s", "skillkeeper:\n  requires: []\n"),
+        );
+        let skill = only_skill(&fs, "repo");
+        assert_eq!(skill.manifest.requires, Some(Vec::new()));
+        let opts = make_opts(skill, Scope::Global);
+        let manifest = install_skill(&fs, &opts, "/dest", None, NOW).unwrap();
+
+        assert_eq!(manifest.requires, None);
+        let skid = fs.read_file("/dest/s/.skid.yml").unwrap();
+        assert!(!skid.contains("requires:"));
+    }
+
+    #[test]
+    fn the_identity_file_stays_out_of_the_content_hash_when_dependencies_are_recorded() {
+        // Update detection compares an install's `content_hash` against the
+        // source repository's `resolved_content_hash` for the same skill. The
+        // identity file exists only on the install side, so if it ever leaked
+        // into either hash, every installed skill everywhere would read as
+        // "update available" forever.
+        let fs = MemFs::new()
+            .with_file(
+                "repo/s/SKILL.md",
+                &skill_md("s", "skillkeeper:\n  requires:\n    - g/dep\n"),
+            )
+            .with_file("repo/s/run.sh", "echo hi\n");
+        let skill = only_skill(&fs, "repo");
+        let source_hash = resolved_content_hash(&fs, "repo", &skill).unwrap();
+        let opts = make_opts(skill, Scope::Global);
+        let manifest = install_skill(&fs, &opts, "/dest", None, NOW).unwrap();
+
+        // The written identity file really does carry the new key, so this is
+        // not a vacuous comparison.
+        assert!(fs.read_file("/dest/s/.skid.yml").unwrap().contains("g/dep"));
+        assert!(manifest.files.iter().any(|f| f.rel_path == "s/.skid.yml"));
+        assert_eq!(manifest.content_hash, Some(source_hash));
+        // And the ledger-side recomputation agrees, over the same managed
+        // files that include `.skid.yml`.
+        assert_eq!(
+            manifest.content_hash.as_deref(),
+            Some(manifest_content_hash(&manifest).as_str())
+        );
     }
 }

@@ -5,6 +5,14 @@
  * chosen skills marked to install (other branches collapsed); the user can add
  * more or uncheck installed skills. Saving (double-confirm) applies the diff
  * with a progress bar.
+ *
+ * `skillKeys` is the page's EXPLICIT selection -- its hand picks, without the
+ * dependencies. The closure has to be recomputed here rather than carried over,
+ * because it depends on the project chosen in step 1: a dependency already
+ * installed there is not an install, and one that is not must be added. So the
+ * modal holds its own hand-pick/repair pair, seeds it with the project's
+ * installed set plus the keys it was handed, and derives everything it draws and
+ * installs from that -- see `derived` below.
  */
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -19,15 +27,17 @@ import { AgentSelect } from '@/entities/agent';
 import { ProjectIcon, ProjectSelect } from '@/entities/project';
 import {
   buildProjectTree,
-  buildProjectPlan,
-  installedLeafIds,
   projectNodeId,
   projectSkillKey,
-  parseRepoSkillKey,
-  parseProjectSkillKey,
   branchesContaining,
+  applyCheckChange,
 } from '@/entities/skill';
+import type { Selection } from '@/entities/skill';
+import { buildInstallScope, resolveInstallSelection, seedInstallSelection } from '../lib/installSelection';
 import './SkillInstallModal.scss';
+
+/** Nothing is picked, nothing is being repaired. */
+const EMPTY_SELECTION: Selection = { explicit: [], restored: [] };
 
 export interface SkillInstallModalProps {
   readonly open: boolean;
@@ -49,7 +59,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
   const [step, setStep] = useState<'project' | 'tree'>('project');
   const [projectId, setProjectId] = useState('');
   const [agents, setAgents] = useState<AgentKind[]>([]);
-  const [checked, setChecked] = useState<string[]>([]);
+  const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
@@ -57,7 +67,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
       setStep('project');
       setProjectId('');
       setAgents([]);
-      setChecked([]);
+      setSelection(EMPTY_SELECTION);
       setConfirming(false);
     }
   }, [open]);
@@ -78,33 +88,32 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
     };
   }, [projectId, projects]);
 
-  const installedSet = useMemo(
-    () => new Set(installedLeafIds(installs).filter((k) => parseProjectSkillKey(k).projectId === projectId)),
-    [installs, projectId],
+  // The scope's graph and baseline: the expensive half, and independent of the
+  // selection, so it is NOT rebuilt on a checkbox click or an agent change.
+  const scope = useMemo(
+    () => buildInstallScope(projectId, availableSkills, installs),
+    [projectId, availableSkills, installs],
   );
-
-  const toInstallKeys = useMemo(
-    () =>
-      skillKeys.map((k) => {
-        const r = parseRepoSkillKey(k);
-        return projectSkillKey(projectId, r.repoId, r.group, r.name);
-      }),
-    [skillKeys, projectId],
+  const { graph, baseline } = scope;
+  // The cheap half. Still exactly ONE derivation per render, and the plan is
+  // built inside the same call from that same derived set -- see
+  // `lib/installSelection`, which owns that rule so it can be unit tested.
+  const { derived, plan } = useMemo(
+    () => resolveInstallSelection({ scope, selection, installs, agents }),
+    [scope, selection, installs, agents],
   );
 
   function goToTree(): void {
-    setChecked([...new Set([...installedSet, ...toInstallKeys])]);
+    // The page hands over its EXPLICIT picks only, so the closure is computed
+    // here, against THIS project's installed set -- otherwise every dependency
+    // the user selected on the page would be silently dropped from the install.
+    setSelection(seedInstallSelection(projectId, skillKeys, installs));
     setStep('tree');
   }
 
-  const checkedSet = useMemo(() => new Set(checked), [checked]);
-
-  // The apply plan diffs the desired state (checked skills x chosen agents)
-  // against what is installed, at (skill, agent) granularity.
-  const plan = useMemo(
-    () => buildProjectPlan(projectId, checked, installs, agents),
-    [projectId, checked, installs, agents],
-  );
+  const installedSet = useMemo(() => new Set(baseline), [baseline]);
+  const checkedSet = useMemo(() => new Set(derived.shown), [derived]);
+  const dependencySet = useMemo(() => new Set(derived.dependency), [derived]);
   const installCount = plan.rows.filter((r) => r.action === 'install').length;
   const removeCount = plan.rows.filter((r) => r.action === 'remove').length;
   const changed = useMemo(
@@ -131,10 +140,21 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
         }
         const wasInstalled = installedSet.has(node.id);
         const isChecked = checkedSet.has(node.id);
+        const isDependency = dependencySet.has(node.id);
         let detail: ReactNode;
-        if (wasInstalled && isChecked) detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
+        // An installed skill held on by somebody else's dependency IS present;
+        // the teal checkbox says why it is held. Guarding this arm on
+        // `!isDependency` would leave that row with no badge at all.
+        if (wasInstalled && isChecked)
+          detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
         else if (wasInstalled && !isChecked) detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
-        else if (!wasInstalled && isChecked) detail = <ChangeBadge kind="add" label={t('skills.status.add')} />;
+        else if (!wasInstalled && isChecked)
+          detail = (
+            <ChangeBadge
+              kind={isDependency ? 'add-dependency' : 'add'}
+              label={isDependency ? t('skills.status.addDependency') : t('skills.status.add')}
+            />
+          );
         else detail = undefined;
         return { ...node, detail };
       });
@@ -152,7 +172,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
           }
         : root,
     );
-  }, [tree, installedSet, checkedSet, t, project, projectInfo]);
+  }, [tree, installedSet, checkedSet, dependencySet, t, project, projectInfo]);
 
   const expandedIds = useMemo(() => branchesContaining(tree, changed), [tree, changed]);
 
@@ -232,8 +252,11 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             <TreeView
               nodes={decorated}
               checkable
-              checkedIds={checked}
-              onCheckedChange={setChecked}
+              checkedIds={derived.shown}
+              dependencyIds={derived.dependency}
+              onCheckedChange={(next) =>
+                setSelection(applyCheckChange(selection, baseline, graph, derived.shown, next))
+              }
               defaultExpandedIds={expandedIds}
               ariaLabel={t('skills.install.title')}
             />

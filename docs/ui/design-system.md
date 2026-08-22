@@ -82,6 +82,13 @@ the reference export.
 used for status and categorical color (e.g. success = green, destructive = red,
 warning = orange/yellow).
 
+Two hues carry a fixed meaning in the change-badge family (`ChangeBadge` and
+the matching `Checkbox` `dependency` tone): `--sk-teal` means "selected as a
+dependency" -- an addition adjacent enough to green to read as "will be added",
+distinct enough to say the user did not name it -- and `--sk-orange` carries the
+warning tone. Orange rather than `--sk-yellow`, which does not hold contrast as
+a filled circle on the light theme's white row.
+
 ### 2.2 Neutral ramp
 
 Light theme ramp (light to dark):
@@ -439,6 +446,9 @@ points toward the primary action.
   for entering a duration; the value is stored in minutes and hours snap to whole
   hours. Implemented as `IntervalStepper` (composes `Stepper` +
   `SegmentedControl`).
+- Checkbox: box fill `--sk-color-accent` when checked, glyph knocked out in
+  white; the `dependency` tone swaps that fill for `--sk-teal`. The
+  indeterminate dash takes visual precedence over the check.
 
 ### 8.4 Text fields
 

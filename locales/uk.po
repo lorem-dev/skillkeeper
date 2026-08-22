@@ -604,6 +604,18 @@ msgstr "Навичку буде видалено"
 msgid "skills.status.present"
 msgstr "Навичку вже встановлено"
 
+msgid "skills.status.addDependency"
+msgstr "Навичку буде встановлено як залежність іншої навички"
+
+msgid "skills.status.brokenRequires"
+msgstr "Потрібну навичку було видалено; ця навичка може не працювати. Натисніть, щоб відновити."
+
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "Потрібну навичку було видалено; ця навичка може не працювати. Жоден репозиторій не містить цієї навички."
+
+msgid "skills.status.brokenRequiresPending"
+msgstr "Потрібну навичку буде видалено; ця навичка може перестати працювати. Натисніть, щоб відновити."
+
 msgid "skills.installPending"
 msgstr "Встановлення навичок з’явиться незабаром (вибрано: {count})"
 

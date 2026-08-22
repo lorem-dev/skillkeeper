@@ -604,6 +604,18 @@ msgstr "Umiejętność zostanie usunięta"
 msgid "skills.status.present"
 msgstr "Umiejętność jest już zainstalowana"
 
+msgid "skills.status.addDependency"
+msgstr "Umiejętność zostanie zainstalowana jako zależność innej umiejętności"
+
+msgid "skills.status.brokenRequires"
+msgstr "Wymagana umiejętność została usunięta; ta umiejętność może nie działać. Kliknij, aby przywrócić."
+
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "Wymagana umiejętność została usunięta; ta umiejętność może nie działać. Żadne repozytorium nie udostępnia tej umiejętności."
+
+msgid "skills.status.brokenRequiresPending"
+msgstr "Wymagana umiejętność zostanie usunięta; ta umiejętność może przestać działać. Kliknij, aby przywrócić."
+
 msgid "skills.installPending"
 msgstr "Instalowanie umiejętności będzie dostępne wkrótce (wybrano: {count})"
 

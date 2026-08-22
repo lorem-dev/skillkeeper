@@ -538,6 +538,18 @@ msgstr "สกิลจะถูกลบ"
 msgid "skills.status.present"
 msgstr "ติดตั้งสกิลนี้แล้ว"
 
+msgid "skills.status.addDependency"
+msgstr "สกิลจะถูกติดตั้งในฐานะการพึ่งพาของสกิลอื่น"
+
+msgid "skills.status.brokenRequires"
+msgstr "สกิลที่จำเป็นถูกลบไปแล้ว สกิลนี้อาจทำงานไม่ได้ คลิกเพื่อกู้คืน"
+
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "สกิลที่จำเป็นถูกลบไปแล้ว สกิลนี้อาจทำงานไม่ได้ ไม่มีที่เก็บโค้ดใดที่มีสกิลนั้น"
+
+msgid "skills.status.brokenRequiresPending"
+msgstr "สกิลที่จำเป็นจะถูกลบ สกิลนี้อาจหยุดทำงาน คลิกเพื่อกู้คืน"
+
 msgid "skills.installPending"
 msgstr "การติดตั้งสกิลจะมาเร็ว ๆ นี้ (เลือกไว้ {count})"
 

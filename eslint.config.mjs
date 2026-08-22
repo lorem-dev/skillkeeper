@@ -119,6 +119,35 @@ export default tseslint.config(
       ],
     },
   },
+  // The install modal's selection arithmetic lives in
+  // `features/skillInstall/lib/installSelection.ts`, and that file exists so the
+  // rule "the apply plan is built from the DERIVED checked set, never from the
+  // user's hand picks" can be unit tested -- a React component cannot be, since
+  // renderer tests are node-only here.
+  //
+  // Nothing can catch the modal ceasing to call the helper. What IS catchable is
+  // the revert SHAPE: the modal re-deriving or re-planning locally, which is how
+  // the rule would come back into a component and stop being covered. Banning
+  // those two names in the modal's directory turns that regression into a lint
+  // error instead of a silently untested behaviour change.
+  {
+    files: [`${RENDERER}/features/skillInstall/ui/**/*.{ts,tsx}`],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/entities/skill',
+              importNames: ['buildProjectPlan', 'deriveSelection'],
+              message:
+                'The install modal must not derive or plan locally: features/skillInstall/lib/installSelection.ts owns both, so the derived-set-to-plan rule stays unit tested. Use resolveInstallSelection.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Story files legitimately export non-component values (the CSF default
   // meta and named story objects), and a CSF `render` function is invoked as a
   // component by Storybook's runtime even though it is syntactically a plain

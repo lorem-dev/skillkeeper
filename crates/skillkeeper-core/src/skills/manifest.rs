@@ -21,6 +21,7 @@
 use serde_yaml_ng::{Mapping, Value};
 
 use crate::models::{HookManifest, SkillManifest};
+use crate::skills::group_path;
 
 /// A manifest plus the leniencies applied to get it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -135,6 +136,107 @@ fn normalize_name(map: &mut Mapping, notes: &mut Vec<String>) -> Result<(), Stri
     }
 }
 
+/// Read the strict, namespaced `skillkeeper.requires`.
+///
+/// Returns `Ok(None)` when the block or the field is absent, so the caller
+/// falls back to the flat field. Unknown keys inside the block are ignored
+/// (with a note) rather than rejected: a repository written for a newer
+/// SkillKeeper must stay readable by an older one.
+///
+/// # Errors
+///
+/// Returns a message when the block is not a mapping, the field is not a list
+/// of strings, or an entry is not a valid reference. Strictness is the point:
+/// an author who opted into this form asked to be held to it, so nothing here
+/// is coerced.
+fn namespaced_requires(
+    map: &Mapping,
+    own_path: &str,
+    notes: &mut Vec<String>,
+) -> Result<Option<Vec<String>>, String> {
+    let Some(block) = map.get("skillkeeper") else {
+        return Ok(None);
+    };
+    if block.is_null() {
+        return Ok(None);
+    }
+    let Value::Mapping(block) = block else {
+        return Err("\"skillkeeper\" must be a mapping".to_string());
+    };
+    for (key, _) in block {
+        let name = key.as_str().unwrap_or_default();
+        if name != "requires" {
+            notes.push(format!("ignoring unknown \"skillkeeper\" field \"{name}\""));
+        }
+    }
+    let Some(value) = block.get("requires") else {
+        return Ok(None);
+    };
+    if value.is_null() {
+        return Ok(None);
+    }
+    let Value::Sequence(items) = value else {
+        return Err("\"skillkeeper.requires\" must be a list of strings".to_string());
+    };
+    let mut out: Vec<String> = Vec::with_capacity(items.len());
+    for item in items {
+        let Value::String(reference) = item else {
+            return Err("\"skillkeeper.requires\" must be a list of strings".to_string());
+        };
+        if let Err(reason) = group_path::validate_skill_ref(reference) {
+            return Err(format!(
+                "invalid skill reference \"{reference}\" in \"skillkeeper.requires\": {reason}"
+            ));
+        }
+        if reference == own_path {
+            return Err(format!("skill \"{own_path}\" cannot require itself"));
+        }
+        if out.iter().any(|kept| kept == reference) {
+            notes.push(format!(
+                "ignoring duplicate skill reference \"{reference}\""
+            ));
+            continue;
+        }
+        out.push(reference.clone());
+    }
+    Ok(Some(out))
+}
+
+/// Read the lenient, flat `requires` after the shared `TextList` normalization
+/// has run. Anything that is not a usable reference is dropped with a note; the
+/// skill always survives.
+fn flat_requires(map: &Mapping, own_path: &str, notes: &mut Vec<String>) -> Option<Vec<String>> {
+    let Some(Value::Sequence(items)) = map.get("requires") else {
+        return None;
+    };
+    let mut out: Vec<String> = Vec::with_capacity(items.len());
+    for item in items {
+        let Some(reference) = item.as_str() else {
+            continue;
+        };
+        if reference == own_path {
+            notes.push(format!(
+                "ignoring invalid skill reference \"{reference}\" in \"requires\": a skill cannot require itself"
+            ));
+            continue;
+        }
+        if let Err(_reason) = group_path::validate_skill_ref(reference) {
+            notes.push(format!(
+                "ignoring invalid skill reference \"{reference}\" in \"requires\""
+            ));
+            continue;
+        }
+        if out.iter().any(|kept| kept == reference) {
+            notes.push(format!(
+                "ignoring duplicate skill reference \"{reference}\""
+            ));
+            continue;
+        }
+        out.push(reference.to_string());
+    }
+    Some(out)
+}
+
 /// Parse `SKILL.md` frontmatter into a [`SkillManifest`], coercing or dropping
 /// mistyped optional fields instead of rejecting the skill.
 ///
@@ -155,8 +257,45 @@ pub fn parse_skill_manifest(data: &Value) -> Result<Parsed<SkillManifest>, Strin
     ] {
         normalize(&mut map, key, kind, &mut notes);
     }
-    let manifest: SkillManifest =
+
+    // The declaring skill's own reference form, needed to reject a self
+    // reference. `name` is guaranteed present and non-empty by
+    // `normalize_name` above. The group is not part of the frontmatter -- it
+    // comes from the directory layout -- so this catches a self reference only
+    // for an UNGROUPED skill. A grouped `g/a` requiring "g/a" cannot be told
+    // apart here from a reference to somebody else, so it is not rejected: the
+    // skill resolves, and `RequiresGraph::self_edges` reports it as a cycle of
+    // length one (`SK002`) once the group is known. See the resolver.
+    let own_path = map
+        .get("name")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+
+    let requires = match namespaced_requires(&map, &own_path, &mut notes)? {
+        Some(list) => {
+            if map.contains_key("requires") {
+                notes.push(
+                    "ignoring \"requires\": \"skillkeeper.requires\" takes precedence".to_string(),
+                );
+            }
+            Some(list)
+        }
+        None => {
+            normalize(&mut map, "requires", FieldKind::TextList, &mut notes);
+            flat_requires(&map, &own_path, &mut notes)
+        }
+    };
+
+    // `skillkeeper` and `requires` are consumed here; drop both so the derived
+    // deserialization below never sees them (it has no field for either, and
+    // the value we computed is authoritative).
+    map.remove("skillkeeper");
+    map.remove("requires");
+
+    let mut manifest: SkillManifest =
         serde_yaml_ng::from_value(Value::Mapping(map)).map_err(|e| e.to_string())?;
+    manifest.requires = requires;
     Ok(Parsed { manifest, notes })
 }
 
@@ -316,5 +455,117 @@ mod tests {
         ))
         .unwrap_err();
         assert!(err.contains("unknown variant `sprinkle`"), "{err}");
+    }
+
+    #[test]
+    fn reads_a_namespaced_requires_list() {
+        let parsed = skill("name: a\nskillkeeper:\n  requires:\n    - g/b\n    - c\n");
+        assert_eq!(
+            parsed.manifest.requires,
+            Some(vec!["g/b".to_string(), "c".to_string()])
+        );
+        assert!(parsed.notes.is_empty());
+    }
+
+    #[test]
+    fn reads_an_empty_namespaced_requires_as_no_dependencies() {
+        let parsed = skill("name: a\nskillkeeper:\n  requires: []\n");
+        assert_eq!(parsed.manifest.requires, Some(Vec::new()));
+    }
+
+    #[test]
+    fn namespaced_requires_takes_precedence_over_the_flat_field() {
+        let parsed =
+            skill("name: a\nrequires:\n  - flat\nskillkeeper:\n  requires:\n    - nested\n");
+        assert_eq!(parsed.manifest.requires, Some(vec!["nested".to_string()]));
+        assert_eq!(
+            parsed.notes,
+            vec!["ignoring \"requires\": \"skillkeeper.requires\" takes precedence"]
+        );
+    }
+
+    #[test]
+    fn ignores_an_unknown_key_inside_the_namespaced_block() {
+        let parsed = skill("name: a\nskillkeeper:\n  requires:\n    - b\n  future: 1\n");
+        assert_eq!(parsed.manifest.requires, Some(vec!["b".to_string()]));
+        assert_eq!(
+            parsed.notes,
+            vec!["ignoring unknown \"skillkeeper\" field \"future\""]
+        );
+    }
+
+    #[test]
+    fn drops_a_duplicate_reference_with_a_note() {
+        let parsed = skill("name: a\nskillkeeper:\n  requires:\n    - b\n    - b\n");
+        assert_eq!(parsed.manifest.requires, Some(vec!["b".to_string()]));
+        assert_eq!(
+            parsed.notes,
+            vec!["ignoring duplicate skill reference \"b\""]
+        );
+    }
+
+    #[test]
+    fn rejects_a_non_mapping_skillkeeper_block() {
+        let err = parse_skill_manifest(&yaml("name: a\nskillkeeper: nope\n")).unwrap_err();
+        assert_eq!(err, "\"skillkeeper\" must be a mapping");
+    }
+
+    #[test]
+    fn rejects_a_scalar_where_the_namespaced_list_belongs() {
+        // Deliberately NOT coerced: the strict field means what it says.
+        let err =
+            parse_skill_manifest(&yaml("name: a\nskillkeeper:\n  requires: b\n")).unwrap_err();
+        assert_eq!(err, "\"skillkeeper.requires\" must be a list of strings");
+    }
+
+    #[test]
+    fn rejects_a_non_string_entry_in_the_namespaced_list() {
+        let err = parse_skill_manifest(&yaml("name: a\nskillkeeper:\n  requires:\n    - [x]\n"))
+            .unwrap_err();
+        assert_eq!(err, "\"skillkeeper.requires\" must be a list of strings");
+    }
+
+    #[test]
+    fn rejects_an_invalid_reference_in_the_namespaced_list() {
+        let err = parse_skill_manifest(&yaml("name: a\nskillkeeper:\n  requires:\n    - ../x\n"))
+            .unwrap_err();
+        assert!(
+            err.starts_with("invalid skill reference \"../x\" in \"skillkeeper.requires\""),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn rejects_a_self_reference() {
+        let err = parse_skill_manifest(&yaml("name: a\nskillkeeper:\n  requires:\n    - a\n"))
+            .unwrap_err();
+        assert_eq!(err, "skill \"a\" cannot require itself");
+    }
+
+    #[test]
+    fn reads_a_bare_flat_requires_as_a_one_element_list() {
+        let parsed = skill("name: a\nrequires: b\n");
+        assert_eq!(parsed.manifest.requires, Some(vec!["b".to_string()]));
+        assert_eq!(parsed.notes, vec!["reading \"requires\" as a list of text"]);
+    }
+
+    #[test]
+    fn drops_an_invalid_flat_reference_and_keeps_the_skill() {
+        let parsed = skill("name: a\nrequires:\n  - b\n  - ../x\n");
+        assert_eq!(parsed.manifest.requires, Some(vec!["b".to_string()]));
+        assert_eq!(
+            parsed.notes,
+            vec!["ignoring invalid skill reference \"../x\" in \"requires\""]
+        );
+    }
+
+    #[test]
+    fn drops_a_flat_self_reference_and_keeps_the_skill() {
+        let parsed = skill("name: a\nrequires:\n  - a\n");
+        assert_eq!(parsed.manifest.requires, Some(Vec::new()));
+        assert_eq!(
+            parsed.notes,
+            vec!["ignoring invalid skill reference \"a\" in \"requires\": a skill cannot require itself"]
+        );
     }
 }

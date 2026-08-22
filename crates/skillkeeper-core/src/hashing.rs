@@ -279,6 +279,7 @@ mod tests {
             source_path: None,
             content_hash: None,
             version: None,
+            requires: None,
             installed_at: "2026-07-17T00:00:00.000Z".to_string(),
             files,
             hook_edits: vec![],
@@ -333,6 +334,7 @@ mod tests {
                 license: None,
                 executables: None,
                 hooks: None,
+                requires: None,
             },
             files: vec![
                 "fmt/prettier/SKILL.md".to_string(),

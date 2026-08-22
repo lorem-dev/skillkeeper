@@ -108,6 +108,24 @@ export function parseRepoSkillKey(key: string): ParsedSkillRef {
   return { repoId, group: group === '' ? undefined : group, name };
 }
 
+/**
+ * The (group, name) pair at the tail of ANY skill checkbox key -- repo-mode
+ * (`repoId::group::name`) or project-mode (`projectId::repoId::group::name`).
+ *
+ * Reads the last two fields instead of a fixed arity, which is what makes one
+ * function serve both: no encoded field can contain the separator (see `enc`),
+ * so the split is exact and the trailing pair is always (group, name). The
+ * fixed-arity parsers above silently drop the name of a key with one field too
+ * many, so anything that only wants something to sort or show should come here
+ * rather than guess which parser applies.
+ */
+export function parseSkillKeyTail(key: string): Pick<ParsedSkillRef, 'group' | 'name'> {
+  const fields = key.split(SEP).map(dec);
+  const name = fields[fields.length - 1] ?? '';
+  const group = fields.length >= 2 ? (fields[fields.length - 2] ?? '') : '';
+  return { group: group === '' ? undefined : group, name };
+}
+
 /** Parse a project-mode key `projectId::repoId::group::name`, each field encoded. */
 export function parseProjectSkillKey(key: string): ParsedSkillRef & { readonly projectId: string } {
   const [projectId = '', repoId = '', group = '', name = ''] = key.split(SEP).map(dec);
@@ -502,13 +520,29 @@ export function buildProjectModel(
   return { nodes, statusByLeaf, updatesByNode, orphanLeaves };
 }
 
-/** Project-mode leaf ids for every currently-installed skill (pre-checked set).
- *  A global install is keyed under the reserved global scope id. */
-export function installedLeafIds(installs: readonly InstallManifest[]): string[] {
+/**
+ * Project-mode leaf ids for every currently-installed skill (pre-checked set).
+ * A global install is keyed under the reserved global scope id.
+ *
+ * `scopeIds` narrows the result to those scopes. Pass it whenever the ids are
+ * used as a selection BASELINE: the ledger outlives the state, since removing a
+ * project drops its record while keeping its installs (and `reconcile` preserves
+ * them on purpose), so an unscoped baseline can name a leaf no scope of the page
+ * shows. Diffed against a set derived from a graph spanning the shown scopes,
+ * every such leaf reads as a pending removal that has no row to uncheck and no
+ * save that could clear it. Omit it only where the whole ledger really is the
+ * question.
+ */
+export function installedLeafIds(
+  installs: readonly InstallManifest[],
+  scopeIds?: readonly string[],
+): string[] {
+  const wanted = scopeIds === undefined ? undefined : new Set(scopeIds);
   const out: string[] = [];
   for (const m of installs) {
     const scopeId = scopeIdOf(m.target);
     if (scopeId === undefined || m.sourceRepoId === undefined) continue;
+    if (wanted !== undefined && !wanted.has(scopeId)) continue;
     out.push(projectSkillKey(scopeId, m.sourceRepoId, m.skillId.group, m.skillId.name));
   }
   return out;

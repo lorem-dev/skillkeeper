@@ -323,6 +323,33 @@ export const CheckboxesDeepNesting: Story = {
   ),
 };
 
+// The `dependencyIds` prop in isolation: a static set of leaf ids, tinted teal
+// via the checkbox's `dependency` tone, alongside a plain `checkedIds` set.
+// `sk-plans` is in both arrays and reads teal; `sk-brainstorm` and
+// `sk-systematic` are checked but not a dependency, and read in the default
+// tone. Branches stay neutral even though one of `grp-writing`'s two checked
+// children (`sk-plans`) is a dependency leaf -- a branch checkbox already
+// carries three states, and a fourth tint on it would add nothing. No
+// selection logic here, on purpose: this is a props demonstration only. The
+// real reducer (`buildScopedGraph`/`deriveSelection`/`applyCheckChange`) is
+// exercised interactively in `entities/skill/ui/DependencySelection.stories.tsx`,
+// which `shared/ui` may not import.
+export const CheckboxesDependencyIds: Story = {
+  render: () => (
+    <div style={{ width: 340 }}>
+      <TreeView
+        nodes={repoWithGroups}
+        checkable
+        checkboxLevels={[1, 2]}
+        checkedIds={['sk-brainstorm', 'sk-plans', 'sk-systematic']}
+        dependencyIds={['sk-plans']}
+        defaultExpandedIds={['repo-1', 'grp-writing', 'grp-debug']}
+        ariaLabel="Dependency tint"
+      />
+    </div>
+  ),
+};
+
 // Long labels with checkboxes AND badges: the name ellipsizes while the update
 // dot + badge stay pinned after it. Hover a row to reveal its "update" badge;
 // the "local" status badge on the short skill is always visible.

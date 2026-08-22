@@ -27,6 +27,7 @@ skillkeeper repo add <url> [<local-path>] [--name <name>] [--lfs | --no-lfs]
 skillkeeper repo remove <id>
 skillkeeper repo list
 skillkeeper repo update [id] [--all]
+skillkeeper repo lint [<id> | --all | --path <dir>] [--json]
 ```
 
 `repo add` clones immediately. The local path is optional: omit it and the
@@ -42,6 +43,10 @@ already tracked.
 
 `repo update` (CLI) or "sync" (desktop) refreshes a repository from its
 remote; see "Update operations" below for how the two differ.
+
+To check what is statically wrong with a repository's skills -- missing
+dependencies, cycles, skills that do not resolve -- run
+[`repo lint`](cli.md#repo-lint).
 
 ## Branch tracking
 

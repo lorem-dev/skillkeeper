@@ -94,6 +94,18 @@
   outline-offset: 2px;
 }
 
+// Matches ChangeBadge's add-dependency: this box is on because something else
+// needs it. Mirrors the checked/indeterminate selectors above at higher
+// specificity so it overrides them regardless of source order.
+.sk-checkbox--dependency {
+  .sk-checkbox__input:checked + .sk-checkbox__box,
+  &.sk-checkbox--checked .sk-checkbox__box,
+  &.sk-checkbox--indeterminate .sk-checkbox__box {
+    background: var(--sk-teal);
+    border-color: var(--sk-teal);
+  }
+}
+
 .sk-checkbox__input:disabled + .sk-checkbox__box {
   opacity: 0.5;
 }

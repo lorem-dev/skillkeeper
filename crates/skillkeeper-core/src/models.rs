@@ -103,6 +103,12 @@ pub struct SkillManifest {
     /// Names of hooks declared by this skill (each maps to a `hooks/<name>`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hooks: Option<Vec<String>>,
+    /// Skill paths, within this skill's own repository, that this skill needs in
+    /// order to work. Declared as `skillkeeper.requires` (strict) or as a flat
+    /// `requires` (lenient); see [`crate::skills::manifest`]. Each entry is an
+    /// absolute skill path -- `group/name`, or `name` for an ungrouped skill.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires: Option<Vec<String>>,
 }
 
 /// Where a hook writes its edit: an agent, plus either a file pattern (text and
@@ -381,6 +387,11 @@ pub struct InstallManifest {
     pub content_hash: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    /// Skill paths this skill declared as dependencies at install time.
+    /// Mirrors `.skid.yml`; the ledger copy is what the desktop reads to mark a
+    /// skill whose dependency is gone.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires: Option<Vec<String>>,
     /// ISO-8601 install timestamp.
     pub installed_at: String,
     pub files: Vec<ManagedFile>,
@@ -612,6 +623,7 @@ mod tests {
                 license: Some("MIT".to_string()),
                 executables: Some(vec!["run.sh".to_string()]),
                 hooks: None,
+                requires: None,
             },
             files: vec!["fmt/prettier/SKILL.md".to_string()],
             hooks: vec![ResolvedHook {
@@ -690,6 +702,7 @@ mod tests {
             source_path: None,
             content_hash: Some("abc".to_string()),
             version: None,
+            requires: None,
             installed_at: "2026-07-17T00:00:00.000Z".to_string(),
             files: vec![ManagedFile {
                 rel_path: "fmt/SKILL.md".to_string(),

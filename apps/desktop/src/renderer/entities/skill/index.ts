@@ -28,6 +28,21 @@ export type {
   ProjectSkillUpdate,
   OrphanLeafInfo,
 } from './lib/skillTree';
+export {
+  buildGraph,
+  buildScopedGraph,
+  closure,
+  dependents,
+  contains,
+  requiresOf,
+  skillPath,
+  brokenLeaves,
+  pendingBrokenLeaves,
+  referenceKeys,
+} from './lib/requires';
+export type { RequiresGraph, BrokenArgs, PendingBrokenArgs } from './lib/requires';
+export { deriveSelection, dropMissing, toggle, applyCheckChange, restore } from './lib/selection';
+export type { Selection, DerivedSelection } from './lib/selection';
 export { buildProjectPlan, scopesNeedingAgents } from './lib/applyPlan';
 export type { ProjectPlan, AgentOps, SkillChangeRow } from './lib/applyPlan';
 export { SkillCard } from './ui/SkillCard';

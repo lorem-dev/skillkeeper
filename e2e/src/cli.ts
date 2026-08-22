@@ -94,6 +94,18 @@ export class Sandbox {
     const result = spawnSync(CLI_BIN, [...args], {
       cwd: options.cwd ?? this.home,
       encoding: 'utf8',
+      // A hang has to fail, not stall the run. Jest's `testTimeout` cannot help
+      // here: it is enforced on the event loop, and `spawnSync` blocks the loop
+      // outright, so a CLI that never exits would hold the whole suite forever
+      // with no output. The dependency specs make that a real risk -- a
+      // traversal regression on the fixture's deliberate cycle would spin
+      // rather than fail -- so the bound belongs on the child process.
+      //
+      // 60s is two orders of magnitude above any real invocation (the whole
+      // suite runs in ~6s) and half of `testTimeout`, so the kill lands first
+      // and surfaces as an ETIMEDOUT throw naming the binary. Same reasoning as
+      // the `--version` probe in scripts/e2e-prepare.mjs.
+      timeout: 60_000,
       env: {
         ...process.env,
         HOME: this.home,

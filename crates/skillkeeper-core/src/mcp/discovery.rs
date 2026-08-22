@@ -56,6 +56,7 @@ mod tests {
                 license: None,
                 executables: None,
                 hooks: None,
+                requires: None,
             },
             files: Vec::new(),
             hooks: Vec::new(),

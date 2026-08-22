@@ -84,6 +84,48 @@ store the fresh result rather than relying on a local edit.
 
 The full rationale is in [decision 0030](decisions/0030-ui-state-store.md).
 
+### Skill selection is derived, not stored
+
+The Skills pages' checkbox state is not a checked set. The store keeps only what
+the user picked by hand (`explicit`) plus the installed skills whose dependency
+closure they asked to re-apply (`restored`); the rest is derived on every read
+(`entities/skill/lib/selection.ts`):
+
+```
+seeds      = (explicit \ baseline) union restored
+shown      = explicit union closure(seeds)
+dependency = shown \ explicit
+```
+
+Nothing records *why* a box is on, so no sequence of clicks can desynchronize
+it. The alternative -- a checked set plus an "auto-added" set mutated per click
+-- needs reference counting and drifts.
+
+`baseline` (the installed set for the scope, empty in repositories mode) is
+deliberately left out of the seeds. Include it and opening a project whose
+installed skill has a missing dependency would immediately queue an install
+nobody asked for, and the broken state -- the thing the user needs to see --
+could not exist at all. `restore` is how the user opts into repairing it, and
+that is what the orange badge click calls.
+
+Three of the four selection behaviors are consequences of the derivation:
+checking a skill checks its dependencies, unchecking it drops the dependencies
+it alone brought in, and a dependency that is also a hand pick survives its
+dependent being unchecked. The fourth -- unchecking a dependency also unchecks
+what needed it -- takes one imperative step in `toggle`, which walks the reverse
+closure and drops the dependents. A forward derivation can express what is ON;
+it can never express that a box was clicked OFF.
+
+Two consequences a user will meet:
+
+- Ticking a group checkbox makes every leaf under it a hand pick, dependencies
+  included. Ticking a branch *is* the user covering every box under it, so
+  unchecking one member later does not drag down another the same click
+  selected.
+- A dependency cannot be promoted to a hand pick by clicking it. Its box is
+  already checked, so the click is an uncheck. The only way is to check it
+  before -- or instead of -- the skill that needs it.
+
 ---
 
 ## Directory Responsibilities

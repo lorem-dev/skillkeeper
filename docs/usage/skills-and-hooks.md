@@ -10,7 +10,8 @@ mechanism).
 A skill is a directory that contains a `SKILL.md` file plus any supporting
 files. `SKILL.md` carries YAML frontmatter (name, optional version, optional
 description, optional license, optional declared executables, optional
-declared hook names) and a Markdown body for human documentation.
+declared hook names, optional declared skill dependencies) and a Markdown body
+for human documentation.
 
 Only `name` is required. Fields SkillKeeper does not know -- another agent's
 own keys, say -- are ignored, and a known field written in another shape
@@ -61,6 +62,88 @@ install. The warning reads exactly:
 ```
 Unresolved SKILL.md at "<path>": nesting is deeper than 3 group levels; declare it in skillkeeper.repo.yaml to install it.
 ```
+
+## Skill dependencies
+
+A skill may declare other skills of its own repository that it needs:
+
+```yaml
+---
+name: brainstorming
+skillkeeper:
+  requires:
+    - superpowers/using-superpowers
+    - writing-plans
+---
+```
+
+Two spellings are read: the namespaced `skillkeeper.requires` above, and a flat
+top-level `requires`. When both are present the namespaced list wins entirely
+and the flat one is ignored -- including when the namespaced list is empty,
+which is how an author says "this skill has no dependencies".
+
+A reference is an absolute skill path within the same repository:
+`group/sub/name`, or bare `name` for an ungrouped skill. Cross-repository
+dependencies are not supported.
+
+A reference names the skill's **resolved identity**, not its directory path. If
+`skillkeeper.repo.yaml` renames a skill or overrides its group, references must
+use the resulting group and name -- the identity the skill tree shows -- not the
+on-disk layout. `repo lint`'s `SK001` is the safety net for getting this wrong.
+
+### Strictness
+
+The asymmetry between the two spellings is deliberate:
+
+- `skillkeeper.requires` is validated strictly. A scalar where the list
+  belongs, a non-string entry, or an invalid reference means the skill does not
+  resolve at all. So does a self-reference by an ungrouped skill, which is the
+  only self-reference this check can see: the group comes from the directory
+  layout rather than the frontmatter, so a grouped skill naming its own path is
+  indistinguishable here from one naming a neighbour. It is caught afterwards,
+  once the group is known, as a cycle of one (see below), and the skill
+  resolves.
+- Flat `requires` is lenient. A bad entry is dropped with a warning and the
+  skill still installs.
+
+A reference with no skill behind it costs the declaring skill nothing either
+way: the skill resolves and installs, the repository gets a warning, `repo lint`
+reports `SK001`, and the desktop app marks the skill.
+
+Cycles are reported, not blocking. `repo lint` treats a cycle as an error
+(`SK002`) and the resolver warns, but selection and installation work -- the
+closure over a cycle is well defined. The message names the members without an
+arrow chain: the detector returns strongly connected components rather than
+traversal-ordered cycles, so an arrow chain would imply edges that may not
+exist.
+
+A skill that requires itself is a cycle of length one and is reported the same
+way, under `SK002`, with a message naming that one skill:
+
+```
+Dependency cycle: skill "g/a" requires itself.
+```
+
+### Install, update, and uninstall
+
+Install installs the transitive dependency closure, for the same agents and
+scope as the named skill. A closure member already installed for that target is
+reported as already installed and left as it is.
+
+Update updates the skill's dependencies too, and installs any the new version
+newly declares, for the same agents and scope as the dependent. It stays inside
+the skill's own repository: a same-named skill installed from a different
+repository is left alone.
+
+Uninstall never cascades. It removes what was named, then reports every
+still-installed skill it broke. A dependency counts as satisfied for a
+dependent only at the dependent's own target, so removing a skill for one agent
+does not warn about a dependent installed only for another. Breakage that
+predates the command is not reported here; `repo lint` and the desktop marker
+cover that.
+
+See [`repo lint`](cli.md#repo-lint) for the full list of dependency
+diagnostics.
 
 ## Skill resolution schemes
 

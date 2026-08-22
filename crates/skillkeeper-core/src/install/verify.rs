@@ -814,6 +814,7 @@ mod tests {
                 source_path: None,
                 content_hash: None,
                 version: None,
+                requires: None,
                 installed_at: String::new(),
                 files: vec![ManagedFile {
                     rel_path: hostile.to_string(),

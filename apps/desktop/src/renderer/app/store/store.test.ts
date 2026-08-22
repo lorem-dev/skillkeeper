@@ -70,6 +70,7 @@ function reset(): void {
       projectFilter: [],
       repoChecked: [],
       projectChecked: [],
+      projectRestored: [],
       projectAgents: {},
       expandedIds: null,
     },
@@ -239,6 +240,17 @@ describe('useSkillkeeperStore', () => {
       expect(ui.projectAgents).toEqual({ 'proj-1': ['claude'] });
     });
 
+    it('clears a pending dependency repair when the baseline changes', () => {
+      const store = useSkillkeeperStore.getState();
+      // The user armed a repair against the OLD baseline.
+      store.setSkillsUi({ projectRestored: ['stale-leaf'] });
+      store.setSkills([projectInstall]);
+
+      // Whether a dependency is still missing is exactly what the new baseline
+      // decides, so a repair that outlived it must not re-queue an install.
+      expect(useSkillkeeperStore.getState().skillsUi.projectRestored).toEqual([]);
+    });
+
     it('preserves view state (mode/query/filters) when reseeding', () => {
       const store = useSkillkeeperStore.getState();
       store.setSkillsUi({ mode: 'repositories', query: 'fmt', repoFilter: ['repo-1'] });
@@ -305,6 +317,26 @@ describe('useSkillkeeperStore', () => {
       expect(ui.projectAgents).toEqual({ 'proj-1': ['claude'] });
     });
 
+    it('projects mode clears a pending dependency repair', () => {
+      const store = useSkillkeeperStore.getState();
+      store.setSkills([projectInstall]);
+      store.setSkillsUi({ projectRestored: ['leaf-1'] });
+      store.resetSkillsSelection('projects');
+
+      expect(useSkillkeeperStore.getState().skillsUi.projectRestored).toEqual([]);
+    });
+
+    it('repositories mode leaves a pending dependency repair alone', () => {
+      // Repo mode has no installed baseline, so it has no repair state of its
+      // own and no business clearing the project-mode one.
+      const store = useSkillkeeperStore.getState();
+      store.setSkills([projectInstall]);
+      store.setSkillsUi({ projectRestored: ['leaf-1'] });
+      store.resetSkillsSelection('repositories');
+
+      expect(useSkillkeeperStore.getState().skillsUi.projectRestored).toEqual(['leaf-1']);
+    });
+
     it('does not clear a persisted tree expansion in either mode', () => {
       const store = useSkillkeeperStore.getState();
       store.setSkills([projectInstall]);
@@ -315,6 +347,26 @@ describe('useSkillkeeperStore', () => {
 
       store.resetSkillsSelection('projects');
       expect(useSkillkeeperStore.getState().skillsUi.expandedIds).toEqual(['root-1']);
+    });
+  });
+
+  describe('goToSkills', () => {
+    it('navigating into projects mode clears a pending dependency repair', () => {
+      const store = useSkillkeeperStore.getState();
+      store.setSkills([projectInstall]);
+      store.setSkillsUi({ projectRestored: ['leaf-1'] });
+      store.goToSkills({ mode: 'projects' });
+
+      expect(useSkillkeeperStore.getState().skillsUi.projectRestored).toEqual([]);
+    });
+
+    it('keeps a pending dependency repair when the selection is not reset', () => {
+      const store = useSkillkeeperStore.getState();
+      store.setSkills([projectInstall]);
+      store.setSkillsUi({ projectRestored: ['leaf-1'] });
+      store.goToSkills({ mode: 'projects' }, false);
+
+      expect(useSkillkeeperStore.getState().skillsUi.projectRestored).toEqual(['leaf-1']);
     });
   });
 

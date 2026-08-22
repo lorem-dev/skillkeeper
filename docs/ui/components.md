@@ -185,8 +185,11 @@ native button attributes. Design-system.md 8.2.
 Source: [shared/ui/Button/Button.tsx](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Button/Button.tsx)
 
 ### Checkbox
-`<Checkbox label? />` -- native checkbox with a styled box. Forwards native input
-attributes (`checked`, `onChange`, `disabled`, ...).
+`<Checkbox label? indeterminate? tone? />` -- native checkbox with a styled box.
+Forwards native input attributes (`checked`, `onChange`, `disabled`, ...).
+`indeterminate` shows a dash and takes visual precedence over `checked`. `tone`:
+`default` | `dependency`; `dependency` tints the box `--sk-teal` to match the
+`add-dependency` badge -- this box is on because another skill needs it.
 Source: [shared/ui/Checkbox/Checkbox.tsx](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Checkbox/Checkbox.tsx)
 
 ### Toggle
@@ -338,10 +341,23 @@ Design-system.md 8.8.
 Source: [shared/ui/Menu/Menu.tsx](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Menu/Menu.tsx)
 
 ### ChangeBadge
-`<ChangeBadge kind label />` -- a small filled circle with a knocked-out glyph
-previewing a pending change; `kind`: `add` (green, `+`) | `remove` (red, `-`) |
-`present` (gray, check). The glyph is a true SVG-mask knockout so it reads on any
-row background. Wrapped in a Tooltip with `label` (also the accessible name).
+`<ChangeBadge kind label onClick? tabIndex? />` -- a small filled circle with a
+knocked-out glyph previewing a pending change; `kind`: `add` (green, `+`) |
+`remove` (red, `-`) | `present` (gray, check) | `add-dependency` (teal, `+`) |
+`broken` (orange, `!`). `add-dependency` uses the same plus as `add` -- a
+dependency install is an add; only the color says it was chosen for you.
+`broken` means a skill this one needed is gone. The glyph is a true SVG-mask
+knockout so it reads on any row background. Wrapped in a Tooltip with `label`
+(also the accessible name).
+
+Without `onClick` the badge is a non-interactive `role="img"` span. With
+`onClick` it renders as a real button -- used by `broken`, which can be acted on
+to repair the missing dependency. The interactive form is deliberately its own
+tab stop, against the surrounding roving-tabindex convention (a `TreeView` row
+is one tab stop and its other children get `tabIndex={-1}`): there is no
+row-level key bound to "repair", so a `tabIndex={-1}` badge would put its action
+out of keyboard reach entirely. `tabIndex` is the pass-through for a caller that
+later wires such a key.
 Source: [shared/ui/ChangeBadge/ChangeBadge.tsx](https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/ChangeBadge/ChangeBadge.tsx)
 
 ### SearchSummary

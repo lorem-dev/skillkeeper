@@ -505,6 +505,18 @@ msgstr "將移除技能"
 msgid "skills.status.present"
 msgstr "技能已安裝"
 
+msgid "skills.status.addDependency"
+msgstr "將作為其他技能的相依項安裝"
+
+msgid "skills.status.brokenRequires"
+msgstr "所需的技能已被移除；此技能可能無法正常運作。按一下以恢復。"
+
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "所需的技能已被移除；此技能可能無法正常運作。沒有任何儲存庫提供該技能。"
+
+msgid "skills.status.brokenRequiresPending"
+msgstr "將移除所需的技能；此技能可能無法正常運作。按一下以恢復。"
+
 msgid "skills.installPending"
 msgstr "安裝技能即將推出（已選取 {count} 個）"
 

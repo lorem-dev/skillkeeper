@@ -6,7 +6,9 @@
  * Components (presets browser) + Management (installed instances).
  *
  * A tree of repo -> (group ->) skills, checkable to build an install set;
- * "Install" (Add) opens `SkillInstallModal` for the checked skills. A repo
+ * checking a skill also checks what it requires, tinted to say so. "Install"
+ * (Add) opens `SkillInstallModal` for the EXPLICIT picks -- the modal derives the
+ * closure itself, against the chosen project's own installed set. A repo
  * multi-select narrows which repositories appear; a search box fuzzy-filters
  * the tree; a footer summarizes the result and clears the search/filter.
  *
@@ -17,14 +19,36 @@
  * deep-link router (App reads `skillsUi.mode`) all agree with what is shown.
  */
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { Page, Toolbar, Button, ExpandingSearch, FilterButton, CollapsibleFilters, MultiCombobox, SearchSummary, TreeView, Badge, Tooltip } from '@/shared/ui';
+import { Page, Toolbar, Button, ExpandingSearch, FilterButton, CollapsibleFilters, MultiCombobox, SearchSummary, TreeView, ChangeBadge, Badge, Tooltip } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { useFilterToggle } from '@/shared/lib';
-import { buildRepoTree, filterTree, collectBranchIds, rootIds, countLeaves, repoSkillKey } from '@/entities/skill';
+import {
+  buildRepoTree,
+  filterTree,
+  collectBranchIds,
+  rootIds,
+  countLeaves,
+  repoSkillKey,
+  buildGraph,
+  deriveSelection,
+  dropMissing,
+  applyCheckChange,
+} from '@/entities/skill';
 import { SkillInstallModal } from '@/features/skillInstall';
 import './SkillsPage.scss';
+
+/**
+ * Repositories mode has no installed baseline: nothing here is "already
+ * present", so every check seeds its own dependency closure -- the first-install
+ * case. Module-level so the memos below see a stable reference.
+ */
+const NO_BASELINE: readonly string[] = [];
+
+/** No repair can be pending in a mode with no baseline to repair against. */
+const NO_RESTORED: readonly string[] = [];
 
 export function SkillsComponentsPage() {
   const availableSkills = useSkillkeeperStore((s) => s.availableSkills);
@@ -69,13 +93,33 @@ export function SkillsComponentsPage() {
     [repositories, repoFilter],
   );
 
+  // `repoChecked` holds the hand picks only; the dependency closure is derived.
+  // Derived ONCE per render: the tree is drawn from this exact value and every
+  // checkbox change is diffed against the same `shown`, so the two can never
+  // disagree (see `applyCheckChange`, which diffs against what was drawn).
+  const graph = useMemo(() => buildGraph(availableSkills, []), [availableSkills]);
+  const selection = useMemo(
+    () =>
+      dropMissing(
+        graph,
+        deriveSelection({ explicit: repoChecked, restored: NO_RESTORED }, NO_BASELINE, graph),
+      ),
+    [repoChecked, graph],
+  );
+
   const baseTree = useMemo(() => buildRepoTree(availableSkills, shownRepos), [availableSkills, shownRepos]);
   const shownTree = useMemo(() => filterTree(baseTree, query), [baseTree, query]);
 
-  // Repo mode has no status/update decoration -- only the grey "rules" badge on
-  // skills that ship guidance.
+  // Repo mode has no INSTALL-status decoration -- present/add/remove are
+  // statements about a scope, and nothing is installed into a repository. It
+  // does carry a dependency marker, because dependencies are selected in this
+  // very mode: without it the only signal that a box was ticked for the user
+  // rather than by them is the teal checkbox tone, which is colour alone and
+  // says nothing to a screen reader. Plus the grey "rules" badge on skills that
+  // ship guidance.
   const decorated = useMemo(() => {
-    if (guidanceIds.size === 0) return shownTree;
+    const dependencySet = new Set(selection.dependency);
+    if (guidanceIds.size === 0 && dependencySet.size === 0) return shownTree;
     const rulesBadge = (
       <span className="sk-skills-badgewrap" onClick={(e) => e.stopPropagation()}>
         <Tooltip content={t('skills.rulesHint')}>
@@ -87,9 +131,16 @@ export function SkillsComponentsPage() {
       if (node.children !== undefined && node.children.length > 0) {
         return { ...node, children: node.children.map(walk) };
       }
-      if (!guidanceIds.has(node.id)) return node;
+      const hasRules = guidanceIds.has(node.id);
+      // The badge carries the accessible name, so the tint is never the only
+      // thing that says a skill was selected as somebody else's dependency.
+      const detail: ReactNode = dependencySet.has(node.id) ? (
+        <ChangeBadge kind="add-dependency" label={t('skills.status.addDependency')} />
+      ) : undefined;
+      if (!hasRules) return detail === undefined ? node : { ...node, detail };
       return {
         ...node,
+        detail,
         label: (
           <span className="sk-skills-nodelabel">
             <span className="sk-skills-name">{node.label}</span>
@@ -99,7 +150,7 @@ export function SkillsComponentsPage() {
       };
     };
     return shownTree.map(walk);
-  }, [shownTree, guidanceIds, t]);
+  }, [shownTree, guidanceIds, selection, t]);
 
   const searching = query.trim() !== '';
   const filtering = repoFilter.length > 0;
@@ -143,8 +194,10 @@ export function SkillsComponentsPage() {
 
   // Reset + Install live in the bottom dock; the whole dock is hidden (rather
   // than the buttons disabled) when nothing is checked.
+  // Keyed off the DERIVED set: a selection made only of dependencies (every hand
+  // pick filtered out of the tree, say) is still a selection.
   const dock =
-    repoChecked.length > 0
+    selection.shown.length > 0
       ? [
           <Button key="reset" variant="secondary" glass onClick={() => resetSkillsSelection('repositories')}>
             {t('skills.action.reset')}
@@ -201,8 +254,19 @@ export function SkillsComponentsPage() {
             className="sk-skills-tree"
             nodes={decorated}
             checkable
-            checkedIds={repoChecked}
-            onCheckedChange={setRepoChecked}
+            checkedIds={selection.shown}
+            dependencyIds={selection.dependency}
+            onCheckedChange={(next) =>
+              setRepoChecked([
+                ...applyCheckChange(
+                  { explicit: repoChecked, restored: NO_RESTORED },
+                  NO_BASELINE,
+                  graph,
+                  selection.shown,
+                  next,
+                ).explicit,
+              ])
+            }
             defaultExpandedIds={expandedIds}
             onExpandedChange={(ids) => setSkillsUi({ expandedIds: ids })}
             ariaLabel={t('skills.componentsTitle')}

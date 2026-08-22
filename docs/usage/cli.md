@@ -59,6 +59,58 @@ installed skills.
 - `--all` - update all registered repositories.
 - `<id>` - update a specific repository.
 
+### repo lint
+
+```
+skillkeeper repo lint [<id> | --all | --path <dir>] [--json]
+```
+
+Report everything statically wrong with a skill repository's skills: missing
+dependencies, dependency cycles, unresolvable skills, and other static faults.
+Reporting only -- nothing here changes what resolves or installs. This does not
+check for updates; `check` does that.
+
+Exactly one target is required, and the three are mutually exclusive:
+
+- `<id>` - one tracked repository, by id.
+- `--all` - every tracked repository, grouped by repository. A repository whose
+  working tree is missing is reported on stderr and skipped; the rest still
+  lint.
+- `--path <dir>` - a directory that is not a tracked repository. This is the
+  form a skill author uses in their own CI, before the repository is registered
+  anywhere.
+
+`--json` emits a JSON array of diagnostics instead of human output. Stdout is
+always exactly one parseable array, including on a `2` exit, where it is `[]`.
+
+Exit codes:
+
+- `0` - no error was reported. Warnings alone do not fail, because a repository
+  with warnings still installs. `--all` finding no tracked repositories also
+  exits `0`, with a message saying exactly that.
+- `1` - at least one error was reported among the repositories that were
+  linted.
+- `2` - a usage or lookup failure: no target, more than one target, an unknown
+  repository id, or a named target (`<id>` or `--path <dir>`) whose working tree
+  does not exist. A named target that could not be linted never prints the clean
+  message, so a mistyped path in a CI gate cannot look like success.
+
+| code | severity | condition |
+|---------|----------|-----------|
+| `SK001` | error | A declared dependency does not exist in the repository. |
+| `SK002` | error | A dependency cycle, including a skill that requires itself. The message names the members. |
+| `SK003` | error | `skillkeeper.requires` failed strict validation; the skill does not resolve. |
+| `SK004` | error | A `SKILL.md` does not resolve for any other reason. |
+| `SK005` | error | A `hooks:` entry names a hook with no readable `hooks/<name>/HOOK.md`. |
+| `SK010` | warning | Dependencies declared with the flat `requires` field. |
+| `SK011` | warning | Both forms present; the flat `requires` was ignored. |
+| `SK012` | warning | A duplicate entry in a dependency list. |
+| `SK013` | warning | An `executables:` entry names a path absent from the skill body. |
+| `SK014` | warning | A manifest field was coerced, dropped, or re-quoted. |
+
+Codes are stable and are what a script should match on; the message text is
+not.
+
 ---
 
 ## skillkeeper skill
@@ -95,7 +147,14 @@ the agent targets it is currently installed for.
 skillkeeper skill install <id> [--agent <agent>] [--global] [--project <dir>] [--allow-hooks]
 ```
 
-Install a skill for one or more agents.
+Install a skill for one or more agents, together with its transitive
+dependency closure (see
+[Skill dependencies](skills-and-hooks.md#skill-dependencies)). Each dependency
+is installed for the same agents and scope as the named skill, and reported as
+installed as a dependency. A skill already installed for that target -- the
+named one or a dependency -- prints an "already installed" line and is left as
+it is. A dependency reference with no skill behind it is named on stderr; the
+named skill still installs.
 
 - `--agent <agent>` - optional. One of `claude`, `codex`, `copilot`, `cursor`,
   `opencode`. When omitted, the skill is installed for every agent detected in
@@ -119,6 +178,12 @@ Uninstall a skill. Removes all `ManagedFile` entries recorded in the manifest
 and all `ManagedHookEdit` regions (by `delimiterId` or `markerId`). Does not
 touch files or regions not owned by this installation.
 
+Uninstall never cascades to a skill's dependencies or dependents. It reports on
+stderr every still-installed skill this call broke, per target -- a dependency
+counts as satisfied for a dependent only at the dependent's own target -- and
+the exit code does not change. Breakage that predates the call is `repo lint`'s
+to report.
+
 - `--agent <agent>` - limit to one agent; otherwise every agent the skill is
   installed for is removed.
 
@@ -129,7 +194,11 @@ skillkeeper skill update <id> [--agent <agent>] [--project <dir>] [--allow-hooks
 ```
 
 Update a skill to the latest version from its source repository (by default for
-every agent target where it is installed).
+every agent target where it is installed). The skill's dependencies are updated
+with it, and a dependency the new version newly declares is installed, for the
+same agents and scope as the dependent. Dependency resolution stays inside the
+skill's own repository: a same-named skill installed from a different repository
+is left alone.
 
 - `--agent <agent>` - limit the update to one agent.
 - `--project <dir>` - project directory for project-scope installs (default: the

@@ -617,6 +617,7 @@ mod tests {
             source_path: None,
             content_hash: Some("h".to_string()),
             version: None,
+            requires: None,
             installed_at: "2026-07-17T00:00:00.000Z".to_string(),
             files: vec![],
             hook_edits: vec![],

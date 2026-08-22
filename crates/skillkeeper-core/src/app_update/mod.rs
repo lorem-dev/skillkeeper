@@ -16,5 +16,5 @@ pub mod version;
 
 pub use decide::{decide, should_show_dialog, DecideInput, UpdateOffer, MAX_NOTES_BYTES};
 pub use manifest::{download_url, select_artifact, Artifact, Manifest, ManifestEntry};
-pub use platform::{host_asset_key, preferred_kinds};
+pub use platform::{asset_key, preferred_kinds};
 pub use version::{bump_between, Bump, Version};

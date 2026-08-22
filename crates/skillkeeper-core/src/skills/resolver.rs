@@ -35,6 +35,7 @@ use crate::ports::{FsPort, PortResult};
 use crate::skills::group_path;
 use crate::skills::manifest::{self, Parsed};
 use crate::skills::repo_config::parse_repo_config;
+use crate::skills::requires;
 
 const SKILL_FILE: &str = "SKILL.md";
 const HOOK_FILE: &str = "HOOK.md";
@@ -407,25 +408,61 @@ fn resolve_from_config(
 pub fn resolve_skills(fs: &dyn FsPort, repo_root: &str) -> ResolveResult {
     let mut warnings: Vec<String> = Vec::new();
 
+    // Both branches feed the same finished-list check below, so there is
+    // exactly one exit from this function: the dependency check needs the
+    // complete skill list, whichever scheme produced it.
     let config_path = format!("{repo_root}/{REPO_CONFIG}");
-    if fs.exists(&config_path).unwrap_or(false) {
+    let skills = if fs.exists(&config_path).unwrap_or(false) {
         let text = fs.read_file(&config_path).unwrap_or_default();
-        let skills = resolve_from_config(fs, repo_root, &text, &mut warnings);
-        return ResolveResult { skills, warnings };
+        resolve_from_config(fs, repo_root, &text, &mut warnings)
+    } else {
+        let SkillDirs { dirs, too_deep } =
+            find_skill_dirs(fs, repo_root, group_path::MAX_SKILL_DEPTH);
+        let mut skills = Vec::new();
+        for dir in dirs {
+            if let Ok(Some(skill)) =
+                build_skill(fs, repo_root, &dir, auto_skill_id(&dir), &mut warnings)
+            {
+                skills.push(skill);
+            }
+        }
+        for deep in too_deep {
+            warnings.push(too_deep_warning(&deep));
+        }
+        skills
+    };
+
+    // Dependency faults are repository-level: they need the finished skill
+    // list, so they cannot be checked while walking. All are reported and none
+    // is fatal -- a missing target or a cycle is an authoring mistake, and
+    // hiding the skills involved would cost the user more than the mistake
+    // does.
+    let graph = requires::RequiresGraph::build(&skills);
+    for (from, target) in graph.missing() {
+        warnings.push(format!(
+            "Skill \"{from}\" requires \"{target}\", which does not exist in this repository."
+        ));
+    }
+    for path in graph.self_edges() {
+        // A self reference reaches this graph whenever the declaring skill is
+        // grouped: the manifest parser rejects the ones it can see, but the
+        // frontmatter carries no group, so `g/a` requiring "g/a" -- the
+        // absolute spelling a reference must use -- looks like a reference to
+        // somebody else there. It is a cycle of length one, so it is reported
+        // with the cycle prefix, but naming the single skill rather than
+        // listing one member.
+        warnings.push(format!(
+            "Dependency cycle: skill \"{path}\" requires itself."
+        ));
+    }
+    for component in graph.cycles() {
+        // `cycles()` returns strongly connected components (already sorted),
+        // not traversal-ordered simple cycles, and a component can contain
+        // more than one cycle. An arrow chain would imply a specific edge
+        // path that may not exist, so members are only named, not chained.
+        warnings.push(format!("Dependency cycle among: {}.", component.join(", ")));
     }
 
-    let SkillDirs { dirs, too_deep } = find_skill_dirs(fs, repo_root, group_path::MAX_SKILL_DEPTH);
-    let mut skills = Vec::new();
-    for dir in dirs {
-        if let Ok(Some(skill)) =
-            build_skill(fs, repo_root, &dir, auto_skill_id(&dir), &mut warnings)
-        {
-            skills.push(skill);
-        }
-    }
-    for deep in too_deep {
-        warnings.push(too_deep_warning(&deep));
-    }
     ResolveResult { skills, warnings }
 }
 
@@ -781,6 +818,61 @@ mod tests {
         assert_eq!(names, vec!["yes".to_string()]);
     }
 
+    #[test]
+    fn warns_about_a_missing_dependency_declared_via_repo_config() {
+        // The dependency check runs once on the finished skill list, so it
+        // must also fire for the scheme-3 (repo-config) resolution path, not
+        // only for auto-detected skills.
+        let fs = MemFs::new()
+            .with_file(
+                "repo/skillkeeper.repo.yaml",
+                "version: 1\nskills:\n  - path: a\n  - path: b\n",
+            )
+            .with_file(
+                "repo/a/SKILL.md",
+                "---\nname: a\nskillkeeper:\n  requires:\n    - ghost\n---\nbody\n",
+            )
+            .with_file("repo/b/SKILL.md", &skill_md("b"));
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(result.skills.len(), 2);
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w
+                    == "Skill \"a\" requires \"ghost\", which does not exist in this repository."),
+            "{:?}",
+            result.warnings
+        );
+    }
+
+    #[test]
+    fn warns_about_a_dependency_cycle_declared_via_repo_config() {
+        let fs = MemFs::new()
+            .with_file(
+                "repo/skillkeeper.repo.yaml",
+                "version: 1\nskills:\n  - path: a\n  - path: b\n",
+            )
+            .with_file(
+                "repo/a/SKILL.md",
+                "---\nname: a\nskillkeeper:\n  requires:\n    - b\n---\nbody\n",
+            )
+            .with_file(
+                "repo/b/SKILL.md",
+                "---\nname: b\nskillkeeper:\n  requires:\n    - a\n---\nbody\n",
+            );
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(result.skills.len(), 2);
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w.starts_with("Dependency cycle")),
+            "{:?}",
+            result.warnings
+        );
+    }
+
     // --- reserved hooks and depth warnings ---
 
     #[test]
@@ -999,6 +1091,128 @@ mod tests {
         assert_eq!(
             result.skills[0].hooks[0].manifest.target.agent,
             crate::models::AgentKind::Claude
+        );
+    }
+
+    // --- dependency faults (whole-repository checks) ---
+
+    #[test]
+    fn warns_about_a_dependency_that_does_not_exist() {
+        let fs = MemFs::new().with_file(
+            "repo/a/SKILL.md",
+            "---\nname: a\nskillkeeper:\n  requires:\n    - ghost\n---\nbody\n",
+        );
+        let result = resolve_skills(&fs, "repo");
+        // The skill still resolves: a broken reference is a repository fault,
+        // not a reason to hide a working skill.
+        assert_eq!(result.skills.len(), 1);
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w
+                    == "Skill \"a\" requires \"ghost\", which does not exist in this repository."),
+            "{:?}",
+            result.warnings
+        );
+    }
+
+    #[test]
+    fn warns_about_a_dependency_cycle_naming_every_member() {
+        // A three-member cycle so "every member" is not trivially satisfied
+        // by a two-node fixture.
+        let fs = MemFs::new()
+            .with_file(
+                "repo/a/SKILL.md",
+                "---\nname: a\nskillkeeper:\n  requires:\n    - b\n---\nbody\n",
+            )
+            .with_file(
+                "repo/b/SKILL.md",
+                "---\nname: b\nskillkeeper:\n  requires:\n    - c\n---\nbody\n",
+            )
+            .with_file(
+                "repo/c/SKILL.md",
+                "---\nname: c\nskillkeeper:\n  requires:\n    - a\n---\nbody\n",
+            );
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(result.skills.len(), 3);
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w == "Dependency cycle among: a, b, c."),
+            "{:?}",
+            result.warnings
+        );
+    }
+
+    #[test]
+    fn warns_when_a_grouped_skill_requires_itself() {
+        // The absolute spelling of its own path, which is the ONLY spelling a
+        // reference may use. The manifest parser cannot reject it: the
+        // frontmatter carries no group, so "g/a" looks like a reference to
+        // somebody else there. The group is known here, so this is where a
+        // self reference is caught -- as a cycle of length one, naming the
+        // single skill.
+        let fs = MemFs::new().with_file(
+            "repo/g/a/SKILL.md",
+            "---\nname: a\nskillkeeper:\n  requires:\n    - g/a\n---\nbody\n",
+        );
+        let result = resolve_skills(&fs, "repo");
+        // Cycles do not hide their skills: it resolves and installs.
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(
+            result.warnings,
+            vec!["Dependency cycle: skill \"g/a\" requires itself.".to_string()]
+        );
+    }
+
+    #[test]
+    fn a_grouped_dependency_resolves_by_its_full_path() {
+        let fs = MemFs::new()
+            .with_file(
+                "repo/g/a/SKILL.md",
+                "---\nname: a\nskillkeeper:\n  requires:\n    - g/b\n---\nbody\n",
+            )
+            .with_file("repo/g/b/SKILL.md", "---\nname: b\n---\nbody\n");
+        let result = resolve_skills(&fs, "repo");
+        assert_eq!(result.skills.len(), 2);
+        assert!(
+            result.warnings.is_empty(),
+            "a valid cross-group reference must not warn: {:?}",
+            result.warnings
+        );
+    }
+
+    #[test]
+    fn a_dependency_on_a_skill_dropped_by_strict_validation_is_reported_missing() {
+        let fs = MemFs::new()
+            .with_file(
+                "repo/a/SKILL.md",
+                "---\nname: a\nskillkeeper:\n  requires:\n    - b\n---\nbody\n",
+            )
+            .with_file(
+                "repo/b/SKILL.md",
+                "---\nname: b\nskillkeeper:\n  requires: oops\n---\nbody\n",
+            );
+        let result = resolve_skills(&fs, "repo");
+        // `b` did not resolve, so as far as the graph is concerned it does not
+        // exist, and `a` gets the missing-target warning on top of `b`'s own.
+        assert_eq!(result.skills.len(), 1);
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w.contains("must be a list of strings")),
+            "{:?}",
+            result.warnings
+        );
+        assert!(
+            result.warnings.iter().any(
+                |w| w == "Skill \"a\" requires \"b\", which does not exist in this repository."
+            ),
+            "{:?}",
+            result.warnings
         );
     }
 }
