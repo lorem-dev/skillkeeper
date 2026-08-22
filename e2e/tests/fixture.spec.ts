@@ -66,11 +66,18 @@ describe('fixture submodule', () => {
     const files = fixtureFiles();
     const skills = files.filter((f) => f.endsWith('SKILL.md'));
     const hooks = files.filter((f) => f.endsWith('HOOK.md'));
-    // 12 resolvable skills plus the deliberately unresolvable deep-nesting one,
-    // which now sits four group levels down -- one past the limit of three.
-    expect(skills).toHaveLength(13);
+    // 24 resolvable skills plus two deliberately unresolvable ones:
+    // `deep-nesting/...`, which sits four group levels down -- one past the
+    // limit of three -- and `requires/invalid-strict`, whose strict
+    // `skillkeeper.requires` is malformed and so fails the whole manifest.
+    expect(skills).toHaveLength(26);
     expect(hooks).toHaveLength(3);
     expect(skills).toContain('deep-nesting/l2/l3/l4/too-deep-skill/SKILL.md');
+    expect(skills).toContain('requires/invalid-strict/SKILL.md');
+    // The dependency group: one skill per behaviour the `requires` field and
+    // the lint pass have. Counted so a dropped fixture shows up here rather
+    // than as a mysteriously passing lint spec.
+    expect(skills.filter((f) => f.startsWith('requires/'))).toHaveLength(13);
     // One group tree carrying skills at one, two, and three levels at once.
     expect(skills).toContain('platform/release-skill/SKILL.md');
     expect(skills).toContain('platform/lint/style-skill/SKILL.md');

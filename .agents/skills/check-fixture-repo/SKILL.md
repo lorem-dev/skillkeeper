@@ -3,9 +3,9 @@ name: check-fixture-repo
 description: >
   Validate the examples/test-repo fixture submodule and drive the built CLI
   against it end to end -- resolution schemes, groups, hooks, guidance
-  precedence, executables, MCP presets and parameters, and the verify/repair
-  round-trip -- in a throwaway state directory that cannot touch the developer's
-  real configuration.
+  precedence, executables, skill dependencies and `repo lint`, MCP presets and
+  parameters, and the verify/repair round-trip -- in a throwaway state directory
+  that cannot touch the developer's real configuration.
 ---
 
 # check-fixture-repo
@@ -65,9 +65,22 @@ to look:
 | `e2e/tests/skills.spec.ts` | resolution schemes, `.skid.yml` identity, nested body paths, selective `+x`, guidance precedence, hook merge and consent, the delimited-text region, and both silent-failure modes of the resolver | the **product** changed |
 | `e2e/tests/mcp.spec.ts` | preset discovery including the group-scoped file, parameter substitution, both ledger files, the `.gitignore` guard for the secrets file, rules rendering, instance-name allocation, the Codex stdio-only skip, and removal | the **product** changed |
 | `e2e/tests/repair.spec.ts` | `verify` -> `repair` -> `verify`, directory pruning, the bounds that keep repair inside the repaired skill, and uninstall reversing hooks and guidance | the **product** changed |
+| `e2e/tests/requires.spec.ts` | skill dependencies: every `repo lint` code the `requires` group triggers, the single-document `--json` form, both target-misuse exits, the transitive install closure, and the uninstall breakage report | the **product** changed |
 
 If `fixture.spec.ts` fails, fix or re-pin the fixture. If it passes and another
 spec fails, the CLI's behaviour moved and the fixture is telling you so.
+
+Two of the fixture's twenty-six `SKILL.md` files must **not** resolve:
+`deep-nesting/l2/l3/l4/too-deep-skill` (four group levels, one past the limit)
+and `requires/invalid-strict` (a malformed strict `skillkeeper.requires`, which
+fails the whole manifest). A count assertion that suddenly passes with 25
+resolvable skills is a regression, not a fixed test.
+
+`repo lint --path examples/test-repo` exits **1** by design: the fixture ships
+`SK001`, `SK002`, `SK003`, `SK004`, and `SK005` errors alongside `SK010`,
+`SK011`, `SK012`, and `SK013` warnings, one skill per code. The fixture's own
+README documents which skill triggers which. Never "fix" the fixture to make
+that exit 0.
 
 ### 3. Confirm nothing escaped the sandbox
 
@@ -90,7 +103,7 @@ commit the bump on its own.
 Jest already reports per-test results, so summarize rather than restate:
 
 ```
-pnpm test:e2e:            PASS / FAIL (N passed, N failed of 37)
+pnpm test:e2e:            PASS / FAIL (N passed, N failed of 51)
 failing spec(s):          <file> -> <test name>
 attributed to:            fixture drift / product change / harness defect
 working tree clean after: yes / no
