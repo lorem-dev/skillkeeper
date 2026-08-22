@@ -505,6 +505,12 @@ msgstr "スキルが削除されます"
 msgid "skills.status.present"
 msgstr "スキルはすでにインストールされています"
 
+msgid "skills.status.addDependency"
+msgstr "他のスキルの依存関係としてインストールされます"
+
+msgid "skills.status.brokenRequires"
+msgstr "必要なスキルが削除されました。このスキルは動作しない可能性があります。クリックして復元してください。"
+
 msgid "skills.installPending"
 msgstr "スキルのインストールは近日公開予定です ({count} 件選択中)"
 

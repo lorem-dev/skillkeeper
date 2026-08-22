@@ -571,6 +571,12 @@ msgstr "La compétence sera retirée"
 msgid "skills.status.present"
 msgstr "Compétence déjà installée"
 
+msgid "skills.status.addDependency"
+msgstr "La compétence sera installée en tant que dépendance d'une autre compétence"
+
+msgid "skills.status.brokenRequires"
+msgstr "Une compétence requise a été supprimée ; cette compétence risque de ne pas fonctionner. Cliquez pour la restaurer."
+
 msgid "skills.installPending"
 msgstr "L'installation des compétences arrive bientôt ({count} sélectionnées)"
 

@@ -604,6 +604,12 @@ msgstr "La competenza verrà rimossa"
 msgid "skills.status.present"
 msgstr "Competenza già installata"
 
+msgid "skills.status.addDependency"
+msgstr "La competenza verrà installata come dipendenza di un'altra competenza"
+
+msgid "skills.status.brokenRequires"
+msgstr "Una competenza richiesta è stata rimossa; questa competenza potrebbe non funzionare. Fai clic per ripristinarla."
+
 msgid "skills.installPending"
 msgstr "L'installazione delle competenze arriverà a breve ({count} selezionate)"
 

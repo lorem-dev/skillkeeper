@@ -604,6 +604,12 @@ msgstr "Навык будзе выдалены"
 msgid "skills.status.present"
 msgstr "Навык ужо ўсталяваны"
 
+msgid "skills.status.addDependency"
+msgstr "Навык будзе ўсталяваны як залежнасць іншага навыка"
+
+msgid "skills.status.brokenRequires"
+msgstr "Патрэбны навык быў выдалены; гэты навык можа не працаваць. Націсніце, каб аднавіць."
+
 msgid "skills.installPending"
 msgstr "Усталяванне навыкаў хутка з’явіцца (выбрана: {count})"
 

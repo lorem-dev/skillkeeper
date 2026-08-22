@@ -571,6 +571,12 @@ msgstr "स्किल हटाई जाएगी"
 msgid "skills.status.present"
 msgstr "स्किल पहले से इंस्टॉल है"
 
+msgid "skills.status.addDependency"
+msgstr "यह किसी अन्य स्किल की निर्भरता के रूप में इंस्टॉल की जाएगी"
+
+msgid "skills.status.brokenRequires"
+msgstr "आवश्यक स्किल हटा दी गई है; यह स्किल काम नहीं कर सकती। पुनर्स्थापित करने के लिए क्लिक करें।"
+
 msgid "skills.installPending"
 msgstr "स्किल इंस्टॉल करना जल्द आ रहा है ({count} चुनी गईं)"
 

@@ -556,6 +556,12 @@ msgstr "Skill wird entfernt"
 msgid "skills.status.present"
 msgstr "Skill bereits installiert"
 
+msgid "skills.status.addDependency"
+msgstr "Skill wird als Abhängigkeit eines anderen Skills installiert"
+
+msgid "skills.status.brokenRequires"
+msgstr "Ein erforderlicher Skill wurde entfernt; dieser Skill funktioniert möglicherweise nicht. Klicken Sie, um ihn wiederherzustellen."
+
 msgid "skills.installPending"
 msgstr "Skills installieren kommt bald ({count} ausgewählt)"
 
