@@ -192,7 +192,9 @@ fn namespaced_requires(
             return Err(format!("skill \"{own_path}\" cannot require itself"));
         }
         if out.iter().any(|kept| kept == reference) {
-            notes.push(format!("ignoring duplicate skill reference \"{reference}\""));
+            notes.push(format!(
+                "ignoring duplicate skill reference \"{reference}\""
+            ));
             continue;
         }
         out.push(reference.clone());
@@ -225,7 +227,9 @@ fn flat_requires(map: &Mapping, own_path: &str, notes: &mut Vec<String>) -> Opti
             continue;
         }
         if out.iter().any(|kept| kept == reference) {
-            notes.push(format!("ignoring duplicate skill reference \"{reference}\""));
+            notes.push(format!(
+                "ignoring duplicate skill reference \"{reference}\""
+            ));
             continue;
         }
         out.push(reference.to_string());
@@ -469,7 +473,8 @@ mod tests {
 
     #[test]
     fn namespaced_requires_takes_precedence_over_the_flat_field() {
-        let parsed = skill("name: a\nrequires:\n  - flat\nskillkeeper:\n  requires:\n    - nested\n");
+        let parsed =
+            skill("name: a\nrequires:\n  - flat\nskillkeeper:\n  requires:\n    - nested\n");
         assert_eq!(parsed.manifest.requires, Some(vec!["nested".to_string()]));
         assert_eq!(
             parsed.notes,
@@ -506,7 +511,8 @@ mod tests {
     #[test]
     fn rejects_a_scalar_where_the_namespaced_list_belongs() {
         // Deliberately NOT coerced: the strict field means what it says.
-        let err = parse_skill_manifest(&yaml("name: a\nskillkeeper:\n  requires: b\n")).unwrap_err();
+        let err =
+            parse_skill_manifest(&yaml("name: a\nskillkeeper:\n  requires: b\n")).unwrap_err();
         assert_eq!(err, "\"skillkeeper.requires\" must be a list of strings");
     }
 
