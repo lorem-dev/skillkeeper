@@ -1481,8 +1481,11 @@ secondary, etc.); <code>loading</code> shows a shimmer and disables the button. 
 native button attributes. Design-system.md 8.2.
 Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Button/Button.tsx">shared/ui/Button/Button.tsx</a></p>
 <h3 id="checkbox">Checkbox<a class="headerlink" href="#checkbox" title="Permanent link">&para;</a></h3>
-<p><code>&lt;Checkbox label? /&gt;</code> -- native checkbox with a styled box. Forwards native input
-attributes (<code>checked</code>, <code>onChange</code>, <code>disabled</code>, ...).
+<p><code>&lt;Checkbox label? indeterminate? tone? /&gt;</code> -- native checkbox with a styled box.
+Forwards native input attributes (<code>checked</code>, <code>onChange</code>, <code>disabled</code>, ...).
+<code>indeterminate</code> shows a dash and takes visual precedence over <code>checked</code>. <code>tone</code>:
+<code>default</code> | <code>dependency</code>; <code>dependency</code> tints the box <code>--sk-teal</code> to match the
+<code>add-dependency</code> badge -- this box is on because another skill needs it.
 Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Checkbox/Checkbox.tsx">shared/ui/Checkbox/Checkbox.tsx</a></p>
 <h3 id="toggle">Toggle<a class="headerlink" href="#toggle" title="Permanent link">&para;</a></h3>
 <p><code>&lt;Toggle label? /&gt;</code> -- a switch (native checkbox, <code>role="switch"</code>) styled as a pill
@@ -1608,10 +1611,22 @@ window. Full keyboard navigation; selection state is owned by the consumer.
 Design-system.md 8.8.
 Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/Menu/Menu.tsx">shared/ui/Menu/Menu.tsx</a></p>
 <h3 id="changebadge">ChangeBadge<a class="headerlink" href="#changebadge" title="Permanent link">&para;</a></h3>
-<p><code>&lt;ChangeBadge kind label /&gt;</code> -- a small filled circle with a knocked-out glyph
-previewing a pending change; <code>kind</code>: <code>add</code> (green, <code>+</code>) | <code>remove</code> (red, <code>-</code>) |
-<code>present</code> (gray, check). The glyph is a true SVG-mask knockout so it reads on any
-row background. Wrapped in a Tooltip with <code>label</code> (also the accessible name).
+<p><code>&lt;ChangeBadge kind label onClick? tabIndex? /&gt;</code> -- a small filled circle with a
+knocked-out glyph previewing a pending change; <code>kind</code>: <code>add</code> (green, <code>+</code>) |
+<code>remove</code> (red, <code>-</code>) | <code>present</code> (gray, check) | <code>add-dependency</code> (teal, <code>+</code>) |
+<code>broken</code> (orange, <code>!</code>). <code>add-dependency</code> uses the same plus as <code>add</code> -- a
+dependency install is an add; only the color says it was chosen for you.
+<code>broken</code> means a skill this one needed is gone. The glyph is a true SVG-mask
+knockout so it reads on any row background. Wrapped in a Tooltip with <code>label</code>
+(also the accessible name).</p>
+<p>Without <code>onClick</code> the badge is a non-interactive <code>role="img"</code> span. With
+<code>onClick</code> it renders as a real button -- used by <code>broken</code>, which can be acted on
+to repair the missing dependency. The interactive form is deliberately its own
+tab stop, against the surrounding roving-tabindex convention (a <code>TreeView</code> row
+is one tab stop and its other children get <code>tabIndex={-1}</code>): there is no
+row-level key bound to "repair", so a <code>tabIndex={-1}</code> badge would put its action
+out of keyboard reach entirely. <code>tabIndex</code> is the pass-through for a caller that
+later wires such a key.
 Source: <a href="https://github.com/lorem-dev/skillkeeper/blob/main/apps/desktop/src/renderer/shared/ui/ChangeBadge/ChangeBadge.tsx">shared/ui/ChangeBadge/ChangeBadge.tsx</a></p>
 <h3 id="searchsummary">SearchSummary<a class="headerlink" href="#searchsummary" title="Permanent link">&para;</a></h3>
 <p><code>&lt;SearchSummary foundLabel totalLabel showAllLabel onShowAll /&gt;</code> -- a footer shown

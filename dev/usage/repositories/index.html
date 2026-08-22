@@ -1326,6 +1326,7 @@ instead of the clone's default.</p>
 skillkeeper repo remove &lt;id&gt;
 skillkeeper repo list
 skillkeeper repo update [id] [--all]
+skillkeeper repo lint [&lt;id&gt; | --all | --path &lt;dir&gt;] [--json]
 </code></pre></div>
 <p><code>repo add</code> clones immediately. The local path is optional: omit it and the
 clone lands in a per-repository directory under the app's own repositories folder
@@ -1339,6 +1340,9 @@ Either front end rejects an add whose URL (or, for the CLI, local path) is
 already tracked.</p>
 <p><code>repo update</code> (CLI) or "sync" (desktop) refreshes a repository from its
 remote; see "Update operations" below for how the two differ.</p>
+<p>To check what is statically wrong with a repository's skills -- missing
+dependencies, cycles, skills that do not resolve -- run
+<a href="../cli/#repo-lint"><code>repo lint</code></a>.</p>
 <h2 id="branch-tracking">Branch tracking<a class="headerlink" href="#branch-tracking" title="Permanent link">&para;</a></h2>
 <p>A repository can track a specific branch instead of the clone's default.
 Setting or changing the tracked branch force-checks-out that branch in the

@@ -1399,6 +1399,12 @@ the reference export.</p>
 <p><code>--sk-blue</code> is the primary accent (selection, primary buttons, focus). The rest are
 used for status and categorical color (e.g. success = green, destructive = red,
 warning = orange/yellow).</p>
+<p>Two hues carry a fixed meaning in the change-badge family (<code>ChangeBadge</code> and
+the matching <code>Checkbox</code> <code>dependency</code> tone): <code>--sk-teal</code> means "selected as a
+dependency" -- an addition adjacent enough to green to read as "will be added",
+distinct enough to say the user did not name it -- and <code>--sk-orange</code> carries the
+warning tone. Orange rather than <code>--sk-yellow</code>, which does not hold contrast as
+a filled circle on the light theme's white row.</p>
 <h3 id="22-neutral-ramp">2.2 Neutral ramp<a class="headerlink" href="#22-neutral-ramp" title="Permanent link">&para;</a></h3>
 <p>Light theme ramp (light to dark):</p>
 <table>
@@ -2006,6 +2012,9 @@ frosted shell), opening the shared <code>Menu</code> (8.8) for its dropdown.</p>
   for entering a duration; the value is stored in minutes and hours snap to whole
   hours. Implemented as <code>IntervalStepper</code> (composes <code>Stepper</code> +
   <code>SegmentedControl</code>).</li>
+<li>Checkbox: box fill <code>--sk-color-accent</code> when checked, glyph knocked out in
+  white; the <code>dependency</code> tone swaps that fill for <code>--sk-teal</code>. The
+  indeterminate dash takes visual precedence over the check.</li>
 </ul>
 <h3 id="84-text-fields">8.4 Text fields<a class="headerlink" href="#84-text-fields" title="Permanent link">&para;</a></h3>
 <p>Fill <code>--sk-color-fill-3</code>, radius <code>--sk-radius-sm</code>, padding <code>--sk-space-3</code>

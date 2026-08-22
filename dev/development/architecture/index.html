@@ -790,6 +790,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#skill-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill dependencies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#state-storage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -954,6 +965,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#skill-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill dependencies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#state-storage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1029,7 +1051,8 @@ platform I/O.</p>
                                             hashing, install/uninstall/verify/
                                             repair engine, hooks, git port,
                                             update scheduler, adapter interface,
-                                            MCP model/install
+                                            MCP model/install, skill dependency
+                                            graph, repository lint
 
 skillkeeper-config     -&gt; core              per-section config loading + serde
                                             validation with defaults
@@ -1058,8 +1081,8 @@ install engine never depends on a concrete agent adapter directly.</p>
 <ul>
 <li><code>SkillId</code> - stable identity: <code>{ group?: string, name: string }</code>.</li>
 <li><code>SkillManifest</code> - parsed <code>SKILL.md</code> frontmatter: name, optional version,
-  optional description, optional license, optional declared executables, and
-  optional hook references.</li>
+  optional description, optional license, optional declared executables,
+  optional hook references, and optional skill dependencies (<code>requires</code>).</li>
 <li><code>HookManifest</code> - parsed <code>HOOK.md</code> frontmatter: name, the target it edits
   (agent + file pattern or config key path), and the apply strategy
   (<code>delimited-text</code>, <code>json-merge</code>, or <code>file</code>).</li>
@@ -1079,6 +1102,20 @@ install engine never depends on a concrete agent adapter directly.</p>
 <li><code>{ kind: 'file', ...ManagedFile }</code> for hook-owned standalone files.</li>
 <li><code>Project</code> - a tracked directory: <code>{ id, path, name, addedAt }</code>.</li>
 </ul>
+<h2 id="skill-dependencies">Skill dependencies<a class="headerlink" href="#skill-dependencies" title="Permanent link">&para;</a></h2>
+<p>Two <code>skillkeeper-core</code> modules, both pure of I/O beyond the <code>FsPort</code>:</p>
+<ul>
+<li><code>skills::requires</code> - the skill dependency graph. The only place it is
+  traversed: transitive closure for install and update, reverse closure for what
+  breaks when a skill goes away, plus the missing-reference and cycle detectors.</li>
+<li><code>skills::lint</code> - the static repository pass behind
+  <a href="../../usage/cli/#repo-lint"><code>repo lint</code></a>. Reporting only; nothing in it
+  changes what resolves or installs.</li>
+</ul>
+<p>The renderer carries a mirror of the graph (<code>entities/skill/lib/requires.ts</code>) so
+the skill tree can be drawn without a bridge round trip per click. It is a
+preview: the core stays authoritative at apply time, and both sides are covered
+by the same case table.</p>
 <h2 id="state-storage">State storage<a class="headerlink" href="#state-storage" title="Permanent link">&para;</a></h2>
 <p>Two stores under the OS application-data directory, kept separate because they
 have different lifecycles:</p>

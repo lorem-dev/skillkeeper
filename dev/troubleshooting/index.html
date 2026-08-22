@@ -725,6 +725,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skills
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skills">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#an-orange-marker-on-an-installed-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An orange ! marker on an installed skill
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -941,6 +969,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skills
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skills">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#an-orange-marker-on-an-installed-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An orange ! marker on an installed skill
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1002,6 +1058,21 @@ archive from the latest release, and adds the binary to your PATH.</p>
 <p>Make sure the install directory is on your PATH, then verify with
 <code>skillkeeper version</code>. See the <a href="../usage/cli/">CLI Reference</a> for the available
 commands.</p>
+<h2 id="skills">Skills<a class="headerlink" href="#skills" title="Permanent link">&para;</a></h2>
+<h3 id="an-orange-marker-on-an-installed-skill">An orange <code>!</code> marker on an installed skill<a class="headerlink" href="#an-orange-marker-on-an-installed-skill" title="Permanent link">&para;</a></h3>
+<p>The skill declares a dependency that is not installed for that agent. The skill
+itself is untouched: it is still installed and its files are intact. The marker
+is a statement about what is on disk, not a queued change, which is why it
+outranks any pending add or remove on the same row.</p>
+<p>Click the marker to queue the missing dependencies for install, then Save to
+apply. Where only some of the missing references can be installed, the marker
+stays orange afterwards -- part of it was repaired, part of it cannot be.</p>
+<p>The marker is not always clickable. When none of the skill's missing
+dependencies exists in any repository there is nothing to install, so the badge
+drops to its non-interactive form and the tooltip explains the state without
+offering a repair. Fix that at the source: the reference is wrong, or the skill
+it names is not published. Run
+<a href="../usage/cli/#repo-lint"><code>repo lint</code></a> against the repository to see which it is.</p>
 
 
 

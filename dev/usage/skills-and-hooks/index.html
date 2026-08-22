@@ -452,6 +452,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#skill-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill dependencies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skill dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#strictness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strictness
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-update-and-uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install, update, and uninstall
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#skill-resolution-schemes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -624,7 +663,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#install-update-and-uninstall" class="md-nav__link">
+  <a href="#install-update-and-uninstall_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Install, update, and uninstall
@@ -1165,6 +1204,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#skill-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill dependencies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skill dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#strictness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strictness
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-update-and-uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install, update, and uninstall
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#skill-resolution-schemes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1337,7 +1415,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#install-update-and-uninstall" class="md-nav__link">
+  <a href="#install-update-and-uninstall_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Install, update, and uninstall
@@ -1448,7 +1526,8 @@ mechanism).</p>
 <p>A skill is a directory that contains a <code>SKILL.md</code> file plus any supporting
 files. <code>SKILL.md</code> carries YAML frontmatter (name, optional version, optional
 description, optional license, optional declared executables, optional
-declared hook names) and a Markdown body for human documentation.</p>
+declared hook names, optional declared skill dependencies) and a Markdown body
+for human documentation.</p>
 <p>Only <code>name</code> is required. Fields SkillKeeper does not know -- another agent's
 own keys, say -- are ignored, and a known field written in another shape
 (<code>version: 1.0</code> as a number, a lone <code>executables</code> entry with no list) is read
@@ -1486,6 +1565,70 @@ repository config yields an unresolved-path warning, not a silently guessed
 install. The warning reads exactly:</p>
 <div class="highlight"><pre><span></span><code>Unresolved SKILL.md at "&lt;path&gt;": nesting is deeper than 3 group levels; declare it in skillkeeper.repo.yaml to install it.
 </code></pre></div>
+<h2 id="skill-dependencies">Skill dependencies<a class="headerlink" href="#skill-dependencies" title="Permanent link">&para;</a></h2>
+<p>A skill may declare other skills of its own repository that it needs:</p>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">brainstorming</span>
+<span class="nt">skillkeeper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">requires</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">superpowers/using-superpowers</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">writing-plans</span>
+<span class="nn">---</span>
+</code></pre></div>
+<p>Two spellings are read: the namespaced <code>skillkeeper.requires</code> above, and a flat
+top-level <code>requires</code>. When both are present the namespaced list wins entirely
+and the flat one is ignored -- including when the namespaced list is empty,
+which is how an author says "this skill has no dependencies".</p>
+<p>A reference is an absolute skill path within the same repository:
+<code>group/sub/name</code>, or bare <code>name</code> for an ungrouped skill. Cross-repository
+dependencies are not supported.</p>
+<p>A reference names the skill's <strong>resolved identity</strong>, not its directory path. If
+<code>skillkeeper.repo.yaml</code> renames a skill or overrides its group, references must
+use the resulting group and name -- the identity the skill tree shows -- not the
+on-disk layout. <code>repo lint</code>'s <code>SK001</code> is the safety net for getting this wrong.</p>
+<h3 id="strictness">Strictness<a class="headerlink" href="#strictness" title="Permanent link">&para;</a></h3>
+<p>The asymmetry between the two spellings is deliberate:</p>
+<ul>
+<li><code>skillkeeper.requires</code> is validated strictly. A scalar where the list
+  belongs, a non-string entry, or an invalid reference means the skill does not
+  resolve at all. So does a self-reference by an ungrouped skill, which is the
+  only self-reference this check can see: the group comes from the directory
+  layout rather than the frontmatter, so a grouped skill naming its own path is
+  indistinguishable here from one naming a neighbour. It is caught afterwards,
+  once the group is known, as a cycle of one (see below), and the skill
+  resolves.</li>
+<li>Flat <code>requires</code> is lenient. A bad entry is dropped with a warning and the
+  skill still installs.</li>
+</ul>
+<p>A reference with no skill behind it costs the declaring skill nothing either
+way: the skill resolves and installs, the repository gets a warning, <code>repo lint</code>
+reports <code>SK001</code>, and the desktop app marks the skill.</p>
+<p>Cycles are reported, not blocking. <code>repo lint</code> treats a cycle as an error
+(<code>SK002</code>) and the resolver warns, but selection and installation work -- the
+closure over a cycle is well defined. The message names the members without an
+arrow chain: the detector returns strongly connected components rather than
+traversal-ordered cycles, so an arrow chain would imply edges that may not
+exist.</p>
+<p>A skill that requires itself is a cycle of length one and is reported the same
+way, under <code>SK002</code>, with a message naming that one skill:</p>
+<div class="highlight"><pre><span></span><code>Dependency cycle: skill "g/a" requires itself.
+</code></pre></div>
+<h3 id="install-update-and-uninstall">Install, update, and uninstall<a class="headerlink" href="#install-update-and-uninstall" title="Permanent link">&para;</a></h3>
+<p>Install installs the transitive dependency closure, for the same agents and
+scope as the named skill. A closure member already installed for that target is
+reported as already installed and left as it is.</p>
+<p>Update updates the skill's dependencies too, and installs any the new version
+newly declares, for the same agents and scope as the dependent. It stays inside
+the skill's own repository: a same-named skill installed from a different
+repository is left alone.</p>
+<p>Uninstall never cascades. It removes what was named, then reports every
+still-installed skill it broke. A dependency counts as satisfied for a
+dependent only at the dependent's own target, so removing a skill for one agent
+does not warn about a dependent installed only for another. Breakage that
+predates the command is not reported here; <code>repo lint</code> and the desktop marker
+cover that.</p>
+<p>See <a href="../cli/#repo-lint"><code>repo lint</code></a> for the full list of dependency
+diagnostics.</p>
 <h2 id="skill-resolution-schemes">Skill resolution schemes<a class="headerlink" href="#skill-resolution-schemes" title="Permanent link">&para;</a></h2>
 <p>SkillKeeper discovers skills in a cloned repository working tree using one of
 three schemes, applied in this order:</p>
@@ -1726,7 +1869,7 @@ the app's state file is lost, <code>.skid.yml</code> still identifies the skill'
 group, and source remote, and records the content hash it was installed
 with. Reconciliation (below) reads it back to re-identify a skill purely from
 what is on disk.</p>
-<h2 id="install-update-and-uninstall">Install, update, and uninstall<a class="headerlink" href="#install-update-and-uninstall" title="Permanent link">&para;</a></h2>
+<h2 id="install-update-and-uninstall_1">Install, update, and uninstall<a class="headerlink" href="#install-update-and-uninstall_1" title="Permanent link">&para;</a></h2>
 <h3 id="skill-body-install">Skill body install<a class="headerlink" href="#skill-body-install" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Resolve the skill from the repository working tree.</li>

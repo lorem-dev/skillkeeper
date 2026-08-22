@@ -681,6 +681,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#repo-lint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        repo lint
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1270,6 +1281,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#repo-lint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        repo lint
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1624,6 +1646,100 @@ installed skills.</p>
 <li><code>--all</code> - update all registered repositories.</li>
 <li><code>&lt;id&gt;</code> - update a specific repository.</li>
 </ul>
+<h3 id="repo-lint">repo lint<a class="headerlink" href="#repo-lint" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>skillkeeper repo lint [&lt;id&gt; | --all | --path &lt;dir&gt;] [--json]
+</code></pre></div>
+<p>Report everything statically wrong with a skill repository's skills: missing
+dependencies, dependency cycles, unresolvable skills, and other static faults.
+Reporting only -- nothing here changes what resolves or installs. This does not
+check for updates; <code>check</code> does that.</p>
+<p>Exactly one target is required, and the three are mutually exclusive:</p>
+<ul>
+<li><code>&lt;id&gt;</code> - one tracked repository, by id.</li>
+<li><code>--all</code> - every tracked repository, grouped by repository. A repository whose
+  working tree is missing is reported on stderr and skipped; the rest still
+  lint.</li>
+<li><code>--path &lt;dir&gt;</code> - a directory that is not a tracked repository. This is the
+  form a skill author uses in their own CI, before the repository is registered
+  anywhere.</li>
+</ul>
+<p><code>--json</code> emits a JSON array of diagnostics instead of human output. Stdout is
+always exactly one parseable array, including on a <code>2</code> exit, where it is <code>[]</code>.</p>
+<p>Exit codes:</p>
+<ul>
+<li><code>0</code> - no error was reported. Warnings alone do not fail, because a repository
+  with warnings still installs. <code>--all</code> finding no tracked repositories also
+  exits <code>0</code>, with a message saying exactly that.</li>
+<li><code>1</code> - at least one error was reported among the repositories that were
+  linted.</li>
+<li><code>2</code> - a usage or lookup failure: no target, more than one target, an unknown
+  repository id, or a named target (<code>&lt;id&gt;</code> or <code>--path &lt;dir&gt;</code>) whose working tree
+  does not exist. A named target that could not be linted never prints the clean
+  message, so a mistyped path in a CI gate cannot look like success.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>severity</th>
+<th>condition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SK001</code></td>
+<td>error</td>
+<td>A declared dependency does not exist in the repository.</td>
+</tr>
+<tr>
+<td><code>SK002</code></td>
+<td>error</td>
+<td>A dependency cycle, including a skill that requires itself. The message names the members.</td>
+</tr>
+<tr>
+<td><code>SK003</code></td>
+<td>error</td>
+<td><code>skillkeeper.requires</code> failed strict validation; the skill does not resolve.</td>
+</tr>
+<tr>
+<td><code>SK004</code></td>
+<td>error</td>
+<td>A <code>SKILL.md</code> does not resolve for any other reason.</td>
+</tr>
+<tr>
+<td><code>SK005</code></td>
+<td>error</td>
+<td>A <code>hooks:</code> entry names a hook with no readable <code>hooks/&lt;name&gt;/HOOK.md</code>.</td>
+</tr>
+<tr>
+<td><code>SK010</code></td>
+<td>warning</td>
+<td>Dependencies declared with the flat <code>requires</code> field.</td>
+</tr>
+<tr>
+<td><code>SK011</code></td>
+<td>warning</td>
+<td>Both forms present; the flat <code>requires</code> was ignored.</td>
+</tr>
+<tr>
+<td><code>SK012</code></td>
+<td>warning</td>
+<td>A duplicate entry in a dependency list.</td>
+</tr>
+<tr>
+<td><code>SK013</code></td>
+<td>warning</td>
+<td>An <code>executables:</code> entry names a path absent from the skill body.</td>
+</tr>
+<tr>
+<td><code>SK014</code></td>
+<td>warning</td>
+<td>A manifest field was coerced, dropped, or re-quoted.</td>
+</tr>
+</tbody>
+</table>
+<p>Codes are stable and are what a script should match on; the message text is
+not.</p>
 <hr />
 <h2 id="skillkeeper-skill">skillkeeper skill<a class="headerlink" href="#skillkeeper-skill" title="Permanent link">&para;</a></h2>
 <p>Manage skills.</p>
@@ -1645,7 +1761,14 @@ the agent targets it is currently installed for.</p>
 <h3 id="skill-install">skill install<a class="headerlink" href="#skill-install" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>skillkeeper skill install &lt;id&gt; [--agent &lt;agent&gt;] [--global] [--project &lt;dir&gt;] [--allow-hooks]
 </code></pre></div>
-<p>Install a skill for one or more agents.</p>
+<p>Install a skill for one or more agents, together with its transitive
+dependency closure (see
+<a href="../skills-and-hooks/#skill-dependencies">Skill dependencies</a>). Each dependency
+is installed for the same agents and scope as the named skill, and reported as
+installed as a dependency. A skill already installed for that target -- the
+named one or a dependency -- prints an "already installed" line and is left as
+it is. A dependency reference with no skill behind it is named on stderr; the
+named skill still installs.</p>
 <ul>
 <li><code>--agent &lt;agent&gt;</code> - optional. One of <code>claude</code>, <code>codex</code>, <code>copilot</code>, <code>cursor</code>,
   <code>opencode</code>. When omitted, the skill is installed for every agent detected in
@@ -1665,6 +1788,11 @@ the agent targets it is currently installed for.</p>
 <p>Uninstall a skill. Removes all <code>ManagedFile</code> entries recorded in the manifest
 and all <code>ManagedHookEdit</code> regions (by <code>delimiterId</code> or <code>markerId</code>). Does not
 touch files or regions not owned by this installation.</p>
+<p>Uninstall never cascades to a skill's dependencies or dependents. It reports on
+stderr every still-installed skill this call broke, per target -- a dependency
+counts as satisfied for a dependent only at the dependent's own target -- and
+the exit code does not change. Breakage that predates the call is <code>repo lint</code>'s
+to report.</p>
 <ul>
 <li><code>--agent &lt;agent&gt;</code> - limit to one agent; otherwise every agent the skill is
   installed for is removed.</li>
@@ -1673,7 +1801,11 @@ touch files or regions not owned by this installation.</p>
 <div class="highlight"><pre><span></span><code>skillkeeper skill update &lt;id&gt; [--agent &lt;agent&gt;] [--project &lt;dir&gt;] [--allow-hooks]
 </code></pre></div>
 <p>Update a skill to the latest version from its source repository (by default for
-every agent target where it is installed).</p>
+every agent target where it is installed). The skill's dependencies are updated
+with it, and a dependency the new version newly declares is installed, for the
+same agents and scope as the dependent. Dependency resolution stays inside the
+skill's own repository: a same-named skill installed from a different repository
+is left alone.</p>
 <ul>
 <li><code>--agent &lt;agent&gt;</code> - limit the update to one agent.</li>
 <li><code>--project &lt;dir&gt;</code> - project directory for project-scope installs (default: the
