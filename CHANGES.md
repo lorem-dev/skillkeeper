@@ -329,17 +329,6 @@
   tree and per-project agent picker, a thank-you screen, "Start the tutorial
   again" in Settings and (macOS) the Help menu, ESC/Skip to end, with
   progress persisted to onboarding.json.
-
-### Fixed
-
-- Desktop: the embedded terminal keeps its colors in sync with the active
-  theme -- previously it kept the theme it was created with, so switching
-  theme left it inverted until restart.
-
-## Version 0.1.2-rc.1
-
-### Features
-
 - `skill install` without `--agent` installs for every agent detected in the
   project directory (by marker files, the same detection the desktop app uses);
   pass `--agent` to target a single one.
@@ -356,6 +345,12 @@
   install scripts (`scripts/install.sh`, `scripts/install.ps1`) that detect the
   platform, download the binary, and put it on the PATH.
 
+### Fixed
+
+- Desktop: the embedded terminal keeps its colors in sync with the active
+  theme -- previously it kept the theme it was created with, so switching
+  theme left it inverted until restart.
+
 ## Version 0.1.1
 
 ### Features
@@ -365,6 +360,7 @@
 - Make the native folder picker for adding a project window-modal (parented to
   the main window) so the app window cannot be used while it is open, and closes
   with it.
+- Show a theme-aware app icon in the Windows/Linux title bar.
 
 ### Fixes
 
@@ -380,29 +376,15 @@
 - Restore the Page toolbar shading wash on Windows/Linux as a gradient from the
   standard page background color to transparent (instead of the dropped macOS
   theme tint).
-
-## Version 0.1.1-rc.2
-
-### Fixes
-
-- Make the frosted surfaces more opaque on Windows/Linux so they stay legible
-  when backdrop-filter blur is not painted (e.g. under software compositing),
-  independent of the runtime software-renderer detection.
-- Keep the title-bar app icon unselectable and let dragging it move the window.
-
-## Version 0.1.1-rc.1
-
-### Features
-
-- Show a theme-aware app icon in the Windows/Linux title bar.
-
-### Fixes
-
 - Keep frosted surfaces legible where the engine parses but does not paint
   backdrop-filter (Windows under software compositing): fall back to solid
   backgrounds for headers, menus, popovers, and dialogs.
 - Stop console windows from flashing when the app runs Git and other helper
   processes on Windows.
+- Make the frosted surfaces more opaque on Windows/Linux so they stay legible
+  when backdrop-filter blur is not painted (e.g. under software compositing),
+  independent of the runtime software-renderer detection.
+- Keep the title-bar app icon unselectable and let dragging it move the window.
 
 ## Version 0.1.0
 
