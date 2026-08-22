@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.6.0
+
 ### Added
 
 - A `SKILL.md` can declare the skills of its own repository that it needs, as
