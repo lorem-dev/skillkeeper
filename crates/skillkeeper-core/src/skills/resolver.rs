@@ -433,14 +433,26 @@ pub fn resolve_skills(fs: &dyn FsPort, repo_root: &str) -> ResolveResult {
     };
 
     // Dependency faults are repository-level: they need the finished skill
-    // list, so they cannot be checked while walking. Both are reported and
-    // neither is fatal -- a missing target or a cycle is an authoring
-    // mistake, and hiding the skills involved would cost the user more than
-    // the mistake does.
+    // list, so they cannot be checked while walking. All are reported and none
+    // is fatal -- a missing target or a cycle is an authoring mistake, and
+    // hiding the skills involved would cost the user more than the mistake
+    // does.
     let graph = requires::RequiresGraph::build(&skills);
     for (from, target) in graph.missing() {
         warnings.push(format!(
             "Skill \"{from}\" requires \"{target}\", which does not exist in this repository."
+        ));
+    }
+    for path in graph.self_edges() {
+        // A self reference reaches this graph whenever the declaring skill is
+        // grouped: the manifest parser rejects the ones it can see, but the
+        // frontmatter carries no group, so `g/a` requiring "g/a" -- the
+        // absolute spelling a reference must use -- looks like a reference to
+        // somebody else there. It is a cycle of length one, so it is reported
+        // with the cycle prefix, but naming the single skill rather than
+        // listing one member.
+        warnings.push(format!(
+            "Dependency cycle: skill \"{path}\" requires itself."
         ));
     }
     for component in graph.cycles() {
@@ -1131,6 +1143,27 @@ mod tests {
                 .any(|w| w == "Dependency cycle among: a, b, c."),
             "{:?}",
             result.warnings
+        );
+    }
+
+    #[test]
+    fn warns_when_a_grouped_skill_requires_itself() {
+        // The absolute spelling of its own path, which is the ONLY spelling a
+        // reference may use. The manifest parser cannot reject it: the
+        // frontmatter carries no group, so "g/a" looks like a reference to
+        // somebody else there. The group is known here, so this is where a
+        // self reference is caught -- as a cycle of length one, naming the
+        // single skill.
+        let fs = MemFs::new().with_file(
+            "repo/g/a/SKILL.md",
+            "---\nname: a\nskillkeeper:\n  requires:\n    - g/a\n---\nbody\n",
+        );
+        let result = resolve_skills(&fs, "repo");
+        // Cycles do not hide their skills: it resolves and installs.
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(
+            result.warnings,
+            vec!["Dependency cycle: skill \"g/a\" requires itself.".to_string()]
         );
     }
 

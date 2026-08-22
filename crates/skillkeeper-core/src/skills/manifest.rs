@@ -261,9 +261,11 @@ pub fn parse_skill_manifest(data: &Value) -> Result<Parsed<SkillManifest>, Strin
     // The declaring skill's own reference form, needed to reject a self
     // reference. `name` is guaranteed present and non-empty by
     // `normalize_name` above. The group is not part of the frontmatter -- it
-    // comes from the directory layout -- so a self reference can only be caught
-    // for an ungrouped skill here; the resolver catches the grouped case
-    // (it is also a one-element cycle, reported as such).
+    // comes from the directory layout -- so this catches a self reference only
+    // for an UNGROUPED skill. A grouped `g/a` requiring "g/a" cannot be told
+    // apart here from a reference to somebody else, so it is not rejected: the
+    // skill resolves, and `RequiresGraph::self_edges` reports it as a cycle of
+    // length one (`SK002`) once the group is known. See the resolver.
     let own_path = map
         .get("name")
         .and_then(Value::as_str)

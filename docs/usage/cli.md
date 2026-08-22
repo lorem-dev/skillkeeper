@@ -98,7 +98,7 @@ Exit codes:
 | code | severity | condition |
 |---------|----------|-----------|
 | `SK001` | error | A declared dependency does not exist in the repository. |
-| `SK002` | error | A dependency cycle. The message names the members. |
+| `SK002` | error | A dependency cycle, including a skill that requires itself. The message names the members. |
 | `SK003` | error | `skillkeeper.requires` failed strict validation; the skill does not resolve. |
 | `SK004` | error | A `SKILL.md` does not resolve for any other reason. |
 | `SK005` | error | A `hooks:` entry names a hook with no readable `hooks/<name>/HOOK.md`. |

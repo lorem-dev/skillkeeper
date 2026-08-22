@@ -679,6 +679,9 @@ msgstr "Skill will be installed as a dependency of another skill"
 msgid "skills.status.brokenRequires"
 msgstr "A required skill was removed; this skill may not work. Click to restore."
 
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "A required skill was removed; this skill may not work. No repository provides that skill."
+
 msgid "skills.installPending"
 msgstr "Installing skills is coming soon ({count} selected)"
 

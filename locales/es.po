@@ -610,6 +610,9 @@ msgstr "La habilidad se instalará como dependencia de otra habilidad"
 msgid "skills.status.brokenRequires"
 msgstr "Se eliminó una habilidad requerida; esta habilidad podría no funcionar. Haz clic para restaurarla."
 
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "Se eliminó una habilidad requerida; esta habilidad podría no funcionar. Ningún repositorio proporciona esa habilidad."
+
 msgid "skills.installPending"
 msgstr "La instalación de habilidades llegará pronto ({count} seleccionadas)"
 

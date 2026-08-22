@@ -37,6 +37,7 @@ export {
   requiresOf,
   skillPath,
   brokenLeaves,
+  referenceKeys,
 } from './lib/requires';
 export type { RequiresGraph, BrokenArgs } from './lib/requires';
 export { deriveSelection, dropMissing, toggle, applyCheckChange, restore } from './lib/selection';

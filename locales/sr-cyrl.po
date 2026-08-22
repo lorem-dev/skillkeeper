@@ -577,6 +577,9 @@ msgstr "Вештина ће бити инсталирана као зависн�
 msgid "skills.status.brokenRequires"
 msgstr "Потребна вештина је уклоњена; ова вештина можда неће радити. Кликните да бисте је вратили."
 
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "Потребна вештина је уклоњена; ова вештина можда неће радити. Ниједан репозиторијум не пружа ту вештину."
+
 msgid "skills.installPending"
 msgstr "Инсталирање вештина ускоро стиже ({count} изабрано)"
 

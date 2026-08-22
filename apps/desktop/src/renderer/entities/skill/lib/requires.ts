@@ -19,7 +19,13 @@
  */
 import type { AgentKind, AvailableSkill, InstallManifest } from '@/services/bridge';
 import { scopeIdOf } from '@/domain';
-import { parseRepoSkillKey, parseSkillKeyTail, projectSkillKey, repoSkillKey } from './skillTree';
+import {
+  parseProjectSkillKey,
+  parseRepoSkillKey,
+  parseSkillKeyTail,
+  projectSkillKey,
+  repoSkillKey,
+} from './skillTree';
 
 /** A skill's reference form: `group/name`, or `name` when ungrouped. */
 export function skillPath(group: string | undefined, name: string): string {
@@ -373,6 +379,15 @@ interface TargetInstall {
  * other's edges invents a requirement. The catalog fallback covers a manifest
  * written before `requires` was recorded, while the ledger-first order is what
  * keeps an orphan working -- it has ledger edges and no catalog entry at all.
+ *
+ * The CLI's counterpart, `report_broken_dependents` in
+ * `crates/skillkeeper-cli/src/commands/skill.rs`, deliberately has NO catalog
+ * fallback: it uses the ledger only. Both are right for their own question. It
+ * answers "what did this command break", so an edge nobody was ever promised
+ * cannot have been broken by it. This answers "what is broken now", where a
+ * manifest recording no `requires` is missing information rather than asserting
+ * that there are none, and today's catalog is the best account of it available.
+ * Change one and read the other.
  */
 function installsAtTarget(
   inScope: readonly InstallManifest[],
@@ -460,4 +475,23 @@ export function brokenLeaves(args: BrokenArgs): Map<string, string[]> {
     out.set(leaf, [...refs].sort(byCodePoint));
   }
   return out;
+}
+
+/**
+ * The graph keys for `refs`, read as references of `leaf` -- the inverse of the
+ * reference forms {@link brokenLeaves} reports as its values.
+ *
+ * A reference never leaves its referrer's repository, and never leaves the scope
+ * the referrer is installed in, so a reference resolves in `leaf`'s own scope
+ * and repo id. Provided rather than left to the caller because rebuilding a key
+ * by hand is exactly the kind of near-copy of {@link buildScopedGraph}'s keying
+ * that drifts: ask {@link contains} about these keys, not about ids you assembled
+ * yourself.
+ */
+export function referenceKeys(leaf: string, refs: readonly string[]): string[] {
+  const { projectId, repoId } = parseProjectSkillKey(leaf);
+  return refs.map((ref) => {
+    const { group, name } = splitPath(ref);
+    return projectSkillKey(projectId, repoId, group, name);
+  });
 }

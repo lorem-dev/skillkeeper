@@ -18,12 +18,14 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentKind, AvailableSkill, InstallManifest } from '@/services/bridge';
 import { installedLeafIds, projectSkillKey, repoSkillKey } from './skillTree';
-import { buildGraph, buildScopedGraph, brokenLeaves } from './requires';
-import { applyCheckChange, deriveSelection, restore } from './selection';
+import { buildGraph, buildScopedGraph, brokenLeaves, contains, referenceKeys } from './requires';
+import { applyCheckChange, deriveSelection, dropMissing, restore } from './selection';
 import { buildProjectPlan } from './applyPlan';
 
 const REPO = 'r1';
 const PROJ = 'p1';
+/** A project that was removed from the state while its installs stayed. */
+const GONE = 'p2';
 
 function parts(path: string): { group?: string; name: string } {
   const at = path.lastIndexOf('/');
@@ -34,9 +36,12 @@ function rk(path: string): string {
   const { group, name } = parts(path);
   return repoSkillKey(REPO, group, name);
 }
-function pk(path: string): string {
+function pkIn(scopeId: string, path: string): string {
   const { group, name } = parts(path);
-  return projectSkillKey(PROJ, REPO, group, name);
+  return projectSkillKey(scopeId, REPO, group, name);
+}
+function pk(path: string): string {
+  return pkIn(PROJ, path);
 }
 function mk(path: string, requires?: string[]): AvailableSkill {
   const { group, name } = parts(path);
@@ -51,11 +56,16 @@ function mk(path: string, requires?: string[]): AvailableSkill {
     ...(requires !== undefined ? { requires } : {}),
   };
 }
-function inst(path: string, agents: readonly AgentKind[], requires?: string[]): InstallManifest[] {
+function instIn(
+  scopeId: string,
+  path: string,
+  agents: readonly AgentKind[],
+  requires?: string[],
+): InstallManifest[] {
   const { group, name } = parts(path);
   return agents.map((agent) => ({
     skillId: { ...(group !== undefined ? { group } : {}), name },
-    target: { agent, scope: 'project' as const, projectId: PROJ },
+    target: { agent, scope: 'project' as const, projectId: scopeId },
     destinationRoot: '/dest',
     sourceRepoId: REPO,
     sourceRemote: 'git@example.com:a/b.git',
@@ -65,6 +75,9 @@ function inst(path: string, agents: readonly AgentKind[], requires?: string[]): 
     hookEdits: [],
     ...(requires !== undefined ? { requires } : {}),
   }));
+}
+function inst(path: string, agents: readonly AgentKind[], requires?: string[]): InstallManifest[] {
+  return instIn(PROJ, path, agents, requires);
 }
 
 // a -> b -> c
@@ -184,5 +197,78 @@ describe('skills page selection wiring', () => {
     const broken = brokenLeaves({ scopeId: PROJ, available: catalog, installs: applied });
     expect([...broken.keys()]).toEqual([pk('g/a')]);
     expect(broken.get(pk('g/a'))).toEqual(['g/b']);
+  });
+
+  it('management: a dependency installed for fewer agents is repairable', () => {
+    // The spec's own case: `a` is installed for claude AND codex and requires
+    // `b`; `b` is installed for claude only. `a` is broken at codex, and the
+    // repair is an install of `b` for codex -- a diff that exists only at
+    // (skill, agent) granularity, which the apply plan resolves.
+    const catalog2 = [mk('g/a', ['g/b']), mk('g/b')];
+    const installs = [...inst('g/a', ['claude', 'codex'], ['g/b']), ...inst('g/b', ['claude'])];
+    const broken = brokenLeaves({ scopeId: PROJ, available: catalog2, installs });
+    expect([...broken.keys()]).toEqual([pk('g/a')]);
+    const missing = broken.get(pk('g/a')) ?? [];
+    expect(missing).toEqual(['g/b']);
+
+    const graph = buildScopedGraph([PROJ], catalog2, installs);
+    const baseline = installedLeafIds(installs, [PROJ]);
+    // Repairability, as the page asks it: does a MISSING reference name a skill
+    // that exists? Asking instead whether the leaf's closure holds something not
+    // in the leaf-level installed set answers NO here -- `b` IS installed, just
+    // not for every agent `a` has -- which is what marked this case broken and
+    // unrepairable at once, badge without a click and tooltip inviting one.
+    const keys = referenceKeys(pk('g/a'), missing);
+    expect(keys.some((k) => contains(graph, k))).toBe(true);
+    expect(keys.every((k) => baseline.includes(k))).toBe(true);
+
+    // And the repair really is one: the plan installs `b` for the agent it is
+    // missing at, and touches nothing else.
+    const shown = dropMissing(
+      graph,
+      deriveSelection({ explicit: baseline, restored: [pk('g/a')] }, baseline, graph),
+    ).shown;
+    const plan = buildProjectPlan(PROJ, shown, installs, ['claude', 'codex']);
+    expect(plan.rows.map((r) => ({ name: r.ref.name, action: r.action, agents: r.agents }))).toEqual(
+      [{ name: 'b', action: 'install', agents: ['codex'] }],
+    );
+  });
+
+  it('management: a dependency that exists nowhere is not repairable', () => {
+    // The arm that keeps a badge non-interactive: the reference names a skill no
+    // repository and no ledger entry knows, so there is nothing to install and
+    // the tooltip must not promise a click.
+    const catalog2 = [mk('g/a', ['g/ghost'])];
+    const installs = inst('g/a', ['claude'], ['g/ghost']);
+    const graph = buildScopedGraph([PROJ], catalog2, installs);
+    const missing = brokenLeaves({ scopeId: PROJ, available: catalog2, installs }).get(pk('g/a'));
+    expect(missing).toEqual(['g/ghost']);
+    expect(referenceKeys(pk('g/a'), missing ?? []).some((k) => contains(graph, k))).toBe(false);
+  });
+
+  it('management: an install outside the shown scopes is no pending removal', () => {
+    // `projects::remove` drops the project record and KEEPS its installs, and
+    // `reconcile` preserves them deliberately. So the ledger can hold an install
+    // whose scope is not among the ones the page shows -- while the graph spans
+    // only those scopes. A baseline drawn from the whole ledger then counts that
+    // install as a pending removal forever: nothing is drawn for it, and Save
+    // cannot clear it, because the save path iterates the tracked scopes only.
+    // The baseline and the graph must therefore span the same set of scopes.
+    const scopeIds = [PROJ];
+    const installs = [...instIn(PROJ, 'g/c', ['claude']), ...instIn(GONE, 'g/c', ['claude'])];
+    const graph = buildScopedGraph(scopeIds, catalog, installs);
+    const baseline = installedLeafIds(installs, scopeIds);
+
+    // The page's derivation, verbatim: hand picks seeded from the baseline.
+    const shown = dropMissing(
+      graph,
+      deriveSelection({ explicit: baseline, restored: [] }, baseline, graph),
+    ).shown;
+    const shownSet = new Set(shown);
+    // `pendingRemove` is exactly this difference.
+    expect(baseline.filter((id) => !shownSet.has(id))).toEqual([]);
+    // The whole ledger still holds both installs; only the baseline is scoped.
+    expect(installedLeafIds(installs)).toHaveLength(2);
+    expect(baseline).toEqual([pkIn(PROJ, 'g/c')]);
   });
 });

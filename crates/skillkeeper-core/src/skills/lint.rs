@@ -125,9 +125,11 @@ pub fn lint_repository(fs: &dyn FsPort, repo_root: &str) -> Vec<Diagnostic> {
     let resolved = resolve_skills(fs, repo_root);
     let mut out: Vec<Diagnostic> = Vec::new();
 
-    // The resolver's own warnings, reclassified. The two dependency messages it
-    // now emits are skipped here and re-derived from the graph below, so their
-    // `path` field is populated rather than parsed back out of prose.
+    // The resolver's own warnings, reclassified. The dependency messages it now
+    // emits are skipped here and re-derived from the graph below, so their
+    // `path` field is populated rather than parsed back out of prose. The
+    // `Dependency cycle` prefix covers both cycle messages -- a component and a
+    // skill that requires itself.
     for message in &resolved.warnings {
         if message.starts_with("Skill \"") && message.contains("does not exist in this repository")
         {
@@ -160,6 +162,20 @@ pub fn lint_repository(fs: &dyn FsPort, repo_root: &str) -> Vec<Diagnostic> {
             message: format!(
                 "Skill \"{from}\" requires \"{target}\", which does not exist in this repository."
             ),
+        });
+    }
+    for path in graph.self_edges() {
+        // A skill that requires itself is a cycle of length one, so it carries
+        // the cycle code -- but the message names the one skill rather than
+        // listing a single member. `cycles()` does not report it; only a
+        // grouped skill can reach here, since the manifest parser rejects every
+        // self reference it can see in the frontmatter (which has no group).
+        out.push(Diagnostic {
+            code: "SK002",
+            severity: Severity::Error,
+            path: Some(path.clone()),
+            file: None,
+            message: format!("Dependency cycle: skill \"{path}\" requires itself."),
         });
     }
     for component in graph.cycles() {
@@ -334,6 +350,27 @@ mod tests {
         assert_eq!(codes(&diags), vec!["SK002"]);
         assert_eq!(diags[0].severity, Severity::Error);
         assert_eq!(diags[0].message, "Dependency cycle among: a, b, c.");
+    }
+
+    #[test]
+    fn reports_a_grouped_self_reference_as_sk002() {
+        // `g/a` requiring "g/a": the absolute spelling every reference must
+        // use, and the one self reference the manifest parser cannot see -- the
+        // frontmatter has no group. Without the self-edge check this repository
+        // lints clean: `missing()` finds the target present, and `cycles()`
+        // discards the one-node component by design.
+        let fs = MemFs::new().with_file(
+            "/repo/g/a/SKILL.md",
+            "---\nname: a\nskillkeeper:\n  requires:\n    - g/a\n---\nx\n",
+        );
+        let diags = lint_repository(&fs, "/repo");
+        assert_eq!(codes(&diags), vec!["SK002"]);
+        assert_eq!(diags[0].severity, Severity::Error);
+        assert_eq!(diags[0].path.as_deref(), Some("g/a"));
+        assert_eq!(
+            diags[0].message,
+            "Dependency cycle: skill \"g/a\" requires itself."
+        );
     }
 
     #[test]

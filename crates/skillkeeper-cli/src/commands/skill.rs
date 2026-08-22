@@ -719,6 +719,18 @@ pub fn uninstall(
 /// The edges come from the ledger's recorded `requires` rather than from the
 /// source repository: the question is what the installed skills were promised
 /// at install time, not what the repository declares today.
+///
+/// The desktop app's mirror of this check,
+/// `apps/desktop/src/renderer/entities/skill/lib/requires.ts`
+/// (`installsAtTarget`), deliberately does NOT match here: where a manifest
+/// recorded no `requires` at all it falls back to what the catalog declares
+/// today. Both are right for their own question. This function answers "what
+/// did THIS command break", so an edge nobody was ever promised cannot have
+/// been broken by it, and inventing one from today's repository would blame the
+/// user's `uninstall` for a dependency their install never had. The app answers
+/// "what is broken NOW", where a manifest written before `requires` was
+/// recorded is missing information rather than stating an absence, and the
+/// catalog is the best account of it available. Change one and read the other.
 fn report_broken_dependents(
     installs: &[InstallManifest],
     removed: &[InstallManifest],

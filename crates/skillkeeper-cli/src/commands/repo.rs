@@ -358,8 +358,19 @@ pub fn lint(
     let mut all: Vec<(String, Diagnostic)> = Vec::new();
     let mut target_unreadable = false;
     for (label, root) in &roots {
-        if !fs.exists(root).unwrap_or(false) {
-            writeln!(err, "[{label}] Working tree not found: {root}")?;
+        // A working tree is a DIRECTORY. `exists` is also true for a regular
+        // file, so `--path ./SKILL.md` used to walk nothing, find nothing, and
+        // report "No problems found." with exit 0 -- a mistyped path passing the
+        // CI gate, which is the failure the named-target rule exists to prevent.
+        // A file is therefore as unlintable as an absent path, and says so in
+        // its own words rather than claiming the path is not there.
+        let unusable = match fs.stat(root).unwrap_or(None) {
+            None => Some(format!("Working tree not found: {root}")),
+            Some(stat) if !stat.is_directory => Some(format!("Not a directory: {root}")),
+            Some(_) => None,
+        };
+        if let Some(reason) = unusable {
+            writeln!(err, "[{label}] {reason}")?;
             if named_target {
                 target_unreadable = true;
             }
@@ -1229,6 +1240,32 @@ mod tests {
         assert!(String::from_utf8(err)
             .unwrap()
             .contains("Working tree not found: /definitely-not-here"));
+    }
+
+    #[test]
+    fn lint_fails_a_named_path_target_that_is_a_file() {
+        // `--path ./SKILL.md`: the path EXISTS, so an existence check passes it
+        // through, the walk finds no skill directory, and the run reports a
+        // clean repository. Same class of failure as a mistyped path, so it must
+        // exit 2 and must not print the clean message.
+        let fs = MemFs::new().with_file("/repos/skills/a/SKILL.md", "---\nname: a\n---\nx\n");
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = lint(
+            &fs,
+            STATE_PATH,
+            LintTarget::Path("/repos/skills/a/SKILL.md"),
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 2);
+        let out_text = String::from_utf8(out).unwrap();
+        assert!(!out_text.contains("No problems found"), "{out_text}");
+        assert!(String::from_utf8(err)
+            .unwrap()
+            .contains("Not a directory: /repos/skills/a/SKILL.md"));
     }
 
     #[test]

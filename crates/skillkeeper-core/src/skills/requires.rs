@@ -166,16 +166,34 @@ impl RequiresGraph {
         out
     }
 
+    /// Skills that require themselves, sorted.
+    ///
+    /// A self edge is a cycle of length one, and [`Self::cycles`] does not
+    /// report it -- see the note there. Reported separately so a caller can
+    /// name the one skill involved instead of printing a members list of one.
+    ///
+    /// This is not an unreachable defensive case. The manifest parser rejects a
+    /// self reference, but it only ever sees the frontmatter, and a skill's
+    /// group comes from the directory layout instead. So the reference `"g/a"`
+    /// inside `g/a` -- the absolute spelling every reference must use -- is not
+    /// a self reference as far as the parser can tell, and reaches this graph
+    /// as a genuine self edge.
+    pub fn self_edges(&self) -> Vec<String> {
+        self.forward
+            .iter()
+            .filter(|&(from, targets)| targets.contains(from))
+            .map(|(from, _)| from.clone())
+            .collect()
+    }
+
     /// Strongly connected components of more than one node, each sorted, the
     /// outer list sorted.
     ///
-    /// Assumes no node references itself. [`Self::build`] upholds this --
-    /// the manifest parser rejects a self reference before it ever reaches
-    /// this graph -- but [`Self::build_from_edges`] does not validate its
-    /// input. If that precondition is violated, the self loop is not
-    /// reported as a cycle: it forms a one-node strongly connected
-    /// component, and the `component.len() > 1` filter below discards it
-    /// silently.
+    /// A node that references itself is NOT reported here: it forms a one-node
+    /// strongly connected component, which the `component.len() > 1` filter
+    /// below discards. That is deliberate, and [`Self::self_edges`] is where
+    /// such a skill is reported instead -- naming one skill reads better than a
+    /// members list of one.
     ///
     /// Iterative Tarjan, so a pathological repository cannot blow the stack.
     pub fn cycles(&self) -> Vec<Vec<String>> {
@@ -402,6 +420,22 @@ mod tests {
     #[test]
     fn cycles_is_empty_for_a_dag() {
         assert!(diamond().cycles().is_empty());
+    }
+
+    #[test]
+    fn self_edges_reports_what_cycles_discards() {
+        // The division of labour: a one-node component is not a `cycles()`
+        // result, and a genuine component is not a `self_edges()` one.
+        let g = graph(&[("g/a", &["g/a"]), ("x", &["y"]), ("y", &["x"])]);
+        assert_eq!(g.self_edges(), vec!["g/a".to_string()]);
+        assert_eq!(g.cycles(), vec![vec!["x".to_string(), "y".to_string()]]);
+        // And a self reference is not a missing one: the target is a skill.
+        assert!(g.missing().is_empty());
+    }
+
+    #[test]
+    fn self_edges_is_empty_for_a_dag() {
+        assert!(diamond().self_edges().is_empty());
     }
 
     #[test]

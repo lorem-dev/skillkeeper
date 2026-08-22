@@ -511,6 +511,9 @@ msgstr "将作为其他技能的依赖项安装"
 msgid "skills.status.brokenRequires"
 msgstr "所需的技能已被移除；此技能可能无法正常工作。点击以恢复。"
 
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "所需的技能已被移除；此技能可能无法正常工作。没有任何仓库提供该技能。"
+
 msgid "skills.installPending"
 msgstr "安装技能功能即将推出（已选择 {count} 个）"
 

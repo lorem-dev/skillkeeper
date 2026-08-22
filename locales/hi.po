@@ -577,6 +577,9 @@ msgstr "यह किसी अन्य स्किल की निर्भ�
 msgid "skills.status.brokenRequires"
 msgstr "आवश्यक स्किल हटा दी गई है; यह स्किल काम नहीं कर सकती। पुनर्स्थापित करने के लिए क्लिक करें।"
 
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "आवश्यक स्किल हटा दी गई है; यह स्किल काम नहीं कर सकती। आवश्यक स्किल किसी भी रिपॉज़िटरी में उपलब्ध नहीं है।"
+
 msgid "skills.installPending"
 msgstr "स्किल इंस्टॉल करना जल्द आ रहा है ({count} चुनी गईं)"
 

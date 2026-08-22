@@ -64,8 +64,8 @@ import {
   projectNodeId,
   buildScopedGraph,
   brokenLeaves,
-  closure,
   contains,
+  referenceKeys,
   deriveSelection,
   dropMissing,
   applyCheckChange,
@@ -125,17 +125,26 @@ export function SkillsManagementPage() {
   const setRepoFilter = (value: string[]): void => setSkillsUi({ repoFilter: value });
   const setProjectFilter = (value: string[]): void => setSkillsUi({ projectFilter: value });
 
-  // The installed skills are the baseline the selection diffs against
-  // (pre-checked leaves + each project's installed agents).
-  const installedIds = useMemo(() => installedLeafIds(installs), [installs]);
-  const installedSet = useMemo(() => new Set(installedIds), [installedIds]);
-  const installedAgents = useMemo(() => installedAgentsByProject(installs), [installs]);
-
   // The scopes a save reviews: the global scope first, then every tracked
   // project -- mirrors SkillSaveModal's own scope ordering, independent of the
   // current project/repo filters (a filtered-out project's pending changes
-  // still need reviewing).
+  // still need reviewing). Declared before the baseline below, which is scoped
+  // to it.
   const scopeIds = useMemo(() => [GLOBAL_SCOPE_ID, ...projects.map((p) => p.id)], [projects]);
+
+  // The installed skills are the baseline the selection diffs against
+  // (pre-checked leaves + each project's installed agents).
+  //
+  // Scoped to `scopeIds` -- the same set the graph below spans -- because the
+  // ledger outlives the project list: `projects::remove` drops the record and
+  // keeps the installs, and `reconcile` preserves them on purpose. An unscoped
+  // baseline would name leaves of a removed project, `dropMissing` would strip
+  // them from the shown set (they are not nodes of the graph), and `pendingRemove`
+  // would count them forever: a pending-changes dock with no row to uncheck,
+  // which Save cannot clear either, since it iterates `scopeIds` too.
+  const installedIds = useMemo(() => installedLeafIds(installs, scopeIds), [installs, scopeIds]);
+  const installedSet = useMemo(() => new Set(installedIds), [installedIds]);
+  const installedAgents = useMemo(() => installedAgentsByProject(installs), [installs]);
 
   // The dependency graph, drawn from the catalog UNIONED with the ledger, so an
   // orphan (installed, repository gone) still contributes the edges it was
@@ -195,28 +204,34 @@ export function SkillsManagementPage() {
     return all;
   }, [scopeIds, availableSkills, installs]);
 
-  // Of the broken leaves, the ones a repair could actually do something for: at
-  // least one skill in their closure both exists (it is a node of the graph, so
-  // some repository or ledger entry knows it) and is not installed here yet.
+  // Of the broken leaves, the ones a repair could actually do something for: one
+  // of the references they are MISSING names a skill that exists, i.e. is a node
+  // of the graph, so some repository or ledger entry knows how to install it.
   //
-  // A leaf whose only missing reference names a skill that exists NOWHERE fails
-  // this test, and its marker is rendered without a click below. The badge must
-  // not offer a repair it cannot perform: the click would arm a closure that
-  // `dropMissing` then empties, so nothing would appear to happen -- or, before
-  // that filter existed, it would have built an apply plan with a row that has
-  // to fail. Where SOME of the missing references are installable the leaf stays
-  // clickable and the marker stays orange afterwards, which is exactly the
-  // truth: part of it was repaired, part of it cannot be.
+  // Judged per agent, exactly like `brokenLeaves`, by asking about the missing
+  // references it reports rather than about the leaf's whole closure: a
+  // reference is only reported missing at a target where it is not installed, so
+  // "not installed here yet" is already established and the only open question
+  // is whether the skill exists at all. Testing the closure against the
+  // leaf-level installed set instead judged a dependency installed for FEWER
+  // agents than its dependent -- broken at the agents it is absent from, present
+  // at the others -- as unrepairable, which left the row marked broken, offering
+  // no click, and still carrying a tooltip inviting one.
+  //
+  // A leaf whose missing references name nothing that exists anywhere fails this
+  // test, and its marker is rendered below with no click and a tooltip that
+  // promises none: the click would arm a closure that `dropMissing` then
+  // empties, so nothing would appear to happen. Where SOME of the missing
+  // references are installable the leaf stays clickable and the marker stays
+  // orange afterwards, which is exactly the truth: part of it was repaired, part
+  // of it cannot be.
   const repairableLeaves = useMemo(() => {
     const out = new Set<string>();
-    for (const leaf of brokenByLeaf.keys()) {
-      const canFix = closure(graph, [leaf]).some(
-        (id) => contains(graph, id) && !installedSet.has(id),
-      );
-      if (canFix) out.add(leaf);
+    for (const [leaf, missing] of brokenByLeaf) {
+      if (referenceKeys(leaf, missing).some((key) => contains(graph, key))) out.add(leaf);
     }
     return out;
-  }, [brokenByLeaf, graph, installedSet]);
+  }, [brokenByLeaf, graph]);
 
   // Scopes whose checked skills would install nothing because no agent is
   // chosen -- Save opens the agent-choice modal first when this is non-empty.
@@ -384,12 +399,15 @@ export function SkillsManagementPage() {
       if (broken !== undefined && !isDependency) {
         // Clickable only where a repair would install something (see
         // `repairableLeaves`); otherwise `ChangeBadge` falls back to its
-        // non-interactive form, which still carries the tooltip explaining the
-        // state. The badge stops its own click and its own Enter/Space, so the
-        // row behind it neither toggles nor expands -- hence no
-        // `sk-skills-badgewrap` here, which would take its keyboard handling out
-        // of the picture.
-        const repair = repairableLeaves.has(node.id)
+        // non-interactive form. The tooltip follows the click rather than being
+        // fixed: the clickable form says what to do, the other says why nothing
+        // can be done, because a tooltip reading "Click to restore." on a badge
+        // that is not a button states something untrue. The badge stops its own
+        // click and its own Enter/Space, so the row behind it neither toggles nor
+        // expands -- hence no `sk-skills-badgewrap` here, which would take its
+        // keyboard handling out of the picture.
+        const repairable = repairableLeaves.has(node.id);
+        const repair = repairable
           ? () =>
               setSkillsUi({
                 projectRestored: [
@@ -398,7 +416,13 @@ export function SkillsManagementPage() {
               })
           : undefined;
         detail = (
-          <ChangeBadge kind="broken" label={t('skills.status.brokenRequires')} onClick={repair} />
+          <ChangeBadge
+            kind="broken"
+            label={t(
+              repairable ? 'skills.status.brokenRequires' : 'skills.status.brokenRequiresUnavailable',
+            )}
+            onClick={repair}
+          />
         );
       }
       // An installed skill held on by somebody else's dependency IS present --
@@ -521,7 +545,21 @@ export function SkillsManagementPage() {
       projects.some((p) => !sameAgents(projectAgents[p.id] ?? [], installedAgents[p.id] ?? [])),
     [projects, projectAgents, installedAgents],
   );
-  const hasProjectChanges = pendingAdd > 0 || pendingRemove > 0 || agentsChangedAny;
+  // A repair that is still outstanding is a saveable diff of its own. Where the
+  // missing dependency is installed in this scope for FEWER agents than its
+  // dependent, arming the repair adds nothing to the derived set -- the leaf is
+  // already installed, hence already shown -- so `pendingAdd` cannot see it. The
+  // diff exists only at (skill, agent) granularity, which the apply plan
+  // resolves and a set of leaf ids cannot express. Without this term the badge
+  // would accept the click and the dock would never offer the Save that performs
+  // it. It clears itself: once the ledger satisfies the leaf, it is no longer
+  // broken.
+  const pendingRepair = useMemo(
+    () => projectRestored.some((id) => brokenByLeaf.has(id) && repairableLeaves.has(id)),
+    [projectRestored, brokenByLeaf, repairableLeaves],
+  );
+  const hasProjectChanges =
+    pendingAdd > 0 || pendingRemove > 0 || agentsChangedAny || pendingRepair;
 
   // The user-wide scope leads the projects filter, mirroring its position as the
   // tree's first root.

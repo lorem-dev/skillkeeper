@@ -628,6 +628,9 @@ msgstr "Навык будет установлен как зависимость
 msgid "skills.status.brokenRequires"
 msgstr "Требуемый навык был удалён; этот навык может не работать. Нажмите, чтобы восстановить."
 
+msgid "skills.status.brokenRequiresUnavailable"
+msgstr "Требуемый навык был удалён; этот навык может не работать. Ни один репозиторий не предоставляет этот навык."
+
 msgid "skills.installPending"
 msgstr "Установка скиллов скоро появится (выбрано: {count})"
 

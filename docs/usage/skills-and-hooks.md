@@ -96,8 +96,13 @@ on-disk layout. `repo lint`'s `SK001` is the safety net for getting this wrong.
 The asymmetry between the two spellings is deliberate:
 
 - `skillkeeper.requires` is validated strictly. A scalar where the list
-  belongs, a non-string entry, an invalid reference, or a self-reference means
-  the skill does not resolve at all.
+  belongs, a non-string entry, or an invalid reference means the skill does not
+  resolve at all. So does a self-reference by an ungrouped skill, which is the
+  only self-reference this check can see: the group comes from the directory
+  layout rather than the frontmatter, so a grouped skill naming its own path is
+  indistinguishable here from one naming a neighbour. It is caught afterwards,
+  once the group is known, as a cycle of one (see below), and the skill
+  resolves.
 - Flat `requires` is lenient. A bad entry is dropped with a warning and the
   skill still installs.
 
@@ -111,6 +116,13 @@ closure over a cycle is well defined. The message names the members without an
 arrow chain: the detector returns strongly connected components rather than
 traversal-ordered cycles, so an arrow chain would imply edges that may not
 exist.
+
+A skill that requires itself is a cycle of length one and is reported the same
+way, under `SK002`, with a message naming that one skill:
+
+```
+Dependency cycle: skill "g/a" requires itself.
+```
 
 ### Install, update, and uninstall
 

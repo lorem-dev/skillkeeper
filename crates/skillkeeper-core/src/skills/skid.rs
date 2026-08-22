@@ -36,8 +36,13 @@ pub struct SkidFile {
 const HEADER: &str = "# SkillKeeper identity file. Generated on install; do not edit.\n";
 
 /// Serialize a `.skid.yml`, omitting absent optional fields, with a header.
-/// Key order mirrors the TypeScript writer for the schema-1 fields: `schema`,
-/// `name`, `group?`, `remote?`, then the schema-2 `requires?`, then `version`.
+///
+/// The one writer of the file, and the key order is fixed here: the schema-1
+/// fields `schema`, `name`, `group?`, `remote?` first, in that order, then the
+/// schema-2 `requires?`, then `version`. Appending each new key after the
+/// existing ones is what keeps a file this version writes readable as the same
+/// shape as the files already on disk, and keeps a rewrite by a later install a
+/// change of values rather than of layout.
 pub fn serialize_skid(skid: &SkidFile) -> String {
     let mut body = Mapping::new();
     body.insert("schema".into(), skid.schema.into());
