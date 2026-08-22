@@ -103,6 +103,12 @@ pub struct SkillManifest {
     /// Names of hooks declared by this skill (each maps to a `hooks/<name>`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hooks: Option<Vec<String>>,
+    /// Skill paths, within this skill's own repository, that this skill needs in
+    /// order to work. Declared as `skillkeeper.requires` (strict) or as a flat
+    /// `requires` (lenient); see [`crate::skills::manifest`]. Each entry is an
+    /// absolute skill path -- `group/name`, or `name` for an ungrouped skill.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires: Option<Vec<String>>,
 }
 
 /// Where a hook writes its edit: an agent, plus either a file pattern (text and
@@ -612,6 +618,7 @@ mod tests {
                 license: Some("MIT".to_string()),
                 executables: Some(vec!["run.sh".to_string()]),
                 hooks: None,
+                requires: None,
             },
             files: vec!["fmt/prettier/SKILL.md".to_string()],
             hooks: vec![ResolvedHook {

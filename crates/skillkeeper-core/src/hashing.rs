@@ -333,6 +333,7 @@ mod tests {
                 license: None,
                 executables: None,
                 hooks: None,
+                requires: None,
             },
             files: vec![
                 "fmt/prettier/SKILL.md".to_string(),
