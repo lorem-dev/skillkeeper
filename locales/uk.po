@@ -613,6 +613,9 @@ msgstr "Потрібну навичку було видалено; ця нави
 msgid "skills.status.brokenRequiresUnavailable"
 msgstr "Потрібну навичку було видалено; ця навичка може не працювати. Жоден репозиторій не містить цієї навички."
 
+msgid "skills.status.brokenRequiresPending"
+msgstr "Потрібну навичку буде видалено; ця навичка може перестати працювати. Натисніть, щоб відновити."
+
 msgid "skills.installPending"
 msgstr "Встановлення навичок з’явиться незабаром (вибрано: {count})"
 

@@ -580,6 +580,9 @@ msgstr "Potrebna veština je uklonjena; ova veština možda neće raditi. Klikni
 msgid "skills.status.brokenRequiresUnavailable"
 msgstr "Potrebna veština je uklonjena; ova veština možda neće raditi. Nijedan repozitorijum ne pruža tu veštinu."
 
+msgid "skills.status.brokenRequiresPending"
+msgstr "Potrebna veština će biti uklonjena; ova veština možda neće više raditi. Kliknite da biste je vratili."
+
 msgid "skills.installPending"
 msgstr "Instaliranje veština uskoro stiže ({count} izabrano)"
 

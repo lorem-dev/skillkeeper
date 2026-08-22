@@ -5,7 +5,8 @@
  * (`skillkeeper.requires`). This module answers the three questions the Skills
  * pages ask: what does checking this skill pull in ({@link closure}), what
  * breaks if this one goes away ({@link dependents}), and which installed skills
- * are missing a dependency ({@link brokenLeaves}).
+ * are missing a dependency ({@link brokenLeaves}) -- plus which ones are about
+ * to be, once the pending selection is applied ({@link pendingBrokenLeaves}).
  *
  * Nodes are keyed by the same checkbox ids the tree uses, so a caller never
  * converts between a graph node and a tree node. Dependencies never cross
@@ -473,6 +474,82 @@ export function brokenLeaves(args: BrokenArgs): Map<string, string[]> {
   const out = new Map<string, string[]>();
   for (const [leaf, refs] of missingByLeaf) {
     out.set(leaf, [...refs].sort(byCodePoint));
+  }
+  return out;
+}
+
+/** The inputs {@link pendingBrokenLeaves} needs: {@link BrokenArgs} plus the selection. */
+export interface PendingBrokenArgs extends BrokenArgs {
+  /**
+   * Every checked leaf id, exactly as the tree holds them: project-mode keys, of
+   * any scope. Ids outside `scopeId` are ignored, so a caller hands over the
+   * whole derived selection and lets this pick its own scope out of it.
+   */
+  readonly selected: readonly string[];
+}
+
+/**
+ * Installed leaves of this scope that are still checked and will LOSE a
+ * dependency once the pending selection is applied, mapped to the references
+ * they will then be missing.
+ *
+ * {@link brokenLeaves} reads the ledger, which is post-apply truth: it can only
+ * speak once the damage is done. Unchecking the dependency of an installed skill
+ * is exactly where that is too late -- the dependent stays installed AND checked
+ * (an installed skill is never dropped as collateral, see `toggle`), so until
+ * this the interface said nothing at all until Save had already broken it. A
+ * warning before an irreversible apply is worth strictly more than one after.
+ *
+ * Answered by synthesizing the ledger the apply would leave behind and asking
+ * {@link brokenLeaves} about THAT, so what "broken" means is defined in exactly
+ * one place:
+ *
+ * - a currently-installed leaf that is still checked survives, carrying the
+ *   `requires` its own manifest recorded -- the manifest is passed through
+ *   untouched, which is what keeps the per-target judgement intact;
+ * - a currently-installed leaf that is no longer checked is a pending removal,
+ *   so it is absent from the synthesized ledger -- and that absence is what
+ *   makes its dependents report it.
+ *
+ * A checked leaf that is NOT installed yet is deliberately NOT synthesized in,
+ * even though the apply will install it. It cannot change this answer: it could
+ * only matter by SATISFYING a surviving leaf's dependency, and a surviving leaf
+ * whose dependency is not installed at its own target today is already broken
+ * today -- so it is subtracted below either way. Adding it as a node of its own
+ * would report a fresh install as "about to lose" something it never had, which
+ * is the after-apply marker's business, not this one's.
+ *
+ * Leaves broken TODAY are subtracted: a row shows one marker, and it is the one
+ * stating a fact rather than a forecast, so {@link brokenLeaves}'s own reporting
+ * is untouched. Subtracted per LEAF, matching how a leaf is marked: a leaf
+ * already broken at one of its targets keeps today's marker even where a
+ * different target is the one the pending change would break.
+ *
+ * Keys and values are shaped exactly as {@link brokenLeaves} shapes them --
+ * project-mode leaf ids to reference forms -- so one badge renders either map.
+ */
+export function pendingBrokenLeaves(args: PendingBrokenArgs): Map<string, string[]> {
+  const { scopeId, available, installs, selected } = args;
+  // Keys of another scope are none of this scope's business: a dependency is
+  // only ever satisfied inside its own scope.
+  const wanted = new Set(selected.filter((id) => parseProjectSkillKey(id).projectId === scopeId));
+
+  const surviving = installs.filter((m) => {
+    // Other scopes pass through untouched -- `brokenLeaves` filters by scope
+    // itself, and filtering here as well would only duplicate that.
+    if (scopeIdOf(m.target) !== scopeId) return true;
+    const repoId = m.sourceRepoId;
+    // An install with no source repository is a node of neither ledger, so
+    // keeping it changes no answer and costs one special case less.
+    if (repoId === undefined) return true;
+    return wanted.has(projectKeyOf(scopeId, repoSkillKey(repoId, m.skillId.group, m.skillId.name)));
+  });
+
+  const today = brokenLeaves({ scopeId, available, installs });
+  const out = new Map<string, string[]>();
+  for (const [leaf, refs] of brokenLeaves({ scopeId, available, installs: surviving })) {
+    if (today.has(leaf)) continue;
+    out.set(leaf, refs);
   }
   return out;
 }

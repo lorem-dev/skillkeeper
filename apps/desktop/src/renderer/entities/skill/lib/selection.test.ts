@@ -52,6 +52,11 @@ const CATALOG = [
   mk('w', ['h/u']),
   mk('h/u'),
   mk('h/v'),
+  // A two-dependency leaf, one dependency installed and one not: the fixture
+  // for the mixed case below, where only the not-installed half may read teal.
+  mk('m', ['n', 'o']),
+  mk('n'),
+  mk('o'),
 ];
 const G = buildGraph(CATALOG, []);
 
@@ -102,6 +107,53 @@ describe('deriveSelection', () => {
 
   it('is empty for an empty selection', () => {
     expect(deriveSelection(sel([]), [], G)).toEqual({ shown: [], dependency: [] });
+  });
+
+  // The teal-tint regression (docs/bug: "restore" retints an already-installed
+  // leaf). Chain a -> b -> c, all three installed. `b` is unchecked, which
+  // takes `a` (its dependent) down with it, then the user clicks the orange
+  // "!" on `a` to restore its closure. `b` is retained, not newly installed,
+  // and must not read teal even though the closure -- not a hand pick -- is
+  // what keeps its box checked.
+  it('does not tint a retained installed leaf teal after restore', () => {
+    const baseline = [K('a'), K('b'), K('c')];
+    let s = toggle(sel(baseline), baseline, G, K('b'));
+    s = restore(s, K('a'));
+    const d = deriveSelection(s, baseline, G);
+    expect(d.shown).toContain(K('b'));
+    expect(d.dependency).not.toContain(K('b'));
+  });
+
+  it('tints a genuinely new dependency teal', () => {
+    // `b` is pulled in by the explicit pick of `a` and is not installed
+    // anywhere: this IS a new install, so it must read teal.
+    const d = deriveSelection(sel([K('a')]), [], G);
+    expect(d.dependency).toContain(K('b'));
+  });
+
+  it('keeps every closure member teal with an empty baseline (repositories mode)', () => {
+    // Repositories mode has no installed set at all, so the baseline exclusion
+    // must never remove anything there: the whole closure of an explicit pick
+    // stays teal, exactly as before this fix.
+    const d = deriveSelection(sel([K('a')]), [], G);
+    expect(d.dependency.sort()).toEqual([K('b'), K('c')].sort());
+  });
+
+  it('leaves a hand-picked installed leaf out of dependency via explicit, not baseline', () => {
+    // `a` is both a hand pick AND installed. It is excluded from `dependency`
+    // by the `explicit` half of the filter already; asserted on its own so a
+    // future edit cannot drop the `explicit` exclusion while this case keeps
+    // passing by accident through the `baseline` exclusion alone.
+    const d = deriveSelection(sel([K('a')]), [K('a')], G);
+    expect(d.dependency).not.toContain(K('a'));
+  });
+
+  it('tints only the not-installed half of a mixed dependency pair', () => {
+    // `m` requires both `n` (installed) and `o` (not). Picking `m` explicitly
+    // pulls both into `shown`, but only `o` is a new install.
+    const d = deriveSelection(sel([K('m')]), [K('n')], G);
+    expect(d.shown.sort()).toEqual([K('m'), K('n'), K('o')].sort());
+    expect(d.dependency).toEqual([K('o')]);
   });
 });
 

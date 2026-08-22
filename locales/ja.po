@@ -514,6 +514,9 @@ msgstr "必要なスキルが削除されました。このスキルは動作し
 msgid "skills.status.brokenRequiresUnavailable"
 msgstr "必要なスキルが削除されました。このスキルは動作しない可能性があります。どのリポジトリにも存在しません。"
 
+msgid "skills.status.brokenRequiresPending"
+msgstr "必要なスキルが削除されます。このスキルは動作しなくなる可能性があります。クリックして復元してください。"
+
 msgid "skills.installPending"
 msgstr "スキルのインストールは近日公開予定です ({count} 件選択中)"
 

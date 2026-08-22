@@ -631,6 +631,9 @@ msgstr "Требуемый навык был удалён; этот навык �
 msgid "skills.status.brokenRequiresUnavailable"
 msgstr "Требуемый навык был удалён; этот навык может не работать. Ни один репозиторий не предоставляет этот навык."
 
+msgid "skills.status.brokenRequiresPending"
+msgstr "Требуемый навык будет удалён; этот навык может перестать работать. Нажмите, чтобы восстановить."
+
 msgid "skills.installPending"
 msgstr "Установка скиллов скоро появится (выбрано: {count})"
 

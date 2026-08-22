@@ -580,6 +580,9 @@ msgstr "Потребна вештина је уклоњена; ова вешти
 msgid "skills.status.brokenRequiresUnavailable"
 msgstr "Потребна вештина је уклоњена; ова вештина можда неће радити. Ниједан репозиторијум не пружа ту вештину."
 
+msgid "skills.status.brokenRequiresPending"
+msgstr "Потребна вештина ће бити уклоњена; ова вештина можда неће више радити. Кликните да бисте је вратили."
+
 msgid "skills.installPending"
 msgstr "Инсталирање вештина ускоро стиже ({count} изабрано)"
 

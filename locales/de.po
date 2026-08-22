@@ -565,6 +565,9 @@ msgstr "Ein erforderlicher Skill wurde entfernt; dieser Skill funktioniert mögl
 msgid "skills.status.brokenRequiresUnavailable"
 msgstr "Ein erforderlicher Skill wurde entfernt; dieser Skill funktioniert möglicherweise nicht. Kein Repository stellt diesen Skill bereit."
 
+msgid "skills.status.brokenRequiresPending"
+msgstr "Ein erforderlicher Skill wird entfernt; dieser Skill funktioniert möglicherweise nicht mehr. Klicken Sie, um ihn wiederherzustellen."
+
 msgid "skills.installPending"
 msgstr "Skills installieren kommt bald ({count} ausgewählt)"
 

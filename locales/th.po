@@ -547,6 +547,9 @@ msgstr "สกิลที่จำเป็นถูกลบไปแล้ว
 msgid "skills.status.brokenRequiresUnavailable"
 msgstr "สกิลที่จำเป็นถูกลบไปแล้ว สกิลนี้อาจทำงานไม่ได้ ไม่มีที่เก็บโค้ดใดที่มีสกิลนั้น"
 
+msgid "skills.status.brokenRequiresPending"
+msgstr "สกิลที่จำเป็นจะถูกลบ สกิลนี้อาจหยุดทำงาน คลิกเพื่อกู้คืน"
+
 msgid "skills.installPending"
 msgstr "การติดตั้งสกิลจะมาเร็ว ๆ นี้ (เลือกไว้ {count})"
 

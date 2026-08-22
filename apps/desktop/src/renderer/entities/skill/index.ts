@@ -37,9 +37,10 @@ export {
   requiresOf,
   skillPath,
   brokenLeaves,
+  pendingBrokenLeaves,
   referenceKeys,
 } from './lib/requires';
-export type { RequiresGraph, BrokenArgs } from './lib/requires';
+export type { RequiresGraph, BrokenArgs, PendingBrokenArgs } from './lib/requires';
 export { deriveSelection, dropMissing, toggle, applyCheckChange, restore } from './lib/selection';
 export type { Selection, DerivedSelection } from './lib/selection';
 export { buildProjectPlan, scopesNeedingAgents } from './lib/applyPlan';

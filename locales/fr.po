@@ -580,6 +580,9 @@ msgstr "Une compétence requise a été supprimée ; cette compétence risque de
 msgid "skills.status.brokenRequiresUnavailable"
 msgstr "Une compétence requise a été supprimée ; cette compétence risque de ne pas fonctionner. Aucun dépôt ne fournit cette compétence."
 
+msgid "skills.status.brokenRequiresPending"
+msgstr "Une compétence requise sera retirée ; cette compétence risque de ne plus fonctionner. Cliquez pour la restaurer."
+
 msgid "skills.installPending"
 msgstr "L'installation des compétences arrive bientôt ({count} sélectionnées)"
 

@@ -17,8 +17,9 @@
  * dependency closure around them is derived per render (`entities/skill`'s
  * selection model) and is what the tree, the badges, the pending counts and the
  * save all read. Checking a skill therefore also checks what it requires, and
- * an installed skill whose dependency has gone missing carries a clickable
- * marker that arms the whole missing closure for reinstall.
+ * an installed skill whose dependency has gone missing -- or is about to, once
+ * the pending selection is applied -- carries a clickable marker that arms the
+ * whole missing closure for reinstall.
  *
  * View + selection state (query, filters, hand picks, per-project agents, tree
  * expansion) lives in the store's shared `skillsUi` slice so it survives
@@ -64,6 +65,7 @@ import {
   projectNodeId,
   buildScopedGraph,
   brokenLeaves,
+  pendingBrokenLeaves,
   contains,
   referenceKeys,
   deriveSelection,
@@ -204,6 +206,32 @@ export function SkillsManagementPage() {
     return all;
   }, [scopeIds, availableSkills, installs]);
 
+  // The same question asked of the PENDING state: installed leaves that still
+  // stay checked but whose dependency the user has just unchecked. `brokenByLeaf`
+  // reads the ledger, so it can only speak after Save -- when the skill is
+  // already broken -- and unchecking a dependency is exactly the case it misses,
+  // since an installed dependent is never dropped as collateral and so keeps its
+  // "present" badge with nothing to say that saving will break it.
+  //
+  // Read off `selection.shown`, the same derived set the tree is drawn from, so
+  // the warning and the checkboxes cannot disagree. Leaves broken today are
+  // subtracted inside `pendingBrokenLeaves`, which is what keeps the two maps
+  // disjoint and every row down to one marker.
+  const pendingBrokenByLeaf = useMemo(() => {
+    const all = new Map<string, string[]>();
+    for (const scopeId of scopeIds) {
+      for (const [leaf, missing] of pendingBrokenLeaves({
+        scopeId,
+        available: availableSkills,
+        installs,
+        selected: selection.shown,
+      })) {
+        all.set(leaf, missing);
+      }
+    }
+    return all;
+  }, [scopeIds, availableSkills, installs, selection]);
+
   // Of the broken leaves, the ones a repair could actually do something for: one
   // of the references they are MISSING names a skill that exists, i.e. is a node
   // of the graph, so some repository or ledger entry knows how to install it.
@@ -225,13 +253,18 @@ export function SkillsManagementPage() {
   // references are installable the leaf stays clickable and the marker stays
   // orange afterwards, which is exactly the truth: part of it was repaired, part
   // of it cannot be.
+  //
+  // Both maps are judged, by the same test: a pending break is caused by the
+  // user's own uncheck, so its missing reference is a leaf installed TODAY and
+  // therefore a node -- but a leaf can also be about to lose a reference that
+  // exists nowhere, and that marker must not promise a click either.
   const repairableLeaves = useMemo(() => {
     const out = new Set<string>();
-    for (const [leaf, missing] of brokenByLeaf) {
+    for (const [leaf, missing] of [...brokenByLeaf, ...pendingBrokenByLeaf]) {
       if (referenceKeys(leaf, missing).some((key) => contains(graph, key))) out.add(leaf);
     }
     return out;
-  }, [brokenByLeaf, graph]);
+  }, [brokenByLeaf, pendingBrokenByLeaf, graph]);
 
   // Scopes whose checked skills would install nothing because no agent is
   // chosen -- Save opens the agent-choice modal first when this is non-empty.
@@ -390,6 +423,7 @@ export function SkillsManagementPage() {
       const wasInstalled = installedSet.has(node.id);
       const isChecked = shownSet.has(node.id);
       const broken = brokenByLeaf.get(node.id);
+      const pendingBroken = pendingBrokenByLeaf.get(node.id);
       const isDependency = dependencySet.has(node.id);
       let detail: ReactNode;
       // Broken outranks every pending change on the same row: it is a statement
@@ -422,6 +456,31 @@ export function SkillsManagementPage() {
               repairable ? 'skills.status.brokenRequires' : 'skills.status.brokenRequiresUnavailable',
             )}
             onClick={repair}
+          />
+        );
+      }
+      // The same marker for what the pending selection is ABOUT to break, and
+      // deliberately ranked below the arm above: a leaf broken today shows
+      // today's marker and today's tooltip, because a fact outranks a forecast.
+      // The two arms are otherwise one rule, hence the same `!isDependency`
+      // guard and the same repairability gate -- a tinted row cannot be
+      // prospectively broken anyway (its dependent's closure re-adds whatever it
+      // needs), and where nothing could be restored there is no click to offer
+      // and no honest tooltip to offer it with, so the row falls through to its
+      // ordinary badge and the after-apply marker reports it.
+      else if (pendingBroken !== undefined && !isDependency && repairableLeaves.has(node.id)) {
+        detail = (
+          <ChangeBadge
+            kind="broken"
+            label={t('skills.status.brokenRequiresPending')}
+            onClick={() =>
+              setSkillsUi({
+                projectRestored: [
+                  ...restore({ explicit: projectChecked, restored: projectRestored }, node.id)
+                    .restored,
+                ],
+              })
+            }
           />
         );
       }
@@ -506,6 +565,7 @@ export function SkillsManagementPage() {
     selection,
     shownSet,
     brokenByLeaf,
+    pendingBrokenByLeaf,
     repairableLeaves,
     installedSet,
     projectAgents,

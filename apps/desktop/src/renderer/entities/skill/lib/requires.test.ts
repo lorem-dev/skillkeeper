@@ -4,6 +4,7 @@ import { GLOBAL_SCOPE_ID } from '@/domain';
 import { projectSkillKey, repoSkillKey } from './skillTree';
 import {
   brokenLeaves,
+  pendingBrokenLeaves,
   buildGraph,
   buildScopedGraph,
   closure,
@@ -479,6 +480,85 @@ describe('brokenLeaves', () => {
 
   it('is empty input safe', () => {
     expect(brokenLeaves({ scopeId: 'p1', available: [], installs: [] }).size).toBe(0);
+  });
+});
+
+describe('pendingBrokenLeaves', () => {
+  /** The user's own arrangement: `a -> b -> c`, all three installed at claude. */
+  const chainInstalls = [
+    ...inst('p1', 'a', ['claude'], ['b']),
+    ...inst('p1', 'b', ['claude'], ['c']),
+    ...inst('p1', 'c', ['claude']),
+  ];
+  const wholeChain = [pk('p1', 'a'), pk('p1', 'b'), pk('p1', 'c')];
+
+  it('marks the head when the middle of an installed chain is unchecked', () => {
+    // The reported defect: `b` is queued for removal, `a` stays installed and
+    // checked, and nothing said that saving would break it.
+    const pending = pendingBrokenLeaves({
+      scopeId: 'p1',
+      available: chain,
+      installs: chainInstalls,
+      selected: [pk('p1', 'a'), pk('p1', 'c')],
+    });
+    expect([...pending.keys()]).toEqual([pk('p1', 'a')]);
+    expect(pending.get(pk('p1', 'a'))).toEqual(['b']);
+  });
+
+  it('leaves a leaf that is broken today to its own marker', () => {
+    // `b` was never installed, so `a` is broken NOW. The prospective set stays
+    // silent about it: the row shows one marker, and it is today's.
+    const args = {
+      scopeId: 'p1',
+      available: [mk('a', ['b']), mk('b')],
+      installs: inst('p1', 'a', ['claude'], ['b']),
+      selected: [pk('p1', 'a')],
+    };
+    expect(brokenLeaves(args).get(pk('p1', 'a'))).toEqual(['b']);
+    expect(pendingBrokenLeaves(args).size).toBe(0);
+  });
+
+  it('marks nothing when the unchecked leaf has no dependents', () => {
+    const pending = pendingBrokenLeaves({
+      scopeId: 'p1',
+      available: [...chain, mk('d')],
+      installs: [...chainInstalls, ...inst('p1', 'd', ['claude'])],
+      selected: wholeChain,
+    });
+    expect(pending.size).toBe(0);
+  });
+
+  it('marks both earlier links when the last of a chain is unchecked', () => {
+    const pending = pendingBrokenLeaves({
+      scopeId: 'p1',
+      available: chain,
+      installs: chainInstalls,
+      selected: [pk('p1', 'a'), pk('p1', 'b')],
+    });
+    expect([...pending.keys()].sort()).toEqual([pk('p1', 'a'), pk('p1', 'b')].sort());
+    expect(pending.get(pk('p1', 'a'))).toEqual(['c']);
+    expect(pending.get(pk('p1', 'b'))).toEqual(['c']);
+  });
+
+  it('judges each agent by the dependencies that agent install was promised', () => {
+    // `a@claude` was promised `b`, `a@codex` was promised `c`, and each is
+    // installed at its own agent only. Unchecking `b` breaks the claude install
+    // and leaves the codex one alone, so the leaf is marked for `b` ONLY --
+    // mixing the two targets would either add `c` to the report or, with the
+    // agents intersected, mark `a` for a dependency it never needed there.
+    const pending = pendingBrokenLeaves({
+      scopeId: 'p1',
+      available: [mk('a', ['b']), mk('b'), mk('c')],
+      installs: [
+        ...inst('p1', 'a', ['claude'], ['b']),
+        ...inst('p1', 'a', ['codex'], ['c']),
+        ...inst('p1', 'b', ['claude']),
+        ...inst('p1', 'c', ['codex']),
+      ],
+      selected: [pk('p1', 'a'), pk('p1', 'c')],
+    });
+    expect([...pending.keys()]).toEqual([pk('p1', 'a')]);
+    expect(pending.get(pk('p1', 'a'))).toEqual(['b']);
   });
 });
 

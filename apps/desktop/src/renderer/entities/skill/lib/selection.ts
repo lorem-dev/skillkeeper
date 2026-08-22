@@ -7,7 +7,7 @@
  *
  *     seeds      = (explicit \ baseline) union restored
  *     shown      = explicit union closure(seeds)
- *     dependency = shown \ explicit
+ *     dependency = shown \ explicit \ baseline
  *
  * Nothing records WHY a checkbox is on, so no sequence of clicks can
  * desynchronize it -- which is the whole point. The alternative, a checked set
@@ -19,6 +19,16 @@
  * installed skill has a missing dependency would immediately queue an install
  * nobody asked for, and the broken state -- the thing the user needs to see --
  * could not exist. {@link restore} is how the user opts into repairing it.
+ *
+ * `baseline` is excluded from `dependency` too, for a different reason: an
+ * installed leaf can re-enter `shown` through the closure without ever
+ * re-joining `explicit` -- it was dropped from `explicit` when its own
+ * dependent got unchecked, and {@link restore} seeds the closure, not the
+ * pick. Teal means "will be newly installed because something else needs
+ * it"; a leaf that is merely being RETAINED is neither new nor an install, so
+ * it must not read that way. Simplifying this back to `shown \ explicit` is
+ * exactly the edit that reintroduces that false teal on every already-
+ * installed dependency a repair brings back.
  *
  * One consequence worth stating, because it looks like a gap until you try it: a
  * dependency cannot be promoted to an explicit pick by clicking it. Its box is
@@ -69,7 +79,16 @@ export function deriveSelection(
   const shown = new Set(sel.explicit);
   for (const id of closure(graph, [...new Set(seeds)])) shown.add(id);
   const shownList = [...shown];
-  return { shown: shownList, dependency: shownList.filter((id) => !explicit.has(id)) };
+  // `dependency` excludes `installed` as well as `explicit`: an installed leaf
+  // can re-enter `shown` via `restore`'s closure without ever re-joining
+  // `explicit` (see the file header), and teal must mean "will be newly
+  // installed", not "will be retained". Dropping the `installed` half of this
+  // filter is the natural-looking simplification that brings the false teal
+  // back -- read the header before making that edit.
+  return {
+    shown: shownList,
+    dependency: shownList.filter((id) => !explicit.has(id) && !installed.has(id)),
+  };
 }
 
 /**

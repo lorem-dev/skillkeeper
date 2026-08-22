@@ -613,6 +613,9 @@ msgstr "Una competenza richiesta è stata rimossa; questa competenza potrebbe no
 msgid "skills.status.brokenRequiresUnavailable"
 msgstr "Una competenza richiesta è stata rimossa; questa competenza potrebbe non funzionare. Nessun repository fornisce questa competenza."
 
+msgid "skills.status.brokenRequiresPending"
+msgstr "Una competenza richiesta verrà rimossa; questa competenza potrebbe smettere di funzionare. Fai clic per ripristinarla."
+
 msgid "skills.installPending"
 msgstr "L'installazione delle competenze arriverà a breve ({count} selezionate)"
 

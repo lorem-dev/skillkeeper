@@ -18,7 +18,14 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentKind, AvailableSkill, InstallManifest } from '@/services/bridge';
 import { installedLeafIds, projectSkillKey, repoSkillKey } from './skillTree';
-import { buildGraph, buildScopedGraph, brokenLeaves, contains, referenceKeys } from './requires';
+import {
+  buildGraph,
+  buildScopedGraph,
+  brokenLeaves,
+  contains,
+  pendingBrokenLeaves,
+  referenceKeys,
+} from './requires';
 import { applyCheckChange, deriveSelection, dropMissing, restore } from './selection';
 import { buildProjectPlan } from './applyPlan';
 
@@ -148,15 +155,19 @@ describe('skills page selection wiring', () => {
     expect(deriveSelection(after, baseline, graph).shown).toEqual([]);
   });
 
-  it('management: reaches the installed-and-dependency-tinted state', () => {
-    // The one arrangement where a leaf is installed, checked, AND tinted -- the
-    // input to the badge chain's `present` arm, which must not be guarded on
-    // `!isDependency` or this row ends up the only installed row with no badge.
+  it('management: retaining an installed leaf through another pick does not tint it', () => {
+    // The one arrangement where an installed leaf re-enters `shown` through
+    // somebody ELSE's closure rather than through `explicit` -- the input to
+    // the badge chain's `present` arm, which must not be guarded on
+    // `!isDependency` or this row ends up the only installed row with no
+    // badge. It must also NOT read teal: `y` is retained, not newly
+    // installed, and `dependency` excludes the baseline for exactly this case
+    // (see `deriveSelection`'s header).
     //
-    // `y` is installed; `x` requires `y` and is NOT installed. Uncheck `y`, then
-    // check `x`: `x` is not in the baseline so it seeds, and its closure re-adds
-    // `y` -- which is still installed, and now held as somebody else's
-    // dependency rather than as a pick of its own.
+    // `y` is installed; `x` requires `y` and is NOT installed. Uncheck `y`,
+    // then check `x`: `x` is not in the baseline so it seeds, and its closure
+    // re-adds `y` -- which is still installed, and now held on by somebody
+    // else's pick rather than by a pick of its own.
     const catalog2 = [mk('g/x', ['g/y']), mk('g/y')];
     const installs = inst('g/y', ['claude']);
     const graph = buildScopedGraph([PROJ], catalog2, installs);
@@ -171,8 +182,8 @@ describe('skills page selection wiring', () => {
     const step2 = applyCheckChange(step1, baseline, graph, [], [pk('g/x')]);
     const d = deriveSelection(step2, baseline, graph);
     expect(new Set(d.shown)).toEqual(new Set([pk('g/x'), pk('g/y')]));
-    expect(d.dependency).toEqual([pk('g/y')]);
-    // installed AND checked AND tinted, all at once.
+    // installed AND checked AND retained -- present, not teal.
+    expect(d.dependency).toEqual([]);
     expect(baseline).toContain(pk('g/y'));
   });
 
@@ -185,8 +196,8 @@ describe('skills page selection wiring', () => {
     const after = applyCheckChange({ explicit: baseline, restored: [] }, baseline, graph, shown, next);
     // 'a' is installed, so it survives the uncheck -- and because the baseline
     // is excluded from the seeds, it does NOT re-arm 'b'. So 'b' really is a
-    // pending removal that will break 'a', with no click-time warning: the
-    // orange marker after apply is the designed feedback.
+    // pending removal that will break 'a', which is what the prospective marker
+    // is drawn from (the test below), before the apply makes it true.
     const d = deriveSelection(after, baseline, graph);
     expect(new Set(after.explicit)).toEqual(new Set([pk('g/a'), pk('g/c')]));
     expect(new Set(d.shown)).toEqual(new Set([pk('g/a'), pk('g/c')]));
@@ -197,6 +208,55 @@ describe('skills page selection wiring', () => {
     const broken = brokenLeaves({ scopeId: PROJ, available: catalog, installs: applied });
     expect([...broken.keys()]).toEqual([pk('g/a')]);
     expect(broken.get(pk('g/a'))).toEqual(['g/b']);
+  });
+
+  it('management: the pending removal is marked before the apply, and the click undoes it', () => {
+    // The user's report: with the chain installed, unchecking the MIDDLE leaf
+    // must warn on the head straight away -- and the warning's click needs no
+    // mechanism of its own, only the `restore` the after-apply marker uses.
+    const installs = [...inst('g/a', ['claude'], ['g/b']), ...inst('g/b', ['claude'], ['g/c']), ...inst('g/c', ['claude'])];
+    const graph = buildScopedGraph([PROJ], catalog, installs);
+    const baseline = installedLeafIds(installs, [PROJ]);
+    const shown = deriveSelection({ explicit: baseline, restored: [] }, baseline, graph).shown;
+    const unchecked = applyCheckChange(
+      { explicit: baseline, restored: [] },
+      baseline,
+      graph,
+      shown,
+      shown.filter((id) => id !== pk('g/b')),
+    );
+    const pendingSelection = dropMissing(graph, deriveSelection(unchecked, baseline, graph));
+
+    // Nothing is broken YET -- the ledger still holds all three.
+    expect(brokenLeaves({ scopeId: PROJ, available: catalog, installs }).size).toBe(0);
+    // But the head is already marked, naming the leaf about to go.
+    const pending = pendingBrokenLeaves({
+      scopeId: PROJ,
+      available: catalog,
+      installs,
+      selected: pendingSelection.shown,
+    });
+    expect([...pending.keys()]).toEqual([pk('g/a')]);
+    expect(pending.get(pk('g/a'))).toEqual(['g/b']);
+
+    // The click, through the SAME `restore` the after-apply marker uses: 'g/a'
+    // becomes a seed, its closure re-adds 'g/b', and the pending removal is
+    // cancelled -- the red minus becomes a dependency-tinted check.
+    const repaired = restore(unchecked, pk('g/a'));
+    const after = dropMissing(graph, deriveSelection(repaired, baseline, graph));
+    expect(new Set(after.shown)).toEqual(new Set([pk('g/a'), pk('g/b'), pk('g/c')]));
+    // 'g/b' is installed and merely RETAINED by the restore -- nothing is being
+    // newly installed for it, so it must not read teal (the reported bug: this
+    // used to tint it because `dependency` was `shown \ explicit` alone, with
+    // no regard for the baseline `restore` pulled it back from).
+    expect(after.dependency).toEqual([]);
+    // And with the removal cancelled there is nothing left to warn about.
+    expect(
+      pendingBrokenLeaves({ scopeId: PROJ, available: catalog, installs, selected: after.shown })
+        .size,
+    ).toBe(0);
+    // Nor is it an install: 'g/b' is already there, so the plan is empty.
+    expect(buildProjectPlan(PROJ, after.shown, installs, ['claude']).rows).toEqual([]);
   });
 
   it('management: a dependency installed for fewer agents is repairable', () => {
