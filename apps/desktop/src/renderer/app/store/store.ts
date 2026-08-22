@@ -308,10 +308,18 @@ export interface SkillsUiState {
   repoFilter: string[];
   /** Project ids the tree is narrowed to (empty = all). */
   projectFilter: string[];
-  /** Repo-mode checked skill leaf ids (baseline: none). */
+  /** Repo-mode leaf ids checked BY HAND (baseline: none). Dependencies are
+   *  derived, not stored -- see `entities/skill/lib/selection`. */
   repoChecked: string[];
-  /** Project-mode checked skill leaf ids (baseline: the installed set). */
+  /** Project-mode leaf ids checked BY HAND (baseline: the installed set). */
   projectChecked: string[];
+  /**
+   * Installed leaf ids whose dependency closure the user asked to re-apply by
+   * clicking the broken-dependency marker. Separate from `projectChecked`
+   * because an installed skill is already checked: re-arming its closure is a
+   * different request from checking it.
+   */
+  projectRestored: string[];
   /** Chosen agents per project (baseline: the installed agents). */
   projectAgents: Record<string, AgentKind[]>;
   /**
@@ -921,8 +929,14 @@ const NOTIFICATION_LOG_LIMIT = 500;
 /** The project-mode selection (checks + agents) that matches what is installed. */
 function installedBaseline(
   installs: readonly InstallManifest[],
-): Pick<SkillsUiState, 'projectChecked' | 'projectAgents'> {
-  return { projectChecked: installedLeafIds(installs), projectAgents: installedAgentsByProject(installs) };
+): Pick<SkillsUiState, 'projectChecked' | 'projectAgents' | 'projectRestored'> {
+  return {
+    projectChecked: installedLeafIds(installs),
+    projectAgents: installedAgentsByProject(installs),
+    // A new baseline invalidates any pending repair: whether a dependency is
+    // still missing is exactly what the new baseline decides.
+    projectRestored: [],
+  };
 }
 
 export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
@@ -953,6 +967,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
     projectFilter: [],
     repoChecked: [],
     projectChecked: [],
+    projectRestored: [],
     projectAgents: {},
     expandedIds: null,
   },
