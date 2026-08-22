@@ -51,6 +51,9 @@ export interface AvailableSkill {
   readonly name: string;
   readonly version?: string;
   readonly description?: string;
+  /** Skill paths in the same repository that this skill needs (absolute:
+   *  `group/name`, or `name` when ungrouped). */
+  readonly requires?: string[];
   /** Content hash of the skill body (excludes `.skid.yml`), for update detection. */
   readonly contentHash: string;
   /** The skill ships a GUIDE.md/RULES.md guidance file (drives the "rules" badge). */
@@ -128,7 +131,18 @@ export interface ApplyProgress {
 }
 
 export type ApplyResult =
-  { ok: true; installed: number; removed: number } | { ok: false; error: string };
+  | {
+      ok: true;
+      /**
+       * Count of skills actually installed. The backend expands the install
+       * list to its dependency closure before installing, so this can be
+       * larger than the number of skills requested -- it does not echo the
+       * request.
+       */
+      installed: number;
+      removed: number;
+    }
+  | { ok: false; error: string };
 
 // -- mcp ---------------------------------------------------------------------
 

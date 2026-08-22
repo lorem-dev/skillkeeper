@@ -17,7 +17,7 @@
 //! which is injected per project via [`ProjectEnv`] (the Rust analogue of the TS
 //! `adapterEnvFor`). Every state mutation runs under `ctx.state_lock`.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
@@ -32,9 +32,11 @@ use skillkeeper_core::hooks::guidance::{
 };
 use skillkeeper_core::install::install::{install_skill, uninstall_skill, HookSupport};
 use skillkeeper_core::models::{
-    AgentKind, AgentTarget, AppState, InstallManifest, InstallOptions, Scope, SkillId,
+    AgentKind, AgentTarget, AppState, InstallManifest, InstallOptions, Repository, Scope, SkillId,
 };
 use skillkeeper_core::ports::{Clock, FsPort, HostEnv, PortResult};
+use skillkeeper_core::skills::group_path::skill_path;
+use skillkeeper_core::skills::requires::RequiresGraph;
 use skillkeeper_core::skills::resolver::resolve_skills;
 use skillkeeper_core::skills::skid::{parse_skid, SKID_FILE};
 use skillkeeper_core::state::state::{load_state, save_state};
@@ -146,6 +148,10 @@ pub struct AvailableSkill {
     pub version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Skill paths, within this skill's own repository, that it needs. Drives
+    /// the dependency tint and the broken-dependency marker in the renderer.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub requires: Option<Vec<String>>,
     /// Content hash of the skill body (excludes `.skid.yml`), for update detection.
     pub content_hash: String,
     /// The skill ships a `GUIDE.md`/`RULES.md` guidance file (drives the badge).
@@ -236,6 +242,7 @@ pub fn available(ctx: &AppContext) -> AvailableSkillsResult {
                 name: skill.id.name.clone(),
                 version: skill.manifest.version.clone(),
                 description: skill.manifest.description.clone(),
+                requires: skill.manifest.requires.clone().filter(|l| !l.is_empty()),
                 content_hash,
                 has_guidance,
             });
@@ -441,7 +448,7 @@ pub fn reconcile(ctx: &AppContext) -> Result<Vec<InstallManifest>, String> {
 
 /// A skill identified by its source repo and (group, name). Mirrors the TS
 /// `SkillRef`.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SkillRef {
     pub repo_id: String,
@@ -483,6 +490,9 @@ pub struct ApplyProgress {
 #[serde(rename_all = "camelCase")]
 pub struct ApplyResult {
     pub ok: bool,
+    /// Count of skills actually installed, including any dependencies
+    /// `expand_requires` added to the requested list -- can exceed the
+    /// number of skills requested; does not echo the request.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub installed: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -621,6 +631,55 @@ fn same_scope(m: &InstallManifest, args: &ApplyArgs) -> bool {
     }
 }
 
+/// Add every transitive dependency of `refs` to the list, preserving the
+/// caller's order and appending discovered dependencies after it.
+/// Dependencies are same-repository by definition: references are grouped by
+/// `repo_id` and each repository's own skills are resolved to build that
+/// repository's graph, so a reference never resolves against a namesake in a
+/// different repository. A reference whose target does not exist (an unknown
+/// `repo_id`, or a path with no skill behind it) is dropped here -- the
+/// resolver already warned about it, and `repo lint` reports it -- rather than
+/// sent on to fail an install. Idempotent: an already-listed dependency
+/// (compared by full reference identity) is never duplicated.
+fn expand_requires(fs: &dyn FsPort, repos: &[Repository], refs: &[SkillRef]) -> Vec<SkillRef> {
+    let mut out: Vec<SkillRef> = refs.to_vec();
+    let mut by_repo: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for r in refs {
+        by_repo
+            .entry(r.repo_id.clone())
+            .or_default()
+            .push(skill_path(r.group.as_deref(), &r.name));
+    }
+    for (repo_id, roots) in by_repo {
+        let Some(repo) = repos.iter().find(|r| r.id == repo_id) else {
+            continue;
+        };
+        let resolved = resolve_skills(fs, &repo.local_path);
+        let graph = RequiresGraph::build(&resolved.skills);
+        for path in graph.closure(&roots) {
+            if roots.contains(&path) {
+                continue;
+            }
+            let Some(skill) = resolved
+                .skills
+                .iter()
+                .find(|s| skill_path(s.id.group.as_deref(), &s.id.name) == path)
+            else {
+                continue;
+            };
+            let candidate = SkillRef {
+                repo_id: repo_id.clone(),
+                group: skill.id.group.clone(),
+                name: skill.id.name.clone(),
+            };
+            if !out.iter().any(|r| *r == candidate) {
+                out.push(candidate);
+            }
+        }
+    }
+    out
+}
+
 /// The fallible body of [`apply`], run under the state lock.
 fn apply_inner(
     ctx: &AppContext,
@@ -639,8 +698,15 @@ fn apply_inner(
         project_path: args.project_path.clone(),
     };
 
+    // The renderer sends the closure already. Expanding again here is the
+    // guarantee: the core is authoritative at apply time, so a preview that
+    // missed a dependency is a cosmetic mismatch rather than a broken install.
+    // Idempotent, so the common case adds nothing. Never applied to
+    // `args.remove`: uninstalling a skill must not cascade to its dependents.
+    let install = expand_requires(&ctx.fs, &state.repositories, &args.install);
+
     let per_skill = args.agents.len().max(1);
-    let total = (args.install.len() + args.remove.len()) * per_skill;
+    let total = (install.len() + args.remove.len()) * per_skill;
     let mut done = 0usize;
 
     // key = guidance file path; value = ordered (blockKey, body) upserts.
@@ -675,7 +741,7 @@ fn apply_inner(
     }
 
     // Installs.
-    for r in &args.install {
+    for r in &install {
         let repo = state
             .repositories
             .iter()
@@ -810,7 +876,7 @@ fn apply_inner(
         installs: installs.clone(),
     };
     save_state(&ctx.fs, &ctx.paths.state_json, &next).map_err(|e| e.to_string())?;
-    Ok((args.install.len(), args.remove.len()))
+    Ok((install.len(), args.remove.len()))
 }
 
 // ---------------------------------------------------------------------------
@@ -1665,6 +1731,323 @@ mod tests {
             kept[0].requires,
             Some(vec!["dep-a".to_string()]),
             "reconcile lost requires"
+        );
+    }
+
+    // ---- available/apply: requires ----
+
+    /// A throwaway working tree holding the given skills, each written with a
+    /// `SKILL.md` whose frontmatter is `name: <name>` plus the given extra
+    /// YAML block (used to declare `requires`). No git init: `available` and
+    /// `apply` read straight off the working tree in these tests, and neither
+    /// goes through git.
+    struct MultiSkillRepo {
+        path: PathBuf,
+    }
+
+    impl MultiSkillRepo {
+        fn new(skills: &[(&str, &str)]) -> Self {
+            use std::sync::atomic::{AtomicU32, Ordering};
+            static COUNTER: AtomicU32 = AtomicU32::new(0);
+            let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+            let mut path = std::env::temp_dir();
+            path.push(format!("skillkeeper-multisrc-{}-{}", std::process::id(), n));
+            for (name, extra) in skills {
+                let skill_dir = path.join(name);
+                std::fs::create_dir_all(&skill_dir).expect("create skill dir");
+                std::fs::write(
+                    skill_dir.join("SKILL.md"),
+                    format!("---\nname: {name}\n{extra}---\nbody\n"),
+                )
+                .expect("write SKILL.md");
+            }
+            Self { path }
+        }
+
+        fn url(&self) -> String {
+            self.path.to_string_lossy().into_owned()
+        }
+    }
+
+    impl Drop for MultiSkillRepo {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+
+    /// A [`TempAppData`] plus a tracked repository/project seeded with a
+    /// custom skill set, for the dependency-carrying and closure-expansion
+    /// tests. Derefs to [`AppContext`] so it can be passed anywhere the tests
+    /// under this module already pass `&app.ctx`.
+    struct TestCtx {
+        app: TempAppData,
+        _src: MultiSkillRepo,
+        proj: ProjectDir,
+        repo_id: String,
+        project_id: String,
+    }
+
+    impl std::ops::Deref for TestCtx {
+        type Target = AppContext;
+
+        fn deref(&self) -> &AppContext {
+            &self.app.ctx
+        }
+    }
+
+    impl TestCtx {
+        /// A [`SkillRef`] into this context's repository for the named skill.
+        fn skill_ref(&self, name: &str) -> SkillRef {
+            SkillRef {
+                repo_id: self.repo_id.clone(),
+                group: None,
+                name: name.to_string(),
+            }
+        }
+    }
+
+    /// Seed one tracked repository containing `skills` (name -> extra
+    /// frontmatter YAML, see [`MultiSkillRepo`]) inside one tracked project.
+    fn ctx_with_repo_skills(skills: &[(&str, &str)]) -> TestCtx {
+        let app = TempAppData::new();
+        let src = MultiSkillRepo::new(skills);
+        let proj = ProjectDir::new();
+        let repo = Repository {
+            id: "repo-1".to_string(),
+            name: "skills".to_string(),
+            url: src.url(),
+            kind: RepositoryKind::Generic,
+            transport: Transport::Https,
+            lfs: false,
+            local_path: src.url(),
+            last_fetched: None,
+            branch: None,
+        };
+        let project = Project {
+            id: "proj-1".to_string(),
+            path: proj.path(),
+            name: "app".to_string(),
+            added_at: "2026-07-17T00:00:00.000Z".to_string(),
+        };
+        let state = AppState {
+            version: skillkeeper_core::models::STATE_VERSION,
+            repositories: vec![repo.clone()],
+            projects: vec![project.clone()],
+            installs: vec![],
+        };
+        save_state(&app.ctx.fs, &app.ctx.paths.state_json, &state).unwrap();
+        TestCtx {
+            app,
+            _src: src,
+            proj,
+            repo_id: repo.id,
+            project_id: project.id,
+        }
+    }
+
+    /// Run [`apply`] against `ctx`'s seeded project, at project scope, for
+    /// the Claude agent.
+    fn apply_for_test(ctx: &TestCtx, install: &[SkillRef], remove: &[SkillRef]) -> ApplyResult {
+        let mut noop = |_p: ApplyProgress| {};
+        apply(
+            ctx,
+            apply_args(
+                &ctx.project_id,
+                &ctx.proj,
+                install.to_vec(),
+                remove.to_vec(),
+            ),
+            &mut noop,
+        )
+    }
+
+    /// The names recorded in the install ledger, for asserting on the set of
+    /// what actually got installed.
+    fn installed_names(ctx: &TestCtx) -> Vec<String> {
+        load_state(&ctx.fs, &ctx.paths.state_json)
+            .unwrap()
+            .installs
+            .iter()
+            .map(|m| m.skill_id.name.clone())
+            .collect()
+    }
+
+    #[test]
+    fn available_carries_declared_dependencies() {
+        let ctx = ctx_with_repo_skills(&[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")]);
+        let result = available(&ctx);
+        let a = result
+            .skills
+            .iter()
+            .find(|s| s.name == "a")
+            .expect("a is listed");
+        assert_eq!(a.requires, Some(vec!["b".to_string()]));
+        let b = result
+            .skills
+            .iter()
+            .find(|s| s.name == "b")
+            .expect("b is listed");
+        assert_eq!(b.requires, None);
+    }
+
+    #[test]
+    fn apply_installs_the_dependency_closure_even_when_only_the_dependent_was_asked_for() {
+        // The renderer normally sends the closure already; the backend expands
+        // anyway, so a preview that missed one can never produce a broken
+        // install. Idempotent: an already-listed dependency is not duplicated.
+        let ctx = ctx_with_repo_skills(&[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")]);
+        let result = apply_for_test(&ctx, &[ctx.skill_ref("a")], &[]);
+        assert!(result.ok, "apply failed: {:?}", result.error);
+        let installed = installed_names(&ctx);
+        assert!(installed.contains(&"a".to_string()));
+        assert!(installed.contains(&"b".to_string()));
+    }
+
+    #[test]
+    fn apply_does_not_duplicate_a_dependency_the_caller_already_listed() {
+        // The renderer's common case: it already sent the closure. Expanding
+        // again must not add a second copy of `b`.
+        let ctx = ctx_with_repo_skills(&[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")]);
+        let result = apply_for_test(&ctx, &[ctx.skill_ref("a"), ctx.skill_ref("b")], &[]);
+        assert!(result.ok, "apply failed: {:?}", result.error);
+        let installed = installed_names(&ctx);
+        assert_eq!(installed.iter().filter(|n| *n == "b").count(), 1);
+    }
+
+    // ---- expand_requires: cross-repository isolation ----
+
+    /// Like [`TestCtx`] but with two tracked repositories, for asserting that
+    /// dependency expansion never resolves a reference against a namesake in
+    /// the wrong repository.
+    struct TestCtx2 {
+        app: TempAppData,
+        _src1: MultiSkillRepo,
+        _src2: MultiSkillRepo,
+        proj: ProjectDir,
+        repo1_id: String,
+        project_id: String,
+    }
+
+    impl std::ops::Deref for TestCtx2 {
+        type Target = AppContext;
+
+        fn deref(&self) -> &AppContext {
+            &self.app.ctx
+        }
+    }
+
+    impl TestCtx2 {
+        /// A [`SkillRef`] into repository one for the named skill.
+        fn skill_ref_repo1(&self, name: &str) -> SkillRef {
+            SkillRef {
+                repo_id: self.repo1_id.clone(),
+                group: None,
+                name: name.to_string(),
+            }
+        }
+    }
+
+    /// Seed two tracked repositories, `skills1` and `skills2` (name -> extra
+    /// frontmatter YAML, see [`MultiSkillRepo`]), inside one tracked project.
+    ///
+    /// The state's `repositories` list is saved with repository two BEFORE
+    /// repository one, on purpose: `expand_requires` must resolve a reference
+    /// by matching `repo_id` exactly, never by "the first repository whose
+    /// skills happen to contain this name" in list order. Saving them in
+    /// reverse order means an implementation that merged every repository's
+    /// skills into one combined lookup (instead of grouping by `repo_id` and
+    /// building one graph per repository) would resolve a shared name to
+    /// repository two here, catching that regression instead of passing by
+    /// coincidence of iteration order.
+    fn ctx_with_two_repo_skills(skills1: &[(&str, &str)], skills2: &[(&str, &str)]) -> TestCtx2 {
+        let app = TempAppData::new();
+        let src1 = MultiSkillRepo::new(skills1);
+        let src2 = MultiSkillRepo::new(skills2);
+        let proj = ProjectDir::new();
+        let repo1 = Repository {
+            id: "repo-1".to_string(),
+            name: "skills-1".to_string(),
+            url: src1.url(),
+            kind: RepositoryKind::Generic,
+            transport: Transport::Https,
+            lfs: false,
+            local_path: src1.url(),
+            last_fetched: None,
+            branch: None,
+        };
+        let repo2 = Repository {
+            id: "repo-2".to_string(),
+            name: "skills-2".to_string(),
+            url: src2.url(),
+            kind: RepositoryKind::Generic,
+            transport: Transport::Https,
+            lfs: false,
+            local_path: src2.url(),
+            last_fetched: None,
+            branch: None,
+        };
+        let project = Project {
+            id: "proj-1".to_string(),
+            path: proj.path(),
+            name: "app".to_string(),
+            added_at: "2026-07-17T00:00:00.000Z".to_string(),
+        };
+        let state = AppState {
+            version: skillkeeper_core::models::STATE_VERSION,
+            // Reverse order: see the doc comment above.
+            repositories: vec![repo2.clone(), repo1.clone()],
+            projects: vec![project.clone()],
+            installs: vec![],
+        };
+        save_state(&app.ctx.fs, &app.ctx.paths.state_json, &state).unwrap();
+        TestCtx2 {
+            app,
+            _src1: src1,
+            _src2: src2,
+            proj,
+            repo1_id: repo1.id,
+            project_id: project.id,
+        }
+    }
+
+    #[test]
+    fn apply_expands_dependencies_only_within_the_requesting_repository() {
+        // Repository one holds "a" (which requires "b") and its own "b".
+        // Repository two ALSO holds a skill named "b". Installing repo one's
+        // "a" must expand to repo one's "b", never repo two's, even though
+        // both are named "b" and repo two is listed first in tracked state
+        // (see ctx_with_two_repo_skills).
+        let ctx = ctx_with_two_repo_skills(
+            &[("a", "skillkeeper:\n  requires:\n    - b\n"), ("b", "")],
+            &[("b", "")],
+        );
+        let mut noop = |_p: ApplyProgress| {};
+        let result = apply(
+            &ctx,
+            apply_args(
+                &ctx.project_id,
+                &ctx.proj,
+                vec![ctx.skill_ref_repo1("a")],
+                vec![],
+            ),
+            &mut noop,
+        );
+        assert!(result.ok, "apply failed: {:?}", result.error);
+        let installed = load_state(&ctx.fs, &ctx.paths.state_json).unwrap().installs;
+        let b_installs: Vec<_> = installed
+            .iter()
+            .filter(|m| m.skill_id.name == "b")
+            .collect();
+        assert_eq!(
+            b_installs.len(),
+            1,
+            "expected exactly one \"b\" installed, got {b_installs:?}"
+        );
+        assert_eq!(
+            b_installs[0].source_repo_id.as_deref(),
+            Some(ctx.repo1_id.as_str()),
+            "the expanded dependency must come from the requesting repository (repo-1), \
+             not a namesake in another repository"
         );
     }
 }
