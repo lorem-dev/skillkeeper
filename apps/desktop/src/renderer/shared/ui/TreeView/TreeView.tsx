@@ -17,8 +17,11 @@
  * branch's checkbox is tri-state -- checked when all of its descendant leaves
  * are checked, "mixed" (a dash) when only some are, unchecked otherwise;
  * toggling it checks/unchecks all of them. `checkedIds` (the checked leaves) is
- * controlled via `onCheckedChange`. In this mode clicking a branch row toggles
- * its expansion (not selection), and clicking a leaf row toggles its checkbox --
+ * controlled via `onCheckedChange`. A leaf may also be tinted (`dependencyIds`)
+ * to mark that it is checked as a dependency of another node -- the caller
+ * decides which; branches are left neutral regardless. In this mode clicking a
+ * branch row toggles its expansion (not selection), and clicking a leaf row
+ * toggles its checkbox --
  * unless that leaf sets its own `trailing` control (e.g. an MCP row's
  * Install/Remove badge), in which case it never gets a checkbox and is left out
  * of every ancestor's tri-state count; it renders the reserved spacer instead.
@@ -82,6 +85,13 @@ export interface TreeViewProps {
   readonly checkedIds?: readonly string[];
   /** Called with the next full set of checked leaf ids after a toggle. */
   readonly onCheckedChange?: (checkedIds: string[]) => void;
+  /**
+   * Of the checked ids, the ones checked because something else needs them.
+   * They render with the `dependency` checkbox tone. Branches are deliberately
+   * left neutral: a branch checkbox already carries three states, and a fourth
+   * visual on it buys nothing.
+   */
+  readonly dependencyIds?: readonly string[];
   /** Whether rows play the mask-reveal entrance animation. Defaults to true;
    *  pass false to opt a specific tree out (e.g. inside an overlay window).
    *  Also gated by the global `animations` setting. */
@@ -155,6 +165,7 @@ export function TreeView({
   checkboxLevels,
   checkedIds,
   onCheckedChange,
+  dependencyIds,
   animate = true,
   className,
 }: TreeViewProps) {
@@ -212,6 +223,7 @@ export function TreeView({
 
   const visible = useMemo(() => flattenVisible(nodes, expanded), [nodes, expanded]);
   const checkedSet = useMemo(() => new Set(checkedIds ?? []), [checkedIds]);
+  const dependencySet = useMemo(() => new Set(dependencyIds ?? []), [dependencyIds]);
 
   // Which rows carry a checkbox. By default every node that is not explicitly
   // non-selectable does, at any depth -- structure, not arithmetic, because a
@@ -492,6 +504,9 @@ export function TreeView({
                   checked={checkState === 'checked'}
                   indeterminate={checkState === 'indeterminate'}
                   onChange={() => toggleCheck(node, depth)}
+                  // Only leaves are tinted -- a branch checkbox already carries
+                  // three states, and a fourth visual on it buys nothing.
+                  tone={!hasChildren && dependencySet.has(node.id) ? 'dependency' : 'default'}
                 />
               </span>
             ) : (

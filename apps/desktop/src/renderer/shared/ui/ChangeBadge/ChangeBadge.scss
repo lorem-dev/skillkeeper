@@ -27,3 +27,29 @@
 .sk-change-badge--present {
   color: var(--sk-color-label-2);
 }
+
+// Teal, not green: also an addition, but one the user did not ask for directly.
+// Adjacent enough to read as "will be added", distinct enough to be a question.
+.sk-change-badge--add-dependency {
+  color: var(--sk-teal);
+}
+
+// The warning tone this design system already uses (Badge tone="warning",
+// Alert, the status bar). Literal --sk-yellow does not hold contrast as a
+// filled circle on the light theme's white row.
+.sk-change-badge--broken {
+  color: var(--sk-orange);
+}
+
+.sk-change-badge--button {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 50%;
+
+  &:focus-visible {
+    outline: 2px solid var(--sk-color-accent);
+    outline-offset: 2px;
+  }
+}
