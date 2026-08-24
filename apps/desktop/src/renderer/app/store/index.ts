@@ -7,6 +7,7 @@ export {
   matchMcpPreset,
   scanMcpParams,
   repoMcpPresetId,
+  normalizeMcpDefFromBridge,
 } from './store';
 export type {
   SkillkeeperState,

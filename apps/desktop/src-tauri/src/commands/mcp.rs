@@ -1143,7 +1143,7 @@ fn preflight_inner(ctx: &AppContext, args: &McpUpdatePreflightArgs) -> Result<Ve
 /// STORED one was no longer accepted. The stored values are then migrated back
 /// in line with the new def's options BEFORE the old instance is removed -- a
 /// value an earlier install recorded may no longer be offered -- and the
-/// resulting `OptionSubstituted`/`OptionsEmpty` notes flow out alongside the
+/// resulting `OptionSubstituted` notes flow out alongside the
 /// writer's own notes; the reinstall refreshes the ledger hash
 /// automatically. An update the agent cannot express -- an oauth client it
 /// has no setting for -- is declined and reported instead of rewriting the
@@ -2057,8 +2057,13 @@ mod tests {
         );
     }
 
+    /// An option list that went empty is silent, not a note: an empty list
+    /// cannot be told apart from a parameter that only ever carried a
+    /// `description`, so a note here fired on every described parameter on
+    /// every update. The stored value still stands -- clearing it would break
+    /// a working install.
     #[test]
-    fn update_reports_an_empty_option_set_and_keeps_the_stored_value() {
+    fn update_says_nothing_about_an_emptied_option_set_and_keeps_the_stored_value() {
         let app = TempAppData::new();
         let proj = ProjectDir::new();
         seed_project(&app, &proj);
@@ -2104,10 +2109,8 @@ mod tests {
         assert!(updated.ok, "update failed: {:?}", updated.error);
         let updated_list = updated.updated.expect("updated list");
         assert!(
-            updated_list[0].notes.iter().any(
-                |n| matches!(n, UpsertNote::OptionsEmpty { parameter } if parameter == "choice")
-            ),
-            "got {:?}",
+            updated_list[0].notes.is_empty(),
+            "an emptied option set has nothing true to report, got {:?}",
             updated_list[0].notes
         );
 

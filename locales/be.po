@@ -1009,9 +1009,6 @@ msgstr "Выберыце значэнне"
 msgid "mcp.note.optionSubstituted"
 msgstr "{parameter} больш не прымае захаванае значэнне, таму замест яго было выбрана {value}."
 
-msgid "mcp.note.optionsEmpty"
-msgstr "{parameter} не мае варыянтаў для выбару, таму яго захаванае значэнне засталося без змен."
-
 msgid "mcp.error.invalidOption"
 msgstr "Выберыце адно з прапанаваных значэнняў."
 

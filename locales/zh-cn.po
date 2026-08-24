@@ -874,9 +874,6 @@ msgstr "选择一个值"
 msgid "mcp.note.optionSubstituted"
 msgstr "{parameter} 不再接受已保存的值,因此改为选择了 {value}。"
 
-msgid "mcp.note.optionsEmpty"
-msgstr "{parameter} 没有可供选择的选项,因此其已保存的值保持不变。"
-
 msgid "mcp.error.invalidOption"
 msgstr "请选择所提供的值之一。"
 

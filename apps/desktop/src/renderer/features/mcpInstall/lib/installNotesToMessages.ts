@@ -25,7 +25,7 @@ import { AGENT_LABELS } from '@/domain';
  * Renders one writer note as a localized message. A `switch` over `note.kind`
  * with a case per variant and no `default` -- matching the pattern used for
  * `McpTreeItem.kind` in `pages/Mcp/lib/mcpItemPreset.ts` -- so that adding a
- * fifth `UpsertNote` variant without handling it here is a compile error
+ * fourth `UpsertNote` variant without handling it here is a compile error
  * (`noImplicitReturns`/`noFallthroughCasesInSwitch`), not a silently wrong
  * branch.
  */
@@ -37,8 +37,6 @@ function messageForNote(note: UpsertNote, agent: McpInstalled['agent'], t: Trans
       return t('mcp.codexCallbackConflict', { found: String(note.found), wanted: String(note.wanted) });
     case 'optionSubstituted':
       return t('mcp.note.optionSubstituted', { parameter: note.parameter, value: note.value });
-    case 'optionsEmpty':
-      return t('mcp.note.optionsEmpty', { parameter: note.parameter });
   }
 }
 

@@ -316,14 +316,25 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
                         />
                       )}
                       {options.length > 0 ? (
-                        <Select
-                          options={options.map((o) => ({ value: o.value, label: o.label }))}
-                          value={value}
-                          onChange={setValue}
-                          placeholder={t('mcp.param.choosePlaceholder')}
-                          ariaLabel={param}
-                          disabled={busy}
-                        />
+                        <>
+                          <Select
+                            options={options.map((o) => ({ value: o.value, label: o.label }))}
+                            value={value}
+                            onChange={setValue}
+                            placeholder={t('mcp.param.choosePlaceholder')}
+                            ariaLabel={param}
+                            disabled={busy}
+                          />
+                          {/* The third of the three Select surfaces, same
+                              reasoning as the install modal's: an
+                              option-constrained parameter starts with nothing
+                              selected and Save stays disabled until one is, so
+                              the reason is stated rather than left to be
+                              guessed from a dead button. */}
+                          {!paramValueValid(meta, value) && (
+                            <span className="sk-save-modal__mcpprompt-help">{t('mcp.error.invalidOption')}</span>
+                          )}
+                        </>
                       ) : (
                         <TextField value={value} disabled={busy} onChange={(e) => setValue(e.target.value)} />
                       )}

@@ -1009,9 +1009,6 @@ msgstr "Scegli un valore"
 msgid "mcp.note.optionSubstituted"
 msgstr "{parameter} non accetta più il valore memorizzato, quindi è stato selezionato {value} al suo posto."
 
-msgid "mcp.note.optionsEmpty"
-msgstr "{parameter} non ha opzioni tra cui scegliere, quindi il suo valore memorizzato è stato lasciato invariato."
-
 msgid "mcp.error.invalidOption"
 msgstr "Scegli uno dei valori proposti."
 

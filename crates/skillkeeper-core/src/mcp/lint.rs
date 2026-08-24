@@ -32,8 +32,16 @@
 //! [`crate::mcp::model`], which accepts the bare form precisely so that half
 //! a key cannot drop the whole file. So the fault cannot be told apart from
 //! "no options at all" once the YAML has been parsed: there is nothing left
-//! in the model to lint. It is already reported where an author feels it, at
-//! update time, by `UpsertNote::OptionsEmpty`.
+//! in the model to lint.
+//!
+//! Nothing else reports it either, and nothing can: an update-time note used
+//! to, but the same indistinguishability made it fire on every parameter that
+//! merely carried a `description`, so it was removed (see
+//! [`crate::mcp::params::migrate_option_values`]). An author who writes an
+//! empty `options:` gets a select with nothing to select in it and no warning
+//! anywhere. Telling the two apart needs a model that can hold "authored, and
+//! empty" -- an `Option<Vec<_>>` rather than a `Vec<_>` -- which is a design
+//! decision, not a lint.
 
 use std::collections::HashSet;
 
@@ -431,9 +439,9 @@ mod tests {
         };
         // Every way of writing an empty `options:` -- bare, `{}`, `[]` --
         // deserializes to an empty Vec, indistinguishable from the key being
-        // absent, so the lint cannot tell them apart. This is reported at
-        // update time by `UpsertNote::OptionsEmpty` instead -- see the module
-        // header's note on SK020.
+        // absent, so the lint cannot tell them apart -- and neither can
+        // anything downstream, which is why it is not reported at all -- see
+        // the module header's note on SK020.
         assert!(lint_mcp_preset(&def).is_empty());
     }
 

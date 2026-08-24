@@ -39,6 +39,7 @@ export type {
   ApplyResult,
   AvailableMcp,
   AvailableMcpResult,
+  RawMcpServerDef,
   McpConfigWarning,
   McpInstallReq,
   McpBatch,

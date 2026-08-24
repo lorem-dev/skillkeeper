@@ -147,16 +147,30 @@ fn transport_str(t: McpTransport) -> &'static str {
 }
 
 /// Render description spans for a terminal: a link becomes its text followed by
-/// its URL in parentheses. No escaping is needed and none is applied.
+/// its URL in parentheses.
+///
+/// Control characters are dropped from everything printed -- prose, a link's
+/// visible text, and its URL. A description comes out of a cloned repository's
+/// `mcp.yml`, so it is untrusted text on its way to a terminal: an escape
+/// sequence in it would otherwise colour, clear or reposition the reader's
+/// terminal, and `\r` alone is enough to overwrite the line SkillKeeper just
+/// printed with something the repository author chose. The rule lives here, at
+/// the single boundary where any of this reaches a terminal, rather than at
+/// each parse site -- `is_allowed_url` refuses a URL with control characters
+/// too, but that guards what may become a live link in the desktop app and
+/// cannot cover the prose around it.
 fn render_spans_for_terminal(spans: &[DescriptionSpan]) -> String {
+    fn push_printable(out: &mut String, text: &str) {
+        out.extend(text.chars().filter(|c| !c.is_control()));
+    }
     let mut out = String::new();
     for span in spans {
         match span {
-            DescriptionSpan::Text { text } => out.push_str(text),
+            DescriptionSpan::Text { text } => push_printable(&mut out, text),
             DescriptionSpan::Link { text, url } => {
-                out.push_str(text);
+                push_printable(&mut out, text);
                 out.push_str(" (");
-                out.push_str(url);
+                push_printable(&mut out, url);
                 out.push(')');
             }
         }
@@ -232,11 +246,6 @@ fn note_line(agent: AgentKind, note: &UpsertNote) -> String {
         UpsertNote::OptionSubstituted { parameter, value } => format!(
             "Note {agent}: \"{parameter}\" no longer offers its stored value; using \"{value}\" instead."
         ),
-        UpsertNote::OptionsEmpty { parameter } => {
-            format!(
-                "Note {agent}: \"{parameter}\" has no options to choose from; its stored value was kept as-is."
-            )
-        }
     }
 }
 
@@ -1319,8 +1328,8 @@ mod tests {
     /// Installs the `choice_fs` preset with `choice=alpha`, then empties the
     /// source's option list entirely (leaving `choice` with nothing to
     /// choose from) and runs `update`. The stored value has nothing left to
-    /// validate against, so the update must keep it and report the empty
-    /// set rather than fail.
+    /// validate against, so the update must keep it -- and say nothing, since
+    /// this entry is byte-identical to one that only carries a description.
     fn run_update_after_the_options_go_empty() -> (i32, String, String) {
         let app = TestApp::new(choice_fs());
         seed_state(&app.fs);
@@ -1589,6 +1598,59 @@ mod tests {
         );
     }
 
+    /// `mcp.yml` is repository-authored text on its way to a terminal. The
+    /// URL is already refused at parse time, but prose and a link's visible
+    /// text are printed verbatim, so the strip has to sit at the rendering
+    /// boundary to cover all three. The URL span here could not come from
+    /// `parse_description` today -- the point is that this function does not
+    /// depend on that being true.
+    #[test]
+    fn rendering_for_a_terminal_drops_control_characters_from_prose_link_text_and_url() {
+        let spans = vec![
+            DescriptionSpan::Text {
+                text: "red \u{1b}[31mALERT\u{1b}[0m ".to_string(),
+            },
+            DescriptionSpan::Link {
+                text: "do\u{1b}[2Kcs".to_string(),
+                url: "https://mcp.example.com/\rmcp".to_string(),
+            },
+        ];
+        let out = render_spans_for_terminal(&spans);
+        assert!(
+            !out.chars().any(char::is_control),
+            "no control character may survive: {out:?}"
+        );
+        // What is left is inert text, printed as the characters it is: the
+        // sequence is broken by the missing ESC, not hidden.
+        assert_eq!(
+            out,
+            "red [31mALERT[0m do[2Kcs (https://mcp.example.com/mcp)"
+        );
+    }
+
+    #[test]
+    fn list_never_prints_a_control_character_a_repository_authored() {
+        // `\e` and `\r` are YAML escapes, so the file itself stays printable
+        // while the parsed description holds real ESC and CR bytes -- the shape
+        // that let a cloned repository clear the line SkillKeeper just printed
+        // and write its own text over it.
+        let (code, out, _err) =
+            run_list_with_description("a\\e[2K\\rSkillKeeper: everything is fine");
+        assert_eq!(code, 0);
+        assert!(
+            !out.contains('\u{1b}'),
+            "an escape byte reached the terminal: {out:?}"
+        );
+        assert!(
+            !out.contains('\r'),
+            "a carriage return reached the terminal: {out:?}"
+        );
+        assert!(
+            out.contains("SkillKeeper: everything is fine"),
+            "the rest of the text is still printed: {out}"
+        );
+    }
+
     #[test]
     fn list_truncates_an_over_long_description() {
         // Longer than DESCRIPTION_BUDGET: the full string must never reach the
@@ -1639,11 +1701,22 @@ mod tests {
         assert!(out.contains("choice"), "got {out}");
     }
 
+    /// A parameter with an empty option list is indistinguishable from one
+    /// that only carries a `description`, so an update has nothing true to say
+    /// about it. The old note said something anyway, on every update of every
+    /// described parameter.
     #[test]
-    fn update_reports_an_empty_option_set_and_does_not_fail() {
+    fn update_says_nothing_when_the_options_go_empty() {
         let (code, out, _err) = run_update_after_the_options_go_empty();
-        assert_eq!(code, 0, "a reported empty option set is not a failure");
-        assert!(out.contains("choice"), "got {out}");
+        assert_eq!(code, 0, "an empty option set is not a failure");
+        assert!(
+            out.contains("opts"),
+            "the update itself must still have run: {out}"
+        );
+        assert!(
+            !out.contains("choice"),
+            "nothing is said about a parameter nothing happened to: {out}"
+        );
     }
 
     fn seed_state(fs: &MemFs) {

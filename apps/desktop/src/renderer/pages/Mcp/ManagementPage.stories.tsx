@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useSkillkeeperStore, scanMcpParams, repoMcpPresetId } from '@/app/store';
+import { useSkillkeeperStore, scanMcpParams, repoMcpPresetId, normalizeMcpDefFromBridge } from '@/app/store';
 import { seedStore } from '@/app/store/storyState';
 import type { SkillKeeperConfig, McpPreset } from '@/app/store';
 import type {
@@ -129,20 +129,24 @@ function buildMcpPresets(config: SkillKeeperConfig, available: readonly Availabl
       hasRules: def.rules !== undefined,
     };
   });
-  const repo: McpPreset[] = available.map(
-    (a): McpPreset => ({
-      id: repoMcpPresetId(a.repoId, a.group, a.def.name),
+  const repo: McpPreset[] = available.map((a): McpPreset => {
+    // Through the same normalizer the store uses: a def arrives over the bridge
+    // with no `parameters` key at all when it has none -- see
+    // `normalizeMcpDefFromBridge`.
+    const def = normalizeMcpDefFromBridge(a.def);
+    return {
+      id: repoMcpPresetId(a.repoId, a.group, def.name),
       origin: 'repo',
-      name: a.def.name,
-      def: a.def,
+      name: def.name,
+      def,
       hash: a.hash,
-      params: scanMcpParams(a.def),
-      hasRules: a.def.rules !== undefined,
+      params: scanMcpParams(def),
+      hasRules: def.rules !== undefined,
       repoId: a.repoId,
       remote: a.remote,
       group: a.group,
-    }),
-  );
+    };
+  });
   return [...manual, ...repo];
 }
 

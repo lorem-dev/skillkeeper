@@ -929,9 +929,6 @@ msgid "mcp.note.optionSubstituted"
 msgstr "{parameter} ไม่รองรับค่าที่บันทึกไว้อีกต่อไป จึงเลือก {value} แทน"
 
 #, fuzzy
-msgid "mcp.note.optionsEmpty"
-msgstr "{parameter} ไม่มีตัวเลือกให้เลือก ค่าที่บันทึกไว้จึงถูกปล่อยไว้เช่นเดิม"
-
 #, fuzzy
 msgid "mcp.error.invalidOption"
 msgstr "เลือกค่าใดค่าหนึ่งที่มีให้"

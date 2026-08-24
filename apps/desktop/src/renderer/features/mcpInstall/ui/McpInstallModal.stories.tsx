@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { useSkillkeeperStore } from '@/app/store';
+import { useSkillkeeperStore, normalizeMcpDefFromBridge, repoMcpPresetId, scanMcpParams } from '@/app/store';
 import { seedStore } from '@/app/store/storyState';
 import type { McpPreset } from '@/app/store';
-import type { DescriptionSpan } from '@/services/bridge';
+import type { DescriptionSpan, RawMcpServerDef } from '@/services/bridge';
 import { McpInstallModal } from './McpInstallModal';
 
 const meta = {
@@ -171,6 +171,39 @@ const describedPresetLongOption: McpPreset = {
   },
 };
 
+// A repo preset exactly as the BRIDGE sends one that declares placeholders and
+// no `parameters:` block -- the shape of every `mcp.yml` authored before that
+// block existed. `McpServerDef.parameters` is `skip_serializing_if =
+// "BTreeMap::is_empty"` in Rust, so the key is simply not there, while the
+// generated TypeScript declares it required; pressing Install on such a preset
+// threw during render until `normalizeMcpDefFromBridge` filled it in at the
+// store boundary. This fixture goes through that same normalizer rather than
+// carrying a hand-written `parameters: {}`, so the story starts from the real
+// wire shape -- every fixture above quietly carries the key, which is why the
+// crash was invisible in Storybook and in the whole renderer suite.
+const bridgeShapedDef: RawMcpServerDef = {
+  name: 'docs-http',
+  type: 'http',
+  url: 'https://{host}/docs',
+  headers: { Authorization: 'Bearer {token}' },
+};
+
+const bridgeShapedDefNormalized = normalizeMcpDefFromBridge(bridgeShapedDef);
+
+const bridgeShapedPreset: McpPreset = {
+  id: repoMcpPresetId('repo-1', undefined, bridgeShapedDefNormalized.name),
+  origin: 'repo',
+  name: bridgeShapedDefNormalized.name,
+  def: bridgeShapedDefNormalized,
+  hash: 'sha256:repo-docs-http',
+  // From the scanner, not from `parameters`: non-empty params with no metadata
+  // map at all is precisely the combination that crashed.
+  params: scanMcpParams(bridgeShapedDefNormalized),
+  hasRules: false,
+  repoId: 'repo-1',
+  remote: 'git@github.com:acme/mcps.git',
+};
+
 // Repo http preset with two params -- every agent (including codex, whose
 // TOML config now expresses http) is selectable.
 export const RepoHttpWithParams: Story = {
@@ -179,6 +212,17 @@ export const RepoHttpWithParams: Story = {
     return <McpInstallModal {...args} />;
   },
   args: { preset: repoHttpPreset },
+};
+
+// The preset above: two plain TextFields, no descriptions, nothing special to
+// look at -- which is the point. Before the boundary fix this story could not
+// render at all.
+export const BridgeShapedWithoutParametersKey: Story = {
+  render: (args) => {
+    useSeedProjects();
+    return <McpInstallModal {...args} />;
+  },
+  args: { preset: bridgeShapedPreset },
 };
 
 // Manual stdio preset -- every agent (including codex) is selectable.

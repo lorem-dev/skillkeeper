@@ -7,4 +7,4 @@
  * into 18 catalogs, so the writer must not bake English prose into them. The
  * serialized form is a discriminated union the bridge already handles.
  */
-export type UpsertNote = { "kind": "droppedField", field: string, } | { "kind": "codexCallbackConflict", found: string, wanted: number, } | { "kind": "optionSubstituted", parameter: string, value: string, } | { "kind": "optionsEmpty", parameter: string, };
+export type UpsertNote = { "kind": "droppedField", field: string, } | { "kind": "codexCallbackConflict", found: string, wanted: number, } | { "kind": "optionSubstituted", parameter: string, value: string, };

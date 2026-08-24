@@ -106,13 +106,6 @@ describe('installNotesToMessages', () => {
     ]);
   });
 
-  it('maps an optionsEmpty note to mcp.note.optionsEmpty with the parameter', () => {
-    const targets = [installed({ agent: 'claude', notes: [{ kind: 'optionsEmpty', parameter: 'region' }] })];
-    expect(installNotesToMessages(targets, stubTranslator)).toEqual([
-      'mcp.note.optionsEmpty|{"parameter":"region"}',
-    ]);
-  });
-
   it('deduplicates two installs reporting the same optionSubstituted note into a single message', () => {
     const targets = [
       installed({
@@ -128,16 +121,6 @@ describe('installNotesToMessages', () => {
     ];
     expect(installNotesToMessages(targets, stubTranslator)).toEqual([
       'mcp.note.optionSubstituted|{"parameter":"region","value":"us-east"}',
-    ]);
-  });
-
-  it('deduplicates two installs reporting the same optionsEmpty note into a single message', () => {
-    const targets = [
-      installed({ agent: 'claude', instanceName: 'instance-1', notes: [{ kind: 'optionsEmpty', parameter: 'region' }] }),
-      installed({ agent: 'claude', instanceName: 'instance-2', notes: [{ kind: 'optionsEmpty', parameter: 'region' }] }),
-    ];
-    expect(installNotesToMessages(targets, stubTranslator)).toEqual([
-      'mcp.note.optionsEmpty|{"parameter":"region"}',
     ]);
   });
 });

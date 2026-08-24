@@ -955,9 +955,6 @@ msgstr "मान चुनें"
 msgid "mcp.note.optionSubstituted"
 msgstr "{parameter} अब सहेजे गए मान को स्वीकार नहीं करता, इसलिए इसके बजाय {value} चुना गया।"
 
-msgid "mcp.note.optionsEmpty"
-msgstr "{parameter} में चुनने के लिए कोई विकल्प नहीं है, इसलिए इसका सहेजा गया मान जस का तस छोड़ दिया गया।"
-
 msgid "mcp.error.invalidOption"
 msgstr "दिए गए मानों में से कोई एक चुनें।"
 

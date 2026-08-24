@@ -147,13 +147,41 @@ export type ApplyResult =
 
 // -- mcp ---------------------------------------------------------------------
 
+/**
+ * An `McpServerDef` exactly as the backend sends it: `parameters` may be
+ * ABSENT, where the generated type says it never is.
+ *
+ * `McpServerDef.parameters` carries `#[serde(skip_serializing_if =
+ * "BTreeMap::is_empty")]` in Rust (`crates/skillkeeper-core/src/mcp/model.rs`),
+ * so a def with no `parameters:` block -- which is every `mcp.yml` authored
+ * before that block existed -- arrives over the bridge with no `parameters` key
+ * at all. ts-rs cannot express a `skip_serializing_if` on a non-`Option` field,
+ * so the generated `McpServerDef` declares the field REQUIRED: the type
+ * promises a map the wire does not always carry, and a `def.parameters[name]`
+ * read throws on those defs with nothing in TypeScript to flag it.
+ *
+ * Declaring the inbound shape honestly here is what makes the fix enforceable
+ * rather than remembered: assigning one of these straight into renderer state
+ * is a type error, so the only way through is `normalizeMcpDefFromBridge`
+ * (`@/app/store`) -- after which the generated type is TRUE for every reader
+ * and no consumer needs a guard.
+ *
+ * OUTBOUND defs (`McpInstallReq`, `McpUpdateReq`, `McpUpdatePreflightArgs`)
+ * stay `McpServerDef`: the renderer always builds those with the key present,
+ * and Rust reads an empty map back to exactly what it would have defaulted to.
+ */
+export type RawMcpServerDef = Omit<McpServerDef, 'parameters'> & {
+  readonly parameters?: McpServerDef['parameters'];
+};
+
 export interface AvailableMcp {
   readonly repoId: string;
   /** Source repository remote URL; the stable identity for matching installs. */
   readonly remote: string;
   /** Optional one-level group (the skill-group directory name); absent for root. */
   readonly group?: string;
-  readonly def: McpServerDef;
+  /** As sent, not as typed -- see {@link RawMcpServerDef}. */
+  readonly def: RawMcpServerDef;
   /** Content hash of the raw def (excludes `name`), for update detection. */
   readonly hash: string;
 }

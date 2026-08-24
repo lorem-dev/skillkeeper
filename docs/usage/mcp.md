@@ -256,6 +256,13 @@ An unfinished `options` is never a parse failure. A bare `options:`, an empty
 label yet gets a blank one - a half-written key must not take down every
 other server declared in the same file.
 
+Nothing warns about an empty one, though, and nothing can: all of those forms
+parse to exactly what a parameter with no `options` key at all parses to, so
+neither the linter nor an update can tell "the author wrote an empty list"
+from "the author wrote no list". A parameter with an empty `options` therefore
+offers a select with nothing to select in it, and no message anywhere says so.
+Either fill the list in or drop the key.
+
 A parameter's value must be one of its `options`. This is enforced on both
 surfaces: the CLI (`mcp install`, `mcp update`) rejects a value that is not
 one of the options and prints the parameter's description alongside the
@@ -265,13 +272,16 @@ warning (`SK022`).
 
 Updating an installed instance can leave a stored value that the new
 definition's `options` no longer offers (an author removed or renamed a
-choice). This is never silent:
+choice):
 
 - If the parameter still has options, the stored value is replaced by the
-  **first** option, and the substitution is reported.
-- If the parameter's `options` is now empty, the stored value is left
-  untouched - clearing it could break a working install - and a warning is
-  reported instead.
+  **first** option, and the substitution is reported. Rewriting a value you
+  chose is never silent.
+- If the parameter has no options left, the stored value is left untouched -
+  clearing it could break a working install - and nothing is reported, for
+  the reason above: an empty list reads exactly like a parameter that only
+  carries a `description`, so a message here would fire on every described
+  parameter of every update.
 
 ### The desktop preset editor does not author this
 

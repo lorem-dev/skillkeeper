@@ -71,9 +71,6 @@ pub enum UpsertNote {
     /// option replaced it. Reported because silently rewriting a value the user
     /// chose is the failure this channel exists to prevent.
     OptionSubstituted { parameter: String, value: String },
-    /// A parameter declares an empty option set, so no substitution was
-    /// possible and the stored value was left untouched.
-    OptionsEmpty { parameter: String },
 }
 
 /// The result of an upsert: the rewritten config text, plus any notes. A note

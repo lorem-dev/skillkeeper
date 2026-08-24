@@ -1116,6 +1116,31 @@ describe('useSkillkeeperStore', () => {
       expect(first).toBeDefined();
       expect(first).toBe(second);
     });
+
+    // The def below is written the way the BACKEND writes one, not the way
+    // every other fixture in this file does: no `parameters` key at all,
+    // because `McpServerDef.parameters` is
+    // `skip_serializing_if = "BTreeMap::is_empty"` in Rust and the generated
+    // TypeScript cannot say so. That omission IS the scenario -- it is what
+    // every `mcp.yml` authored before `parameters:` existed sends, and what
+    // made `preset.def.parameters[param]` throw in the install modal, the
+    // update prompt, the skill-save modal and `descriptionSpanQueries`.
+    it('fills in the parameters map the backend omits when it is empty', async () => {
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue({
+        mcp: [{ ...repoAvailable, def: { name: 'docs', type: 'http', url: 'https://{host}/docs' } }],
+        warnings: [],
+      });
+
+      await useSkillkeeperStore.getState().refreshMcpPresets();
+
+      const repo = useSkillkeeperStore.getState().mcpPresets.find((p) => p.origin === 'repo');
+      // The scanner-derived `params` is non-empty while the metadata map is
+      // absent, which is exactly the combination that crashed -- a reader
+      // indexes the map once per param.
+      expect(repo?.params).toEqual(['host']);
+      expect(repo?.def.parameters).toEqual({});
+      expect(repo?.def.parameters['host']).toBeUndefined();
+    });
   });
 
   describe('deleteMcpPreset', () => {

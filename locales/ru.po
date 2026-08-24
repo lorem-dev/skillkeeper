@@ -1030,9 +1030,6 @@ msgstr "Выберите значение"
 msgid "mcp.note.optionSubstituted"
 msgstr "{parameter} больше не принимает сохранённое значение, поэтому вместо него было выбрано {value}."
 
-msgid "mcp.note.optionsEmpty"
-msgstr "{parameter} не имеет вариантов для выбора, поэтому его сохранённое значение осталось без изменений."
-
 msgid "mcp.error.invalidOption"
 msgstr "Выберите одно из предложенных значений."
 

@@ -218,10 +218,16 @@ pub fn invalid_option_values(
 /// Bring `values` back in line with `def`'s options, reporting every change.
 ///
 /// A stored value outside a non-empty option set is replaced by the FIRST
-/// option -- well defined because options are an ordered list. An empty option
-/// set leaves the value untouched: clearing it would break an installation that
-/// currently works, and an empty set is an authoring mistake rather than an
-/// instruction.
+/// option -- well defined because options are an ordered list.
+///
+/// A parameter with NO options is skipped in silence. It has nothing to
+/// migrate towards, and there is nothing true to say about it either: an empty
+/// option list cannot be told apart from an absent one once the YAML is parsed
+/// (see `de_options` in [`crate::mcp::model`] and the SK020 note in
+/// [`crate::mcp::lint`]), so "this parameter declares an empty option set" is a
+/// claim this code cannot make. Saying it anyway warned about every
+/// description-only entry -- the form the design's worked example teaches --
+/// on every single update.
 #[must_use]
 pub fn migrate_option_values(
     def: &McpServerDef,
@@ -229,24 +235,21 @@ pub fn migrate_option_values(
 ) -> Vec<UpsertNote> {
     let mut notes = Vec::new();
     for (name, parameter) in &def.parameters {
+        // Doubles as the empty-list guard: no first option, nothing to do.
+        let Some(first) = parameter.options.first() else {
+            continue;
+        };
         let Some(current) = values.get(name).cloned() else {
             continue;
         };
         if parameter.options.iter().any(|o| o.value == current) {
             continue;
         }
-        match parameter.options.first() {
-            Some(first) => {
-                values.insert(name.clone(), first.value.clone());
-                notes.push(UpsertNote::OptionSubstituted {
-                    parameter: name.clone(),
-                    value: first.value.clone(),
-                });
-            }
-            None => notes.push(UpsertNote::OptionsEmpty {
-                parameter: name.clone(),
-            }),
-        }
+        values.insert(name.clone(), first.value.clone());
+        notes.push(UpsertNote::OptionSubstituted {
+            parameter: name.clone(),
+            value: first.value.clone(),
+        });
     }
     notes
 }
@@ -638,21 +641,43 @@ mod tests {
     }
 
     #[test]
-    fn an_empty_option_set_leaves_the_stored_value_alone_and_warns() {
+    fn an_empty_option_set_leaves_the_stored_value_alone_and_says_nothing() {
         let def = choice_def(&[]);
         let mut v = values(&[("choice", "kept")]);
-        let notes = migrate_option_values(&def, &mut v);
+        assert_eq!(
+            migrate_option_values(&def, &mut v),
+            vec![],
+            "an empty list is indistinguishable from no options at all, so there is nothing true to report"
+        );
         assert_eq!(
             v.get("choice").map(String::as_str),
             Some("kept"),
             "clearing would break a working install"
         );
-        assert_eq!(
-            notes,
-            vec![UpsertNote::OptionsEmpty {
-                parameter: "choice".to_string()
-            }]
+    }
+
+    /// The form that made the old warning a guaranteed false positive: a
+    /// parameter carrying only a `description`, exactly as the design's worked
+    /// example teaches, deserializes to the same empty option list as an
+    /// authored-empty one. `parameters` is additive metadata -- adding a
+    /// description to a placeholder must not change what an update reports.
+    #[test]
+    fn a_description_only_parameter_is_never_reported_on_update() {
+        let mut parameters = BTreeMap::new();
+        parameters.insert(
+            "project_id".to_string(),
+            McpParameter {
+                description: Some("The numeric project id.".to_string()),
+                options: vec![],
+            },
         );
+        let def = McpServerDef {
+            parameters,
+            ..http_def()
+        };
+        let mut v = values(&[("project_id", "42")]);
+        assert_eq!(migrate_option_values(&def, &mut v), vec![]);
+        assert_eq!(v.get("project_id").map(String::as_str), Some("42"));
     }
 
     #[test]

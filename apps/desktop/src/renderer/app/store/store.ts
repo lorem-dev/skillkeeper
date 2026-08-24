@@ -28,6 +28,7 @@ import type {
   RepoInfo,
   ProjectInfo,
   McpServerDef,
+  RawMcpServerDef,
   McpPresetOrigin,
   McpInstall,
   McpBatch,
@@ -230,6 +231,32 @@ function omitEmptyForHash(rest: Omit<McpServerDef, 'name'>): Record<string, unkn
     out['oauth'] = oauthRest;
   }
   return out;
+}
+
+/**
+ * Fills in the `parameters` map the backend omits when it is empty, so a def
+ * that arrived over the bridge actually matches its own generated type before
+ * anything reads it.
+ *
+ * See {@link RawMcpServerDef} for why the wire and the type disagree. The
+ * omission is NOT a bug to fix on the Rust side: `parameters` is skipped from
+ * the canonical JSON too (that is what {@link omitEmptyForHash} mirrors), so
+ * teaching serde to always emit it would change the content hash of every def
+ * in existence and read every installed instance as out of date exactly once.
+ *
+ * This is the single normalization point, applied where bridge data becomes
+ * renderer state ({@link McpPreset}), rather than a guard at each of the reads
+ * downstream -- `preset.def.parameters[param]` is read in the install modal,
+ * the update prompt, the skill-save modal and `descriptionSpanQueries`, and
+ * the next such reader would be written without one. Everything the renderer
+ * builds itself (a manual preset, the preset editor) already carries the key.
+ *
+ * What this adds cannot move a hash: `hashMcpDefInRenderer` drops an empty
+ * `parameters` again before hashing, and a repo preset's hash comes from the
+ * backend regardless.
+ */
+export function normalizeMcpDefFromBridge(def: RawMcpServerDef): McpServerDef {
+  return { ...def, parameters: def.parameters ?? {} };
 }
 
 /** Content hash of an MCP server def, excluding `name` -- see the note on
@@ -1662,18 +1689,24 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       // logged, deduped, no toast. Without this a preset simply is not there,
       // which is indistinguishable from never having been declared.
       get().notifyResolveWarnings(available.warnings);
-      const repo: McpPreset[] = available.mcp.map((a) => ({
-        id: repoMcpPresetId(a.repoId, a.group, a.def.name),
-        origin: 'repo',
-        name: a.def.name,
-        def: a.def,
-        hash: a.hash,
-        params: scanMcpParams(a.def),
-        hasRules: a.def.rules !== undefined,
-        repoId: a.repoId,
-        remote: a.remote,
-        group: a.group,
-      }));
+      const repo: McpPreset[] = available.mcp.map((a) => {
+        // The one place a def crosses from the bridge into renderer state, so
+        // the one place the omitted-when-empty `parameters` key is filled in --
+        // see `normalizeMcpDefFromBridge`.
+        const def = normalizeMcpDefFromBridge(a.def);
+        return {
+          id: repoMcpPresetId(a.repoId, a.group, def.name),
+          origin: 'repo',
+          name: def.name,
+          def,
+          hash: a.hash,
+          params: scanMcpParams(def),
+          hasRules: def.rules !== undefined,
+          repoId: a.repoId,
+          remote: a.remote,
+          group: a.group,
+        };
+      });
       set({ mcpPresets: [...manual, ...repo] });
     })();
   },

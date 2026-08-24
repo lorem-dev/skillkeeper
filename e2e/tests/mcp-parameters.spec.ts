@@ -95,8 +95,14 @@ describe('mcp descriptions and options', () => {
    * substituted what the user typed and then reported the substitution
    * against the stored value.
    *
-   * These run last and mutate the tracked clone's `mcp.yml`, so they must
-   * stay after everything above that reads the pristine fixture.
+   * These mutate the tracked clone's `mcp.yml`, so they must stay after
+   * everything above that reads the pristine clone. They are NOT last in the
+   * file: Jest runs a describe's children in declaration order, so the
+   * trailing `it('reports SK018 and SK019 as warnings')` runs after this
+   * block. That one is safe because it lints `FIXTURE_DIR` -- the submodule
+   * checkout, never written by these tests -- and not the clone. Anything
+   * appended after this block that reads the clone must rewrite what it needs
+   * or move above it.
    */
   describe('update', () => {
     const CLONE_MCP = (): string => join(clone, 'mcp.yml');
