@@ -120,9 +120,7 @@ export function SettingsPage() {
               label={t('settings.animations')}
               options={animationOptions}
               value={config.general.animations}
-              onChange={(v) =>
-                void updateConfig({ general: { animations: v as 'fast' | 'normal' | 'off' } })
-              }
+              onChange={(v) => void updateConfig({ general: { animations: v as 'fast' | 'normal' | 'off' } })}
             />
           </FormRow>
         </FormSection>

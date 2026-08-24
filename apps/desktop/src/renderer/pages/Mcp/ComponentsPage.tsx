@@ -23,7 +23,19 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { Page, Toolbar, Button, ExpandingSearch, FilterButton, CollapsibleFilters, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
+import {
+  Page,
+  Toolbar,
+  Button,
+  ExpandingSearch,
+  FilterButton,
+  CollapsibleFilters,
+  SearchSummary,
+  TreeView,
+  Badge,
+  Tooltip,
+  MultiCombobox,
+} from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { fuzzyFilter, fade, useFilterToggle, useAnimationsEnabled, useMotion } from '@/shared/lib';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
@@ -83,9 +95,7 @@ export function ComponentsPage() {
     () =>
       repoFilter.length === 0
         ? mcpPresets
-        : mcpPresets.filter(
-            (p) => p.origin === 'manual' || (p.repoId !== undefined && repoFilter.includes(p.repoId)),
-          ),
+        : mcpPresets.filter((p) => p.origin === 'manual' || (p.repoId !== undefined && repoFilter.includes(p.repoId))),
     [mcpPresets, repoFilter],
   );
 
@@ -177,9 +187,7 @@ export function ComponentsPage() {
   // time), mirroring McpPage: union in the search-match branches while
   // searching, without collapsing anything the user had open.
   const baseExpandedIds = persistedExpandedIds ?? rootIds(baseTree);
-  const expandedIds = searching
-    ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])]
-    : baseExpandedIds;
+  const expandedIds = searching ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])] : baseExpandedIds;
 
   const actions = (
     <>

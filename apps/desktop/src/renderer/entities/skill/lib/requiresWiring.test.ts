@@ -18,14 +18,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentKind, AvailableSkill, InstallManifest } from '@/services/bridge';
 import { installedLeafIds, projectSkillKey, repoSkillKey } from './skillTree';
-import {
-  buildGraph,
-  buildScopedGraph,
-  brokenLeaves,
-  contains,
-  pendingBrokenLeaves,
-  referenceKeys,
-} from './requires';
+import { buildGraph, buildScopedGraph, brokenLeaves, contains, pendingBrokenLeaves, referenceKeys } from './requires';
 import { applyCheckChange, deriveSelection, dropMissing, restore } from './selection';
 import { buildProjectPlan } from './applyPlan';
 
@@ -63,12 +56,7 @@ function mk(path: string, requires?: string[]): AvailableSkill {
     ...(requires !== undefined ? { requires } : {}),
   };
 }
-function instIn(
-  scopeId: string,
-  path: string,
-  agents: readonly AgentKind[],
-  requires?: string[],
-): InstallManifest[] {
+function instIn(scopeId: string, path: string, agents: readonly AgentKind[], requires?: string[]): InstallManifest[] {
   const { group, name } = parts(path);
   return agents.map((agent) => ({
     skillId: { ...(group !== undefined ? { group } : {}), name },
@@ -141,7 +129,12 @@ describe('skills page selection wiring', () => {
     expect(new Set(after.dependency)).toEqual(new Set([pk('g/b'), pk('g/c')]));
     // Which is a real install, not just a tint.
     const plan = buildProjectPlan(PROJ, after.shown, installs, ['claude']);
-    expect(plan.rows.filter((r) => r.action === 'install').map((r) => r.ref.name).sort()).toEqual(['b', 'c']);
+    expect(
+      plan.rows
+        .filter((r) => r.action === 'install')
+        .map((r) => r.ref.name)
+        .sort(),
+    ).toEqual(['b', 'c']);
   });
 
   it('management: unchecking a repaired leaf clears the pending repair', () => {
@@ -188,7 +181,11 @@ describe('skills page selection wiring', () => {
   });
 
   it('management: unchecking an installed dependency keeps the installed dependent', () => {
-    const installs = [...inst('g/a', ['claude'], ['g/b']), ...inst('g/b', ['claude'], ['g/c']), ...inst('g/c', ['claude'])];
+    const installs = [
+      ...inst('g/a', ['claude'], ['g/b']),
+      ...inst('g/b', ['claude'], ['g/c']),
+      ...inst('g/c', ['claude']),
+    ];
     const graph = buildScopedGraph([PROJ], catalog, installs);
     const baseline = installedLeafIds(installs);
     const shown = deriveSelection({ explicit: baseline, restored: [] }, baseline, graph).shown;
@@ -214,7 +211,11 @@ describe('skills page selection wiring', () => {
     // The user's report: with the chain installed, unchecking the MIDDLE leaf
     // must warn on the head straight away -- and the warning's click needs no
     // mechanism of its own, only the `restore` the after-apply marker uses.
-    const installs = [...inst('g/a', ['claude'], ['g/b']), ...inst('g/b', ['claude'], ['g/c']), ...inst('g/c', ['claude'])];
+    const installs = [
+      ...inst('g/a', ['claude'], ['g/b']),
+      ...inst('g/b', ['claude'], ['g/c']),
+      ...inst('g/c', ['claude']),
+    ];
     const graph = buildScopedGraph([PROJ], catalog, installs);
     const baseline = installedLeafIds(installs, [PROJ]);
     const shown = deriveSelection({ explicit: baseline, restored: [] }, baseline, graph).shown;
@@ -251,10 +252,7 @@ describe('skills page selection wiring', () => {
     // no regard for the baseline `restore` pulled it back from).
     expect(after.dependency).toEqual([]);
     // And with the removal cancelled there is nothing left to warn about.
-    expect(
-      pendingBrokenLeaves({ scopeId: PROJ, available: catalog, installs, selected: after.shown })
-        .size,
-    ).toBe(0);
+    expect(pendingBrokenLeaves({ scopeId: PROJ, available: catalog, installs, selected: after.shown }).size).toBe(0);
     // Nor is it an install: 'g/b' is already there, so the plan is empty.
     expect(buildProjectPlan(PROJ, after.shown, installs, ['claude']).rows).toEqual([]);
   });
@@ -289,9 +287,9 @@ describe('skills page selection wiring', () => {
       deriveSelection({ explicit: baseline, restored: [pk('g/a')] }, baseline, graph),
     ).shown;
     const plan = buildProjectPlan(PROJ, shown, installs, ['claude', 'codex']);
-    expect(plan.rows.map((r) => ({ name: r.ref.name, action: r.action, agents: r.agents }))).toEqual(
-      [{ name: 'b', action: 'install', agents: ['codex'] }],
-    );
+    expect(plan.rows.map((r) => ({ name: r.ref.name, action: r.action, agents: r.agents }))).toEqual([
+      { name: 'b', action: 'install', agents: ['codex'] },
+    ]);
   });
 
   it('management: a dependency that exists nowhere is not repairable', () => {
@@ -320,10 +318,7 @@ describe('skills page selection wiring', () => {
     const baseline = installedLeafIds(installs, scopeIds);
 
     // The page's derivation, verbatim: hand picks seeded from the baseline.
-    const shown = dropMissing(
-      graph,
-      deriveSelection({ explicit: baseline, restored: [] }, baseline, graph),
-    ).shown;
+    const shown = dropMissing(graph, deriveSelection({ explicit: baseline, restored: [] }, baseline, graph)).shown;
     const shownSet = new Set(shown);
     // `pendingRemove` is exactly this difference.
     expect(baseline.filter((id) => !shownSet.has(id))).toEqual([]);

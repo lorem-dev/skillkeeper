@@ -59,12 +59,7 @@ export function TasksPage() {
               <Button variant="secondary" onClick={clearFinishedTasks} disabled={!hasFinished}>
                 {t('tasks.clear')}
               </Button>
-              <Button
-                variant="plain"
-                className="sk-tasks__close"
-                onClick={closeTasks}
-                aria-label={t('common.close')}
-              >
+              <Button variant="plain" className="sk-tasks__close" onClick={closeTasks} aria-label={t('common.close')}>
                 <Icon name="close" />
               </Button>
             </div>

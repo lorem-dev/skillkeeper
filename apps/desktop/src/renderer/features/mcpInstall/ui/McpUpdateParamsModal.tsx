@@ -92,9 +92,7 @@ export function McpUpdateParamsModal({
     void bridgeClient.openExternalUrl(url);
   }
 
-  const allFilled = missingParams.every((param) =>
-    paramValueValid(preset.def.parameters[param], values[param] ?? ''),
-  );
+  const allFilled = missingParams.every((param) => paramValueValid(preset.def.parameters[param], values[param] ?? ''));
 
   function confirm(): void {
     if (!allFilled) return;

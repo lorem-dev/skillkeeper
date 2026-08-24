@@ -19,10 +19,7 @@ import { describe, it, expect } from 'vitest';
 import type { McpPresetDraft } from './validate';
 import { validatePreset } from './validate';
 
-const MODAL_SOURCE = readFileSync(
-  new URL('../ui/McpEditModal.tsx', import.meta.url),
-  'utf8',
-);
+const MODAL_SOURCE = readFileSync(new URL('../ui/McpEditModal.tsx', import.meta.url), 'utf8');
 
 function draft(over: Partial<McpPresetDraft>): McpPresetDraft {
   return {
@@ -58,9 +55,8 @@ describe('McpEditModal renders every oauth validation message', () => {
 
       // Indexed fields (`scopes.0`) are rendered through `rowErrorFor`, which
       // matches on the prefix because the index is not known up front.
-      const site = field.includes('.') && /\.\d+$/.test(field)
-        ? `rowErrorFor('${field.split('.')[0]!}')`
-        : `errorFor('${field}')`;
+      const site =
+        field.includes('.') && /\.\d+$/.test(field) ? `rowErrorFor('${field.split('.')[0]!}')` : `errorFor('${field}')`;
       expect(MODAL_SOURCE).toContain(`sk-mcp-edit__error">{${site}}`);
     });
   }

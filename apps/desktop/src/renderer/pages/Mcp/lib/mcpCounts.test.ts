@@ -48,10 +48,7 @@ describe('countInstalledLeaves', () => {
       ['i2', { kind: 'installed', installs: [], updatable: true }],
       ['u1', { kind: 'unlinked', installs: [] }],
     ]);
-    const tree = branch('root', [
-      branch('group', [leaf('i1'), leaf('u1')]),
-      leaf('i2'),
-    ]);
+    const tree = branch('root', [branch('group', [leaf('i1'), leaf('u1')]), leaf('i2')]);
     expect(countInstalledLeaves(tree, items)).toBe(2);
   });
 
@@ -61,9 +58,7 @@ describe('countInstalledLeaves', () => {
   });
 
   it('rolls an installed row two group levels down up to the outermost branch', () => {
-    const items = new Map<string, McpTreeItem>([
-      ['i1', { kind: 'installed', installs: [], updatable: false }],
-    ]);
+    const items = new Map<string, McpTreeItem>([['i1', { kind: 'installed', installs: [], updatable: false }]]);
     const tree = branch('platform', [branch('platform/lint', [leaf('i1')])]);
     expect(countInstalledLeaves(tree, items)).toBe(1);
   });

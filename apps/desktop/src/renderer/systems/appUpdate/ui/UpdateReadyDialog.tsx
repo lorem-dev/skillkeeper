@@ -101,7 +101,9 @@ export function UpdateReadyDialog({ platform = bridgeClient.platform }: UpdateRe
       <p className="sk-update-hint">{t('appUpdate.readyHint')}</p>
       {showMacFallback && (
         <div className="sk-update-fallback">
-          <p className="sk-update-hint">{t('appUpdate.installFailedFallbackHint', { action: t('appUpdate.installNow') })}</p>
+          <p className="sk-update-hint">
+            {t('appUpdate.installFailedFallbackHint', { action: t('appUpdate.installNow') })}
+          </p>
           <div className="sk-update-fallback-command-row">
             <pre className="sk-update-fallback-command">{MACOS_QUARANTINE_FALLBACK_COMMAND}</pre>
             <Button

@@ -27,12 +27,7 @@ export interface CollapsibleFiltersProps {
   readonly children: ReactNode;
 }
 
-export function CollapsibleFilters({
-  open,
-  className,
-  onFocusWithinChange,
-  children,
-}: CollapsibleFiltersProps) {
+export function CollapsibleFilters({ open, className, onFocusWithinChange, children }: CollapsibleFiltersProps) {
   return (
     <div
       className={cx('sk-collapsible-filters', open && 'sk-collapsible-filters--open')}

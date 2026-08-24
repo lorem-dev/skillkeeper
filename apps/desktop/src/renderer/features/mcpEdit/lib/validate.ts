@@ -71,11 +71,7 @@ function isHttpLike(type: McpTransportDraft): boolean {
  *  reject a block on a stdio preset without complaining about an untouched
  *  section that merely exists in the draft. */
 function hasAnyOauth(oauth: McpOauthDraft): boolean {
-  return (
-    oauth.clientId.trim() !== '' ||
-    oauth.callbackPort.trim() !== '' ||
-    oauth.scopes.some((s) => s.trim() !== '')
-  );
+  return oauth.clientId.trim() !== '' || oauth.callbackPort.trim() !== '' || oauth.scopes.some((s) => s.trim() !== '');
 }
 
 /**

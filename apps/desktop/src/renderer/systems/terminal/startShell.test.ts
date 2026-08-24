@@ -45,9 +45,7 @@ describe('startWithRetry', () => {
 
 describe('errorText', () => {
   it('uses an Error message', () => {
-    expect(errorText(new Error('cannot open a pseudo-terminal'))).toBe(
-      'cannot open a pseudo-terminal',
-    );
+    expect(errorText(new Error('cannot open a pseudo-terminal'))).toBe('cannot open a pseudo-terminal');
   });
 
   it('stringifies a non-Error rejection', () => {

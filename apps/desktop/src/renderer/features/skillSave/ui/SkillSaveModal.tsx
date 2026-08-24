@@ -72,10 +72,7 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
   // The scopes a save reviews: the global scope first, then every tracked
   // project -- mirrors the tree builders' scope ordering.
   const scopes = useMemo(
-    () => [
-      { id: GLOBAL_SCOPE_ID, name: t('scope.global') },
-      ...projects.map((p) => ({ id: p.id, name: p.name })),
-    ],
+    () => [{ id: GLOBAL_SCOPE_ID, name: t('scope.global') }, ...projects.map((p) => ({ id: p.id, name: p.name }))],
     [projects, t],
   );
 
@@ -271,12 +268,7 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
   }
 
   return (
-    <Modal
-      open={open}
-      onClose={busy ? () => {} : onClose}
-      title={t('skills.save.title')}
-      className="sk-save-modal"
-    >
+    <Modal open={open} onClose={busy ? () => {} : onClose} title={t('skills.save.title')} className="sk-save-modal">
       <div className="sk-save-modal__body">
         <Table
           columns={columns}

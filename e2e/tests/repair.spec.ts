@@ -22,9 +22,7 @@ describe('verify and repair', () => {
     sandbox.addFixtureRepo();
     project = sandbox.project();
     for (const id of ['documented-skill', 'minimal-skill', 'json-hooks-skill']) {
-      sandbox.runOk([
-        'skill', 'install', id, '--agent', 'claude', '--project', project, '--allow-hooks',
-      ]);
+      sandbox.runOk(['skill', 'install', id, '--agent', 'claude', '--project', project, '--allow-hooks']);
     }
   });
 
@@ -34,11 +32,11 @@ describe('verify and repair', () => {
 
   it('reports each drift state, then repairs to a clean verify', () => {
     const dir = skillDir('documented-skill');
-    writeFileSync(join(dir, 'reference', 'notes.md'), 'drifted\n');   // modified
-    rmSync(join(dir, 'RULES.md'));                                    // missing
-    writeFileSync(join(dir, 'unrecorded.txt'), 'junk\n');             // extraneous
+    writeFileSync(join(dir, 'reference', 'notes.md'), 'drifted\n'); // modified
+    rmSync(join(dir, 'RULES.md')); // missing
+    writeFileSync(join(dir, 'unrecorded.txt'), 'junk\n'); // extraneous
     mkdirSync(join(dir, 'stray'), { recursive: true });
-    writeFileSync(join(dir, 'stray', 'deep.txt'), 'junk\n');          // nested extraneous
+    writeFileSync(join(dir, 'stray', 'deep.txt'), 'junk\n'); // nested extraneous
 
     const before = sandbox.run(['skill', 'verify', 'documented-skill'], { cwd: project });
     expect(before.status).not.toBe(0);
@@ -86,9 +84,7 @@ describe('verify and repair', () => {
 
     expect(existsSync(join(project, '.claude', 'skills', 'bystander.txt'))).toBe(true);
     // Every sibling skill is intact, files and all.
-    expect(readdirSync(join(project, '.claude', 'skills')).sort()).toEqual(
-      expect.arrayContaining(before),
-    );
+    expect(readdirSync(join(project, '.claude', 'skills')).sort()).toEqual(expect.arrayContaining(before));
     expect(existsSync(join(skillDir('minimal-skill'), 'SKILL.md'))).toBe(true);
     expect(existsSync(join(skillDir('json-hooks-skill'), 'SKILL.md'))).toBe(true);
   });
@@ -100,9 +96,7 @@ describe('verify and repair', () => {
     sandbox.runOk(['skill', 'uninstall', 'json-hooks-skill'], { cwd: project });
 
     // Both owned nodes are gone, and the arrays they lived in were pruned.
-    const settings = readJson<{ hooks?: Record<string, unknown> }>(
-      join(project, '.claude', 'settings.json'),
-    );
+    const settings = readJson<{ hooks?: Record<string, unknown> }>(join(project, '.claude', 'settings.json'));
     expect(settings.hooks ?? {}).toEqual({});
     expect(existsSync(skillDir('json-hooks-skill'))).toBe(false);
 

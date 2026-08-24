@@ -26,7 +26,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ jobs:
       - name: Set up Node.js 22
         uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          node-version: '24'
           # This job only runs node scripts/check-version.mjs and never installs
           # deps. Disable setup-node's package-manager cache: it otherwise
           # auto-detects the pnpm packageManager field and fails locating pnpm
@@ -96,32 +96,32 @@ jobs:
           # macOS Apple Silicon
           - os: macos-latest
             target: aarch64-apple-darwin
-            args: "--target aarch64-apple-darwin"
+            args: '--target aarch64-apple-darwin'
           # macOS Intel (cross-compiled on the arm64 runner)
           - os: macos-latest
             target: x86_64-apple-darwin
-            args: "--target x86_64-apple-darwin"
+            args: '--target x86_64-apple-darwin'
           # Linux x64. ubuntu-22.04 keeps the AppImage's glibc floor low for
           # broader distro compatibility.
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            args: ""
+            args: ''
           # Linux arm64, built natively on the arm64 runner (free for public
           # repositories). Same 22.04 image as the x64 leg, so both AppImages
           # share a glibc floor.
           - os: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
-            args: ""
+            args: ''
           # Windows x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            args: ""
+            args: ''
           # Windows arm64 (cross-compiled on the x64 runner, as macOS Intel is).
           # Only the Rust target changes; Node, pnpm and the frontend build stay
           # on the x64 image.
           - os: windows-latest
             target: aarch64-pc-windows-msvc
-            args: "--target aarch64-pc-windows-msvc"
+            args: '--target aarch64-pc-windows-msvc'
 
     steps:
       - name: Checkout repository
@@ -171,7 +171,7 @@ jobs:
           # 7.7 GB of the repository's 10 GB budget across a handful of release
           # candidates, which evicted the CI caches that do get reused.
           save-if: false
-          workspaces: ". -> target"
+          workspaces: '. -> target'
 
       - name: Enable pnpm via corepack
         run: corepack enable
@@ -179,7 +179,7 @@ jobs:
       - name: Set up Node.js 22 with pnpm cache
         uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          node-version: '24'
           cache: pnpm
 
       - name: Install dependencies (frozen lockfile)
@@ -475,7 +475,7 @@ jobs:
       - name: Set up Node.js 22
         uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          node-version: '24'
           # This job runs only node scripts (release notes) plus gh/gpg and
           # never installs deps. Disable the package-manager cache so setup-node
           # does not try to locate pnpm before corepack is enabled.

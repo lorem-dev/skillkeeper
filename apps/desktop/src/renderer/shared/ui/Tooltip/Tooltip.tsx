@@ -53,8 +53,7 @@ const bubble = {
   exit: { opacity: 0, scale: 0.96, transition: { duration: SK_DURATION.fast } },
 };
 
-const clamp = (value: number, min: number, max: number): number =>
-  Math.max(min, Math.min(max, value));
+const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
 /** Room (px) between the trigger rect and each window edge. */
 function roomOn(side: Side, trigger: DOMRect): number {

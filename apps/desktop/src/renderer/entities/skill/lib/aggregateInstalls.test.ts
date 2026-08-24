@@ -29,8 +29,11 @@ describe('aggregateInstalls', () => {
   it('keeps the latest installedAt and detects hooks', () => {
     const out = aggregateInstalls([
       mk({ name: 'a', installedAt: '2026-01-01T00:00:00.000Z' }),
-      mk({ name: 'a', installedAt: '2026-03-01T00:00:00.000Z',
-           hookEdits: [{ kind: 'file', relPath: 'h', sha256: 'x', executable: false }] }),
+      mk({
+        name: 'a',
+        installedAt: '2026-03-01T00:00:00.000Z',
+        hookEdits: [{ kind: 'file', relPath: 'h', sha256: 'x', executable: false }],
+      }),
     ]);
     expect(out[0]!.installedAt).toBe('2026-03-01T00:00:00.000Z');
     expect(out[0]!.hasHooks).toBe(true);

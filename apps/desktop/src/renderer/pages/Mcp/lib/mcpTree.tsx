@@ -324,9 +324,7 @@ export function buildMcpProjectTree(
 
   const projectScopes = projects.map((p) => ({ id: p.id, name: p.name, global: false }));
   const scopes =
-    globalLabel === null
-      ? projectScopes
-      : [{ id: GLOBAL_SCOPE_ID, name: globalLabel, global: true }, ...projectScopes];
+    globalLabel === null ? projectScopes : [{ id: GLOBAL_SCOPE_ID, name: globalLabel, global: true }, ...projectScopes];
 
   const projectNodes: TreeNode[] = [];
   for (const scope of scopes) {
@@ -380,7 +378,13 @@ export function buildMcpProjectTree(
         }),
       });
 
-      repoChildren.push({ id: mcpProjectRepoNodeId(scope.id, repo.id), label: repo.name, icon: repoIcon, selectable: false, children });
+      repoChildren.push({
+        id: mcpProjectRepoNodeId(scope.id, repo.id),
+        label: repo.name,
+        icon: repoIcon,
+        selectable: false,
+        children,
+      });
     }
 
     // Installed instances of a manual preset (identity.local === preset id):

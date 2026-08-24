@@ -23,7 +23,19 @@ import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
 import { GLOBAL_SCOPE_ID } from '@/domain';
 import type { Project } from '@/services/bridge';
-import { Page, Toolbar, Button, ExpandingSearch, FilterButton, CollapsibleFilters, SearchSummary, TreeView, Badge, Tooltip, MultiCombobox } from '@/shared/ui';
+import {
+  Page,
+  Toolbar,
+  Button,
+  ExpandingSearch,
+  FilterButton,
+  CollapsibleFilters,
+  SearchSummary,
+  TreeView,
+  Badge,
+  Tooltip,
+  MultiCombobox,
+} from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { useFilterToggle } from '@/shared/lib';
 import { filterTree, collectBranchIds, rootIds, countLeaves } from '@/entities/skill';
@@ -83,13 +95,11 @@ export function ManagementPage() {
   };
 
   const shownRepos = useMemo(
-    () =>
-      repoFilter.length === 0 ? repositories : repositories.filter((r) => repoFilter.includes(r.id)),
+    () => (repoFilter.length === 0 ? repositories : repositories.filter((r) => repoFilter.includes(r.id))),
     [repositories, repoFilter],
   );
   const shownProjects = useMemo(
-    () =>
-      projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id)),
+    () => (projectFilter.length === 0 ? projects : projects.filter((p) => projectFilter.includes(p.id))),
     [projects, projectFilter],
   );
   // The user-wide scope is one more entry in the projects filter, so it narrows
@@ -100,13 +110,7 @@ export function ManagementPage() {
 
   const treeResult = useMemo(
     () =>
-      buildMcpProjectTree(
-        mcpPresets,
-        mcpInstalls,
-        shownProjects,
-        shownRepos,
-        showGlobal ? t('scope.global') : null,
-      ),
+      buildMcpProjectTree(mcpPresets, mcpInstalls, shownProjects, shownRepos, showGlobal ? t('scope.global') : null),
     [mcpPresets, mcpInstalls, shownProjects, shownRepos, showGlobal, t],
   );
   const { nodes: baseTree, items } = treeResult;
@@ -220,9 +224,7 @@ export function ManagementPage() {
   // time), mirroring McpPage: union in the search-match branches while
   // searching, without collapsing anything the user had open.
   const baseExpandedIds = persistedExpandedIds ?? rootIds(baseTree);
-  const expandedIds = searching
-    ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])]
-    : baseExpandedIds;
+  const expandedIds = searching ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])] : baseExpandedIds;
 
   const actions = (
     <>

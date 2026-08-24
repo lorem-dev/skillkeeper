@@ -145,7 +145,5 @@ export function scopesNeedingAgents(
     if (installed.has(key)) continue;
     wouldInstall.add(parseProjectSkillKey(key).projectId);
   }
-  return scopeIds.filter(
-    (id) => wouldInstall.has(id) && (agentsByScope[id]?.length ?? 0) === 0,
-  );
+  return scopeIds.filter((id) => wouldInstall.has(id) && (agentsByScope[id]?.length ?? 0) === 0);
 }

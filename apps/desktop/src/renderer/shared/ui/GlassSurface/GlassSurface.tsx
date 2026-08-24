@@ -29,9 +29,7 @@ export function GlassSurface({ children, className, borderBrightness, ...options
   // callers can still override `blur` via props.
   useGlassRefraction(ref, { blur: 4, ...options });
   const style =
-    borderBrightness !== undefined
-      ? ({ '--sk-glass-border-strength': borderBrightness } as CSSProperties)
-      : undefined;
+    borderBrightness !== undefined ? ({ '--sk-glass-border-strength': borderBrightness } as CSSProperties) : undefined;
   return (
     <div ref={ref} className={cx('sk-glass-surface', className)} style={style}>
       {children}

@@ -57,13 +57,7 @@ export function SshUnlockBlocker() {
   return createPortal(
     <AnimatePresence>
       {open && (
-        <motion.div
-          className="sk-ssh-block"
-          variants={fade}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-        >
+        <motion.div className="sk-ssh-block" variants={fade} initial="initial" animate="animate" exit="exit">
           <p className="sk-ssh-block__note" role="status">
             {t('ssh.unlock.blocking')}
           </p>

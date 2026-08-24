@@ -26,9 +26,7 @@ const repo: Repository = {
   localPath: '/tmp/a',
 };
 
-const projects: Project[] = [
-  { id: 'p1', path: '/work/one', name: 'One', addedAt: '2026-01-01T00:00:00.000Z' },
-];
+const projects: Project[] = [{ id: 'p1', path: '/work/one', name: 'One', addedAt: '2026-01-01T00:00:00.000Z' }];
 
 const available: AvailableSkill[] = [{ repoId: 'r1', name: 'fmt' } as AvailableSkill];
 
@@ -75,11 +73,8 @@ describe('buildProjectModel', () => {
   const hashed = (contentHash: string): AvailableSkill =>
     ({ repoId: 'r1', name: 'fmt', contentHash }) as AvailableSkill;
 
-  const withHash = (
-    scope: 'project' | 'global',
-    contentHash: string,
-    projectId?: string,
-  ): InstallManifest => ({ ...manifest(scope, projectId), contentHash }) as InstallManifest;
+  const withHash = (scope: 'project' | 'global', contentHash: string, projectId?: string): InstallManifest =>
+    ({ ...manifest(scope, projectId), contentHash }) as InstallManifest;
 
   const globalLeaf = projectSkillKey(GLOBAL_SCOPE_ID, 'r1', undefined, 'fmt');
   const projectLeaf = projectSkillKey('p1', 'r1', undefined, 'fmt');
@@ -161,15 +156,11 @@ describe('buildProjectModel', () => {
 
 describe('installedLeafIds', () => {
   it('buckets a global manifest under the reserved id', () => {
-    expect(installedLeafIds([manifest('global')])).toEqual([
-      projectSkillKey(GLOBAL_SCOPE_ID, 'r1', undefined, 'fmt'),
-    ]);
+    expect(installedLeafIds([manifest('global')])).toEqual([projectSkillKey(GLOBAL_SCOPE_ID, 'r1', undefined, 'fmt')]);
   });
 
   it('leaves a project manifest keyed by its project', () => {
-    expect(installedLeafIds([manifest('project', 'p1')])).toEqual([
-      projectSkillKey('p1', 'r1', undefined, 'fmt'),
-    ]);
+    expect(installedLeafIds([manifest('project', 'p1')])).toEqual([projectSkillKey('p1', 'r1', undefined, 'fmt')]);
   });
 
   it('skips a project manifest with no project id', () => {
@@ -239,10 +230,7 @@ describe('buildRepoTree with nested groups', () => {
   });
 
   it('shares a branch between a one-level and a three-level skill', () => {
-    const [repoNode] = buildRepoTree(
-      [skill('clippy', 'platform/lint/rust'), skill('style', 'platform')],
-      [r1],
-    );
+    const [repoNode] = buildRepoTree([skill('clippy', 'platform/lint/rust'), skill('style', 'platform')], [r1]);
 
     expect(repoNode!.children).toHaveLength(1);
     // Inside `platform`: the `lint` branch, then `platform`'s own leaf.
@@ -273,14 +261,7 @@ describe('buildProjectModel update roll-up', () => {
   };
 
   it('rolls an update up through every ancestor group node', () => {
-    const model = buildProjectModel(
-      [skill('clippy', 'a/b/c', 'sha256:new')],
-      [r1],
-      [r1],
-      [project],
-      [installed],
-      null,
-    );
+    const model = buildProjectModel([skill('clippy', 'a/b/c', 'sha256:new')], [r1], [r1], [project], [installed], null);
 
     const ids = [...model.updatesByNode.keys()];
     expect(ids).toContain(projectGroupNodeId('p1', 'r1', 'a'));

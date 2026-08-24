@@ -90,12 +90,7 @@ export function WindowControls({
   const l = { ...DEFAULT_LABELS, ...labels };
   return (
     <div className={cx('sk-winctl', `sk-winctl--${variant}`, className)}>
-      <button
-        type="button"
-        className="sk-winctl__btn sk-winctl__btn--min"
-        aria-label={l.minimize}
-        onClick={onMinimize}
-      >
+      <button type="button" className="sk-winctl__btn sk-winctl__btn--min" aria-label={l.minimize} onClick={onMinimize}>
         <MinimizeGlyph />
       </button>
       <button
@@ -106,12 +101,7 @@ export function WindowControls({
       >
         {maximized ? <RestoreGlyph /> : <MaximizeGlyph />}
       </button>
-      <button
-        type="button"
-        className="sk-winctl__btn sk-winctl__btn--close"
-        aria-label={l.close}
-        onClick={onClose}
-      >
+      <button type="button" className="sk-winctl__btn sk-winctl__btn--close" aria-label={l.close} onClick={onClose}>
         <CloseGlyph />
       </button>
     </div>

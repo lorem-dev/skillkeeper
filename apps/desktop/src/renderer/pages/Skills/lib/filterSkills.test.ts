@@ -3,8 +3,14 @@ import type { InstalledSkillView } from '@/entities/skill';
 import { filterSkills } from './filterSkills';
 
 const v = (over: Partial<InstalledSkillView> & { key: string; name: string }): InstalledSkillView => ({
-  agents: ['claude'], scopes: ['global'], hasHooks: false, installedAt: '2026-01-01',
-  fileCount: 0, hookCount: 0, destinationRoot: '/d', ...over,
+  agents: ['claude'],
+  scopes: ['global'],
+  hasHooks: false,
+  installedAt: '2026-01-01',
+  fileCount: 0,
+  hookCount: 0,
+  destinationRoot: '/d',
+  ...over,
 });
 
 describe('filterSkills', () => {

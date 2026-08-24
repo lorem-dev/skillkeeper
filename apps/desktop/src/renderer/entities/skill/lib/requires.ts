@@ -20,13 +20,7 @@
  */
 import type { AgentKind, AvailableSkill, InstallManifest } from '@/services/bridge';
 import { scopeIdOf } from '@/domain';
-import {
-  parseProjectSkillKey,
-  parseRepoSkillKey,
-  parseSkillKeyTail,
-  projectSkillKey,
-  repoSkillKey,
-} from './skillTree';
+import { parseProjectSkillKey, parseRepoSkillKey, parseSkillKeyTail, projectSkillKey, repoSkillKey } from './skillTree';
 
 /** A skill's reference form: `group/name`, or `name` when ungrouped. */
 export function skillPath(group: string | undefined, name: string): string {
@@ -214,10 +208,7 @@ function buildFromEdges(edges: Iterable<Edge>): RequiresGraph {
  * gone is absent from the catalog, so without its recorded `requires` its
  * broken state could never be detected.
  */
-export function buildGraph(
-  skills: readonly AvailableSkill[],
-  installs: readonly InstallManifest[],
-): RequiresGraph {
+export function buildGraph(skills: readonly AvailableSkill[], installs: readonly InstallManifest[]): RequiresGraph {
   const edges: Edge[] = [];
   for (const s of skills) {
     edges.push([repoSkillKey(s.repoId, s.group, s.name), keysOf(s.repoId, s.requires ?? [])]);
@@ -225,10 +216,7 @@ export function buildGraph(
   for (const m of installs) {
     const repoId = m.sourceRepoId;
     if (repoId === undefined) continue;
-    edges.push([
-      repoSkillKey(repoId, m.skillId.group, m.skillId.name),
-      keysOf(repoId, m.requires ?? []),
-    ]);
+    edges.push([repoSkillKey(repoId, m.skillId.group, m.skillId.name), keysOf(repoId, m.requires ?? [])]);
   }
   return buildFromEdges(edges);
 }

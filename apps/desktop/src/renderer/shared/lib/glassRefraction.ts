@@ -109,7 +109,6 @@ export function supportsBackdropUrl(): boolean {
   }
   const el = document.createElement('div');
   el.style.cssText = 'backdrop-filter: url(#test)';
-  urlBackdropSupport =
-    el.style.backdropFilter === 'url(#test)' || el.style.backdropFilter === 'url("#test")';
+  urlBackdropSupport = el.style.backdropFilter === 'url(#test)' || el.style.backdropFilter === 'url("#test")';
   return urlBackdropSupport;
 }

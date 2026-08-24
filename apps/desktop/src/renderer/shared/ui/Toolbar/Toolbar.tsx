@@ -24,24 +24,14 @@ export interface ToolbarProps {
   readonly className?: string;
 }
 
-export function Toolbar({
-  title,
-  titleAdornment,
-  leading,
-  trailing,
-  separator = false,
-  className,
-}: ToolbarProps) {
+export function Toolbar({ title, titleAdornment, leading, trailing, separator = false, className }: ToolbarProps) {
   return (
     // Every structural slot of the toolbar doubles as a macOS window-drag handle
     // (no-op elsewhere), so the whole top strip drags the window. Tauri starts a
     // drag only when the *pressed* element itself is tagged, so the interactive
     // children inside the slots (buttons, inputs, selects) keep working -- only
     // the slots' own background/gaps drag.
-    <div
-      className={cx('sk-toolbar', separator && 'sk-toolbar--separator', className)}
-      {...dragRegion()}
-    >
+    <div className={cx('sk-toolbar', separator && 'sk-toolbar--separator', className)} {...dragRegion()}>
       {leading !== undefined && (
         <div className="sk-toolbar__leading" {...dragRegion()}>
           {leading}

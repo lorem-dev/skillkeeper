@@ -31,22 +31,14 @@ export function interpolate(template: string, vars: Vars): string {
  *
  * Lookup order for a key: `primary` -> `fallback` -> the raw key string.
  */
-export function createTranslatorFrom(
-  primary: Partial<Catalog>,
-  fallback: Partial<Catalog>,
-  lang: Lang,
-): Translator {
+export function createTranslatorFrom(primary: Partial<Catalog>, fallback: Partial<Catalog>, lang: Lang): Translator {
   const pluralRules = new Intl.PluralRules(lang);
 
   const has = (key: string): boolean =>
-    (primary as Record<string, string>)[key] !== undefined ||
-    (fallback as Record<string, string>)[key] !== undefined;
+    (primary as Record<string, string>)[key] !== undefined || (fallback as Record<string, string>)[key] !== undefined;
 
   const t = function t(key: MessageKey | (string & {}), vars?: Vars): string {
-    const raw =
-      (primary as Record<string, string>)[key] ??
-      (fallback as Record<string, string>)[key] ??
-      key;
+    const raw = (primary as Record<string, string>)[key] ?? (fallback as Record<string, string>)[key] ?? key;
     return vars !== undefined ? interpolate(raw, vars) : raw;
   } as Translator;
 

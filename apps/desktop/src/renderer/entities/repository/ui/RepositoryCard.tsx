@@ -103,12 +103,7 @@ export function RepositoryCard({
     indicatorKey = 'error';
     indicator = (
       <Tooltip content={errorLabel}>
-        <button
-          type="button"
-          className="sk-repo-card__error-dot"
-          aria-label={errorLabel}
-          onClick={onErrorClick}
-        />
+        <button type="button" className="sk-repo-card__error-dot" aria-label={errorLabel} onClick={onErrorClick} />
       </Tooltip>
     );
   } else if (hasUpdate) {
@@ -209,23 +204,13 @@ export function RepositoryCard({
         )}
         {onGoToMcp !== undefined && (
           <Tooltip content={mcpLabel}>
-            <Button
-              variant="secondary"
-              className="sk-repo-card__icon-btn"
-              onClick={onGoToMcp}
-              aria-label={mcpLabel}
-            >
+            <Button variant="secondary" className="sk-repo-card__icon-btn" onClick={onGoToMcp} aria-label={mcpLabel}>
               <Icon name="mcp" />
             </Button>
           </Tooltip>
         )}
         <Tooltip content={editLabel}>
-          <Button
-            variant="secondary"
-            className="sk-repo-card__icon-btn"
-            onClick={onEdit}
-            aria-label={editLabel}
-          >
+          <Button variant="secondary" className="sk-repo-card__icon-btn" onClick={onEdit} aria-label={editLabel}>
             <Icon name="edit" />
           </Button>
         </Tooltip>

@@ -88,15 +88,9 @@ describe('repo lint', () => {
     expect(items.some((d) => d.path === 'requires/cycle-b')).toBe(false);
     // The four unattributed codes still identify their manifest somewhere: the
     // two leniency notes carry the file in their prose.
-    expect(
-      items.some((d) => d.code === 'SK011' && d.message.includes('requires/both-forms/SKILL.md')),
-    ).toBe(true);
-    expect(
-      items.some((d) => d.code === 'SK012' && d.message.includes('requires/duplicate/SKILL.md')),
-    ).toBe(true);
-    expect(
-      items.some((d) => d.code === 'SK003' && d.message.includes('requires/invalid-strict/SKILL.md')),
-    ).toBe(true);
+    expect(items.some((d) => d.code === 'SK011' && d.message.includes('requires/both-forms/SKILL.md'))).toBe(true);
+    expect(items.some((d) => d.code === 'SK012' && d.message.includes('requires/duplicate/SKILL.md'))).toBe(true);
+    expect(items.some((d) => d.code === 'SK003' && d.message.includes('requires/invalid-strict/SKILL.md'))).toBe(true);
     // A valid reference into another group is not a finding of any kind. This is
     // the case that would break if reference lookup were scoped to the
     // declaring skill's own group directory.
@@ -138,14 +132,7 @@ describe('skill install with dependencies', () => {
   // scope on purpose -- `uninstall` takes no `--project` and acts on the
   // current directory, which for this harness is the throwaway HOME.
   it('installs the whole chain when only its head is named', () => {
-    const result = sandbox.run([
-      'skill',
-      'install',
-      'requires/chain-a',
-      '--agent',
-      'claude',
-      '--global',
-    ]);
+    const result = sandbox.run(['skill', 'install', 'requires/chain-a', '--agent', 'claude', '--global']);
     expect(result.status).toBe(0);
     // Two hops, so transitivity rather than a single lookup: `chain-c` is named
     // only by `chain-b`, never by the skill the user asked for.
@@ -208,9 +195,7 @@ describe('skill install: cycles and cross-group references', () => {
     // the child process precisely so that shows up as a failure -- Jest's own
     // `testTimeout` cannot interrupt the synchronous `spawnSync`.
     const project = sandbox.project();
-    const result = sandbox.run([
-      'skill', 'install', 'requires/cycle-a', '--agent', 'claude', '--project', project,
-    ]);
+    const result = sandbox.run(['skill', 'install', 'requires/cycle-a', '--agent', 'claude', '--project', project]);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Skill installed: requires/cycle-a');
     expect(result.stdout).toContain('Skill installed as a dependency: requires/cycle-b');
@@ -235,7 +220,13 @@ describe('skill install: cycles and cross-group references', () => {
     // survive - the dependency is still installed in its own right."
     const project = sandbox.project();
     const installed = sandbox.run([
-      'skill', 'install', 'requires/cross-group', '--agent', 'claude', '--project', project,
+      'skill',
+      'install',
+      'requires/cross-group',
+      '--agent',
+      'claude',
+      '--project',
+      project,
     ]);
     expect(installed.status).toBe(0);
     // Two groups away, and named by its full `group/name` id: the bare
@@ -264,8 +255,6 @@ describe('skill install: cycles and cross-group references', () => {
     expect(listed).toContain('tooling/lint-skill');
     expect(listed).not.toContain('requires/cross-group');
     // Its body survives too, not just the ledger row.
-    expect(read(join(project, '.claude', 'skills', 'lint-skill', 'SKILL.md'))).toContain(
-      'name: lint-skill',
-    );
+    expect(read(join(project, '.claude', 'skills', 'lint-skill', 'SKILL.md'))).toContain('name: lint-skill');
   });
 });

@@ -77,7 +77,5 @@ export const Empty: Story = {
 };
 
 export const Disabled: Story = {
-  render: () => (
-    <MultiCombobox label="Repositories" options={repos} value={['repo-1']} onChange={() => {}} disabled />
-  ),
+  render: () => <MultiCombobox label="Repositories" options={repos} value={['repo-1']} onChange={() => {}} disabled />,
 };

@@ -26,15 +26,7 @@ export interface RadioGroupProps {
   readonly disabled?: boolean;
 }
 
-export function RadioGroup({
-  name,
-  value,
-  options,
-  onChange,
-  label,
-  className,
-  disabled,
-}: RadioGroupProps) {
+export function RadioGroup({ name, value, options, onChange, label, className, disabled }: RadioGroupProps) {
   return (
     <div role="radiogroup" aria-label={label} className={cx('sk-radio-group', className)}>
       {options.map((o) => {

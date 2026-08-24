@@ -61,8 +61,16 @@ describe('installNotesToMessages', () => {
     // one per agent target) that report the identical dropped field render
     // to the exact same text and must collapse to one notification, not two.
     const targets = [
-      installed({ agent: 'cursor', instanceName: 'instance-1', notes: [{ kind: 'droppedField', field: 'callbackPort' }] }),
-      installed({ agent: 'cursor', instanceName: 'instance-2', notes: [{ kind: 'droppedField', field: 'callbackPort' }] }),
+      installed({
+        agent: 'cursor',
+        instanceName: 'instance-1',
+        notes: [{ kind: 'droppedField', field: 'callbackPort' }],
+      }),
+      installed({
+        agent: 'cursor',
+        instanceName: 'instance-2',
+        notes: [{ kind: 'droppedField', field: 'callbackPort' }],
+      }),
     ];
     expect(installNotesToMessages(targets, stubTranslator)).toEqual([
       'mcp.oauthFieldDropped|{"agent":"Cursor","field":"callbackPort"}',
@@ -72,7 +80,11 @@ describe('installNotesToMessages', () => {
   it('does not collapse the same dropped field across two different agents, since the agent name is part of the text', () => {
     const targets = [
       installed({ agent: 'cursor', notes: [{ kind: 'droppedField', field: 'callbackPort' }] }),
-      installed({ agent: 'opencode', instanceName: 'instance-2', notes: [{ kind: 'droppedField', field: 'callbackPort' }] }),
+      installed({
+        agent: 'opencode',
+        instanceName: 'instance-2',
+        notes: [{ kind: 'droppedField', field: 'callbackPort' }],
+      }),
     ];
     expect(installNotesToMessages(targets, stubTranslator)).toEqual([
       'mcp.oauthFieldDropped|{"agent":"Cursor","field":"callbackPort"}',

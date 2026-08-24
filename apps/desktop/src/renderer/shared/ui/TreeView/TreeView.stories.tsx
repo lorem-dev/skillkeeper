@@ -106,10 +106,8 @@ const projectInstalled: TreeNode[] = [
 // text stays available in the row's tooltip.
 const LONG_REPO = 'anthropic/an-intentionally-very-long-repository-name-for-testing-truncation';
 const LONG_GROUP = 'A skill group with an unusually long descriptive name that keeps going';
-const LONG_SKILL =
-  'extremely-detailed-skill-name-that-runs-well-past-sixty-four-characters-and-then-some';
-const LONG_SKILL_2 =
-  'another-very-long-locally-authored-skill-name-that-should-also-truncate-nicely';
+const LONG_SKILL = 'extremely-detailed-skill-name-that-runs-well-past-sixty-four-characters-and-then-some';
+const LONG_SKILL_2 = 'another-very-long-locally-authored-skill-name-that-should-also-truncate-nicely';
 
 const longLabels: TreeNode[] = [
   {
@@ -181,13 +179,7 @@ const deepNesting: TreeNode[] = [
   },
 ];
 
-const DEEP_NESTING_EXPANDED = [
-  'proj-deep',
-  'repo-deep',
-  'grp-platform',
-  'grp-platform-lint',
-  'grp-platform-lint-rust',
-];
+const DEEP_NESTING_EXPANDED = ['proj-deep', 'repo-deep', 'grp-platform', 'grp-platform-lint', 'grp-platform-lint-rust'];
 
 function Checkable({
   nodes,
@@ -318,9 +310,7 @@ export const CheckboxesLeavesOnly: Story = {
 // dash. The project root carries `selectable: false`, so it has no checkbox at
 // all -- that is the boundary this story pins.
 export const CheckboxesDeepNesting: Story = {
-  render: () => (
-    <Checkable nodes={deepNesting} expanded={DEEP_NESTING_EXPANDED} initial={['sk-deep-clippy']} />
-  ),
+  render: () => <Checkable nodes={deepNesting} expanded={DEEP_NESTING_EXPANDED} initial={['sk-deep-clippy']} />,
 };
 
 // The `dependencyIds` prop in isolation: a static set of leaf ids, tinted teal
@@ -379,9 +369,7 @@ export const CheckboxesLongLabels: Story = {
         ],
       },
     ];
-    return (
-      <Checkable nodes={nodes} expanded={['repo-long', 'grp-long']} levels={[1, 2]} initial={['sk-long']} />
-    );
+    return <Checkable nodes={nodes} expanded={['repo-long', 'grp-long']} levels={[1, 2]} initial={['sk-long']} />;
   },
 };
 

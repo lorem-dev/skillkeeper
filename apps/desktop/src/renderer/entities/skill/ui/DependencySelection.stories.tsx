@@ -100,10 +100,7 @@ function DependencySelectionDemo() {
   const graph = useMemo(() => buildScopedGraph([SCOPE_ID], CATALOG, INSTALLS), []);
   const baseline = useMemo(() => installedLeafIds(INSTALLS), []);
   const installedSet = useMemo(() => new Set(baseline), [baseline]);
-  const brokenByLeaf = useMemo(
-    () => brokenLeaves({ scopeId: SCOPE_ID, available: CATALOG, installs: INSTALLS }),
-    [],
-  );
+  const brokenByLeaf = useMemo(() => brokenLeaves({ scopeId: SCOPE_ID, available: CATALOG, installs: INSTALLS }), []);
 
   // Of the broken leaves, the ones a repair could actually do something for --
   // mirrors `ManagementPage`'s own `repairableLeaves` exactly.
@@ -128,13 +125,7 @@ function DependencySelectionDemo() {
   const dependencySet = useMemo(() => new Set(selection.dependency), [selection]);
 
   const onCheckedChange = (next: string[]): void => {
-    const updated = applyCheckChange(
-      { explicit: checked, restored: repaired },
-      baseline,
-      graph,
-      selection.shown,
-      next,
-    );
+    const updated = applyCheckChange({ explicit: checked, restored: repaired }, baseline, graph, selection.shown, next);
     setChecked([...updated.explicit]);
     setRepaired([...updated.restored]);
   };

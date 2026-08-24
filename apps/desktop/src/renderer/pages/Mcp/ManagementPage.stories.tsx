@@ -2,14 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useSkillkeeperStore, scanMcpParams, repoMcpPresetId, normalizeMcpDefFromBridge } from '@/app/store';
 import { seedStore } from '@/app/store/storyState';
 import type { SkillKeeperConfig, McpPreset } from '@/app/store';
-import type {
-  AvailableMcp,
-  McpInstall,
-  McpServerDef,
-  Project,
-  ProjectInfo,
-  Repository,
-} from '@/services/bridge';
+import type { AvailableMcp, McpInstall, McpServerDef, Project, ProjectInfo, Repository } from '@/services/bridge';
 import { ManagementPage } from './ManagementPage';
 
 const meta: Meta<typeof ManagementPage> = { title: 'pages/ManagementPage', component: ManagementPage };

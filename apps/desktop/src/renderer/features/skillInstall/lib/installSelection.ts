@@ -33,10 +33,7 @@ import type { DerivedSelection, ProjectPlan, RequiresGraph, Selection } from '@/
  * The project-mode leaf ids installed in `scopeId`, which are both the modal's
  * pre-checked rows and the selection's baseline.
  */
-export function installedInScope(
-  scopeId: string,
-  installs: readonly InstallManifest[],
-): string[] {
+export function installedInScope(scopeId: string, installs: readonly InstallManifest[]): string[] {
   return installedLeafIds(installs).filter((k) => parseProjectSkillKey(k).projectId === scopeId);
 }
 

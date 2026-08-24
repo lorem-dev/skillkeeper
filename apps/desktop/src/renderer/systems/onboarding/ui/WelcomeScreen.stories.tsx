@@ -32,9 +32,7 @@ const ABOUT_FOOTER = <div>(c) 2026 Lorem Dev</div>;
 // preference is left at "system" so the preview's own Theme toolbar toggle (see
 // .storybook/preview.tsx) drives light/dark -- no separate Dark story needed.
 /** Stand-in for the Settings row, which reaches the backend for its state. */
-const SSH_KEY_FIELD = (
-  <div style={{ fontSize: 12, opacity: 0.6 }}>SSH key: not set</div>
-);
+const SSH_KEY_FIELD = <div style={{ fontSize: 12, opacity: 0.6 }}>SSH key: not set</div>;
 
 export const Default: Story = {
   render: () => {

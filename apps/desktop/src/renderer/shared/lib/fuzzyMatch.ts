@@ -81,11 +81,7 @@ export function fuzzyMatches(text: string, query: string): boolean {
  * returns a copy of all items in their original order. Otherwise only matching
  * items are returned, ordered best-match-first.
  */
-export function fuzzyFilter<T>(
-  items: readonly T[],
-  query: string,
-  toText: (item: T) => readonly string[],
-): T[] {
+export function fuzzyFilter<T>(items: readonly T[], query: string, toText: (item: T) => readonly string[]): T[] {
   const q = query.trim().toLowerCase();
   if (q === '') return [...items];
 

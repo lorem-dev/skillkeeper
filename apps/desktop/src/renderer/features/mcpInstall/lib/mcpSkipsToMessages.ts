@@ -38,9 +38,7 @@ export function mcpSkipsToMessages(skipped: readonly McpSkipped[], t: Translator
       continue;
     }
     if (skip.transport !== undefined) {
-      messages.add(
-        t('mcp.transportUnsupported', { agent, transport: t(`mcp.protocol.${skip.transport}`) }),
-      );
+      messages.add(t('mcp.transportUnsupported', { agent, transport: t(`mcp.protocol.${skip.transport}`) }));
       continue;
     }
     unnamed += 1;

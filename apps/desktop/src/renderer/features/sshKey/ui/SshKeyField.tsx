@@ -129,19 +129,13 @@ export function SshKeyField() {
   // A blocked git operation elsewhere (e.g. a repository sync) can raise the
   // unlock window while this page happens to be open; refresh so the state
   // line does not go stale until the user navigates back to Settings.
-  useEffect(
-    () => bridgeClient.onSshUnlockRequired(() => refreshState()),
-    [refreshState],
-  );
+  useEffect(() => bridgeClient.onSshUnlockRequired(() => refreshState()), [refreshState]);
 
   // The prompt this row raises (or joins) resolves in its own window, so this
   // is the only way the row learns it is over -- re-read the state rather
   // than trusting the payload, so the row settles to "Unlocked for this
   // session" on success or back to "Locked" on cancel/close either way.
-  useEffect(
-    () => bridgeClient.onSshUnlockResolved(() => refreshState()),
-    [refreshState],
-  );
+  useEffect(() => bridgeClient.onSshUnlockResolved(() => refreshState()), [refreshState]);
 
   // Raises the unlock window on demand (or joins the one a blocked git
   // operation is already waiting behind) and returns as soon as it is up --
@@ -226,17 +220,10 @@ export function SshKeyField() {
   // offer for it here. The command itself accepts that state -- a git
   // operation can load the key between this render and the click, and a
   // conversion asked for a moment earlier must not then be refused.
-  const isPutty =
-    dto.state === 'puttyLocked' ||
-    dto.state === 'puttyUnencrypted' ||
-    dto.state === 'puttyNoAgent';
+  const isPutty = dto.state === 'puttyLocked' || dto.state === 'puttyUnencrypted' || dto.state === 'puttyNoAgent';
 
   return (
-    <FormRow
-      label={t('settings.ssh.key')}
-      description={t('settings.ssh.keyDescription')}
-      align="top"
-    >
+    <FormRow label={t('settings.ssh.key')} description={t('settings.ssh.keyDescription')} align="top">
       <div className="sk-ssh-key">
         <div className="sk-ssh-key__row">
           <span ref={pathRef} className="sk-ssh-key__path" title={dto.path}>

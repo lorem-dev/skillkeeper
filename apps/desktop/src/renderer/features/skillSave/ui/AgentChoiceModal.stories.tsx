@@ -126,16 +126,20 @@ export const EmptyDetection: Story = {
 // propose removing that Cursor server, which the user never asked for.
 export const KeepsAnInstalledAgent: Story = {
   render: () => {
-    seedAgentChoice(BASE_CONFIG, [PROJECT_ACME], [
-      {
-        projectId: PROJECT_ACME.id,
-        agent: 'cursor',
-        instanceName: 'github',
-        identity: { remote: 'git@github.com:acme/mcp.git', source: 'github' },
-        hash: 'h1',
-        hasParams: false,
-      },
-    ]);
+    seedAgentChoice(
+      BASE_CONFIG,
+      [PROJECT_ACME],
+      [
+        {
+          projectId: PROJECT_ACME.id,
+          agent: 'cursor',
+          instanceName: 'github',
+          identity: { remote: 'git@github.com:acme/mcp.git', source: 'github' },
+          hash: 'h1',
+          hasParams: false,
+        },
+      ],
+    );
     return (
       <AgentChoiceModal
         open

@@ -22,7 +22,20 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import { useTranslator } from '@/systems/i18n';
-import { Page, Toolbar, Button, ExpandingSearch, FilterButton, CollapsibleFilters, MultiCombobox, SearchSummary, TreeView, ChangeBadge, Badge, Tooltip } from '@/shared/ui';
+import {
+  Page,
+  Toolbar,
+  Button,
+  ExpandingSearch,
+  FilterButton,
+  CollapsibleFilters,
+  MultiCombobox,
+  SearchSummary,
+  TreeView,
+  ChangeBadge,
+  Badge,
+  Tooltip,
+} from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
 import { useFilterToggle } from '@/shared/lib';
 import {
@@ -99,11 +112,7 @@ export function SkillsComponentsPage() {
   // disagree (see `applyCheckChange`, which diffs against what was drawn).
   const graph = useMemo(() => buildGraph(availableSkills, []), [availableSkills]);
   const selection = useMemo(
-    () =>
-      dropMissing(
-        graph,
-        deriveSelection({ explicit: repoChecked, restored: NO_RESTORED }, NO_BASELINE, graph),
-      ),
+    () => dropMissing(graph, deriveSelection({ explicit: repoChecked, restored: NO_RESTORED }, NO_BASELINE, graph)),
     [repoChecked, graph],
   );
 
@@ -160,9 +169,7 @@ export function SkillsComponentsPage() {
   // time); while searching, union in the match branches so matches auto-open
   // without collapsing anything the user had open.
   const baseExpandedIds = persistedExpandedIds ?? rootIds(baseTree);
-  const expandedIds = searching
-    ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])]
-    : baseExpandedIds;
+  const expandedIds = searching ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])] : baseExpandedIds;
 
   const repoOptions = repositories.map((r) => ({ value: r.id, label: r.name }));
 

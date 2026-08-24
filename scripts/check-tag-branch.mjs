@@ -60,8 +60,7 @@ if (tagSha === null) {
   process.exit(1);
 }
 
-const reachable =
-  spawnSync('git', ['merge-base', '--is-ancestor', tagSha, branchRef]).status === 0;
+const reachable = spawnSync('git', ['merge-base', '--is-ancestor', tagSha, branchRef]).status === 0;
 
 if (!reachable) {
   console.error(

@@ -145,8 +145,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
         // An installed skill held on by somebody else's dependency IS present;
         // the teal checkbox says why it is held. Guarding this arm on
         // `!isDependency` would leave that row with no badge at all.
-        if (wasInstalled && isChecked)
-          detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
+        if (wasInstalled && isChecked) detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
         else if (wasInstalled && !isChecked) detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
         else if (!wasInstalled && isChecked)
           detail = (

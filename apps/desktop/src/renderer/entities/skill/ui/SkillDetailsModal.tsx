@@ -29,21 +29,29 @@ export function SkillDetailsModal(props: SkillDetailsModalProps) {
           </div>
           <div className="sk-skill-details__agents">
             {props.agentLabels.map((a) => (
-              <Badge key={a} tone="accent">{a}</Badge>
+              <Badge key={a} tone="accent">
+                {a}
+              </Badge>
             ))}
           </div>
           <ul className="sk-skill-details__meta">
             <li>{props.filesLabel}</li>
             <li>{props.hooksLabel}</li>
             <li>{props.installedAtLabel}</li>
-            <li>{props.destinationLabel}: {skill.destinationRoot}</li>
+            <li>
+              {props.destinationLabel}: {skill.destinationRoot}
+            </li>
           </ul>
           <div className="sk-skill-details__actions">
             <Tooltip content={props.comingSoonLabel}>
-              <Button variant="secondary" disabled>{props.verifyLabel}</Button>
+              <Button variant="secondary" disabled>
+                {props.verifyLabel}
+              </Button>
             </Tooltip>
             <Tooltip content={props.comingSoonLabel}>
-              <Button variant="primary" disabled>{props.updateLabel}</Button>
+              <Button variant="primary" disabled>
+                {props.updateLabel}
+              </Button>
             </Tooltip>
           </div>
         </div>

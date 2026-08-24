@@ -18,12 +18,7 @@ export interface DisclosureGroupProps {
   readonly className?: string;
 }
 
-export function DisclosureGroup({
-  title,
-  children,
-  defaultOpen = false,
-  className,
-}: DisclosureGroupProps) {
+export function DisclosureGroup({ title, children, defaultOpen = false, className }: DisclosureGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
   const contentId = useId();
   return (
@@ -54,11 +49,7 @@ export function DisclosureGroup({
         </motion.span>
         <span className="sk-disclosure__title">{title}</span>
       </button>
-      <div
-        id={contentId}
-        className={cx('sk-disclosure__wrap', open && 'sk-disclosure__wrap--open')}
-        inert={!open}
-      >
+      <div id={contentId} className={cx('sk-disclosure__wrap', open && 'sk-disclosure__wrap--open')} inert={!open}>
         <div className="sk-disclosure__inner">
           <div className="sk-disclosure__body">{children}</div>
         </div>

@@ -72,10 +72,7 @@ export function Table({
   }, [scrolls, update, rows]);
 
   const head = (
-    <div
-      className={cx('sk-table__head', scrolls && canUp && 'sk-table__head--scrolled')}
-      role="row"
-    >
+    <div className={cx('sk-table__head', scrolls && canUp && 'sk-table__head--scrolled')} role="row">
       {columns.map((col) => (
         <div
           key={col.key}

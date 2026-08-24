@@ -67,9 +67,7 @@ function SettingsRow({ children }: { readonly children: ReactNode }) {
     <div style={{ width: 640 }}>
       <FormSection title="Application updates">
         <FormRow description="SkillKeeper checks for a new version on startup and once a day.">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sk-space-3)' }}>
-            {children}
-          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sk-space-3)' }}>{children}</div>
         </FormRow>
       </FormSection>
     </div>

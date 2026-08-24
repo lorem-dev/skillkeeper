@@ -55,12 +55,7 @@ function mk(path: string, requires?: string[]): AvailableSkill {
 
 /** One install manifest of `path` per agent, in `scopeId`. `GLOBAL_SCOPE_ID`
  *  produces global-scope targets, which carry no project id at all. */
-function inst(
-  scopeId: string,
-  path: string,
-  agents: readonly AgentKind[],
-  requires?: string[],
-): InstallManifest[] {
+function inst(scopeId: string, path: string, agents: readonly AgentKind[], requires?: string[]): InstallManifest[] {
   const { group, name } = parts(path);
   return agents.map((agent) => ({
     skillId: { ...(group !== undefined ? { group } : {}), name },
@@ -226,9 +221,7 @@ describe('closure', () => {
     const g = buildGraph([mk('a', ['b']), other], []);
     // `a` in r1 reaches r1's `b`, which is absent -- not r2's `b`.
     expect(closure(g, [rk('a')])).toEqual([rk('a'), rk('b')]);
-    expect(closure(g, [repoSkillKey('r2', undefined, 'b')])).toEqual([
-      repoSkillKey('r2', undefined, 'b'),
-    ]);
+    expect(closure(g, [repoSkillKey('r2', undefined, 'b')])).toEqual([repoSkillKey('r2', undefined, 'b')]);
   });
 
   it('unions the catalog with the edges recorded in install manifests', () => {
@@ -245,9 +238,7 @@ describe('closure', () => {
 describe('dependents', () => {
   it('walks backwards and excludes the target', () => {
     expect(dependents(buildGraph(chain, []), [rk('c')])).toEqual([rk('a'), rk('b')].sort());
-    expect(dependents(buildGraph(diamond, []), [rk('d')])).toEqual(
-      [rk('a'), rk('b'), rk('c')].sort(),
-    );
+    expect(dependents(buildGraph(diamond, []), [rk('d')])).toEqual([rk('a'), rk('b'), rk('c')].sort());
   });
 
   it('sorts in the path domain, not the encoded-key domain', () => {
@@ -609,11 +600,7 @@ describe('buildScopedGraph', () => {
     // it sorts first. Reading the trailing (group, name) pair instead gives the
     // real paths `a/z` and `a-x/b`, where `-` (0x2D) precedes `/` (0x2F), so
     // `a-x/b` sorts first. Opposite orders: the bug cannot pass this.
-    const g = buildScopedGraph(
-      ['p1'],
-      [mk('a/z', ['dep']), mk('a-x/b', ['dep']), mk('dep')],
-      [],
-    );
+    const g = buildScopedGraph(['p1'], [mk('a/z', ['dep']), mk('a-x/b', ['dep']), mk('dep')], []);
     expect(dependents(g, [pk('p1', 'dep')])).toEqual([pk('p1', 'a-x/b'), pk('p1', 'a/z')]);
   });
 });

@@ -117,9 +117,7 @@ for (const name of readdirSync(distDir).sort()) {
   const bundle = DESKTOP_FORMATS.find((f) => f.test.test(name));
   if (bundle) {
     const arch = desktopArch(name, bundle.os);
-    const label = arch
-      ? `Desktop ${bundle.os} ${arch} (${bundle.format})`
-      : `Desktop ${bundle.os} (${bundle.format})`;
+    const label = arch ? `Desktop ${bundle.os} ${arch} (${bundle.format})` : `Desktop ${bundle.os} (${bundle.format})`;
     // Within an OS: the architecture most readers are on first, then the
     // other, then any bundle whose name states none. That is Apple Silicon on
     // macOS and x64 on Windows and Linux -- a single "arm64 first" rule was

@@ -110,31 +110,17 @@ export function ProjectCard({
           compositing, `[data-backdrop='unsupported']`) -- see ProjectCard.scss. */}
       <span
         className={
-          iconUrl !== undefined
-            ? 'sk-project-card__wash sk-project-card__wash--icon'
-            : 'sk-project-card__wash'
+          iconUrl !== undefined ? 'sk-project-card__wash sk-project-card__wash--icon' : 'sk-project-card__wash'
         }
         aria-hidden="true"
         style={{ '--sk-project-wash': `hsl(${washHue} 55% 58%)` } as CSSProperties}
       >
         {iconUrl !== undefined && (
           <>
-            <img
-              className="sk-project-card__wash-img"
-              src={iconUrl}
-              alt=""
-              draggable={false}
-              decoding="async"
-            />
+            <img className="sk-project-card__wash-img" src={iconUrl} alt="" draggable={false} decoding="async" />
             {/* On hover, an enlarged, blurred blow-up of the icon fills the whole
                 card. */}
-            <img
-              className="sk-project-card__wash-flood-img"
-              src={iconUrl}
-              alt=""
-              draggable={false}
-              decoding="async"
-            />
+            <img className="sk-project-card__wash-flood-img" src={iconUrl} alt="" draggable={false} decoding="async" />
           </>
         )}
         {/* Name-keyed colour gradient (top-left -> transparent). Rest layer for
@@ -146,12 +132,7 @@ export function ProjectCard({
       {/* Leading project icon, top-aligned to the title line; the text column
           (name / path / badges) starts to its right, so the space under the icon
           is empty. */}
-      <ProjectIcon
-        iconUrl={iconUrl}
-        name={project.name}
-        size={18}
-        className="sk-project-card__leading-icon"
-      />
+      <ProjectIcon iconUrl={iconUrl} name={project.name} size={18} className="sk-project-card__leading-icon" />
       <div className="sk-project-card__main">
         <span className="sk-project-card__name-row">
           <span className="sk-project-card__name">{truncateEnd(project.name, NAME_MAX)}</span>

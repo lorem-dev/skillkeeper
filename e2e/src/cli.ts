@@ -52,9 +52,7 @@ export function assertCliBuilt(): void {
 /** Fail early when the fixture submodule was never checked out. */
 export function assertFixtureCheckedOut(): void {
   if (!existsSync(join(FIXTURE_DIR, 'mcp.yml'))) {
-    throw new Error(
-      `Fixture submodule missing at ${FIXTURE_DIR}. Run "git submodule update --init".`,
-    );
+    throw new Error(`Fixture submodule missing at ${FIXTURE_DIR}. Run "git submodule update --init".`);
   }
 }
 

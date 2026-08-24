@@ -3,15 +3,7 @@
 // These describe the shapes exchanged over the Tauri command/event bridge
 // (see `client.ts`). The definitions live here, in the bridge layer that owns
 // the contract, and are re-exported from `./types`.
-import type {
-  Repository,
-  Project,
-  AgentKind,
-  McpServerDef,
-  McpTransport,
-  McpIdentity,
-  Scope,
-} from './generated/core';
+import type { Repository, Project, AgentKind, McpServerDef, McpTransport, McpIdentity, Scope } from './generated/core';
 import type { AppUpdateOffer } from './generated/AppUpdateOffer';
 import type { UpsertNote } from './generated/core/UpsertNote';
 
@@ -342,8 +334,7 @@ export interface McpUpdatePreflightArgs {
 
 /** Result of mcpUpdatePreflight. Never thrown across the bridge boundary. */
 export type McpUpdatePreflightResult =
-  | { readonly ok: true; readonly missingParams: string[] }
-  | { readonly ok: false; readonly error: string };
+  { readonly ok: true; readonly missingParams: string[] } | { readonly ok: false; readonly error: string };
 
 // -- terminal -----------------------------------------------------------------
 

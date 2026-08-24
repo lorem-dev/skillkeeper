@@ -46,4 +46,3 @@ export function toManualPreset(preset: McpPreset): ManualMcpPreset {
     oauth: def.oauth,
   };
 }
-

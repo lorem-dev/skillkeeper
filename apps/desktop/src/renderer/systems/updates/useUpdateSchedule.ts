@@ -46,8 +46,5 @@ export function useUpdateSchedule(): void {
   // window is answered the store decides whether to resume the sweep (unlocked)
   // or to say the check stayed skipped (declined). Subscribed for the app's
   // lifetime, and a no-op when no check was refused.
-  useEffect(
-    () => bridgeClient.onSshUnlockResolved((unlocked) => noteUnlockResolved(unlocked)),
-    [noteUnlockResolved],
-  );
+  useEffect(() => bridgeClient.onSshUnlockResolved((unlocked) => noteUnlockResolved(unlocked)), [noteUnlockResolved]);
 }

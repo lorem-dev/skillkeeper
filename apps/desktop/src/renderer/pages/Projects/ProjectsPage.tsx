@@ -62,10 +62,7 @@ export function ProjectsPage() {
   // Fuzzy search by name and path. The field only appears once there are at
   // least two cards to sift through.
   const searching = query.trim() !== '';
-  const filtered = useMemo(
-    () => fuzzyFilter(projects, query, (p) => [p.name, p.path]),
-    [projects, query],
-  );
+  const filtered = useMemo(() => fuzzyFilter(projects, query, (p) => [p.name, p.path]), [projects, query]);
 
   // Count of MCP servers installed from repositories, per project id. A
   // repo-origin install carries a `remote` on its identity (manual installs
@@ -88,9 +85,7 @@ export function ProjectsPage() {
   const globalCounts = useMemo(() => {
     const globals = installs.filter((m) => m.target.scope === 'global');
     const skills = new Set(
-      globals.map((m) =>
-        m.skillId.group !== undefined ? `${m.skillId.group}/${m.skillId.name}` : m.skillId.name,
-      ),
+      globals.map((m) => (m.skillId.group !== undefined ? `${m.skillId.group}/${m.skillId.name}` : m.skillId.name)),
     );
     const agents = new Set(globals.map((m) => m.target.agent));
     return { skills: skills.size, agents: agents.size };
@@ -145,16 +140,8 @@ export function ProjectsPage() {
           hint={t('scope.globalHint')}
           skillCountLabel={t.plural('projects.skillCount', globalCounts.skills)}
           skillCountHint={t.plural('projects.skillCountHint', globalCounts.skills)}
-          agentsLabel={
-            globalCounts.agents > 0
-              ? t.plural('projects.agentCount', globalCounts.agents)
-              : undefined
-          }
-          agentsHint={
-            globalCounts.agents > 0
-              ? t.plural('projects.agentsHint', globalCounts.agents)
-              : undefined
-          }
+          agentsLabel={globalCounts.agents > 0 ? t.plural('projects.agentCount', globalCounts.agents) : undefined}
+          agentsHint={globalCounts.agents > 0 ? t.plural('projects.agentsHint', globalCounts.agents) : undefined}
         />
         {projects.length === 0 ? (
           <p className="sk-empty">{t('projects.empty')}</p>
@@ -181,9 +168,7 @@ export function ProjectsPage() {
                     project={p}
                     iconUrl={info?.iconDataUrl}
                     infoPending={info === undefined}
-                    skillCountLabel={
-                      info !== undefined ? t.plural('projects.skillCount', info.skillCount) : undefined
-                    }
+                    skillCountLabel={info !== undefined ? t.plural('projects.skillCount', info.skillCount) : undefined}
                     skillCountHint={
                       info !== undefined ? t.plural('projects.skillCountHint', info.skillCount) : undefined
                     }
@@ -197,9 +182,7 @@ export function ProjectsPage() {
                         ? t.plural('projects.fromReposHint', info.fromReposCount)
                         : undefined
                     }
-                    mcpCountLabel={
-                      mcpCount > 0 ? t('projects.mcpCount', { count: String(mcpCount) }) : undefined
-                    }
+                    mcpCountLabel={mcpCount > 0 ? t('projects.mcpCount', { count: String(mcpCount) }) : undefined}
                     mcpCountHint={mcpCount > 0 ? t.plural('projects.mcpHint', mcpCount) : undefined}
                     agentsLabel={
                       info !== undefined && info.agentCount > 0
@@ -212,9 +195,7 @@ export function ProjectsPage() {
                         : undefined
                     }
                     missing={folderState !== undefined && folderState !== 'present'}
-                    missingLabel={
-                      folderState === 'denied' ? t('projects.noAccess') : t('projects.missing')
-                    }
+                    missingLabel={folderState === 'denied' ? t('projects.noAccess') : t('projects.missing')}
                     pathCopyLabel={t('projects.copyPath')}
                     onPathClick={() => copyPath(p.path)}
                     editLabel={t('projects.edit')}
@@ -225,9 +206,7 @@ export function ProjectsPage() {
                     mcpLabel={t('common.goToMcp')}
                     onGoToMcp={() => goToMcpProject(p.id)}
                     removeLabel={t('projects.remove')}
-                    openControl={
-                      <OpenProjectButton path={p.path} beforeOpen={() => ensureProjectAvailable(p.id)} />
-                    }
+                    openControl={<OpenProjectButton path={p.path} beforeOpen={() => ensureProjectAvailable(p.id)} />}
                     onEdit={() => edit(p)}
                     onRemove={() => void removeProject(p.id)}
                   />

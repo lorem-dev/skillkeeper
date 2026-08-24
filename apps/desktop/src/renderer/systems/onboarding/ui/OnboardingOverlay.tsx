@@ -19,7 +19,12 @@ const DOCS_PROJECTS = 'https://lorem-dev.github.io/skillkeeper/latest/usage/proj
 const DOCS_REPOSITORIES = 'https://lorem-dev.github.io/skillkeeper/latest/usage/repositories/';
 
 // Spotlight steps that carry an external documentation link on their coachmark.
-const STEP_DOC: Partial<Record<StepId, { readonly href: string; readonly labelKey: 'onboarding.projects.docs' | 'onboarding.repositories.docs' }>> = {
+const STEP_DOC: Partial<
+  Record<
+    StepId,
+    { readonly href: string; readonly labelKey: 'onboarding.projects.docs' | 'onboarding.repositories.docs' }
+  >
+> = {
   projects: { href: DOCS_PROJECTS, labelKey: 'onboarding.projects.docs' },
   repositories: { href: DOCS_REPOSITORIES, labelKey: 'onboarding.repositories.docs' },
 };
@@ -49,12 +54,7 @@ export interface OnboardingOverlayProps {
  * screen, a spotlight ring + coachmark anchored to a live control, or a
  * centered modal.
  */
-export function OnboardingOverlay({
-  aboutIdentity,
-  aboutFooter,
-  renderDemoTree,
-  sshKeyField,
-}: OnboardingOverlayProps) {
+export function OnboardingOverlay({ aboutIdentity, aboutFooter, renderDemoTree, sshKeyField }: OnboardingOverlayProps) {
   const active = useOnboardingActive();
   const step = useOnboardingStep();
   const { next, back, skip } = useOnboardingActions();
@@ -107,11 +107,7 @@ export function OnboardingOverlay({
       )}
 
       {step === 'welcome' && (
-        <WelcomeScreen
-          aboutIdentity={aboutIdentity}
-          aboutFooter={aboutFooter}
-          sshKeyField={sshKeyField}
-        />
+        <WelcomeScreen aboutIdentity={aboutIdentity} aboutFooter={aboutFooter} sshKeyField={sshKeyField} />
       )}
 
       {meta.kind === 'spotlight' && (

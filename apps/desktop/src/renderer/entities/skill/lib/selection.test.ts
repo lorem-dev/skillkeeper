@@ -64,15 +64,10 @@ const G = buildGraph(CATALOG, []);
  *  format stays in one place. */
 const K = (path: string): string => {
   const at = path.lastIndexOf('/');
-  return at < 0
-    ? repoSkillKey(REPO, undefined, path)
-    : repoSkillKey(REPO, path.slice(0, at), path.slice(at + 1));
+  return at < 0 ? repoSkillKey(REPO, undefined, path) : repoSkillKey(REPO, path.slice(0, at), path.slice(at + 1));
 };
 
-const sel = (
-  explicit: string[],
-  restored: string[] = [],
-): { explicit: string[]; restored: string[] } => ({
+const sel = (explicit: string[], restored: string[] = []): { explicit: string[]; restored: string[] } => ({
   explicit,
   restored,
 });

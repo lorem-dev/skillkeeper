@@ -80,9 +80,7 @@ export function RepoAddButton() {
           />
           {showError && <p className="sk-repo-form__error">{t('repositories.invalidRemote')}</p>}
           {!showError && portIgnored && (
-            <p className="sk-repo-form__error">
-              {t('repositories.scpPortIgnored', { url: asSchemeUrl(url) })}
-            </p>
+            <p className="sk-repo-form__error">{t('repositories.scpPortIgnored', { url: asSchemeUrl(url) })}</p>
           )}
           <TextField
             placeholder={t('repositories.addName')}

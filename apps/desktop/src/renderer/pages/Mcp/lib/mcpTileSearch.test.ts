@@ -46,12 +46,7 @@ describe('mcpTileSearchText', () => {
       hasRules: false,
       repoId: 'repo-1',
     };
-    expect(mcpTileSearchText(preset, REPOS)).toEqual([
-      'linear',
-      'http',
-      'Team Skills',
-      'https://api.linear.app/mcp',
-    ]);
+    expect(mcpTileSearchText(preset, REPOS)).toEqual(['linear', 'http', 'Team Skills', 'https://api.linear.app/mcp']);
   });
 
   it('omits the repo name when the preset repoId matches no tracked repository', () => {

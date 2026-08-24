@@ -53,11 +53,7 @@
     -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent);
     // Tint toward the window background: lightens in the light theme (bg is
     // near-white), darkens in the dark theme (bg is near-black).
-    background: linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--sk-color-bg) 32%, transparent),
-      transparent
-    );
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--sk-color-bg) 32%, transparent), transparent);
   }
 
   @include glass.backdrop-fallback {

@@ -926,8 +926,7 @@ function makeNotificationEntry(
   repoId?: string,
   href?: string,
 ): NotificationEntry {
-  const payload =
-    typeof message === 'string' ? { text: message } : { key: message.key, vars: message.vars };
+  const payload = typeof message === 'string' ? { text: message } : { key: message.key, vars: message.vars };
   return {
     id: crypto.randomUUID(),
     level,
@@ -1134,10 +1133,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       // Reset the target mode's selection to the installed baseline (repo mode:
       // no checks; project mode: reseed from installed), so no stale pending
       // changes carry over into the fresh view.
-      const selection =
-        merged.mode === 'repositories'
-          ? { repoChecked: [] }
-          : installedBaseline(get().skills);
+      const selection = merged.mode === 'repositories' ? { repoChecked: [] } : installedBaseline(get().skills);
       return { skillsUi: { ...merged, ...selection }, skillsNav: s.skillsNav + 1 };
     });
   },
@@ -1333,9 +1329,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       ...(patch.notifications !== undefined
         ? { notifications: { ...current.notifications, ...patch.notifications } }
         : {}),
-      ...(patch.repositories !== undefined
-        ? { repositories: { ...current.repositories, ...patch.repositories } }
-        : {}),
+      ...(patch.repositories !== undefined ? { repositories: { ...current.repositories, ...patch.repositories } } : {}),
       ...(patch.projects !== undefined ? { projects: { ...current.projects, ...patch.projects } } : {}),
       ...(patch.mcp !== undefined ? { mcp: { ...current.mcp, ...patch.mcp } } : {}),
     };

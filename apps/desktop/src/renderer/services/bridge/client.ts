@@ -262,8 +262,7 @@ export const bridgeClient: BridgeClient = {
   reconcileMcp: () => invoke<McpInstall[]>('mcp_reconcile'),
   updateMcp: (args) => invoke<UpdateMcpResult>('mcp_update', { args }),
   mcpUpdatePreflight: (args) => invoke<McpUpdatePreflightResult>('mcp_update_preflight', { args }),
-  mcpDescriptionSpans: (descriptions) =>
-    invoke<DescriptionSpan[][]>('mcp_description_spans', { descriptions }),
+  mcpDescriptionSpans: (descriptions) => invoke<DescriptionSpan[][]>('mcp_description_spans', { descriptions }),
   detectProjectAgents: (path) => invoke<AgentKind[]>('projects_detect_agents', { path }),
   applySkillChanges: (args) => invoke<ApplyResult>('skills_apply', { args }),
   onSkillsProgress: (callback) => subscribe<ApplyProgress>('skills:progress', callback),
@@ -275,22 +274,18 @@ export const bridgeClient: BridgeClient = {
   onConfigChanged: (callback) => subscribe<LoadConfigResult>('config:changed', callback),
   onMenuNavigate: (callback) => subscribe<string>('menu:navigate', callback),
   onMenuAbout: (callback) => subscribe<void>('menu:about', () => callback()),
-  onMenuOnboardingToggle: (callback) =>
-    subscribe<void>('menu:onboarding-toggle', () => callback()),
-  onMenuCheckForUpdates: (callback) =>
-    subscribe<void>('menu:check-for-updates', () => callback()),
+  onMenuOnboardingToggle: (callback) => subscribe<void>('menu:onboarding-toggle', () => callback()),
+  onMenuCheckForUpdates: (callback) => subscribe<void>('menu:check-for-updates', () => callback()),
   onboardingMenuSync: (active) => {
     void invoke('onboarding_menu_sync', { active });
   },
   getAppVersion: () => invoke<string>('get_app_version'),
   addRepository: (url, name) => invoke<RepoResult>('repositories_add', { url, name }),
   cloneRepository: (id) => invoke<RepoResult>('repositories_clone', { id }),
-  updateRepository: (id, name, url, branch) =>
-    invoke<RepoResult>('repositories_update', { id, name, url, branch }),
+  updateRepository: (id, name, url, branch) => invoke<RepoResult>('repositories_update', { id, name, url, branch }),
   removeRepository: (id) => invoke<RemoveResult>('repositories_remove', { id }),
   syncRepository: (id) => invoke<RepoResult>('repositories_sync', { id }),
-  repoHasUpdate: (id, interactive) =>
-    invoke<boolean>('repositories_has_update', { id, interactive }),
+  repoHasUpdate: (id, interactive) => invoke<boolean>('repositories_has_update', { id, interactive }),
   describeRepository: (id) => invoke<RepoInfo>('repositories_describe', { id }),
   listBranches: (id) => invoke<string[]>('repositories_list_branches', { id }),
   selectFolder: () => invoke<string | null>('dialog_select_folder'),
@@ -332,12 +327,10 @@ export const bridgeClient: BridgeClient = {
     // called before listen() resolves.
     let off: (() => void) | null = null;
     let cancelled = false;
-    void listen<{ path: string }>('ssh:unlockRequired', (e) => callback(e.payload.path)).then(
-      (un) => {
-        if (cancelled) un();
-        else off = un;
-      },
-    );
+    void listen<{ path: string }>('ssh:unlockRequired', (e) => callback(e.payload.path)).then((un) => {
+      if (cancelled) un();
+      else off = un;
+    });
     return () => {
       cancelled = true;
       off?.();
@@ -347,12 +340,10 @@ export const bridgeClient: BridgeClient = {
     // Same shape as onSshUnlockRequired.
     let off: (() => void) | null = null;
     let cancelled = false;
-    void listen<{ unlocked: boolean }>('ssh:unlockResolved', (e) => callback(e.payload.unlocked)).then(
-      (un) => {
-        if (cancelled) un();
-        else off = un;
-      },
-    );
+    void listen<{ unlocked: boolean }>('ssh:unlockResolved', (e) => callback(e.payload.unlocked)).then((un) => {
+      if (cancelled) un();
+      else off = un;
+    });
     return () => {
       cancelled = true;
       off?.();

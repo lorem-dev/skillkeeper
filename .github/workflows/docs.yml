@@ -24,8 +24,8 @@ on:
     tags:
       # Final releases only: the negative pattern excludes any pre-release tag
       # (a `-` qualifier), so an RC never starts this workflow at all.
-      - "v*"
-      - "!v*-*"
+      - 'v*'
+      - '!v*-*'
   workflow_dispatch:
 
 # mike pushes commits to the gh-pages branch.

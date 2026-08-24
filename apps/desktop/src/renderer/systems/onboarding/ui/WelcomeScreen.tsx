@@ -46,25 +46,25 @@ export function WelcomeScreen({ aboutIdentity, aboutFooter, sshKeyField }: Welco
         animate={{ opacity: 1 }}
         transition={{ duration: SK_DURATION.medium * scale, ease: SK_EASE }}
       >
-      <div className="sk-onboarding-welcome__block">
-        {aboutIdentity}
-        <FormSection className="sk-onboarding-welcome__form">
-          <LanguageThemeFields languageClassName="sk-onboarding-welcome__language" />
-          {sshKeyField}
-        </FormSection>
-        <p className="sk-onboarding-welcome__hint">{t('onboarding.settingsLater')}</p>
-        <div className="sk-onboarding-welcome__actions">
-          {/* Ends the tour by jumping to its last step, so the closing screen
+        <div className="sk-onboarding-welcome__block">
+          {aboutIdentity}
+          <FormSection className="sk-onboarding-welcome__form">
+            <LanguageThemeFields languageClassName="sk-onboarding-welcome__language" />
+            {sshKeyField}
+          </FormSection>
+          <p className="sk-onboarding-welcome__hint">{t('onboarding.settingsLater')}</p>
+          <div className="sk-onboarding-welcome__actions">
+            {/* Ends the tour by jumping to its last step, so the closing screen
               still shows rather than the app appearing without explanation. */}
-          <Button variant="secondary" glass onClick={skip}>
-            {t('onboarding.skip')}
-          </Button>
-          <Button variant="primary" glass onClick={next}>
-            {t('onboarding.next')}
-          </Button>
+            <Button variant="secondary" glass onClick={skip}>
+              {t('onboarding.skip')}
+            </Button>
+            <Button variant="primary" glass onClick={next}>
+              {t('onboarding.next')}
+            </Button>
+          </div>
         </div>
-      </div>
-      <div className="sk-onboarding-welcome__footer">{aboutFooter}</div>
+        <div className="sk-onboarding-welcome__footer">{aboutFooter}</div>
       </motion.div>
     </div>
   );

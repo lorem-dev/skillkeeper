@@ -96,8 +96,7 @@ async function generateMenuIcons() {
   const { Resvg } = await import('@resvg/resvg-js');
   const out = join(ICONS, 'menu-icons');
   mkdirSync(out, { recursive: true });
-  const render = (svg, size) =>
-    new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng();
+  const render = (svg, size) => new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng();
   for (const glyph of MENU_GLYPHS) {
     const svg = blacken(readFileSync(join(GLYPH_SVGS, `${glyph}.svg`), 'utf8'));
     writeFileSync(join(out, `${glyph}Template.png`), render(svg, 16));

@@ -23,14 +23,7 @@ export interface SegmentedControlProps {
   readonly className?: string;
 }
 
-export function SegmentedControl({
-  options,
-  value,
-  onChange,
-  label,
-  disabled,
-  className,
-}: SegmentedControlProps) {
+export function SegmentedControl({ options, value, onChange, label, disabled, className }: SegmentedControlProps) {
   const groupId = useId();
   return (
     <div

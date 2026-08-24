@@ -74,11 +74,7 @@ describe('nestByGroup', () => {
   });
 
   it('sorts sibling groups by label and puts them before leaves', () => {
-    const nodes = nest([
-      { name: 'loose' },
-      { name: 'x', group: 'zeta' },
-      { name: 'y', group: 'alpha' },
-    ]);
+    const nodes = nest([{ name: 'loose' }, { name: 'x', group: 'zeta' }, { name: 'y', group: 'alpha' }]);
 
     expect(nodes.map((n) => n.label)).toEqual(['alpha', 'zeta', 'loose']);
   });

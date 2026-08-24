@@ -363,9 +363,7 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
                 value={draft.oauth.clientId}
                 invalid={errorFor('oauth.clientId') !== undefined}
                 placeholder={t('mcp.field.clientId')}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, oauth: { ...d.oauth, clientId: e.target.value } }))
-                }
+                onChange={(e) => setDraft((d) => ({ ...d, oauth: { ...d.oauth, clientId: e.target.value } }))}
               />
               {errorFor('oauth.clientId') !== undefined && (
                 <span className="sk-mcp-edit__error">{errorFor('oauth.clientId')}</span>
@@ -374,9 +372,7 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
                 value={draft.oauth.callbackPort}
                 invalid={errorFor('oauth.callbackPort') !== undefined}
                 placeholder={t('mcp.field.callbackPort')}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, oauth: { ...d.oauth, callbackPort: e.target.value } }))
-                }
+                onChange={(e) => setDraft((d) => ({ ...d, oauth: { ...d.oauth, callbackPort: e.target.value } }))}
               />
               {errorFor('oauth.callbackPort') !== undefined && (
                 <span className="sk-mcp-edit__error">{errorFor('oauth.callbackPort')}</span>

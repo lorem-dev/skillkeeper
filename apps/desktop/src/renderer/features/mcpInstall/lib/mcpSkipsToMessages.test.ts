@@ -20,15 +20,11 @@ describe('mcpSkipsToMessages', () => {
 
   it('names the oauth rule for an oauth skip rather than counting it', () => {
     const skipped: McpSkipped[] = [{ agent: 'copilot', source: 'remote', reason: 'oauth' }];
-    expect(mcpSkipsToMessages(skipped, stubTranslator)).toEqual([
-      'mcp.oauthUnsupported|{"agent":"Copilot"}',
-    ]);
+    expect(mcpSkipsToMessages(skipped, stubTranslator)).toEqual(['mcp.oauthUnsupported|{"agent":"Copilot"}']);
   });
 
   it('names the transport for a transport skip', () => {
-    const skipped: McpSkipped[] = [
-      { agent: 'copilot', source: 'local-tool', reason: 'transport', transport: 'sse' },
-    ];
+    const skipped: McpSkipped[] = [{ agent: 'copilot', source: 'local-tool', reason: 'transport', transport: 'sse' }];
     expect(mcpSkipsToMessages(skipped, stubTranslator)).toEqual([
       'mcp.transportUnsupported|{"agent":"Copilot","transport":"mcp.protocol.sse|{}"}',
     ]);
@@ -50,9 +46,7 @@ describe('mcpSkipsToMessages', () => {
       { agent: 'copilot', source: 'remote-a', reason: 'oauth' },
       { agent: 'copilot', source: 'remote-b', reason: 'oauth' },
     ];
-    expect(mcpSkipsToMessages(skipped, stubTranslator)).toEqual([
-      'mcp.oauthUnsupported|{"agent":"Copilot"}',
-    ]);
+    expect(mcpSkipsToMessages(skipped, stubTranslator)).toEqual(['mcp.oauthUnsupported|{"agent":"Copilot"}']);
   });
 
   it('falls back to the counted message for a transport skip that names no transport', () => {

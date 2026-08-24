@@ -38,7 +38,9 @@ describe('buildProjectMcpPlan', () => {
     expect(installRows[0]!.needsParamPrompt).toBe(false);
 
     const cursorBatch = plan.batches.find((b) => b.agent === 'cursor');
-    expect(cursorBatch?.install).toEqual([{ identity: { remote: 'r', source: 'github' }, def: presets[0]!.def, values: {} }]);
+    expect(cursorBatch?.install).toEqual([
+      { identity: { remote: 'r', source: 'github' }, def: presets[0]!.def, values: {} },
+    ]);
   });
 
   it('removes an installed instance for an agent dropped from the chosen set', () => {
@@ -79,7 +81,9 @@ describe('buildProjectMcpPlan', () => {
   });
 
   it('excludes an agent that cannot express an OAuth client from a preset carrying one', () => {
-    const installs = [install({ instanceName: 'remote_1', agent: 'claude', identity: { remote: 'r', source: 'remote' } })];
+    const installs = [
+      install({ instanceName: 'remote_1', agent: 'claude', identity: { remote: 'r', source: 'remote' } }),
+    ];
     const presets = [
       preset({
         id: 'p1',
@@ -105,7 +109,9 @@ describe('buildProjectMcpPlan', () => {
   });
 
   it('still plans an install for an agent that CAN express an OAuth client', () => {
-    const installs = [install({ instanceName: 'remote_1', agent: 'claude', identity: { remote: 'r', source: 'remote' } })];
+    const installs = [
+      install({ instanceName: 'remote_1', agent: 'claude', identity: { remote: 'r', source: 'remote' } }),
+    ];
     const presets = [
       preset({
         id: 'p1',

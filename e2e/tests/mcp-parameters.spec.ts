@@ -39,16 +39,12 @@ describe('mcp descriptions and options', () => {
     // The description's own "{host}" mention is prose, never scanned for
     // placeholders, so it reaches the terminal literally -- unlike the real
     // {host} parameter substituted into docs-linked's url on install below.
-    expect(listed).toContain(
-      'See reference (https://docs.example.com/reference) for {host} usage notes.',
-    );
+    expect(listed).toContain('See reference (https://docs.example.com/reference) for {host} usage notes.');
   });
 
   it('truncates an over-long description to 128 visible characters, marked with an ellipsis', () => {
     const listed = sandbox.runOk(['mcp', 'list']).stdout;
-    const line = listed
-      .split('\n')
-      .find((l) => l.trim().startsWith('This description exists only'));
+    const line = listed.split('\n').find((l) => l.trim().startsWith('This description exists only'));
     expect(line).toBeDefined();
     const text = (line ?? '').trim();
     expect(text.endsWith('...')).toBe(true);
@@ -60,13 +56,20 @@ describe('mcp descriptions and options', () => {
   describe('install', () => {
     it('accepts a value that is one of the parameter options', () => {
       const result = sandbox.runOk([
-        'mcp', 'install', 'docs-linked', '--agent', 'claude', '--project', project,
-        '--param', 'host=docs.example.com', '--param', 'access=read',
+        'mcp',
+        'install',
+        'docs-linked',
+        '--agent',
+        'claude',
+        '--project',
+        project,
+        '--param',
+        'host=docs.example.com',
+        '--param',
+        'access=read',
       ]);
       expect(result.stdout).toContain('Installed: docs_linked_1 (claude) ->');
-      const native = readJson<{ mcpServers: Record<string, Record<string, unknown>> }>(
-        join(project, '.mcp.json'),
-      );
+      const native = readJson<{ mcpServers: Record<string, Record<string, unknown>> }>(join(project, '.mcp.json'));
       const server = native.mcpServers['docs_linked_1'];
       expect(server?.['url']).toBe('https://docs.example.com/docs');
       expect((server?.['headers'] as Record<string, string>)['X-Access-Level']).toBe('read');
@@ -75,8 +78,17 @@ describe('mcp descriptions and options', () => {
     it('refuses a value outside the options, exits 1, names the accepted ones, and writes nothing', () => {
       const freshProject = sandbox.project('invalid-option');
       const result = sandbox.run([
-        'mcp', 'install', 'docs-linked', '--agent', 'claude', '--project', freshProject,
-        '--param', 'host=docs.example.com', '--param', 'access=admin',
+        'mcp',
+        'install',
+        'docs-linked',
+        '--agent',
+        'claude',
+        '--project',
+        freshProject,
+        '--param',
+        'host=docs.example.com',
+        '--param',
+        'access=admin',
       ]);
       expect(result.status).toBe(1);
       expect(result.stderr).toContain('access');
@@ -112,8 +124,17 @@ describe('mcp descriptions and options', () => {
     beforeAll(() => {
       updateProject = sandbox.project('update-options');
       sandbox.runOk([
-        'mcp', 'install', 'docs-linked', '--agent', 'claude', '--project', updateProject,
-        '--param', 'host=docs.example.com', '--param', 'access=read',
+        'mcp',
+        'install',
+        'docs-linked',
+        '--agent',
+        'claude',
+        '--project',
+        updateProject,
+        '--param',
+        'host=docs.example.com',
+        '--param',
+        'access=read',
       ]);
     });
 
@@ -149,17 +170,22 @@ describe('mcp descriptions and options', () => {
       const native = readJson<{ mcpServers: Record<string, Record<string, unknown>> }>(
         join(updateProject, '.mcp.json'),
       );
-      const headers = native.mcpServers['docs_linked_1']?.['headers'] as
-        | Record<string, string>
-        | undefined;
+      const headers = native.mcpServers['docs_linked_1']?.['headers'] as Record<string, string> | undefined;
       return headers?.['X-Access-Level'];
     };
 
     it('refuses a --param outside the options, names the accepted ones, and changes nothing', () => {
       rewriteDocsLinked('        options:\n          read: Read-only\n          write: Read and write');
       const result = sandbox.run([
-        'mcp', 'update', 'docs-linked', '--agent', 'claude', '--project', updateProject,
-        '--param', 'access=admin',
+        'mcp',
+        'update',
+        'docs-linked',
+        '--agent',
+        'claude',
+        '--project',
+        updateProject,
+        '--param',
+        'access=admin',
       ]);
       expect(result.status).toBe(1);
       expect(result.stderr).toContain('admin');
@@ -168,15 +194,20 @@ describe('mcp descriptions and options', () => {
       // The refusal precedes the remove-then-reinstall, so the instance is
       // still there and still holds what it held.
       expect(nativeAccess()).toBe('read');
-      expect(read(join(updateProject, '.claude', 'skills', '.skmcp.params.yml'))).toContain(
-        'access: read',
-      );
+      expect(read(join(updateProject, '.claude', 'skills', '.skmcp.params.yml'))).toContain('access: read');
     });
 
     it('accepts a --param that is one of the options and rewrites the instance', () => {
       const result = sandbox.runOk([
-        'mcp', 'update', 'docs-linked', '--agent', 'claude', '--project', updateProject,
-        '--param', 'access=write',
+        'mcp',
+        'update',
+        'docs-linked',
+        '--agent',
+        'claude',
+        '--project',
+        updateProject,
+        '--param',
+        'access=write',
       ]);
       expect(result.stdout).toContain('docs_linked_1');
       expect(nativeAccess()).toBe('write');
@@ -187,9 +218,7 @@ describe('mcp descriptions and options', () => {
       // leaving "read" as the only -- and therefore first -- option. This is
       // a value off disk, so it is migrated and reported rather than refused.
       rewriteDocsLinked('        options:\n          read: Read-only');
-      const result = sandbox.runOk([
-        'mcp', 'update', 'docs-linked', '--agent', 'claude', '--project', updateProject,
-      ]);
+      const result = sandbox.runOk(['mcp', 'update', 'docs-linked', '--agent', 'claude', '--project', updateProject]);
       expect(result.stdout).toContain('access');
       expect(result.stdout).toContain('read');
       expect(nativeAccess()).toBe('read');

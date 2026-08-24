@@ -21,9 +21,13 @@ describe('mcp oauth', () => {
     fixtureClone = sandbox.addFixtureRepo();
     project = sandbox.project();
     installOutput = sandbox.runOk([
-      'mcp', 'install', 'oauth-http',
-      '--agent', 'claude,cursor,codex,opencode,copilot',
-      '--project', project,
+      'mcp',
+      'install',
+      'oauth-http',
+      '--agent',
+      'claude,cursor,codex,opencode,copilot',
+      '--project',
+      project,
     ]).stdout;
   });
 
@@ -31,9 +35,7 @@ describe('mcp oauth', () => {
 
   it('claude: an oauth object with clientId, callbackPort, and space-joined scopes', () => {
     expect(installOutput).toContain('Installed: oauth_http_1 (claude) ->');
-    const native = readJson<{ mcpServers: Record<string, Record<string, unknown>> }>(
-      join(project, '.mcp.json'),
-    );
+    const native = readJson<{ mcpServers: Record<string, Record<string, unknown>> }>(join(project, '.mcp.json'));
     const oauth = native.mcpServers['oauth_http_1']?.['oauth'] as Record<string, unknown>;
     expect(oauth['clientId']).toBe('example-client');
     expect(oauth['callbackPort']).toBe(8432);
@@ -58,9 +60,7 @@ describe('mcp oauth', () => {
     expect(installOutput).toContain('Installed: oauth_http_1 (opencode) ->');
     expect(installOutput).toContain('Note opencode: cannot express "callbackPort"; it was not written.');
     expect(installOutput).toContain('Note opencode: cannot express "scopes"; it was not written.');
-    const native = readJson<{ mcp: Record<string, Record<string, unknown>> }>(
-      join(project, 'opencode.json'),
-    );
+    const native = readJson<{ mcp: Record<string, Record<string, unknown>> }>(join(project, 'opencode.json'));
     const oauth = native.mcp['oauth_http_1']?.['oauth'] as Record<string, unknown>;
     expect(Object.keys(oauth)).toEqual(['clientId']);
     expect(oauth['clientId']).toBe('example-client');

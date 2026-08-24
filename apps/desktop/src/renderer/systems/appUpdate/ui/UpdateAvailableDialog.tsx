@@ -45,12 +45,7 @@ export function UpdateAvailableDialog() {
   }
 
   return (
-    <Modal
-      open={open}
-      onClose={handleCancel}
-      title={t('appUpdate.availableTitle')}
-      className="sk-update-available"
-    >
+    <Modal open={open} onClose={handleCancel} title={t('appUpdate.availableTitle')} className="sk-update-available">
       <p className="sk-update-body">{t('appUpdate.availableBody', { version })}</p>
       {notes !== '' && <pre className="sk-update-notes">{notes}</pre>}
       <div className="sk-update-actions">

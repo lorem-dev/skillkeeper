@@ -11,9 +11,7 @@ import { useSkillkeeperStore } from '@/app/store';
  */
 export function useIsDark(): boolean {
   const pref = useSkillkeeperStore((s) => s.config?.general.theme ?? 'system');
-  const [systemDark, setSystemDark] = useState(
-    () => window.matchMedia('(prefers-color-scheme: dark)').matches,
-  );
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');

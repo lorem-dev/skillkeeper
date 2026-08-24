@@ -63,8 +63,7 @@ export function MultiSelect({
     setOverflow(m.scrollWidth > v.clientWidth);
   }, [joined]);
 
-  const toggle = (v: string): void =>
-    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  const toggle = (v: string): void => onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
 
   const items: MenuItem[] = options.map((o) => ({
     id: o.value,

@@ -30,11 +30,7 @@
 [data-theme='dark'] .sk-project-icon--letter {
   // Diagonal shade: the project's colour, noticeably darker toward the
   // bottom-right corner.
-  background: linear-gradient(
-    135deg,
-    var(--sk-proj-color),
-    color-mix(in srgb, var(--sk-proj-color), #000 28%)
-  );
+  background: linear-gradient(135deg, var(--sk-proj-color), color-mix(in srgb, var(--sk-proj-color), #000 28%));
   color: #fff;
   box-shadow: none;
   text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.2);
@@ -53,11 +49,7 @@
 }
 
 [data-theme='dark'] .sk-project-icon--global {
-  background: linear-gradient(
-    135deg,
-    var(--sk-proj-color),
-    color-mix(in srgb, var(--sk-proj-color), #000 28%)
-  );
+  background: linear-gradient(135deg, var(--sk-proj-color), color-mix(in srgb, var(--sk-proj-color), #000 28%));
   color: #fff;
   box-shadow: none;
 }

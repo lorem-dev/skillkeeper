@@ -29,5 +29,9 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  &__agents { display: inline-flex; flex-wrap: wrap; gap: var(--sk-space-1); }
+  &__agents {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--sk-space-1);
+  }
 }

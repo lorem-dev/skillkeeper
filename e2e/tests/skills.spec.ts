@@ -38,16 +38,7 @@ describe('skill install', () => {
     clone = sandbox.addFixtureRepo();
     project = sandbox.project();
     for (const id of CLAUDE_SKILLS) {
-      sandbox.runOk([
-        'skill',
-        'install',
-        id,
-        '--agent',
-        'claude',
-        '--project',
-        project,
-        '--allow-hooks',
-      ]);
+      sandbox.runOk(['skill', 'install', id, '--agent', 'claude', '--project', project, '--allow-hooks']);
     }
   });
 
@@ -84,9 +75,7 @@ describe('skill install', () => {
 
     // Its one-level sibling under the same tree, to pin that both depths work
     // side by side rather than only the deepest.
-    expect(read(join(skillsRoot(), 'release-skill', '.skid.yml'))).toContain(
-      'group: platform',
-    );
+    expect(read(join(skillsRoot(), 'release-skill', '.skid.yml'))).toContain('group: platform');
   });
 
   it('recreates nested body paths instead of flattening them', () => {
@@ -146,15 +135,7 @@ describe('skill install', () => {
 
     it('installs the body but skips hooks without --allow-hooks', () => {
       const bare = sandbox.project('no-consent');
-      const result = sandbox.runOk([
-        'skill',
-        'install',
-        'json-hooks-skill',
-        '--agent',
-        'claude',
-        '--project',
-        bare,
-      ]);
+      const result = sandbox.runOk(['skill', 'install', 'json-hooks-skill', '--agent', 'claude', '--project', bare]);
       expect(result.output).toContain('--allow-hooks');
       expect(existsSync(join(bare, '.claude', 'skills', 'json-hooks-skill', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(bare, '.claude', 'settings.json'))).toBe(false);
@@ -184,29 +165,13 @@ describe('skill install', () => {
 
   describe('resolution warnings', () => {
     it('does not resolve a skill nested deeper than three group levels', () => {
-      const result = sandbox.run([
-        'skill',
-        'install',
-        'too-deep-skill',
-        '--agent',
-        'claude',
-        '--project',
-        project,
-      ]);
+      const result = sandbox.run(['skill', 'install', 'too-deep-skill', '--agent', 'claude', '--project', project]);
       expect(result.status).not.toBe(0);
       expect(result.output).toContain('Skill not found in any tracked repository');
     });
 
     it('reports the unresolved path, so a misplaced skill is not silently absent', () => {
-      const result = sandbox.runOk([
-        'skill',
-        'install',
-        'minimal-skill',
-        '--agent',
-        'claude',
-        '--project',
-        project,
-      ]);
+      const result = sandbox.runOk(['skill', 'install', 'minimal-skill', '--agent', 'claude', '--project', project]);
       expect(result.stderr).toContain('deep-nesting/l2/l3/l4/too-deep-skill');
       expect(result.stderr).toContain('nesting is deeper than 3 group levels');
       expect(result.stderr).toContain('[fixture]');
@@ -223,15 +188,7 @@ describe('skill install', () => {
       mkdirSync(vendored, { recursive: true });
       writeFileSync(join(vendored, 'SKILL.md'), '---\nname: vendored\n---\n');
 
-      const result = sandbox.runOk([
-        'skill',
-        'install',
-        'minimal-skill',
-        '--agent',
-        'claude',
-        '--project',
-        project,
-      ]);
+      const result = sandbox.runOk(['skill', 'install', 'minimal-skill', '--agent', 'claude', '--project', project]);
       expect(result.stderr).not.toContain('release-prep');
       expect(result.stderr).not.toContain('node_modules');
       // The genuine negative fixture still warns.

@@ -82,11 +82,7 @@ export const Interactive: Story = {
     const [maximized, setMaximized] = useState(false);
     return (
       <Bar>
-        <WindowControls
-          {...args}
-          maximized={maximized}
-          onToggleMaximize={() => setMaximized((m) => !m)}
-        />
+        <WindowControls {...args} maximized={maximized} onToggleMaximize={() => setMaximized((m) => !m)} />
       </Bar>
     );
   },

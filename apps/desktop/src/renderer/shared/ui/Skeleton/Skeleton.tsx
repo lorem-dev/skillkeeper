@@ -15,10 +15,6 @@ export interface SkeletonProps {
 
 export function Skeleton({ width, height, radius, className }: SkeletonProps) {
   return (
-    <span
-      className={cx('sk-skeleton', className)}
-      aria-hidden="true"
-      style={{ width, height, borderRadius: radius }}
-    />
+    <span className={cx('sk-skeleton', className)} aria-hidden="true" style={{ width, height, borderRadius: radius }} />
   );
 }

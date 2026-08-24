@@ -33,9 +33,24 @@ const MO_OUT = join(ROOT, 'apps', 'desktop', 'src-tauri', 'locales');
 // Every supported language, in canonical order. Keep in sync with
 // packages/i18n/src/langs.ts (SUPPORTED_LANGS).
 const ALL_LANGS = [
-  'en', 'de', 'ru', 'uk', 'be', 'fr', 'ja', 'zh-cn',
-  'pl', 'sr-cyrl', 'sr-latn', 'zh-tw', 'es', 'pt', 'ko', 'it',
-  'hi', 'th',
+  'en',
+  'de',
+  'ru',
+  'uk',
+  'be',
+  'fr',
+  'ja',
+  'zh-cn',
+  'pl',
+  'sr-cyrl',
+  'sr-latn',
+  'zh-tw',
+  'es',
+  'pt',
+  'ko',
+  'it',
+  'hi',
+  'th',
 ];
 
 // Resolve which languages to generate from argv: no arguments means all.
@@ -133,9 +148,7 @@ function main() {
     console.log(`${lang}: ${entries.length} messages -> catalogs/${lang}.ts + locales/${lang}.mo`);
   }
   const scope = langs.length === ALL_LANGS.length ? '' : ` (${langs.join(', ')})`;
-  console.log(
-    `\ngenerated ${langs.length} TS catalogs + ${langs.length} .mo files from locales/${scope}`,
-  );
+  console.log(`\ngenerated ${langs.length} TS catalogs + ${langs.length} .mo files from locales/${scope}`);
 }
 
 main();

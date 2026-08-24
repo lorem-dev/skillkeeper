@@ -1,12 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { AgentKind, InstallManifest, McpInstall, Project } from '@/services/bridge';
 import { GLOBAL_SCOPE_ID } from '@/domain';
-import {
-  agentChoiceScopes,
-  installedAgentsByScope,
-  mergeAgentDefaults,
-  resolveAgentDefaults,
-} from './agentDefaults';
+import { agentChoiceScopes, installedAgentsByScope, mergeAgentDefaults, resolveAgentDefaults } from './agentDefaults';
 
 function project(over: Partial<Project> & { id: string; path: string }): Project {
   return { name: over.id, addedAt: '2026-01-01T00:00:00.000Z', ...over };
@@ -52,9 +47,7 @@ describe('agentChoiceScopes', () => {
   });
 
   it('drops an id matching neither the global scope nor a tracked project', () => {
-    expect(agentChoiceScopes(['ghost', 'project-1'], [ACME])).toEqual([
-      { id: 'project-1', project: ACME },
-    ]);
+    expect(agentChoiceScopes(['ghost', 'project-1'], [ACME])).toEqual([{ id: 'project-1', project: ACME }]);
   });
 });
 
@@ -106,11 +99,7 @@ describe('mergeAgentDefaults', () => {
   // A user can legitimately clear a row: that is an answer too, and a late
   // default must not silently re-fill it.
   it('keeps a touched scope even when the user cleared it', () => {
-    const merged = mergeAgentDefaults(
-      { 'project-1': [] },
-      { 'project-1': ['claude'] },
-      new Set(['project-1']),
-    );
+    const merged = mergeAgentDefaults({ 'project-1': [] }, { 'project-1': ['claude'] }, new Set(['project-1']));
 
     expect(merged).toEqual({ 'project-1': [] });
   });
@@ -124,8 +113,7 @@ describe('mergeAgentDefaults', () => {
 
 describe('resolveAgentDefaults', () => {
   it('takes a tracked project its detected set', async () => {
-    const detect = async (path: string): Promise<AgentKind[]> =>
-      path === '/tmp/acme' ? ['claude', 'cursor'] : [];
+    const detect = async (path: string): Promise<AgentKind[]> => (path === '/tmp/acme' ? ['claude', 'cursor'] : []);
 
     const result = await resolveAgentDefaults(agentChoiceScopes(['project-1'], [ACME]), [], {}, detect);
 

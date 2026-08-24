@@ -20,13 +20,7 @@ export function AboutIdentity({ showTagline = true }: AboutIdentityProps) {
   const { version, dark } = useAboutInfo();
   return (
     <>
-      <img
-        className="sk-about__logo"
-        src={dark ? logoDark : logoLight}
-        alt=""
-        width={72}
-        height={72}
-      />
+      <img className="sk-about__logo" src={dark ? logoDark : logoLight} alt="" width={72} height={72} />
       <div className="sk-about__name">{t('app.title')}</div>
       {version !== '' && <div className="sk-about__version">{t('about.version', { version })}</div>}
       {showTagline && <div className="sk-about__tagline">{t('about.tagline')}</div>}

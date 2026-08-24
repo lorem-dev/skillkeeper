@@ -20,14 +20,7 @@ export interface RowProps {
   readonly children?: ReactNode;
 }
 
-export function Row({
-  align = 'center',
-  justify = 'start',
-  gap,
-  wrap = false,
-  className,
-  children,
-}: RowProps) {
+export function Row({ align = 'center', justify = 'start', gap, wrap = false, className, children }: RowProps) {
   return (
     <div
       className={cx(

@@ -99,11 +99,7 @@ export function LogsPage() {
                 ariaLabel={t('logs.filter')}
                 placeholder={t('logs.filter')}
               />
-              <Button
-                variant="destructive"
-                onClick={clearNotifications}
-                disabled={notifications.length === 0}
-              >
+              <Button variant="destructive" onClick={clearNotifications} disabled={notifications.length === 0}>
                 {t('logs.clear')}
               </Button>
               <Button
@@ -113,12 +109,7 @@ export function LogsPage() {
               >
                 {t('logs.copyAll')}
               </Button>
-              <Button
-                variant="plain"
-                className="sk-logs__close"
-                onClick={closeLogs}
-                aria-label={t('common.close')}
-              >
+              <Button variant="plain" className="sk-logs__close" onClick={closeLogs} aria-label={t('common.close')}>
                 <Icon name="close" />
               </Button>
             </div>
@@ -134,9 +125,7 @@ export function LogsPage() {
                     <time className="sk-logs__time" dateTime={entry.at}>
                       {entry.at}
                     </time>
-                    {entry.repoId !== undefined && (
-                      <span className="sk-logs__repo">{entry.repoId}</span>
-                    )}
+                    {entry.repoId !== undefined && <span className="sk-logs__repo">{entry.repoId}</span>}
                   </div>
                   <p className="sk-logs__message">
                     {resolveNotification(entry, t)}

@@ -13,8 +13,7 @@ import { mcpConnectionFromDef } from './mcpPresetMapping';
 /** Fields the tile grid's search box fuzzy-matches one preset against. */
 export function mcpTileSearchText(preset: McpPreset, repositories: readonly Repository[]): string[] {
   const connection = mcpConnectionFromDef(preset.def);
-  const repoName =
-    preset.repoId !== undefined ? repositories.find((r) => r.id === preset.repoId)?.name : undefined;
+  const repoName = preset.repoId !== undefined ? repositories.find((r) => r.id === preset.repoId)?.name : undefined;
   const fields = [preset.name, preset.def.type];
   if (repoName !== undefined) fields.push(repoName);
   if (connection.url !== undefined) fields.push(connection.url);

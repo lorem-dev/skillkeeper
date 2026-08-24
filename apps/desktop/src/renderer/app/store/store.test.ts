@@ -562,18 +562,18 @@ describe('useSkillkeeperStore', () => {
         onMenuCheckForUpdates: () => () => {},
         onboardingMenuSync: () => {},
         getAppVersion: () => Promise.resolve('0.0.0-test'),
-        addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        cloneRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        updateRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        removeRepository: async () => ({ ok: true } as RemoveResult),
-        syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        addRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        cloneRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        updateRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        removeRepository: async () => ({ ok: true }) as RemoveResult,
+        syncRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
         repoHasUpdate: async () => false,
         describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
         listBranches: async () => [],
         selectFolder: async () => null,
-        addProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
-        updateProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
-        removeProject: async () => ({ ok: true } as RemoveResult),
+        addProject: async () => ({ ok: true, project: mockProject }) as ProjectResult,
+        updateProject: async () => ({ ok: true, project: mockProject }) as ProjectResult,
+        removeProject: async () => ({ ok: true }) as RemoveResult,
         describeProject: async () => ({ skillCount: 0, fromReposCount: 0, agentCount: 0 }),
         projectFolderState: async () => 'present' as const,
         openProject: async () => ({ ok: true }),
@@ -664,18 +664,18 @@ describe('useSkillkeeperStore', () => {
         onMenuCheckForUpdates: () => () => {},
         onboardingMenuSync: () => {},
         getAppVersion: () => Promise.resolve('0.0.0-test'),
-        addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        cloneRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        updateRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        removeRepository: async () => ({ ok: true } as RemoveResult),
-        syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        addRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        cloneRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        updateRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        removeRepository: async () => ({ ok: true }) as RemoveResult,
+        syncRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
         repoHasUpdate: async () => false,
         describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
         listBranches: async () => [],
         selectFolder: async () => null,
-        addProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
-        updateProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
-        removeProject: async () => ({ ok: true } as RemoveResult),
+        addProject: async () => ({ ok: true, project: mockProject }) as ProjectResult,
+        updateProject: async () => ({ ok: true, project: mockProject }) as ProjectResult,
+        removeProject: async () => ({ ok: true }) as RemoveResult,
         describeProject: async () => ({ skillCount: 0, fromReposCount: 0, agentCount: 0 }),
         projectFolderState: async () => 'present' as const,
         openProject: async () => ({ ok: true }),
@@ -779,9 +779,7 @@ describe('useSkillkeeperStore', () => {
 
     it('notifyResolveWarnings logs warnings without raising a toast', () => {
       const s = useSkillkeeperStore.getState();
-      s.notifyResolveWarnings([
-        { repoId: 'repo-1', repoName: 'fixture', message: 'Unresolved SKILL.md at "a/b/c"' },
-      ]);
+      s.notifyResolveWarnings([{ repoId: 'repo-1', repoName: 'fixture', message: 'Unresolved SKILL.md at "a/b/c"' }]);
       const state = useSkillkeeperStore.getState();
       expect(state.notifications).toHaveLength(1);
       expect(state.notifications[0]?.level).toBe('warning');
@@ -997,9 +995,7 @@ describe('useSkillkeeperStore', () => {
       vi.mocked(bridgeClient.reconcileSkills).mockResolvedValue([]);
       vi.mocked(bridgeClient.reconcileMcp).mockResolvedValue([]);
 
-      await useSkillkeeperStore
-        .getState()
-        .updateRepository(mockRepo.id, mockRepo.name, mockRepo.url, 'release');
+      await useSkillkeeperStore.getState().updateRepository(mockRepo.id, mockRepo.name, mockRepo.url, 'release');
 
       expect(bridgeClient.listAvailableSkills).toHaveBeenCalled();
       expect(bridgeClient.listAvailableMcp).toHaveBeenCalled();
@@ -1042,11 +1038,9 @@ describe('useSkillkeeperStore', () => {
     };
 
     beforeEach(() => {
-      useSkillkeeperStore.getState().setConfig(
-        { ...mockConfig, mcp: { servers: [{ id: 'manual-1', ...manualDef }] } },
-        validValidity,
-        [],
-      );
+      useSkillkeeperStore
+        .getState()
+        .setConfig({ ...mockConfig, mcp: { servers: [{ id: 'manual-1', ...manualDef }] } }, validValidity, []);
       vi.mocked(bridgeClient.listAvailableMcp).mockReset();
       vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue({ mcp: [repoAvailable], warnings: [] });
       // The shared `reset` leaves the notification log alone, and these tests
@@ -1175,8 +1169,7 @@ describe('useSkillkeeperStore', () => {
     /** The args passed to each `bridgeClient.applyMcp` call this test made. */
     const applyMcpArgs = (): unknown[] => vi.mocked(bridgeClient.applyMcp).mock.calls.map((c) => c[0]);
     /** The configs passed to each `bridgeClient.setConfig` call this test made. */
-    const setConfigArgs = (): SkillKeeperConfig[] =>
-      vi.mocked(bridgeClient.setConfig).mock.calls.map((c) => c[0]);
+    const setConfigArgs = (): SkillKeeperConfig[] => vi.mocked(bridgeClient.setConfig).mock.calls.map((c) => c[0]);
 
     beforeEach(() => {
       vi.mocked(bridgeClient.applyMcp).mockReset();
@@ -1191,11 +1184,9 @@ describe('useSkillkeeperStore', () => {
         validity: validValidity,
         warnings: [],
       }));
-      useSkillkeeperStore.getState().setConfig(
-        { ...mockConfig, mcp: { servers: [manualDef, otherManualDef] } },
-        validValidity,
-        [],
-      );
+      useSkillkeeperStore
+        .getState()
+        .setConfig({ ...mockConfig, mcp: { servers: [manualDef, otherManualDef] } }, validValidity, []);
       useSkillkeeperStore.setState({
         projects: [mockProject],
         mcpInstalls: [manualProjectInstall, globalInstall, unrelatedInstall],
@@ -1812,7 +1803,7 @@ describe('useSkillkeeperStore', () => {
       });
     });
 
-    describe('checkAppUpdateNow (the About dialog\'s manual button)', () => {
+    describe("checkAppUpdateNow (the About dialog's manual button)", () => {
       beforeEach(() => {
         useSkillkeeperStore.setState({ tasks: [], notifications: [], toasts: [] });
         vi.mocked(bridgeClient.checkAppUpdateNow).mockReset();

@@ -19,16 +19,26 @@ const DIST = join(ROOT, 'packages', 'i18n', 'dist', 'catalogs');
 const OUT = join(ROOT, 'locales');
 
 const LANGS = [
-  'en', 'de', 'ru', 'uk', 'be', 'fr', 'ja', 'zh-cn',
-  'pl', 'sr-cyrl', 'sr-latn', 'zh-tw', 'es', 'pt', 'ko', 'it',
+  'en',
+  'de',
+  'ru',
+  'uk',
+  'be',
+  'fr',
+  'ja',
+  'zh-cn',
+  'pl',
+  'sr-cyrl',
+  'sr-latn',
+  'zh-tw',
+  'es',
+  'pt',
+  'ko',
+  'it',
 ];
 
 function escapePo(s) {
-  return s
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\t/g, '\\t');
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\t/g, '\\t');
 }
 
 async function loadCatalog(lang) {

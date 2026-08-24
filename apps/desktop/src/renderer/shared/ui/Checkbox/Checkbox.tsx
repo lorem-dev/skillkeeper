@@ -54,14 +54,7 @@ export function Checkbox({
         className,
       )}
     >
-      <input
-        ref={ref}
-        type="checkbox"
-        className="sk-checkbox__input"
-        disabled={disabled}
-        checked={checked}
-        {...rest}
-      />
+      <input ref={ref} type="checkbox" className="sk-checkbox__input" disabled={disabled} checked={checked} {...rest} />
       <span className="sk-checkbox__box" aria-hidden="true">
         <svg viewBox="0 0 12 12" className="sk-checkbox__check">
           <path

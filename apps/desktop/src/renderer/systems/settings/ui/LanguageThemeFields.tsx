@@ -39,9 +39,7 @@ export function LanguageThemeFields({ languageClassName }: LanguageThemeFieldsPr
           className={languageClassName}
           options={languageOptions}
           value={lang}
-          onChange={(v) =>
-            void ensureCatalog(v as Lang).then(() => updateConfig({ general: { language: v as Lang } }))
-          }
+          onChange={(v) => void ensureCatalog(v as Lang).then(() => updateConfig({ general: { language: v as Lang } }))}
           ariaLabel={t('settings.language')}
           placeholder={t('settings.language')}
           emptyText={t('settings.languageEmpty')}

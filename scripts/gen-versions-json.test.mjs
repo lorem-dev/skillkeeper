@@ -32,7 +32,13 @@ const changes = [
   '',
 ].join('\n');
 
-const base = { changes, existingTags: ['v0.6.0', 'v0.5.0', 'v0.4.0'], currentTag: 'v0.6.0', assets: [], generatedAt: 'T' };
+const base = {
+  changes,
+  existingTags: ['v0.6.0', 'v0.5.0', 'v0.4.0'],
+  currentTag: 'v0.6.0',
+  assets: [],
+  generatedAt: 'T',
+};
 
 describe('buildManifest', () => {
   it('lists versions newest first', () => {
@@ -56,7 +62,12 @@ describe('buildManifest', () => {
 
   it('flags a release candidate', () => {
     const rc = changes.replace('## Version 0.6.0', '## Version 0.6.0-rc.1');
-    const m = buildManifest({ ...base, changes: rc, existingTags: ['v0.6.0-rc.1', 'v0.5.0', 'v0.4.0'], currentTag: 'v0.6.0-rc.1' });
+    const m = buildManifest({
+      ...base,
+      changes: rc,
+      existingTags: ['v0.6.0-rc.1', 'v0.5.0', 'v0.4.0'],
+      currentTag: 'v0.6.0-rc.1',
+    });
     expect(m.versions[0]).toMatchObject({ version: '0.6.0-rc.1', prerelease: true });
     expect(m.versions[1]).toMatchObject({ prerelease: false });
   });
@@ -185,12 +196,7 @@ describe('buildManifest', () => {
       assets: [],
       generatedAt: 'T',
     });
-    expect(m.versions.map((v) => v.version)).toEqual([
-      '0.7.0',
-      '0.7.0-rc.10',
-      '0.7.0-rc.9',
-      '0.7.0-rc.2',
-    ]);
+    expect(m.versions.map((v) => v.version)).toEqual(['0.7.0', '0.7.0-rc.10', '0.7.0-rc.9', '0.7.0-rc.2']);
   });
 
   it('rejects a malformed version heading instead of comparing it as NaN', () => {
@@ -198,9 +204,7 @@ describe('buildManifest', () => {
     // known-existing), or the tag filter would drop it before it ever
     // reaches the comparator -- so currentTag is set to match it.
     const bad = base.changes.replace('## Version 0.5.0', '## Version 0.x.0');
-    expect(() =>
-      buildManifest({ ...base, changes: bad, currentTag: 'v0.x.0' }),
-    ).toThrow(/malformed version/);
+    expect(() => buildManifest({ ...base, changes: bad, currentTag: 'v0.x.0' })).toThrow(/malformed version/);
   });
 });
 
@@ -332,9 +336,7 @@ describe('main', () => {
   it('writes versions.json, attaching the staged assets to the newest entry', () => {
     writeFileSync(join(root, 'dist', 'SkillKeeper_0.6.0_amd64.deb'), 'deb-bytes');
     writeFileSync(join(root, 'dist', 'SkillKeeper_0.6.0_aarch64.dmg'), 'dmg-bytes');
-    execFileSync.mockReturnValue(
-      JSON.stringify([{ tagName: 'v0.6.0' }, { tagName: 'v0.5.0' }, { tagName: 'v0.4.0' }]),
-    );
+    execFileSync.mockReturnValue(JSON.stringify([{ tagName: 'v0.6.0' }, { tagName: 'v0.5.0' }, { tagName: 'v0.4.0' }]));
 
     const manifest = main({ argv: argv('v0.6.0'), env: {}, root, now: () => 'FIXED-TIME' });
 
@@ -350,16 +352,12 @@ describe('main', () => {
   });
 
   it('throws when no tag is given, by argument or by $GITHUB_REF_NAME, and writes nothing', () => {
-    expect(() => main({ argv: ['node', 'scripts/gen-versions-json.mjs'], env: {}, root })).toThrow(
-      /no tag given/,
-    );
+    expect(() => main({ argv: ['node', 'scripts/gen-versions-json.mjs'], env: {}, root })).toThrow(/no tag given/);
     expect(existsSync(join(root, 'dist', 'versions.json'))).toBe(false);
   });
 
   it('throws when the dist directory does not exist', () => {
-    expect(() => main({ argv: argv('v0.6.0', 'no-such-dir'), env: {}, root })).toThrow(
-      /no such directory/,
-    );
+    expect(() => main({ argv: argv('v0.6.0', 'no-such-dir'), env: {}, root })).toThrow(/no such directory/);
   });
 
   it('throws, and writes nothing, when the tag matches no CHANGES.md section', () => {
@@ -369,13 +367,9 @@ describe('main', () => {
     // that had discarded every staged asset; now it must fail loudly and
     // must not write the file at all.
     writeFileSync(join(root, 'dist', 'SkillKeeper_0.9.9_amd64.deb'), 'deb-bytes');
-    execFileSync.mockReturnValue(
-      JSON.stringify([{ tagName: 'v0.6.0' }, { tagName: 'v0.5.0' }, { tagName: 'v0.4.0' }]),
-    );
+    execFileSync.mockReturnValue(JSON.stringify([{ tagName: 'v0.6.0' }, { tagName: 'v0.5.0' }, { tagName: 'v0.4.0' }]));
 
-    expect(() => main({ argv: argv('v9.9.9'), env: {}, root })).toThrow(
-      /matches no "## Version" section/,
-    );
+    expect(() => main({ argv: argv('v9.9.9'), env: {}, root })).toThrow(/matches no "## Version" section/);
     expect(existsSync(join(root, 'dist', 'versions.json'))).toBe(false);
   });
 
@@ -404,9 +398,7 @@ describe('main', () => {
   });
 
   it('falls back to $GITHUB_REF_NAME when no tag argument is given', () => {
-    execFileSync.mockReturnValue(
-      JSON.stringify([{ tagName: 'v0.6.0' }, { tagName: 'v0.5.0' }, { tagName: 'v0.4.0' }]),
-    );
+    execFileSync.mockReturnValue(JSON.stringify([{ tagName: 'v0.6.0' }, { tagName: 'v0.5.0' }, { tagName: 'v0.4.0' }]));
     const manifest = main({
       argv: ['node', 'scripts/gen-versions-json.mjs'],
       env: { GITHUB_REF_NAME: 'v0.6.0' },

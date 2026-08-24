@@ -17,9 +17,7 @@ export interface BadgeProps {
 
 export function Badge({ children, tone = 'neutral', selectable = false, className }: BadgeProps) {
   return (
-    <span
-      className={cx('sk-badge', `sk-badge--${tone}`, selectable && 'sk-badge--selectable', className)}
-    >
+    <span className={cx('sk-badge', `sk-badge--${tone}`, selectable && 'sk-badge--selectable', className)}>
       {children}
     </span>
   );

@@ -22,8 +22,6 @@ const options = [
 export const Interactive: Story = {
   render: () => {
     const [value, setValue] = useState('all');
-    return (
-      <SegmentedControl label="Filter" options={options} value={value} onChange={setValue} />
-    );
+    return <SegmentedControl label="Filter" options={options} value={value} onChange={setValue} />;
   },
 };

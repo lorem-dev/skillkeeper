@@ -106,12 +106,7 @@ export function McpCard({
         <span className="sk-mcp-card__badges">
           {repoName !== undefined && (
             <Tooltip content={goToRepoLabel ?? ''}>
-              <button
-                type="button"
-                className="sk-mcp-card__repo-badge"
-                onClick={onGoToRepo}
-                aria-label={goToRepoLabel}
-              >
+              <button type="button" className="sk-mcp-card__repo-badge" onClick={onGoToRepo} aria-label={goToRepoLabel}>
                 <Badge tone="accent">{truncate(repoName, REPO_MAX)}</Badge>
               </button>
             </Tooltip>
@@ -123,13 +118,7 @@ export function McpCard({
       <div className="sk-mcp-card__actions">
         {onEdit !== undefined && (
           <Tooltip content={editLabel}>
-            <Button
-              variant="secondary"
-              glass
-              className="sk-mcp-card__icon-btn"
-              onClick={onEdit}
-              aria-label={editLabel}
-            >
+            <Button variant="secondary" glass className="sk-mcp-card__icon-btn" onClick={onEdit} aria-label={editLabel}>
               <Icon name="edit" />
             </Button>
           </Tooltip>
