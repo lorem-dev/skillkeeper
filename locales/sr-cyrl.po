@@ -1277,9 +1277,6 @@ msgstr "Глобално"
 msgid "scope.globalHint"
 msgstr "Инсталирано за овог корисника, у сваком пројекту"
 
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex инсталира MCP сервере за целог корисника, а не по пројекту"
-
 msgid "skills.agentChoice.title"
 msgstr "Изаберите агенте"
 

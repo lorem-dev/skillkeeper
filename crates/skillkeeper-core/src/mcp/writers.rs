@@ -374,11 +374,9 @@ pub fn supports_transport(agent: AgentKind, t: McpTransport) -> bool {
 /// Inputs needed to resolve an agent's native MCP config destination.
 #[derive(Debug, Clone, Default)]
 pub struct McpDestinationTarget {
-    /// Project root; required (and non-blank) at project scope, except for
-    /// codex (global-only).
+    /// Project root; required (and non-blank) at project scope.
     pub project_path: Option<String>,
-    /// User home directory; required (and non-blank) at global scope, and for
-    /// codex always.
+    /// User home directory; required (and non-blank) at global scope.
     pub home_dir: Option<String>,
 }
 
@@ -408,15 +406,13 @@ fn require_destination_input<'a>(
 /// Resolve where `agent` keeps its native MCP config for `scope`. Global
 /// resolutions land next to the directory the agent's adapter already uses at
 /// global scope, so every SkillKeeper-managed file for that agent stays in one
-/// place. Codex is global-only: it has no project-scoped MCP config, so it
-/// ignores `scope`. Returns an error when the field the scope needs is absent
-/// or blank.
+/// place. Returns an error when the field the scope needs is absent or blank.
 pub fn mcp_destination(
     agent: AgentKind,
     scope: Scope,
     target: &McpDestinationTarget,
 ) -> Result<McpDestination, String> {
-    if scope == Scope::Global || agent == AgentKind::Codex {
+    if scope == Scope::Global {
         let home = require_destination_input(
             target.home_dir.as_ref(),
             &format!("{agent:?} global destination requires \"homeDir\""),
@@ -442,7 +438,7 @@ pub fn mcp_destination(
         AgentKind::Cursor => format!("{project}/.cursor/mcp.json"),
         AgentKind::Copilot => format!("{project}/.vscode/mcp.json"),
         AgentKind::Opencode => format!("{project}/opencode.json"),
-        AgentKind::Codex => unreachable!("codex handled above"),
+        AgentKind::Codex => format!("{project}/.codex/config.toml"),
     };
     Ok(McpDestination {
         path,
@@ -1089,16 +1085,48 @@ mod tests {
     }
 
     #[test]
-    fn mcp_destination_keeps_codex_global_at_project_scope() {
+    fn mcp_destination_resolves_codex_at_project_scope() {
         let target = McpDestinationTarget {
             project_path: Some("/proj".to_string()),
             home_dir: Some("/home/user".to_string()),
         };
-        // Codex has no project-scoped MCP config; asking for one still resolves
-        // globally rather than inventing a path under the project.
+        // Codex reads a project-scoped .codex/config.toml, so a project-scope
+        // request resolves under the project rather than falling back to the
+        // home directory.
         let dest = mcp_destination(AgentKind::Codex, Scope::Project, &target).unwrap();
-        assert_eq!(dest.path, "/home/user/.codex/config.toml");
+        assert_eq!(dest.path, "/proj/.codex/config.toml");
+        assert_eq!(dest.scope, Scope::Project);
+    }
+
+    #[test]
+    fn codex_resolves_a_project_scoped_config() {
+        let target = McpDestinationTarget {
+            project_path: Some("/work/app".to_string()),
+            home_dir: Some("/home/u".to_string()),
+        };
+        let dest = mcp_destination(AgentKind::Codex, Scope::Project, &target).expect("resolve");
+        assert_eq!(dest.path, "/work/app/.codex/config.toml");
+        assert_eq!(dest.scope, Scope::Project);
+    }
+
+    #[test]
+    fn codex_still_resolves_a_global_config() {
+        let target = McpDestinationTarget {
+            project_path: None,
+            home_dir: Some("/home/u".to_string()),
+        };
+        let dest = mcp_destination(AgentKind::Codex, Scope::Global, &target).expect("resolve");
+        assert_eq!(dest.path, "/home/u/.codex/config.toml");
         assert_eq!(dest.scope, Scope::Global);
+    }
+
+    #[test]
+    fn codex_at_project_scope_rejects_a_blank_project_path() {
+        let target = McpDestinationTarget {
+            project_path: Some("   ".to_string()),
+            home_dir: Some("/home/u".to_string()),
+        };
+        assert!(mcp_destination(AgentKind::Codex, Scope::Project, &target).is_err());
     }
 
     #[test]

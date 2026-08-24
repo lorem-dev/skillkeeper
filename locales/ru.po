@@ -1322,9 +1322,6 @@ msgstr "Глобально"
 msgid "scope.globalHint"
 msgstr "Установлено для этого пользователя, во всех проектах"
 
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex устанавливает MCP серверы для всего пользователя, а не для отдельного проекта"
-
 msgid "skills.agentChoice.title"
 msgstr "Выберите агентов"
 

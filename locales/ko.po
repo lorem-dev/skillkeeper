@@ -1313,9 +1313,6 @@ msgstr "전역"
 msgid "scope.globalHint"
 msgstr "이 사용자 전체에 설치되어 모든 프로젝트에 적용"
 
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex는 MCP 서버를 프로젝트별이 아니라 사용자 전체에 설치합니다"
-
 msgid "skills.agentChoice.title"
 msgstr "에이전트 선택"
 

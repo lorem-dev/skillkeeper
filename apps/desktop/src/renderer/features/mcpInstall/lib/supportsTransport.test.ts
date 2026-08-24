@@ -13,10 +13,10 @@ import { supportsTransport } from './supportsTransport';
 const TRANSPORTS: readonly McpTransport[] = ['stdio', 'http', 'sse'];
 
 describe('supportsTransport', () => {
-  it('codex supports only stdio', () => {
-    expect(supportsTransport('codex', 'stdio')).toBe(true);
-    expect(supportsTransport('codex', 'http')).toBe(false);
+  it('lets codex take http but not sse', () => {
+    expect(supportsTransport('codex', 'http')).toBe(true);
     expect(supportsTransport('codex', 'sse')).toBe(false);
+    expect(supportsTransport('codex', 'stdio')).toBe(true);
   });
 
   it('every non-codex agent supports every transport', () => {

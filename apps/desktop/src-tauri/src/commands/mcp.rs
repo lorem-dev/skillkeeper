@@ -46,19 +46,13 @@ use std::sync::Arc;
 use super::blocking;
 use crate::state::AppContext;
 
-/// The four project-scoped MCP agents; codex is handled separately (global).
-const PROJECT_MCP_AGENTS: [AgentKind; 4] = [
-    AgentKind::Claude,
-    AgentKind::Cursor,
-    AgentKind::Copilot,
-    AgentKind::Opencode,
-];
-
 /// The reserved `projectId` an install reports at global scope. It is a bucket
 /// label on the wire only -- `state.json` never gains a project with this id.
 pub const GLOBAL_PROJECT_ID: &str = "global";
 
-/// Every agent, for the global pass over MCP ledgers.
+/// Every MCP agent, for both the per-project pass and the global pass over
+/// MCP ledgers. Every agent is eligible at both scopes now that Codex resolves
+/// a real project-scoped destination (see `mcp_destination`).
 const ALL_MCP_AGENTS: [AgentKind; 5] = [
     AgentKind::Claude,
     AgentKind::Codex,
@@ -401,28 +395,23 @@ struct McpTarget {
     params_path: String,
     /// Per-agent guidance file(s) that MCP `rules` blocks install into.
     guidance_files: Vec<String>,
-    /// The scope these paths were actually resolved at, which is not always the
-    /// requested one (codex is global-only). Gate anything that depends on where
-    /// the write lands -- the `.gitignore` entry above all -- on THIS, never on
-    /// the requested scope, or the two can disagree.
+    /// The scope these paths were actually resolved at. Gate anything that
+    /// depends on where the write lands -- the `.gitignore` entry above all --
+    /// on THIS, never on the requested scope, or the two can disagree.
     scope: Scope,
 }
 
-/// The scope an MCP write for `agent` really lands at. Codex has no
-/// project-scoped native config, so it is always global no matter what was
-/// requested.
-fn resolved_mcp_scope(agent: AgentKind, requested: Scope) -> Scope {
-    if agent == AgentKind::Codex {
-        Scope::Global
-    } else {
-        requested
-    }
+/// The scope an MCP write for `agent` really lands at. Kept as a named function
+/// because callers must gate on the RESOLVED scope rather than the requested
+/// one; today they coincide for every agent.
+fn resolved_mcp_scope(_agent: AgentKind, requested: Scope) -> Scope {
+    requested
 }
 
 /// Resolve where one MCP install for `agent` writes at `scope`: the native
 /// config path, the ledger/params paths under the agent's skills destination
 /// root for that scope (the SAME root the skills engine resolves), and the
-/// agent's guidance file. Codex is global-only and ignores `scope`.
+/// agent's guidance file.
 fn resolve_mcp_target(
     ctx: &AppContext,
     agent: AgentKind,
@@ -643,11 +632,7 @@ fn resolve_install_values(
 /// `mcp:apply` -- apply install/remove batches for a project across agents.
 /// Removes run before installs (so a re-install onto the same instance name
 /// starts clean); an install whose transport the agent cannot express is skipped
-/// and reported. A codex batch at project scope is skipped whole -- installs AND
-/// removes -- and every dropped operation is reported, so no caller can read the
-/// drop as success. Codex otherwise resolves to the global scope and takes no
-/// `.gitignore` path. Never throws across the boundary. Port of the TS
-/// `applyMcp`.
+/// and reported. Never throws across the boundary. Port of the TS `applyMcp`.
 pub fn apply(ctx: &AppContext, args: ApplyMcpArgs) -> ApplyMcpResult {
     let _guard = lock(ctx);
     match apply_inner(ctx, &args) {
@@ -666,30 +651,6 @@ fn apply_inner(
     let mut skipped: Vec<McpSkipped> = Vec::new();
 
     for batch in &args.batches {
-        // Codex has no project-scoped MCP config: its only home is Global, so a
-        // project batch is reported rather than silently written to the home.
-        // BOTH halves of the batch are reported: a remove-only batch that
-        // reported nothing was indistinguishable from a successful removal, so
-        // a caller that lost the scope on the way in (as `deleteMcpPreset` once
-        // did) saw the server disappear from the interface while it stayed in
-        // `~/.codex/config.toml` and in the global ledger.
-        if args.scope == Scope::Project && batch.agent == AgentKind::Codex {
-            for ins in &batch.install {
-                skipped.push(McpSkipped {
-                    agent: batch.agent,
-                    source: ins.identity.source.clone(),
-                    transport: Some(ins.def.transport),
-                });
-            }
-            for rem in &batch.remove {
-                skipped.push(McpSkipped {
-                    agent: batch.agent,
-                    source: rem.instance_name.clone(),
-                    transport: None,
-                });
-            }
-            continue;
-        }
         let target = resolve_mcp_target(
             ctx,
             batch.agent,
@@ -824,8 +785,8 @@ fn read_params_map(
 }
 
 /// `mcp:installs` -- read every agent's `.skmcp.yml` and map each entry to an
-/// [`McpInstall`]: the four project agents across all tracked projects, plus the
-/// codex global ledger. Read-only (no pruning). Port of the TS `listMcpInstalls`.
+/// [`McpInstall`]: every agent across all tracked projects, plus every agent's
+/// global ledger. Read-only (no pruning). Port of the TS `listMcpInstalls`.
 pub fn installs(ctx: &AppContext) -> Vec<McpInstall> {
     let mut out = Vec::new();
     let projects = {
@@ -837,7 +798,7 @@ pub fn installs(ctx: &AppContext) -> Vec<McpInstall> {
     };
 
     for project in &projects {
-        for agent in PROJECT_MCP_AGENTS {
+        for agent in ALL_MCP_AGENTS {
             if let Ok(target) =
                 resolve_mcp_target(ctx, agent, Scope::Project, &project.path, &project.id)
             {
@@ -968,7 +929,7 @@ pub fn reconcile(ctx: &AppContext) -> Vec<McpInstall> {
     };
 
     for project in &projects {
-        for agent in PROJECT_MCP_AGENTS {
+        for agent in ALL_MCP_AGENTS {
             if let Ok(target) =
                 resolve_mcp_target(ctx, agent, Scope::Project, &project.path, &project.id)
             {
@@ -1302,6 +1263,16 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+        }
+    }
+
+    /// An sse def -- the one transport Codex still rejects (it now accepts
+    /// both stdio and http).
+    fn sse_def() -> McpServerDef {
+        McpServerDef {
+            transport: McpTransport::Sse,
+            url: Some("https://mcp.example.com/mcp".to_string()),
+            ..http_def()
         }
     }
 
@@ -1718,15 +1689,16 @@ mod tests {
     }
 
     #[test]
-    fn apply_skips_a_codex_batch_at_project_scope() {
+    fn apply_installs_a_codex_batch_at_project_scope() {
         let app = CodexApp::new();
+        let project_path = app.home.join("proj").to_string_lossy().into_owned();
 
         let result = apply(
             &app.ctx,
             ApplyMcpArgs {
                 scope: Scope::Project,
                 project_id: "p1".to_string(),
-                project_path: app.home.join("proj").to_string_lossy().into_owned(),
+                project_path: project_path.clone(),
                 batches: vec![McpBatch {
                     agent: AgentKind::Codex,
                     install: vec![install_req(stdio_token_def(), &[("token", "abc")])],
@@ -1734,28 +1706,56 @@ mod tests {
                 }],
             },
         );
-        assert!(result.ok);
-        assert_eq!(result.installed, Some(0));
-        let skipped = result.skipped.expect("skipped list present");
-        assert_eq!(skipped.len(), 1);
-        assert_eq!(skipped[0].agent, AgentKind::Codex);
-        assert_eq!(skipped[0].source, "github");
-        assert_eq!(skipped[0].transport, Some(McpTransport::Stdio));
-        // Nothing was written anywhere.
+        assert!(
+            result.ok,
+            "codex project install failed: {:?}",
+            result.error
+        );
+        assert_eq!(result.installed, Some(1));
+        assert_eq!(result.skipped.as_ref().map(Vec::len), Some(0));
+
+        // Native config written under the project, not the home.
+        let native = std::fs::read_to_string(Path::new(&project_path).join(".codex/config.toml"))
+            .expect("project-scoped codex config written");
+        assert!(native.contains("[mcp_servers.github_1]"));
         assert!(!app.home.join(".codex/config.toml").exists());
-        assert!(installs(&app.ctx).is_empty());
+
+        // Resolved scope is now Project, so the gitignore gate that keeps the
+        // ledger out of the repository applies to codex exactly as it does for
+        // every other agent.
+        let gitignore = std::fs::read_to_string(Path::new(&project_path).join(".gitignore"))
+            .expect("gitignore written for a project-scoped codex install");
+        assert!(gitignore.contains(".skmcp.params.yml"));
     }
 
     #[test]
-    fn apply_reports_a_remove_only_codex_batch_at_project_scope() {
-        // A codex instance exists -- installed the only way it can be, globally.
+    fn a_project_scoped_codex_install_appears_in_the_installs_listing() {
+        // `installs()` used to skip codex in its per-project loop (the
+        // now-removed `PROJECT_MCP_AGENTS` excluded it), so a project-scoped
+        // codex install could land correctly on disk yet never surface here.
         let app = CodexApp::new();
-        let installed = apply(
+        let project_path = app.home.join("proj").to_string_lossy().into_owned();
+
+        let project = Project {
+            id: "p1".to_string(),
+            path: project_path.clone(),
+            name: "app".to_string(),
+            added_at: "2026-07-17T00:00:00.000Z".to_string(),
+        };
+        let state = AppState {
+            version: STATE_VERSION,
+            repositories: vec![],
+            projects: vec![project],
+            installs: vec![],
+        };
+        save_state(&app.ctx.fs, &app.ctx.paths.state_json, &state).unwrap();
+
+        let result = apply(
             &app.ctx,
             ApplyMcpArgs {
-                scope: Scope::Global,
-                project_id: String::new(),
-                project_path: String::new(),
+                scope: Scope::Project,
+                project_id: "p1".to_string(),
+                project_path: project_path.clone(),
                 batches: vec![McpBatch {
                     agent: AgentKind::Codex,
                     install: vec![install_req(stdio_token_def(), &[("token", "abc")])],
@@ -1763,18 +1763,59 @@ mod tests {
                 }],
             },
         );
-        assert!(installed.ok, "global install failed: {:?}", installed.error);
+        assert!(
+            result.ok,
+            "codex project install failed: {:?}",
+            result.error
+        );
+        assert_eq!(result.installed, Some(1));
 
-        // Removing it at PROJECT scope cannot be honoured. Before the fix this
-        // returned `removed: 0` with an empty `skipped` list -- byte-identical
-        // to a successful removal -- so the caller reported success while the
-        // server stayed in the config and the ledger.
+        let listed = installs(&app.ctx);
+        let entry = listed
+            .iter()
+            .find(|i| i.agent == AgentKind::Codex && i.project_id == "p1");
+        assert!(
+            entry.is_some(),
+            "expected a project-scoped codex install in the listing, got: {listed:?}"
+        );
+        assert_eq!(entry.unwrap().instance_name, "github_1");
+    }
+
+    #[test]
+    fn apply_removes_a_codex_instance_at_project_scope() {
+        // Before project scope was real, removing at PROJECT scope for codex was
+        // reported as a skip (the batch could only ever land at Global). Now a
+        // project-scope codex remove is honoured exactly like every other agent:
+        // installed at project scope, then removed from that same project file.
+        let app = CodexApp::new();
+        let project_path = app.home.join("proj").to_string_lossy().into_owned();
+
+        let installed = apply(
+            &app.ctx,
+            ApplyMcpArgs {
+                scope: Scope::Project,
+                project_id: "p1".to_string(),
+                project_path: project_path.clone(),
+                batches: vec![McpBatch {
+                    agent: AgentKind::Codex,
+                    install: vec![install_req(stdio_token_def(), &[("token", "abc")])],
+                    remove: vec![],
+                }],
+            },
+        );
+        assert!(
+            installed.ok,
+            "project install failed: {:?}",
+            installed.error
+        );
+        assert_eq!(installed.installed, Some(1));
+
         let result = apply(
             &app.ctx,
             ApplyMcpArgs {
                 scope: Scope::Project,
                 project_id: "p1".to_string(),
-                project_path: app.home.join("proj").to_string_lossy().into_owned(),
+                project_path: project_path.clone(),
                 batches: vec![McpBatch {
                     agent: AgentKind::Codex,
                     install: vec![],
@@ -1784,17 +1825,13 @@ mod tests {
                 }],
             },
         );
-        assert!(result.ok);
-        assert_eq!(result.removed, Some(0));
-        let skipped = result.skipped.expect("skipped list present");
-        assert_eq!(skipped.len(), 1);
-        assert_eq!(skipped[0].agent, AgentKind::Codex);
-        assert_eq!(skipped[0].source, "github_1");
-        assert_eq!(skipped[0].transport, None);
-        // And the instance is still there, which is what the report says.
-        let listed = installs(&app.ctx);
-        assert_eq!(listed.len(), 1);
-        assert_eq!(listed[0].instance_name, "github_1");
+        assert!(result.ok, "project remove failed: {:?}", result.error);
+        assert_eq!(result.removed, Some(1));
+        assert_eq!(result.skipped.as_ref().map(Vec::len), Some(0));
+
+        let native = std::fs::read_to_string(Path::new(&project_path).join(".codex/config.toml"))
+            .expect("project-scoped codex config still present");
+        assert!(!native.contains("github_1"));
     }
 
     #[test]
@@ -2047,7 +2084,8 @@ mod tests {
     fn apply_skips_an_install_whose_transport_the_agent_cannot_express() {
         let app = CodexApp::new();
 
-        // Codex is stdio-only; an http def is skipped, not installed.
+        // Codex accepts stdio and http; sse is the one transport it still
+        // cannot express, so an sse def is skipped, not installed.
         let result = apply(
             &app.ctx,
             ApplyMcpArgs {
@@ -2056,7 +2094,7 @@ mod tests {
                 project_path: String::new(),
                 batches: vec![McpBatch {
                     agent: AgentKind::Codex,
-                    install: vec![install_req(http_def(), &[])],
+                    install: vec![install_req(sse_def(), &[])],
                     remove: vec![],
                 }],
             },
@@ -2067,7 +2105,7 @@ mod tests {
         assert_eq!(skipped.len(), 1);
         assert_eq!(skipped[0].agent, AgentKind::Codex);
         assert_eq!(skipped[0].source, "github");
-        assert_eq!(skipped[0].transport, Some(McpTransport::Http));
+        assert_eq!(skipped[0].transport, Some(McpTransport::Sse));
         assert!(installs(&app.ctx).is_empty());
     }
 }

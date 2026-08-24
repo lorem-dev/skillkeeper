@@ -62,8 +62,8 @@ const manualStdioPreset: McpPreset = {
   hasRules: false,
 };
 
-// Repo http preset with two params -- codex is disabled (http is not
-// expressible in its stdio-only TOML config), every other agent is selectable.
+// Repo http preset with two params -- every agent (including codex, whose
+// TOML config now expresses http) is selectable.
 export const RepoHttpWithParams: Story = {
   render: (args) => {
     useSeedProjects();

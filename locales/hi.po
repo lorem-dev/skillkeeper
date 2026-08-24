@@ -1232,9 +1232,6 @@ msgstr "वैश्विक"
 msgid "scope.globalHint"
 msgstr "इस उपयोगकर्ता के लिए, हर प्रोजेक्ट में इंस्टॉल"
 
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex, MCP सर्वर पूरे उपयोगकर्ता के लिए इंस्टॉल करता है, प्रति प्रोजेक्ट नहीं"
-
 msgid "skills.agentChoice.title"
 msgstr "एजेंट चुनें"
 

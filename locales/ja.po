@@ -1187,9 +1187,6 @@ msgstr "グローバル"
 msgid "scope.globalHint"
 msgstr "このユーザー全体にインストールされ、すべてのプロジェクトで有効"
 
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex はMCPサーバーをプロジェクトごとではなくユーザー全体にインストールします"
-
 msgid "skills.agentChoice.title"
 msgstr "エージェントを選択"
 

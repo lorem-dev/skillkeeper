@@ -1187,9 +1187,6 @@ msgstr "全域"
 msgid "scope.globalHint"
 msgstr "為此使用者安裝，適用於所有專案"
 
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex 為整個使用者安裝 MCP 伺服器，而非按專案安裝"
-
 msgid "skills.agentChoice.title"
 msgstr "選擇代理"
 
