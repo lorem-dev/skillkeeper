@@ -856,6 +856,82 @@ msgstr "ส่วนประกอบ"
 msgid "mcp.managementTitle"
 msgstr "การจัดการ"
 
+#, fuzzy
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+#, fuzzy
+msgid "mcp.field.clientId"
+msgstr "รหัสไคลเอนต์"
+
+#, fuzzy
+msgid "mcp.field.callbackPort"
+msgstr "พอร์ตคอลแบ็ก"
+
+#, fuzzy
+msgid "mcp.field.scopes"
+msgstr "ขอบเขต"
+
+#, fuzzy
+msgid "mcp.scopePlaceholder"
+msgstr "ขอบเขต"
+
+#, fuzzy
+msgid "mcp.addScope"
+msgstr "เพิ่มขอบเขต"
+
+#, fuzzy
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper จัดเก็บเฉพาะฟิลด์ไคลเอนต์สาธารณะเท่านั้น ลงชื่อเข้าใช้ผ่านเอเจนต์เอง ไม่มีการบันทึกไคลเอนต์ซีเคร็ตไว้ที่นี่"
+
+#, fuzzy
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth ใช้ได้กับเซิร์ฟเวอร์ http และ sse เท่านั้น"
+
+#, fuzzy
+msgid "mcp.error.clientIdBlank"
+msgstr "รหัสไคลเอนต์ต้องไม่ว่างเปล่า"
+
+#, fuzzy
+msgid "mcp.error.callbackPortRange"
+msgstr "พอร์ตคอลแบ็กต้องอยู่ระหว่าง 1 ถึง 65535"
+
+#, fuzzy
+msgid "mcp.error.scopeBlank"
+msgstr "ขอบเขตต้องไม่ว่างเปล่า"
+
+#, fuzzy
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} ไม่สามารถจัดเก็บไคลเอนต์ OAuth ได้ เซิร์ฟเวอร์นี้จึงจะไม่สามารถยืนยันตัวตนได้"
+
+#, fuzzy
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} ไม่รองรับ {field} จึงไม่ได้เขียนค่านี้"
+
+#, fuzzy
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex ตั้งค่าพอร์ตคอลแบ็ก OAuth ไว้ที่ {found} อยู่แล้ว จึงถูกปล่อยไว้เช่นเดิมแทนที่จะตั้งเป็น {wanted}"
+
+#, fuzzy
+msgid "mcp.field.description"
+msgstr "คำอธิบาย"
+
+#, fuzzy
+msgid "mcp.descriptionPlaceholder"
+msgstr "เซิร์ฟเวอร์นี้ใช้ทำอะไร"
+
+#, fuzzy
+msgid "mcp.param.choosePlaceholder"
+msgstr "เลือกค่า"
+
+#, fuzzy
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} ไม่รองรับค่าที่บันทึกไว้อีกต่อไป จึงเลือก {value} แทน"
+
+#, fuzzy
+msgid "mcp.error.invalidOption"
+msgstr "เลือกค่าใดค่าหนึ่งที่มีให้"
+
 msgid "settings.comingSoon"
 msgstr "หน้าการตั้งค่าจะมาเร็ว ๆ นี้"
 
@@ -1186,9 +1262,6 @@ msgstr "ทั่วระบบ"
 
 msgid "scope.globalHint"
 msgstr "ติดตั้งสำหรับผู้ใช้นี้ ในทุกโปรเจกต์"
-
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex ติดตั้งเซิร์ฟเวอร์ MCP สำหรับผู้ใช้ทั้งหมด ไม่ใช่แยกตามโปรเจกต์"
 
 msgid "skills.agentChoice.title"
 msgstr "เลือกเอเจนต์"

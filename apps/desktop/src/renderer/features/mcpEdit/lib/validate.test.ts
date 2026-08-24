@@ -4,8 +4,10 @@
  * the canonical algorithm lives in the Rust `skillkeeper-core` crate).
  */
 import { describe, it, expect } from 'vitest';
-import { validateParamSyntax, validatePreset } from './validate';
-import type { McpPresetDraft } from './validate';
+import { oauthFromDraft, validateParamSyntax, validatePreset } from './validate';
+import type { McpOauthDraft, McpPresetDraft } from './validate';
+
+const emptyOauthDraft: McpOauthDraft = { callbackPort: '', clientId: '', scopes: [] };
 
 const emptyDraft: McpPresetDraft = {
   name: '',
@@ -16,7 +18,12 @@ const emptyDraft: McpPresetDraft = {
   args: [],
   env: [],
   rules: '',
+  description: '',
+  oauth: emptyOauthDraft,
 };
+
+const stdioDraft: McpPresetDraft = { ...emptyDraft, name: 'x', type: 'stdio', command: 'run' };
+const httpDraft: McpPresetDraft = { ...emptyDraft, name: 'x', type: 'http', url: 'https://example.com' };
 
 describe('validateParamSyntax', () => {
   it('accepts a placeholder-free string', () => {
@@ -223,5 +230,84 @@ describe('validatePreset', () => {
     const paramErrors = errors.filter((e) => e.field === 'url' || e.field === 'headers.0.value');
     expect(paramErrors).toHaveLength(1);
     expect(paramErrors[0]?.field).toBe('url');
+  });
+
+  it('rejects an oauth block on a stdio preset', () => {
+    const errors = validatePreset({
+      ...stdioDraft,
+      oauth: { clientId: 'c', callbackPort: '', scopes: [] },
+    });
+    expect(errors.map((e) => e.messageKey)).toContain('mcp.error.oauthOnStdio');
+  });
+
+  it('does not flag an untouched oauth section on a stdio preset', () => {
+    const errors = validatePreset(stdioDraft);
+    expect(errors.map((e) => e.messageKey)).not.toContain('mcp.error.oauthOnStdio');
+  });
+
+  it('rejects a callback port outside the valid range', () => {
+    for (const port of ['0', '65536', '-1', 'abc']) {
+      const errors = validatePreset({
+        ...httpDraft,
+        oauth: { clientId: '', callbackPort: port, scopes: [] },
+      });
+      expect(errors.map((e) => e.messageKey)).toContain('mcp.error.callbackPortRange');
+    }
+  });
+
+  it('accepts a valid callback port', () => {
+    const errors = validatePreset({
+      ...httpDraft,
+      oauth: { clientId: '', callbackPort: '8432', scopes: [] },
+    });
+    expect(errors.map((e) => e.messageKey)).not.toContain('mcp.error.callbackPortRange');
+  });
+
+  it('rejects a whitespace-only client id', () => {
+    const errors = validatePreset({
+      ...httpDraft,
+      oauth: { clientId: '   ', callbackPort: '', scopes: [] },
+    });
+    expect(errors.map((e) => e.messageKey)).toContain('mcp.error.clientIdBlank');
+  });
+
+  it('flags a blank scope by its row index', () => {
+    const errors = validatePreset({
+      ...httpDraft,
+      oauth: { clientId: '', callbackPort: '', scopes: ['read', '   '] },
+    });
+    expect(errors).toContainEqual({ field: 'scopes.1', messageKey: 'mcp.error.scopeBlank' });
+  });
+});
+
+describe('oauthFromDraft', () => {
+  it('drops an oauth block whose every field is empty', () => {
+    expect(oauthFromDraft({ clientId: '  ', callbackPort: '', scopes: ['', ' '] })).toBeUndefined();
+  });
+
+  it('keeps scopes as a list and trims blanks', () => {
+    expect(oauthFromDraft({ clientId: 'c', callbackPort: '8432', scopes: ['read', ' ', 'write'] })).toEqual({
+      clientId: 'c',
+      callbackPort: 8432,
+      scopes: ['read', 'write'],
+    });
+  });
+
+  it('keeps just the client id when nothing else is filled in', () => {
+    expect(oauthFromDraft({ clientId: 'c', callbackPort: '', scopes: [] })).toEqual({
+      clientId: 'c',
+      scopes: [],
+    });
+  });
+
+  it('keeps just the callback port when nothing else is filled in', () => {
+    expect(oauthFromDraft({ clientId: '', callbackPort: '8432', scopes: [] })).toEqual({
+      callbackPort: 8432,
+      scopes: [],
+    });
+  });
+
+  it('drops a non-integer callback port', () => {
+    expect(oauthFromDraft({ clientId: '', callbackPort: '84.5', scopes: [] })).toBeUndefined();
   });
 });

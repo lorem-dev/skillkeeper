@@ -86,3 +86,11 @@
   gap: var(--sk-space-2);
   min-width: 0;
 }
+
+/* The parameter's authored description, on the same row as its name and its
+   control: secondary text, so the control stays the row's focus. */
+.sk-save-modal__mcpprompt-help {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+  min-width: 0;
+}

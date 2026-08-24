@@ -8,8 +8,7 @@ describe('stripSvgRoot', () => {
   });
 
   it('preserves multiple sibling elements', () => {
-    const svg =
-      '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="1" cy="1" r="1" /><path d="M0 0h4" /></svg>';
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="1" cy="1" r="1" /><path d="M0 0h4" /></svg>';
     expect(stripSvgRoot(svg)).toBe('<circle cx="1" cy="1" r="1" /><path d="M0 0h4" />');
   });
 

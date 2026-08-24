@@ -68,6 +68,16 @@ servers:
     args: [<string>, ...]     # optional, stdio
     env:                      # optional, stdio
       <VAR_NAME>: <value>
+    oauth:                    # optional, http/sse
+      clientId: <string>
+      callbackPort: <number>
+      scopes: [<string>, ...]
+    description: <string>     # optional, shown wherever this preset is listed
+    parameters:               # optional, keyed by parameter name
+      <param-name>:
+        description: <string> # optional, prose; see "Descriptions" below
+        options:              # optional, value-to-label map; order matters
+          <value>: <label>
     rules: <string>           # optional guidance body
 ```
 
@@ -119,7 +129,7 @@ servers:
 
 ```yaml
 # yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json
-# tooling/mcp.yml -- group "tooling"
+# tooling/mcp.yml - group "tooling"
 version: 1
 servers:
   - name: tooling-sse
@@ -133,18 +143,21 @@ Both files exist for real in the
 [skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo)
 fixture repository:
 [`mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/mcp.yml)
-declares five ungrouped presets covering all three transports, with and without
-parameters, headers, and `rules`;
+declares nine ungrouped presets covering all three transports, with and
+without parameters, headers, `rules`, `oauth`, descriptions and
+option-constrained parameters -- including two invalid on purpose, for the
+lint checks;
 [`tooling/mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/mcp.yml)
 declares one preset in the `tooling` group.
 
 ## Parameters
 
 A server definition may reference `{name}` placeholders in `url`, header
-values, `command`, `args`, `env` values, and `rules`. Parameters are **not**
-declared anywhere - they are discovered by scanning every one of those
-fields for `{[A-Za-z0-9_]+}` and collecting the distinct names. The same
-name used in more than one field is still a single parameter.
+values, `command`, `args`, `env` values, `rules`, `oauth.clientId`, and each
+entry of `oauth.scopes`. Parameters are **not** declared anywhere - they are
+discovered by scanning every one of those fields for `{[A-Za-z0-9_]+}` and
+collecting the distinct names. The same name used in more than one field is
+still a single parameter. `oauth.callbackPort` is numeric and is not scanned.
 
 Placeholder syntax is validated separately: an unclosed `{`, an empty `{}`,
 or a name containing a character outside `[A-Za-z0-9_]` is rejected, with
@@ -162,7 +175,7 @@ Example: the `docs-http` server above has two parameters, `host` and
 
 ```yaml
 headers:
-  X-Token: "{personal_token}"   # quoted -- a string
+  X-Token: "{personal_token}"   # quoted, a string
   Authorization: Bearer {token} # fine unquoted: `{` is not the first character
 ```
 
@@ -171,6 +184,115 @@ is read as the map `{personal_token: null}` rather than as text. SkillKeeper
 recovers the intended string and reads the file anyway, but it reports a
 warning naming the line, because the same spelling means something else to
 every other YAML tool. Quoting silences it.
+
+## Descriptions and parameter metadata
+
+A server, and each of its parameters, may carry a `description`: a short line
+of prose shown wherever the preset (or its parameter prompt) is listed. A
+parameter may also carry `options`, restricting it to a fixed set of values
+and giving each one a label.
+
+```yaml
+version: 1
+servers:
+  - name: docs-remote
+    type: http
+    url: "https://mcp.example.com/mcp"
+    description: "Docs search over the [team wiki](https://mcp.example.com/wiki)."
+    parameters:
+      region:
+        description: "Which regional endpoint to query."
+        options:
+          us: United States
+          eu: Europe
+      token:
+        description: "A personal access token."
+```
+
+`parameters` is **additive metadata, not a declaration**: the set of
+parameters still comes from scanning every string field for `{name}`
+placeholders, exactly as described above. A placeholder with no `parameters`
+entry behaves exactly as it always has, and an existing `mcp.yml` with no
+`parameters` block does not change meaning. An entry in `parameters` naming
+something no placeholder uses is never an error - it is a lint warning
+(`SK019`), and nothing else changes. See
+[CLI Reference](cli.md#repo-lint) for the full table of lint codes.
+
+### Description markup
+
+A description is prose, not a template: it is deliberately **not** scanned
+for `{param}` placeholders, so writing `{name}` inside one renders as those
+literal characters and never becomes an input field.
+
+Exactly one markup form is recognized: `[text](http://...)` or
+`[text](https://...)`. Everything else stays literal text, including every
+other URL scheme, a protocol-relative or relative URL, a URL containing `(`
+or whitespace, an empty or whitespace-only label, and unbalanced brackets. A
+link immediately followed by more text is still a link. Falling back to
+literal text on anything unrecognized is deliberate: a construct SkillKeeper
+does not recognize can never turn into a live link. A description containing
+link-like text that failed to parse is a lint warning (`SK021`), never an
+error.
+
+### Truncation
+
+A description is truncated to 128 VISIBLE characters, hard. A link's URL
+never counts toward that budget - only its visible text does. An ellipsis is
+appended only when something was actually removed. When the budget runs out
+in the middle of a link's text, the text is cut and the link is **kept**,
+still pointing at the same URL, rather than dropped entirely - dropping it
+could swallow the only link a description has. There is deliberately no way
+to read the truncated remainder. A description longer than the budget is a
+lint warning (`SK018`).
+
+### Options: validation and migration
+
+`options` is written as a mapping of value to label, and its **order
+matters**: it decides which option is chosen when a stored value disappears
+(see below), so reordering the mapping is treated as a change to the server,
+the same as changing any other field. A list of `{value, label}` entries is
+accepted as well, and is the form the value is written back as.
+
+An unfinished `options` is never a parse failure. A bare `options:`, an empty
+`{}` and an empty `[]` all mean "no options", and a value written with no
+label yet gets a blank one - a half-written key must not take down every
+other server declared in the same file.
+
+Nothing warns about an empty one, though, and nothing can: all of those forms
+parse to exactly what a parameter with no `options` key at all parses to, so
+neither the linter nor an update can tell "the author wrote an empty list"
+from "the author wrote no list". A parameter with an empty `options` therefore
+offers a select with nothing to select in it, and no message anywhere says so.
+Either fill the list in or drop the key.
+
+A parameter's value must be one of its `options`. This is enforced on both
+surfaces: the CLI (`mcp install`, `mcp update`) rejects a value that is not
+one of the options and prints the parameter's description alongside the
+accepted values, and the desktop app's install, update and save forms only
+let you pick one of them. Two options sharing the same value is a lint
+warning (`SK022`).
+
+Updating an installed instance can leave a stored value that the new
+definition's `options` no longer offers (an author removed or renamed a
+choice):
+
+- If the parameter still has options, the stored value is replaced by the
+  **first** option, and the substitution is reported. Rewriting a value you
+  chose is never silent.
+- If the parameter has no options left, the stored value is left untouched -
+  clearing it could break a working install - and nothing is reported, for
+  the reason above: an empty list reads exactly like a parameter that only
+  carries a `description`, so a message here would fire on every described
+  parameter of every update.
+
+### The desktop preset editor does not author this
+
+Described parameters and option lists exist only in a hand-written
+`mcp.yml`. The desktop's preset editor - used for the user's own manual
+presets - gained a `description` field on the server and nothing else. It
+creates neither a `parameters` map nor an `options` list; giving one of a
+manual preset's parameters a description or a restricted set of options is
+not possible from the interface.
 
 ## Install, update, and remove
 
@@ -281,10 +403,7 @@ agent:
 | cursor   | `<project>/.cursor/skills/`                 | `~/.cursor/skills/`                    |
 | copilot  | `<project>/.github/copilot/skills/`         | `~/.config/github-copilot/skills/`     |
 | opencode | `<project>/.opencode/skills/`               | `~/.config/opencode/skills/`           |
-| codex    | (not used for MCP)                          | `~/.codex/skills/`                     |
-
-Codex MCP installs always use the global location, regardless of which
-project the install was started from (see "Codex" below).
+| codex    | `<project>/.codex/skills/`                  | `~/.codex/skills/`                     |
 
 ## Per-agent native destinations
 
@@ -298,31 +417,26 @@ destinations below is written; every agent supports both, not only codex:
 | cursor   | `<project>/.cursor/mcp.json`   | `~/.cursor/mcp.json`                              | stdio, http, sse | `mcpServers`   |
 | copilot  | `<project>/.vscode/mcp.json`   | `~/.config/github-copilot/mcp-config.json`        | stdio, http, sse | `servers`      |
 | opencode | `<project>/opencode.json`      | `~/.config/opencode/opencode.json`                | stdio, http, sse | `mcp`          |
-| codex    | (not available)                 | `~/.codex/config.toml`                            | stdio only       | `mcp_servers`  |
+| codex    | `<project>/.codex/config.toml` | `~/.codex/config.toml`                            | stdio, http      | `mcp_servers`  |
 
 Writers only touch their own container key and the server entries they own;
 other keys and other servers already in the file are preserved. Output key
 order is sorted, so re-writing the same content is a no-op diff.
 
-Codex differs from the other four agents in two ways:
+Codex differs from the other four agents in a few ways:
 
-- **Global only**: every agent can be installed user-wide with `--global`, but
-  Codex has no project-scoped MCP config at all, so it is global *only* --
-  `mcp install --agent codex` and `mcp update --agent codex` without `--global`
-  are both refused. An install for
-  Codex always writes to `~/.codex/config.toml`, `~/.codex/skills/.skmcp.yml`,
-  and `~/.codex/skills/.skmcp.params.yml` - never into a project - regardless
-  of which project directory the command was run from. This is intentional and
-  applies to the guidance target too (`~/AGENTS.md`): Codex has only a single
-  global MCP config, so a Codex MCP server is shared across every project.
-  Keeping its ledger, parameter values, instance-name allocation, and rules
-  global is what keeps that one config coherent (for example, it lets
-  instance names stay unique in the single `config.toml`). Note this differs
-  from Codex *skill* guidance, which is project-scoped (`<project>/AGENTS.md`)
-  because skills are per-project files - MCP servers are not.
-- **stdio only**: Codex's native config cannot express `http` or `sse`
-  servers. Installing a non-stdio preset for Codex is skipped rather than
-  attempted, and is reported back as a skipped install.
+- **A project-scoped config is honored only for trusted projects**: Codex
+  reads a project-scoped `<project>/.codex/config.toml` in addition to its
+  global file, but only for a project the user has marked trusted from
+  within Codex itself. SkillKeeper has no way to see that trust state, so it
+  writes the project-scoped file regardless of it rather than pretending to
+  verify something it cannot see. This applies equally to the CLI (`mcp
+  install --agent codex --project <dir>`) and the desktop backend.
+- **`sse` is not supported**: Codex's native config can express `stdio` and
+  `http` servers. Whether its remote client also accepts `sse` is
+  unverified, so this project does not write a config shape it has not
+  confirmed works; installing an `sse` preset for Codex is skipped rather
+  than attempted, and is reported back as a skipped install.
 
 The Codex writer round-trips `~/.codex/config.toml` through a TOML
 parser/serializer. That preserves table structure and values but does
@@ -342,6 +456,125 @@ byte-for-byte instead of failing on it or dropping it, so neither install order
 loses data. Note that a `#` comment is not valid JSON, so a file holding both a
 hook block and MCP servers is still not readable by opencode itself; avoid
 installing global opencode hooks and global opencode MCP servers together.
+
+## OAuth
+
+An `oauth` block on an `http` or `sse` server definition carries the OAuth
+*client configuration* the agent needs to sign in to that server. It is
+meaningful only for those two transports, never for `stdio`.
+
+```yaml
+oauth:
+  clientId: example-client
+  callbackPort: 4321
+  scopes: [read, write]
+```
+
+- `clientId` - a pre-registered OAuth client id. Absent leaves the agent to
+  register one dynamically.
+- `callbackPort` - a fixed loopback port for the redirect URI. Absent lets
+  the agent choose its own.
+- `scopes` - the requested scopes. Declared as a list because the agents
+  disagree on the wire type it is rendered as (see "Per-agent rendering"
+  below); an empty list is the same as omitting the field.
+
+### SkillKeeper writes configuration; the agent signs in
+
+SkillKeeper never performs the OAuth flow itself: it does not open a
+browser, does not run a callback server, and does not obtain, store, or
+refresh a token. Every agent runs its own authorization flow and keeps the
+resulting token in its own store - Claude Code in the system keychain,
+OpenCode in its own credentials file, Codex behind its own sign-in command -
+so a token SkillKeeper obtained could not be placed anywhere useful. Writing
+the client configuration and leaving the sign-in to the agent is exactly how
+SkillKeeper already treats every other MCP field.
+
+### A client secret is never stored
+
+`oauth` carries only public-client fields: `clientId`, `callbackPort`, and
+`scopes`. There is no `clientSecret` field. SkillKeeper's configuration is
+committed to repositories and synchronized between machines, so a secret
+placed in it would leak by construction. A user with a confidential client
+supplies the secret through their own agent's command instead, which routes
+it to the platform keychain rather than to a file SkillKeeper can see.
+
+### Per-agent rendering
+
+`scopes` is stored as a list because the agents do not agree on the wire
+type: Claude Code takes one space-separated string, while Cursor and Codex
+take an array. A list converts to both without loss.
+
+| Agent | Native key | Client id | Scopes | Callback port |
+|---|---|---|---|---|
+| Claude Code | `oauth` | `clientId` | space-separated string | `callbackPort` |
+| Cursor | `auth` | `CLIENT_ID` | array | not supported; dropped and reported |
+| OpenCode | `oauth` | `clientId` | not written; unverified whether OpenCode accepts a scopes field | not supported; dropped and reported |
+| Codex | `[mcp_servers.<name>.oauth]`, `scopes` in the server table | `client_id` | array, beside `url`, not inside `oauth` | see "Codex" below |
+| Copilot | not supported | - | - | - |
+
+A field an agent's native config cannot express is omitted rather than
+guessed at, and the omission is reported back as a note next to the install
+result, the same way a skipped agent already is.
+
+Installing an oauth-carrying preset for Copilot skips Copilot outright and
+reports why, rather than writing a server that looks installed and cannot
+authenticate.
+
+### Codex
+
+Codex nests the client id in its own table and keeps scopes beside `url`,
+not inside the `oauth` table:
+
+```toml
+[mcp_servers.remote]
+url = "https://mcp.example.com/mcp"
+scopes = ["read", "write"]
+
+[mcp_servers.remote.oauth]
+client_id = "example-client"
+```
+
+A `callbackPort` also writes two keys at the root of `config.toml`, not
+inside the server table, because that is where Codex reads them from:
+
+```toml
+mcp_oauth_callback_port = 4321
+mcp_oauth_callback_url = "http://localhost:4321/callback"
+```
+
+They are written together, derived from one value, and only when both are
+absent or already hold the values SkillKeeper would write. If a different
+value is already there, SkillKeeper writes the server but leaves the two
+keys alone and reports the conflict: a half-written pair, or overwriting a
+value another server or the user depends on, is worse than leaving it for
+the user to resolve by hand. Uninstalling the server never removes these
+keys either, for the same reason - they are not SkillKeeper's to delete.
+
+Codex also gates its remote MCP client behind an experimental feature flag:
+
+```toml
+[features]
+rmcp_client = true
+```
+
+SkillKeeper does not write it: enabling an experimental feature in someone's
+configuration is not a decision this project makes for them. Set it
+yourself before installing a remote server for Codex.
+
+### Lint codes
+
+`repo lint` reports three warnings for a malformed `oauth` block: `SK015`,
+`SK016` and `SK017`. Their exact conditions live in one place, the lint table
+in the [CLI reference](cli.md), so that a wording change cannot land in one
+page and not the other. All three are warnings, not errors - a
+repository you only consume still resolves and installs with a bad auth
+block on one preset, the same as any other lint warning. Authoring the
+preset yourself in the desktop editor is different: it rejects the same
+input outright and refuses to save, since you are the one who can fix it.
+The CLI has no MCP authoring command, so it has nothing to reject there. An
+`oauth` block that does reach an install on a `stdio` preset is dropped
+rather than written, and the drop is reported for every agent. See
+[CLI Reference](cli.md#repo-lint) for the full table of codes.
 
 ## Rules (guidance)
 

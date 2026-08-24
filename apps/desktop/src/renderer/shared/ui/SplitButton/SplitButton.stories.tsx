@@ -26,9 +26,19 @@ export const WithSystemIcons: Story = {
   args: {
     icon: <img src={dot} width={20} height={20} alt="" />,
     items: [
-      { id: 'vscode', label: 'Visual Studio Code', icon: <img src={dot} width={20} height={20} alt="" />, onSelect: () => {} },
+      {
+        id: 'vscode',
+        label: 'Visual Studio Code',
+        icon: <img src={dot} width={20} height={20} alt="" />,
+        onSelect: () => {},
+      },
       { id: 'zed', label: 'Zed', icon: <img src={dot} width={20} height={20} alt="" />, onSelect: () => {} },
-      { id: 'default', label: 'Open in default app', icon: <img src={dot} width={20} height={20} alt="" />, onSelect: () => {} },
+      {
+        id: 'default',
+        label: 'Open in default app',
+        icon: <img src={dot} width={20} height={20} alt="" />,
+        onSelect: () => {},
+      },
     ],
   },
 };

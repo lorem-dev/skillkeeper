@@ -10,10 +10,4 @@ export const AGENT_LABELS: Record<AgentKind, string> = {
 };
 
 /** All known agent kinds in a stable order. */
-export const ALL_AGENTS: readonly AgentKind[] = [
-  'claude',
-  'codex',
-  'copilot',
-  'cursor',
-  'opencode',
-];
+export const ALL_AGENTS: readonly AgentKind[] = ['claude', 'codex', 'copilot', 'cursor', 'opencode'];

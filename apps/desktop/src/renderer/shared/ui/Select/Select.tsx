@@ -94,7 +94,9 @@ export function Select({
 
   return (
     <span className={cx('sk-select', className)}>
-      <span id={labelId} className="sk-select__label">{label}</span>
+      <span id={labelId} className="sk-select__label">
+        {label}
+      </span>
       {control}
     </span>
   );

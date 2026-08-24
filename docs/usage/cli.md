@@ -107,9 +107,20 @@ Exit codes:
 | `SK012` | warning | A duplicate entry in a dependency list. |
 | `SK013` | warning | An `executables:` entry names a path absent from the skill body. |
 | `SK014` | warning | A manifest field was coerced, dropped, or re-quoted. |
+| `SK015` | warning | An MCP preset's `oauth` block is present on a `stdio` transport. |
+| `SK016` | warning | An MCP preset's `oauth.clientId` is present but blank. |
+| `SK017` | warning | An MCP preset's `oauth.callbackPort` is present and `0`. |
+| `SK018` | warning | An MCP preset's (or parameter's) description is longer than 128 visible characters; it will be truncated. |
+| `SK019` | warning | An MCP preset's `parameters` entry names something no `{param}` placeholder uses. |
+| `SK021` | warning | An MCP preset's description contains link-like text (`[...](...)`) that is not a valid `http`/`https` link; it will be shown literally. |
+| `SK022` | warning | An MCP preset parameter's `options` has more than one entry with the same value. |
+
+`SK020` is deliberately unassigned.
 
 Codes are stable and are what a script should match on; the message text is
-not.
+not. See [MCP Servers](mcp.md#descriptions-and-parameter-metadata) for the
+description, parameter, and option rules `SK018`, `SK019`, `SK021`, and
+`SK022` enforce.
 
 ---
 
@@ -345,7 +356,8 @@ skillkeeper mcp install <name> [--agent <agent>]... [--param <name=value>]... [-
 Install an MCP preset for one or more agents.
 
 An agent whose native config cannot express the preset's transport is skipped
-with a notice rather than attempted -- Codex, for example, supports `stdio` only.
+with a notice rather than attempted -- Codex, for example, does not support `sse`,
+so an `sse`-only preset is skipped for Codex even if it installs for other agents.
 The command exits non-zero when it installed nothing at all, so a single-agent
 install that was skipped reports failure, while a multi-agent install that
 succeeded for at least one agent reports success.
@@ -357,8 +369,7 @@ succeeded for at least one agent reports success.
 - `--project <dir>` - project directory (default: the current directory).
   Mutually exclusive with `--global`.
 - `--global` - install for the whole user, in every project, instead of one
-  project directory. Mutually exclusive with `--project`. Required for `codex`,
-  whose MCP config is user-wide.
+  project directory. Mutually exclusive with `--project`.
 
 ### mcp remove
 
@@ -388,9 +399,7 @@ for any newly required placeholders.
 - `--project <dir>` - project directory (default: the current directory);
   ignored with `--all`. Mutually exclusive with `--global`.
 - `--global` - act on the user-wide installs instead of a project's. Mutually
-  exclusive with `--project` and `--all`. Required for `codex`, whose MCP config
-  is user-wide: `--agent codex` at project scope is refused, the same way
-  `mcp install` refuses it.
+  exclusive with `--project` and `--all`.
 
 ---
 

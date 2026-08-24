@@ -19,9 +19,7 @@ function notify(): void {
 
 /** Narrow an arbitrary config value to a supported `Lang`, defaulting to `en`. */
 export function resolveLang(value: string | undefined): Lang {
-  return value !== undefined && (SUPPORTED_LANGS as readonly string[]).includes(value)
-    ? (value as Lang)
-    : 'en';
+  return value !== undefined && (SUPPORTED_LANGS as readonly string[]).includes(value) ? (value as Lang) : 'en';
 }
 
 /** The loaded catalog for `lang`, or English when it has not loaded yet. */

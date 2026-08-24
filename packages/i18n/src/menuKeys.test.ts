@@ -22,8 +22,23 @@ import type { Catalog } from './catalogs/en.js';
 const NEW_KEYS = ['menu.view', 'menu.about', 'menu.openSettings'] as const;
 
 const LOCALES: Record<string, Partial<Catalog>> = {
-  be, de, es, fr, hi, it: itCat, ja, ko, pl, pt, ru,
-  'sr-cyrl': srCyrl, 'sr-latn': srLatn, th, uk, 'zh-cn': zhCn, 'zh-tw': zhTw,
+  be,
+  de,
+  es,
+  fr,
+  hi,
+  it: itCat,
+  ja,
+  ko,
+  pl,
+  pt,
+  ru,
+  'sr-cyrl': srCyrl,
+  'sr-latn': srLatn,
+  th,
+  uk,
+  'zh-cn': zhCn,
+  'zh-tw': zhTw,
 };
 
 describe('menu.* keys', () => {
@@ -45,12 +60,27 @@ describe('menu.* keys', () => {
 });
 
 const REFINEMENT_KEYS = [
-  'menu.edit', 'menu.window', 'menu.help',
-  'menu.undo', 'menu.redo', 'menu.cut', 'menu.copy', 'menu.paste',
-  'menu.pasteAndMatchStyle', 'menu.delete', 'menu.selectAll',
-  'menu.minimize', 'menu.zoom', 'menu.close',
-  'menu.services', 'menu.hide', 'menu.hideOthers', 'menu.showAll', 'menu.quit',
-  'about.version', 'about.tagline',
+  'menu.edit',
+  'menu.window',
+  'menu.help',
+  'menu.undo',
+  'menu.redo',
+  'menu.cut',
+  'menu.copy',
+  'menu.paste',
+  'menu.pasteAndMatchStyle',
+  'menu.delete',
+  'menu.selectAll',
+  'menu.minimize',
+  'menu.zoom',
+  'menu.close',
+  'menu.services',
+  'menu.hide',
+  'menu.hideOthers',
+  'menu.showAll',
+  'menu.quit',
+  'about.version',
+  'about.tagline',
 ] as const;
 
 describe('menu refinement keys', () => {

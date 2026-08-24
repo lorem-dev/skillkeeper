@@ -1027,6 +1027,63 @@ msgstr "Components"
 msgid "mcp.managementTitle"
 msgstr "Management"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "Client ID"
+
+msgid "mcp.field.callbackPort"
+msgstr "Callback port"
+
+msgid "mcp.field.scopes"
+msgstr "Scopes"
+
+msgid "mcp.scopePlaceholder"
+msgstr "scope"
+
+msgid "mcp.addScope"
+msgstr "Add scope"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper stores only the public client fields. Sign in through the agent itself; a client secret is never saved here."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth applies to http and sse servers only."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "Client ID cannot be blank."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "Callback port must be between 1 and 65535."
+
+msgid "mcp.error.scopeBlank"
+msgstr "A scope cannot be blank."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} cannot store an OAuth client, so this server would not authenticate."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} does not support {field}; it was not written."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex already sets its OAuth callback port to {found}, so it was left alone instead of being set to {wanted}."
+
+msgid "mcp.field.description"
+msgstr "Description"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "What this server is for"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "Choose a value"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} no longer accepts the stored value, so {value} was selected instead."
+
+msgid "mcp.error.invalidOption"
+msgstr "Choose one of the offered values."
+
 msgid "settings.comingSoon"
 msgstr "Settings screen coming soon."
 
@@ -1357,9 +1414,6 @@ msgstr "Global"
 
 msgid "scope.globalHint"
 msgstr "Installed for this user, in every project"
-
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex installs MCP servers for the whole user, not per project"
 
 msgid "skills.agentChoice.title"
 msgstr "Choose agents"

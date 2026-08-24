@@ -250,39 +250,35 @@ export function Menu({
             onKeyDown={onKeyDown}
           >
             {items.map((item, i) => {
-            const itemRole = isListbox
-              ? 'option'
-              : item.selected === undefined
-                ? 'menuitem'
-                : 'menuitemcheckbox';
-            return (
-              <div
-                key={item.id}
-                id={`${listId}-${i}`}
-                role={itemRole}
-                aria-selected={isListbox ? (item.selected ?? false) : undefined}
-                aria-checked={!isListbox && item.selected !== undefined ? item.selected : undefined}
-                aria-disabled={item.disabled}
-                className={cx(
-                  'sk-menu__item',
-                  i === activeIndex && 'sk-menu__item--active',
-                  item.selected === true && 'sk-menu__item--selected',
-                )}
-                onMouseEnter={() => {
-                  if (item.disabled !== true) setActiveIndex(i);
-                }}
-                onClick={() => choose(i)}
-              >
-                {selectable && (
-                  <span className="sk-menu__check" aria-hidden="true">
-                    {item.selected === true ? <Icon name="check" size={16} /> : null}
-                  </span>
-                )}
-                {item.icon !== undefined && <span className="sk-menu__icon">{item.icon}</span>}
-                <span className="sk-menu__label">{item.label}</span>
-              </div>
-            );
-          })}
+              const itemRole = isListbox ? 'option' : item.selected === undefined ? 'menuitem' : 'menuitemcheckbox';
+              return (
+                <div
+                  key={item.id}
+                  id={`${listId}-${i}`}
+                  role={itemRole}
+                  aria-selected={isListbox ? (item.selected ?? false) : undefined}
+                  aria-checked={!isListbox && item.selected !== undefined ? item.selected : undefined}
+                  aria-disabled={item.disabled}
+                  className={cx(
+                    'sk-menu__item',
+                    i === activeIndex && 'sk-menu__item--active',
+                    item.selected === true && 'sk-menu__item--selected',
+                  )}
+                  onMouseEnter={() => {
+                    if (item.disabled !== true) setActiveIndex(i);
+                  }}
+                  onClick={() => choose(i)}
+                >
+                  {selectable && (
+                    <span className="sk-menu__check" aria-hidden="true">
+                      {item.selected === true ? <Icon name="check" size={16} /> : null}
+                    </span>
+                  )}
+                  {item.icon !== undefined && <span className="sk-menu__icon">{item.icon}</span>}
+                  <span className="sk-menu__label">{item.label}</span>
+                </div>
+              );
+            })}
           </div>
         </motion.div>
       )}

@@ -55,7 +55,10 @@ function parseChangelogSections(changes) {
       }
     }
 
-    const body = lines.slice(i + 1, end).join('\n').trim();
+    const body = lines
+      .slice(i + 1, end)
+      .join('\n')
+      .trim();
     sections.push({
       version,
       tag: `v${version}`,
@@ -257,7 +260,9 @@ export function scanAssets(distDir) {
 
     const classified = classifyBundle(name);
     if (classified === null) {
-      console.error(`::warning::gen-versions-json: cannot classify staged file "${name}"; it will not appear in versions.json`);
+      console.error(
+        `::warning::gen-versions-json: cannot classify staged file "${name}"; it will not appear in versions.json`,
+      );
       continue;
     }
     assets.push({ key: classified.key, kind: classified.kind, name, sha256: sha256(join(distDir, name)) });

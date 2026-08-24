@@ -15,13 +15,7 @@ export type AnimationMode = 'fast' | 'normal' | 'off';
 
 const AnimationContext = createContext<AnimationMode>('normal');
 
-export function AnimationProvider({
-  mode,
-  children,
-}: {
-  readonly mode: AnimationMode;
-  readonly children: ReactNode;
-}) {
+export function AnimationProvider({ mode, children }: { readonly mode: AnimationMode; readonly children: ReactNode }) {
   return <AnimationContext.Provider value={mode}>{children}</AnimationContext.Provider>;
 }
 

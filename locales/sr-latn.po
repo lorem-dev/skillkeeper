@@ -910,6 +910,82 @@ msgstr "Komponente"
 msgid "mcp.managementTitle"
 msgstr "Upravljanje"
 
+#, fuzzy
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+#, fuzzy
+msgid "mcp.field.clientId"
+msgstr "ID klijenta"
+
+#, fuzzy
+msgid "mcp.field.callbackPort"
+msgstr "Povratni port"
+
+#, fuzzy
+msgid "mcp.field.scopes"
+msgstr "Obimi"
+
+#, fuzzy
+msgid "mcp.scopePlaceholder"
+msgstr "obim"
+
+#, fuzzy
+msgid "mcp.addScope"
+msgstr "Dodaj obim"
+
+#, fuzzy
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper čuva samo javna polja klijenta. Prijavite se preko samog agenta; tajna klijenta se ovde nikada ne čuva."
+
+#, fuzzy
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth se odnosi samo na http i sse servere."
+
+#, fuzzy
+msgid "mcp.error.clientIdBlank"
+msgstr "ID klijenta ne sme biti prazan."
+
+#, fuzzy
+msgid "mcp.error.callbackPortRange"
+msgstr "Povratni port mora biti između 1 i 65535."
+
+#, fuzzy
+msgid "mcp.error.scopeBlank"
+msgstr "Obim ne sme biti prazan."
+
+#, fuzzy
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} ne može da sačuva OAuth klijenta, pa se ovaj server neće autentifikovati."
+
+#, fuzzy
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} ne podržava {field}; to nije zapisano."
+
+#, fuzzy
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex već postavlja svoj OAuth povratni port na {found}, pa je ostavljen nepromenjen umesto da bude postavljen na {wanted}."
+
+#, fuzzy
+msgid "mcp.field.description"
+msgstr "Opis"
+
+#, fuzzy
+msgid "mcp.descriptionPlaceholder"
+msgstr "Čemu služi ovaj server"
+
+#, fuzzy
+msgid "mcp.param.choosePlaceholder"
+msgstr "Izaberite vrednost"
+
+#, fuzzy
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} više ne prihvata sačuvanu vrednost, pa je umesto nje izabrano {value}."
+
+#, fuzzy
+msgid "mcp.error.invalidOption"
+msgstr "Izaberite jednu od ponuđenih vrednosti."
+
 msgid "settings.comingSoon"
 msgstr "Ekran podešavanja uskoro stiže."
 
@@ -1276,9 +1352,6 @@ msgstr "Globalno"
 
 msgid "scope.globalHint"
 msgstr "Instalirano za ovog korisnika, u svakom projektu"
-
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex instalira MCP servere za celog korisnika, a ne po projektu"
 
 msgid "skills.agentChoice.title"
 msgstr "Izaberite agente"

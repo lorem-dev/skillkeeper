@@ -88,6 +88,81 @@ fn build() -> Value {
     }
     defs.insert("McpServerDef".to_string(), server);
 
+    // `callback_port` derives from `u16`, so derivation says `minimum: 0` --
+    // which published a schema that accepts a port both `repo lint` (SK017) and
+    // the desktop editor reject. The schema is an AUTHORING surface, like the
+    // editor, so it agrees with the editor: zero is not a port.
+    if let Some(Value::Object(oauth)) = defs.get_mut("McpOauth") {
+        if let Some(Value::Object(props)) = oauth.get_mut("properties") {
+            if let Some(Value::Object(port)) = props.get_mut("callbackPort") {
+                port.insert("minimum".to_string(), json!(1));
+            }
+        }
+    }
+
+    // `options` derives from the MODEL's type, an ordered `Vec<McpOption>`,
+    // but `de_options` also accepts -- and the documentation teaches -- the
+    // MAPPING form (`value: label`). The docs tell a reader to point their
+    // editor at this schema, so a schema knowing only the list form flags the
+    // documented example as invalid. Both forms are published; the list stays
+    // first because it is the canonical serialized one.
+    if let Some(Value::Object(parameter)) = defs.get_mut("McpParameter") {
+        if let Some(Value::Object(props)) = parameter.get_mut("properties") {
+            if let Some(Value::Object(options)) = props.get_mut("options") {
+                let description = options.remove("description");
+                options.remove("type");
+                let items = options.remove("items").unwrap_or(json!({}));
+                options.insert(
+                    "anyOf".to_string(),
+                    json!([
+                        { "type": "array", "items": items },
+                        {
+                            "type": "object",
+                            // A null label is the blank label, not a parse
+                            // failure -- see `de_options`.
+                            // A label may be any YAML scalar, and so may the
+                            // key -- `de_options` converts rather than
+                            // refusing, because refusing dropped the whole
+                            // file. A JSON object key is always a string, so
+                            // only the value side needs widening here.
+                            "additionalProperties": {
+                                "type": ["string", "number", "boolean", "null"]
+                            }
+                        },
+                        // A bare `options:`, which `de_options` reads as the
+                        // empty list rather than dropping the whole file.
+                        { "type": "null" },
+                    ]),
+                );
+                if let Some(description) = description {
+                    options.insert("description".to_string(), description);
+                }
+            }
+        }
+    }
+
+    // `parameters:` and `scopes:` written with nothing under them deserialize
+    // to the empty map and the empty list, for the same reason a bare
+    // `options:` does -- `parse_mcp_config` reads the whole document, so
+    // refusing an unfinished key throws away every server beside it. The null
+    // branch was patched onto `options` when that was found and not onto its
+    // two siblings with the identical wire shape, so an editor pointed at this
+    // schema flagged files SkillKeeper reads without complaint.
+    for (def_name, property) in [("McpServerDef", "parameters"), ("McpOauth", "scopes")] {
+        if let Some(Value::Object(def)) = defs.get_mut(def_name) {
+            if let Some(Value::Object(props)) = def.get_mut("properties") {
+                if let Some(Value::Object(schema)) = props.get_mut(property) {
+                    let description = schema.remove("description");
+                    let inner = Value::Object(std::mem::take(schema));
+                    schema.insert("anyOf".to_string(), json!([inner, { "type": "null" }]));
+                    if let Some(description) = description {
+                        schema.insert("description".to_string(), description);
+                    }
+                }
+            }
+        }
+    }
+
     json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": SCHEMA_URL,
@@ -182,8 +257,85 @@ mod tests {
         names.sort_unstable();
         assert_eq!(
             names,
-            ["args", "command", "env", "headers", "name", "rules", "type", "url"]
+            [
+                "args",
+                "command",
+                "description",
+                "env",
+                "headers",
+                "name",
+                "oauth",
+                "parameters",
+                "rules",
+                "type",
+                "url"
+            ]
         );
+    }
+
+    /// Drift guard on the SHAPE, not just the key: `describes_every_field_the_parser_accepts`
+    /// compares property names only, so a schema knowing one of the two forms
+    /// `de_options` accepts passed it while flagging the authoring form the
+    /// documentation's own worked example uses.
+    #[test]
+    fn accepts_both_option_forms_the_parser_accepts() {
+        let options = build()["$defs"]["McpParameter"]["properties"]["options"].clone();
+        assert!(
+            options.get("type").is_none(),
+            "a single `type` cannot describe both a mapping and a list"
+        );
+        let forms = options["anyOf"].as_array().expect("anyOf forms").clone();
+        assert_eq!(
+            forms
+                .iter()
+                .map(|f| f["type"].clone())
+                .collect::<Vec<Value>>(),
+            vec![json!("array"), json!("object"), json!("null")],
+            "the canonical list, the authored mapping, and a bare `options:`"
+        );
+        assert_eq!(forms[0]["items"]["$ref"], json!("#/$defs/McpOption"));
+        // The mapping's VALUES take any YAML scalar or null, because
+        // `de_options` converts rather than refusing -- the schema has to
+        // agree with it, or the editor flags a file the parser reads happily.
+        assert_eq!(
+            forms[1]["additionalProperties"]["type"],
+            json!(["string", "number", "boolean", "null"])
+        );
+    }
+
+    /// `parameters:` and `scopes:` deserialize from a bare key exactly as
+    /// `options:` does, and for the same reason. The null branch was added to
+    /// `options` alone when that was found, so this asserts all THREE -- the
+    /// point being that a sibling with the identical wire shape must not be
+    /// able to fall behind again.
+    #[test]
+    fn every_key_the_parser_reads_as_empty_may_be_written_bare() {
+        let built = build();
+        for (def_name, property) in [
+            ("McpServerDef", "parameters"),
+            ("McpOauth", "scopes"),
+            ("McpParameter", "options"),
+        ] {
+            let schema = &built["$defs"][def_name]["properties"][property];
+            let forms = schema["anyOf"]
+                .as_array()
+                .unwrap_or_else(|| panic!("{def_name}.{property} must publish an anyOf"));
+            assert!(
+                forms.iter().any(|f| f["type"] == json!("null")),
+                "{def_name}.{property} must accept being written bare"
+            );
+            assert!(
+                schema["description"].is_string(),
+                "{def_name}.{property} must keep its description"
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_a_zero_callback_port_like_every_other_authoring_surface() {
+        let port = build()["$defs"]["McpOauth"]["properties"]["callbackPort"].clone();
+        assert_eq!(port["minimum"], json!(1), "a port of 0 is not a port");
+        assert_eq!(port["maximum"], json!(65535));
     }
 
     #[test]

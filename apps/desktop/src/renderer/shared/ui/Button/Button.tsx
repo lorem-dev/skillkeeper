@@ -9,13 +9,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { cx, useGlassRefraction } from '../../lib';
 import './Button.scss';
 
-export type ButtonVariant =
-  | 'primary'
-  | 'secondary'
-  | 'tinted'
-  | 'plain'
-  | 'destructive'
-  | 'glass';
+export type ButtonVariant = 'primary' | 'secondary' | 'tinted' | 'plain' | 'destructive' | 'glass';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style. Defaults to `secondary`. */

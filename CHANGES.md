@@ -2,6 +2,30 @@
 
 ## Development
 
+### Added
+
+- An MCP server definition can carry an `oauth` block for the agent's
+  sign-in. See
+  [MCP Servers](https://lorem-dev.github.io/skillkeeper/latest/usage/mcp/#oauth).
+- Codex MCP presets can use the `http` transport, not just `stdio`. See
+  [MCP Servers](https://lorem-dev.github.io/skillkeeper/latest/usage/mcp/#per-agent-native-destinations).
+- An MCP server (and its parameters) can carry a `description`, and a
+  parameter can be restricted to a set of labeled `options`. See
+  [MCP Servers](https://lorem-dev.github.io/skillkeeper/latest/usage/mcp/#descriptions-and-parameter-metadata).
+
+### Fixed
+
+- Codex now resolves a real project-scoped `.codex/config.toml` instead of
+  always writing the global config.
+- Updating an MCP server no longer deletes it when the new definition cannot be
+  installed. An update removes the instance and writes it back; if the source
+  had changed to a transport the agent cannot express, or to a parameter with
+  no value, the write failed after the removal and the instance was gone along
+  with its stored parameter values. Both are now decided before anything is
+  removed, on the CLI and in the desktop app.
+- A server name written in a repository's `mcp.yml` can no longer inject
+  terminal escape sequences into `mcp list` output.
+
 ## Version 0.6.0
 
 ### Added
@@ -9,7 +33,7 @@
 - A `SKILL.md` can declare the skills of its own repository that it needs, as
   `skillkeeper.requires` or a flat `requires`.
 - Installing a skill installs its transitive dependencies. See
-  [Skills and Hooks](https://lorem-dev.github.io/skillkeeper/usage/skills-and-hooks/).
+  [Skills and Hooks](https://lorem-dev.github.io/skillkeeper/latest/usage/skills-and-hooks/).
 - `skillkeeper repo lint` reports what is statically wrong in a skill
   repository, with ten stable diagnostic codes and exit codes a CI gate can use.
 - `skill update` updates a skill's dependencies as well, and installs any the

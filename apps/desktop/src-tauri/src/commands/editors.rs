@@ -75,6 +75,39 @@ pub async fn open_external(url: String) -> Result<OpenResult, String> {
         .map_err(|e| e.to_string())
 }
 
+/// Reject anything that is not an http or https URL. The renderer only ever
+/// passes a URL that came from a parsed description span, where the same rule
+/// already applied -- this is the second gate, not the first, and it is here so
+/// that a future caller cannot bypass it.
+fn validate_external_url(url: &str) -> Result<(), String> {
+    if url.starts_with("http://") || url.starts_with("https://") {
+        Ok(())
+    } else {
+        Err(format!("refusing to open a non-http url: {url}"))
+    }
+}
+
+/// Hand `url` to the system browser. Mirrors how `editor_launch::open_external`
+/// hands a path to the system: `opener::open` spawns the browser, so keep it off
+/// the async workers the way the command wrapper below does.
+fn open_external_url_inner(url: &str) -> Result<(), String> {
+    validate_external_url(url)?;
+    opener::open(url).map_err(|e| e.to_string())
+}
+
+/// Open a URL taken from a parsed MCP description span (a link's `url`) in the
+/// OS default browser. Distinct from `open_external` above -- that one carries a
+/// fixed, trusted documentation URL; this one carries renderer-supplied input, so
+/// it validates the scheme before ever touching `opener::open`.
+#[tauri::command]
+pub async fn open_external_url(url: String) -> Result<(), String> {
+    // opener::open spawns the browser; keep it off the async workers.
+    let result = tauri::async_runtime::spawn_blocking(move || open_external_url_inner(&url))
+        .await
+        .map_err(|e| e.to_string())?;
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,5 +134,23 @@ mod tests {
         let r = open_project_folder("/tmp/whatever", "no-such-editor");
         assert!(!r.ok);
         assert_eq!(r.error.as_deref(), Some("Unknown editor: no-such-editor"));
+    }
+
+    #[test]
+    fn only_http_and_https_urls_are_opened() {
+        for bad in [
+            "javascript:alert(1)",
+            "file:///etc/passwd",
+            "mailto:x@example.com",
+            "//example.com",
+            "/relative",
+            "",
+        ] {
+            assert!(open_external_url_inner(bad).is_err(), "accepted {bad}");
+        }
+        // The allowed shapes pass validation; whether the system actually has a
+        // browser is not this function's concern and is not asserted here.
+        assert!(validate_external_url("https://example.com").is_ok());
+        assert!(validate_external_url("http://example.com").is_ok());
     }
 }

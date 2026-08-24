@@ -42,8 +42,7 @@ export const ShortContentStaysCentered: Story = {
           Open short dialog
         </Button>
         <Modal open={open} onClose={() => setOpen(false)} title="Short content">
-          This dialog is short enough to stay centered in the scrim -- no
-          scrolling, no edge scrim bar.
+          This dialog is short enough to stay centered in the scrim -- no scrolling, no edge scrim bar.
         </Modal>
       </>
     );
@@ -67,15 +66,13 @@ export const VeryTallContentScrollsWithEdgeFades: Story = {
         <Modal open={open} onClose={() => setOpen(false)} title="Very tall content">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <p>
-              This dialog is much taller than the window, so the whole block
-              scrolls within the window (title through actions) as one unit,
-              keeping a margin on every side.
+              This dialog is much taller than the window, so the whole block scrolls within the window (title through
+              actions) as one unit, keeping a margin on every side.
             </p>
             {Array.from({ length: 24 }, (_, i) => (
               <p key={i}>
-                Section {i + 1} of a long form. Keep scrolling to watch the top
-                fade block appear as content leaves upward and the bottom block
-                fade away near the end.
+                Section {i + 1} of a long form. Keep scrolling to watch the top fade block appear as content leaves
+                upward and the bottom block fade away near the end.
               </p>
             ))}
             <Button variant="primary" onClick={() => setOpen(false)}>

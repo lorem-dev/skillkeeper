@@ -27,7 +27,7 @@ use crate::mcp::skmcp::{
     parse_skmcp, parse_skmcp_params, serialize_skmcp, serialize_skmcp_params, SkmcpEntry,
     SkmcpFile, SKMCP_SCHEMA,
 };
-use crate::mcp::writers::{writer_for, WriterError};
+use crate::mcp::writers::{writer_for, UpsertNote, WriterError};
 use crate::models::AgentKind;
 use crate::ports::{FsPort, PortError};
 
@@ -91,6 +91,22 @@ pub struct InstallMcpArgs {
     pub gitignore_project_path: Option<String>,
 }
 
+/// What one successful [`install_mcp_instance`] produced.
+///
+/// A named record rather than a tuple so both halves are self-documenting at
+/// every call site: the instance name that was written, and any notes the
+/// writer raised about fields the target agent could not express. `notes` is
+/// empty when nothing was dropped, and it must reach the user -- a silently
+/// dropped auth field reads as configured when it is not.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct McpInstallOutcome {
+    /// The name the server was written under, in the native config and in the
+    /// ledger. Either `args.instance_name` verbatim or a freshly allocated one.
+    pub instance_name: String,
+    /// Notes from the native writer; see [`UpsertNote`].
+    pub notes: Vec<UpsertNote>,
+}
+
 /// Arguments for [`remove_mcp_instance`].
 #[derive(Debug, Clone)]
 pub struct RemoveMcpArgs {
@@ -121,11 +137,16 @@ fn read_or_empty(fs: &dyn FsPort, path: &str) -> Result<String, PortError> {
 
 /// Install one MCP server instance: render its parameters, write the native
 /// config, upsert guidance (when the def carries `rules`), and record the install
-/// in both ledger files. Returns the assigned instance name.
+/// in both ledger files. Returns the assigned instance name plus the writer's
+/// notes (see [`McpInstallOutcome`]).
+///
+/// This function does not decide whether the target agent can express the def at
+/// all: its callers gate on `supports_transport`/`supports_oauth` before calling
+/// in, because only they own the reporting surface a skip is announced on.
 pub fn install_mcp_instance(
     fs: &dyn FsPort,
     args: &InstallMcpArgs,
-) -> Result<String, McpInstallError> {
+) -> Result<McpInstallOutcome, McpInstallError> {
     let rendered = render_params(&args.def, &args.values)?;
 
     let native_text = read_or_empty(fs, &args.native_path)?;
@@ -138,10 +159,8 @@ pub fn install_mcp_instance(
         }
     };
 
-    fs.write_file(
-        &args.native_path,
-        &writer.upsert(&native_text, &instance_name, &rendered)?,
-    )?;
+    let upsert = writer.upsert(&native_text, &instance_name, &rendered)?;
+    fs.write_file(&args.native_path, &upsert.text)?;
 
     if args.def.rules.is_some() {
         let key = guidance_key(
@@ -193,7 +212,10 @@ pub fn install_mcp_instance(
         ensure_gitignore(fs, gitignore_path)?;
     }
 
-    Ok(instance_name)
+    Ok(McpInstallOutcome {
+        instance_name,
+        notes: upsert.notes,
+    })
 }
 
 /// Remove one MCP server instance by name: the reverse of
@@ -254,7 +276,7 @@ pub fn remove_mcp_instance(fs: &dyn FsPort, args: &RemoveMcpArgs) -> Result<(), 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::model::McpTransport;
+    use crate::mcp::model::{McpOauth, McpTransport};
     use crate::testing::MemFs;
 
     const NATIVE_PATH: &str = "/proj/.mcp.json";
@@ -282,6 +304,32 @@ mod tests {
             ]),
             env: Some(env),
             rules: None,
+            oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
+        }
+    }
+
+    /// An http def carrying an oauth client with a callback port -- a field
+    /// cursor's native config has no setting for, so its writer drops it and
+    /// says so.
+    fn oauth_http_def() -> McpServerDef {
+        McpServerDef {
+            name: "Remote MCP".to_string(),
+            transport: McpTransport::Http,
+            url: Some("https://example.com/mcp".to_string()),
+            headers: None,
+            command: None,
+            args: None,
+            env: None,
+            rules: None,
+            oauth: Some(McpOauth {
+                callback_port: Some(8432),
+                client_id: Some("sk-client".to_string()),
+                scopes: vec!["repo".to_string()],
+            }),
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -318,7 +366,9 @@ mod tests {
     #[test]
     fn writes_native_ledger_with_raw_hash_and_params() {
         let fs = MemFs::new();
-        let instance_name = install_mcp_instance(&fs, &base_args()).unwrap();
+        let instance_name = install_mcp_instance(&fs, &base_args())
+            .unwrap()
+            .instance_name;
         assert_eq!(instance_name, "github_1");
 
         let native_text = fs.read_file(NATIVE_PATH).unwrap();
@@ -342,13 +392,38 @@ mod tests {
     }
 
     #[test]
+    fn carries_the_writer_notes_out_beside_the_instance_name() {
+        let fs = MemFs::new();
+        let mut args = base_args();
+        args.agent = AgentKind::Cursor;
+        args.def = oauth_http_def();
+        let outcome = install_mcp_instance(&fs, &args).unwrap();
+
+        assert_eq!(outcome.instance_name, "github_1");
+        // Cursor has no callback-port setting. The drop reaches the caller or
+        // the user reads an install that silently lost part of its auth.
+        assert_eq!(
+            outcome.notes,
+            vec![UpsertNote::DroppedField {
+                field: "callbackPort".to_string()
+            }]
+        );
+        // The client id it CAN express was still written.
+        assert!(fs.read_file(NATIVE_PATH).unwrap().contains("sk-client"));
+
+        // A def with nothing to drop comes back with no notes at all.
+        let quiet = install_mcp_instance(&MemFs::new(), &base_args()).unwrap();
+        assert!(quiet.notes.is_empty());
+    }
+
+    #[test]
     fn upserts_rendered_marker_stripped_guidance_into_each_file() {
         let fs = MemFs::new();
         let guidance_files = vec!["/proj/CLAUDE.md".to_string(), "/proj/AGENTS.md".to_string()];
         let mut args = base_args();
         args.def = rules_def();
         args.guidance_files = guidance_files.clone();
-        let instance_name = install_mcp_instance(&fs, &args).unwrap();
+        let instance_name = install_mcp_instance(&fs, &args).unwrap().instance_name;
 
         let key = guidance_key("git@github.com:acme/mcps.git", &instance_name);
         for file in &guidance_files {
@@ -371,8 +446,12 @@ mod tests {
     #[test]
     fn allocates_the_next_free_instance_name_on_a_second_install() {
         let fs = MemFs::new();
-        let first = install_mcp_instance(&fs, &base_args()).unwrap();
-        let second = install_mcp_instance(&fs, &base_args()).unwrap();
+        let first = install_mcp_instance(&fs, &base_args())
+            .unwrap()
+            .instance_name;
+        let second = install_mcp_instance(&fs, &base_args())
+            .unwrap()
+            .instance_name;
         assert_eq!(first, "github_1");
         assert_eq!(second, "github_2");
 
@@ -384,12 +463,14 @@ mod tests {
     #[test]
     fn uses_a_forced_instance_name_verbatim_even_on_collision() {
         let fs = MemFs::new();
-        let first = install_mcp_instance(&fs, &base_args()).unwrap();
+        let first = install_mcp_instance(&fs, &base_args())
+            .unwrap()
+            .instance_name;
         assert_eq!(first, "github_1");
 
         let mut args = base_args();
         args.instance_name = Some("github_1".to_string());
-        let forced = install_mcp_instance(&fs, &args).unwrap();
+        let forced = install_mcp_instance(&fs, &args).unwrap().instance_name;
         assert_eq!(forced, "github_1");
 
         let ledger = parse_skmcp(&fs.read_file(LEDGER_PATH).unwrap()).unwrap();
@@ -433,7 +514,7 @@ mod tests {
             ..rules_def()
         };
         args.guidance_files = guidance_files.clone();
-        let instance_name = install_mcp_instance(&fs, &args).unwrap();
+        let instance_name = install_mcp_instance(&fs, &args).unwrap().instance_name;
 
         let ledger = parse_skmcp(&fs.read_file(LEDGER_PATH).unwrap()).unwrap();
         assert_eq!(ledger.servers[0].local.as_deref(), Some("abc123"));
@@ -462,7 +543,7 @@ mod tests {
         let mut args = base_args();
         args.def = rules_def();
         args.guidance_files = guidance_files.clone();
-        let instance_name = install_mcp_instance(&fs, &args).unwrap();
+        let instance_name = install_mcp_instance(&fs, &args).unwrap().instance_name;
 
         remove_mcp_instance(&fs, &remove_args(&instance_name, guidance_files.clone())).unwrap();
 
@@ -496,8 +577,12 @@ mod tests {
     #[test]
     fn remove_targets_only_the_named_instance() {
         let fs = MemFs::new();
-        let first = install_mcp_instance(&fs, &base_args()).unwrap();
-        let second = install_mcp_instance(&fs, &base_args()).unwrap();
+        let first = install_mcp_instance(&fs, &base_args())
+            .unwrap()
+            .instance_name;
+        let second = install_mcp_instance(&fs, &base_args())
+            .unwrap()
+            .instance_name;
 
         remove_mcp_instance(&fs, &remove_args(&first, Vec::new())).unwrap();
 

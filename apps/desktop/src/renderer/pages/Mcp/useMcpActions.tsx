@@ -19,7 +19,13 @@ import { Button, Modal } from '@/shared/ui';
 import { McpCard } from '@/entities/mcp';
 import { McpEditModal } from '@/features/mcpEdit';
 import type { ManualMcpPreset } from '@/features/mcpEdit';
-import { McpInstallModal, McpUpdateParamsModal, buildRemoveBatches } from '@/features/mcpInstall';
+import {
+  McpInstallModal,
+  McpUpdateParamsModal,
+  buildRemoveBatches,
+  installNotesToMessages,
+  mcpSkipsToMessages,
+} from '@/features/mcpInstall';
 import type { McpTreeItem } from './lib/mcpTree';
 import { resolveDetailsPreset } from './lib/mcpItemPreset';
 import { mcpConnectionFromDef, toManualPreset } from './lib/mcpPresetMapping';
@@ -33,7 +39,7 @@ const EMPTY_MCP_PRESET: McpPreset = {
   id: '',
   origin: 'manual',
   name: '',
-  def: { name: '', type: 'stdio' },
+  def: { name: '', type: 'stdio', parameters: {} },
   hash: '',
   params: [],
   hasRules: false,
@@ -86,6 +92,10 @@ export function useMcpActions(): McpActions {
     scope: ApplyScope;
     installs: readonly McpInstall[];
     missingParams: string[];
+    // The preset being updated TO, carried so the prompt can render each
+    // parameter's description and its accepted options rather than a bare
+    // text field -- see `McpUpdateParamsModal`.
+    preset: McpPreset;
   } | null>(null);
   const [detailsPreset, setDetailsPreset] = useState<McpPreset | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
@@ -135,9 +145,19 @@ export function useMcpActions(): McpActions {
         values,
       }));
       const result = await updateMcp({ updates, scope: scope.scope });
-      if (!result.ok) notify(result.error, 'error');
+      if (!result.ok) {
+        notify(result.error, 'error');
+        return;
+      }
+      // An update is a reinstall, so it reports exactly what an install does,
+      // and for the same reason: a declined agent leaves the instance flagged
+      // out of date, so saying nothing invites the user to click Update again
+      // forever, and a writer note is the only sign an auth field was dropped.
+      // The CLI already prints both (`mcp update` in the CLI's mcp command).
+      for (const message of mcpSkipsToMessages(result.skipped, t)) notify(message, 'info');
+      for (const message of installNotesToMessages(result.updated, t)) notify(message, 'info');
     },
-    [projects, mcpPresets, updateMcp, notify],
+    [projects, mcpPresets, updateMcp, notify, t],
   );
 
   // Update entry point: preflight every affected agent's instance (one per
@@ -177,7 +197,7 @@ export function useMcpActions(): McpActions {
         await runMcpUpdate(toUpdate, {});
         return;
       }
-      setUpdateTarget({ scope, installs: toUpdate, missingParams: [...missing].sort() });
+      setUpdateTarget({ scope, installs: toUpdate, missingParams: [...missing].sort(), preset });
     },
     [projects, mcpPresets, notify, runMcpUpdate],
   );
@@ -292,6 +312,7 @@ export function useMcpActions(): McpActions {
       />
       <McpUpdateParamsModal
         open={updateTarget !== null}
+        preset={updateTarget?.preset ?? EMPTY_MCP_PRESET}
         missingParams={updateTarget?.missingParams ?? []}
         onConfirm={(values) => {
           const target = updateTarget;

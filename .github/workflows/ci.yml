@@ -56,7 +56,7 @@ jobs:
       - name: Set up Node.js 22 with pnpm cache
         uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          node-version: '24'
           cache: pnpm
 
       - name: Install dependencies (frozen lockfile)
@@ -173,7 +173,7 @@ jobs:
       - name: Set up Node.js 22 with pnpm cache
         uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          node-version: '24'
           cache: pnpm
 
       - name: Install dependencies (frozen lockfile)
@@ -247,7 +247,7 @@ jobs:
       - name: Set up Node.js 22 with pnpm cache
         uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          node-version: '24'
           cache: pnpm
 
       - name: Install dependencies (frozen lockfile)
@@ -260,5 +260,5 @@ jobs:
         # reproducible and fail for reasons in the diff, not because the fixture
         # moved. Locally the same script force-pulls instead.
         env:
-          SKILLKEEPER_E2E_PIN_FIXTURE: "1"
+          SKILLKEEPER_E2E_PIN_FIXTURE: '1'
         run: pnpm test:e2e

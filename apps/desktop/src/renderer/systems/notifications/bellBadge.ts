@@ -29,8 +29,7 @@ export interface BellBadge {
  * or hide an error. Warnings surface only once the error count is zero.
  */
 export function resolveBellBadge(errorCount: number, warningCount: number): BellBadge {
-  const level: NotificationLevel | null =
-    errorCount > 0 ? 'error' : warningCount > 0 ? 'warning' : null;
+  const level: NotificationLevel | null = errorCount > 0 ? 'error' : warningCount > 0 ? 'warning' : null;
   if (level === null) {
     return {
       tone: null,

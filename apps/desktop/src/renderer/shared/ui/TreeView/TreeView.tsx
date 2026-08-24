@@ -171,9 +171,7 @@ export function TreeView({
 }: TreeViewProps) {
   const animationsEnabled = useAnimationsEnabled();
   const revealed = animate && animationsEnabled;
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(
-    () => new Set(defaultExpandedIds ?? []),
-  );
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set(defaultExpandedIds ?? []));
   const [focusedId, setFocusedId] = useState<string | null>(nodes[0]?.id ?? null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   // Branches mount their children lazily: a collapsed branch renders only its
@@ -255,7 +253,7 @@ export function TreeView({
   function checkStateFor(node: TreeNode, depth: number): CheckState | null {
     if (!checkboxFor(node, depth)) return null;
     const hasChildren = node.children !== undefined && node.children.length > 0;
-    if (!hasChildren) return node.trailing !== undefined ? null : (checkedSet.has(node.id) ? 'checked' : 'unchecked');
+    if (!hasChildren) return node.trailing !== undefined ? null : checkedSet.has(node.id) ? 'checked' : 'unchecked';
     const leaves = checkableLeaves(node, depth);
     if (leaves.length === 0) return 'unchecked';
     let checkedCount = 0;
@@ -308,9 +306,7 @@ export function TreeView({
 
   // Exactly one row is in the tab order (roving tabindex). Fall back to the
   // first visible row when the remembered one has scrolled out of existence.
-  const activeId = visible.some((v) => v.node.id === focusedId)
-    ? focusedId
-    : (visible[0]?.node.id ?? null);
+  const activeId = visible.some((v) => v.node.id === focusedId) ? focusedId : (visible[0]?.node.id ?? null);
 
   // Single funnel for every USER-driven expansion change (row/chevron click,
   // keyboard toggles) -- notifies `onExpandedChange` with the full next set.
@@ -465,9 +461,7 @@ export function TreeView({
                 toggle(node.id);
               }}
             >
-              <span
-                className={cx('sk-tree__chevron-glyph', isOpen && 'sk-tree__chevron-glyph--open')}
-              >
+              <span className={cx('sk-tree__chevron-glyph', isOpen && 'sk-tree__chevron-glyph--open')}>
                 <svg viewBox="0 0 12 12">
                   <path
                     d="M3 4.5 L6 7.5 L9 4.5"
@@ -494,11 +488,7 @@ export function TreeView({
               // inner input is hidden from AT and out of the tab order (Space on
               // the row toggles it). Stop the click so the row handler does not
               // also fire.
-              <span
-                className="sk-tree__checkbox"
-                aria-hidden="true"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <span className="sk-tree__checkbox" aria-hidden="true" onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   tabIndex={-1}
                   checked={checkState === 'checked'}

@@ -3,16 +3,9 @@
 // These describe the shapes exchanged over the Tauri command/event bridge
 // (see `client.ts`). The definitions live here, in the bridge layer that owns
 // the contract, and are re-exported from `./types`.
-import type {
-  Repository,
-  Project,
-  AgentKind,
-  McpServerDef,
-  McpTransport,
-  McpIdentity,
-  Scope,
-} from './generated/core';
+import type { Repository, Project, AgentKind, McpServerDef, McpTransport, McpIdentity, Scope } from './generated/core';
 import type { AppUpdateOffer } from './generated/AppUpdateOffer';
+import type { UpsertNote } from './generated/core/UpsertNote';
 
 // -- editors -----------------------------------------------------------------
 
@@ -146,13 +139,41 @@ export type ApplyResult =
 
 // -- mcp ---------------------------------------------------------------------
 
+/**
+ * An `McpServerDef` exactly as the backend sends it: `parameters` may be
+ * ABSENT, where the generated type says it never is.
+ *
+ * `McpServerDef.parameters` carries `#[serde(skip_serializing_if =
+ * "BTreeMap::is_empty")]` in Rust (`crates/skillkeeper-core/src/mcp/model.rs`),
+ * so a def with no `parameters:` block -- which is every `mcp.yml` authored
+ * before that block existed -- arrives over the bridge with no `parameters` key
+ * at all. ts-rs cannot express a `skip_serializing_if` on a non-`Option` field,
+ * so the generated `McpServerDef` declares the field REQUIRED: the type
+ * promises a map the wire does not always carry, and a `def.parameters[name]`
+ * read throws on those defs with nothing in TypeScript to flag it.
+ *
+ * Declaring the inbound shape honestly here is what makes the fix enforceable
+ * rather than remembered: assigning one of these straight into renderer state
+ * is a type error, so the only way through is `normalizeMcpDefFromBridge`
+ * (`@/app/store`) -- after which the generated type is TRUE for every reader
+ * and no consumer needs a guard.
+ *
+ * OUTBOUND defs (`McpInstallReq`, `McpUpdateReq`, `McpUpdatePreflightArgs`)
+ * stay `McpServerDef`: the renderer always builds those with the key present,
+ * and Rust reads an empty map back to exactly what it would have defaulted to.
+ */
+export type RawMcpServerDef = Omit<McpServerDef, 'parameters'> & {
+  readonly parameters?: McpServerDef['parameters'];
+};
+
 export interface AvailableMcp {
   readonly repoId: string;
   /** Source repository remote URL; the stable identity for matching installs. */
   readonly remote: string;
   /** Optional one-level group (the skill-group directory name); absent for root. */
   readonly group?: string;
-  readonly def: McpServerDef;
+  /** As sent, not as typed -- see {@link RawMcpServerDef}. */
+  readonly def: RawMcpServerDef;
   /** Content hash of the raw def (excludes `name`), for update detection. */
   readonly hash: string;
 }
@@ -211,23 +232,40 @@ export interface ApplyMcpArgs {
 }
 
 /**
- * One operation `applyMcp` declined to perform: an install whose transport the
- * agent cannot express, or any operation in a codex batch that arrived at
- * project scope (codex's native config is user-wide only).
+ * One install `applyMcp` declined to perform: one whose transport the agent
+ * cannot express, or one carrying an oauth client the agent cannot express.
+ * Removes are never skipped -- they carry no def, so neither rule applies.
  */
 export interface McpSkipped {
   readonly agent: AgentKind;
-  /** The preset's source name for an install, the instance name for a remove. */
+  /** The preset's source name. */
   readonly source: string;
-  /** The transport that could not be expressed; absent for a skipped remove. */
+  /** Which rule declined it; `mcpSkipsToMessages` turns it into a message. */
+  readonly reason: 'transport' | 'oauth';
+  /**
+   * The transport that could not be expressed; absent for an oauth skip, whose
+   * transport was perfectly expressible.
+   */
   readonly transport?: McpTransport;
+}
+
+/** One install `applyMcp` performed, and what the writer could not express. */
+export interface McpInstalled {
+  readonly agent: AgentKind;
+  readonly instanceName: string;
+  /**
+   * Writer notes, empty when nothing was dropped. The install succeeded, so
+   * these are not errors -- but a silently dropped auth field reads as
+   * configured when it is not, so they are shown.
+   */
+  readonly notes: readonly UpsertNote[];
 }
 
 /** Result of applyMcp. Never thrown across the bridge boundary. */
 export type ApplyMcpResult =
   | {
       readonly ok: true;
-      readonly installed: number;
+      readonly installed: readonly McpInstalled[];
       readonly removed: number;
       readonly skipped: McpSkipped[];
     }
@@ -271,7 +309,13 @@ export interface UpdateMcpArgs {
 
 /** Result of updateMcp. Never thrown across the bridge boundary. */
 export type UpdateMcpResult =
-  { readonly ok: true; readonly updated: number } | { readonly ok: false; readonly error: string };
+  | {
+      readonly ok: true;
+      /** One entry per updated instance; an update is a reinstall, notes and all. */
+      readonly updated: readonly McpInstalled[];
+      readonly skipped: McpSkipped[];
+    }
+  | { readonly ok: false; readonly error: string };
 
 /** Arguments for mcpUpdatePreflight. */
 export interface McpUpdatePreflightArgs {
@@ -290,8 +334,7 @@ export interface McpUpdatePreflightArgs {
 
 /** Result of mcpUpdatePreflight. Never thrown across the bridge boundary. */
 export type McpUpdatePreflightResult =
-  | { readonly ok: true; readonly missingParams: string[] }
-  | { readonly ok: false; readonly error: string };
+  { readonly ok: true; readonly missingParams: string[] } | { readonly ok: false; readonly error: string };
 
 // -- terminal -----------------------------------------------------------------
 

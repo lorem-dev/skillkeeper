@@ -9,6 +9,8 @@ export { GlassSurface } from './GlassSurface';
 export type { GlassSurfaceProps } from './GlassSurface';
 export { Divider } from './Divider';
 export type { DividerProps } from './Divider';
+export { DescriptionText } from './DescriptionText';
+export type { DescriptionTextProps, DescriptionSpan } from './DescriptionText';
 export { Toolbar } from './Toolbar';
 export type { ToolbarProps } from './Toolbar';
 export { Sidebar, SidebarItem } from './Sidebar';

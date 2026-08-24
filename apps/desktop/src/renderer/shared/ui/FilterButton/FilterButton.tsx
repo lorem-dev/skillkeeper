@@ -31,14 +31,7 @@ export interface FilterButtonProps {
   readonly clearLabel: string;
 }
 
-export function FilterButton({
-  count,
-  open,
-  onToggle,
-  onClear,
-  filterLabel,
-  clearLabel,
-}: FilterButtonProps) {
+export function FilterButton({ count, open, onToggle, onClear, filterLabel, clearLabel }: FilterButtonProps) {
   const active = count > 0;
   const label = active ? clearLabel : filterLabel;
   return (

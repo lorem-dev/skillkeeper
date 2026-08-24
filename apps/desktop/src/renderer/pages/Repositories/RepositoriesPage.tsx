@@ -151,79 +151,79 @@ export function RepositoriesPage() {
         <p className="sk-empty">{t('repositories.empty')}</p>
       ) : (
         <>
-        <div className="sk-repo-list">
-          <AnimatePresence mode="popLayout" initial={animate}>
-          {filtered.map((r, i) => (
-            <motion.div
-              key={r.id}
-              layout
-              custom={i}
-              variants={cardStagger}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              data-repo-id={r.id}
-              className={cx('sk-repo-card-anchor', highlightRepoId === r.id && 'sk-repo-card-anchor--highlight')}
-            >
-            <RepositoryCard
-              repository={r}
-              phase={repoStatus[r.id]?.phase ?? 'idle'}
-              hasUpdate={repoStatus[r.id]?.hasUpdate ?? false}
-              error={repoStatus[r.id]?.error}
-              syncLabel={t('repositories.sync')}
-              syncingLabel={t('repositories.syncing')}
-              editLabel={t('repositories.edit')}
-              updateLabel={t('repositories.hasUpdate')}
-              errorLabel={t('repositories.viewError')}
-              urlCopyLabel={t('repositories.copyRemote')}
-              onUrlClick={() => copyRemote(r.url)}
-              branch={repoInfo[r.id]?.branch}
-              branchCopyLabel={t('repositories.copyBranch')}
-              onBranchClick={() => {
-                const branch = repoInfo[r.id]?.branch;
-                if (branch != null && branch !== '') copyBranch(branch);
-              }}
-              skillCountLabel={
-                repoInfo[r.id] !== undefined
-                  ? t.plural('repositories.skillCount', repoInfo[r.id]!.skillCount)
-                  : undefined
-              }
-              infoPending={repoInfo[r.id] === undefined}
-              skillsLabel={t('common.goToSkills')}
-              mcpLabel={t('common.goToMcp')}
-              onSync={() => void syncRepository(r.id)}
-              onEdit={() => setEditing(r)}
-              onGoToSkills={
-                (repoInfo[r.id]?.skillCount ?? 0) > 0
-                  ? () => goToSkills({ mode: 'repositories', repoFilter: [r.id] }, false)
-                  : undefined
-              }
-              onGoToMcp={reposWithMcp.has(r.id) ? () => goToMcp(r.id) : undefined}
-              onErrorClick={() => showRepoError(r.id)}
-            />
-            </motion.div>
-          ))}
+          <div className="sk-repo-list">
+            <AnimatePresence mode="popLayout" initial={animate}>
+              {filtered.map((r, i) => (
+                <motion.div
+                  key={r.id}
+                  layout
+                  custom={i}
+                  variants={cardStagger}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  data-repo-id={r.id}
+                  className={cx('sk-repo-card-anchor', highlightRepoId === r.id && 'sk-repo-card-anchor--highlight')}
+                >
+                  <RepositoryCard
+                    repository={r}
+                    phase={repoStatus[r.id]?.phase ?? 'idle'}
+                    hasUpdate={repoStatus[r.id]?.hasUpdate ?? false}
+                    error={repoStatus[r.id]?.error}
+                    syncLabel={t('repositories.sync')}
+                    syncingLabel={t('repositories.syncing')}
+                    editLabel={t('repositories.edit')}
+                    updateLabel={t('repositories.hasUpdate')}
+                    errorLabel={t('repositories.viewError')}
+                    urlCopyLabel={t('repositories.copyRemote')}
+                    onUrlClick={() => copyRemote(r.url)}
+                    branch={repoInfo[r.id]?.branch}
+                    branchCopyLabel={t('repositories.copyBranch')}
+                    onBranchClick={() => {
+                      const branch = repoInfo[r.id]?.branch;
+                      if (branch != null && branch !== '') copyBranch(branch);
+                    }}
+                    skillCountLabel={
+                      repoInfo[r.id] !== undefined
+                        ? t.plural('repositories.skillCount', repoInfo[r.id]!.skillCount)
+                        : undefined
+                    }
+                    infoPending={repoInfo[r.id] === undefined}
+                    skillsLabel={t('common.goToSkills')}
+                    mcpLabel={t('common.goToMcp')}
+                    onSync={() => void syncRepository(r.id)}
+                    onEdit={() => setEditing(r)}
+                    onGoToSkills={
+                      (repoInfo[r.id]?.skillCount ?? 0) > 0
+                        ? () => goToSkills({ mode: 'repositories', repoFilter: [r.id] }, false)
+                        : undefined
+                    }
+                    onGoToMcp={reposWithMcp.has(r.id) ? () => goToMcp(r.id) : undefined}
+                    onErrorClick={() => showRepoError(r.id)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+          <AnimatePresence>
+            {searching && (
+              <motion.div
+                key="footer"
+                className="sk-list-footer"
+                variants={fade}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <SearchSummary
+                  foundLabel={t.plural('repositories.searchFound', filtered.length)}
+                  totalLabel={t.plural('repositories.searchTotal', repositories.length)}
+                  showAllLabel={t('repositories.showAll')}
+                  onShowAll={() => setQuery('')}
+                />
+              </motion.div>
+            )}
           </AnimatePresence>
-        </div>
-        <AnimatePresence>
-          {searching && (
-            <motion.div
-              key="footer"
-              className="sk-list-footer"
-              variants={fade}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-            >
-              <SearchSummary
-                foundLabel={t.plural('repositories.searchFound', filtered.length)}
-                totalLabel={t.plural('repositories.searchTotal', repositories.length)}
-                showAllLabel={t('repositories.showAll')}
-                onShowAll={() => setQuery('')}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
         </>
       )}
       <RepoEditModal repository={editing} onClose={() => setEditing(null)} />

@@ -1,8 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
-const fromRoot = (relative: string): string =>
-  fileURLToPath(new URL(relative, import.meta.url));
+const fromRoot = (relative: string): string => fileURLToPath(new URL(relative, import.meta.url));
 
 export default defineConfig({
   resolve: {

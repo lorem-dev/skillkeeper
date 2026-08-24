@@ -90,9 +90,7 @@ describe('fixture submodule', () => {
   });
 
   it('every manifest opens with a YAML frontmatter block naming the skill', () => {
-    for (const file of fixtureFiles().filter(
-      (f) => f.endsWith('SKILL.md') || f.endsWith('HOOK.md'),
-    )) {
+    for (const file of fixtureFiles().filter((f) => f.endsWith('SKILL.md') || f.endsWith('HOOK.md'))) {
       const text = readFileSync(join(FIXTURE_DIR, file), 'utf8');
       expect(text.startsWith('---\n')).toBe(true);
       const frontmatter = text.split('---\n')[1] ?? '';
@@ -109,11 +107,9 @@ describe('fixture submodule', () => {
   it('script-skill ships its scripts non-executable, so install must apply +x', () => {
     // The point of the fixture: if the source were already 755, the install test
     // could not tell "applied from the executables list" from "inherited".
-    const out = execFileSync(
-      'git',
-      ['-C', FIXTURE_DIR, 'ls-files', '-s', 'script-skill/bin', 'script-skill/lib'],
-      { encoding: 'utf8' },
-    );
+    const out = execFileSync('git', ['-C', FIXTURE_DIR, 'ls-files', '-s', 'script-skill/bin', 'script-skill/lib'], {
+      encoding: 'utf8',
+    });
     for (const line of out.split('\n').filter((l) => l !== '')) {
       expect(line.startsWith('100644 ')).toBe(true);
     }

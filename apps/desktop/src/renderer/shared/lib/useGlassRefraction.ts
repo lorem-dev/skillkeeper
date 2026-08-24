@@ -95,9 +95,7 @@ export function useGlassRefraction<T extends HTMLElement>(
         strength,
         chromaticAberration,
       });
-      setFilter(
-        `blur(${blur}px) url('${filter}') brightness(${brightness}) saturate(${saturate})`,
-      );
+      setFilter(`blur(${blur}px) url('${filter}') brightness(${brightness}) saturate(${saturate})`);
     };
 
     apply();

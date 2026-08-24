@@ -135,15 +135,11 @@ describe('scopesNeedingAgents', () => {
   const leaf = (scope: string, name: string) => projectSkillKey(scope, 'r1', undefined, name);
 
   it('lists a scope whose checked skill is not installed and has no agents', () => {
-    expect(
-      scopesNeedingAgents(scopes, [leaf('p1', 'fmt')], [], {}),
-    ).toEqual(['p1']);
+    expect(scopesNeedingAgents(scopes, [leaf('p1', 'fmt')], [], {})).toEqual(['p1']);
   });
 
   it('does not list a scope that already has agents chosen', () => {
-    expect(
-      scopesNeedingAgents(scopes, [leaf('p1', 'fmt')], [], { p1: ['claude'] }),
-    ).toEqual([]);
+    expect(scopesNeedingAgents(scopes, [leaf('p1', 'fmt')], [], { p1: ['claude'] })).toEqual([]);
   });
 
   it('does not list a scope whose only pending change is a removal', () => {
@@ -165,9 +161,10 @@ describe('scopesNeedingAgents', () => {
   });
 
   it('treats the global scope like any other id and keeps the given order', () => {
-    expect(
-      scopesNeedingAgents(scopes, [leaf('p2', 'a'), leaf(GLOBAL_SCOPE_ID, 'b')], [], {}),
-    ).toEqual([GLOBAL_SCOPE_ID, 'p2']);
+    expect(scopesNeedingAgents(scopes, [leaf('p2', 'a'), leaf(GLOBAL_SCOPE_ID, 'b')], [], {})).toEqual([
+      GLOBAL_SCOPE_ID,
+      'p2',
+    ]);
   });
 
   it('ignores a checked key whose scope is not in the given list', () => {

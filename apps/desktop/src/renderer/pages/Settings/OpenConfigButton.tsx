@@ -32,9 +32,7 @@ function loadEditors(): Promise<EditorOption[]> {
 function EditorIconImage({ src }: { readonly src: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) return <Icon name="placeholder" />;
-  return (
-    <img src={src} width={20} height={20} alt="" decoding="async" onError={() => setFailed(true)} />
-  );
+  return <img src={src} width={20} height={20} alt="" decoding="async" onError={() => setFailed(true)} />;
 }
 
 function editorIcon(option: EditorOption | undefined): ReactNode {
@@ -72,9 +70,7 @@ export function OpenConfigButton() {
   const t = useTranslator();
   const animationsEnabled = useAnimationsEnabled();
   const [editors, setEditors] = useState<EditorOption[] | null>(() => editorsCache);
-  const [selected, setSelected] = useState<string>(
-    () => localStorage.getItem(STORAGE_KEY) ?? DEFAULT_ID,
-  );
+  const [selected, setSelected] = useState<string>(() => localStorage.getItem(STORAGE_KEY) ?? DEFAULT_ID);
 
   useEffect(() => {
     if (editorsCache !== null) return;

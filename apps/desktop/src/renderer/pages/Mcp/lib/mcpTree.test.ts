@@ -37,7 +37,7 @@ function project(over: Partial<Project> & { id: string; name: string }): Project
 function preset(over: Partial<McpPreset> & { id: string; name: string }): McpPreset {
   return {
     origin: 'repo',
-    def: { name: over.name, type: 'stdio', command: 'run' },
+    def: { name: over.name, type: 'stdio', command: 'run', parameters: {} },
     hash: `sha256:${over.id}`,
     params: [],
     hasRules: false,
@@ -228,8 +228,18 @@ describe('buildMcpProjectTree', () => {
   it('groups multi-agent installs of the same instance name into one named row', () => {
     const grouped = preset({ id: 'repo:r1::tool', name: 'tool', repoId: 'r1', remote: repoA.url });
     const installs: McpInstall[] = [
-      install({ instanceName: 'tool_1', agent: 'claude', identity: { remote: repoA.url, source: 'tool' }, hash: grouped.hash }),
-      install({ instanceName: 'tool_1', agent: 'cursor', identity: { remote: repoA.url, source: 'tool' }, hash: grouped.hash }),
+      install({
+        instanceName: 'tool_1',
+        agent: 'claude',
+        identity: { remote: repoA.url, source: 'tool' },
+        hash: grouped.hash,
+      }),
+      install({
+        instanceName: 'tool_1',
+        agent: 'cursor',
+        identity: { remote: repoA.url, source: 'tool' },
+        hash: grouped.hash,
+      }),
     ];
 
     const { nodes, items } = buildMcpProjectTree([grouped], installs, projects, repos, 'Global');

@@ -7,7 +7,7 @@ import { buildProjectMcpPlan } from './mcpPlan';
 function preset(over: Partial<McpPreset> & { id: string; name: string }): McpPreset {
   return {
     origin: 'repo',
-    def: { name: over.name, type: 'stdio', command: 'run' },
+    def: { name: over.name, type: 'stdio', command: 'run', parameters: {} },
     hash: `sha256:${over.id}`,
     params: [],
     hasRules: false,
@@ -38,7 +38,9 @@ describe('buildProjectMcpPlan', () => {
     expect(installRows[0]!.needsParamPrompt).toBe(false);
 
     const cursorBatch = plan.batches.find((b) => b.agent === 'cursor');
-    expect(cursorBatch?.install).toEqual([{ identity: { remote: 'r', source: 'github' }, def: presets[0]!.def, values: {} }]);
+    expect(cursorBatch?.install).toEqual([
+      { identity: { remote: 'r', source: 'github' }, def: presets[0]!.def, values: {} },
+    ]);
   });
 
   it('removes an installed instance for an agent dropped from the chosen set', () => {
@@ -59,14 +61,77 @@ describe('buildProjectMcpPlan', () => {
   it('excludes an agent whose native config cannot express the instance transport', () => {
     const installs = [install({ instanceName: 'github_1', agent: 'claude' })];
     const presets = [
-      preset({ id: 'p1', name: 'github', remote: 'r', def: { name: 'github', type: 'http', url: 'https://x' } }),
+      preset({
+        id: 'p1',
+        name: 'github',
+        remote: 'r',
+        def: { name: 'github', type: 'sse', url: 'https://x', parameters: {} },
+      }),
     ];
 
-    // codex cannot express http; only stdio.
-    const plan = buildProjectMcpPlan(installs, 'p1', ['claude', 'codex'], presets);
+    // codex accepts stdio and http but rejects sse; cursor accepts every
+    // transport, so it must still get the install -- proving this assertion
+    // exercises the transport gate rather than an emptied candidate list.
+    const plan = buildProjectMcpPlan(installs, 'p1', ['claude', 'cursor', 'codex'], presets);
+
+    const installRows = plan.rows.filter((r) => r.action === 'install');
+    expect(installRows).toHaveLength(1);
+    expect(installRows[0]!.agents).toEqual(['cursor']);
+    expect(plan.batches.find((b) => b.agent === 'codex')).toBeUndefined();
+  });
+
+  it('excludes an agent that cannot express an OAuth client from a preset carrying one', () => {
+    const installs = [
+      install({ instanceName: 'remote_1', agent: 'claude', identity: { remote: 'r', source: 'remote' } }),
+    ];
+    const presets = [
+      preset({
+        id: 'p1',
+        name: 'remote',
+        remote: 'r',
+        def: {
+          name: 'remote',
+          type: 'http',
+          url: 'https://mcp.example.com/mcp',
+          oauth: { clientId: 'example-client', scopes: ['read'] },
+          parameters: {},
+        },
+      }),
+    ];
+
+    // copilot takes http fine but cannot store an OAuth client, so the backend
+    // declines the install. Planning it anyway would show the user an install
+    // row that then silently does not happen.
+    const plan = buildProjectMcpPlan(installs, 'p1', ['claude', 'copilot'], presets);
 
     expect(plan.rows.filter((r) => r.action === 'install')).toEqual([]);
-    expect(plan.batches.find((b) => b.agent === 'codex')).toBeUndefined();
+    expect(plan.batches.find((b) => b.agent === 'copilot')).toBeUndefined();
+  });
+
+  it('still plans an install for an agent that CAN express an OAuth client', () => {
+    const installs = [
+      install({ instanceName: 'remote_1', agent: 'claude', identity: { remote: 'r', source: 'remote' } }),
+    ];
+    const presets = [
+      preset({
+        id: 'p1',
+        name: 'remote',
+        remote: 'r',
+        def: {
+          name: 'remote',
+          type: 'http',
+          url: 'https://mcp.example.com/mcp',
+          oauth: { clientId: 'example-client', scopes: ['read'] },
+          parameters: {},
+        },
+      }),
+    ];
+
+    const plan = buildProjectMcpPlan(installs, 'p1', ['claude', 'cursor'], presets);
+
+    const installRows = plan.rows.filter((r) => r.action === 'install');
+    expect(installRows).toHaveLength(1);
+    expect(installRows[0]!.agents).toEqual(['cursor']);
   });
 
   it('groups multiple agents installed for the same identity into one row and one batch entry each', () => {
@@ -142,6 +207,24 @@ describe('buildProjectMcpPlan', () => {
     expect(plan.batches).toEqual([]);
   });
 
+  // Codex has project-scoped MCP config just like every other agent, so it is
+  // a project-scoped install candidate the same as any other agent (subject
+  // to the same `supportsTransport`/`supportsOauth` gates everyone else gets).
+  it('allows codex as an install candidate at a project scope', () => {
+    const installs = [install({ instanceName: 'github_1', agent: 'claude' })];
+    const presets = [preset({ id: 'p1', name: 'github', remote: 'r' })]; // stdio -- codex-compatible
+
+    const plan = buildProjectMcpPlan(installs, 'p1', ['claude', 'codex'], presets);
+
+    const installRows = plan.rows.filter((r) => r.action === 'install');
+    expect(installRows).toHaveLength(1);
+    expect(installRows[0]!.agents).toEqual(['codex']);
+    const codexBatch = plan.batches.find((b) => b.agent === 'codex');
+    expect(codexBatch?.install).toEqual([
+      { identity: { remote: 'r', source: 'github' }, def: presets[0]!.def, values: {} },
+    ]);
+  });
+
   // Regression: `SkillSaveModal`'s per-scope review previously only ever
   // called this for tracked projects, so a global-scope MCP instance never
   // appeared in the Save modal's rows or its apply loop. `McpInstall.projectId`
@@ -162,13 +245,13 @@ describe('buildProjectMcpPlan', () => {
     expect(claudeBatch?.remove).toEqual([{ instanceName: 'github_1' }]);
   });
 
-  // Codex has no project-scoped MCP config, so it is excluded from every
-  // PROJECT plan's install candidates (see the other tests above/below) -- but
-  // at the global scope it is a legitimate, even primary, agent. Before this
-  // fix the install-candidate list was unconditionally the four
-  // project-scoped agents, so a newly-chosen codex at the global scope could
-  // never receive an already-installed instance's install op.
-  it('allows codex as an install candidate at the global scope (unlike a project scope)', () => {
+  // Codex has project-scoped MCP config just like every other agent, so
+  // `buildProjectMcpPlan`'s install-candidate list is `ALL_AGENTS` regardless
+  // of scope; the only remaining per-agent gates are `supportsTransport` and
+  // `supportsOauth` (exercised by the tests above). This test exercises the
+  // global scope specifically, confirming a newly-chosen codex there still
+  // receives an already-installed instance's install op.
+  it('allows codex as an install candidate at the global scope', () => {
     const installs = [install({ instanceName: 'github_1', agent: 'claude', projectId: GLOBAL_SCOPE_ID })];
     const presets = [preset({ id: 'p1', name: 'github', remote: 'r' })]; // stdio -- codex-compatible
 

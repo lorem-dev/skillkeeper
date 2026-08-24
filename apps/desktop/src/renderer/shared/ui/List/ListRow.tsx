@@ -20,16 +20,7 @@ export interface ListRowProps {
   readonly className?: string;
 }
 
-export function ListRow({
-  title,
-  subtitle,
-  leading,
-  trailing,
-  children,
-  onClick,
-  selected,
-  className,
-}: ListRowProps) {
+export function ListRow({ title, subtitle, leading, trailing, children, onClick, selected, className }: ListRowProps) {
   const interactive = onClick !== undefined;
   const cls = cx(
     'sk-list-row',

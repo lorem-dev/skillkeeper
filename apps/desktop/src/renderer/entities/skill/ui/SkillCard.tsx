@@ -23,7 +23,9 @@ export function SkillCard({ skill, versionLabel, agentLabels, onOpen }: SkillCar
         </span>
         <span className="sk-skill-card__agents">
           {agentLabels.map((a) => (
-            <Badge key={a} tone="accent">{a}</Badge>
+            <Badge key={a} tone="accent">
+              {a}
+            </Badge>
           ))}
         </span>
       </button>

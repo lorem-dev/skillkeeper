@@ -12,12 +12,24 @@
 
 $themes: (
   light: (
-    'blue': #0088ff, 'indigo': #6155f5, 'teal': #00c8b3, 'cyan': #00c3d0,
-    'green': #34c759, 'yellow': #ffcc00, 'orange': #ff9230, 'red': #ff383c,
-    'pink': #ff2d55, 'purple': #cb30e0, 'brown': #ac7f5e,
+    'blue': #0088ff,
+    'indigo': #6155f5,
+    'teal': #00c8b3,
+    'cyan': #00c3d0,
+    'green': #34c759,
+    'yellow': #ffcc00,
+    'orange': #ff9230,
+    'red': #ff383c,
+    'pink': #ff2d55,
+    'purple': #cb30e0,
+    'brown': #ac7f5e,
 
-    'gray-1': #f2f2f7, 'gray-2': #e5e5ea, 'gray-3': #d1d1d6,
-    'gray-4': #c7c7cc, 'gray-5': #aeaeb2, 'gray-6': #8e8e93,
+    'gray-1': #f2f2f7,
+    'gray-2': #e5e5ea,
+    'gray-3': #d1d1d6,
+    'gray-4': #c7c7cc,
+    'gray-5': #aeaeb2,
+    'gray-6': #8e8e93,
 
     'color-label': #000000,
     'color-label-2': #8a8a8e,
@@ -33,12 +45,24 @@ $themes: (
     'glass-tint': rgba(255, 255, 255, 0.62),
   ),
   dark: (
-    'blue': #0091ff, 'indigo': #6d7cff, 'teal': #00dac3, 'cyan': #3cd3fe,
-    'green': #30d158, 'yellow': #ffd600, 'orange': #ff8d28, 'red': #ff4245,
-    'pink': #ff375f, 'purple': #db34f2, 'brown': #b78a66,
+    'blue': #0091ff,
+    'indigo': #6d7cff,
+    'teal': #00dac3,
+    'cyan': #3cd3fe,
+    'green': #30d158,
+    'yellow': #ffd600,
+    'orange': #ff8d28,
+    'red': #ff4245,
+    'pink': #ff375f,
+    'purple': #db34f2,
+    'brown': #b78a66,
 
-    'gray-1': #1c1c1e, 'gray-2': #2c2c2e, 'gray-3': #3a3a3c,
-    'gray-4': #48484a, 'gray-5': #636366, 'gray-6': #8e8e93,
+    'gray-1': #1c1c1e,
+    'gray-2': #2c2c2e,
+    'gray-3': #3a3a3c,
+    'gray-4': #48484a,
+    'gray-5': #636366,
+    'gray-6': #8e8e93,
 
     'color-label': #ffffff,
     'color-label-2': #98989e,
@@ -72,8 +96,8 @@ $themes: (
   --sk-card-hover-bg: var(--sk-color-bg-secondary);
 
   // type
-  --sk-font-sans: "Inter", system-ui, sans-serif;
-  --sk-font-display: "Cormorant Garamond", Georgia, serif;
+  --sk-font-sans: 'Inter', system-ui, sans-serif;
+  --sk-font-display: 'Cormorant Garamond', Georgia, serif;
 
   // radii
   --sk-radius-xs: 4px;
@@ -101,13 +125,12 @@ $themes: (
   // elevation. The light theme carries depth mainly through the drop shadow; the
   // dark theme softens these further (see the override below) and leans on the
   // hairline glass border for edge definition instead.
-  --sk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.10);
+  --sk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.1);
   --sk-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.14);
   --sk-shadow-3: 0 12px 36px rgba(0, 0, 0, 0.22);
   // White control knobs (slider/toggle) need a crisp rim + drop shadow so they
   // stay visible on light backgrounds, not just a soft elevation shadow.
-  --sk-shadow-knob: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.28),
-    0 3px 8px rgba(0, 0, 0, 0.12);
+  --sk-shadow-knob: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.28), 0 3px 8px rgba(0, 0, 0, 0.12);
   // Glass edge: a thin gradient border, bright at the top-left and bottom-right
   // corners and fading to transparent at the other two, so the rim catches light
   // on one diagonal and blends into the backdrop elsewhere. Two soft radial
@@ -166,7 +189,7 @@ $themes: (
   // above uses stronger drops) and lean on the hairline border for edges.
   --sk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.08);
   --sk-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --sk-shadow-3: 0 12px 40px rgba(0, 0, 0, 0.20);
+  --sk-shadow-3: 0 12px 40px rgba(0, 0, 0, 0.2);
   --sk-card-hover-bg: var(--sk-color-fill-3);
 }
 

@@ -56,9 +56,7 @@ export function TerminalView() {
   // Where the context menu was opened, and whether anything was selected at
   // that moment (checked once, on open, so the entry cannot go stale while the
   // menu is up). `null` means closed.
-  const [menuAt, setMenuAt] = useState<{ x: number; y: number; hasSelection: boolean } | null>(
-    null,
-  );
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number; hasSelection: boolean } | null>(null);
   // A zero-size element placed at the click point: Menu positions against an
   // anchor's rect, and this is what turns a cursor position into one.
   const menuAnchor = useRef<HTMLDivElement>(null);
@@ -266,11 +264,7 @@ export function TerminalView() {
     <>
       <div className="sk-terminal" ref={host} onContextMenu={openMenu} />
       {menuAt !== null && (
-        <div
-          className="sk-terminal__menu-anchor"
-          ref={menuAnchor}
-          style={{ top: menuAt.y, left: menuAt.x }}
-        />
+        <div className="sk-terminal__menu-anchor" ref={menuAnchor} style={{ top: menuAt.y, left: menuAt.x }} />
       )}
       <Menu
         open={menuAt !== null}

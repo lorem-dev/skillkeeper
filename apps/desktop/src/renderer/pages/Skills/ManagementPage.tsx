@@ -165,10 +165,7 @@ export function SkillsManagementPage() {
   // interpreted against cannot drift apart.
   const selection = useMemo(
     () =>
-      dropMissing(
-        graph,
-        deriveSelection({ explicit: projectChecked, restored: projectRestored }, installedIds, graph),
-      ),
+      dropMissing(graph, deriveSelection({ explicit: projectChecked, restored: projectRestored }, installedIds, graph)),
     [projectChecked, projectRestored, installedIds, graph],
   );
   const shownSet = useMemo(() => new Set(selection.shown), [selection]);
@@ -370,11 +367,7 @@ export function SkillsManagementPage() {
       } else if (orphan?.kind === 'unlinked') {
         badge = (
           <Tooltip content={t('skills.addRepo')}>
-            <button
-              type="button"
-              className="sk-skills-badge-btn"
-              onClick={() => requestAddRepository(orphan.remote)}
-            >
+            <button type="button" className="sk-skills-badge-btn" onClick={() => requestAddRepository(orphan.remote)}>
               <Badge tone="warning">{t('skills.unlinked')}</Badge>
             </button>
           </Tooltip>
@@ -392,10 +385,7 @@ export function SkillsManagementPage() {
         <span className="sk-skills-nodelabel">
           <span className="sk-skills-name">{node.label}</span>
           {ups !== undefined && (
-            <span
-              className={`sk-skills-dot${updatesBusy ? ' sk-skills-dot--pulse' : ''}`}
-              aria-hidden="true"
-            />
+            <span className={`sk-skills-dot${updatesBusy ? ' sk-skills-dot--pulse' : ''}`} aria-hidden="true" />
           )}
           {badge !== null && (
             // Badges own their commands; swallow the click so it never reaches
@@ -452,9 +442,7 @@ export function SkillsManagementPage() {
         detail = (
           <ChangeBadge
             kind="broken"
-            label={t(
-              repairable ? 'skills.status.brokenRequires' : 'skills.status.brokenRequiresUnavailable',
-            )}
+            label={t(repairable ? 'skills.status.brokenRequires' : 'skills.status.brokenRequiresUnavailable')}
             onClick={repair}
           />
         );
@@ -476,8 +464,7 @@ export function SkillsManagementPage() {
             onClick={() =>
               setSkillsUi({
                 projectRestored: [
-                  ...restore({ explicit: projectChecked, restored: projectRestored }, node.id)
-                    .restored,
+                  ...restore({ explicit: projectChecked, restored: projectRestored }, node.id).restored,
                 ],
               })
             }
@@ -488,10 +475,8 @@ export function SkillsManagementPage() {
       // it stays installed, and the teal checkbox already says why it is held.
       // No `!isDependency` guard here: it would leave that row the only
       // installed row in the tree with no badge at all.
-      else if (wasInstalled && isChecked)
-        detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
-      else if (wasInstalled && !isChecked)
-        detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
+      else if (wasInstalled && isChecked) detail = <ChangeBadge kind="present" label={t('skills.status.present')} />;
+      else if (wasInstalled && !isChecked) detail = <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
       else if (!wasInstalled && isChecked)
         detail = (
           <ChangeBadge
@@ -584,9 +569,7 @@ export function SkillsManagementPage() {
   const totalSkills = useMemo(() => countLeaves(baseTree), [baseTree]);
   const shownSkills = useMemo(() => countLeaves(decorated), [decorated]);
   const baseExpandedIds = persistedExpandedIds ?? rootIds(baseTree);
-  const expandedIds = searching
-    ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])]
-    : baseExpandedIds;
+  const expandedIds = searching ? [...new Set([...baseExpandedIds, ...collectBranchIds(decorated)])] : baseExpandedIds;
 
   // Pending change (drives the Save button + its notification). Counted from the
   // derived set, so a selection consisting only of dependencies still shows the
@@ -618,8 +601,7 @@ export function SkillsManagementPage() {
     () => projectRestored.some((id) => brokenByLeaf.has(id) && repairableLeaves.has(id)),
     [projectRestored, brokenByLeaf, repairableLeaves],
   );
-  const hasProjectChanges =
-    pendingAdd > 0 || pendingRemove > 0 || agentsChangedAny || pendingRepair;
+  const hasProjectChanges = pendingAdd > 0 || pendingRemove > 0 || agentsChangedAny || pendingRepair;
 
   // The user-wide scope leads the projects filter, mirroring its position as the
   // tree's first root.

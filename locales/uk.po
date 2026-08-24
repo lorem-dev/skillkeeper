@@ -955,6 +955,63 @@ msgstr "Компоненти"
 msgid "mcp.managementTitle"
 msgstr "Менеджмент"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "ID клієнта"
+
+msgid "mcp.field.callbackPort"
+msgstr "Порт зворотного виклику"
+
+msgid "mcp.field.scopes"
+msgstr "Області доступу"
+
+msgid "mcp.scopePlaceholder"
+msgstr "область"
+
+msgid "mcp.addScope"
+msgstr "Додати область"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper зберігає лише публічні поля клієнта. Увійдіть через самого агента; секрет клієнта тут ніколи не зберігається."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth застосовується лише до серверів http і sse."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "ID клієнта не може бути порожнім."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "Порт зворотного виклику має бути від 1 до 65535."
+
+msgid "mcp.error.scopeBlank"
+msgstr "Область не може бути порожньою."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} не може зберегти OAuth-клієнта, тому цей сервер не зможе пройти автентифікацію."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} не підтримує {field}; це не було записано."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex вже встановлює порт зворотного виклику OAuth на {found}, тому його залишили без змін замість встановлення на {wanted}."
+
+msgid "mcp.field.description"
+msgstr "Опис"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "Для чого цей сервер"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "Виберіть значення"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} більше не приймає збережене значення, тому замість нього було вибрано {value}."
+
+msgid "mcp.error.invalidOption"
+msgstr "Виберіть одне із запропонованих значень."
+
 msgid "settings.comingSoon"
 msgstr "Екран налаштувань з’явиться незабаром."
 
@@ -1321,9 +1378,6 @@ msgstr "Глобально"
 
 msgid "scope.globalHint"
 msgstr "Встановлено для цього користувача, у всіх проєктах"
-
-msgid "mcp.install.codexGlobalOnly"
-msgstr "Codex встановлює сервери MCP для всього користувача, а не для окремого проєкту"
 
 msgid "skills.agentChoice.title"
 msgstr "Виберіть агентів"

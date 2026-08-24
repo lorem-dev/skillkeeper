@@ -91,12 +91,8 @@ function useThrottledCallback(fn: () => void, ms: number): () => void {
 }
 
 export function StatusBar() {
-  const errorCount = useSkillkeeperStore(
-    (s) => s.notifications.filter((n) => n.level === 'error').length,
-  );
-  const warningCount = useSkillkeeperStore(
-    (s) => s.notifications.filter((n) => n.level === 'warning').length,
-  );
+  const errorCount = useSkillkeeperStore((s) => s.notifications.filter((n) => n.level === 'error').length);
+  const warningCount = useSkillkeeperStore((s) => s.notifications.filter((n) => n.level === 'warning').length);
   const rawActiveTaskCount = useSkillkeeperStore(
     (s) => s.tasks.filter((task) => task.status === 'queued' || task.status === 'running').length,
   );
@@ -159,22 +155,13 @@ export function StatusBar() {
       </Button>
       <Button
         variant="plain"
-        className={cx(
-          'sk-statusbar__btn',
-          'sk-statusbar__bell',
-          badge.tone === null && 'sk-statusbar__bell--empty',
-        )}
+        className={cx('sk-statusbar__btn', 'sk-statusbar__bell', badge.tone === null && 'sk-statusbar__bell--empty')}
         onClick={logsOpen ? closeLogs : openLogs}
         aria-label={label}
       >
         <Icon name="bell" size={18} />
         {badge.tone !== null && (
-          <span
-            className={cx(
-              'sk-statusbar__badge',
-              badge.tone === 'warning' && 'sk-statusbar__badge--warning',
-            )}
-          >
+          <span className={cx('sk-statusbar__badge', badge.tone === 'warning' && 'sk-statusbar__badge--warning')}>
             {badge.text}
           </span>
         )}

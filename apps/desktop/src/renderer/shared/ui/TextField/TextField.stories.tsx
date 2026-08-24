@@ -28,14 +28,7 @@ export const Default: Story = {
 export const Invalid: Story = {
   render: () => {
     const [value, setValue] = useState('not-a-url');
-    return (
-      <TextField
-        label="Repository URL"
-        invalid
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
-    );
+    return <TextField label="Repository URL" invalid value={value} onChange={(e) => setValue(e.target.value)} />;
   },
 };
 

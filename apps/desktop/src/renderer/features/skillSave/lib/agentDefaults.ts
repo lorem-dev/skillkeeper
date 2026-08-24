@@ -29,10 +29,7 @@ export interface AgentChoiceScope {
  * agent set, making the save silently inert again (the very bug the agent
  * choice exists to prevent).
  */
-export function agentChoiceScopes(
-  scopeIds: readonly string[],
-  projects: readonly Project[],
-): AgentChoiceScope[] {
+export function agentChoiceScopes(scopeIds: readonly string[], projects: readonly Project[]): AgentChoiceScope[] {
   const out: AgentChoiceScope[] = [];
   for (const id of scopeIds) {
     if (isGlobalScope(id)) {

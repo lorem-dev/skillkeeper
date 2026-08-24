@@ -17,11 +17,7 @@ type Story = StoryObj<typeof meta>;
 // Center the trigger so a fixed placement has room on every side. Hover the
 // button to reveal the bubble.
 function stage(node: ReactNode): ReactElement {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 180 }}>
-      {node}
-    </div>
-  );
+  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 180 }}>{node}</div>;
 }
 
 export const Top: Story = {

@@ -84,7 +84,11 @@ export function MultiCombobox({
   // `value` of a native <input> -- there is no chip/pill UI to attach an
   // option's icon to, so `icon` only renders in the dropdown row below.
   const summary = useMemo(
-    () => options.filter((o) => valueSet.has(o.value)).map((o) => o.label).join(', '),
+    () =>
+      options
+        .filter((o) => valueSet.has(o.value))
+        .map((o) => o.label)
+        .join(', '),
     [options, valueSet],
   );
 
@@ -165,9 +169,7 @@ export function MultiCombobox({
   const toggle = (index: number): void => {
     const option = filtered[index];
     if (option === undefined || option.disabled === true) return;
-    const next = valueSet.has(option.value)
-      ? value.filter((v) => v !== option.value)
-      : [...value, option.value];
+    const next = valueSet.has(option.value) ? value.filter((v) => v !== option.value) : [...value, option.value];
     onChange([...next]);
     // Keep the list open (and focused) so several can be toggled in a row.
     inputRef.current?.focus();
@@ -260,7 +262,14 @@ export function MultiCombobox({
               animate={{ opacity: 1, scale: 1, transition: { duration: SK_DURATION.fast, ease: SK_EASE } }}
               exit={{ opacity: 0, scale: 0.96, transition: { duration: SK_DURATION.fast } }}
             >
-              <div ref={listRef} id={listId} role="listbox" aria-multiselectable="true" aria-label={ariaLabel} className="sk-multicombobox__list">
+              <div
+                ref={listRef}
+                id={listId}
+                role="listbox"
+                aria-multiselectable="true"
+                aria-label={ariaLabel}
+                className="sk-multicombobox__list"
+              >
                 {filtered.length === 0 ? (
                   <div className="sk-multicombobox__empty">{emptyText}</div>
                 ) : (

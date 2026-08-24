@@ -10,9 +10,7 @@ import type { AppUpdateOffer } from '@/services/bridge';
 
 /** What the status-bar update badge should show. */
 export type UpdateBadgeState =
-  | { kind: 'hidden' }
-  | { kind: 'available'; version: string }
-  | { kind: 'downloading'; percent: number };
+  { kind: 'hidden' } | { kind: 'available'; version: string } | { kind: 'downloading'; percent: number };
 
 /**
  * Resolve the badge from the held offer and the current download state.
@@ -24,11 +22,7 @@ export type UpdateBadgeState =
  * and rounded to the nearest whole number, since the backend's progress event
  * is a `u8` but a caller here could pass anything.
  */
-export function badgeState(
-  offer: AppUpdateOffer | null,
-  downloading: boolean,
-  percent: number,
-): UpdateBadgeState {
+export function badgeState(offer: AppUpdateOffer | null, downloading: boolean, percent: number): UpdateBadgeState {
   if (offer === null || !offer.installable) return { kind: 'hidden' };
   if (downloading) {
     const clamped = Math.min(100, Math.max(0, percent));

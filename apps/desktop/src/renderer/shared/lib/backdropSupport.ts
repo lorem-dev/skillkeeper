@@ -32,14 +32,10 @@ const SOFTWARE_RENDERER = /swiftshader|software|basic render|llvmpipe|swrast/i;
 function detectRenderer(): string | null {
   try {
     const canvas = document.createElement('canvas');
-    const gl = (canvas.getContext('webgl') ??
-      canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+    const gl = (canvas.getContext('webgl') ?? canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
     if (gl === null) return null;
     const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    const value =
-      ext !== null
-        ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
-        : gl.getParameter(gl.RENDERER);
+    const value = ext !== null ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
     return typeof value === 'string' ? value : null;
   } catch {
     return null;
@@ -62,8 +58,7 @@ export function supportsBackdropBlur(): boolean {
   const cssParses =
     typeof CSS !== 'undefined' &&
     typeof CSS.supports === 'function' &&
-    (CSS.supports('backdrop-filter', 'blur(1px)') ||
-      CSS.supports('-webkit-backdrop-filter', 'blur(1px)'));
+    (CSS.supports('backdrop-filter', 'blur(1px)') || CSS.supports('-webkit-backdrop-filter', 'blur(1px)'));
   if (!cssParses) {
     backdropBlurSupport = true;
     return backdropBlurSupport;

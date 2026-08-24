@@ -4285,6 +4285,7 @@ name = "skillkeeper-config"
 version = "0.6.0"
 dependencies = [
  "serde",
+ "serde_json",
  "serde_yaml_ng",
  "skillkeeper-core",
  "thiserror 2.0.20",

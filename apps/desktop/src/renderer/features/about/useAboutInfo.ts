@@ -36,9 +36,7 @@ export function useAboutInfo(): AboutInfo {
     };
   }, []);
 
-  const dark =
-    theme === 'dark' ||
-    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   // Copyright years: a single "2026" while the end year is still 2026, otherwise
   // the range "2026-<end>". The end year is the build year for a production build

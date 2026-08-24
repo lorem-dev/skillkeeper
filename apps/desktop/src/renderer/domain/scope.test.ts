@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AgentTarget, Project } from '@/services/bridge';
 import { GLOBAL_SCOPE_ID, applyScope, isGlobalScope, scopeIdOf } from './scope';
 
-const projects: Project[] = [
-  { id: 'p1', path: '/work/one', name: 'One', addedAt: '2026-01-01T00:00:00.000Z' },
-];
+const projects: Project[] = [{ id: 'p1', path: '/work/one', name: 'One', addedAt: '2026-01-01T00:00:00.000Z' }];
 
 const target = (patch: Partial<AgentTarget>): AgentTarget => ({
   agent: 'claude',

@@ -42,6 +42,7 @@ export function toManualPreset(preset: McpPreset): ManualMcpPreset {
     args: def.args !== undefined ? [...def.args] : undefined,
     env: def.env !== undefined ? { ...def.env } : undefined,
     rules: def.rules,
+    description: def.description,
+    oauth: def.oauth,
   };
 }
-

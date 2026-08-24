@@ -13,3 +13,18 @@ apps/desktop/src/renderer/services/bridge/generated
 # from here would dirty its worktree and show up as an unintended pointer bump.
 examples/test-repo
 
+# Written by `cargo test` (mcp::schema::tests::writes_the_schema_file). Prettier
+# and the generator disagree about its layout, so formatting it here would make
+# the two rewrite it in turn, forever.
+schemas
+
+# Written by `pnpm run i18n` from the `.po` sources. Same reason as above: the
+# generator owns the layout, so the formatter must not.
+packages/i18n/src/catalogs
+
+# Markdown is hand-authored prose here, and the formatter's model of it does not
+# match how these pages are written: it strips the alignment padding out of
+# reference tables, and it moves a list item's continuation line to column 0
+# when the line above ends inside an unclosed inline-code span (see the ledger
+# paragraph in docs/usage/mcp.md). Neither buys anything a reader can see.
+*.md

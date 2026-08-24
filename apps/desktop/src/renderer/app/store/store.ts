@@ -28,6 +28,7 @@ import type {
   RepoInfo,
   ProjectInfo,
   McpServerDef,
+  RawMcpServerDef,
   McpPresetOrigin,
   McpInstall,
   McpBatch,
@@ -107,8 +108,19 @@ export function repoMcpPresetId(repoId: string, group: string | undefined, name:
 // the three helpers below reimplement them locally, matching the canonical Rust
 // implementations in `skillkeeper-core` (which its `cargo test` suite covers).
 
-/** Mirrors the Rust `parse_params` (`skillkeeper-core` `mcp`): scans every string field of
- *  an MCP def for `{param}` placeholders and returns the sorted, deduped set.
+/** Mirrors the Rust `parse_params` (`skillkeeper-core` `mcp`): scans the same
+ *  string fields of an MCP def for `{param}` placeholders -- url, header
+ *  values, command, args, env values, rules, and the oauth client id and each
+ *  scope -- and returns the sorted, deduped set. `oauth.callbackPort` is
+ *  numeric and is deliberately not scanned.
+ *
+ *  The Rust `string_fields` helper is the canonical field list, and a Rust test
+ *  (`the_renderer_mirror_scans_exactly_the_same_fields` in `mcp/params.rs`)
+ *  parses this function's body to assert the two lists stay identical -- adding
+ *  a scanned field on either side without the other fails `cargo test`. Keep
+ *  the field accesses below written as `def.<field>` / `oauth.<field>` so that
+ *  guard can see them.
+ *
  *  Exported so its behavior can be tested directly. */
 export function scanMcpParams(def: McpServerDef): string[] {
   const names = new Set<string>();
@@ -124,6 +136,11 @@ export function scanMcpParams(def: McpServerDef): string[] {
   if (def.args !== undefined) for (const a of def.args) scan(a);
   if (def.env !== undefined) for (const v of Object.values(def.env)) scan(v);
   if (def.rules !== undefined) scan(def.rules);
+  if (def.oauth !== undefined) {
+    const oauth = def.oauth;
+    if (oauth.clientId !== undefined) scan(oauth.clientId);
+    for (const scope of oauth.scopes ?? []) scan(scope);
+  }
   return [...names].sort();
 }
 
@@ -161,6 +178,12 @@ export function normalizeMcpRemote(url: string): string {
  * SHA-256 algorithm using the standard Web Crypto API (`crypto.subtle`),
  * available in every renderer/browser context, so its output matches the
  * backend's `hash_mcp_def` byte-for-byte.
+ *
+ * Sorting alone is not enough for that claim to hold -- see
+ * {@link omitEmptyForHash} for the empty-collection rule that goes with it,
+ * and `matches_the_rust_digest_for_a_known_def` in this module's test file,
+ * which pins the literal digest against the Rust test of the same name so the
+ * two sides are held together by a value rather than by this comment.
  */
 function sortMcpKeysForHash(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortMcpKeysForHash);
@@ -175,12 +198,75 @@ function sortMcpKeysForHash(value: unknown): unknown {
   return value;
 }
 
+/**
+ * Drops the collections Rust's serde omits when they are EMPTY but whose
+ * generated TypeScript type is non-optional, so the canonical JSON matches
+ * `canonical_mcp_json` byte for byte:
+ *
+ * - `parameters` -- `skip_serializing_if = "BTreeMap::is_empty"`
+ * - `parameters.*.options` -- `skip_serializing_if = "Vec::is_empty"`
+ * - `oauth.scopes` -- `skip_serializing_if = "Vec::is_empty"`
+ *
+ * `headers`, `args` and `env` are deliberately NOT in this list: they are
+ * `Option<..>` in Rust with `skip_serializing_if = "Option::is_none"`, so an
+ * empty map or list there serializes as `{}`/`[]` on both sides and dropping
+ * it here would introduce the very divergence this removes.
+ *
+ * This exists because a def the RENDERER builds (a manual preset, in
+ * `refreshMcpPresets`) carries `parameters: {}` in order to satisfy the
+ * generated type, whereas one that arrives over the bridge already has the
+ * key omitted -- so only the renderer-built defs diverged, and every
+ * installed manual preset read as permanently out of date.
+ */
+function omitEmptyForHash(rest: Omit<McpServerDef, 'name'>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...rest };
+  const parameters = Object.entries(rest.parameters ?? {}).map(([name, parameter]) => {
+    const { options, ...paramRest } = parameter;
+    return [name, options !== undefined && options.length > 0 ? { ...paramRest, options } : paramRest] as const;
+  });
+  if (parameters.length === 0) delete out['parameters'];
+  else out['parameters'] = Object.fromEntries(parameters);
+  if (rest.oauth?.scopes !== undefined && rest.oauth.scopes.length === 0) {
+    const { scopes: _scopes, ...oauthRest } = rest.oauth;
+    out['oauth'] = oauthRest;
+  }
+  return out;
+}
+
+/**
+ * Fills in the `parameters` map the backend omits when it is empty, so a def
+ * that arrived over the bridge actually matches its own generated type before
+ * anything reads it.
+ *
+ * See {@link RawMcpServerDef} for why the wire and the type disagree. The
+ * omission is NOT a bug to fix on the Rust side: `parameters` is skipped from
+ * the canonical JSON too (that is what {@link omitEmptyForHash} mirrors), so
+ * teaching serde to always emit it would change the content hash of every def
+ * in existence and read every installed instance as out of date exactly once.
+ *
+ * This is the single normalization point, applied where bridge data becomes
+ * renderer state ({@link McpPreset}), rather than a guard at each of the reads
+ * downstream -- `preset.def.parameters[param]` is read in the install modal,
+ * the update prompt, the skill-save modal and `descriptionSpanQueries`, and
+ * the next such reader would be written without one. Everything the renderer
+ * builds itself (a manual preset, the preset editor) already carries the key.
+ *
+ * What this adds cannot move a hash: `hashMcpDefInRenderer` drops an empty
+ * `parameters` again before hashing, and a repo preset's hash comes from the
+ * backend regardless.
+ */
+export function normalizeMcpDefFromBridge(def: RawMcpServerDef): McpServerDef {
+  return { ...def, parameters: def.parameters ?? {} };
+}
+
 /** Content hash of an MCP server def, excluding `name` -- see the note on
  *  {@link sortMcpKeysForHash} for why this reimplements the backend's
- *  `hash_mcp_def`. Exported so its behavior can be tested directly. */
+ *  `hash_mcp_def`, and {@link omitEmptyForHash} for the empty-collection
+ *  rule the two sides have to agree on. Exported so its behavior can be
+ *  tested directly. */
 export async function hashMcpDefInRenderer(def: McpServerDef): Promise<string> {
   const { name: _name, ...rest } = def;
-  const canonical = JSON.stringify(sortMcpKeysForHash(rest));
+  const canonical = JSON.stringify(sortMcpKeysForHash(omitEmptyForHash(rest)));
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
   const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
   return `sha256:${hex}`;
@@ -840,8 +926,7 @@ function makeNotificationEntry(
   repoId?: string,
   href?: string,
 ): NotificationEntry {
-  const payload =
-    typeof message === 'string' ? { text: message } : { key: message.key, vars: message.vars };
+  const payload = typeof message === 'string' ? { text: message } : { key: message.key, vars: message.vars };
   return {
     id: crypto.randomUUID(),
     level,
@@ -1048,10 +1133,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       // Reset the target mode's selection to the installed baseline (repo mode:
       // no checks; project mode: reseed from installed), so no stale pending
       // changes carry over into the fresh view.
-      const selection =
-        merged.mode === 'repositories'
-          ? { repoChecked: [] }
-          : installedBaseline(get().skills);
+      const selection = merged.mode === 'repositories' ? { repoChecked: [] } : installedBaseline(get().skills);
       return { skillsUi: { ...merged, ...selection }, skillsNav: s.skillsNav + 1 };
     });
   },
@@ -1247,9 +1329,7 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       ...(patch.notifications !== undefined
         ? { notifications: { ...current.notifications, ...patch.notifications } }
         : {}),
-      ...(patch.repositories !== undefined
-        ? { repositories: { ...current.repositories, ...patch.repositories } }
-        : {}),
+      ...(patch.repositories !== undefined ? { repositories: { ...current.repositories, ...patch.repositories } } : {}),
       ...(patch.projects !== undefined ? { projects: { ...current.projects, ...patch.projects } } : {}),
       ...(patch.mcp !== undefined ? { mcp: { ...current.mcp, ...patch.mcp } } : {}),
     };
@@ -1577,7 +1657,15 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const manualDefs = get().config?.mcp.servers ?? [];
       const manual = await Promise.all(
         manualDefs.map(async (preset): Promise<McpPreset> => {
-          const { id, ...def } = preset;
+          const { id, ...rest } = preset;
+          // The manual-preset editor never authors `parameters` (see
+          // `skillkeeper_config::McpPreset`'s doc comment), so an empty map is
+          // the honest value here, not a placeholder standing in for missing
+          // data. It does NOT reach the content hash: Rust omits an empty
+          // `parameters` entirely, so `hashMcpDefInRenderer` drops it (see
+          // `omitEmptyForHash`) or every installed manual preset would read as
+          // permanently out of date.
+          const def: McpServerDef = { ...rest, parameters: {} };
           return {
             id,
             origin: 'manual',
@@ -1595,18 +1683,24 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       // logged, deduped, no toast. Without this a preset simply is not there,
       // which is indistinguishable from never having been declared.
       get().notifyResolveWarnings(available.warnings);
-      const repo: McpPreset[] = available.mcp.map((a) => ({
-        id: repoMcpPresetId(a.repoId, a.group, a.def.name),
-        origin: 'repo',
-        name: a.def.name,
-        def: a.def,
-        hash: a.hash,
-        params: scanMcpParams(a.def),
-        hasRules: a.def.rules !== undefined,
-        repoId: a.repoId,
-        remote: a.remote,
-        group: a.group,
-      }));
+      const repo: McpPreset[] = available.mcp.map((a) => {
+        // The one place a def crosses from the bridge into renderer state, so
+        // the one place the omitted-when-empty `parameters` key is filled in --
+        // see `normalizeMcpDefFromBridge`.
+        const def = normalizeMcpDefFromBridge(a.def);
+        return {
+          id: repoMcpPresetId(a.repoId, a.group, def.name),
+          origin: 'repo',
+          name: def.name,
+          def,
+          hash: a.hash,
+          params: scanMcpParams(def),
+          hasRules: def.rules !== undefined,
+          repoId: a.repoId,
+          remote: a.remote,
+          group: a.group,
+        };
+      });
       set({ mcpPresets: [...manual, ...repo] });
     })();
   },

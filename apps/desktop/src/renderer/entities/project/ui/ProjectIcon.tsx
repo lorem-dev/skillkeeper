@@ -36,11 +36,7 @@ export function ProjectIcon({ iconUrl, name, size = 18, className, global }: Pro
     // at any size.
     const inset = Math.round(size * 0.14);
     return (
-      <span
-        className={cx('sk-project-icon', 'sk-project-icon--global', className)}
-        style={box}
-        aria-hidden="true"
-      >
+      <span className={cx('sk-project-icon', 'sk-project-icon--global', className)} style={box} aria-hidden="true">
         <Icon name="global" size={size - inset * 2} />
       </span>
     );

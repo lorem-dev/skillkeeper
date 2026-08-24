@@ -62,12 +62,7 @@ describe('createTranslator', () => {
     const de = createTranslator('de');
     const ru = createTranslator('ru');
 
-    const navKeys = [
-      'nav.repositories',
-      'nav.skills',
-      'nav.projects',
-      'nav.settings',
-    ] as const;
+    const navKeys = ['nav.repositories', 'nav.skills', 'nav.projects', 'nav.settings'] as const;
 
     for (const key of navKeys) {
       expect(en(key)).toBeTruthy();

@@ -1,11 +1,4 @@
-export type StepId =
-  | 'welcome'
-  | 'projects'
-  | 'repositories'
-  | 'skills-intro'
-  | 'skills-actions'
-  | 'agents'
-  | 'done';
+export type StepId = 'welcome' | 'projects' | 'repositories' | 'skills-intro' | 'skills-actions' | 'agents' | 'done';
 
 export type AnchorId = 'add-project' | 'add-repository';
 

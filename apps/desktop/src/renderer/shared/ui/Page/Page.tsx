@@ -88,11 +88,7 @@ export function Page({ title, toolbar, dock, children }: PageProps) {
         <div className={cx('sk-page__body', hasDock && 'sk-page__body--docked')}>{children}</div>
       </div>
       <div
-        className={cx(
-          'sk-page__fade',
-          'sk-page__fade--bottom',
-          (canScrollDown || hasDock) && 'sk-page__fade--visible',
-        )}
+        className={cx('sk-page__fade', 'sk-page__fade--bottom', (canScrollDown || hasDock) && 'sk-page__fade--visible')}
         aria-hidden="true"
       />
       {/* The dock's buttons fade + slide in one after another, RIGHTMOST first

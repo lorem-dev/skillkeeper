@@ -2,12 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AgentKind, AvailableSkill, InstallManifest } from '@/services/bridge';
 import { GLOBAL_SCOPE_ID } from '@/domain';
 import { buildProjectPlan, deriveSelection, projectSkillKey, repoSkillKey } from '@/entities/skill';
-import {
-  buildInstallScope,
-  installedInScope,
-  resolveInstallSelection,
-  seedInstallSelection,
-} from './installSelection';
+import { buildInstallScope, installedInScope, resolveInstallSelection, seedInstallSelection } from './installSelection';
 
 const REPO = 'r1';
 const PROJ = 'p1';
@@ -96,11 +91,12 @@ describe('buildInstallScope', () => {
     expect(scope.baseline).toEqual([pk(PROJ, 'g/c')]);
     // Keyed by project-mode leaf id: a repo-mode key resolves to nothing, which
     // is the silent failure this scoping exists to prevent.
-    expect(deriveSelection({ explicit: [pk(PROJ, 'g/a')], restored: [] }, [], scope.graph).shown)
-      .toEqual([pk(PROJ, 'g/a'), pk(PROJ, 'g/b'), pk(PROJ, 'g/c')]);
-    expect(deriveSelection({ explicit: [rk('g/a')], restored: [] }, [], scope.graph).shown).toEqual([
-      rk('g/a'),
+    expect(deriveSelection({ explicit: [pk(PROJ, 'g/a')], restored: [] }, [], scope.graph).shown).toEqual([
+      pk(PROJ, 'g/a'),
+      pk(PROJ, 'g/b'),
+      pk(PROJ, 'g/c'),
     ]);
+    expect(deriveSelection({ explicit: [rk('g/a')], restored: [] }, [], scope.graph).shown).toEqual([rk('g/a')]);
   });
 
   it('does not depend on the selection or the chosen agents', () => {
@@ -129,9 +125,7 @@ describe('resolveInstallSelection', () => {
     });
 
     // Drawn: all three checked, the two dependencies tinted.
-    expect(new Set(view.derived.shown)).toEqual(
-      new Set([pk(PROJ, 'g/a'), pk(PROJ, 'g/b'), pk(PROJ, 'g/c')]),
-    );
+    expect(new Set(view.derived.shown)).toEqual(new Set([pk(PROJ, 'g/a'), pk(PROJ, 'g/b'), pk(PROJ, 'g/c')]));
     expect(new Set(view.derived.dependency)).toEqual(new Set([pk(PROJ, 'g/b'), pk(PROJ, 'g/c')]));
 
     // Applied: all three. This is the assertion the whole feature turns on --
@@ -141,9 +135,7 @@ describe('resolveInstallSelection', () => {
 
     // For contrast, the mistake this guards against: a plan built from the hand
     // picks draws the same three boxes and installs one skill.
-    expect(buildProjectPlan(PROJ, selection.explicit, [], CLAUDE).rows.map((r) => r.ref.name)).toEqual([
-      'a',
-    ]);
+    expect(buildProjectPlan(PROJ, selection.explicit, [], CLAUDE).rows.map((r) => r.ref.name)).toEqual(['a']);
   });
 
   it('does not re-install a dependency already present in this scope', () => {
@@ -154,13 +146,14 @@ describe('resolveInstallSelection', () => {
       installs,
       agents: CLAUDE,
     });
-    expect(new Set(view.derived.shown)).toEqual(
-      new Set([pk(PROJ, 'g/a'), pk(PROJ, 'g/b'), pk(PROJ, 'g/c')]),
-    );
+    expect(new Set(view.derived.shown)).toEqual(new Set([pk(PROJ, 'g/a'), pk(PROJ, 'g/b'), pk(PROJ, 'g/c')]));
     // 'c' is installed, so it is a baseline row, not a dependency-tinted add.
     expect(view.derived.dependency).toEqual([pk(PROJ, 'g/b')]);
     expect(
-      view.plan.rows.filter((r) => r.action === 'install').map((r) => r.ref.name).sort(),
+      view.plan.rows
+        .filter((r) => r.action === 'install')
+        .map((r) => r.ref.name)
+        .sort(),
     ).toEqual(['a', 'b']);
   });
 
@@ -176,7 +169,10 @@ describe('resolveInstallSelection', () => {
     expect(scope.baseline).toEqual([]);
     // p2's copy of 'c' satisfies nothing here: it is still an install for p1.
     expect(
-      view.plan.rows.filter((r) => r.action === 'install').map((r) => r.ref.name).sort(),
+      view.plan.rows
+        .filter((r) => r.action === 'install')
+        .map((r) => r.ref.name)
+        .sort(),
     ).toEqual(['a', 'b', 'c']);
   });
 
@@ -188,11 +184,7 @@ describe('resolveInstallSelection', () => {
       agents: CLAUDE,
     });
     expect(new Set(view.derived.shown)).toEqual(
-      new Set([
-        pk(GLOBAL_SCOPE_ID, 'g/a'),
-        pk(GLOBAL_SCOPE_ID, 'g/b'),
-        pk(GLOBAL_SCOPE_ID, 'g/c'),
-      ]),
+      new Set([pk(GLOBAL_SCOPE_ID, 'g/a'), pk(GLOBAL_SCOPE_ID, 'g/b'), pk(GLOBAL_SCOPE_ID, 'g/c')]),
     );
     expect(view.plan.rows.map((r) => r.ref.name).sort()).toEqual(['a', 'b', 'c']);
   });

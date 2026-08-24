@@ -44,7 +44,16 @@ export interface SplitButtonProps {
   readonly size?: 'default' | 'compact';
 }
 
-export function SplitButton({ icon, tooltip, onPrimary, items, menuLabel, disabled, glass = false, size = 'default' }: SplitButtonProps) {
+export function SplitButton({
+  icon,
+  tooltip,
+  onPrimary,
+  items,
+  menuLabel,
+  disabled,
+  glass = false,
+  size = 'default',
+}: SplitButtonProps) {
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   // Refract the backdrop through the whole shell when glass is on; no-op
@@ -92,13 +101,7 @@ export function SplitButton({ icon, tooltip, onPrimary, items, menuLabel, disabl
       >
         <Icon name="chevron-right" className="sk-split-button__chevron" />
       </button>
-      <Menu
-        open={open}
-        onClose={() => setOpen(false)}
-        anchorRef={toggleRef}
-        items={menuItems}
-        ariaLabel={menuLabel}
-      />
+      <Menu open={open} onClose={() => setOpen(false)} anchorRef={toggleRef} items={menuItems} ariaLabel={menuLabel} />
     </div>
   );
 }

@@ -27,7 +27,7 @@ describe('mcpTileSearchText', () => {
       id: 'manual-1',
       origin: 'manual',
       name: 'local-filesystem',
-      def: { name: 'local-filesystem', type: 'stdio', command: 'npx', args: ['-y', 'server'] },
+      def: { name: 'local-filesystem', type: 'stdio', command: 'npx', args: ['-y', 'server'], parameters: {} },
       hash: 'sha256:x',
       params: [],
       hasRules: false,
@@ -40,18 +40,13 @@ describe('mcpTileSearchText', () => {
       id: 'repo:repo-1:devtools:linear',
       origin: 'repo',
       name: 'linear',
-      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/mcp' },
+      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/mcp', parameters: {} },
       hash: 'sha256:y',
       params: [],
       hasRules: false,
       repoId: 'repo-1',
     };
-    expect(mcpTileSearchText(preset, REPOS)).toEqual([
-      'linear',
-      'http',
-      'Team Skills',
-      'https://api.linear.app/mcp',
-    ]);
+    expect(mcpTileSearchText(preset, REPOS)).toEqual(['linear', 'http', 'Team Skills', 'https://api.linear.app/mcp']);
   });
 
   it('omits the repo name when the preset repoId matches no tracked repository', () => {
@@ -59,7 +54,7 @@ describe('mcpTileSearchText', () => {
       id: 'repo:repo-2:g:x',
       origin: 'repo',
       name: 'x',
-      def: { name: 'x', type: 'sse', url: 'https://mcp.example.com/sse' },
+      def: { name: 'x', type: 'sse', url: 'https://mcp.example.com/sse', parameters: {} },
       hash: 'sha256:z',
       params: [],
       hasRules: false,
@@ -73,7 +68,7 @@ describe('mcpTileSearchText', () => {
       id: 'manual-2',
       origin: 'manual',
       name: 'bare',
-      def: { name: 'bare', type: 'stdio' },
+      def: { name: 'bare', type: 'stdio', parameters: {} },
       hash: 'sha256:w',
       params: [],
       hasRules: false,

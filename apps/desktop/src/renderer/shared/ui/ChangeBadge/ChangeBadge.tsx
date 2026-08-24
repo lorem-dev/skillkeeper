@@ -55,14 +55,7 @@ export interface ChangeBadgeProps {
 
 // Black = knocked out of the mask, so the glyph shows the background through.
 const GLYPH: Record<ChangeBadgeKind, ReactNode> = {
-  add: (
-    <path
-      d="M8 4.6 L8 11.4 M4.6 8 L11.4 8"
-      stroke="black"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-    />
-  ),
+  add: <path d="M8 4.6 L8 11.4 M4.6 8 L11.4 8" stroke="black" strokeWidth="1.8" strokeLinecap="round" />,
   remove: <path d="M4.6 8 L11.4 8" stroke="black" strokeWidth="1.8" strokeLinecap="round" />,
   present: (
     <path
@@ -76,14 +69,7 @@ const GLYPH: Record<ChangeBadgeKind, ReactNode> = {
   ),
   // Same plus as `add`: a dependency install IS an add. Only the color says it
   // was chosen for you rather than by you.
-  'add-dependency': (
-    <path
-      d="M8 4.6 L8 11.4 M4.6 8 L11.4 8"
-      stroke="black"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-    />
-  ),
+  'add-dependency': <path d="M8 4.6 L8 11.4 M4.6 8 L11.4 8" stroke="black" strokeWidth="1.8" strokeLinecap="round" />,
   broken: (
     <>
       <path d="M8 4.2 L8 9" stroke="black" strokeWidth="1.8" strokeLinecap="round" />

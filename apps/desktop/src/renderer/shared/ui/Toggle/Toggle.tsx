@@ -16,13 +16,7 @@ export function Toggle({ label, className, disabled, ...rest }: ToggleProps) {
   return (
     <label className={cx('sk-toggle', disabled && 'sk-toggle--disabled', className)}>
       {label !== undefined && <span className="sk-toggle__label">{label}</span>}
-      <input
-        type="checkbox"
-        role="switch"
-        className="sk-toggle__input"
-        disabled={disabled}
-        {...rest}
-      />
+      <input type="checkbox" role="switch" className="sk-toggle__input" disabled={disabled} {...rest} />
       <span className="sk-toggle__track" aria-hidden="true">
         <span className="sk-toggle__knob" />
       </span>

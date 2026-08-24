@@ -10,7 +10,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use regex::{Captures, Regex};
 use thiserror::Error;
 
-use crate::mcp::model::McpServerDef;
+use crate::mcp::model::{McpOauth, McpServerDef};
+use crate::mcp::writers::UpsertNote;
 
 /// Matches a `{param}` placeholder; capture group 1 is the parameter name.
 fn placeholder_re() -> Regex {
@@ -18,7 +19,9 @@ fn placeholder_re() -> Regex {
 }
 
 /// Every string field of an MCP server definition that may contain `{param}`
-/// placeholders: url, header values, command, args, env values, and rules.
+/// placeholders: url, header values, command, args, env values, rules, and the
+/// oauth client id and scopes. `oauth.callback_port` is numeric and is
+/// deliberately not scanned.
 fn string_fields(def: &McpServerDef) -> Vec<&str> {
     let mut out: Vec<&str> = Vec::new();
     if let Some(url) = &def.url {
@@ -38,6 +41,12 @@ fn string_fields(def: &McpServerDef) -> Vec<&str> {
     }
     if let Some(rules) = &def.rules {
         out.push(rules);
+    }
+    if let Some(oauth) = &def.oauth {
+        if let Some(client_id) = &oauth.client_id {
+            out.push(client_id);
+        }
+        out.extend(oauth.scopes.iter().map(String::as_str));
     }
     out
 }
@@ -168,6 +177,13 @@ pub fn render_params(
             .map(|args| args.iter().map(|arg| render(arg)).collect()),
         env: render_record(&def.env),
         rules: def.rules.as_deref().map(&render),
+        oauth: def.oauth.as_ref().map(|oauth| McpOauth {
+            callback_port: oauth.callback_port,
+            client_id: oauth.client_id.as_deref().map(&render),
+            scopes: oauth.scopes.iter().map(|s| render(s)).collect(),
+        }),
+        description: def.description.clone(),
+        parameters: def.parameters.clone(),
     };
 
     let missing = missing.into_inner();
@@ -178,16 +194,94 @@ pub fn render_params(
     Ok(out)
 }
 
+/// Stored values that name something outside their parameter's options.
+/// A parameter with no options accepts anything. Sorted by parameter name.
+#[must_use]
+pub fn invalid_option_values(
+    def: &McpServerDef,
+    values: &BTreeMap<String, String>,
+) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    for (name, parameter) in &def.parameters {
+        if parameter.options.is_empty() {
+            continue;
+        }
+        if let Some(value) = values.get(name) {
+            if !parameter.options.iter().any(|o| &o.value == value) {
+                out.push((name.clone(), value.clone()));
+            }
+        }
+    }
+    out
+}
+
+/// Bring `values` back in line with `def`'s options, reporting every change.
+///
+/// A stored value outside a non-empty option set is replaced by the FIRST
+/// option -- well defined because options are an ordered list.
+///
+/// A parameter with NO options is skipped in silence. It has nothing to
+/// migrate towards, and there is nothing true to say about it either: an empty
+/// option list cannot be told apart from an absent one once the YAML is parsed
+/// (see `de_options` in [`crate::mcp::model`] and the SK020 note in
+/// [`crate::mcp::lint`]), so "this parameter declares an empty option set" is a
+/// claim this code cannot make. Saying it anyway warned about every
+/// description-only entry -- the form the design's worked example teaches --
+/// on every single update.
+#[must_use]
+pub fn migrate_option_values(
+    def: &McpServerDef,
+    values: &mut BTreeMap<String, String>,
+) -> Vec<UpsertNote> {
+    let mut notes = Vec::new();
+    for (name, parameter) in &def.parameters {
+        // Doubles as the empty-list guard: no first option, nothing to do.
+        let Some(first) = parameter.options.first() else {
+            continue;
+        };
+        let Some(current) = values.get(name).cloned() else {
+            continue;
+        };
+        if parameter.options.iter().any(|o| o.value == current) {
+            continue;
+        }
+        values.insert(name.clone(), first.value.clone());
+        notes.push(UpsertNote::OptionSubstituted {
+            parameter: name.clone(),
+            value: first.value.clone(),
+        });
+    }
+    notes
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::model::McpTransport;
+    use crate::mcp::model::{McpOption, McpParameter, McpTransport};
 
     fn map(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
         pairs
             .iter()
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect()
+    }
+
+    /// A minimal http-transport definition with no placeholders of its own, so
+    /// oauth-focused tests can add exactly the placeholders they care about.
+    fn http_def() -> McpServerDef {
+        McpServerDef {
+            name: "remote".to_string(),
+            transport: McpTransport::Http,
+            url: Some("https://example.com/mcp".to_string()),
+            headers: None,
+            command: None,
+            args: None,
+            env: None,
+            rules: None,
+            oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
+        }
     }
 
     fn sample_def() -> McpServerDef {
@@ -200,6 +294,9 @@ mod tests {
             args: None,
             env: None,
             rules: Some("host={host}".to_string()),
+            oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -219,6 +316,9 @@ mod tests {
             args: Some(vec!["{a}".to_string()]),
             env: Some(map(&[("E", "{b}")])),
             rules: None,
+            oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         assert_eq!(parse_params(&def), vec!["a", "b"]);
     }
@@ -251,6 +351,9 @@ mod tests {
             args: Some(vec!["{a}".to_string()]),
             env: None,
             rules: None,
+            oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         let out = render_params(&def, &map(&[("a", "A")])).unwrap();
         assert_eq!(out.args, Some(vec!["A".to_string()]));
@@ -285,5 +388,303 @@ mod tests {
         assert_eq!(missing_params(&def, None), vec!["host", "token"]);
         // A stored key present but empty still counts as present (not missing).
         assert!(missing_params(&def, Some(&map(&[("host", "h"), ("token", "")]))).is_empty());
+    }
+
+    #[test]
+    fn a_client_id_placeholder_is_a_parameter() {
+        let mut def = http_def();
+        def.oauth = Some(McpOauth {
+            client_id: Some("{org_client}".to_string()),
+            callback_port: Some(8432),
+            scopes: vec!["{tier}_read".to_string()],
+        });
+        assert_eq!(
+            parse_params(&def),
+            vec!["org_client".to_string(), "tier".to_string()]
+        );
+    }
+
+    #[test]
+    fn rendering_substitutes_into_the_client_id_and_scopes() {
+        let mut def = http_def();
+        def.oauth = Some(McpOauth {
+            client_id: Some("{org_client}".to_string()),
+            callback_port: Some(8432),
+            scopes: vec!["{tier}_read".to_string()],
+        });
+        let mut values = BTreeMap::new();
+        values.insert("org_client".to_string(), "abc".to_string());
+        values.insert("tier".to_string(), "admin".to_string());
+        let out = render_params(&def, &values).expect("render");
+        let oauth = out.oauth.expect("oauth survives rendering");
+        assert_eq!(oauth.client_id.as_deref(), Some("abc"));
+        assert_eq!(oauth.scopes, vec!["admin_read".to_string()]);
+        assert_eq!(oauth.callback_port, Some(8432));
+    }
+
+    #[test]
+    fn a_missing_oauth_parameter_is_reported_like_any_other() {
+        let mut def = http_def();
+        def.oauth = Some(McpOauth {
+            client_id: Some("{org_client}".to_string()),
+            callback_port: None,
+            scopes: Vec::new(),
+        });
+        let err = render_params(&def, &BTreeMap::new()).expect_err("missing value");
+        assert!(err.to_string().contains("org_client"));
+    }
+
+    /// Drift guard for the renderer's hand-written mirror of [`string_fields`]:
+    /// `scanMcpParams` in `apps/desktop/src/renderer/app/store/store.ts`. The
+    /// mirror exists because the install modal needs a preset's parameter list
+    /// synchronously, before any backend call, so it cannot ask this crate.
+    ///
+    /// Nothing made the two fail together, and they drifted: `oauth` was added
+    /// here and never there, so the modal rendered no input for a parameterized
+    /// client id, enabled Confirm, and dead-ended the install on a backend
+    /// `MissingValuesError` naming a value the UI never asked for.
+    ///
+    /// Pinned structurally rather than by example, because an example only
+    /// catches the field someone thought to write a case for. Both function
+    /// bodies are parsed for their `def.<field>` / `oauth.<field>` accesses and
+    /// the two sets must be identical, so adding a scanned field on one side
+    /// alone fails here.
+    #[test]
+    fn the_renderer_mirror_scans_exactly_the_same_fields() {
+        /// `client_id` -> `clientId`, so the two languages' spellings of one
+        /// field compare equal.
+        fn camel(name: &str) -> String {
+            let mut parts = name.split('_');
+            let mut out = parts.next().unwrap_or_default().to_string();
+            for part in parts {
+                let mut chars = part.chars();
+                if let Some(first) = chars.next() {
+                    out.push(first.to_ascii_uppercase());
+                    out.push_str(chars.as_str());
+                }
+            }
+            out
+        }
+
+        /// The `def.*` / `oauth.*` field names read inside the function that
+        /// `signature` opens, whose body is taken to end at the first `}` in
+        /// column 0.
+        fn scanned_fields(source: &str, signature: &str) -> BTreeSet<String> {
+            let start = source.find(signature).unwrap_or_else(|| {
+                panic!("{signature} not found -- this guard is reading the wrong function")
+            });
+            let body = &source[start..];
+            let end = body
+                .find("\n}")
+                .unwrap_or_else(|| panic!("{signature} has no closing brace in column 0"));
+            let re = Regex::new(r"\b(?:def|oauth)\.([A-Za-z_]+)").expect("valid regex");
+            re.captures_iter(&body[..end])
+                .map(|caps| camel(&caps[1]))
+                .collect()
+        }
+
+        let rust = scanned_fields(
+            include_str!("params.rs"),
+            "fn string_fields(def: &McpServerDef) -> Vec<&str> {",
+        );
+        let mirror_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../apps/desktop/src/renderer/app/store/store.ts");
+        let mirror_source = std::fs::read_to_string(&mirror_path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", mirror_path.display()));
+        let renderer = scanned_fields(
+            &mirror_source,
+            "export function scanMcpParams(def: McpServerDef): string[] {",
+        );
+
+        // Both extractions must have found something, or the assertion below
+        // would pass on two empty sets after a harmless rename.
+        assert!(
+            rust.contains("oauth") && rust.contains("clientId") && rust.contains("scopes"),
+            "the Rust field list did not parse as expected: {rust:?}"
+        );
+        assert_eq!(
+            rust, renderer,
+            "`scanMcpParams` and `string_fields` scan different fields; update \
+             both or neither"
+        );
+    }
+
+    fn choice_def(pairs: &[(&str, &str)]) -> McpServerDef {
+        let mut parameters = BTreeMap::new();
+        parameters.insert(
+            "choice".to_string(),
+            McpParameter {
+                description: None,
+                options: pairs
+                    .iter()
+                    .map(|(v, l)| McpOption {
+                        value: (*v).to_string(),
+                        label: (*l).to_string(),
+                    })
+                    .collect(),
+            },
+        );
+        McpServerDef {
+            parameters,
+            ..http_def()
+        }
+    }
+
+    fn values(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
+        pairs
+            .iter()
+            .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn a_value_outside_the_options_is_invalid() {
+        let def = choice_def(&[("a", "Ay"), ("b", "Bee")]);
+        assert_eq!(
+            invalid_option_values(&def, &values(&[("choice", "c")])),
+            vec![("choice".to_string(), "c".to_string())]
+        );
+        assert!(invalid_option_values(&def, &values(&[("choice", "a")])).is_empty());
+    }
+
+    #[test]
+    fn invalid_option_values_are_sorted_by_parameter_name() {
+        // Two invalid parameters, inserted in reverse alphabetical order: a
+        // regression from the `BTreeMap` iteration this documents to plain
+        // insertion order would flip this result and nothing else would catch
+        // it, since every other case here uses only one invalid parameter.
+        let mut parameters = BTreeMap::new();
+        parameters.insert(
+            "zulu".to_string(),
+            McpParameter {
+                description: None,
+                options: vec![McpOption {
+                    value: "z1".to_string(),
+                    label: "Z1".to_string(),
+                }],
+            },
+        );
+        parameters.insert(
+            "alpha".to_string(),
+            McpParameter {
+                description: None,
+                options: vec![McpOption {
+                    value: "a1".to_string(),
+                    label: "A1".to_string(),
+                }],
+            },
+        );
+        let def = McpServerDef {
+            parameters,
+            ..http_def()
+        };
+        let bad = values(&[("zulu", "bad-z"), ("alpha", "bad-a")]);
+        assert_eq!(
+            invalid_option_values(&def, &bad),
+            vec![
+                ("alpha".to_string(), "bad-a".to_string()),
+                ("zulu".to_string(), "bad-z".to_string()),
+            ],
+            "entries must come out sorted by parameter name"
+        );
+    }
+
+    #[test]
+    fn a_parameter_without_options_accepts_anything() {
+        let def = choice_def(&[]);
+        assert!(invalid_option_values(&def, &values(&[("choice", "whatever")])).is_empty());
+    }
+
+    #[test]
+    fn a_removed_option_falls_back_to_the_first_and_is_reported() {
+        let def = choice_def(&[("a", "Ay"), ("b", "Bee")]);
+        let mut v = values(&[("choice", "gone")]);
+        let notes = migrate_option_values(&def, &mut v);
+        assert_eq!(
+            v.get("choice").map(String::as_str),
+            Some("a"),
+            "first option, in document order"
+        );
+        assert_eq!(
+            notes,
+            vec![UpsertNote::OptionSubstituted {
+                parameter: "choice".to_string(),
+                value: "a".to_string()
+            }],
+            "silently rewriting a value the user chose is exactly what must not happen"
+        );
+    }
+
+    /// The one case that discriminates "first in document order" from
+    /// "smallest value". Every other options fixture in this feature happens
+    /// to be in ascending value order, so replacing `options.first()` with an
+    /// alphabetical minimum survived all of them -- and "first is well defined
+    /// precisely because options are an ordered list" is the entire reason a
+    /// YAML mapping is modelled as a list rather than a map.
+    #[test]
+    fn first_means_first_in_the_document_not_first_alphabetically() {
+        let def = choice_def(&[("zebra", "Z"), ("apple", "A")]);
+        let mut v = values(&[("choice", "gone")]);
+        let notes = migrate_option_values(&def, &mut v);
+        assert_eq!(
+            v.get("choice").map(String::as_str),
+            Some("zebra"),
+            "the option written first wins, even when it sorts last"
+        );
+        assert_eq!(
+            notes,
+            vec![UpsertNote::OptionSubstituted {
+                parameter: "choice".to_string(),
+                value: "zebra".to_string()
+            }]
+        );
+    }
+
+    #[test]
+    fn an_empty_option_set_leaves_the_stored_value_alone_and_says_nothing() {
+        let def = choice_def(&[]);
+        let mut v = values(&[("choice", "kept")]);
+        assert_eq!(
+            migrate_option_values(&def, &mut v),
+            vec![],
+            "an empty list is indistinguishable from no options at all, so there is nothing true to report"
+        );
+        assert_eq!(
+            v.get("choice").map(String::as_str),
+            Some("kept"),
+            "clearing would break a working install"
+        );
+    }
+
+    /// The form that made the old warning a guaranteed false positive: a
+    /// parameter carrying only a `description`, exactly as the design's worked
+    /// example teaches, deserializes to the same empty option list as an
+    /// authored-empty one. `parameters` is additive metadata -- adding a
+    /// description to a placeholder must not change what an update reports.
+    #[test]
+    fn a_description_only_parameter_is_never_reported_on_update() {
+        let mut parameters = BTreeMap::new();
+        parameters.insert(
+            "project_id".to_string(),
+            McpParameter {
+                description: Some("The numeric project id.".to_string()),
+                options: vec![],
+            },
+        );
+        let def = McpServerDef {
+            parameters,
+            ..http_def()
+        };
+        let mut v = values(&[("project_id", "42")]);
+        assert_eq!(migrate_option_values(&def, &mut v), vec![]);
+        assert_eq!(v.get("project_id").map(String::as_str), Some("42"));
+    }
+
+    #[test]
+    fn a_still_valid_value_is_neither_changed_nor_reported() {
+        let def = choice_def(&[("a", "Ay"), ("b", "Bee")]);
+        let mut v = values(&[("choice", "b")]);
+        assert!(migrate_option_values(&def, &mut v).is_empty());
+        assert_eq!(v.get("choice").map(String::as_str), Some("b"));
     }
 }

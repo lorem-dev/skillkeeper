@@ -3,8 +3,13 @@ import { STEP_META, nextStepId, prevStepId } from './steps';
 import type { StepId } from './steps';
 
 const ORDER: readonly StepId[] = [
-  'welcome', 'projects', 'repositories',
-  'skills-intro', 'skills-actions', 'agents', 'done',
+  'welcome',
+  'projects',
+  'repositories',
+  'skills-intro',
+  'skills-actions',
+  'agents',
+  'done',
 ];
 
 describe('steps', () => {

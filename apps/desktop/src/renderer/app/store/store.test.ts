@@ -541,11 +541,12 @@ describe('useSkillkeeperStore', () => {
         listAvailableSkills: async () => ({ skills: [], warnings: [] }),
         reconcileSkills: async () => [],
         listAvailableMcp: async () => ({ mcp: [], warnings: [] }),
-        applyMcp: async () => ({ ok: true as const, installed: 0, removed: 0, skipped: [] }),
+        applyMcp: async () => ({ ok: true as const, installed: [], removed: 0, skipped: [] }),
         listMcpInstalls: async () => [],
         reconcileMcp: async () => [],
-        updateMcp: async () => ({ ok: true as const, updated: 0 }),
+        updateMcp: async () => ({ ok: true as const, updated: [], skipped: [] }),
         mcpUpdatePreflight: async () => ({ ok: true as const, missingParams: [] }),
+        mcpDescriptionSpans: async () => [],
         detectProjectAgents: async () => [],
         applySkillChanges: async () => ({ ok: true as const, installed: 0, removed: 0 }),
         onSkillsProgress: () => () => {},
@@ -553,6 +554,7 @@ describe('useSkillkeeperStore', () => {
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
         openExternal: async () => ({ ok: true }),
+        openExternalUrl: async () => {},
         onConfigChanged: () => () => {},
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
@@ -560,18 +562,18 @@ describe('useSkillkeeperStore', () => {
         onMenuCheckForUpdates: () => () => {},
         onboardingMenuSync: () => {},
         getAppVersion: () => Promise.resolve('0.0.0-test'),
-        addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        cloneRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        updateRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        removeRepository: async () => ({ ok: true } as RemoveResult),
-        syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        addRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        cloneRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        updateRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        removeRepository: async () => ({ ok: true }) as RemoveResult,
+        syncRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
         repoHasUpdate: async () => false,
         describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
         listBranches: async () => [],
         selectFolder: async () => null,
-        addProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
-        updateProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
-        removeProject: async () => ({ ok: true } as RemoveResult),
+        addProject: async () => ({ ok: true, project: mockProject }) as ProjectResult,
+        updateProject: async () => ({ ok: true, project: mockProject }) as ProjectResult,
+        removeProject: async () => ({ ok: true }) as RemoveResult,
         describeProject: async () => ({ skillCount: 0, fromReposCount: 0, agentCount: 0 }),
         projectFolderState: async () => 'present' as const,
         openProject: async () => ({ ok: true }),
@@ -641,11 +643,12 @@ describe('useSkillkeeperStore', () => {
         listAvailableSkills: async () => ({ skills: [], warnings: [] }),
         reconcileSkills: async () => [],
         listAvailableMcp: async () => ({ mcp: [], warnings: [] }),
-        applyMcp: async () => ({ ok: true as const, installed: 0, removed: 0, skipped: [] }),
+        applyMcp: async () => ({ ok: true as const, installed: [], removed: 0, skipped: [] }),
         listMcpInstalls: async () => [],
         reconcileMcp: async () => [],
-        updateMcp: async () => ({ ok: true as const, updated: 0 }),
+        updateMcp: async () => ({ ok: true as const, updated: [], skipped: [] }),
         mcpUpdatePreflight: async () => ({ ok: true as const, missingParams: [] }),
+        mcpDescriptionSpans: async () => [],
         detectProjectAgents: async () => [],
         applySkillChanges: async () => ({ ok: true as const, installed: 0, removed: 0 }),
         onSkillsProgress: () => () => {},
@@ -653,6 +656,7 @@ describe('useSkillkeeperStore', () => {
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
         openExternal: async () => ({ ok: true }),
+        openExternalUrl: async () => {},
         onConfigChanged: () => () => {},
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
@@ -660,18 +664,18 @@ describe('useSkillkeeperStore', () => {
         onMenuCheckForUpdates: () => () => {},
         onboardingMenuSync: () => {},
         getAppVersion: () => Promise.resolve('0.0.0-test'),
-        addRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        cloneRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        updateRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
-        removeRepository: async () => ({ ok: true } as RemoveResult),
-        syncRepository: async () => ({ ok: true, repository: mockRepo } as RepoResult),
+        addRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        cloneRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        updateRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
+        removeRepository: async () => ({ ok: true }) as RemoveResult,
+        syncRepository: async () => ({ ok: true, repository: mockRepo }) as RepoResult,
         repoHasUpdate: async () => false,
         describeRepository: async () => ({ branch: 'main', skillCount: 0 }),
         listBranches: async () => [],
         selectFolder: async () => null,
-        addProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
-        updateProject: async () => ({ ok: true, project: mockProject } as ProjectResult),
-        removeProject: async () => ({ ok: true } as RemoveResult),
+        addProject: async () => ({ ok: true, project: mockProject }) as ProjectResult,
+        updateProject: async () => ({ ok: true, project: mockProject }) as ProjectResult,
+        removeProject: async () => ({ ok: true }) as RemoveResult,
         describeProject: async () => ({ skillCount: 0, fromReposCount: 0, agentCount: 0 }),
         projectFolderState: async () => 'present' as const,
         openProject: async () => ({ ok: true }),
@@ -775,9 +779,7 @@ describe('useSkillkeeperStore', () => {
 
     it('notifyResolveWarnings logs warnings without raising a toast', () => {
       const s = useSkillkeeperStore.getState();
-      s.notifyResolveWarnings([
-        { repoId: 'repo-1', repoName: 'fixture', message: 'Unresolved SKILL.md at "a/b/c"' },
-      ]);
+      s.notifyResolveWarnings([{ repoId: 'repo-1', repoName: 'fixture', message: 'Unresolved SKILL.md at "a/b/c"' }]);
       const state = useSkillkeeperStore.getState();
       expect(state.notifications).toHaveLength(1);
       expect(state.notifications[0]?.level).toBe('warning');
@@ -993,9 +995,7 @@ describe('useSkillkeeperStore', () => {
       vi.mocked(bridgeClient.reconcileSkills).mockResolvedValue([]);
       vi.mocked(bridgeClient.reconcileMcp).mockResolvedValue([]);
 
-      await useSkillkeeperStore
-        .getState()
-        .updateRepository(mockRepo.id, mockRepo.name, mockRepo.url, 'release');
+      await useSkillkeeperStore.getState().updateRepository(mockRepo.id, mockRepo.name, mockRepo.url, 'release');
 
       expect(bridgeClient.listAvailableSkills).toHaveBeenCalled();
       expect(bridgeClient.listAvailableMcp).toHaveBeenCalled();
@@ -1033,16 +1033,14 @@ describe('useSkillkeeperStore', () => {
       repoId: 'repo-1',
       remote: 'https://github.com/example/skills',
       group: 'devtools',
-      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}' },
+      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}', parameters: {} },
       hash: 'sha256:repo-hash',
     };
 
     beforeEach(() => {
-      useSkillkeeperStore.getState().setConfig(
-        { ...mockConfig, mcp: { servers: [{ id: 'manual-1', ...manualDef }] } },
-        validValidity,
-        [],
-      );
+      useSkillkeeperStore
+        .getState()
+        .setConfig({ ...mockConfig, mcp: { servers: [{ id: 'manual-1', ...manualDef }] } }, validValidity, []);
       vi.mocked(bridgeClient.listAvailableMcp).mockReset();
       vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue({ mcp: [repoAvailable], warnings: [] });
       // The shared `reset` leaves the notification log alone, and these tests
@@ -1112,6 +1110,31 @@ describe('useSkillkeeperStore', () => {
       expect(first).toBeDefined();
       expect(first).toBe(second);
     });
+
+    // The def below is written the way the BACKEND writes one, not the way
+    // every other fixture in this file does: no `parameters` key at all,
+    // because `McpServerDef.parameters` is
+    // `skip_serializing_if = "BTreeMap::is_empty"` in Rust and the generated
+    // TypeScript cannot say so. That omission IS the scenario -- it is what
+    // every `mcp.yml` authored before `parameters:` existed sends, and what
+    // made `preset.def.parameters[param]` throw in the install modal, the
+    // update prompt, the skill-save modal and `descriptionSpanQueries`.
+    it('fills in the parameters map the backend omits when it is empty', async () => {
+      vi.mocked(bridgeClient.listAvailableMcp).mockResolvedValue({
+        mcp: [{ ...repoAvailable, def: { name: 'docs', type: 'http', url: 'https://{host}/docs' } }],
+        warnings: [],
+      });
+
+      await useSkillkeeperStore.getState().refreshMcpPresets();
+
+      const repo = useSkillkeeperStore.getState().mcpPresets.find((p) => p.origin === 'repo');
+      // The scanner-derived `params` is non-empty while the metadata map is
+      // absent, which is exactly the combination that crashed -- a reader
+      // indexes the map once per param.
+      expect(repo?.params).toEqual(['host']);
+      expect(repo?.def.parameters).toEqual({});
+      expect(repo?.def.parameters['host']).toBeUndefined();
+    });
   });
 
   describe('deleteMcpPreset', () => {
@@ -1146,12 +1169,11 @@ describe('useSkillkeeperStore', () => {
     /** The args passed to each `bridgeClient.applyMcp` call this test made. */
     const applyMcpArgs = (): unknown[] => vi.mocked(bridgeClient.applyMcp).mock.calls.map((c) => c[0]);
     /** The configs passed to each `bridgeClient.setConfig` call this test made. */
-    const setConfigArgs = (): SkillKeeperConfig[] =>
-      vi.mocked(bridgeClient.setConfig).mock.calls.map((c) => c[0]);
+    const setConfigArgs = (): SkillKeeperConfig[] => vi.mocked(bridgeClient.setConfig).mock.calls.map((c) => c[0]);
 
     beforeEach(() => {
       vi.mocked(bridgeClient.applyMcp).mockReset();
-      vi.mocked(bridgeClient.applyMcp).mockResolvedValue({ ok: true, installed: 0, removed: 1, skipped: [] });
+      vi.mocked(bridgeClient.applyMcp).mockResolvedValue({ ok: true, installed: [], removed: 1, skipped: [] });
       vi.mocked(bridgeClient.listMcpInstalls).mockReset();
       vi.mocked(bridgeClient.listMcpInstalls).mockResolvedValue([unrelatedInstall]);
       vi.mocked(bridgeClient.listAvailableMcp).mockReset();
@@ -1162,11 +1184,9 @@ describe('useSkillkeeperStore', () => {
         validity: validValidity,
         warnings: [],
       }));
-      useSkillkeeperStore.getState().setConfig(
-        { ...mockConfig, mcp: { servers: [manualDef, otherManualDef] } },
-        validValidity,
-        [],
-      );
+      useSkillkeeperStore
+        .getState()
+        .setConfig({ ...mockConfig, mcp: { servers: [manualDef, otherManualDef] } }, validValidity, []);
       useSkillkeeperStore.setState({
         projects: [mockProject],
         mcpInstalls: [manualProjectInstall, globalInstall, unrelatedInstall],
@@ -1261,7 +1281,7 @@ describe('useSkillkeeperStore', () => {
       id: 'repo:repo-1:devtools:linear',
       origin: 'repo',
       name: 'linear',
-      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}' },
+      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}', parameters: {} },
       hash: 'sha256:current',
       params: ['workspace'],
       hasRules: false,
@@ -1274,7 +1294,7 @@ describe('useSkillkeeperStore', () => {
       id: 'manual-1',
       origin: 'manual',
       name: 'github',
-      def: { name: 'github', type: 'stdio', command: 'github-mcp' },
+      def: { name: 'github', type: 'stdio', command: 'github-mcp', parameters: {} },
       hash: 'sha256:manual-current',
       params: [],
       hasRules: false,
@@ -1344,6 +1364,7 @@ describe('useSkillkeeperStore', () => {
         url: 'https://api.linear.app/{workspace}/mcp',
         headers: { Authorization: 'Bearer {token}', 'X-Env': 'prod' },
         rules: 'Use {token} only for the {workspace} workspace.',
+        parameters: {},
       };
       expect(scanMcpParams(linear)).toEqual(['token', 'workspace']);
 
@@ -1353,11 +1374,48 @@ describe('useSkillkeeperStore', () => {
         command: 'github-mcp',
         args: ['--token', '{gh_token}', '--repo', '{repo}'],
         env: { GH_HOST: 'github.com', GH_TOKEN: '{gh_token}' },
+        parameters: {},
       };
       expect(scanMcpParams(github)).toEqual(['gh_token', 'repo']);
 
-      const plain: McpServerDef = { name: 'plain', type: 'sse', url: 'https://example.com/sse' };
+      const plain: McpServerDef = {
+        name: 'plain',
+        type: 'sse',
+        url: 'https://example.com/sse',
+        parameters: {},
+      };
       expect(scanMcpParams(plain)).toEqual([]);
+    });
+
+    // The motivating case for parameterizing a client id: a shared repository
+    // preset leaves the per-organization client id as a `{param}`. Missing
+    // these left the install modal with no input to render for them, so
+    // Confirm enabled and the backend rejected the install for a value the UI
+    // never asked for.
+    it('scanMcpParams collects placeholders from the oauth client id and scopes', () => {
+      const remote: McpServerDef = {
+        name: 'remote',
+        type: 'http',
+        url: 'https://mcp.example.com/mcp',
+        oauth: {
+          clientId: '{org_client}',
+          callbackPort: 8432,
+          scopes: ['read', 'org:{org_slug}'],
+        },
+        parameters: {},
+      };
+      expect(scanMcpParams(remote)).toEqual(['org_client', 'org_slug']);
+
+      // `callbackPort` is numeric: there is nothing to scan, and a def whose
+      // only oauth content is the port has no parameters at all.
+      const portOnly: McpServerDef = {
+        name: 'port-only',
+        type: 'http',
+        url: 'https://mcp.example.com/mcp',
+        oauth: { callbackPort: 8432, scopes: [] },
+        parameters: {},
+      };
+      expect(scanMcpParams(portOnly)).toEqual([]);
     });
 
     it('normalizeMcpRemote canonicalizes scp, https, ssh+port, and userinfo forms', () => {
@@ -1368,16 +1426,63 @@ describe('useSkillkeeperStore', () => {
     });
 
     it('hashMcpDefInRenderer emits a sha256 digest that ignores the def name', async () => {
-      const a: McpServerDef = { name: 'one', type: 'http', url: 'https://example.com' };
-      const b: McpServerDef = { name: 'two', type: 'http', url: 'https://example.com' };
+      const a: McpServerDef = { name: 'one', type: 'http', url: 'https://example.com', parameters: {} };
+      const b: McpServerDef = { name: 'two', type: 'http', url: 'https://example.com', parameters: {} };
       const hashA = await hashMcpDefInRenderer(a);
       expect(hashA).toMatch(/^sha256:[0-9a-f]{64}$/);
       // `name` is excluded from the hash, so these must collide.
       expect(hashA).toBe(await hashMcpDefInRenderer(b));
       // A change to a hashed field must change the digest.
       expect(hashA).not.toBe(
-        await hashMcpDefInRenderer({ name: 'one', type: 'http', url: 'https://other.example.com' }),
+        await hashMcpDefInRenderer({
+          name: 'one',
+          type: 'http',
+          url: 'https://other.example.com',
+          parameters: {},
+        }),
       );
+    });
+
+    // The LITERAL digest of `{"type":"http","url":"u"}`, the same def and the
+    // same expected bytes as `matches_the_typescript_digest_for_a_known_def`
+    // in `crates/skillkeeper-core/src/mcp/hashing.rs`. Pinned as a value, not
+    // described in a comment: the previous test compared renderer output to
+    // renderer output, so `parameters: {}` surviving into the canonical JSON
+    // -- which Rust omits -- went unnoticed and made every installed manual
+    // preset read as permanently out of date. Change this only alongside the
+    // Rust test of the same name.
+    it('matches_the_rust_digest_for_a_known_def', async () => {
+      const def: McpServerDef = { name: 'x', type: 'http', url: 'u', parameters: {} };
+      expect(await hashMcpDefInRenderer(def)).toBe(
+        'sha256:26f2e45435ed554a6bc2e22df9381ac17c7847f516abe34176c813e403d588c9',
+      );
+    });
+
+    // The digest of `{"oauth":{},"parameters":{"p":{}},"type":"http","url":"u"}`
+    // -- what Rust emits for a def whose `options` and `scopes` are empty,
+    // since serde skips both. Pinned as a value beside
+    // `matches_the_typescript_digest_for_a_def_with_empty_collections` in
+    // `crates/skillkeeper-core/src/mcp/hashing.rs`.
+    it('omits an empty options list and empty oauth scopes, as Rust does', async () => {
+      const def: McpServerDef = {
+        name: 'x',
+        type: 'http',
+        url: 'u',
+        oauth: { scopes: [] },
+        parameters: { p: { options: [] } },
+      };
+      expect(await hashMcpDefInRenderer(def)).toBe(
+        'sha256:c6bd1dfa2aef53d5c84f83ee5623aab1dbcc7b44a1ab29b23ec1e46117226036',
+      );
+    });
+
+    it('keeps an empty headers map, which Rust also serializes', async () => {
+      // `headers` is `Option<BTreeMap<..>>` in Rust: `Some({})` serializes as
+      // `"headers":{}`. Dropping every empty collection indiscriminately would
+      // break this direction while fixing the other.
+      const withHeaders: McpServerDef = { name: 'x', type: 'http', url: 'u', headers: {}, parameters: {} };
+      const withoutHeaders: McpServerDef = { name: 'x', type: 'http', url: 'u', parameters: {} };
+      expect(await hashMcpDefInRenderer(withHeaders)).not.toBe(await hashMcpDefInRenderer(withoutHeaders));
     });
   });
 
@@ -1698,7 +1803,7 @@ describe('useSkillkeeperStore', () => {
       });
     });
 
-    describe('checkAppUpdateNow (the About dialog\'s manual button)', () => {
+    describe("checkAppUpdateNow (the About dialog's manual button)", () => {
       beforeEach(() => {
         useSkillkeeperStore.setState({ tasks: [], notifications: [], toasts: [] });
         vi.mocked(bridgeClient.checkAppUpdateNow).mockReset();

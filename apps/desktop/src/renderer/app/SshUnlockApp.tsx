@@ -25,9 +25,7 @@ import './SshUnlockApp.scss';
  *  not mount. */
 function applyTheme(theme: 'system' | 'light' | 'dark'): void {
   const resolved =
-    theme === 'system'
-      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      : theme;
+    theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
   document.documentElement.setAttribute('data-theme', resolved);
 }
 

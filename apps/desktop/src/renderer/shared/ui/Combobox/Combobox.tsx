@@ -84,9 +84,7 @@ export function Combobox({
   className,
 }: ComboboxProps) {
   const display = (text: string): string =>
-    maxLabelLength !== undefined && text.length > maxLabelLength
-      ? `${text.slice(0, maxLabelLength)}...`
-      : text;
+    maxLabelLength !== undefined && text.length > maxLabelLength ? `${text.slice(0, maxLabelLength)}...` : text;
   const inputRef = useRef<HTMLInputElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -111,9 +109,7 @@ export function Combobox({
     setDirty(false);
     const label = selected?.label ?? '';
     setQuery(
-      maxLabelLength !== undefined && label.length > maxLabelLength
-        ? `${label.slice(0, maxLabelLength)}...`
-        : label,
+      maxLabelLength !== undefined && label.length > maxLabelLength ? `${label.slice(0, maxLabelLength)}...` : label,
     );
   }, [open, selected, maxLabelLength]);
 

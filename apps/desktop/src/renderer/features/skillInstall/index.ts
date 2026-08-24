@@ -6,8 +6,4 @@ export {
   buildInstallScope,
   resolveInstallSelection,
 } from './lib/installSelection';
-export type {
-  InstallScope,
-  InstallSelectionView,
-  InstallSelectionArgs,
-} from './lib/installSelection';
+export type { InstallScope, InstallSelectionView, InstallSelectionArgs } from './lib/installSelection';

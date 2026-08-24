@@ -22,14 +22,6 @@ const options = [
 export const Interactive: Story = {
   render: () => {
     const [value, setValue] = useState('always');
-    return (
-      <RadioGroup
-        name="consent"
-        label="Hook consent"
-        options={options}
-        value={value}
-        onChange={setValue}
-      />
-    );
+    return <RadioGroup name="consent" label="Hook consent" options={options} value={value} onChange={setValue} />;
   },
 };

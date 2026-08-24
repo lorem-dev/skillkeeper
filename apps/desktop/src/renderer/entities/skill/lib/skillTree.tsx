@@ -13,14 +13,7 @@ import type { TreeNode } from '@/shared/ui';
 import { fuzzyMatches } from '@/shared/lib';
 import { GLOBAL_SCOPE_ID, applyScope, groupSegments, nestByGroup, scopeIdOf } from '@/domain';
 import type { ApplyScope } from '@/domain';
-import type {
-  AgentKind,
-  AvailableSkill,
-  InstallManifest,
-  Repository,
-  Project,
-  SkillRef,
-} from '@/services/bridge';
+import type { AgentKind, AvailableSkill, InstallManifest, Repository, Project, SkillRef } from '@/services/bridge';
 
 const SEP = '::';
 
@@ -86,12 +79,7 @@ export function projectGroupNodeId(projectId: string, repoId: string, group: str
 }
 
 /** Stable checkbox key for a project-mode skill leaf. */
-export function projectSkillKey(
-  projectId: string,
-  repoId: string,
-  group: string | undefined,
-  name: string,
-): string {
+export function projectSkillKey(projectId: string, repoId: string, group: string | undefined, name: string): string {
   return [projectId, repoId, group ?? '', name].map(enc).join(SEP);
 }
 
@@ -186,9 +174,7 @@ export function buildRepoTree(available: readonly AvailableSkill[], repos: reado
     const children = nestByGroup(skills, {
       groupOf: (s) => s.group,
       compare: byName,
-      makeLeaves: (s) => [
-        { id: repoSkillKey(repo.id, s.group, s.name), label: s.name, icon: skillIcon },
-      ],
+      makeLeaves: (s) => [{ id: repoSkillKey(repo.id, s.group, s.name), label: s.name, icon: skillIcon }],
       makeGroup: (path, label, kids) => ({
         id: repoGroupNodeId(repo.id, path),
         label,
@@ -327,11 +313,7 @@ interface LeafEntry {
 function leafStatus(e: LeafEntry): ProjectLeafStatus {
   if (!e.installed) return 'available';
   if (!e.available) return 'orphan';
-  if (
-    e.installedHash !== undefined &&
-    e.availableHash !== undefined &&
-    e.installedHash !== e.availableHash
-  ) {
+  if (e.installedHash !== undefined && e.availableHash !== undefined && e.installedHash !== e.availableHash) {
     return 'update';
   }
   return 'present';
@@ -533,10 +515,7 @@ export function buildProjectModel(
  * save that could clear it. Omit it only where the whole ledger really is the
  * question.
  */
-export function installedLeafIds(
-  installs: readonly InstallManifest[],
-  scopeIds?: readonly string[],
-): string[] {
+export function installedLeafIds(installs: readonly InstallManifest[], scopeIds?: readonly string[]): string[] {
   const wanted = scopeIds === undefined ? undefined : new Set(scopeIds);
   const out: string[] = [];
   for (const m of installs) {

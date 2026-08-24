@@ -37,10 +37,7 @@ const realSleep: Sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms
  * rejects with the LAST failure once the attempts are used up (the last one is
  * the most representative of a standing condition).
  */
-export async function startWithRetry(
-  start: () => Promise<string>,
-  sleep: Sleep = realSleep,
-): Promise<string> {
+export async function startWithRetry(start: () => Promise<string>, sleep: Sleep = realSleep): Promise<string> {
   let last: unknown;
   for (let attempt = 0; attempt < START_ATTEMPTS; attempt += 1) {
     try {

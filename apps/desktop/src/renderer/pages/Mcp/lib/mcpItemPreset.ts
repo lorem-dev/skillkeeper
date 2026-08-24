@@ -12,10 +12,7 @@ import { matchMcpPreset } from '@/app/store';
 import type { McpPreset } from '@/app/store';
 import type { McpTreeItem } from './mcpTree';
 
-export function resolveDetailsPreset(
-  item: McpTreeItem,
-  presets: readonly McpPreset[],
-): McpPreset | undefined {
+export function resolveDetailsPreset(item: McpTreeItem, presets: readonly McpPreset[]): McpPreset | undefined {
   switch (item.kind) {
     case 'manual-preset':
     case 'repo-preset':

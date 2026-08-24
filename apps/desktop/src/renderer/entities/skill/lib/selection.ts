@@ -65,11 +65,7 @@ export interface DerivedSelection {
  * adds; `dependency` is a filter of that same list, so the two agree by
  * construction rather than by being maintained together.
  */
-export function deriveSelection(
-  sel: Selection,
-  baseline: readonly string[],
-  graph: RequiresGraph,
-): DerivedSelection {
+export function deriveSelection(sel: Selection, baseline: readonly string[], graph: RequiresGraph): DerivedSelection {
   const explicit = new Set(sel.explicit);
   const installed = new Set(baseline);
   // Every member of `restored` is an installed leaf the user asked to repair, so
@@ -122,12 +118,7 @@ export function dropMissing(graph: RequiresGraph, derived: DerivedSelection): De
  * (in `baseline`) are never dropped as collateral: only an explicit click on
  * one removes it, and that is a planned removal, not a side effect.
  */
-export function toggle(
-  sel: Selection,
-  baseline: readonly string[],
-  graph: RequiresGraph,
-  id: string,
-): Selection {
+export function toggle(sel: Selection, baseline: readonly string[], graph: RequiresGraph, id: string): Selection {
   const derived = deriveSelection(sel, baseline, graph);
   if (!derived.shown.includes(id)) {
     return { explicit: [...sel.explicit, id], restored: sel.restored };

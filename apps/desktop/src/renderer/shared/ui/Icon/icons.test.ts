@@ -64,18 +64,15 @@ const assets: Record<string, string> = {
 };
 
 describe('Icon assets', () => {
-  it.each(Object.entries(assets))(
-    '%s is a standalone svg whose geometry strips cleanly',
-    (_name, raw) => {
-      expect(raw).toContain('<svg');
-      expect(raw).toContain('viewBox="0 0 24 24"');
-      const inner = stripSvgRoot(raw);
-      expect(inner.length).toBeGreaterThan(0);
-      expect(inner).not.toContain('<svg');
-      expect(inner).not.toContain('</svg>');
-      expect(inner).toMatch(/<(path|rect|circle)\b/);
-    },
-  );
+  it.each(Object.entries(assets))('%s is a standalone svg whose geometry strips cleanly', (_name, raw) => {
+    expect(raw).toContain('<svg');
+    expect(raw).toContain('viewBox="0 0 24 24"');
+    const inner = stripSvgRoot(raw);
+    expect(inner.length).toBeGreaterThan(0);
+    expect(inner).not.toContain('<svg');
+    expect(inner).not.toContain('</svg>');
+    expect(inner).toMatch(/<(path|rect|circle)\b/);
+  });
 
   // Guards against this suite silently drifting behind a newly added
   // `IconName` (as happened for `agent`/`skill-group`): every name in the

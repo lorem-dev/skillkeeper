@@ -81,12 +81,9 @@ export function OnboardingDemoTree({ variant }: OnboardingDemoTreeProps) {
   const statusBadge = (id: string): ReactNode => {
     const wasInstalled = installed.has(id);
     const isChecked = checked.has(id);
-    if (wasInstalled && isChecked)
-      return <ChangeBadge kind="present" label={t('skills.status.present')} />;
-    if (wasInstalled && !isChecked)
-      return <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
-    if (!wasInstalled && isChecked)
-      return <ChangeBadge kind="add" label={t('skills.status.add')} />;
+    if (wasInstalled && isChecked) return <ChangeBadge kind="present" label={t('skills.status.present')} />;
+    if (wasInstalled && !isChecked) return <ChangeBadge kind="remove" label={t('skills.status.remove')} />;
+    if (!wasInstalled && isChecked) return <ChangeBadge kind="add" label={t('skills.status.add')} />;
     return undefined;
   };
   const skill = (id: string, name: string): TreeNode => ({

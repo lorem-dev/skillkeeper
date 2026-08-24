@@ -16,7 +16,12 @@ type Story = StoryObj<typeof meta>;
 const projects = [
   { id: 'p1', path: '/Users/dev/projects/acme-api', name: 'acme-api', addedAt: '2026-01-01T00:00:00.000Z' },
   { id: 'p2', path: '/Users/dev/projects/acme-web', name: 'acme-web', addedAt: '2026-01-02T00:00:00.000Z' },
-  { id: 'p3', path: '/Users/dev/projects/my-cool-project', name: 'My Cool Project', addedAt: '2026-01-03T00:00:00.000Z' },
+  {
+    id: 'p3',
+    path: '/Users/dev/projects/my-cool-project',
+    name: 'My Cool Project',
+    addedAt: '2026-01-03T00:00:00.000Z',
+  },
 ];
 
 export const Default: Story = {

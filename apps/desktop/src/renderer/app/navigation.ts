@@ -25,10 +25,7 @@ export const VIEW_LOADERS: Record<View, () => Promise<unknown>> = {
 };
 
 /** Ensure a view's page chunk is loaded before it is shown (load-then-swap). */
-export function preloadView(
-  view: View,
-  loaders: Record<View, () => Promise<unknown>> = VIEW_LOADERS,
-): Promise<void> {
+export function preloadView(view: View, loaders: Record<View, () => Promise<unknown>> = VIEW_LOADERS): Promise<void> {
   return loaders[view]().then(() => undefined);
 }
 

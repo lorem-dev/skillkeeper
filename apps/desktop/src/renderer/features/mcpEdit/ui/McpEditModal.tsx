@@ -4,13 +4,13 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
-import type { McpTransport } from '@/services/bridge';
+import type { McpOauth, McpTransport } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import type { Translator } from '@/systems/i18n';
 import { Button, Icon, Modal, TextField, Select } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui';
-import { validatePreset } from '../lib/validate';
-import type { KeyValueRow, McpPresetDraft, McpTransportDraft } from '../lib/validate';
+import { oauthFromDraft, validatePreset } from '../lib/validate';
+import type { KeyValueRow, McpOauthDraft, McpPresetDraft, McpTransportDraft } from '../lib/validate';
 import './McpEditModal.scss';
 
 /**
@@ -30,6 +30,12 @@ export interface ManualMcpPreset {
   readonly args?: string[];
   readonly env?: Record<string, string>;
   readonly rules?: string;
+  /** A short summary, shown wherever this preset is listed. May contain one
+   *  markup form, a link. The manual-preset editor authors this field and
+   *  nothing else from the parameters design -- no `parameters`, no
+   *  `options` editor; see the design spec's stated non-goal. */
+  readonly description?: string;
+  readonly oauth?: McpOauth;
 }
 
 export interface McpEditModalProps {
@@ -57,6 +63,8 @@ function transportOptions(t: Translator): SelectOption[] {
   ];
 }
 
+const EMPTY_OAUTH_DRAFT: McpOauthDraft = { callbackPort: '', clientId: '', scopes: [] };
+
 const EMPTY_DRAFT: McpPresetDraft = {
   name: '',
   type: 'stdio',
@@ -66,7 +74,31 @@ const EMPTY_DRAFT: McpPresetDraft = {
   args: [],
   env: [],
   rules: '',
+  description: '',
+  oauth: EMPTY_OAUTH_DRAFT,
 };
+
+/**
+ * Converts a saved `McpOauth` (or its absence) back into editable text-field
+ * state.
+ *
+ * Every field is guarded, `scopes` included, even though the generated
+ * `McpOauth` types it as a required `Array<string>`. That type is wrong on the
+ * wire: Rust models `scopes` as a plain `Vec` with
+ * `skip_serializing_if = "Vec::is_empty"`, so an oauth block with no scopes
+ * arrives with the key ABSENT and ts-rs has no way to see that. Dropping the
+ * guard would make this the one place a stored preset can crash the editor
+ * open, on the most ordinary oauth block there is (a client id and nothing
+ * else).
+ */
+function oauthDraftFromOauth(oauth: McpOauth | undefined): McpOauthDraft {
+  if (oauth === undefined) return EMPTY_OAUTH_DRAFT;
+  return {
+    callbackPort: oauth.callbackPort !== undefined ? String(oauth.callbackPort) : '',
+    clientId: oauth.clientId ?? '',
+    scopes: oauth.scopes !== undefined ? [...oauth.scopes] : [],
+  };
+}
 
 function recordToRows(record: Readonly<Record<string, string>> | undefined): KeyValueRow[] {
   return record === undefined ? [] : Object.entries(record).map(([key, value]) => ({ key, value }));
@@ -93,6 +125,8 @@ function draftFromPreset(preset: ManualMcpPreset | undefined): McpPresetDraft {
     args: preset.args !== undefined ? [...preset.args] : [],
     env: recordToRows(preset.env),
     rules: preset.rules ?? '',
+    description: preset.description ?? '',
+    oauth: oauthDraftFromOauth(preset.oauth),
   };
 }
 
@@ -205,6 +239,13 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
     if (open) setDraft(draftFromPreset(preset));
   }, [open, preset]);
 
+  // Only the FIRST error is surfaced, on purpose: `validatePreset` orders its
+  // findings the way a user fills the form in, and marking every field at once
+  // turns one mistake into a wall of red. Save stays disabled while ANY error
+  // stands, so the next one appears as soon as this one is fixed -- but that
+  // only works if the message is actually shown, which is why every field with
+  // a possible error renders `errorFor`/`rowErrorFor` text and not just an
+  // `invalid` border.
   const errors = useMemo(() => validatePreset(draft), [draft]);
   const firstError = errors[0];
   const errorFor = (field: string): string | undefined =>
@@ -215,6 +256,12 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
     if (match === null || match[1] !== prefix) return undefined;
     return Number(match[2]);
   };
+  /** Message text for an indexed row error (`scopes.2`, `headers.0.value`),
+   *  which `errorFor` cannot match because the index is not known up front. */
+  const rowErrorFor = (prefix: string): string | undefined =>
+    firstError !== undefined && rowIndexFor(prefix) !== undefined
+      ? t(firstError.messageKey, firstError.vars)
+      : undefined;
 
   const setType = (value: string): void => setDraft((d) => ({ ...d, type: value as McpTransportDraft }));
 
@@ -232,6 +279,8 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
       args: type === 'stdio' && draft.args.some((a) => a !== '') ? draft.args.filter((a) => a !== '') : undefined,
       env: type === 'stdio' ? rowsToRecord(draft.env) : undefined,
       rules: draft.rules.trim() === '' ? undefined : draft.rules,
+      description: draft.description.trim() === '' ? undefined : draft.description.trim(),
+      oauth: type === 'http' || type === 'sse' ? oauthFromDraft(draft.oauth) : undefined,
     };
     const servers = config?.mcp.servers ?? [];
     const next = preset !== undefined ? servers.map((s) => (s.id === id ? built : s)) : [...servers, built];
@@ -263,9 +312,24 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
           {errorFor('name') !== undefined && <span className="sk-mcp-edit__error">{errorFor('name')}</span>}
         </label>
 
+        <label className="sk-mcp-edit__field">
+          <span className="sk-mcp-edit__label">{t('mcp.field.description')}</span>
+          <TextField
+            value={draft.description}
+            placeholder={t('mcp.descriptionPlaceholder')}
+            onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+          />
+        </label>
+
         <label className="sk-mcp-edit__field sk-mcp-edit__field--bounded">
           <span className="sk-mcp-edit__label">{t('mcp.field.type')}</span>
           <Select options={transportOptions(t)} value={draft.type} onChange={setType} ariaLabel={t('mcp.field.type')} />
+          {/* The oauth-on-stdio error belongs here rather than in the OAuth
+              section: switching an http preset with an auth block to stdio
+              hides that whole section, so an error rendered inside it would
+              leave Save disabled with nothing on screen explaining why. The
+              transport select is the control the user has to change. */}
+          {errorFor('oauth') !== undefined && <span className="sk-mcp-edit__error">{errorFor('oauth')}</span>}
         </label>
 
         {isHttpLike && (
@@ -291,6 +355,40 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
                 removeLabel={t('mcp.remove')}
                 invalidIndex={rowIndexFor('headers')}
               />
+            </div>
+            <div className="sk-mcp-edit__field">
+              <span className="sk-mcp-edit__label">{t('mcp.field.oauth')}</span>
+              <p className="sk-mcp-edit__help">{t('mcp.oauthHelp')}</p>
+              <TextField
+                value={draft.oauth.clientId}
+                invalid={errorFor('oauth.clientId') !== undefined}
+                placeholder={t('mcp.field.clientId')}
+                onChange={(e) => setDraft((d) => ({ ...d, oauth: { ...d.oauth, clientId: e.target.value } }))}
+              />
+              {errorFor('oauth.clientId') !== undefined && (
+                <span className="sk-mcp-edit__error">{errorFor('oauth.clientId')}</span>
+              )}
+              <TextField
+                value={draft.oauth.callbackPort}
+                invalid={errorFor('oauth.callbackPort') !== undefined}
+                placeholder={t('mcp.field.callbackPort')}
+                onChange={(e) => setDraft((d) => ({ ...d, oauth: { ...d.oauth, callbackPort: e.target.value } }))}
+              />
+              {errorFor('oauth.callbackPort') !== undefined && (
+                <span className="sk-mcp-edit__error">{errorFor('oauth.callbackPort')}</span>
+              )}
+              <span className="sk-mcp-edit__label">{t('mcp.field.scopes')}</span>
+              <ArgsEditor
+                args={draft.oauth.scopes}
+                onChange={(scopes) => setDraft((d) => ({ ...d, oauth: { ...d.oauth, scopes } }))}
+                argumentPlaceholder={t('mcp.scopePlaceholder')}
+                addArgumentLabel={t('mcp.addScope')}
+                removeLabel={t('mcp.remove')}
+                invalidIndex={rowIndexFor('scopes')}
+              />
+              {rowErrorFor('scopes') !== undefined && (
+                <span className="sk-mcp-edit__error">{rowErrorFor('scopes')}</span>
+              )}
             </div>
           </>
         )}

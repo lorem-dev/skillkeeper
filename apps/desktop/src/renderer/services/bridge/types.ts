@@ -39,11 +39,13 @@ export type {
   ApplyResult,
   AvailableMcp,
   AvailableMcpResult,
+  RawMcpServerDef,
   McpConfigWarning,
   McpInstallReq,
   McpBatch,
   ApplyMcpArgs,
   McpSkipped,
+  McpInstalled,
   ApplyMcpResult,
   McpInstall,
   McpUpdateReq,
@@ -59,4 +61,14 @@ export type {
   AppUpdateReady,
   AppUpdateFailed,
 } from './contracts';
-export type { McpServerDef, McpTransport, McpIdentity, McpPresetOrigin } from './generated/core';
+export type {
+  McpServerDef,
+  McpTransport,
+  McpIdentity,
+  McpPresetOrigin,
+  McpOauth,
+  UpsertNote,
+  DescriptionSpan,
+  McpOption,
+  McpParameter,
+} from './generated/core';
