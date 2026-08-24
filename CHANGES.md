@@ -17,6 +17,14 @@
 
 - Codex now resolves a real project-scoped `.codex/config.toml` instead of
   always writing the global config.
+- Updating an MCP server no longer deletes it when the new definition cannot be
+  installed. An update removes the instance and writes it back; if the source
+  had changed to a transport the agent cannot express, or to a parameter with
+  no value, the write failed after the removal and the instance was gone along
+  with its stored parameter values. Both are now decided before anything is
+  removed, on the CLI and in the desktop app.
+- A server name written in a repository's `mcp.yml` can no longer inject
+  terminal escape sequences into `mcp list` output.
 
 ## Version 0.6.0
 
