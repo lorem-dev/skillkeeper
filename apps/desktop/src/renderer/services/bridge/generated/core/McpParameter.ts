@@ -15,4 +15,15 @@ import type { McpOption } from "./McpOption";
  * map, reordering the options would not change the content hash -- yet the
  * order decides which option is "first" when a stored value disappears.
  */
-export type McpParameter = { description?: string, options: Array<McpOption>, };
+export type McpParameter = { 
+/**
+ * A short line of prose shown wherever this parameter is asked for. May
+ * contain one markup form, a link; see [`crate::mcp::markup`].
+ */
+description?: string, 
+/**
+ * The values this parameter accepts, in the order they were written.
+ * Authored as a mapping of value to label; also accepted as a list of
+ * `{value, label}`, which is the form it always serializes back to.
+ */
+options: Array<McpOption>, };

@@ -238,6 +238,28 @@ mod tests {
         );
     }
 
+    /// The renderer builds a manual preset's def in TypeScript, where
+    /// `parameters` and `options` are non-optional and therefore present as
+    /// empty collections. Serde skips all three of these when empty, so the
+    /// renderer has to drop them before hashing or the two digests diverge --
+    /// which is exactly what made every installed manual preset read as
+    /// permanently out of date. Pinned as bytes, with the same digest asserted
+    /// in `omits an empty options list and empty oauth scopes, as Rust does`
+    /// in `apps/desktop/src/renderer/app/store/store.test.ts`.
+    #[test]
+    fn matches_the_typescript_digest_for_a_def_with_empty_collections() {
+        let mut parameters = BTreeMap::new();
+        parameters.insert("p".to_string(), McpParameter::default());
+        let def = McpServerDef {
+            oauth: Some(McpOauth::default()),
+            parameters,
+            ..http("x", Some("u"), None)
+        };
+        let canonical = r#"{"oauth":{},"parameters":{"p":{}},"type":"http","url":"u"}"#;
+        assert_eq!(canonical_mcp_json(&def), canonical);
+        assert_eq!(hash_mcp_def(&def), format!("sha256:{}", sha256(canonical)));
+    }
+
     #[test]
     fn changing_a_scope_changes_the_hash() {
         let mut a = http_oauth_def(vec!["read".to_string()]);

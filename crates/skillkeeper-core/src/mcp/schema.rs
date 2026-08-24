@@ -100,6 +100,40 @@ fn build() -> Value {
         }
     }
 
+    // `options` derives from the MODEL's type, an ordered `Vec<McpOption>`,
+    // but `de_options` also accepts -- and the documentation teaches -- the
+    // MAPPING form (`value: label`). The docs tell a reader to point their
+    // editor at this schema, so a schema knowing only the list form flags the
+    // documented example as invalid. Both forms are published; the list stays
+    // first because it is the canonical serialized one.
+    if let Some(Value::Object(parameter)) = defs.get_mut("McpParameter") {
+        if let Some(Value::Object(props)) = parameter.get_mut("properties") {
+            if let Some(Value::Object(options)) = props.get_mut("options") {
+                let description = options.remove("description");
+                options.remove("type");
+                let items = options.remove("items").unwrap_or(json!({}));
+                options.insert(
+                    "anyOf".to_string(),
+                    json!([
+                        { "type": "array", "items": items },
+                        {
+                            "type": "object",
+                            // A null label is the blank label, not a parse
+                            // failure -- see `de_options`.
+                            "additionalProperties": { "type": ["string", "null"] }
+                        },
+                        // A bare `options:`, which `de_options` reads as the
+                        // empty list rather than dropping the whole file.
+                        { "type": "null" },
+                    ]),
+                );
+                if let Some(description) = description {
+                    options.insert("description".to_string(), description);
+                }
+            }
+        }
+    }
+
     json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": SCHEMA_URL,
@@ -207,6 +241,36 @@ mod tests {
                 "type",
                 "url"
             ]
+        );
+    }
+
+    /// Drift guard on the SHAPE, not just the key: `describes_every_field_the_parser_accepts`
+    /// compares property names only, so a schema knowing one of the two forms
+    /// `de_options` accepts passed it while flagging the authoring form the
+    /// documentation's own worked example uses.
+    #[test]
+    fn accepts_both_option_forms_the_parser_accepts() {
+        let options = build()["$defs"]["McpParameter"]["properties"]["options"].clone();
+        assert!(
+            options.get("type").is_none(),
+            "a single `type` cannot describe both a mapping and a list"
+        );
+        let forms = options["anyOf"].as_array().expect("anyOf forms").clone();
+        assert_eq!(
+            forms
+                .iter()
+                .map(|f| f["type"].clone())
+                .collect::<Vec<Value>>(),
+            vec![json!("array"), json!("object"), json!("null")],
+            "the canonical list, the authored mapping, and a bare `options:`"
+        );
+        assert_eq!(forms[0]["items"]["$ref"], json!("#/$defs/McpOption"));
+        // A null label is the blank label, so the mapping's values are
+        // nullable -- the schema has to agree with `de_options` about that
+        // too, or the editor flags a file the parser reads.
+        assert_eq!(
+            forms[1]["additionalProperties"]["type"],
+            json!(["string", "null"])
         );
     }
 

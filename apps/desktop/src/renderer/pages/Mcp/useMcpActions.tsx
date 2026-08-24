@@ -92,6 +92,10 @@ export function useMcpActions(): McpActions {
     scope: ApplyScope;
     installs: readonly McpInstall[];
     missingParams: string[];
+    // The preset being updated TO, carried so the prompt can render each
+    // parameter's description and its accepted options rather than a bare
+    // text field -- see `McpUpdateParamsModal`.
+    preset: McpPreset;
   } | null>(null);
   const [detailsPreset, setDetailsPreset] = useState<McpPreset | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
@@ -193,7 +197,7 @@ export function useMcpActions(): McpActions {
         await runMcpUpdate(toUpdate, {});
         return;
       }
-      setUpdateTarget({ scope, installs: toUpdate, missingParams: [...missing].sort() });
+      setUpdateTarget({ scope, installs: toUpdate, missingParams: [...missing].sort(), preset });
     },
     [projects, mcpPresets, notify, runMcpUpdate],
   );
@@ -308,6 +312,7 @@ export function useMcpActions(): McpActions {
       />
       <McpUpdateParamsModal
         open={updateTarget !== null}
+        preset={updateTarget?.preset ?? EMPTY_MCP_PRESET}
         missingParams={updateTarget?.missingParams ?? []}
         onConfirm={(values) => {
           const target = updateTarget;

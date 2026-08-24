@@ -120,8 +120,13 @@ pub struct McpOption {
     )
 )]
 pub struct McpParameter {
+    /// A short line of prose shown wherever this parameter is asked for. May
+    /// contain one markup form, a link; see [`crate::mcp::markup`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// The values this parameter accepts, in the order they were written.
+    /// Authored as a mapping of value to label; also accepted as a list of
+    /// `{value, label}`, which is the form it always serializes back to.
     #[serde(
         default,
         deserialize_with = "de_options",
@@ -133,6 +138,18 @@ pub struct McpParameter {
 /// Accept either a YAML mapping (`value: label`, order taken from the document)
 /// or a list of `{value, label}`. `serde_yaml_ng`'s `Mapping` is an `IndexMap`,
 /// so a `MapAccess` visitor receives entries in document order.
+///
+/// Two null forms are accepted rather than refused, because
+/// [`crate::mcp::config::parse_mcp_config`] deserializes the WHOLE document:
+/// one author typing a key before filling it in would otherwise take down
+/// every server in that `mcp.yml`, and a repository you merely consume must
+/// still resolve and still install.
+///
+/// - A bare `options:` (`visit_unit`) is the empty list, exactly like
+///   `options: {}` and `options: []`.
+/// - A null label (`read:` with nothing after the colon) is the empty label.
+///   A blank row in a select is an authoring mistake the author sees the
+///   moment they look at it; refusing the file is not proportionate to it.
 fn de_options<'de, D>(deserializer: D) -> Result<Vec<McpOption>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -149,10 +166,17 @@ where
             f.write_str("a mapping of value to label, or a list of {value, label}")
         }
 
+        fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+            Ok(Vec::new())
+        }
+
         fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
             let mut out = Vec::new();
-            while let Some((value, label)) = map.next_entry::<String, String>()? {
-                out.push(McpOption { label, value });
+            while let Some((value, label)) = map.next_entry::<String, Option<String>>()? {
+                out.push(McpOption {
+                    label: label.unwrap_or_default(),
+                    value,
+                });
             }
             Ok(out)
         }
@@ -387,6 +411,33 @@ options:
                 .map(|o| o.value.as_str())
                 .collect::<Vec<_>>(),
             vec!["b", "a"]
+        );
+    }
+
+    #[test]
+    fn every_empty_options_form_is_the_same_empty_list() {
+        // A bare `options:` is the one an author types before filling the key
+        // in. It has to mean what `{}` and `[]` mean, or the whole document
+        // fails to deserialize and every server in that file disappears.
+        for yaml in ["options:\n", "options: {}\n", "options: []\n"] {
+            let p: McpParameter = serde_yaml_ng::from_str(yaml)
+                .unwrap_or_else(|e| panic!("{yaml:?} must deserialize, got {e}"));
+            assert!(p.options.is_empty(), "{yaml:?} must be the empty list");
+        }
+    }
+
+    #[test]
+    fn a_null_option_label_is_blank_rather_than_a_parse_failure() {
+        let p: McpParameter =
+            serde_yaml_ng::from_str("options:\n  read:\n  write: Read and write\n")
+                .expect("a null label must not fail the document");
+        assert_eq!(
+            p.options
+                .iter()
+                .map(|o| (o.value.as_str(), o.label.as_str()))
+                .collect::<Vec<_>>(),
+            vec![("read", ""), ("write", "Read and write")],
+            "a blank label is an authoring mistake the author sees, not a reason to drop the file"
         );
     }
 

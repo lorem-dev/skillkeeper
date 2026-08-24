@@ -164,6 +164,59 @@ fn render_spans_for_terminal(spans: &[DescriptionSpan]) -> String {
     out
 }
 
+/// One indented line describing a parameter, for the two places a value is
+/// asked for or refused: its `description` rendered for a terminal, then its
+/// accepted option values. `None` when the parameter has neither, so a
+/// parameter with no authoring metadata prints nothing extra.
+///
+/// Both halves exist because a CLI user has no select to look at: without the
+/// accepted set they must guess wrong once to learn it, and without the
+/// description they never see the prose the author wrote for exactly this
+/// moment.
+fn parameter_hint(def: &McpServerDef, name: &str) -> Option<String> {
+    let mut parts: Vec<String> = Vec::new();
+    if let Some(description) = parameter_description(def, name) {
+        parts.push(description);
+    }
+    if let Some(accepted) = accepted_option_values(def, name) {
+        parts.push(format!("Accepted: {accepted}."));
+    }
+    if parts.is_empty() {
+        return None;
+    }
+    Some(format!("  {name}: {}", parts.join(" ")))
+}
+
+/// A parameter's `description`, parsed and truncated by the one shared markup
+/// implementation and rendered for a terminal. `None` when the parameter has
+/// no entry, no description, or an empty one.
+fn parameter_description(def: &McpServerDef, name: &str) -> Option<String> {
+    let description = def.parameters.get(name)?.description.as_deref()?;
+    let spans = truncate_spans(parse_description(description), DESCRIPTION_BUDGET);
+    let rendered = render_spans_for_terminal(&spans);
+    if rendered.is_empty() {
+        return None;
+    }
+    Some(rendered)
+}
+
+/// A parameter's accepted option values, comma-separated in document order.
+/// `None` when the parameter has no entry or no options, i.e. accepts anything.
+fn accepted_option_values(def: &McpServerDef, name: &str) -> Option<String> {
+    let parameter = def.parameters.get(name)?;
+    if parameter.options.is_empty() {
+        return None;
+    }
+    Some(
+        parameter
+            .options
+            .iter()
+            .map(|o| o.value.as_str())
+            .collect::<Vec<_>>()
+            .join(", "),
+    )
+}
+
 /// One line for a writer note, shaped like the `Skipped ...` lines beside it:
 /// what the agent could not do, and what happened instead. Printed to stdout
 /// with the install it belongs to -- the install succeeded, so this is not an
@@ -550,22 +603,24 @@ pub fn install(
             "Missing values for mcp params: {}. Pass --param <name>=<value>.",
             missing.join(", ")
         )?;
+        for name in &missing {
+            if let Some(hint) = parameter_hint(&preset.def, name) {
+                writeln!(err, "{hint}")?;
+            }
+        }
         return Ok(1);
     }
     let invalid = invalid_option_values(&preset.def, &values);
     if !invalid.is_empty() {
         for (name, value) in &invalid {
-            let accepted: Vec<&str> = preset
-                .def
-                .parameters
-                .get(name)
-                .map(|p| p.options.iter().map(|o| o.value.as_str()).collect())
-                .unwrap_or_default();
             writeln!(
                 err,
                 "Invalid value \"{value}\" for mcp param \"{name}\". Accepted: {}.",
-                accepted.join(", ")
+                accepted_option_values(&preset.def, name).unwrap_or_default()
             )?;
+            if let Some(description) = parameter_description(&preset.def, name) {
+                writeln!(err, "  {name}: {description}")?;
+            }
         }
         return Ok(1);
     }
@@ -820,6 +875,31 @@ pub fn update(
             let Some(current) = presets.iter().find(|p| identity_matches(entry, p)) else {
                 continue; // source no longer available; leave as-is
             };
+            // Validate what the USER just typed, before the up-to-date check
+            // and before it is merged over anything stored. Provenance decides
+            // the treatment: an override value came from this command line, so
+            // refusing it names something the user can fix, whereas migrating
+            // it would replace an input made seconds ago and then blame
+            // storage for the substitution. A STORED value is migrated
+            // instead, below -- nobody can act on an error about a file they
+            // may never have opened.
+            let invalid = invalid_option_values(&current.def, &override_params);
+            if !invalid.is_empty() {
+                for (param, value) in &invalid {
+                    writeln!(
+                        err,
+                        "Cannot update {} ({}): invalid value \"{value}\" for mcp param \"{param}\". Accepted: {}.",
+                        entry.name,
+                        scope.agent,
+                        accepted_option_values(&current.def, param).unwrap_or_default()
+                    )?;
+                    if let Some(description) = parameter_description(&current.def, param) {
+                        writeln!(err, "  {param}: {description}")?;
+                    }
+                }
+                failed = true;
+                continue;
+            }
             if hash_mcp_def(&current.def) == entry.hash {
                 continue; // already up to date
             }
@@ -828,9 +908,11 @@ pub fn update(
             for (key, value) in &override_params {
                 merged.insert(key.clone(), value.clone());
             }
-            // Bring a stored option value back in line with the source's
+            // Bring a STORED option value back in line with the source's
             // current options before anything else checks or uses `merged`:
             // a value an earlier install recorded may no longer be offered.
+            // The overrides above are already known to be in the option set,
+            // so this only ever migrates what came off disk.
             let option_notes = migrate_option_values(&current.def, &mut merged);
             // Rewritten without its auth block, this server would look
             // updated and fail to authenticate. Declining is the honest
@@ -859,6 +941,11 @@ pub fn update(
                     scope.agent,
                     missing.join(", ")
                 )?;
+                for param in &missing {
+                    if let Some(hint) = parameter_hint(&current.def, param) {
+                        writeln!(err, "{hint}")?;
+                    }
+                }
                 failed = true;
                 continue;
             }
@@ -1092,6 +1179,16 @@ mod tests {
         )
     }
 
+    /// Like [`choice_fs`], but `choice` is rendered into an argument and
+    /// carries a description, so the missing-value and invalid-value paths
+    /// have something to print besides the parameter's name.
+    fn described_choice_fs() -> MemFs {
+        MemFs::new().with_file(
+            "/repos/r1/mcp.yml",
+            "version: 1\nservers:\n  - name: opts\n    type: stdio\n    command: npx\n    args: [\"--level\", \"{choice}\"]\n    parameters:\n      choice:\n        description: \"Which [level](https://example.com/levels) to request.\"\n        options:\n          alpha: Alpha\n          beta: Beta\n",
+        )
+    }
+
     /// A manual (config-defined) http preset carrying an oauth client.
     fn manual_oauth_preset() -> McpPreset {
         McpPreset {
@@ -1267,6 +1364,216 @@ mod tests {
             String::from_utf8(out).unwrap(),
             String::from_utf8(err).unwrap(),
         )
+    }
+
+    /// Installs the `choice_fs` preset with `choice=alpha`, changes the source
+    /// so an update is genuinely pending, then runs `update --param
+    /// choice=<value>`. Returns the app so a refusal test can show the
+    /// installed instance was left exactly as it was found.
+    fn run_update_with_choice_override(value: &str) -> (TestApp, i32, String, String) {
+        let app = TestApp::new(choice_fs());
+        seed_state(&app.fs);
+        let mut sink = Vec::new();
+        let mut sink2 = Vec::new();
+        install(
+            &app.ctx(),
+            "opts",
+            Some(PROJECT),
+            &["claude".to_string()],
+            &["choice=alpha".to_string()],
+            false,
+            &mut sink,
+            &mut sink2,
+        )
+        .unwrap();
+
+        // `rules` added: the def's hash changes, so the ledger entry is out of
+        // date and the update loop has real work to do. Without this the
+        // instance is up to date and the loop's body would never be reached.
+        app.fs
+            .write_file(
+                "/repos/r1/mcp.yml",
+                "version: 1\nservers:\n  - name: opts\n    type: stdio\n    command: npx\n    rules: \"Use it.\"\n    parameters:\n      choice:\n        options:\n          alpha: Alpha\n          beta: Beta\n",
+            )
+            .unwrap();
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = update(
+            &app.ctx(),
+            None,
+            Some(PROJECT),
+            &["claude".to_string()],
+            false,
+            &[format!("choice={value}")],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        (
+            app,
+            code,
+            String::from_utf8(out).unwrap(),
+            String::from_utf8(err).unwrap(),
+        )
+    }
+
+    /// The value came from THIS command line, so it is refused rather than
+    /// migrated: substituting it would replace an input made seconds ago and
+    /// then report that the STORED value was no longer accepted, sending the
+    /// user to look at a file instead of at what they typed.
+    #[test]
+    fn update_refuses_an_out_of_set_param_the_user_just_typed() {
+        let (app, code, _out, err) = run_update_with_choice_override("admin");
+        assert_eq!(code, 1, "an out-of-set --param must fail the update");
+        assert!(err.contains("admin"), "the refused value: {err}");
+        assert!(
+            err.contains("alpha") && err.contains("beta"),
+            "the accepted values must be named: {err}"
+        );
+        // The instance was left exactly as it was found: not migrated to
+        // "alpha" behind the user's back, and not removed by the update's own
+        // remove-then-reinstall.
+        let stored = app
+            .fs
+            .read_file(&format!("/proj/.claude/skills/{SKMCP_PARAMS_FILE}"))
+            .unwrap();
+        assert!(stored.contains("alpha"), "got {stored}");
+        assert!(!stored.contains("admin"), "got {stored}");
+    }
+
+    #[test]
+    fn update_accepts_a_param_that_is_one_of_the_options() {
+        let (app, code, _out, err) = run_update_with_choice_override("beta");
+        assert_eq!(code, 0, "err was {err}");
+        let stored = app
+            .fs
+            .read_file(&format!("/proj/.claude/skills/{SKMCP_PARAMS_FILE}"))
+            .unwrap();
+        assert!(stored.contains("beta"), "got {stored}");
+    }
+
+    /// The override check runs before the up-to-date check, so a value the
+    /// interface would never have produced is refused whether or not this run
+    /// had anything to reinstall.
+    #[test]
+    fn update_refuses_an_out_of_set_param_even_with_nothing_to_update() {
+        let app = TestApp::new(choice_fs());
+        seed_state(&app.fs);
+        let mut sink = Vec::new();
+        let mut sink2 = Vec::new();
+        install(
+            &app.ctx(),
+            "opts",
+            Some(PROJECT),
+            &["claude".to_string()],
+            &["choice=alpha".to_string()],
+            false,
+            &mut sink,
+            &mut sink2,
+        )
+        .unwrap();
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = update(
+            &app.ctx(),
+            None,
+            Some(PROJECT),
+            &["claude".to_string()],
+            false,
+            &["choice=admin".to_string()],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        let err = String::from_utf8(err).unwrap();
+        assert_eq!(code, 1);
+        assert!(err.contains("admin"), "got {err}");
+    }
+
+    /// A CLI user has no select to read, so the description and the accepted
+    /// set have to arrive with the refusal -- otherwise they must guess wrong
+    /// once to learn what the parameter takes.
+    #[test]
+    fn install_prints_a_parameters_description_and_options_when_a_value_is_missing() {
+        let app = TestApp::new(described_choice_fs());
+        seed_state(&app.fs);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(
+            &app.ctx(),
+            "opts",
+            Some(PROJECT),
+            &["claude".to_string()],
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        let err = String::from_utf8(err).unwrap();
+        assert_eq!(code, 1);
+        assert!(
+            err.contains("Which level (https://example.com/levels) to request."),
+            "the description must reach the terminal, links included: {err}"
+        );
+        assert!(err.contains("Accepted: alpha, beta."), "got {err}");
+    }
+
+    #[test]
+    fn install_prints_a_parameters_description_beside_an_invalid_value() {
+        let app = TestApp::new(described_choice_fs());
+        seed_state(&app.fs);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(
+            &app.ctx(),
+            "opts",
+            Some(PROJECT),
+            &["claude".to_string()],
+            &["choice=nope".to_string()],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        let err = String::from_utf8(err).unwrap();
+        assert_eq!(code, 1);
+        assert!(err.contains("Accepted: alpha, beta."), "got {err}");
+        assert!(
+            err.contains("Which level (https://example.com/levels) to request."),
+            "got {err}"
+        );
+    }
+
+    #[test]
+    fn a_parameter_with_no_metadata_prints_no_extra_line() {
+        let app = TestApp::new(MemFs::new().with_file(
+            "/repos/r1/mcp.yml",
+            "version: 1\nservers:\n  - name: plain\n    type: stdio\n    command: npx\n    args: [\"{bare}\"]\n",
+        ));
+        seed_state(&app.fs);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        install(
+            &app.ctx(),
+            "plain",
+            Some(PROJECT),
+            &["claude".to_string()],
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        let err = String::from_utf8(err).unwrap();
+        assert_eq!(
+            err.lines().count(),
+            1,
+            "only the missing-values line itself: {err}"
+        );
     }
 
     #[test]

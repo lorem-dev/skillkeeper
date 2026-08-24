@@ -49,11 +49,27 @@ pub fn visible_len(spans: &[DescriptionSpan]) -> usize {
 }
 
 /// True when `url` is one this project is willing to render as a live link.
+///
+/// The length floor is measured against the scheme that actually matched, not
+/// against the longer of the two: `https://` is one character longer than
+/// `http://`, so a shared floor rejected `http://a` -- a legal one-character
+/// host -- and dropped the link to literal text.
+///
+/// Control characters are refused alongside whitespace. The CLI prints a
+/// link's URL verbatim (`render_spans_for_terminal` in the CLI's `mcp`
+/// command), so an author-supplied URL carrying an escape sequence would
+/// otherwise reach a terminal as one.
 fn is_allowed_url(url: &str) -> bool {
-    (url.starts_with("http://") || url.starts_with("https://"))
-        && url.len() > "https://".len()
+    let Some(rest) = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+    else {
+        return false;
+    };
+    !rest.is_empty()
         && !url.contains('(')
         && !url.chars().any(char::is_whitespace)
+        && !url.chars().any(char::is_control)
 }
 
 /// Parse `text` into spans. Never fails: anything unrecognized is literal.
@@ -237,6 +253,17 @@ mod tests {
         );
     }
 
+    /// `http://` is one character shorter than `https://`. Measuring both
+    /// against the longer scheme refused a legal single-character host and
+    /// silently downgraded the link to literal text.
+    #[test]
+    fn a_one_character_http_host_is_still_a_link() {
+        assert_eq!(
+            parse_description("[a](http://a)"),
+            vec![link("a", "http://a")]
+        );
+    }
+
     #[test]
     fn every_other_shape_stays_literal_text() {
         // Each of these must survive as its own characters, never as a link.
@@ -255,6 +282,15 @@ mod tests {
             "[[a](https://example.com)",
             "[a](https:// )",
             "[ ](https://example.com)",
+            // A scheme and nothing else. The length floor is measured against
+            // the scheme that matched, so both of these must fail on their
+            // own terms rather than one of them passing.
+            "[a](http://)",
+            "[a](https://)",
+            // An ANSI escape in the URL. The CLI prints a link's URL
+            // verbatim, so a control character reaching a span would reach a
+            // terminal as an escape sequence.
+            "[a](https://example.com/\u{1b}[31m)",
             // Distinct from the javascript:/mailto:/etc. rows above, which
             // already fail on scheme alone: this one has an allowed scheme
             // and only fails because the URL itself contains `(`.
@@ -384,7 +420,11 @@ mod tests {
     }
 
     #[test]
-    fn a_cut_exactly_at_a_link_boundary_drops_nothing_and_marks_the_remainder() {
+    fn a_cut_one_character_into_a_link_keeps_the_link_and_marks_it() {
+        // Budget 5 against "abc " (4) leaves 1, so the cut lands INSIDE the
+        // link rather than at its boundary -- the boundary-exact case is the
+        // test below, which is the only one that reaches the post-loop
+        // ellipsis.
         let spans = parse_description("abc [de](https://example.com/x) fgh");
         let out = truncate_spans(spans, 5);
         assert_eq!(
@@ -398,6 +438,47 @@ mod tests {
                     url: "https://example.com/x".to_string()
                 },
             ]
+        );
+    }
+
+    /// The one input that exhausts the budget EXACTLY at a span boundary with
+    /// content still to come, so truncation leaves the loop instead of
+    /// returning from inside it and the trailing ellipsis is its own span.
+    /// Deleting that post-loop push passes every other test in this file.
+    #[test]
+    fn a_cut_exactly_at_a_link_boundary_drops_nothing_and_marks_the_remainder() {
+        // "abc " (4) + link text "de" (2) == 6, the whole budget, with " fgh"
+        // left over.
+        let spans = parse_description("abc [de](https://example.com/x) fgh");
+        let out = truncate_spans(spans, 6);
+        assert_eq!(
+            out,
+            vec![
+                DescriptionSpan::Text {
+                    text: "abc ".to_string()
+                },
+                DescriptionSpan::Link {
+                    text: "de".to_string(),
+                    url: "https://example.com/x".to_string()
+                },
+                DescriptionSpan::Text {
+                    text: "...".to_string()
+                },
+            ],
+            "the link survives whole and the dropped remainder is still marked"
+        );
+    }
+
+    /// The boundary case's twin: the budget is consumed exactly at a span
+    /// boundary and NOTHING remains, so no ellipsis may appear. Without this,
+    /// a fix for the case above could mark a description that lost nothing.
+    #[test]
+    fn a_cut_exactly_at_the_end_marks_nothing() {
+        let spans = parse_description("abc [de](https://example.com/x)");
+        assert_eq!(
+            truncate_spans(spans.clone(), 6),
+            spans,
+            "nothing was removed, so nothing may be marked"
         );
     }
 

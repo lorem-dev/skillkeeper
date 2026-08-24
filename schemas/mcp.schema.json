@@ -50,16 +50,34 @@
       "description": "Authoring metadata for one `{param}` placeholder.\n\nThis is metadata, NOT a declaration: the parameter list still comes from\nscanning every string field for placeholders, so a placeholder with no entry\nhere behaves exactly as it did before this existed and no existing `mcp.yml`\nchanges meaning.\n\n`options` is authored as a YAML mapping (`value: label`) because that is\nwhat an author wants to write, and modelled as an ordered list because\n`canonical_mcp_json` sorts object keys but leaves array order alone. As a\nmap, reordering the options would not change the content hash -- yet the\norder decides which option is \"first\" when a stored value disappears.",
       "properties": {
         "description": {
+          "description": "A short line of prose shown wherever this parameter is asked for. May\ncontain one markup form, a link; see [`crate::mcp::markup`].",
           "type": [
             "string",
             "null"
           ]
         },
         "options": {
-          "items": {
-            "$ref": "#/$defs/McpOption"
-          },
-          "type": "array"
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/McpOption"
+              },
+              "type": "array"
+            },
+            {
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The values this parameter accepts, in the order they were written.\nAuthored as a mapping of value to label; also accepted as a list of\n`{value, label}`, which is the form it always serializes back to."
         }
       },
       "type": "object"

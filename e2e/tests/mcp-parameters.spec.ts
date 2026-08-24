@@ -9,9 +9,9 @@
  * description and a `parameters` entry no placeholder uses), both in the
  * fixture's root `mcp.yml` -- see its README's "MCP presets" section.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { FIXTURE_DIR, readJson, Sandbox } from '../src/cli';
+import { FIXTURE_DIR, read, readJson, Sandbox } from '../src/cli';
 
 /** One `repo lint --json` item; only the fields this spec reads. */
 interface LintItem {
@@ -22,10 +22,13 @@ interface LintItem {
 describe('mcp descriptions and options', () => {
   let sandbox: Sandbox;
   let project: string;
+  /** The tracked clone the CLI reads presets from; editable, which is how the
+   *  update tests below make a source definition change. */
+  let clone: string;
 
   beforeAll(() => {
     sandbox = new Sandbox();
-    sandbox.addFixtureRepo();
+    clone = sandbox.addFixtureRepo();
     project = sandbox.project();
   });
 
@@ -82,6 +85,108 @@ describe('mcp descriptions and options', () => {
       // A refusal is not a partial install: nothing was written for this
       // project at all.
       expect(existsSync(join(freshProject, '.mcp.json'))).toBe(false);
+    });
+  });
+
+  /**
+   * `mcp update`'s option handling, split by where the value came from. The
+   * CLI unit tests cover a STORED value going stale; they never cover a
+   * user-supplied `--param`, which is exactly where the update path silently
+   * substituted what the user typed and then reported the substitution
+   * against the stored value.
+   *
+   * These run last and mutate the tracked clone's `mcp.yml`, so they must
+   * stay after everything above that reads the pristine fixture.
+   */
+  describe('update', () => {
+    const CLONE_MCP = (): string => join(clone, 'mcp.yml');
+    /** The project whose `docs_linked_1` these tests update. */
+    let updateProject: string;
+
+    beforeAll(() => {
+      updateProject = sandbox.project('update-options');
+      sandbox.runOk([
+        'mcp', 'install', 'docs-linked', '--agent', 'claude', '--project', updateProject,
+        '--param', 'host=docs.example.com', '--param', 'access=read',
+      ]);
+    });
+
+    /** Rewrites the clone's `docs-linked` block, which changes the def's hash
+     *  and so makes the installed instance out of date -- otherwise `mcp
+     *  update` has nothing to do and the option paths are never reached. */
+    const rewriteDocsLinked = (optionsBlock: string): void => {
+      const text = readFileSync(CLONE_MCP(), 'utf8');
+      const start = text.indexOf('  - name: docs-linked');
+      const end = text.indexOf('  - name: docs-invalid');
+      expect(start).toBeGreaterThan(-1);
+      expect(end).toBeGreaterThan(start);
+      const replacement = [
+        '  - name: docs-linked',
+        '    type: http',
+        '    url: "https://{host}/docs/v2"',
+        '    description: "See [reference](https://docs.example.com/reference) for {host} usage notes."',
+        '    headers:',
+        '      X-Access-Level: "{access}"',
+        '    parameters:',
+        '      host:',
+        '        description: "Docs host to query."',
+        '      access:',
+        '        description: "Access level to request."',
+        optionsBlock,
+        '',
+        '',
+      ].join('\n');
+      writeFileSync(CLONE_MCP(), text.slice(0, start) + replacement + text.slice(end));
+    };
+
+    const nativeAccess = (): unknown => {
+      const native = readJson<{ mcpServers: Record<string, Record<string, unknown>> }>(
+        join(updateProject, '.mcp.json'),
+      );
+      const headers = native.mcpServers['docs_linked_1']?.['headers'] as
+        | Record<string, string>
+        | undefined;
+      return headers?.['X-Access-Level'];
+    };
+
+    it('refuses a --param outside the options, names the accepted ones, and changes nothing', () => {
+      rewriteDocsLinked('        options:\n          read: Read-only\n          write: Read and write');
+      const result = sandbox.run([
+        'mcp', 'update', 'docs-linked', '--agent', 'claude', '--project', updateProject,
+        '--param', 'access=admin',
+      ]);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('admin');
+      expect(result.stderr).toContain('read');
+      expect(result.stderr).toContain('write');
+      // The refusal precedes the remove-then-reinstall, so the instance is
+      // still there and still holds what it held.
+      expect(nativeAccess()).toBe('read');
+      expect(read(join(updateProject, '.claude', 'skills', '.skmcp.params.yml'))).toContain(
+        'access: read',
+      );
+    });
+
+    it('accepts a --param that is one of the options and rewrites the instance', () => {
+      const result = sandbox.runOk([
+        'mcp', 'update', 'docs-linked', '--agent', 'claude', '--project', updateProject,
+        '--param', 'access=write',
+      ]);
+      expect(result.stdout).toContain('docs_linked_1');
+      expect(nativeAccess()).toBe('write');
+    });
+
+    it('migrates a stored value the new options no longer offer, and reports it', () => {
+      // "write" is now stored (previous test) and is dropped from the source,
+      // leaving "read" as the only -- and therefore first -- option. This is
+      // a value off disk, so it is migrated and reported rather than refused.
+      rewriteDocsLinked('        options:\n          read: Read-only');
+      const result = sandbox.runOk([
+        'mcp', 'update', 'docs-linked', '--agent', 'claude', '--project', updateProject,
+      ]);
+      expect(result.stdout).toContain('access');
+      expect(result.stdout).toContain('read');
+      expect(nativeAccess()).toBe('read');
     });
   });
 

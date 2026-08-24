@@ -177,6 +177,12 @@ export function normalizeMcpRemote(url: string): string {
  * SHA-256 algorithm using the standard Web Crypto API (`crypto.subtle`),
  * available in every renderer/browser context, so its output matches the
  * backend's `hash_mcp_def` byte-for-byte.
+ *
+ * Sorting alone is not enough for that claim to hold -- see
+ * {@link omitEmptyForHash} for the empty-collection rule that goes with it,
+ * and `matches_the_rust_digest_for_a_known_def` in this module's test file,
+ * which pins the literal digest against the Rust test of the same name so the
+ * two sides are held together by a value rather than by this comment.
  */
 function sortMcpKeysForHash(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortMcpKeysForHash);
@@ -191,12 +197,49 @@ function sortMcpKeysForHash(value: unknown): unknown {
   return value;
 }
 
+/**
+ * Drops the collections Rust's serde omits when they are EMPTY but whose
+ * generated TypeScript type is non-optional, so the canonical JSON matches
+ * `canonical_mcp_json` byte for byte:
+ *
+ * - `parameters` -- `skip_serializing_if = "BTreeMap::is_empty"`
+ * - `parameters.*.options` -- `skip_serializing_if = "Vec::is_empty"`
+ * - `oauth.scopes` -- `skip_serializing_if = "Vec::is_empty"`
+ *
+ * `headers`, `args` and `env` are deliberately NOT in this list: they are
+ * `Option<..>` in Rust with `skip_serializing_if = "Option::is_none"`, so an
+ * empty map or list there serializes as `{}`/`[]` on both sides and dropping
+ * it here would introduce the very divergence this removes.
+ *
+ * This exists because a def the RENDERER builds (a manual preset, in
+ * `refreshMcpPresets`) carries `parameters: {}` in order to satisfy the
+ * generated type, whereas one that arrives over the bridge already has the
+ * key omitted -- so only the renderer-built defs diverged, and every
+ * installed manual preset read as permanently out of date.
+ */
+function omitEmptyForHash(rest: Omit<McpServerDef, 'name'>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...rest };
+  const parameters = Object.entries(rest.parameters ?? {}).map(([name, parameter]) => {
+    const { options, ...paramRest } = parameter;
+    return [name, options !== undefined && options.length > 0 ? { ...paramRest, options } : paramRest] as const;
+  });
+  if (parameters.length === 0) delete out['parameters'];
+  else out['parameters'] = Object.fromEntries(parameters);
+  if (rest.oauth?.scopes !== undefined && rest.oauth.scopes.length === 0) {
+    const { scopes: _scopes, ...oauthRest } = rest.oauth;
+    out['oauth'] = oauthRest;
+  }
+  return out;
+}
+
 /** Content hash of an MCP server def, excluding `name` -- see the note on
  *  {@link sortMcpKeysForHash} for why this reimplements the backend's
- *  `hash_mcp_def`. Exported so its behavior can be tested directly. */
+ *  `hash_mcp_def`, and {@link omitEmptyForHash} for the empty-collection
+ *  rule the two sides have to agree on. Exported so its behavior can be
+ *  tested directly. */
 export async function hashMcpDefInRenderer(def: McpServerDef): Promise<string> {
   const { name: _name, ...rest } = def;
-  const canonical = JSON.stringify(sortMcpKeysForHash(rest));
+  const canonical = JSON.stringify(sortMcpKeysForHash(omitEmptyForHash(rest)));
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
   const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
   return `sha256:${hex}`;
@@ -1597,7 +1640,10 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
           // The manual-preset editor never authors `parameters` (see
           // `skillkeeper_config::McpPreset`'s doc comment), so an empty map is
           // the honest value here, not a placeholder standing in for missing
-          // data.
+          // data. It does NOT reach the content hash: Rust omits an empty
+          // `parameters` entirely, so `hashMcpDefInRenderer` drops it (see
+          // `omitEmptyForHash`) or every installed manual preset would read as
+          // permanently out of date.
           const def: McpServerDef = { ...rest, parameters: {} };
           return {
             id,

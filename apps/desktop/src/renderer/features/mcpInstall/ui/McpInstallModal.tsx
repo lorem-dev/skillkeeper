@@ -233,14 +233,24 @@ export function McpInstallModal({
                     <DescriptionText spans={paramSpans} onOpenLink={openLink} className="sk-mcp-install__param-help" />
                   )}
                   {options.length > 0 ? (
-                    <Select
-                      options={options.map((o) => ({ value: o.value, label: o.label }))}
-                      value={values[param] ?? ''}
-                      onChange={(next) => setValues((v) => ({ ...v, [param]: next }))}
-                      placeholder={t('mcp.param.choosePlaceholder')}
-                      ariaLabel={param}
-                      disabled={busy}
-                    />
+                    <>
+                      <Select
+                        options={options.map((o) => ({ value: o.value, label: o.label }))}
+                        value={values[param] ?? ''}
+                        onChange={(next) => setValues((v) => ({ ...v, [param]: next }))}
+                        placeholder={t('mcp.param.choosePlaceholder')}
+                        ariaLabel={param}
+                        disabled={busy}
+                      />
+                      {/* Why a hint under a control that cannot produce an
+                          invalid value: an option-constrained parameter starts
+                          with nothing selected, and Confirm is disabled until
+                          one is. Saying so beats a disabled button with no
+                          stated reason. */}
+                      {!paramValueValid(meta, values[param] ?? '') && (
+                        <span className="sk-mcp-install__param-help">{t('mcp.error.invalidOption')}</span>
+                      )}
+                    </>
                   ) : (
                     <TextField
                       value={values[param] ?? ''}

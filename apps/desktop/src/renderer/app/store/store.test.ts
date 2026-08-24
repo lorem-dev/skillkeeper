@@ -1426,6 +1426,48 @@ describe('useSkillkeeperStore', () => {
         }),
       );
     });
+
+    // The LITERAL digest of `{"type":"http","url":"u"}`, the same def and the
+    // same expected bytes as `matches_the_typescript_digest_for_a_known_def`
+    // in `crates/skillkeeper-core/src/mcp/hashing.rs`. Pinned as a value, not
+    // described in a comment: the previous test compared renderer output to
+    // renderer output, so `parameters: {}` surviving into the canonical JSON
+    // -- which Rust omits -- went unnoticed and made every installed manual
+    // preset read as permanently out of date. Change this only alongside the
+    // Rust test of the same name.
+    it('matches_the_rust_digest_for_a_known_def', async () => {
+      const def: McpServerDef = { name: 'x', type: 'http', url: 'u', parameters: {} };
+      expect(await hashMcpDefInRenderer(def)).toBe(
+        'sha256:26f2e45435ed554a6bc2e22df9381ac17c7847f516abe34176c813e403d588c9',
+      );
+    });
+
+    // The digest of `{"oauth":{},"parameters":{"p":{}},"type":"http","url":"u"}`
+    // -- what Rust emits for a def whose `options` and `scopes` are empty,
+    // since serde skips both. Pinned as a value beside
+    // `matches_the_typescript_digest_for_a_def_with_empty_collections` in
+    // `crates/skillkeeper-core/src/mcp/hashing.rs`.
+    it('omits an empty options list and empty oauth scopes, as Rust does', async () => {
+      const def: McpServerDef = {
+        name: 'x',
+        type: 'http',
+        url: 'u',
+        oauth: { scopes: [] },
+        parameters: { p: { options: [] } },
+      };
+      expect(await hashMcpDefInRenderer(def)).toBe(
+        'sha256:c6bd1dfa2aef53d5c84f83ee5623aab1dbcc7b44a1ab29b23ec1e46117226036',
+      );
+    });
+
+    it('keeps an empty headers map, which Rust also serializes', async () => {
+      // `headers` is `Option<BTreeMap<..>>` in Rust: `Some({})` serializes as
+      // `"headers":{}`. Dropping every empty collection indiscriminately would
+      // break this direction while fixing the other.
+      const withHeaders: McpServerDef = { name: 'x', type: 'http', url: 'u', headers: {}, parameters: {} };
+      const withoutHeaders: McpServerDef = { name: 'x', type: 'http', url: 'u', parameters: {} };
+      expect(await hashMcpDefInRenderer(withHeaders)).not.toBe(await hashMcpDefInRenderer(withoutHeaders));
+    });
   });
 
   describe('onboarding actions', () => {

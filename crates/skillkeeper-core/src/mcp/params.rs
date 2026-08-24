@@ -612,6 +612,31 @@ mod tests {
         );
     }
 
+    /// The one case that discriminates "first in document order" from
+    /// "smallest value". Every other options fixture in this feature happens
+    /// to be in ascending value order, so replacing `options.first()` with an
+    /// alphabetical minimum survived all of them -- and "first is well defined
+    /// precisely because options are an ordered list" is the entire reason a
+    /// YAML mapping is modelled as a list rather than a map.
+    #[test]
+    fn first_means_first_in_the_document_not_first_alphabetically() {
+        let def = choice_def(&[("zebra", "Z"), ("apple", "A")]);
+        let mut v = values(&[("choice", "gone")]);
+        let notes = migrate_option_values(&def, &mut v);
+        assert_eq!(
+            v.get("choice").map(String::as_str),
+            Some("zebra"),
+            "the option written first wins, even when it sorts last"
+        );
+        assert_eq!(
+            notes,
+            vec![UpsertNote::OptionSubstituted {
+                parameter: "choice".to_string(),
+                value: "zebra".to_string()
+            }]
+        );
+    }
+
     #[test]
     fn an_empty_option_set_leaves_the_stored_value_alone_and_warns() {
         let def = choice_def(&[]);

@@ -13,13 +13,21 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
-import type { AgentKind, McpBatch } from '@/services/bridge';
+import { bridgeClient } from '@/services/bridge';
+import type { AgentKind, DescriptionSpan, McpBatch } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
-import { Modal, Button, ProgressBar, Table, Icon, Badge, TextField } from '@/shared/ui';
+import { Modal, Button, ProgressBar, Table, Icon, Badge, TextField, Select, DescriptionText } from '@/shared/ui';
 import type { TableColumn, TableRow } from '@/shared/ui';
 import { AGENT_LABELS, applyScope, GLOBAL_SCOPE_ID } from '@/domain';
 import { buildProjectPlan } from '@/entities/skill';
-import { buildInstallBatches, installNotesToMessages, mcpSkipsToMessages } from '@/features/mcpInstall';
+import {
+  buildInstallBatches,
+  descriptionQueries,
+  installNotesToMessages,
+  mcpSkipsToMessages,
+  paramValueValid,
+  spansForParam,
+} from '@/features/mcpInstall';
 import { buildProjectMcpPlan } from '../lib/mcpPlan';
 import './SkillSaveModal.scss';
 
@@ -166,10 +174,52 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
       .filter((row) => row.action === 'install' && row.needsParamPrompt && row.preset !== undefined)
       .map((row) => ({ scope, row, preset: row.preset! })),
   );
+  // Gated on `paramValueValid`, not on non-blankness: a parameter with
+  // `options` accepts only one of those option values, and this modal applies
+  // its batch straight to `applyMcp`, which refuses anything else. Gating on
+  // blankness alone let a typed value through, and by then the skill plans
+  // above had already been applied -- leaving a half-applied change and no way
+  // to supply a valid value from this modal.
   const missingMcpParams = promptRows.some(({ scope, row, preset }) => {
     const values = mcpParamValues[promptKey(scope.id, row.key)] ?? {};
-    return preset.params.some((p) => (values[p] ?? '').trim() === '');
+    return preset.params.some((p) => !paramValueValid(preset.def.parameters[p], values[p] ?? ''));
   });
+
+  // One `mcp_description_spans` call per distinct preset behind a prompt row,
+  // keyed by preset id because this modal can prompt for several presets at
+  // once. Best-effort, exactly as in `McpInstallModal`: a failed fetch leaves
+  // every description unrendered, which reads as "none authored".
+  const promptPresetIds = useMemo(
+    () => [...new Set(promptRows.map(({ preset }) => preset.id))].sort().join('\n'),
+    [promptRows],
+  );
+  const [promptSpans, setPromptSpans] = useState<Record<string, DescriptionSpan[][]>>({});
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const ids = promptPresetIds === '' ? [] : promptPresetIds.split('\n');
+    let alive = true;
+    void Promise.all(
+      ids.map(async (id): Promise<readonly [string, DescriptionSpan[][]]> => {
+        const preset = mcpPresets.find((p) => p.id === id);
+        if (preset === undefined) return [id, []] as const;
+        return [id, await bridgeClient.mcpDescriptionSpans(descriptionQueries(preset))] as const;
+      }),
+    )
+      .then((entries) => {
+        if (alive) setPromptSpans(Object.fromEntries(entries));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [open, promptPresetIds, mcpPresets]);
+
+  /** Hands a link span's own `url` to the backend opener; never called with
+   *  anything else (see `DescriptionText`'s doc comment). */
+  function openLink(url: string): void {
+    void bridgeClient.openExternalUrl(url);
+  }
 
   const busy = progress !== null;
 
@@ -246,20 +296,37 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
                 </span>
                 {preset.params.map((param) => {
                   const values = mcpParamValues[promptKey(scope.id, row.key)] ?? {};
+                  const value = values[param] ?? '';
+                  const meta = preset.def.parameters[param];
+                  const options = meta?.options ?? [];
+                  const paramSpans = spansForParam(preset, promptSpans[preset.id] ?? [], param);
+                  const setValue = (next: string): void =>
+                    setMcpParamValues((prev) => {
+                      const k = promptKey(scope.id, row.key);
+                      return { ...prev, [k]: { ...prev[k], [param]: next } };
+                    });
                   return (
                     <label key={param} className="sk-save-modal__mcpprompt-field">
                       <span>{param}</span>
-                      <TextField
-                        value={values[param] ?? ''}
-                        disabled={busy}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setMcpParamValues((prev) => {
-                            const k = promptKey(scope.id, row.key);
-                            return { ...prev, [k]: { ...prev[k], [param]: next } };
-                          });
-                        }}
-                      />
+                      {paramSpans !== undefined && (
+                        <DescriptionText
+                          spans={paramSpans}
+                          onOpenLink={openLink}
+                          className="sk-save-modal__mcpprompt-help"
+                        />
+                      )}
+                      {options.length > 0 ? (
+                        <Select
+                          options={options.map((o) => ({ value: o.value, label: o.label }))}
+                          value={value}
+                          onChange={setValue}
+                          placeholder={t('mcp.param.choosePlaceholder')}
+                          ariaLabel={param}
+                          disabled={busy}
+                        />
+                      ) : (
+                        <TextField value={value} disabled={busy} onChange={(e) => setValue(e.target.value)} />
+                      )}
                     </label>
                   );
                 })}

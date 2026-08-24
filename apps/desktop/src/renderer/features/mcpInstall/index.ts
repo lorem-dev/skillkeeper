@@ -11,3 +11,9 @@ export { buildInstallBatches, buildRemoveBatches } from './lib/buildBatches';
 // copies of that mapping is how the update flow ended up reporting neither.
 export { installNotesToMessages } from './lib/installNotesToMessages';
 export { mcpSkipsToMessages } from './lib/mcpSkipsToMessages';
+// Exported for the same reason: every surface that ASKS for a parameter value
+// has to accept the same values the backend does. The skill-save modal is the
+// third such surface, and it was the one that had neither the option select
+// nor this predicate.
+export { paramValueValid } from './lib/paramValueValid';
+export { descriptionQueries, spansForParam } from './lib/descriptionSpanQueries';

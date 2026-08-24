@@ -73,10 +73,10 @@ servers:
       callbackPort: <number>
       scopes: [<string>, ...]
     description: <string>     # optional, shown wherever this preset is listed
-    parameters:                # optional, keyed by parameter name
+    parameters:               # optional, keyed by parameter name
       <param-name>:
-        description: <string>  # optional, prose -- see "Descriptions" below
-        options:                # optional, mapping of value to label; order matters
+        description: <string> # optional, prose; see "Descriptions" below
+        options:              # optional, value-to-label map; order matters
           <value>: <label>
     rules: <string>           # optional guidance body
 ```
@@ -129,7 +129,7 @@ servers:
 
 ```yaml
 # yaml-language-server: $schema=https://github.com/lorem-dev/skillkeeper/releases/latest/download/mcp.schema.json
-# tooling/mcp.yml -- group "tooling"
+# tooling/mcp.yml - group "tooling"
 version: 1
 servers:
   - name: tooling-sse
@@ -173,7 +173,7 @@ Example: the `docs-http` server above has two parameters, `host` and
 
 ```yaml
 headers:
-  X-Token: "{personal_token}"   # quoted -- a string
+  X-Token: "{personal_token}"   # quoted, a string
   Authorization: Bearer {token} # fine unquoted: `{` is not the first character
 ```
 
@@ -248,12 +248,20 @@ lint warning (`SK018`).
 `options` is written as a mapping of value to label, and its **order
 matters**: it decides which option is chosen when a stored value disappears
 (see below), so reordering the mapping is treated as a change to the server,
-the same as changing any other field.
+the same as changing any other field. A list of `{value, label}` entries is
+accepted as well, and is the form the value is written back as.
+
+An unfinished `options` is never a parse failure. A bare `options:`, an empty
+`{}` and an empty `[]` all mean "no options", and a value written with no
+label yet gets a blank one - a half-written key must not take down every
+other server declared in the same file.
 
 A parameter's value must be one of its `options`. This is enforced on both
 surfaces: the CLI (`mcp install`, `mcp update`) rejects a value that is not
-one of the options, and the desktop app's install form only lets you pick one
-of them. Two options sharing the same value is a lint warning (`SK022`).
+one of the options and prints the parameter's description alongside the
+accepted values, and the desktop app's install, update and save forms only
+let you pick one of them. Two options sharing the same value is a lint
+warning (`SK022`).
 
 Updating an installed instance can leave a stored value that the new
 definition's `options` no longer offers (an author removed or renamed a

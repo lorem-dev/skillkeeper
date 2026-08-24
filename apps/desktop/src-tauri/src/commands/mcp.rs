@@ -635,18 +635,39 @@ pub fn list_available(ctx: &AppContext) -> AvailableMcpResult {
 // mcp:apply
 // ---------------------------------------------------------------------------
 
+/// Where one install request's parameter values came from, which is what
+/// decides how an out-of-options value among them is treated.
+///
+/// A value the RENDERER supplied is an error: `paramValueValid` blocks it
+/// client-side, so one arriving here means the interface was bypassed, and the
+/// user is looking at the control that produced it. A value read off
+/// `.skmcp.params.yml` is migrated and reported instead: the renderer never
+/// sees it (`mcpPlan.ts` withholds it deliberately, because it may hold
+/// secrets), so an error about it names a file the user may never have opened
+/// -- and it would abort every unrelated install and remove in the same batch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ValuesOrigin {
+    /// From the install request itself, i.e. from the interface.
+    Renderer,
+    /// Read out of another agent's stored `.skmcp.params.yml` entry.
+    Stored,
+}
+
 /// Resolve the values to render for one install request: `ins.values`, unless
 /// `copyParamsFrom` names another agent's already-installed instance of the same
 /// identity, in which case its stored `.skmcp.params.yml` entry is used (falling
 /// back to `ins.values` when that entry cannot be read). Port of the TS
-/// `resolveInstallValues`.
+/// `resolveInstallValues`. The [`ValuesOrigin`] beside the map says which of
+/// the two it ended up being; a fallback to `ins.values` is `Renderer`,
+/// because that is where those values came from.
 fn resolve_install_values(
     ctx: &AppContext,
     args: &ApplyMcpArgs,
     ins: &McpInstallReq,
-) -> BTreeMap<String, String> {
+) -> (BTreeMap<String, String>, ValuesOrigin) {
+    let renderer = || (ins.values.clone(), ValuesOrigin::Renderer);
     let Some(copy) = &ins.copy_params_from else {
-        return ins.values.clone();
+        return renderer();
     };
     let target = match resolve_mcp_target(
         ctx,
@@ -656,27 +677,29 @@ fn resolve_install_values(
         &args.project_id,
     ) {
         Ok(t) => t,
-        Err(_) => return ins.values.clone(),
+        Err(_) => return renderer(),
     };
     if !ctx.fs.exists(&target.params_path).unwrap_or(false) {
-        return ins.values.clone();
+        return renderer();
     }
     let text = match ctx.fs.read_file(&target.params_path) {
         Ok(t) => t,
-        Err(_) => return ins.values.clone(),
+        Err(_) => return renderer(),
     };
-    parse_skmcp_params(&text)
-        .get(&copy.instance_name)
-        .cloned()
-        .unwrap_or_else(|| ins.values.clone())
+    match parse_skmcp_params(&text).get(&copy.instance_name).cloned() {
+        Some(stored) => (stored, ValuesOrigin::Stored),
+        None => renderer(),
+    }
 }
 
 /// `mcp:apply` -- apply install/remove batches for a project across agents.
-/// Every install request is validated against its preset's option-constrained
-/// parameters BEFORE anything is touched: an out-of-options value is an
-/// error, not a skip, and nothing is written when one is found (the renderer
-/// already blocks this client-side, so a value reaching here means that
-/// check was bypassed). Removes run before installs (so a re-install onto the
+/// Every install request's RENDERER-supplied values are validated against its
+/// preset's option-constrained parameters BEFORE anything is touched: an
+/// out-of-options value is an error, not a skip, and nothing is written when
+/// one is found (the renderer already blocks this client-side, so a value
+/// reaching here means that check was bypassed). A value read off
+/// `.skmcp.params.yml` through `copyParamsFrom` is migrated and reported
+/// instead -- see [`ValuesOrigin`]. Removes run before installs (so a re-install onto the
 /// same instance name starts clean); an install the agent cannot express --
 /// its transport, or an oauth client at all -- is skipped and reported, and
 /// every install that DID run carries the writer's notes back out. Never
@@ -694,18 +717,22 @@ fn apply_inner(
     ctx: &AppContext,
     args: &ApplyMcpArgs,
 ) -> Result<(Vec<McpInstalled>, usize, Vec<McpSkipped>), String> {
-    // Validate every install request's values against its preset's options
-    // BEFORE any batch below removes or writes anything. This is an error,
-    // not a per-agent `McpSkipped`: an invalid option value is a property of
-    // the preset, not of one agent's native config, so it applies to every
-    // target in this call. The renderer already blocks this through
-    // `paramValueValid`, so a value reaching here means something bypassed
-    // the interface.
+    // Validate every install request's RENDERER-supplied values against its
+    // preset's options BEFORE any batch below removes or writes anything.
+    // This is an error, not a per-agent `McpSkipped`: an invalid option value
+    // is a property of the preset, not of one agent's native config, so it
+    // applies to every target in this call. The renderer already blocks it
+    // through `paramValueValid`, so a value reaching here means something
+    // bypassed the interface.
+    //
+    // `ins.values` deliberately rather than `resolve_install_values`: a value
+    // that came off `.skmcp.params.yml` is not the user's current input and is
+    // migrated below instead of aborting the whole batch. See [`ValuesOrigin`].
     for batch in &args.batches {
         for ins in &batch.install {
-            let values = resolve_install_values(ctx, args, ins);
-            if let Some((parameter, value)) =
-                invalid_option_values(&ins.def, &values).into_iter().next()
+            if let Some((parameter, value)) = invalid_option_values(&ins.def, &ins.values)
+                .into_iter()
+                .next()
             {
                 return Err(format!(
                     "Invalid value \"{value}\" for mcp param \"{parameter}\" in \"{}\".",
@@ -765,7 +792,20 @@ fn apply_inner(
                 });
                 continue;
             }
-            let values = resolve_install_values(ctx, args, ins);
+            let (mut values, origin) = resolve_install_values(ctx, args, ins);
+            // A stored value copied off another agent's `.skmcp.params.yml` may
+            // name an option the source no longer offers. Migrating and
+            // reporting it is the update path's answer to exactly this, and it
+            // has to be this path's too: the renderer never saw the value, so
+            // an error naming it is one the user cannot act on -- and it would
+            // abort every unrelated install and remove in the batch. The
+            // renderer's own values were refused outright above, so this runs
+            // over disk-sourced values only.
+            let option_notes = if origin == ValuesOrigin::Stored {
+                migrate_option_values(&ins.def, &mut values)
+            } else {
+                Vec::new()
+            };
             let outcome = install_mcp_instance(
                 &ctx.fs,
                 &InstallMcpArgs {
@@ -788,10 +828,12 @@ fn apply_inner(
                 },
             )
             .map_err(|e| e.to_string())?;
+            let mut notes = option_notes;
+            notes.extend(outcome.notes);
             installed.push(McpInstalled {
                 agent: batch.agent,
                 instance_name: outcome.instance_name,
-                notes: outcome.notes,
+                notes,
             });
         }
     }
@@ -1091,11 +1133,18 @@ fn preflight_inner(ctx: &AppContext, args: &McpUpdatePreflightArgs) -> Result<Ve
 /// `mcp:update` -- update installed instances in place: for each, remove the old
 /// instance and reinstall under the SAME name with the NEW def. Param values are
 /// resolved server-side (the instance's own stored values merged under any
-/// renderer-supplied newly-required params), then migrated back in line with
-/// the new def's option-constrained parameters BEFORE the old instance is
-/// removed -- a value an earlier install recorded may no longer be offered,
-/// and the resulting `OptionSubstituted`/`OptionsEmpty` notes flow out
-/// alongside the writer's own notes; the reinstall refreshes the ledger hash
+/// renderer-supplied newly-required params).
+///
+/// The two halves of that merge are checked differently, by provenance -- the
+/// same split [`ValuesOrigin`] documents for `apply`. A RENDERER-supplied
+/// value is validated against the new def's options BEFORE the merge and
+/// refused outright: the interface should have blocked it, and migrating it
+/// would replace a value the user typed seconds ago while reporting that the
+/// STORED one was no longer accepted. The stored values are then migrated back
+/// in line with the new def's options BEFORE the old instance is removed -- a
+/// value an earlier install recorded may no longer be offered -- and the
+/// resulting `OptionSubstituted`/`OptionsEmpty` notes flow out alongside the
+/// writer's own notes; the reinstall refreshes the ledger hash
 /// automatically. An update the agent cannot express -- an oauth client it
 /// has no setting for -- is declined and reported instead of rewriting the
 /// server without its auth, and every update that DID run carries the writer's
@@ -1112,6 +1161,25 @@ fn update_inner(
     ctx: &AppContext,
     args: &UpdateMcpArgs,
 ) -> Result<(Vec<McpInstalled>, Vec<McpSkipped>), String> {
+    // Validate the RENDERER-supplied values against the new def's options
+    // BEFORE any update below removes or writes anything -- the same pre-pass
+    // `apply_inner` runs, for the same reason and against the same rule. These
+    // are the newly-required params the user just filled in, so an
+    // out-of-options value among them is the interface having been bypassed,
+    // not a stale record: refusing it names something the user can change.
+    // The instance's OWN stored values are migrated and reported instead, in
+    // the loop below. See [`ValuesOrigin`].
+    for u in &args.updates {
+        if let Some((parameter, value)) =
+            invalid_option_values(&u.def, &u.values).into_iter().next()
+        {
+            return Err(format!(
+                "Invalid value \"{value}\" for mcp param \"{parameter}\" in \"{}\".",
+                u.identity.source
+            ));
+        }
+    }
+
     let mut updated: Vec<McpInstalled> = Vec::new();
     let mut skipped: Vec<McpSkipped> = Vec::new();
     for u in &args.updates {
@@ -1134,11 +1202,13 @@ fn update_inner(
         for (key, value) in &u.values {
             values.insert(key.clone(), value.clone());
         }
-        // Bring a stored option value back in line with the new def's options
+        // Bring a STORED option value back in line with the new def's options
         // before the destructive remove below: a value an earlier install may
         // have recorded is no longer guaranteed to be offered, and the remove
         // below would otherwise delete the instance without first fixing up
-        // the value that gets reinstalled under the same name.
+        // the value that gets reinstalled under the same name. The
+        // renderer-supplied overrides merged in above were already refused if
+        // out of set, so this only ever migrates what came off disk.
         let option_notes = migrate_option_values(&u.def, &mut values);
         remove_mcp_instance(
             &ctx.fs,
@@ -2051,6 +2121,149 @@ mod tests {
         assert_eq!(
             stored.get("github_1").and_then(|m| m.get("choice")),
             Some(&"alpha".to_string())
+        );
+    }
+
+    /// The value came from the renderer's own prompt, so it is refused rather
+    /// than migrated. Migrating it would rewrite what the user typed seconds
+    /// ago and then report that the STORED value was no longer accepted --
+    /// blaming a file for the user's own input.
+    #[test]
+    fn update_refuses_a_renderer_supplied_value_outside_the_options() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        assert!(
+            apply(
+                &app.ctx,
+                apply_args(
+                    &proj,
+                    vec![McpBatch {
+                        agent: AgentKind::Claude,
+                        install: vec![install_req(choice_def(), &[("choice", "alpha")])],
+                        remove: vec![],
+                    }],
+                ),
+            )
+            .ok
+        );
+
+        let updated = update(
+            &app.ctx,
+            UpdateMcpArgs {
+                scope: Scope::Project,
+                updates: vec![McpUpdateReq {
+                    project_id: "proj-1".to_string(),
+                    project_path: proj.path(),
+                    agent: AgentKind::Claude,
+                    instance_name: "github_1".to_string(),
+                    identity: identity(),
+                    def: choice_def(),
+                    values: values(&[("choice", "admin")]),
+                }],
+            },
+        );
+        assert!(!updated.ok, "an out-of-options override must not succeed");
+        let error = updated.error.unwrap_or_default();
+        assert!(error.contains("choice"), "got {error}");
+        assert!(error.contains("admin"), "got {error}");
+
+        // The check runs before the destructive remove-then-reinstall, so the
+        // instance is left exactly as it was -- not silently migrated, and
+        // above all not deleted.
+        let params_text = std::fs::read_to_string(
+            Path::new(&proj.path())
+                .join(".claude/skills")
+                .join(SKMCP_PARAMS_FILE),
+        )
+        .expect("params file still there");
+        let stored = parse_skmcp_params(&params_text);
+        assert_eq!(
+            stored.get("github_1").and_then(|m| m.get("choice")),
+            Some(&"alpha".to_string())
+        );
+    }
+
+    /// `copyParamsFrom` reads the value off `.skmcp.params.yml`, which the
+    /// renderer deliberately never sees because it may hold secrets. So an
+    /// out-of-options value there is not something the user bypassed the
+    /// interface with, and erroring would abort every unrelated install and
+    /// remove in the batch over a file they may never have opened.
+    #[test]
+    fn apply_migrates_a_stored_copied_value_instead_of_failing_the_batch() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        // Claude holds a stored "alpha".
+        assert!(
+            apply(
+                &app.ctx,
+                apply_args(
+                    &proj,
+                    vec![McpBatch {
+                        agent: AgentKind::Claude,
+                        install: vec![install_req(choice_def(), &[("choice", "alpha")])],
+                        remove: vec![],
+                    }],
+                ),
+            )
+            .ok
+        );
+
+        // Cursor installs the SAME identity by copying claude's stored value,
+        // against a def that no longer offers "alpha".
+        let result = apply(
+            &app.ctx,
+            apply_args(
+                &proj,
+                vec![McpBatch {
+                    agent: AgentKind::Cursor,
+                    install: vec![McpInstallReq {
+                        identity: identity(),
+                        def: choice_def_alpha_dropped(),
+                        values: BTreeMap::new(),
+                        copy_params_from: Some(CopyParamsFrom {
+                            agent: AgentKind::Claude,
+                            instance_name: "github_1".to_string(),
+                        }),
+                    }],
+                    remove: vec![],
+                }],
+            ),
+        );
+        assert!(result.ok, "the batch must not abort: {:?}", result.error);
+        let installed = result.installed.expect("installed list");
+        assert!(
+            installed[0].notes.iter().any(|n| matches!(
+                n,
+                UpsertNote::OptionSubstituted { parameter, value }
+                    if parameter == "choice" && value == "beta"
+            )),
+            "the substitution must be reported, never silent: {:?}",
+            installed[0].notes
+        );
+
+        let cursor_target = resolve_mcp_target(
+            &app.ctx,
+            AgentKind::Cursor,
+            Scope::Project,
+            &proj.path(),
+            "proj-1",
+        )
+        .expect("cursor target");
+        let params_text = std::fs::read_to_string(&cursor_target.params_path)
+            .expect("cursor params file written");
+        let stored = parse_skmcp_params(&params_text);
+        assert_eq!(
+            stored
+                .values()
+                .next()
+                .and_then(|m| m.get("choice"))
+                .map(String::as_str),
+            Some("beta"),
+            "the migrated value is what gets written"
         );
     }
 

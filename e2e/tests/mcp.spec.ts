@@ -35,9 +35,18 @@ describe('mcp', () => {
     // first path segment, so a preset's group is the full directory path.
     expect(listed).toContain('platform/lint/lint-registry');
     expect(listed).toContain('platform/lint/rust/rust-registry');
-    // 12 presets, one line each, plus one extra description line for each of
-    // the two that carry a `description` (docs-linked, docs-invalid).
-    expect(listed.trim().split('\n')).toHaveLength(14);
+    // Counted separately, because one total folded the preset count and the
+    // number of presets carrying a description into a single number: adding a
+    // description to an existing preset then looked exactly like adding a
+    // preset. A preset line is the one naming its origin; a description is an
+    // indented continuation of the line above it.
+    const lines = listed.trim().split('\n');
+    const presetLines = lines.filter((l) => l.includes('origin='));
+    const describedLines = lines.filter((l) => !l.includes('origin='));
+    expect(presetLines).toHaveLength(12);
+    // docs-linked and docs-invalid are the two that carry a `description`.
+    expect(describedLines).toHaveLength(2);
+    expect(describedLines.every((l) => l.startsWith('    '))).toBe(true);
   });
 
   describe('install', () => {
