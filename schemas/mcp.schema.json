@@ -30,6 +30,40 @@
       },
       "type": "object"
     },
+    "McpOption": {
+      "description": "One selectable value for a parameter. `value` is what is stored and rendered\ninto the native config; `label` is what a reader sees.",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "type": "object"
+    },
+    "McpParameter": {
+      "description": "Authoring metadata for one `{param}` placeholder.\n\nThis is metadata, NOT a declaration: the parameter list still comes from\nscanning every string field for placeholders, so a placeholder with no entry\nhere behaves exactly as it did before this existed and no existing `mcp.yml`\nchanges meaning.\n\n`options` is authored as a YAML mapping (`value: label`) because that is\nwhat an author wants to write, and modelled as an ordered list because\n`canonical_mcp_json` sorts object keys but leaves array order alone. As a\nmap, reordering the options would not change the content hash -- yet the\norder decides which option is \"first\" when a stored value disappears.",
+      "properties": {
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/McpOption"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "McpServerDef": {
       "allOf": [
         {
@@ -99,6 +133,13 @@
             "null"
           ]
         },
+        "description": {
+          "description": "A short summary of what this server is for. May contain one markup form,\na link; see [`crate::mcp::markup`].",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "env": {
           "additionalProperties": {
             "type": "string"
@@ -134,6 +175,13 @@
             }
           ],
           "description": "OAuth client configuration. Meaningful only for `http` and `sse`."
+        },
+        "parameters": {
+          "additionalProperties": {
+            "$ref": "#/$defs/McpParameter"
+          },
+          "description": "Authoring metadata per `{param}` placeholder. Keyed by parameter name;\nthis map's own order is irrelevant because the parameter list arrives\nsorted from the scanner, so a `BTreeMap` matches `headers` and `env`.",
+          "type": "object"
         },
         "rules": {
           "description": "Usage guidance written into the agent's guidance file on install, the\nsame way skill guidance is.",

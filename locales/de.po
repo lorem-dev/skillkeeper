@@ -928,6 +928,24 @@ msgstr "{agent} unterstützt {field} nicht; es wurde nicht geschrieben."
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex legt seinen OAuth-Callback-Port bereits auf {found} fest, daher wurde er unverändert gelassen, statt ihn auf {wanted} zu setzen."
 
+msgid "mcp.field.description"
+msgstr "Beschreibung"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "Wofür dieser Server gedacht ist"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "Wert wählen"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} akzeptiert den gespeicherten Wert nicht mehr, daher wurde stattdessen {value} ausgewählt."
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} hat keine auswählbaren Optionen, daher wurde der gespeicherte Wert unverändert gelassen."
+
+msgid "mcp.error.invalidOption"
+msgstr "Wählen Sie einen der angebotenen Werte."
+
 msgid "settings.comingSoon"
 msgstr "Einstellungen folgen in Kürze."
 

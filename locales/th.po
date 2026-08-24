@@ -912,6 +912,30 @@ msgstr "{agent} ไม่รองรับ {field} จึงไม่ได้�
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex ตั้งค่าพอร์ตคอลแบ็ก OAuth ไว้ที่ {found} อยู่แล้ว จึงถูกปล่อยไว้เช่นเดิมแทนที่จะตั้งเป็น {wanted}"
 
+#, fuzzy
+msgid "mcp.field.description"
+msgstr "คำอธิบาย"
+
+#, fuzzy
+msgid "mcp.descriptionPlaceholder"
+msgstr "เซิร์ฟเวอร์นี้ใช้ทำอะไร"
+
+#, fuzzy
+msgid "mcp.param.choosePlaceholder"
+msgstr "เลือกค่า"
+
+#, fuzzy
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} ไม่รองรับค่าที่บันทึกไว้อีกต่อไป จึงเลือก {value} แทน"
+
+#, fuzzy
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} ไม่มีตัวเลือกให้เลือก ค่าที่บันทึกไว้จึงถูกปล่อยไว้เช่นเดิม"
+
+#, fuzzy
+msgid "mcp.error.invalidOption"
+msgstr "เลือกค่าใดค่าหนึ่งที่มีให้"
+
 msgid "settings.comingSoon"
 msgstr "หน้าการตั้งค่าจะมาเร็ว ๆ นี้"
 

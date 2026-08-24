@@ -997,6 +997,24 @@ msgstr "{agent} не підтримує {field}; це не було записа
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex вже встановлює порт зворотного виклику OAuth на {found}, тому його залишили без змін замість встановлення на {wanted}."
 
+msgid "mcp.field.description"
+msgstr "Опис"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "Для чого цей сервер"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "Виберіть значення"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} більше не приймає збережене значення, тому замість нього було вибрано {value}."
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} не має варіантів для вибору, тому його збережене значення залишилося без змін."
+
+msgid "mcp.error.invalidOption"
+msgstr "Виберіть одне із запропонованих значень."
+
 msgid "settings.comingSoon"
 msgstr "Екран налаштувань з’явиться незабаром."
 

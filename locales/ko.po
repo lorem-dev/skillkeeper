@@ -988,6 +988,24 @@ msgstr "{agent}는 {field}을(를) 지원하지 않으므로 기록되지 않았
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex는 이미 OAuth 콜백 포트를 {found}(으)로 설정했으므로 {wanted}(으)로 설정하는 대신 그대로 두었습니다."
 
+msgid "mcp.field.description"
+msgstr "설명"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "이 서버의 용도"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "값 선택"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter}이(가) 더 이상 저장된 값을 허용하지 않으므로 대신 {value}이(가) 선택되었습니다."
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter}에 선택할 옵션이 없으므로 저장된 값을 그대로 두었습니다."
+
+msgid "mcp.error.invalidOption"
+msgstr "제공된 값 중 하나를 선택하세요."
+
 msgid "settings.comingSoon"
 msgstr "설정 화면은 곧 제공됩니다."
 

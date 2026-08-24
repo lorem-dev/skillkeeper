@@ -10,6 +10,13 @@ import type { McpTransport } from "./McpTransport";
  */
 export type McpPreset = { id: string, name: string, type: McpTransport, url?: string, headers?: { [key in string]: string }, command?: string, args?: Array<string>, env?: { [key in string]: string }, rules?: string, 
 /**
+ * A short summary, shown wherever this preset is listed. May contain one
+ * markup form, a link. Manual presets carry a description and nothing else
+ * from the parameters design: the desktop editor does not author
+ * `parameters` or `options`, so this struct has no place for them.
+ */
+description?: string, 
+/**
  * OAuth client configuration. Meaningful only for `http` and `sse`; a
  * block on a `stdio` preset is a lint warning, never a silent drop.
  */

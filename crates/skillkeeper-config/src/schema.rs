@@ -529,6 +529,12 @@ pub struct McpPreset {
     pub env: Option<BTreeMap<String, String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rules: Option<String>,
+    /// A short summary, shown wherever this preset is listed. May contain one
+    /// markup form, a link. Manual presets carry a description and nothing else
+    /// from the parameters design: the desktop editor does not author
+    /// `parameters` or `options`, so this struct has no place for them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     /// OAuth client configuration. Meaningful only for `http` and `sse`; a
     /// block on a `stdio` preset is a lint warning, never a silent drop.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -686,6 +692,44 @@ mod tests {
         assert!(!serde_json::to_string(&preset)
             .expect("serialize")
             .contains("oauth"));
+    }
+
+    #[test]
+    fn a_manual_preset_round_trips_its_description() {
+        let json = r#"{"id":"p1","name":"remote","type":"http","url":"https://mcp.example.com/mcp","description":"A [doc](https://example.com/d)"}"#;
+        let preset: McpPreset = serde_json::from_str(json).expect("deserialize");
+        assert_eq!(
+            preset.description.as_deref(),
+            Some("A [doc](https://example.com/d)")
+        );
+        assert!(serde_json::to_string(&preset)
+            .expect("serialize")
+            .contains("description"));
+    }
+
+    #[test]
+    fn a_manual_preset_without_a_description_omits_the_key() {
+        let json = r#"{"id":"p1","name":"local","type":"stdio","command":"srv"}"#;
+        let preset: McpPreset = serde_json::from_str(json).expect("deserialize");
+        assert!(preset.description.is_none());
+        assert!(!serde_json::to_string(&preset)
+            .expect("serialize")
+            .contains("description"));
+    }
+
+    #[test]
+    fn a_manual_preset_has_no_parameters_field_at_all() {
+        // The desktop editor does not author parameters or options, so the
+        // config shape deliberately has no place for them. This test exists so
+        // that adding one is a conscious decision, not a drift.
+        let json = r#"{"id":"p1","name":"x","type":"stdio","command":"c","parameters":{"a":{}}}"#;
+        let preset: McpPreset = serde_json::from_str(json).expect("unknown keys are ignored");
+        assert!(
+            !serde_json::to_string(&preset)
+                .expect("serialize")
+                .contains("parameters"),
+            "config must not carry parameters"
+        );
     }
 
     #[test]

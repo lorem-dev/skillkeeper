@@ -305,6 +305,8 @@ mod tests {
             env: Some(env),
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -326,6 +328,8 @@ mod tests {
                 client_id: Some("sk-client".to_string()),
                 scopes: vec!["repo".to_string()],
             }),
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 

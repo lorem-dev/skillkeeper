@@ -997,6 +997,24 @@ msgstr "{agent} nie obsługuje {field}; nie zostało to zapisane."
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex już ustawia port zwrotny OAuth na {found}, więc pozostał bez zmian zamiast zostać ustawionym na {wanted}."
 
+msgid "mcp.field.description"
+msgstr "Opis"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "Do czego służy ten serwer"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "Wybierz wartość"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} nie akceptuje już zapisanej wartości, więc zamiast niej wybrano {value}."
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} nie ma żadnych opcji do wyboru, więc jego zapisana wartość pozostała bez zmian."
+
+msgid "mcp.error.invalidOption"
+msgstr "Wybierz jedną z zaproponowanych wartości."
+
 msgid "settings.comingSoon"
 msgstr "Ekran ustawień będzie dostępny wkrótce."
 

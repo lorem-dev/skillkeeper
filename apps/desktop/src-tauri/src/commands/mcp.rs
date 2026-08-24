@@ -1323,6 +1323,8 @@ mod tests {
             env: Some(values(&[("TOKEN", "{token}")])),
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -1346,6 +1348,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 

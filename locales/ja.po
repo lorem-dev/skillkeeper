@@ -862,6 +862,24 @@ msgstr "{agent} は {field} をサポートしていないため、書き込ま�
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex はすでに OAuth のコールバックポートを {found} に設定しているため、{wanted} に設定する代わりにそのままにされました。"
 
+msgid "mcp.field.description"
+msgstr "説明"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "このサーバーの用途"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "値を選択"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} は保存された値を受け付けなくなったため、代わりに {value} が選択されました。"
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} には選択できるオプションがないため、保存された値はそのままにされました。"
+
+msgid "mcp.error.invalidOption"
+msgstr "提示された値の中から選択してください。"
+
 msgid "settings.comingSoon"
 msgstr "設定画面は近日公開予定です。"
 

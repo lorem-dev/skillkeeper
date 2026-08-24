@@ -943,6 +943,24 @@ msgstr "{agent} {field} का समर्थन नहीं करता; इ
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex पहले से ही अपना OAuth कॉलबैक पोर्ट {found} पर सेट करता है, इसलिए इसे {wanted} पर सेट करने के बजाय जस का तस छोड़ दिया गया।"
 
+msgid "mcp.field.description"
+msgstr "विवरण"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "यह सर्वर किसलिए है"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "मान चुनें"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} अब सहेजे गए मान को स्वीकार नहीं करता, इसलिए इसके बजाय {value} चुना गया।"
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} में चुनने के लिए कोई विकल्प नहीं है, इसलिए इसका सहेजा गया मान जस का तस छोड़ दिया गया।"
+
+msgid "mcp.error.invalidOption"
+msgstr "दिए गए मानों में से कोई एक चुनें।"
+
 msgid "settings.comingSoon"
 msgstr "सेटिंग्स स्क्रीन जल्द आ रही है।"
 

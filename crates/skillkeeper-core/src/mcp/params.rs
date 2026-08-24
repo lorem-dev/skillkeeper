@@ -11,6 +11,7 @@ use regex::{Captures, Regex};
 use thiserror::Error;
 
 use crate::mcp::model::{McpOauth, McpServerDef};
+use crate::mcp::writers::UpsertNote;
 
 /// Matches a `{param}` placeholder; capture group 1 is the parameter name.
 fn placeholder_re() -> Regex {
@@ -181,6 +182,8 @@ pub fn render_params(
             client_id: oauth.client_id.as_deref().map(&render),
             scopes: oauth.scopes.iter().map(|s| render(s)).collect(),
         }),
+        description: def.description.clone(),
+        parameters: def.parameters.clone(),
     };
 
     let missing = missing.into_inner();
@@ -191,10 +194,67 @@ pub fn render_params(
     Ok(out)
 }
 
+/// Stored values that name something outside their parameter's options.
+/// A parameter with no options accepts anything. Sorted by parameter name.
+#[must_use]
+pub fn invalid_option_values(
+    def: &McpServerDef,
+    values: &BTreeMap<String, String>,
+) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    for (name, parameter) in &def.parameters {
+        if parameter.options.is_empty() {
+            continue;
+        }
+        if let Some(value) = values.get(name) {
+            if !parameter.options.iter().any(|o| &o.value == value) {
+                out.push((name.clone(), value.clone()));
+            }
+        }
+    }
+    out
+}
+
+/// Bring `values` back in line with `def`'s options, reporting every change.
+///
+/// A stored value outside a non-empty option set is replaced by the FIRST
+/// option -- well defined because options are an ordered list. An empty option
+/// set leaves the value untouched: clearing it would break an installation that
+/// currently works, and an empty set is an authoring mistake rather than an
+/// instruction.
+#[must_use]
+pub fn migrate_option_values(
+    def: &McpServerDef,
+    values: &mut BTreeMap<String, String>,
+) -> Vec<UpsertNote> {
+    let mut notes = Vec::new();
+    for (name, parameter) in &def.parameters {
+        let Some(current) = values.get(name).cloned() else {
+            continue;
+        };
+        if parameter.options.iter().any(|o| o.value == current) {
+            continue;
+        }
+        match parameter.options.first() {
+            Some(first) => {
+                values.insert(name.clone(), first.value.clone());
+                notes.push(UpsertNote::OptionSubstituted {
+                    parameter: name.clone(),
+                    value: first.value.clone(),
+                });
+            }
+            None => notes.push(UpsertNote::OptionsEmpty {
+                parameter: name.clone(),
+            }),
+        }
+    }
+    notes
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::model::McpTransport;
+    use crate::mcp::model::{McpOption, McpParameter, McpTransport};
 
     fn map(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
         pairs
@@ -216,6 +276,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -230,6 +292,8 @@ mod tests {
             env: None,
             rules: Some("host={host}".to_string()),
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -250,6 +314,8 @@ mod tests {
             env: Some(map(&[("E", "{b}")])),
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         assert_eq!(parse_params(&def), vec!["a", "b"]);
     }
@@ -283,6 +349,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         let out = render_params(&def, &map(&[("a", "A")])).unwrap();
         assert_eq!(out.args, Some(vec!["A".to_string()]));
@@ -436,5 +504,137 @@ mod tests {
             "`scanMcpParams` and `string_fields` scan different fields; update \
              both or neither"
         );
+    }
+
+    fn choice_def(pairs: &[(&str, &str)]) -> McpServerDef {
+        let mut parameters = BTreeMap::new();
+        parameters.insert(
+            "choice".to_string(),
+            McpParameter {
+                description: None,
+                options: pairs
+                    .iter()
+                    .map(|(v, l)| McpOption {
+                        value: (*v).to_string(),
+                        label: (*l).to_string(),
+                    })
+                    .collect(),
+            },
+        );
+        McpServerDef {
+            parameters,
+            ..http_def()
+        }
+    }
+
+    fn values(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
+        pairs
+            .iter()
+            .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn a_value_outside_the_options_is_invalid() {
+        let def = choice_def(&[("a", "Ay"), ("b", "Bee")]);
+        assert_eq!(
+            invalid_option_values(&def, &values(&[("choice", "c")])),
+            vec![("choice".to_string(), "c".to_string())]
+        );
+        assert!(invalid_option_values(&def, &values(&[("choice", "a")])).is_empty());
+    }
+
+    #[test]
+    fn invalid_option_values_are_sorted_by_parameter_name() {
+        // Two invalid parameters, inserted in reverse alphabetical order: a
+        // regression from the `BTreeMap` iteration this documents to plain
+        // insertion order would flip this result and nothing else would catch
+        // it, since every other case here uses only one invalid parameter.
+        let mut parameters = BTreeMap::new();
+        parameters.insert(
+            "zulu".to_string(),
+            McpParameter {
+                description: None,
+                options: vec![McpOption {
+                    value: "z1".to_string(),
+                    label: "Z1".to_string(),
+                }],
+            },
+        );
+        parameters.insert(
+            "alpha".to_string(),
+            McpParameter {
+                description: None,
+                options: vec![McpOption {
+                    value: "a1".to_string(),
+                    label: "A1".to_string(),
+                }],
+            },
+        );
+        let def = McpServerDef {
+            parameters,
+            ..http_def()
+        };
+        let bad = values(&[("zulu", "bad-z"), ("alpha", "bad-a")]);
+        assert_eq!(
+            invalid_option_values(&def, &bad),
+            vec![
+                ("alpha".to_string(), "bad-a".to_string()),
+                ("zulu".to_string(), "bad-z".to_string()),
+            ],
+            "entries must come out sorted by parameter name"
+        );
+    }
+
+    #[test]
+    fn a_parameter_without_options_accepts_anything() {
+        let def = choice_def(&[]);
+        assert!(invalid_option_values(&def, &values(&[("choice", "whatever")])).is_empty());
+    }
+
+    #[test]
+    fn a_removed_option_falls_back_to_the_first_and_is_reported() {
+        let def = choice_def(&[("a", "Ay"), ("b", "Bee")]);
+        let mut v = values(&[("choice", "gone")]);
+        let notes = migrate_option_values(&def, &mut v);
+        assert_eq!(
+            v.get("choice").map(String::as_str),
+            Some("a"),
+            "first option, in document order"
+        );
+        assert_eq!(
+            notes,
+            vec![UpsertNote::OptionSubstituted {
+                parameter: "choice".to_string(),
+                value: "a".to_string()
+            }],
+            "silently rewriting a value the user chose is exactly what must not happen"
+        );
+    }
+
+    #[test]
+    fn an_empty_option_set_leaves_the_stored_value_alone_and_warns() {
+        let def = choice_def(&[]);
+        let mut v = values(&[("choice", "kept")]);
+        let notes = migrate_option_values(&def, &mut v);
+        assert_eq!(
+            v.get("choice").map(String::as_str),
+            Some("kept"),
+            "clearing would break a working install"
+        );
+        assert_eq!(
+            notes,
+            vec![UpsertNote::OptionsEmpty {
+                parameter: "choice".to_string()
+            }]
+        );
+    }
+
+    #[test]
+    fn a_still_valid_value_is_neither_changed_nor_reported() {
+        let def = choice_def(&[("a", "Ay"), ("b", "Bee")]);
+        let mut v = values(&[("choice", "b")]);
+        assert!(migrate_option_values(&def, &mut v).is_empty());
+        assert_eq!(v.get("choice").map(String::as_str), Some("b"));
     }
 }

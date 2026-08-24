@@ -997,6 +997,24 @@ msgstr "{agent} non supporta {field}; non è stato scritto."
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex imposta già la sua porta di callback OAuth su {found}, quindi è stata lasciata invariata invece di essere impostata su {wanted}."
 
+msgid "mcp.field.description"
+msgstr "Descrizione"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "A cosa serve questo server"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "Scegli un valore"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} non accetta più il valore memorizzato, quindi è stato selezionato {value} al suo posto."
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} non ha opzioni tra cui scegliere, quindi il suo valore memorizzato è stato lasciato invariato."
+
+msgid "mcp.error.invalidOption"
+msgstr "Scegli uno dei valori proposti."
+
 msgid "settings.comingSoon"
 msgstr "La schermata delle impostazioni arriverà a breve."
 

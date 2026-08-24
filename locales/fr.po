@@ -952,6 +952,24 @@ msgstr "{agent} ne prend pas en charge {field} ; il n'a pas été écrit."
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex définit déjà son port de rappel OAuth sur {found}, il a donc été laissé tel quel plutôt que d'être défini sur {wanted}."
 
+msgid "mcp.field.description"
+msgstr "Description"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "À quoi sert ce serveur"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "Choisir une valeur"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} n'accepte plus la valeur enregistrée, donc {value} a été sélectionné à la place."
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} n'a aucune option au choix, donc sa valeur enregistrée a été laissée telle quelle."
+
+msgid "mcp.error.invalidOption"
+msgstr "Choisissez l'une des valeurs proposées."
+
 msgid "settings.comingSoon"
 msgstr "L'écran des paramètres arrive bientôt."
 

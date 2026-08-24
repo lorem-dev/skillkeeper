@@ -67,6 +67,13 @@ pub enum UpsertNote {
     /// or only the url -- and reporting any of those as a clamped number would
     /// tell the user something untrue about their own file.
     CodexCallbackConflict { found: String, wanted: u16 },
+    /// A stored parameter value was no longer among its options, so the first
+    /// option replaced it. Reported because silently rewriting a value the user
+    /// chose is the failure this channel exists to prevent.
+    OptionSubstituted { parameter: String, value: String },
+    /// A parameter declares an empty option set, so no substitution was
+    /// possible and the stored value was left untouched.
+    OptionsEmpty { parameter: String },
 }
 
 /// The result of an upsert: the rewritten config text, plus any notes. A note
@@ -750,6 +757,8 @@ mod tests {
             env: Some(env),
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -764,6 +773,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -780,6 +791,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -794,6 +807,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -932,6 +947,8 @@ mod tests {
                 client_id: client_id.map(str::to_string),
                 scopes: scopes.into_iter().map(str::to_string).collect(),
             }),
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -1592,6 +1609,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -1634,6 +1653,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         let bad_http = McpServerDef {
             name: "x".to_string(),
@@ -1645,6 +1666,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         let claude = writer_for(AgentKind::Claude);
         assert!(claude.upsert("", "x", &bad_stdio).is_err());

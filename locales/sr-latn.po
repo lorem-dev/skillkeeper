@@ -966,6 +966,30 @@ msgstr "{agent} ne podržava {field}; to nije zapisano."
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex već postavlja svoj OAuth povratni port na {found}, pa je ostavljen nepromenjen umesto da bude postavljen na {wanted}."
 
+#, fuzzy
+msgid "mcp.field.description"
+msgstr "Opis"
+
+#, fuzzy
+msgid "mcp.descriptionPlaceholder"
+msgstr "Čemu služi ovaj server"
+
+#, fuzzy
+msgid "mcp.param.choosePlaceholder"
+msgstr "Izaberite vrednost"
+
+#, fuzzy
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} više ne prihvata sačuvanu vrednost, pa je umesto nje izabrano {value}."
+
+#, fuzzy
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} nema opcija za izbor, pa je njegova sačuvana vrednost ostala nepromenjena."
+
+#, fuzzy
+msgid "mcp.error.invalidOption"
+msgstr "Izaberite jednu od ponuđenih vrednosti."
+
 msgid "settings.comingSoon"
 msgstr "Ekran podešavanja uskoro stiže."
 

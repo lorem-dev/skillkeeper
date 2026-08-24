@@ -997,6 +997,24 @@ msgstr "{agent} no admite {field}; no se escribió."
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex ya establece su puerto de devolución de llamada de OAuth en {found}, por lo que se dejó como estaba en lugar de establecerlo en {wanted}."
 
+msgid "mcp.field.description"
+msgstr "Descripción"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "Para qué sirve este servidor"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "Elegir un valor"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} ya no acepta el valor guardado, así que se seleccionó {value} en su lugar."
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} no tiene opciones para elegir, así que su valor guardado se dejó como estaba."
+
+msgid "mcp.error.invalidOption"
+msgstr "Elige uno de los valores ofrecidos."
+
 msgid "settings.comingSoon"
 msgstr "La pantalla de ajustes llegará pronto."
 

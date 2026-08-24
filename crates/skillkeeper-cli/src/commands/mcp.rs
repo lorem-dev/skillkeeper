@@ -21,7 +21,11 @@ use skillkeeper_config::schema::McpOauth as ConfigOauth;
 use skillkeeper_config::{McpPreset, McpTransport as ConfigTransport};
 use skillkeeper_core::git_remote::normalize_remote;
 use skillkeeper_core::mcp::discovery::preset_group_dirs;
+use skillkeeper_core::mcp::markup::{
+    parse_description, truncate_spans, DescriptionSpan, DESCRIPTION_BUDGET,
+};
 use skillkeeper_core::mcp::model::McpOauth;
+use skillkeeper_core::mcp::params::{invalid_option_values, migrate_option_values};
 use skillkeeper_core::mcp::{
     hash_mcp_def, install_mcp_instance, mcp_destination, missing_params, parse_mcp_config,
     parse_skmcp, parse_skmcp_params, remove_mcp_instance, supports_oauth, supports_transport,
@@ -142,6 +146,24 @@ fn transport_str(t: McpTransport) -> &'static str {
     }
 }
 
+/// Render description spans for a terminal: a link becomes its text followed by
+/// its URL in parentheses. No escaping is needed and none is applied.
+fn render_spans_for_terminal(spans: &[DescriptionSpan]) -> String {
+    let mut out = String::new();
+    for span in spans {
+        match span {
+            DescriptionSpan::Text { text } => out.push_str(text),
+            DescriptionSpan::Link { text, url } => {
+                out.push_str(text);
+                out.push_str(" (");
+                out.push_str(url);
+                out.push(')');
+            }
+        }
+    }
+    out
+}
+
 /// One line for a writer note, shaped like the `Skipped ...` lines beside it:
 /// what the agent could not do, and what happened instead. Printed to stdout
 /// with the install it belongs to -- the install succeeded, so this is not an
@@ -154,6 +176,14 @@ fn note_line(agent: AgentKind, note: &UpsertNote) -> String {
         UpsertNote::CodexCallbackConflict { found, wanted } => format!(
             "Note {agent}: oauth callback port is already {found}; left alone (this server asked for {wanted})."
         ),
+        UpsertNote::OptionSubstituted { parameter, value } => format!(
+            "Note {agent}: \"{parameter}\" no longer offers its stored value; using \"{value}\" instead."
+        ),
+        UpsertNote::OptionsEmpty { parameter } => {
+            format!(
+                "Note {agent}: \"{parameter}\" has no options to choose from; its stored value was kept as-is."
+            )
+        }
     }
 }
 
@@ -194,6 +224,9 @@ fn preset_to_def(preset: &McpPreset) -> McpServerDef {
         // silently install a manual preset without the auth it asked for, and
         // would keep the `supports_oauth` gate below from ever seeing one.
         oauth: preset.oauth.as_ref().map(to_core_oauth),
+        description: preset.description.clone(),
+        // Manual presets have no config-side equivalent yet.
+        parameters: BTreeMap::new(),
     }
 }
 
@@ -477,6 +510,10 @@ pub fn list(ctx: &McpCtx, out: &mut dyn Write, err: &mut dyn Write) -> Result<i3
             p.origin,
             transport_str(p.def.transport),
         )?;
+        if let Some(description) = &p.def.description {
+            let spans = truncate_spans(parse_description(description), DESCRIPTION_BUDGET);
+            writeln!(out, "    {}", render_spans_for_terminal(&spans))?;
+        }
     }
     Ok(0)
 }
@@ -513,6 +550,23 @@ pub fn install(
             "Missing values for mcp params: {}. Pass --param <name>=<value>.",
             missing.join(", ")
         )?;
+        return Ok(1);
+    }
+    let invalid = invalid_option_values(&preset.def, &values);
+    if !invalid.is_empty() {
+        for (name, value) in &invalid {
+            let accepted: Vec<&str> = preset
+                .def
+                .parameters
+                .get(name)
+                .map(|p| p.options.iter().map(|o| o.value.as_str()).collect())
+                .unwrap_or_default();
+            writeln!(
+                err,
+                "Invalid value \"{value}\" for mcp param \"{name}\". Accepted: {}.",
+                accepted.join(", ")
+            )?;
+        }
         return Ok(1);
     }
 
@@ -774,6 +828,10 @@ pub fn update(
             for (key, value) in &override_params {
                 merged.insert(key.clone(), value.clone());
             }
+            // Bring a stored option value back in line with the source's
+            // current options before anything else checks or uses `merged`:
+            // a value an earlier install recorded may no longer be offered.
+            let option_notes = migrate_option_values(&current.def, &mut merged);
             // Rewritten without its auth block, this server would look
             // updated and fail to authenticate. Declining is the honest
             // outcome -- and it must happen before the remove below, or the
@@ -846,6 +904,9 @@ pub fn update(
             .map_err(|e| CliError(e.to_string()))?;
             updated += 1;
             writeln!(out, "Updated: {} ({})", entry.name, scope.agent)?;
+            for note in &option_notes {
+                writeln!(out, "{}", note_line(scope.agent, note))?;
+            }
             for note in &outcome.notes {
                 writeln!(out, "{}", note_line(scope.agent, note))?;
             }
@@ -1020,6 +1081,17 @@ mod tests {
         )
     }
 
+    /// A MemFs with one repo carrying a stdio preset with one
+    /// option-constrained parameter, "choice" (accepted values alpha/beta).
+    /// The parameter is not tied to any `{placeholder}`: the option check
+    /// applies to a stored value regardless of whether it is ever rendered.
+    fn choice_fs() -> MemFs {
+        MemFs::new().with_file(
+            "/repos/r1/mcp.yml",
+            "version: 1\nservers:\n  - name: opts\n    type: stdio\n    command: npx\n    parameters:\n      choice:\n        options:\n          alpha: Alpha\n          beta: Beta\n",
+        )
+    }
+
     /// A manual (config-defined) http preset carrying an oauth client.
     fn manual_oauth_preset() -> McpPreset {
         McpPreset {
@@ -1032,12 +1104,239 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            description: None,
             oauth: Some(ConfigOauth {
                 callback_port: Some(8432),
                 client_id: Some("sk-client".to_string()),
                 scopes: vec!["repo".to_string()],
             }),
         }
+    }
+
+    #[test]
+    fn preset_to_def_carries_the_manual_presets_description() {
+        let mut preset = manual_oauth_preset();
+        preset.description = Some("A [doc](https://mcp.example.com/d)".to_string());
+        let def = preset_to_def(&preset);
+        assert_eq!(
+            def.description.as_deref(),
+            Some("A [doc](https://mcp.example.com/d)")
+        );
+        assert!(def.parameters.is_empty());
+    }
+
+    /// Runs the real `list` over a single repo preset whose description is
+    /// `description`, and captures the outcome.
+    fn run_list_with_description(description: &str) -> (i32, String, String) {
+        let text = format!(
+            "version: 1\nservers:\n  - name: github\n    type: stdio\n    command: npx\n    description: \"{description}\"\n"
+        );
+        let fs = MemFs::new().with_file("/repos/r1/mcp.yml", &text);
+        let app = TestApp::new(fs);
+        seed_state(&app.fs);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = list(&app.ctx(), &mut out, &mut err).unwrap();
+        (
+            code,
+            String::from_utf8(out).unwrap(),
+            String::from_utf8(err).unwrap(),
+        )
+    }
+
+    /// Installs the `choice_fs` preset for claude with `choice=<value>`.
+    /// Returns the app too, so a refusal test can assert nothing was written.
+    fn run_install_with_choice(value: &str) -> (TestApp, i32, String, String) {
+        let app = TestApp::new(choice_fs());
+        seed_state(&app.fs);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(
+            &app.ctx(),
+            "opts",
+            Some(PROJECT),
+            &["claude".to_string()],
+            &[format!("choice={value}")],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        (
+            app,
+            code,
+            String::from_utf8(out).unwrap(),
+            String::from_utf8(err).unwrap(),
+        )
+    }
+
+    /// Installs the `choice_fs` preset with `choice=alpha`, then drops "alpha"
+    /// from the source's options (leaving only "beta") and runs `update`. The
+    /// stored value is now outside the options, so the update must migrate it
+    /// instead of failing.
+    fn run_update_after_removing_the_stored_option() -> (i32, String, String) {
+        let app = TestApp::new(choice_fs());
+        seed_state(&app.fs);
+        let mut sink = Vec::new();
+        let mut sink2 = Vec::new();
+        install(
+            &app.ctx(),
+            "opts",
+            Some(PROJECT),
+            &["claude".to_string()],
+            &["choice=alpha".to_string()],
+            false,
+            &mut sink,
+            &mut sink2,
+        )
+        .unwrap();
+
+        app.fs
+            .write_file(
+                "/repos/r1/mcp.yml",
+                "version: 1\nservers:\n  - name: opts\n    type: stdio\n    command: npx\n    parameters:\n      choice:\n        options:\n          beta: Beta\n",
+            )
+            .unwrap();
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = update(
+            &app.ctx(),
+            None,
+            Some(PROJECT),
+            &["claude".to_string()],
+            false,
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        (
+            code,
+            String::from_utf8(out).unwrap(),
+            String::from_utf8(err).unwrap(),
+        )
+    }
+
+    /// Installs the `choice_fs` preset with `choice=alpha`, then empties the
+    /// source's option list entirely (leaving `choice` with nothing to
+    /// choose from) and runs `update`. The stored value has nothing left to
+    /// validate against, so the update must keep it and report the empty
+    /// set rather than fail.
+    fn run_update_after_the_options_go_empty() -> (i32, String, String) {
+        let app = TestApp::new(choice_fs());
+        seed_state(&app.fs);
+        let mut sink = Vec::new();
+        let mut sink2 = Vec::new();
+        install(
+            &app.ctx(),
+            "opts",
+            Some(PROJECT),
+            &["claude".to_string()],
+            &["choice=alpha".to_string()],
+            false,
+            &mut sink,
+            &mut sink2,
+        )
+        .unwrap();
+
+        app.fs
+            .write_file(
+                "/repos/r1/mcp.yml",
+                "version: 1\nservers:\n  - name: opts\n    type: stdio\n    command: npx\n    parameters:\n      choice: {}\n",
+            )
+            .unwrap();
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = update(
+            &app.ctx(),
+            None,
+            Some(PROJECT),
+            &["claude".to_string()],
+            false,
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        (
+            code,
+            String::from_utf8(out).unwrap(),
+            String::from_utf8(err).unwrap(),
+        )
+    }
+
+    #[test]
+    fn list_prints_a_truncated_description_with_links_as_text_and_url() {
+        // Exercised through the real `list`, so the wiring is covered, not just
+        // the helper.
+        let (code, out, _err) =
+            run_list_with_description("See [docs](https://mcp.example.com/mcp).");
+        assert_eq!(code, 0);
+        assert!(
+            out.contains("See docs (https://mcp.example.com/mcp)."),
+            "got {out}"
+        );
+    }
+
+    #[test]
+    fn list_truncates_an_over_long_description() {
+        // Longer than DESCRIPTION_BUDGET: the full string must never reach the
+        // terminal, and the cut must be marked.
+        let long = "x".repeat(DESCRIPTION_BUDGET + 50);
+        let (code, out, _err) = run_list_with_description(&long);
+        assert_eq!(code, 0);
+        assert!(
+            !out.contains(&long),
+            "the untruncated description must not appear: {out}"
+        );
+        assert!(
+            out.contains("..."),
+            "expected an ellipsis marking the cut: {out}"
+        );
+    }
+
+    #[test]
+    fn install_refuses_a_value_outside_the_options_and_names_the_accepted_ones() {
+        let (app, code, _out, err) = run_install_with_choice("nope");
+        assert_eq!(code, 1);
+        assert!(err.contains("choice"), "got {err}");
+        assert!(
+            err.contains("alpha") && err.contains("beta"),
+            "the accepted values must be named: {err}"
+        );
+        // A refusal is not a partial install: the check runs before any
+        // agent is touched, so neither the native config nor the ledger
+        // exists. A check that ran AFTER a write would still return 1 here
+        // and this would be the only thing to catch it.
+        assert!(!app.fs.exists("/proj/.mcp.json").unwrap());
+        assert!(!app
+            .fs
+            .exists(&format!("/proj/.claude/skills/{SKMCP_FILE}"))
+            .unwrap());
+    }
+
+    #[test]
+    fn install_accepts_a_value_that_is_one_of_the_options() {
+        let (_app, code, _out, _err) = run_install_with_choice("alpha");
+        assert_eq!(code, 0);
+    }
+
+    #[test]
+    fn update_reports_a_substituted_option_and_does_not_fail() {
+        let (code, out, _err) = run_update_after_removing_the_stored_option();
+        assert_eq!(code, 0, "a reported substitution is not a failure");
+        assert!(out.contains("choice"), "got {out}");
+    }
+
+    #[test]
+    fn update_reports_an_empty_option_set_and_does_not_fail() {
+        let (code, out, _err) = run_update_after_the_options_go_empty();
+        assert_eq!(code, 0, "a reported empty option set is not a failure");
+        assert!(out.contains("choice"), "got {out}");
     }
 
     fn seed_state(fs: &MemFs) {

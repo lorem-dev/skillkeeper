@@ -51,7 +51,7 @@ pub fn hash_mcp_def(def: &McpServerDef) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::model::{McpOauth, McpTransport};
+    use crate::mcp::model::{McpOauth, McpOption, McpParameter, McpTransport};
     use std::collections::BTreeMap;
 
     fn http(name: &str, url: Option<&str>, rules: Option<&str>) -> McpServerDef {
@@ -65,6 +65,8 @@ mod tests {
             env: None,
             rules: rules.map(str::to_string),
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -83,6 +85,8 @@ mod tests {
                 callback_port: None,
                 scopes,
             }),
+            description: None,
+            parameters: BTreeMap::new(),
         }
     }
 
@@ -111,6 +115,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         let b = McpServerDef {
             name: "x".to_string(),
@@ -122,6 +128,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         assert_eq!(canonical_mcp_json(&a), canonical_mcp_json(&b));
     }
@@ -167,6 +175,8 @@ mod tests {
             env: Some(e1),
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         let b = McpServerDef {
             name: "x".to_string(),
@@ -178,6 +188,8 @@ mod tests {
             env: Some(e2),
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         assert_eq!(hash_mcp_def(&a), hash_mcp_def(&b));
     }
@@ -194,6 +206,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         let b = McpServerDef {
             name: "x".to_string(),
@@ -205,6 +219,8 @@ mod tests {
             env: None,
             rules: None,
             oauth: None,
+            description: None,
+            parameters: BTreeMap::new(),
         };
         assert_ne!(hash_mcp_def(&a), hash_mcp_def(&b));
     }
@@ -273,5 +289,60 @@ mod tests {
             scopes: vec!["read".to_string()],
         });
         assert_ne!(hash_mcp_def(&without), hash_mcp_def(&with));
+    }
+
+    fn def_with_options(pairs: Vec<(&str, &str)>) -> McpServerDef {
+        let mut parameters = BTreeMap::new();
+        parameters.insert(
+            "choice".to_string(),
+            McpParameter {
+                description: Some("Pick".to_string()),
+                options: pairs
+                    .into_iter()
+                    .map(|(v, l)| McpOption {
+                        value: v.to_string(),
+                        label: l.to_string(),
+                    })
+                    .collect(),
+            },
+        );
+        McpServerDef {
+            name: "remote".to_string(),
+            transport: McpTransport::Http,
+            url: Some("https://mcp.example.com/mcp".to_string()),
+            headers: None,
+            command: None,
+            args: None,
+            env: None,
+            rules: None,
+            oauth: None,
+            description: None,
+            parameters,
+        }
+    }
+
+    #[test]
+    fn reordering_options_changes_the_hash() {
+        let mut a = def_with_options(vec![("a", "Ay"), ("b", "Bee")]);
+        let b = def_with_options(vec![("b", "Bee"), ("a", "Ay")]);
+        assert_ne!(
+            hash_mcp_def(&a),
+            hash_mcp_def(&b),
+            "option order decides which option is 'first' on migration, so it must be part of the hash"
+        );
+        a.parameters.clear();
+        assert_ne!(hash_mcp_def(&a), hash_mcp_def(&b));
+    }
+
+    #[test]
+    fn a_description_change_changes_the_hash() {
+        let mut a = def_with_options(vec![("a", "Ay")]);
+        let b = McpServerDef {
+            description: Some("changed".to_string()),
+            ..a.clone()
+        };
+        assert_ne!(hash_mcp_def(&a), hash_mcp_def(&b));
+        a.description = Some("changed".to_string());
+        assert_eq!(hash_mcp_def(&a), hash_mcp_def(&b));
     }
 }

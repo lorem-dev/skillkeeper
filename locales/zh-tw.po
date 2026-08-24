@@ -862,6 +862,24 @@ msgstr "{agent} 不支援 {field},因此未寫入。"
 msgid "mcp.codexCallbackConflict"
 msgstr "Codex 已將其 OAuth 回呼連接埠設為 {found},因此保持不變,而非設為 {wanted}。"
 
+msgid "mcp.field.description"
+msgstr "描述"
+
+msgid "mcp.descriptionPlaceholder"
+msgstr "此伺服器的用途"
+
+msgid "mcp.param.choosePlaceholder"
+msgstr "選擇一個值"
+
+msgid "mcp.note.optionSubstituted"
+msgstr "{parameter} 不再接受已儲存的值,因此改為選擇 {value}。"
+
+msgid "mcp.note.optionsEmpty"
+msgstr "{parameter} 沒有可供選擇的選項,因此其已儲存的值保持不變。"
+
+msgid "mcp.error.invalidOption"
+msgstr "請選擇所提供的值之一。"
+
 msgid "settings.comingSoon"
 msgstr "設定畫面即將推出。"
 
