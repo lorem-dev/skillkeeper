@@ -13,6 +13,7 @@ pub mod gitignore_ensure;
 pub mod hashing;
 pub mod install;
 pub mod lint;
+pub mod markup;
 pub mod model;
 pub mod naming;
 pub mod params;
@@ -27,6 +28,7 @@ pub use install::{
     install_mcp_instance, remove_mcp_instance, InstallMcpArgs, McpIdentity, McpInstallError,
     McpInstallOutcome, RemoveMcpArgs,
 };
+pub use markup::{parse_description, visible_len, DescriptionSpan};
 pub use model::{McpPresetOrigin, McpServerDef, McpTransport};
 pub use naming::{allocate_instance_name, to_snake_case};
 pub use params::{
