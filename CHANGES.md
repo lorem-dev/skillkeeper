@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.7.0
+
 ### Added
 
 - An MCP server definition can carry an `oauth` block for the agent's
