@@ -9,7 +9,7 @@
 - A `SKILL.md` can declare the skills of its own repository that it needs, as
   `skillkeeper.requires` or a flat `requires`.
 - Installing a skill installs its transitive dependencies. See
-  [Skills and Hooks](https://lorem-dev.github.io/skillkeeper/usage/skills-and-hooks/).
+  [Skills and Hooks](https://lorem-dev.github.io/skillkeeper/latest/usage/skills-and-hooks/).
 - `skillkeeper repo lint` reports what is statically wrong in a skill
   repository, with ten stable diagnostic codes and exit codes a CI gate can use.
 - `skill update` updates a skill's dependencies as well, and installs any the
