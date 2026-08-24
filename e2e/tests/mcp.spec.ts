@@ -23,7 +23,7 @@ describe('mcp', () => {
     const listed = sandbox.runOk(['mcp', 'list']).stdout;
     for (const name of [
       'filesystem', 'github', 'bare-stdio', 'docs-http', 'events-sse',
-      'oauth-http', 'oauth-stdio-invalid',
+      'oauth-http', 'oauth-stdio-invalid', 'docs-linked', 'docs-invalid',
     ]) {
       expect(listed).toContain(name);
     }
@@ -35,7 +35,9 @@ describe('mcp', () => {
     // first path segment, so a preset's group is the full directory path.
     expect(listed).toContain('platform/lint/lint-registry');
     expect(listed).toContain('platform/lint/rust/rust-registry');
-    expect(listed.trim().split('\n')).toHaveLength(10);
+    // 12 presets, one line each, plus one extra description line for each of
+    // the two that carry a `description` (docs-linked, docs-invalid).
+    expect(listed.trim().split('\n')).toHaveLength(14);
   });
 
   describe('install', () => {
