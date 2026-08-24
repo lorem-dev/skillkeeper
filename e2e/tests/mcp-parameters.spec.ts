@@ -1,13 +1,14 @@
 /**
  * MCP descriptions and options end to end: link rendering, description
- * truncation, option-value validation on install, and the SK018/SK019 lint
- * warnings. Model of `e2e/tests/mcp.spec.ts`; reuses the same fixture and
+ * truncation, option-value validation on install, and every mcp lint
+ * warning. Model of `e2e/tests/mcp.spec.ts`; reuses the same fixture and
  * harness rather than building a second one.
  *
  * The fixtures this exercises are `docs-linked` (a linked description plus a
  * described, option-constrained parameter) and `docs-invalid` (an over-long
- * description and a `parameters` entry no placeholder uses), both in the
- * fixture's root `mcp.yml` -- see its README's "MCP presets" section.
+ * description ending in a non-http link, a `parameters` entry no placeholder
+ * uses, and two options sharing one value), both in the fixture's root
+ * `mcp.yml` -- see its README's "MCP presets" section.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -44,7 +45,7 @@ describe('mcp descriptions and options', () => {
 
   it('truncates an over-long description to 128 visible characters, marked with an ellipsis', () => {
     const listed = sandbox.runOk(['mcp', 'list']).stdout;
-    const line = listed.split('\n').find((l) => l.trim().startsWith('This description exists only'));
+    const line = listed.split('\n').find((l) => l.trim().startsWith('This description exceeds the budget'));
     expect(line).toBeDefined();
     const text = (line ?? '').trim();
     expect(text.endsWith('...')).toBe(true);
@@ -225,17 +226,33 @@ describe('mcp descriptions and options', () => {
     });
   });
 
-  it('reports SK018 and SK019 as warnings', () => {
+  it('reports every mcp lint code as a warning', () => {
     // The fixture also ships pre-existing SK001-SK005 errors unrelated to MCP
     // (see check-fixture-repo's notes), so `repo lint` on this path exits 1
-    // regardless of these two codes. That is not what this test checks: it
-    // checks that SK018 and SK019 fire, and fire as warnings, not that a
-    // warning alone would fail the run -- `repo lint` fails only on an error.
+    // regardless of these codes. That is not what this test checks: it checks
+    // that each one fires, and fires as a warning, not that a warning alone
+    // would fail the run -- `repo lint` fails only on an error.
+    //
+    // All seven are asserted together because the fixture is the only place
+    // their CLI plumbing -- the message, the JSON shape, the severity -- is
+    // exercised at all. Four of them (SK016, SK017, SK021, SK022) tripped
+    // nothing in this repository until the fixture gained input for them, so a
+    // regression in any of the four passed the whole suite. SK020 is
+    // deliberately unassigned and must NOT appear.
     const result = sandbox.run(['repo', 'lint', '--path', FIXTURE_DIR, '--json']);
     const items = JSON.parse(result.stdout) as LintItem[];
-    const sk018 = items.find((d) => d.code === 'SK018');
-    const sk019 = items.find((d) => d.code === 'SK019');
-    expect(sk018?.severity).toBe('warning');
-    expect(sk019?.severity).toBe('warning');
+    const severities = Object.fromEntries(items.map((d) => [d.code, d.severity]));
+    // Asserted as one object so a failure names every code that is missing or
+    // wrong, rather than stopping at the first.
+    expect(severities).toMatchObject({
+      SK015: 'warning',
+      SK016: 'warning',
+      SK017: 'warning',
+      SK018: 'warning',
+      SK019: 'warning',
+      SK021: 'warning',
+      SK022: 'warning',
+    });
+    expect(severities['SK020']).toBeUndefined();
   });
 });
