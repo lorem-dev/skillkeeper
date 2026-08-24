@@ -42,6 +42,7 @@ export type {
   ApplyMcpArgs,
   ApplyMcpResult,
   McpInstalled,
+  McpSkipped,
   McpInstall,
   McpUpdateReq,
   UpdateMcpArgs,

@@ -88,6 +88,18 @@ fn build() -> Value {
     }
     defs.insert("McpServerDef".to_string(), server);
 
+    // `callback_port` derives from `u16`, so derivation says `minimum: 0` --
+    // which published a schema that accepts a port both `repo lint` (SK017) and
+    // the desktop editor reject. The schema is an AUTHORING surface, like the
+    // editor, so it agrees with the editor: zero is not a port.
+    if let Some(Value::Object(oauth)) = defs.get_mut("McpOauth") {
+        if let Some(Value::Object(props)) = oauth.get_mut("properties") {
+            if let Some(Value::Object(port)) = props.get_mut("callbackPort") {
+                port.insert("minimum".to_string(), json!(1));
+            }
+        }
+    }
+
     json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": SCHEMA_URL,
@@ -184,6 +196,13 @@ mod tests {
             names,
             ["args", "command", "env", "headers", "name", "oauth", "rules", "type", "url"]
         );
+    }
+
+    #[test]
+    fn rejects_a_zero_callback_port_like_every_other_authoring_surface() {
+        let port = build()["$defs"]["McpOauth"]["properties"]["callbackPort"].clone();
+        assert_eq!(port["minimum"], json!(1), "a port of 0 is not a port");
+        assert_eq!(port["maximum"], json!(65535));
     }
 
     #[test]

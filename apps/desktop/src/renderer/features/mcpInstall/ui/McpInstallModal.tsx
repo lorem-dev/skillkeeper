@@ -27,6 +27,7 @@ import { supportsTransport } from '../lib/supportsTransport';
 import { supportsOauth } from '../lib/supportsOauth';
 import { buildInstallBatches } from '../lib/buildBatches';
 import { installNotesToMessages } from '../lib/installNotesToMessages';
+import { mcpSkipsToMessages } from '../lib/mcpSkipsToMessages';
 import './McpInstallModal.scss';
 
 export interface McpInstallModalProps {
@@ -111,9 +112,10 @@ export function McpInstallModal({
       notify(result.error, 'error');
       return;
     }
-    if (result.skipped.length > 0) {
-      notify(t('mcp.skippedAgents', { count: String(result.skipped.length) }), 'info');
-    }
+    // One message per declined agent naming the rule that declined it: a
+    // transport skip and an oauth skip have different remedies, and a bare
+    // count told the user neither.
+    for (const message of mcpSkipsToMessages(result.skipped, t)) notify(message, 'info');
     // Deduplicated: two agents dropping the same field must not say it twice.
     for (const message of installNotesToMessages(result.installed, t)) notify(message, 'info');
     onClose();

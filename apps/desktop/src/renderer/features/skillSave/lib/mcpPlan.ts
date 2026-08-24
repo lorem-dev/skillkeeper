@@ -6,8 +6,11 @@
  * project (grouped by identity across agents), an agent ADDED to the chosen
  * set that does not yet have the instance yields an "install" row; an agent
  * REMOVED from the chosen set that has it yields a "remove" row. Only agents
- * whose native config can express the instance's transport are install
- * candidates (`supportsTransport`, reused from `features/mcpInstall/lib`).
+ * whose native config can express both the instance's transport and, when the
+ * preset carries one, an OAuth client are install candidates
+ * (`supportsTransport` and `supportsOauth`, reused from
+ * `features/mcpInstall/lib` -- the same pair `McpInstallModal` gates its agent
+ * checkboxes on, so the two planners agree).
  *
  * This lives in `features/skillSave/lib` rather than beside `applyPlan.ts`
  * (`entities/skill/lib`) because it needs `McpPreset` from `@/app/store`, and
@@ -32,16 +35,8 @@
 import type { AgentKind, McpBatch, McpIdentity, McpInstall, McpInstallReq } from '@/services/bridge';
 import type { McpPreset } from '@/app/store';
 import { normalizeMcpRemote } from '@/app/store';
-import { ALL_AGENTS, isGlobalScope } from '@/domain';
-import { supportsTransport } from '@/features/mcpInstall';
-
-/** The four project-scoped MCP agents; codex has no project-scoped MCP config
- *  (mirrors main's `PROJECT_MCP_AGENTS` and the same exclusion
- *  `pages/Mcp/lib/mcpTree.tsx` documents for task C7) so it is never an install
- *  candidate for a PROJECT plan. At the global scope codex is a legitimate
- *  agent (arguably the primary one), so a global plan's install candidates are
- *  `ALL_AGENTS` instead -- see `buildProjectMcpPlan`. */
-const PROJECT_MCP_AGENTS: readonly AgentKind[] = ['claude', 'cursor', 'copilot', 'opencode'];
+import { ALL_AGENTS } from '@/domain';
+import { supportsTransport, supportsOauth } from '@/features/mcpInstall';
 
 export interface McpChangeRow {
   /** Unique within a plan; `install:<identityKey>` or `remove:<identityKey>`. */
@@ -109,9 +104,6 @@ export function buildProjectMcpPlan(
 ): McpProjectPlan {
   const chosen = new Set(chosenAgents);
   const projectInstalls = installs.filter((i) => i.projectId === projectId);
-  // Codex is only ever an install candidate at the global scope (it has no
-  // project-scoped MCP config); every other agent is a candidate everywhere.
-  const installCandidates = isGlobalScope(projectId) ? ALL_AGENTS : PROJECT_MCP_AGENTS;
 
   const groups = new Map<string, McpInstall[]>();
   for (const inst of projectInstalls) {
@@ -154,8 +146,18 @@ export function buildProjectMcpPlan(
     // remove-only, mirroring `applyPlan.ts`'s treatment of local skills.
     if (preset === undefined) continue;
 
-    const addAgents = installCandidates.filter(
-      (agent) => chosen.has(agent) && !installedAgents.has(agent) && supportsTransport(agent, preset.def.type),
+    // A preset carrying an oauth block is declined by the backend for any
+    // agent that cannot express an OAuth client, exactly as an unexpressible
+    // transport is (`apply` in `src-tauri/src/commands/mcp.rs`). Both gates
+    // therefore have to be applied HERE too: planning an install the backend
+    // will decline puts a row in front of the user promising something that
+    // then quietly does not happen.
+    const addAgents = ALL_AGENTS.filter(
+      (agent) =>
+        chosen.has(agent) &&
+        !installedAgents.has(agent) &&
+        supportsTransport(agent, preset.def.type) &&
+        (preset.def.oauth === undefined || supportsOauth(agent)),
     );
     if (addAgents.length === 0) continue;
 

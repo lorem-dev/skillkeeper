@@ -34,10 +34,25 @@ describe('installNotesToMessages', () => {
 
   it('maps a codexCallbackConflict note to mcp.codexCallbackConflict with found/wanted as strings', () => {
     const targets = [
-      installed({ agent: 'codex', notes: [{ kind: 'codexCallbackConflict', found: 8080, wanted: 8432 }] }),
+      installed({ agent: 'codex', notes: [{ kind: 'codexCallbackConflict', found: '8080', wanted: 8432 }] }),
     ];
     expect(installNotesToMessages(targets, stubTranslator)).toEqual([
       'mcp.codexCallbackConflict|{"found":"8080","wanted":"8432"}',
+    ]);
+  });
+
+  it('passes a non-numeric found value through verbatim', () => {
+    // `found` is a rendered description, not a number: a config can hold a
+    // port hand-written as a quoted string, or only the callback url. The
+    // renderer must not reinterpret it.
+    const targets = [
+      installed({
+        agent: 'codex',
+        notes: [{ kind: 'codexCallbackConflict', found: '"http://localhost:9999/callback"', wanted: 8432 }],
+      }),
+    ];
+    expect(installNotesToMessages(targets, stubTranslator)).toEqual([
+      'mcp.codexCallbackConflict|{"found":"\\"http://localhost:9999/callback\\"","wanted":"8432"}',
     ]);
   });
 

@@ -212,20 +212,19 @@ export interface ApplyMcpArgs {
 }
 
 /**
- * One operation `applyMcp` declined to perform: an install whose transport the
- * agent cannot express, an install carrying an oauth client the agent cannot
- * express, or any operation in a codex batch that arrived at project scope
- * (codex's native config is user-wide only).
+ * One install `applyMcp` declined to perform: one whose transport the agent
+ * cannot express, or one carrying an oauth client the agent cannot express.
+ * Removes are never skipped -- they carry no def, so neither rule applies.
  */
 export interface McpSkipped {
   readonly agent: AgentKind;
-  /** The preset's source name for an install, the instance name for a remove. */
+  /** The preset's source name. */
   readonly source: string;
-  /** Which rule declined it. */
+  /** Which rule declined it; `mcpSkipsToMessages` turns it into a message. */
   readonly reason: 'transport' | 'oauth';
   /**
-   * The transport that could not be expressed; absent for a skipped remove and
-   * for an oauth skip, whose transport was perfectly expressible.
+   * The transport that could not be expressed; absent for an oauth skip, whose
+   * transport was perfectly expressible.
    */
   readonly transport?: McpTransport;
 }

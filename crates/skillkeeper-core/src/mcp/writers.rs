@@ -60,9 +60,13 @@ pub enum UpsertNote {
     /// The agent cannot express this field, so it was not written. `field` is
     /// the canonical name (`"callbackPort"`, `"scopes"`), not a native key.
     DroppedField { field: String },
-    /// Codex already sets its global callback port to something else, so it was
-    /// left alone.
-    CodexCallbackConflict { found: u16, wanted: u16 },
+    /// Codex already sets its global callback keys to something else, so they
+    /// were left alone. `found` is the existing value of whichever of the two
+    /// keys conflicts, rendered for display rather than typed: a hand-edited
+    /// config can hold a port outside `u16`, a port written as a quoted string,
+    /// or only the url -- and reporting any of those as a clamped number would
+    /// tell the user something untrue about their own file.
+    CodexCallbackConflict { found: String, wanted: u16 },
 }
 
 /// The result of an upsert: the rewritten config text, plus any notes. A note
@@ -161,6 +165,22 @@ fn to_copilot_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>)
     Ok((to_plain_server_json(def)?, Vec::new()))
 }
 
+/// A stdio def carrying an `oauth` block: the block is not written, and the
+/// drop is reported. `oauth` is meaningful only for `http` and `sse` (nothing
+/// authenticates a local subprocess), and nothing upstream of the writers
+/// rejects the combination -- so without this, a nonsense def either had an
+/// auth block written onto a stdio server object or had it silently discarded,
+/// differently per agent. Reporting is the rule the rest of this module
+/// follows: a dropped auth field must never read as configured.
+fn stdio_oauth_notes(def: &McpServerDef) -> Vec<UpsertNote> {
+    if def.transport == McpTransport::Stdio && def.oauth.is_some() {
+        return vec![UpsertNote::DroppedField {
+            field: "oauth".to_string(),
+        }];
+    }
+    Vec::new()
+}
+
 /// Claude Code's shape: an `oauth` object with camelCase keys, whose `scopes`
 /// is the single space-separated string of RFC 6749 section 3.3.
 fn to_claude_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>), WriterError> {
@@ -168,6 +188,10 @@ fn to_claude_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>),
     let Some(oauth) = &def.oauth else {
         return Ok((value, Vec::new()));
     };
+    let stdio_notes = stdio_oauth_notes(def);
+    if !stdio_notes.is_empty() {
+        return Ok((value, stdio_notes));
+    }
     let mut block = Map::new();
     if let Some(client_id) = &oauth.client_id {
         block.insert("clientId".into(), Value::String(client_id.clone()));
@@ -194,6 +218,10 @@ fn to_cursor_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>),
     let Some(oauth) = &def.oauth else {
         return Ok((value, Vec::new()));
     };
+    let stdio_notes = stdio_oauth_notes(def);
+    if !stdio_notes.is_empty() {
+        return Ok((value, stdio_notes));
+    }
     let mut notes = Vec::new();
     let mut block = Map::new();
     if let Some(client_id) = &oauth.client_id {
@@ -243,7 +271,7 @@ fn to_opencode_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>
         if let Some(env) = &def.env {
             obj.insert("environment".into(), str_map_to_json(env));
         }
-        return Ok((Value::Object(obj), Vec::new()));
+        return Ok((Value::Object(obj), stdio_oauth_notes(def)));
     }
     let url = def.url.as_ref().ok_or_else(|| {
         WriterError(format!(
@@ -387,7 +415,12 @@ fn parse_toml_root(text: &str) -> Result<toml::Table, WriterError> {
     toml::from_str::<toml::Table>(text).map_err(|e| WriterError(format!("invalid TOML: {e}")))
 }
 
-fn to_codex_server_object(def: &McpServerDef) -> Result<toml::Value, WriterError> {
+/// The codex server table, plus any notes raised building it (a stdio def
+/// carrying an `oauth` block has it dropped and said so, like every other
+/// writer).
+fn to_codex_server_object(
+    def: &McpServerDef,
+) -> Result<(toml::Value, Vec<UpsertNote>), WriterError> {
     match def.transport {
         McpTransport::Stdio => {
             let command = def.command.as_ref().ok_or_else(|| {
@@ -408,7 +441,7 @@ fn to_codex_server_object(def: &McpServerDef) -> Result<toml::Value, WriterError
             if let Some(env) = &def.env {
                 obj.insert("env".into(), toml::Value::Table(str_map_to_toml(env)));
             }
-            Ok(toml::Value::Table(obj))
+            Ok((toml::Value::Table(obj), stdio_oauth_notes(def)))
         }
         McpTransport::Http => {
             let url = def
@@ -444,7 +477,7 @@ fn to_codex_server_object(def: &McpServerDef) -> Result<toml::Value, WriterError
                     obj.insert("oauth".into(), toml::Value::Table(nested));
                 }
             }
-            Ok(toml::Value::Table(obj))
+            Ok((toml::Value::Table(obj), Vec::new()))
         }
         // Codex's support for sse over its remote client is unverified; keep it
         // rejected so `supports_transport` and this writer never disagree.
@@ -458,28 +491,46 @@ fn to_codex_server_object(def: &McpServerDef) -> Result<toml::Value, WriterError
 const CODEX_CALLBACK_PORT_KEY: &str = "mcp_oauth_callback_port";
 const CODEX_CALLBACK_URL_KEY: &str = "mcp_oauth_callback_url";
 
+/// Renders an existing config value for a conflict message. An integer prints
+/// bare; a string keeps its quotes, so a port hand-written as `"8432"` does not
+/// read identically to the number we wanted and leave the user with a message
+/// that makes no sense; anything else names its type, which is all there is
+/// useful to say about it.
+fn describe_toml_value(value: &toml::Value) -> String {
+    match value {
+        toml::Value::Integer(i) => i.to_string(),
+        toml::Value::String(s) => format!("{s:?}"),
+        other => other.type_str().to_string(),
+    }
+}
+
 /// Apply codex's two top-level OAuth callback keys.
 ///
 /// These are global, unlike every other native write SkillKeeper makes, which
 /// stays inside the table it owns. So the rules are deliberately conservative:
 /// write both or neither (the url is derived from the port, and a half-written
-/// pair is worse than none), write only when absent or already equal, and never
-/// remove -- another server or the user may depend on them.
+/// pair is worse than none), write only when each key is absent or already
+/// exactly the value we would write, and never remove -- another server or the
+/// user may depend on them.
+///
+/// BOTH keys are consulted, not only the port, and a port that is present but
+/// not an integer counts as a conflict rather than as nothing. A url standing
+/// on its own, or a port hand-written as `"8432"`, is a pre-existing value
+/// SkillKeeper did not set; silently rewriting a global setting that another
+/// server may depend on is the single thing this policy exists to prevent.
 fn apply_codex_callback_keys(root: &mut toml::Table, port: u16) -> Vec<UpsertNote> {
     let want_url = format!("http://localhost:{port}/callback");
-    let existing = root
+    let port_conflict = root
         .get(CODEX_CALLBACK_PORT_KEY)
-        .and_then(toml::Value::as_integer);
-    match existing {
-        Some(found) if found != i64::from(port) => {
-            return vec![UpsertNote::CodexCallbackConflict {
-                // A port outside u16 cannot have been written by us; clamp for
-                // reporting rather than panicking on a hand-edited config.
-                found: u16::try_from(found).unwrap_or(u16::MAX),
-                wanted: port,
-            }];
-        }
-        _ => {}
+        .filter(|value| value.as_integer() != Some(i64::from(port)));
+    let url_conflict = root
+        .get(CODEX_CALLBACK_URL_KEY)
+        .filter(|value| value.as_str() != Some(want_url.as_str()));
+    if let Some(found) = port_conflict.or(url_conflict) {
+        return vec![UpsertNote::CodexCallbackConflict {
+            found: describe_toml_value(found),
+            wanted: port,
+        }];
     }
     root.insert(
         CODEX_CALLBACK_PORT_KEY.to_string(),
@@ -504,13 +555,22 @@ impl McpConfigWriter for CodexTomlWriter {
             Some(toml::Value::Table(existing)) => existing.clone(),
             _ => toml::Table::new(),
         };
-        container.insert(name.to_string(), to_codex_server_object(def)?);
+        let (server, mut notes) = to_codex_server_object(def)?;
+        container.insert(name.to_string(), server);
         root.insert(
             CODEX_CONTAINER_KEY.to_string(),
             toml::Value::Table(container),
         );
-        let mut notes = Vec::new();
-        if let Some(port) = def.oauth.as_ref().and_then(|o| o.callback_port) {
+        // Gated on the transport, not just on the presence of a port: the two
+        // callback keys are GLOBAL and `remove` never takes them back out, so a
+        // stdio def carrying a nonsense `callback_port` would permanently
+        // mutate a user-wide codex setting on the strength of a field that was
+        // itself dropped two lines above.
+        let callback_port = match def.transport {
+            McpTransport::Stdio => None,
+            _ => def.oauth.as_ref().and_then(|o| o.callback_port),
+        };
+        if let Some(port) = callback_port {
             notes.extend(apply_codex_callback_keys(&mut root, port));
         }
         let text =
@@ -671,6 +731,7 @@ pub fn mcp_destination(
 mod tests {
     use super::*;
     use crate::hooks::region::{insert_region, wrap_region, InsertMode, WrapRegionOptions};
+    use crate::mcp::hashing::hash_mcp_def;
     use crate::mcp::model::McpOauth;
 
     fn stdio_def() -> McpServerDef {
@@ -912,17 +973,37 @@ mod tests {
     }
 
     #[test]
-    fn a_scope_containing_a_space_survives_the_claude_join_unambiguously() {
-        // Guards the canonical-list decision: a joined string must never be the
-        // stored form, and a scope with a space must not silently become two.
-        let def = oauth_def(None, None, vec!["read write"]);
-        let out = writer_for(AgentKind::Claude)
-            .upsert("", "remote", &def)
-            .expect("upsert");
-        let root: Value = serde_json::from_str(&out.text).expect("json");
+    fn the_claude_scope_join_is_lossy_which_is_why_the_stored_form_is_a_list() {
+        // The reason `scopes` is canonically a list. `["read write"]` and
+        // `["read", "write"]` are DIFFERENT scope sets that claude's
+        // space-joined wire format renders identically, so the join cannot be
+        // reversed and must never be the stored form.
+        let one_scope_with_a_space = oauth_def(None, None, vec!["read write"]);
+        let two_scopes = oauth_def(None, None, vec!["read", "write"]);
+
+        let joined = |def: &McpServerDef| -> String {
+            let out = writer_for(AgentKind::Claude)
+                .upsert("", "remote", def)
+                .expect("upsert");
+            let root: Value = serde_json::from_str(&out.text).expect("json");
+            root["mcpServers"]["remote"]["oauth"]["scopes"]
+                .as_str()
+                .expect("claude joins scopes into one string")
+                .to_string()
+        };
+        assert_eq!(joined(&one_scope_with_a_space), "read write");
         assert_eq!(
-            root["mcpServers"]["remote"]["oauth"]["scopes"],
-            "read write"
+            joined(&one_scope_with_a_space),
+            joined(&two_scopes),
+            "the join is lossy: splitting it back cannot recover which set it was"
+        );
+
+        // And the canonical list is what distinguishes them, so the two are not
+        // the same install and an update between them is detectable.
+        assert_ne!(
+            hash_mcp_def(&one_scope_with_a_space),
+            hash_mcp_def(&two_scopes),
+            "the list, unlike the joined string, keeps the two sets distinct"
         );
     }
 
@@ -1005,10 +1086,97 @@ mod tests {
         assert_eq!(
             out.notes,
             vec![UpsertNote::CodexCallbackConflict {
-                found: 9999,
+                found: "9999".to_string(),
                 wanted: 8432
             }]
         );
+    }
+
+    #[test]
+    fn codex_treats_a_lone_callback_url_as_a_conflict_rather_than_rewriting_it() {
+        // The url key with no port key beside it: the pair is read and written
+        // as a UNIT, so a url SkillKeeper did not write is not ours to replace
+        // just because the port key happens to be missing.
+        let existing = "mcp_oauth_callback_url = \"http://localhost:9999/callback\"\n";
+        let def = oauth_def(Some("example-client"), Some(8432), vec![]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert(existing, "remote", &def)
+            .expect("upsert");
+        let root: toml::Table = toml::from_str(&out.text).expect("toml");
+        assert_eq!(
+            root[CODEX_CALLBACK_URL_KEY].as_str(),
+            Some("http://localhost:9999/callback"),
+            "a global key we did not set is not ours to rewrite"
+        );
+        assert!(
+            root.get(CODEX_CALLBACK_PORT_KEY).is_none(),
+            "and the pair is not half-written either"
+        );
+        assert!(
+            root["mcp_servers"]["remote"].is_table(),
+            "the server is still written"
+        );
+        assert_eq!(
+            out.notes,
+            vec![UpsertNote::CodexCallbackConflict {
+                found: "\"http://localhost:9999/callback\"".to_string(),
+                wanted: 8432
+            }]
+        );
+    }
+
+    #[test]
+    fn codex_treats_a_callback_port_written_as_a_string_as_a_conflict() {
+        // A plausible hand-edit. `as_integer()` is None for it, which used to
+        // read as "no existing value" and silently overwrite the key.
+        let existing = "mcp_oauth_callback_port = \"8432\"\n";
+        let def = oauth_def(Some("example-client"), Some(8432), vec![]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert(existing, "remote", &def)
+            .expect("upsert");
+        let root: toml::Table = toml::from_str(&out.text).expect("toml");
+        assert_eq!(
+            root[CODEX_CALLBACK_PORT_KEY].as_str(),
+            Some("8432"),
+            "a global key we did not set is not ours to rewrite, whatever its type"
+        );
+        assert_eq!(
+            out.notes,
+            vec![UpsertNote::CodexCallbackConflict {
+                // Quoted, so the message cannot read as "already 8432, so it
+                // was left alone instead of being set to 8432".
+                found: "\"8432\"".to_string(),
+                wanted: 8432
+            }]
+        );
+    }
+
+    #[test]
+    fn codex_reports_an_out_of_range_callback_port_verbatim_rather_than_clamped() {
+        let existing = "mcp_oauth_callback_port = 70000\n";
+        let def = oauth_def(None, Some(8432), vec![]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert(existing, "remote", &def)
+            .expect("upsert");
+        assert_eq!(
+            out.notes,
+            vec![UpsertNote::CodexCallbackConflict {
+                found: "70000".to_string(),
+                wanted: 8432
+            }],
+            "clamping to 65535 told the user a number that is not in their file"
+        );
+    }
+
+    #[test]
+    fn codex_accepts_the_exact_pair_it_would_have_written() {
+        let existing = "mcp_oauth_callback_port = 8432\n\
+                        mcp_oauth_callback_url = \"http://localhost:8432/callback\"\n";
+        let def = oauth_def(None, Some(8432), vec![]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert(existing, "remote", &def)
+            .expect("upsert");
+        assert!(out.notes.is_empty());
     }
 
     #[test]
@@ -1045,6 +1213,53 @@ mod tests {
         let root: toml::Table = toml::from_str(&out.text).expect("toml");
         assert!(root.get("features").is_none());
         assert!(!out.text.contains("rmcp_client"));
+    }
+
+    /// A stdio def carrying an `oauth` block. Nothing upstream of the writers
+    /// rejects the combination (`repo lint` only warns, `McpConfig::is_valid`
+    /// checks names), so each writer has to handle it -- and used to handle it
+    /// five different ways, four of them unreported: claude and cursor wrote an
+    /// auth block onto a stdio server object, codex and opencode discarded it
+    /// in silence, and copilot alone was skipped and reported. Now every writer
+    /// drops it and says so.
+    #[test]
+    fn no_writer_puts_an_oauth_block_on_a_stdio_server_and_all_of_them_report_the_drop() {
+        let mut def = stdio_def();
+        def.oauth = Some(McpOauth {
+            callback_port: Some(8432),
+            client_id: Some("example-client".to_string()),
+            scopes: vec!["read".to_string()],
+        });
+        let expected = vec![UpsertNote::DroppedField {
+            field: "oauth".to_string(),
+        }];
+
+        for agent in [AgentKind::Claude, AgentKind::Cursor, AgentKind::Opencode] {
+            let out = writer_for(agent)
+                .upsert("", "local_1", &def)
+                .expect("upsert");
+            assert!(
+                !out.text.contains("example-client"),
+                "{agent} wrote an oauth client onto a stdio server"
+            );
+            assert!(
+                !out.text.contains("callbackPort") && !out.text.contains("CLIENT_ID"),
+                "{agent} wrote part of an auth block onto a stdio server"
+            );
+            assert_eq!(out.notes, expected, "{agent} dropped the block in silence");
+        }
+
+        let out = writer_for(AgentKind::Codex)
+            .upsert("", "local_1", &def)
+            .expect("upsert");
+        assert!(!out.text.contains("example-client"));
+        assert_eq!(out.notes, expected);
+        // The two callback keys are GLOBAL and `remove` never takes them back
+        // out, so writing them for a def whose oauth block was just dropped
+        // would permanently mutate a user-wide setting nothing asked for.
+        let root: toml::Table = toml::from_str(&out.text).expect("toml");
+        assert!(root.get(CODEX_CALLBACK_PORT_KEY).is_none());
+        assert!(root.get(CODEX_CALLBACK_URL_KEY).is_none());
     }
 
     #[test]

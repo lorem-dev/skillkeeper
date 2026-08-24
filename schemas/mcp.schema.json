@@ -7,7 +7,7 @@
           "description": "Fixed loopback port for the redirect URI. Absent lets the agent choose.",
           "format": "uint16",
           "maximum": 65535,
-          "minimum": 0,
+          "minimum": 1,
           "type": [
             "integer",
             "null"

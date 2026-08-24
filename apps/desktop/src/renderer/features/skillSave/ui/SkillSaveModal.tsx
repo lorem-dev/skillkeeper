@@ -19,7 +19,7 @@ import { Modal, Button, ProgressBar, Table, Icon, Badge, TextField } from '@/sha
 import type { TableColumn, TableRow } from '@/shared/ui';
 import { AGENT_LABELS, applyScope, GLOBAL_SCOPE_ID } from '@/domain';
 import { buildProjectPlan } from '@/entities/skill';
-import { buildInstallBatches } from '@/features/mcpInstall';
+import { buildInstallBatches, installNotesToMessages, mcpSkipsToMessages } from '@/features/mcpInstall';
 import { buildProjectMcpPlan } from '../lib/mcpPlan';
 import './SkillSaveModal.scss';
 
@@ -210,6 +210,12 @@ export function SkillSaveModal({ open, onClose, checkedIds, projectAgents }: Ski
         notify(result.error, 'error');
         return;
       }
+      // Reported for the same reason `McpInstallModal` reports them: without
+      // this the modal closes on unqualified success while an agent was
+      // declined or a writer dropped an auth field, and the user has no way to
+      // learn either.
+      for (const message of mcpSkipsToMessages(result.skipped, t)) notify(message, 'info');
+      for (const message of installNotesToMessages(result.installed, t)) notify(message, 'info');
     }
     onClose();
   }

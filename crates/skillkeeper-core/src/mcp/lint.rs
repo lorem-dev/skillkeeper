@@ -4,9 +4,14 @@
 //! repository you merely CONSUME must still resolve and install when one
 //! preset carries a bad auth block, the same reasoning that keeps a skill
 //! dependency fault (`SK001`) from taking down an unrelated skill's install.
-//! Authoring surfaces (the desktop modal, the CLI's own preset parsing)
-//! reject the same input outright -- that asymmetry is intended, not a gap
-//! to close here.
+//! The desktop preset editor is an authoring surface and does reject the same
+//! input outright, refusing to save -- that asymmetry is intended, not a gap to
+//! close here. The CLI has no MCP authoring command at all (`mcp` is
+//! list/install/remove/update, and `McpConfig::is_valid` checks only that a
+//! manual preset's id and name are non-empty), so there is nothing there to
+//! reject. What catches an `oauth` block on a `stdio` preset on the way to disk
+//! is the writers: every one of them drops the block and returns an
+//! `UpsertNote::DroppedField`, so it is never written and never silent.
 //!
 //! | code    | severity | condition                                          |
 //! |---------|----------|-----------------------------------------------------|

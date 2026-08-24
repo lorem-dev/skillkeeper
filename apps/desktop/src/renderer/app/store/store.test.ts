@@ -1360,6 +1360,35 @@ describe('useSkillkeeperStore', () => {
       expect(scanMcpParams(plain)).toEqual([]);
     });
 
+    // The motivating case for parameterizing a client id: a shared repository
+    // preset leaves the per-organization client id as a `{param}`. Missing
+    // these left the install modal with no input to render for them, so
+    // Confirm enabled and the backend rejected the install for a value the UI
+    // never asked for.
+    it('scanMcpParams collects placeholders from the oauth client id and scopes', () => {
+      const remote: McpServerDef = {
+        name: 'remote',
+        type: 'http',
+        url: 'https://mcp.example.com/mcp',
+        oauth: {
+          clientId: '{org_client}',
+          callbackPort: 8432,
+          scopes: ['read', 'org:{org_slug}'],
+        },
+      };
+      expect(scanMcpParams(remote)).toEqual(['org_client', 'org_slug']);
+
+      // `callbackPort` is numeric: there is nothing to scan, and a def whose
+      // only oauth content is the port has no parameters at all.
+      const portOnly: McpServerDef = {
+        name: 'port-only',
+        type: 'http',
+        url: 'https://mcp.example.com/mcp',
+        oauth: { callbackPort: 8432, scopes: [] },
+      };
+      expect(scanMcpParams(portOnly)).toEqual([]);
+    });
+
     it('normalizeMcpRemote canonicalizes scp, https, ssh+port, and userinfo forms', () => {
       expect(normalizeMcpRemote('git@github.com:acme/x.git')).toBe('github.com/acme/x');
       expect(normalizeMcpRemote('https://github.com/Acme/X.git')).toBe('github.com/acme/x');

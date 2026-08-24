@@ -241,31 +241,29 @@ pub struct AvailableMcp {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum McpSkipReason {
-    /// The agent's native config cannot express the def's transport, or the
-    /// operation belongs to a batch the agent cannot serve at this scope.
+    /// The agent's native config cannot express the def's transport.
     Transport,
     /// The agent cannot express an OAuth client at all, so writing the server
     /// would leave it looking installed and unable to authenticate.
     Oauth,
 }
 
-/// One operation `apply` declined to perform: an install whose transport the
-/// agent cannot express, an install carrying an oauth client the agent cannot
-/// express, or any operation in a codex batch that arrived at project scope
-/// (codex's native config is user-wide only). Mirrors the TS `McpSkipped`.
+/// One install `apply` declined to perform: one whose transport the agent
+/// cannot express, or one carrying an oauth client the agent cannot express.
+/// Removes are never skipped -- they carry no def, so neither rule applies.
+/// Mirrors the TS `McpSkipped`.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct McpSkipped {
     pub agent: AgentKind,
-    /// The preset's source name for anything carrying a def (an install or an
-    /// update), the instance name for a remove.
+    /// The preset's source name (an install or an update always carries a def,
+    /// and its identity's source names it).
     pub source: String,
     /// Which rule declined it, so the renderer can say why rather than only how
-    /// many.
+    /// many. `mcpSkipsToMessages` in `features/mcpInstall/lib` is what reads it.
     pub reason: McpSkipReason,
-    /// The transport that could not be expressed. Absent for a skipped remove,
-    /// which carries no def and so no transport, and for an oauth skip, whose
-    /// transport was perfectly expressible.
+    /// The transport that could not be expressed. Absent for an oauth skip,
+    /// whose transport was perfectly expressible.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transport: Option<McpTransport>,
 }

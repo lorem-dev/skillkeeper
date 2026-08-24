@@ -107,8 +107,19 @@ export function repoMcpPresetId(repoId: string, group: string | undefined, name:
 // the three helpers below reimplement them locally, matching the canonical Rust
 // implementations in `skillkeeper-core` (which its `cargo test` suite covers).
 
-/** Mirrors the Rust `parse_params` (`skillkeeper-core` `mcp`): scans every string field of
- *  an MCP def for `{param}` placeholders and returns the sorted, deduped set.
+/** Mirrors the Rust `parse_params` (`skillkeeper-core` `mcp`): scans the same
+ *  string fields of an MCP def for `{param}` placeholders -- url, header
+ *  values, command, args, env values, rules, and the oauth client id and each
+ *  scope -- and returns the sorted, deduped set. `oauth.callbackPort` is
+ *  numeric and is deliberately not scanned.
+ *
+ *  The Rust `string_fields` helper is the canonical field list, and a Rust test
+ *  (`the_renderer_mirror_scans_exactly_the_same_fields` in `mcp/params.rs`)
+ *  parses this function's body to assert the two lists stay identical -- adding
+ *  a scanned field on either side without the other fails `cargo test`. Keep
+ *  the field accesses below written as `def.<field>` / `oauth.<field>` so that
+ *  guard can see them.
+ *
  *  Exported so its behavior can be tested directly. */
 export function scanMcpParams(def: McpServerDef): string[] {
   const names = new Set<string>();
@@ -124,6 +135,11 @@ export function scanMcpParams(def: McpServerDef): string[] {
   if (def.args !== undefined) for (const a of def.args) scan(a);
   if (def.env !== undefined) for (const v of Object.values(def.env)) scan(v);
   if (def.rules !== undefined) scan(def.rules);
+  if (def.oauth !== undefined) {
+    const oauth = def.oauth;
+    if (oauth.clientId !== undefined) scan(oauth.clientId);
+    for (const scope of oauth.scopes ?? []) scan(scope);
+  }
   return [...names].sort();
 }
 

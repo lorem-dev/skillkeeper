@@ -234,4 +234,44 @@ mod tests {
             "scope order is significant and must not be sorted away"
         );
     }
+
+    /// The design asks for "any oauth field" to move the hash, not just the
+    /// scopes: the update flow is the only way a user learns that a preset's
+    /// auth changed under them, and a client id or callback port they cannot
+    /// see change is a preset that stays silently stale.
+    #[test]
+    fn changing_the_client_id_changes_the_hash() {
+        let none = http_oauth_def(Vec::new());
+        let mut with_id = http_oauth_def(Vec::new());
+        with_id.oauth.as_mut().expect("oauth").client_id = Some("example-client".to_string());
+        let mut other_id = http_oauth_def(Vec::new());
+        other_id.oauth.as_mut().expect("oauth").client_id = Some("other-client".to_string());
+
+        assert_ne!(hash_mcp_def(&none), hash_mcp_def(&with_id));
+        assert_ne!(hash_mcp_def(&with_id), hash_mcp_def(&other_id));
+    }
+
+    #[test]
+    fn changing_the_callback_port_changes_the_hash() {
+        let none = http_oauth_def(Vec::new());
+        let mut with_port = http_oauth_def(Vec::new());
+        with_port.oauth.as_mut().expect("oauth").callback_port = Some(8432);
+        let mut other_port = http_oauth_def(Vec::new());
+        other_port.oauth.as_mut().expect("oauth").callback_port = Some(8433);
+
+        assert_ne!(hash_mcp_def(&none), hash_mcp_def(&with_port));
+        assert_ne!(hash_mcp_def(&with_port), hash_mcp_def(&other_port));
+    }
+
+    #[test]
+    fn adding_an_oauth_block_at_all_changes_the_hash() {
+        let without = http("remote", Some("https://mcp.example.com/mcp"), None);
+        let mut with = without.clone();
+        with.oauth = Some(McpOauth {
+            client_id: Some("example-client".to_string()),
+            callback_port: Some(8432),
+            scopes: vec!["read".to_string()],
+        });
+        assert_ne!(hash_mcp_def(&without), hash_mcp_def(&with));
+    }
 }

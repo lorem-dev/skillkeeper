@@ -78,9 +78,11 @@ export const OauthFilled: Story = {
   },
 };
 
-// An invalid oauth block: the callback port is out of range and the client
-// id is blank (whitespace only), so both field-level errors show at once and
-// Save stays disabled.
+// An invalid oauth block: the callback port is out of range AND the client id
+// is blank (whitespace only). Only the first error is marked and explained --
+// the modal deliberately surfaces one at a time, in the order a user fills the
+// form in -- so this shows the client-id message; fixing it reveals the port
+// one. Save stays disabled while either stands.
 export const OauthInvalid: Story = {
   args: {
     preset: {
@@ -92,6 +94,42 @@ export const OauthInvalid: Story = {
         clientId: ' ',
         callbackPort: 70000,
         scopes: [],
+      },
+    },
+  },
+};
+
+// A stdio preset carrying an oauth block -- the state reached by filling in
+// OAuth under http and then switching the transport to stdio. The OAuth
+// section is gone (it is http/sse only) and Save is disabled, so the error
+// message under the transport select is the only thing that explains why.
+export const OauthOnStdio: Story = {
+  args: {
+    preset: {
+      id: 'preset-oauth-on-stdio',
+      name: 'oauth-on-stdio',
+      type: 'stdio',
+      command: 'run-server',
+      oauth: {
+        clientId: 'example-client',
+        scopes: ['read'],
+      },
+    },
+  },
+};
+
+// A blank scope entry: the scopes editor marks the offending row and, unlike
+// before, says what is wrong with it.
+export const OauthScopeBlank: Story = {
+  args: {
+    preset: {
+      id: 'preset-oauth-scope-blank',
+      name: 'oauth-scope-blank',
+      type: 'http',
+      url: 'https://mcp.example.com/mcp',
+      oauth: {
+        clientId: 'example-client',
+        scopes: ['read', ' '],
       },
     },
   },

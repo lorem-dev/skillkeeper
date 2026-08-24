@@ -145,10 +145,11 @@ declares one preset in the `tooling` group.
 ## Parameters
 
 A server definition may reference `{name}` placeholders in `url`, header
-values, `command`, `args`, `env` values, and `rules`. Parameters are **not**
-declared anywhere - they are discovered by scanning every one of those
-fields for `{[A-Za-z0-9_]+}` and collecting the distinct names. The same
-name used in more than one field is still a single parameter.
+values, `command`, `args`, `env` values, `rules`, `oauth.clientId`, and each
+entry of `oauth.scopes`. Parameters are **not** declared anywhere - they are
+discovered by scanning every one of those fields for `{[A-Za-z0-9_]+}` and
+collecting the distinct names. The same name used in more than one field is
+still a single parameter. `oauth.callbackPort` is numeric and is not scanned.
 
 Placeholder syntax is validated separately: an unclosed `{`, an empty `{}`,
 or a name containing a character outside `[A-Za-z0-9_]` is rejected, with
@@ -450,9 +451,12 @@ yourself before installing a remote server for Codex.
 `SK017` (a `callbackPort` of `0`). All three are warnings, not errors - a
 repository you only consume still resolves and installs with a bad auth
 block on one preset, the same as any other lint warning. Authoring the
-preset yourself, in the desktop editor or through the CLI's own preset
-parsing, rejects the same input outright, since you are the one who can fix
-it. See [CLI Reference](cli.md#repo-lint) for the full table of codes.
+preset yourself in the desktop editor is different: it rejects the same
+input outright and refuses to save, since you are the one who can fix it.
+The CLI has no MCP authoring command, so it has nothing to reject there. An
+`oauth` block that does reach an install on a `stdio` preset is dropped
+rather than written, and the drop is reported for every agent. See
+[CLI Reference](cli.md#repo-lint) for the full table of codes.
 
 ## Rules (guidance)
 

@@ -362,4 +362,79 @@ mod tests {
         let err = render_params(&def, &BTreeMap::new()).expect_err("missing value");
         assert!(err.to_string().contains("org_client"));
     }
+
+    /// Drift guard for the renderer's hand-written mirror of [`string_fields`]:
+    /// `scanMcpParams` in `apps/desktop/src/renderer/app/store/store.ts`. The
+    /// mirror exists because the install modal needs a preset's parameter list
+    /// synchronously, before any backend call, so it cannot ask this crate.
+    ///
+    /// Nothing made the two fail together, and they drifted: `oauth` was added
+    /// here and never there, so the modal rendered no input for a parameterized
+    /// client id, enabled Confirm, and dead-ended the install on a backend
+    /// `MissingValuesError` naming a value the UI never asked for.
+    ///
+    /// Pinned structurally rather than by example, because an example only
+    /// catches the field someone thought to write a case for. Both function
+    /// bodies are parsed for their `def.<field>` / `oauth.<field>` accesses and
+    /// the two sets must be identical, so adding a scanned field on one side
+    /// alone fails here.
+    #[test]
+    fn the_renderer_mirror_scans_exactly_the_same_fields() {
+        /// `client_id` -> `clientId`, so the two languages' spellings of one
+        /// field compare equal.
+        fn camel(name: &str) -> String {
+            let mut parts = name.split('_');
+            let mut out = parts.next().unwrap_or_default().to_string();
+            for part in parts {
+                let mut chars = part.chars();
+                if let Some(first) = chars.next() {
+                    out.push(first.to_ascii_uppercase());
+                    out.push_str(chars.as_str());
+                }
+            }
+            out
+        }
+
+        /// The `def.*` / `oauth.*` field names read inside the function that
+        /// `signature` opens, whose body is taken to end at the first `}` in
+        /// column 0.
+        fn scanned_fields(source: &str, signature: &str) -> BTreeSet<String> {
+            let start = source.find(signature).unwrap_or_else(|| {
+                panic!("{signature} not found -- this guard is reading the wrong function")
+            });
+            let body = &source[start..];
+            let end = body
+                .find("\n}")
+                .unwrap_or_else(|| panic!("{signature} has no closing brace in column 0"));
+            let re = Regex::new(r"\b(?:def|oauth)\.([A-Za-z_]+)").expect("valid regex");
+            re.captures_iter(&body[..end])
+                .map(|caps| camel(&caps[1]))
+                .collect()
+        }
+
+        let rust = scanned_fields(
+            include_str!("params.rs"),
+            "fn string_fields(def: &McpServerDef) -> Vec<&str> {",
+        );
+        let mirror_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../apps/desktop/src/renderer/app/store/store.ts");
+        let mirror_source = std::fs::read_to_string(&mirror_path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", mirror_path.display()));
+        let renderer = scanned_fields(
+            &mirror_source,
+            "export function scanMcpParams(def: McpServerDef): string[] {",
+        );
+
+        // Both extractions must have found something, or the assertion below
+        // would pass on two empty sets after a harmless rename.
+        assert!(
+            rust.contains("oauth") && rust.contains("clientId") && rust.contains("scopes"),
+            "the Rust field list did not parse as expected: {rust:?}"
+        );
+        assert_eq!(
+            rust, renderer,
+            "`scanMcpParams` and `string_fields` scan different fields; update \
+             both or neither"
+        );
+    }
 }
