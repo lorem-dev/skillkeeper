@@ -7,8 +7,7 @@
 //! `config.mcp.servers`. Installing an instance renders `{param}` placeholders
 //! and writes the target agent's native MCP config, tracking the install in the
 //! `.skmcp.yml` / `.skmcp.params.yml` ledgers under that agent's skills
-//! destination root (the SAME root the skill engine resolves). Codex installs
-//! are always global.
+//! destination root (the SAME root the skill engine resolves).
 //!
 //! Target resolution (`resolve_mcp_target`) mirrors the desktop `mcp.rs`; the
 //! transform/ledger/params logic is the shared core `mcp` subsystem.
@@ -38,16 +37,11 @@ use crate::commands::agenthelpers::ProjectEnv;
 use crate::commands::resolvewarnings::print_resolve_warnings;
 use crate::error::CliError;
 
-/// The four project-scoped MCP agents; codex is handled separately (global).
-const PROJECT_MCP_AGENTS: [AgentKind; 4] = [
-    AgentKind::Claude,
-    AgentKind::Cursor,
-    AgentKind::Copilot,
-    AgentKind::Opencode,
-];
-
-/// Every agent, for a global-scope pass over MCP ledgers (`mcp update --all`
-/// and `mcp update --global`).
+/// Every MCP agent, eligible at both project and global scope: Codex resolves
+/// a real project-scoped destination (see `mcp_destination`) exactly like
+/// every other agent. Shared by the project pass and the global pass over MCP
+/// ledgers (`mcp update --all`, `mcp update --global`, and the default agent
+/// list at either scope).
 const ALL_MCP_AGENTS: [AgentKind; 5] = [
     AgentKind::Claude,
     AgentKind::Codex,
@@ -103,7 +97,7 @@ pub enum McpAction {
         /// exclusive with --global.
         #[arg(long)]
         project: Option<String>,
-        /// Agent(s) to check (repeatable/comma-separated; default: all project agents).
+        /// Agent(s) to check (repeatable/comma-separated; default: every agent).
         #[arg(long)]
         agent: Vec<String>,
         /// Check every tracked project and agent, plus every agent's global ledger.
@@ -344,29 +338,24 @@ struct McpTarget {
     ledger_path: String,
     params_path: String,
     guidance_files: Vec<String>,
-    /// The scope these paths were actually resolved at, which is not always the
-    /// requested one (codex is global-only). Gate anything that depends on
-    /// where the write lands -- the `.gitignore` entry above all -- on THIS,
-    /// never on the requested scope, or the two can disagree.
+    /// The scope these paths were actually resolved at. Gate anything that
+    /// depends on where the write lands -- the `.gitignore` entry above all --
+    /// on THIS, never on the requested scope, or the two can disagree.
     scope: Scope,
 }
 
-/// The scope an MCP write for `agent` really lands at. Codex has no
-/// project-scoped native config, so it is always global no matter what was
-/// requested.
-fn resolved_mcp_scope(agent: AgentKind, requested: Scope) -> Scope {
-    if agent == AgentKind::Codex {
-        Scope::Global
-    } else {
-        requested
-    }
+/// The scope an MCP write for `agent` really lands at. Kept as a named
+/// function because callers must gate on the RESOLVED scope rather than the
+/// requested one; today they coincide for every agent.
+fn resolved_mcp_scope(_agent: AgentKind, requested: Scope) -> Scope {
+    requested
 }
 
 /// Resolve where one MCP install for `agent` writes at `scope`: the native
 /// config path, the ledger/params paths under the agent's skills destination
 /// root for that scope (the SAME root the skills engine resolves), and the
-/// agent's guidance file. Codex is global-only and ignores `scope`. Port of
-/// `resolveMcpTarget`; mirrors the desktop `mcp.rs` version.
+/// agent's guidance file. Port of `resolveMcpTarget`; mirrors the desktop
+/// `mcp.rs` version.
 fn resolve_mcp_target(
     ctx: &McpCtx,
     agent: AgentKind,
@@ -564,15 +553,6 @@ pub fn install(
             writeln!(out, "Skipped {agent}: cannot express an oauth client.")?;
             continue;
         }
-        // Codex's MCP config is user-wide; a project-scope request for it
-        // cannot be honoured, so refuse rather than silently install globally.
-        if agent == AgentKind::Codex && scope == Scope::Project {
-            writeln!(
-                err,
-                "codex MCP servers are user-wide, not per project: pass --global."
-            )?;
-            continue;
-        }
         let target = resolve_mcp_target(ctx, agent, scope, project_path, project_path)?;
         let outcome = install_mcp_instance(
             ctx.fs,
@@ -665,20 +645,16 @@ pub fn remove(
     Ok(0)
 }
 
-/// Resolve a `--agent` list to concrete kinds: the given agents, or a
-/// scope-appropriate default when none were given. Shared by the project and
-/// global (non-`--all`) branches of `update` so neither duplicates the
-/// fallback. At project scope the default is the four project-capable agents
-/// (codex has no project-scoped MCP config); at global scope every agent has
-/// a config to check, codex included, so the default is all five -- matching
-/// `--all`, which already sweeps codex's global ledger unconditionally.
-fn kinds_for(agents: &[String], scope: Scope) -> Vec<AgentKind> {
+/// Resolve a `--agent` list to concrete kinds: the given agents, or every
+/// agent when none were given. Shared by the project and global (non-`--all`)
+/// branches of `update` so neither duplicates the fallback. Every agent has a
+/// config to check at either scope, codex included, so the default is the
+/// same `ALL_MCP_AGENTS` list regardless of scope -- matching `--all`, which
+/// already sweeps every agent at both scopes.
+fn kinds_for(agents: &[String], _scope: Scope) -> Vec<AgentKind> {
     let agent_list = collect_csv(agents);
     if agent_list.is_empty() {
-        match scope {
-            Scope::Project => PROJECT_MCP_AGENTS.to_vec(),
-            Scope::Global => ALL_MCP_AGENTS.to_vec(),
-        }
+        ALL_MCP_AGENTS.to_vec()
     } else {
         agent_list.iter().filter_map(|a| agent_kind(a)).collect()
     }
@@ -712,7 +688,7 @@ pub fn update(
     if all {
         let state = load_state(ctx.fs, ctx.state_path)?;
         for project in &state.projects {
-            for agent in PROJECT_MCP_AGENTS {
+            for agent in ALL_MCP_AGENTS {
                 scopes.push(UpdateScope {
                     agent,
                     scope: Scope::Project,
@@ -759,20 +735,6 @@ pub fn update(
 
     for scope in &scopes {
         if !ctx.registry.has(scope.agent) {
-            continue;
-        }
-        // Codex's MCP config is user-wide, so a project-scope request for it
-        // cannot be honoured; refuse it the way `install` does rather than
-        // updating the user-wide file behind a project's back. Only an explicit
-        // `--agent codex` without `--global` reaches this: neither the
-        // project-scope default (`PROJECT_MCP_AGENTS`) nor `--all` puts codex at
-        // project scope.
-        if scope.agent == AgentKind::Codex && scope.scope == Scope::Project {
-            writeln!(
-                err,
-                "codex MCP servers are user-wide, not per project: pass --global."
-            )?;
-            failed = true;
             continue;
         }
         let target = resolve_mcp_target(
@@ -1619,15 +1581,17 @@ mod tests {
     }
 
     #[test]
-    fn kinds_for_defaults_to_project_agents_at_project_scope() {
-        assert_eq!(kinds_for(&[], Scope::Project), PROJECT_MCP_AGENTS.to_vec());
+    fn kinds_for_defaults_to_every_agent_at_project_scope() {
+        // Codex now resolves a real project-scoped destination just like every
+        // other agent, so an empty --agent list at project scope must cover
+        // it too -- there is no longer a smaller project-capable subset.
+        assert_eq!(kinds_for(&[], Scope::Project), ALL_MCP_AGENTS.to_vec());
     }
 
     #[test]
     fn kinds_for_defaults_to_every_agent_at_global_scope() {
-        // Codex's MCP config exists *only* at global scope, so an empty
-        // --agent list at global scope must still cover it -- matching --all,
-        // which already sweeps codex's global ledger unconditionally.
+        // Matching --all, which already sweeps every agent's global ledger
+        // unconditionally.
         assert_eq!(kinds_for(&[], Scope::Global), ALL_MCP_AGENTS.to_vec());
     }
 
@@ -1691,12 +1655,12 @@ mod tests {
     }
 
     #[test]
-    fn resolve_mcp_target_reports_the_scope_it_really_resolved() {
+    fn resolve_mcp_target_resolves_codex_at_the_requested_scope() {
         let app = TestApp::new(seeded_fs());
         seed_state(&app.fs);
-        // Codex ignores the requested scope, so the target must report Global --
-        // everything gated on "did this write land in a repository?" reads this
-        // field rather than the requested scope.
+        // Codex now resolves a real project-scoped destination, exactly like
+        // every other agent: the resolved scope always matches the requested
+        // one, and the native path lands under the project.
         let codex = resolve_mcp_target(
             &app.ctx(),
             AgentKind::Codex,
@@ -1705,8 +1669,8 @@ mod tests {
             PROJECT,
         )
         .unwrap();
-        assert_eq!(codex.scope, Scope::Global);
-        assert_eq!(codex.native_path, format!("{HOME}/.codex/config.toml"));
+        assert_eq!(codex.scope, Scope::Project);
+        assert_eq!(codex.native_path, format!("{PROJECT}/.codex/config.toml"));
 
         let claude = resolve_mcp_target(
             &app.ctx(),
@@ -1720,23 +1684,67 @@ mod tests {
     }
 
     #[test]
-    fn update_refuses_codex_at_project_scope_and_touches_no_project_gitignore() {
+    fn install_writes_a_project_scoped_codex_config_and_does_not_refuse() {
+        // Codex used to be coerced to global scope no matter what was asked;
+        // a project-scoped install must now land in the project's own
+        // .codex/config.toml, not the refusal this used to print.
+        let app = TestApp::new(seeded_fs());
+        seed_state(&app.fs);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(
+            &app.ctx(),
+            "github",
+            Some(PROJECT),
+            &["codex".to_string()],
+            &["token=secret123".to_string()],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 0);
+        let out = String::from_utf8(out).unwrap();
+        assert!(
+            out.contains("Installed: github_1 (codex) ->"),
+            "expected a successful codex install, got:\n{out}"
+        );
+        assert!(String::from_utf8(err).unwrap().is_empty());
+
+        let native = app
+            .fs
+            .read_file(&format!("{PROJECT}/.codex/config.toml"))
+            .expect("project-scoped codex config written");
+        assert!(native.contains("github_1"));
+        assert!(native.contains("secret123"));
+        // Nothing was written to the user-wide config.
+        assert!(!app
+            .fs
+            .exists(&format!("{HOME}/.codex/config.toml"))
+            .unwrap());
+    }
+
+    #[test]
+    fn update_reinstalls_a_project_scoped_codex_instance() {
+        // The `update` path used to carry the same refusal `install` did;
+        // it must now reinstall a project-scoped codex instance in place,
+        // the same as any other agent.
         let app = TestApp::new(seeded_fs());
         seed_state(&app.fs);
         let mut sink = Vec::new();
         let mut sink2 = Vec::new();
-        // A codex instance exists, installed the only way it can be: globally.
         install(
             &app.ctx(),
             "github",
-            None,
+            Some(PROJECT),
             &["codex".to_string()],
             &["token=abc".to_string()],
-            true,
+            false,
             &mut sink,
             &mut sink2,
         )
         .unwrap();
+
         // Its source def changes, so an update has real work to do.
         app.fs
             .write_file(
@@ -1759,15 +1767,21 @@ mod tests {
             &mut err,
         )
         .unwrap();
+        assert_eq!(code, 0);
+        assert!(String::from_utf8(out)
+            .unwrap()
+            .contains("Updated: github_1 (codex)"));
+        assert!(String::from_utf8(err).unwrap().is_empty());
 
-        // `install` already refuses this combination; `update` now does too,
-        // instead of writing the user-wide config on a project's behalf.
-        assert_eq!(code, 1);
-        assert!(String::from_utf8(err).unwrap().contains("--global"));
-        // The bug this guards against: the gate keyed on the REQUESTED scope
-        // while `resolve_mcp_target` forced codex global, so the reinstall
-        // handed `ensure_gitignore` the project path and created (or polluted)
-        // a .gitignore in a repository nothing had been written into.
-        assert!(!app.fs.exists(&format!("{PROJECT}/.gitignore")).unwrap());
+        let native = app
+            .fs
+            .read_file(&format!("{PROJECT}/.codex/config.toml"))
+            .unwrap();
+        assert!(native.contains("--verbose"));
+        assert!(native.contains("abc")); // stored token preserved
+
+        // Resolved at project scope like any other agent, so the ledger's
+        // gitignore entry applies here too.
+        assert!(app.fs.exists(&format!("{PROJECT}/.gitignore")).unwrap());
     }
 }

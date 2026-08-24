@@ -348,7 +348,8 @@ skillkeeper mcp install <name> [--agent <agent>]... [--param <name=value>]... [-
 Install an MCP preset for one or more agents.
 
 An agent whose native config cannot express the preset's transport is skipped
-with a notice rather than attempted -- Codex, for example, supports `stdio` only.
+with a notice rather than attempted -- Codex, for example, does not support `sse`,
+so an `sse`-only preset is skipped for Codex even if it installs for other agents.
 The command exits non-zero when it installed nothing at all, so a single-agent
 install that was skipped reports failure, while a multi-agent install that
 succeeded for at least one agent reports success.
@@ -360,8 +361,7 @@ succeeded for at least one agent reports success.
 - `--project <dir>` - project directory (default: the current directory).
   Mutually exclusive with `--global`.
 - `--global` - install for the whole user, in every project, instead of one
-  project directory. Mutually exclusive with `--project`. Required for `codex`,
-  whose MCP config is user-wide.
+  project directory. Mutually exclusive with `--project`.
 
 ### mcp remove
 
@@ -391,9 +391,7 @@ for any newly required placeholders.
 - `--project <dir>` - project directory (default: the current directory);
   ignored with `--all`. Mutually exclusive with `--global`.
 - `--global` - act on the user-wide installs instead of a project's. Mutually
-  exclusive with `--project` and `--all`. Required for `codex`, whose MCP config
-  is user-wide: `--agent codex` at project scope is refused, the same way
-  `mcp install` refuses it.
+  exclusive with `--project` and `--all`.
 
 ---
 

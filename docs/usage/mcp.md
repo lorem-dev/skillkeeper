@@ -285,10 +285,7 @@ agent:
 | cursor   | `<project>/.cursor/skills/`                 | `~/.cursor/skills/`                    |
 | copilot  | `<project>/.github/copilot/skills/`         | `~/.config/github-copilot/skills/`     |
 | opencode | `<project>/.opencode/skills/`               | `~/.config/opencode/skills/`           |
-| codex    | (not used for MCP)                          | `~/.codex/skills/`                     |
-
-Codex MCP installs always use the global location, regardless of which
-project the install was started from (see "Codex" below).
+| codex    | `<project>/.codex/skills/`                  | `~/.codex/skills/`                     |
 
 ## Per-agent native destinations
 
@@ -310,24 +307,13 @@ order is sorted, so re-writing the same content is a no-op diff.
 
 Codex differs from the other four agents in a few ways:
 
-- **The CLI requires `--global`**: `mcp install --agent codex` and
-  `mcp update --agent codex` without `--global` are both refused by the CLI,
-  even though Codex's native destination resolution (the table above) can
-  resolve a real project-scoped path. This is a restriction of the CLI
-  command, not of Codex itself. From the CLI, an install for Codex always
-  writes to `~/.codex/config.toml`, `~/.codex/skills/.skmcp.yml`, and
-  `~/.codex/skills/.skmcp.params.yml` - never into a project - regardless of
-  which project directory the command was run from. This also applies to the
-  guidance target (`~/AGENTS.md`) for a CLI-driven install. Note this differs
-  from Codex *skill* guidance, which is project-scoped (`<project>/AGENTS.md`)
-  because skills are per-project files - MCP servers written by the CLI are
-  not.
 - **A project-scoped config is honored only for trusted projects**: Codex
   reads a project-scoped `<project>/.codex/config.toml` in addition to its
   global file, but only for a project the user has marked trusted from
   within Codex itself. SkillKeeper has no way to see that trust state, so it
   writes the project-scoped file regardless of it rather than pretending to
-  verify something it cannot see.
+  verify something it cannot see. This applies equally to the CLI (`mcp
+  install --agent codex --project <dir>`) and the desktop backend.
 - **`sse` is not supported**: Codex's native config can express `stdio` and
   `http` servers. Whether its remote client also accepts `sse` is
   unverified, so this project does not write a config shape it has not
