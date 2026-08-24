@@ -1,0 +1,7 @@
+/* Swap the site logo for the dark-mode variant when the slate (dark) color
+   scheme is active. Material sets data-md-color-scheme on <body>, and the
+   `content` property replaces the rendered <img> for both the header logo and
+   the mobile navigation-drawer logo (.md-logo img). */
+[data-md-color-scheme='slate'] .md-logo img {
+  content: url('logo-dark.png');
+}
