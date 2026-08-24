@@ -120,7 +120,14 @@ fn build() -> Value {
                             "type": "object",
                             // A null label is the blank label, not a parse
                             // failure -- see `de_options`.
-                            "additionalProperties": { "type": ["string", "null"] }
+                            // A label may be any YAML scalar, and so may the
+                            // key -- `de_options` converts rather than
+                            // refusing, because refusing dropped the whole
+                            // file. A JSON object key is always a string, so
+                            // only the value side needs widening here.
+                            "additionalProperties": {
+                                "type": ["string", "number", "boolean", "null"]
+                            }
                         },
                         // A bare `options:`, which `de_options` reads as the
                         // empty list rather than dropping the whole file.
@@ -129,6 +136,28 @@ fn build() -> Value {
                 );
                 if let Some(description) = description {
                     options.insert("description".to_string(), description);
+                }
+            }
+        }
+    }
+
+    // `parameters:` and `scopes:` written with nothing under them deserialize
+    // to the empty map and the empty list, for the same reason a bare
+    // `options:` does -- `parse_mcp_config` reads the whole document, so
+    // refusing an unfinished key throws away every server beside it. The null
+    // branch was patched onto `options` when that was found and not onto its
+    // two siblings with the identical wire shape, so an editor pointed at this
+    // schema flagged files SkillKeeper reads without complaint.
+    for (def_name, property) in [("McpServerDef", "parameters"), ("McpOauth", "scopes")] {
+        if let Some(Value::Object(def)) = defs.get_mut(def_name) {
+            if let Some(Value::Object(props)) = def.get_mut("properties") {
+                if let Some(Value::Object(schema)) = props.get_mut(property) {
+                    let description = schema.remove("description");
+                    let inner = Value::Object(std::mem::take(schema));
+                    schema.insert("anyOf".to_string(), json!([inner, { "type": "null" }]));
+                    if let Some(description) = description {
+                        schema.insert("description".to_string(), description);
+                    }
                 }
             }
         }
@@ -265,13 +294,41 @@ mod tests {
             "the canonical list, the authored mapping, and a bare `options:`"
         );
         assert_eq!(forms[0]["items"]["$ref"], json!("#/$defs/McpOption"));
-        // A null label is the blank label, so the mapping's values are
-        // nullable -- the schema has to agree with `de_options` about that
-        // too, or the editor flags a file the parser reads.
+        // The mapping's VALUES take any YAML scalar or null, because
+        // `de_options` converts rather than refusing -- the schema has to
+        // agree with it, or the editor flags a file the parser reads happily.
         assert_eq!(
             forms[1]["additionalProperties"]["type"],
-            json!(["string", "null"])
+            json!(["string", "number", "boolean", "null"])
         );
+    }
+
+    /// `parameters:` and `scopes:` deserialize from a bare key exactly as
+    /// `options:` does, and for the same reason. The null branch was added to
+    /// `options` alone when that was found, so this asserts all THREE -- the
+    /// point being that a sibling with the identical wire shape must not be
+    /// able to fall behind again.
+    #[test]
+    fn every_key_the_parser_reads_as_empty_may_be_written_bare() {
+        let built = build();
+        for (def_name, property) in [
+            ("McpServerDef", "parameters"),
+            ("McpOauth", "scopes"),
+            ("McpParameter", "options"),
+        ] {
+            let schema = &built["$defs"][def_name]["properties"][property];
+            let forms = schema["anyOf"]
+                .as_array()
+                .unwrap_or_else(|| panic!("{def_name}.{property} must publish an anyOf"));
+            assert!(
+                forms.iter().any(|f| f["type"] == json!("null")),
+                "{def_name}.{property} must accept being written bare"
+            );
+            assert!(
+                schema["description"].is_string(),
+                "{def_name}.{property} must keep its description"
+            );
+        }
     }
 
     #[test]

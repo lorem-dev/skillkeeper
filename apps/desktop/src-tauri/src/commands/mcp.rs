@@ -1183,6 +1183,21 @@ fn update_inner(
     let mut updated: Vec<McpInstalled> = Vec::new();
     let mut skipped: Vec<McpSkipped> = Vec::new();
     for u in &args.updates {
+        // The def may have changed transport since it was installed, to one
+        // this agent cannot express -- `mcpInstallHasUpdate` compares hashes
+        // and nothing else, so an ordinary Update click can carry it here.
+        // `apply_inner` gates its installs on this; without the same gate the
+        // remove below succeeds, the reinstall fails inside the writer, and a
+        // working instance is gone along with the values stored for it.
+        if !supports_transport(u.agent, u.def.transport) {
+            skipped.push(McpSkipped {
+                agent: u.agent,
+                source: u.identity.source.clone(),
+                reason: McpSkipReason::Transport,
+                transport: Some(u.def.transport),
+            });
+            continue;
+        }
         // Rewritten without its auth block, this server would look updated and
         // fail to authenticate. Declining is the honest outcome -- and it must
         // happen before the remove below, or the instance would be deleted and
@@ -1210,6 +1225,28 @@ fn update_inner(
         // renderer-supplied overrides merged in above were already refused if
         // out of set, so this only ever migrates what came off disk.
         let option_notes = migrate_option_values(&u.def, &mut values);
+        // The last thing checked before anything is destroyed: a placeholder
+        // with no value fails inside `install_mcp_instance`, which runs AFTER
+        // the remove below, so without this the instance and its stored values
+        // are gone and the error names a parameter the user was never asked
+        // for. `mcp_update_preflight` exists to collect these, but nothing
+        // makes the renderer call it, and the CLI's own `mcp update` refuses
+        // here rather than trusting its caller
+        // (`crates/skillkeeper-cli/src/commands/mcp.rs`). Refusing now leaves
+        // this instance exactly as it was.
+        let missing = missing_params(&u.def, Some(&values));
+        if !missing.is_empty() {
+            return Err(format!(
+                "Cannot update \"{}\": no value for mcp param{} {}.",
+                u.identity.source,
+                if missing.len() == 1 { "" } else { "s" },
+                missing
+                    .iter()
+                    .map(|p| format!("\"{p}\""))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
         remove_mcp_instance(
             &ctx.fs,
             &RemoveMcpArgs {
@@ -2185,6 +2222,126 @@ mod tests {
         assert_eq!(
             stored.get("github_1").and_then(|m| m.get("choice")),
             Some(&"alpha".to_string())
+        );
+    }
+
+    /// A def whose transport the agent cannot express, arriving through the
+    /// ordinary update path. `mcpInstallHasUpdate` compares hashes and nothing
+    /// else, so a source edited from http to sse reaches Codex's update as a
+    /// normal pending change. Before the guard, the remove succeeded and the
+    /// reinstall failed inside the writer, leaving nothing behind.
+    #[test]
+    fn update_skips_a_transport_the_agent_cannot_express_without_removing_it() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        assert!(
+            apply(
+                &app.ctx,
+                apply_args(
+                    &proj,
+                    vec![McpBatch {
+                        agent: AgentKind::Codex,
+                        install: vec![install_req(http_def(), &[])],
+                        remove: vec![],
+                    }],
+                ),
+            )
+            .ok
+        );
+        let native = Path::new(&proj.path()).join(".codex/config.toml");
+        let before = std::fs::read_to_string(&native).expect("codex config written");
+        assert!(before.contains("mcp_servers"), "got {before}");
+
+        let updated = update(
+            &app.ctx,
+            UpdateMcpArgs {
+                scope: Scope::Project,
+                updates: vec![McpUpdateReq {
+                    project_id: "proj-1".to_string(),
+                    project_path: proj.path(),
+                    agent: AgentKind::Codex,
+                    instance_name: "github_1".to_string(),
+                    identity: identity(),
+                    def: sse_def(),
+                    values: BTreeMap::new(),
+                }],
+            },
+        );
+
+        assert!(updated.ok, "the call itself must succeed, reporting a skip");
+        assert_eq!(updated.updated.unwrap_or_default().len(), 0);
+        let skipped = updated.skipped.unwrap_or_default();
+        assert_eq!(skipped.len(), 1, "the decline must be reported");
+        assert!(matches!(skipped[0].reason, McpSkipReason::Transport));
+        assert_eq!(
+            std::fs::read_to_string(&native).expect("codex config still there"),
+            before,
+            "the working instance must be left exactly as it was"
+        );
+    }
+
+    /// The other way `install_mcp_instance` fails after the remove has already
+    /// run: a placeholder with no value anywhere. The CLI's `mcp update`
+    /// refuses this before touching anything; this backend did not.
+    #[test]
+    fn update_refuses_a_missing_parameter_value_without_removing_the_instance() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        assert!(
+            apply(
+                &app.ctx,
+                apply_args(
+                    &proj,
+                    vec![McpBatch {
+                        agent: AgentKind::Claude,
+                        install: vec![install_req(choice_def(), &[("choice", "alpha")])],
+                        remove: vec![],
+                    }],
+                ),
+            )
+            .ok
+        );
+
+        // The updated source needs a second placeholder nothing has a value
+        // for -- exactly what `mcp_update_preflight` is meant to collect.
+        let mut def = choice_def();
+        def.url = Some("https://mcp.example.com/{region}/mcp".to_string());
+        let updated = update(
+            &app.ctx,
+            UpdateMcpArgs {
+                scope: Scope::Project,
+                updates: vec![McpUpdateReq {
+                    project_id: "proj-1".to_string(),
+                    project_path: proj.path(),
+                    agent: AgentKind::Claude,
+                    instance_name: "github_1".to_string(),
+                    identity: identity(),
+                    def,
+                    values: BTreeMap::new(),
+                }],
+            },
+        );
+
+        assert!(!updated.ok, "a missing value must not silently proceed");
+        let error = updated.error.unwrap_or_default();
+        assert!(error.contains("region"), "got {error}");
+
+        let params_text = std::fs::read_to_string(
+            Path::new(&proj.path())
+                .join(".claude/skills")
+                .join(SKMCP_PARAMS_FILE),
+        )
+        .expect("params file still there");
+        assert_eq!(
+            parse_skmcp_params(&params_text)
+                .get("github_1")
+                .and_then(|m| m.get("choice")),
+            Some(&"alpha".to_string()),
+            "the instance and its stored value must survive the refusal"
         );
     }
 

@@ -161,12 +161,25 @@ fn to_plain_server_json(def: &McpServerDef) -> Result<Value, WriterError> {
 }
 
 /// Copilot's shape: the plain object with no auth block. Copilot cannot express
-/// an OAuth client ([`supports_oauth`]), and every path that reaches a writer
-/// gates on that first -- `mcp install` and `mcp update` in the CLI, `mcp:apply`
-/// and `mcp:update` in the desktop -- so a def carrying an oauth block is
-/// declined before it gets here and there is nothing to note.
+/// an OAuth client ([`supports_oauth`]) at any transport, so the block is
+/// dropped here and the drop is REPORTED -- the rule the rest of this module
+/// follows, that a dropped auth field must never read as configured.
+///
+/// Every path that reaches a writer does gate on `supports_oauth` first
+/// (`mcp install` and `mcp update` in the CLI, `mcp:apply` and `mcp:update` in
+/// the desktop), so in practice a def carrying an oauth block is declined
+/// before it gets here. This reports anyway: a writer that stays silent
+/// because it trusts its callers is exactly how this subsystem has repeatedly
+/// shipped a rule enforced in one layer and quietly missing from another.
 fn to_copilot_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>), WriterError> {
-    Ok((to_plain_server_json(def)?, Vec::new()))
+    let notes = if def.oauth.is_some() {
+        vec![UpsertNote::DroppedField {
+            field: "oauth".to_string(),
+        }]
+    } else {
+        Vec::new()
+    };
+    Ok((to_plain_server_json(def)?, notes))
 }
 
 /// A stdio def carrying an `oauth` block: the block is not written, and the
@@ -1235,7 +1248,8 @@ mod tests {
     /// five different ways, four of them unreported: claude and cursor wrote an
     /// auth block onto a stdio server object, codex and opencode discarded it
     /// in silence, and copilot alone was skipped and reported. Now every writer
-    /// drops it and says so.
+    /// drops it and says so -- including copilot, which this loop used to leave
+    /// out while the sentence above already claimed otherwise.
     #[test]
     fn no_writer_puts_an_oauth_block_on_a_stdio_server_and_all_of_them_report_the_drop() {
         let mut def = stdio_def();
@@ -1248,7 +1262,12 @@ mod tests {
             field: "oauth".to_string(),
         }];
 
-        for agent in [AgentKind::Claude, AgentKind::Cursor, AgentKind::Opencode] {
+        for agent in [
+            AgentKind::Claude,
+            AgentKind::Cursor,
+            AgentKind::Copilot,
+            AgentKind::Opencode,
+        ] {
             let out = writer_for(agent)
                 .upsert("", "local_1", &def)
                 .expect("upsert");
@@ -1693,6 +1712,28 @@ mod tests {
             assert!(supports_transport(agent, McpTransport::Http));
             assert!(supports_transport(agent, McpTransport::Sse));
         }
+    }
+
+    /// The reachable shape for the one agent that cannot express oauth at all:
+    /// an `http` def WITH an oauth block, which is what `supports_oauth` exists
+    /// to decline. The stdio loop above covers copilot too, but stdio+oauth is
+    /// a nonsense def; this is the ordinary one. Copilot returned no note here
+    /// for the whole of this feature, on the grounds that callers gate first --
+    /// so the writer alone could not be trusted, and nothing said so.
+    #[test]
+    fn copilot_reports_the_oauth_block_it_cannot_express() {
+        let def = oauth_def(Some("example-client"), Some(18080), vec!["read"]);
+        let out = writer_for(AgentKind::Copilot)
+            .upsert("", "remote_1", &def)
+            .expect("upsert");
+        assert!(!out.text.contains("example-client"));
+        assert!(!out.text.contains("18080"));
+        assert_eq!(
+            out.notes,
+            vec![UpsertNote::DroppedField {
+                field: "oauth".to_string()
+            }]
+        );
     }
 
     #[test]

@@ -21,11 +21,18 @@
           ]
         },
         "scopes": {
-          "description": "Requested scopes, canonically a list because the agents disagree on the\nwire type: Claude Code takes one space-separated string, Cursor and\nCodex take arrays. A list converts to both without loss; a string does\nnot, since splitting is not reversible when a scope contains a space.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Requested scopes, canonically a list because the agents disagree on the\nwire type: Claude Code takes one space-separated string, Cursor and\nCodex take arrays. A list converts to both without loss; a string does\nnot, since splitting is not reversible when a scope contains a space."
         }
       },
       "type": "object"
@@ -68,6 +75,8 @@
               "additionalProperties": {
                 "type": [
                   "string",
+                  "number",
+                  "boolean",
                   "null"
                 ]
               },
@@ -195,11 +204,18 @@
           "description": "OAuth client configuration. Meaningful only for `http` and `sse`."
         },
         "parameters": {
-          "additionalProperties": {
-            "$ref": "#/$defs/McpParameter"
-          },
-          "description": "Authoring metadata per `{param}` placeholder. Keyed by parameter name;\nthis map's own order is irrelevant because the parameter list arrives\nsorted from the scanner, so a `BTreeMap` matches `headers` and `env`.",
-          "type": "object"
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/McpParameter"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Authoring metadata per `{param}` placeholder. Keyed by parameter name;\nthis map's own order is irrelevant because the parameter list arrives\nsorted from the scanner, so a `BTreeMap` matches `headers` and `env`."
         },
         "rules": {
           "description": "Usage guidance written into the agent's guidance file on install, the\nsame way skill guidance is.",

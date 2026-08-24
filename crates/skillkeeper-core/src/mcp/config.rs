@@ -227,6 +227,34 @@ mod tests {
         assert_eq!(cfg.servers[0].parameters["access"].options[0].label, "");
     }
 
+    /// The third form of the same disproportion: a YAML scalar that is not a
+    /// string. `8080:` is a number to the parser and a value to the author who
+    /// typed it, and insisting on strings threw away the sibling preset too.
+    #[test]
+    fn a_non_string_option_scalar_leaves_every_server_in_the_file_intact() {
+        let cfg = parse_mcp_config(
+            "version: 1\nservers:\n  - name: ported\n    type: http\n    url: https://example.com/{port}\n    parameters:\n      port:\n        options:\n          8080: Primary\n          9090: 2\n          true: Enabled\n  - name: innocent\n    type: stdio\n    command: npx\n",
+        )
+        .expect("a numeric option value must not fail the document");
+        assert_eq!(
+            cfg.servers
+                .iter()
+                .map(|s| s.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["ported", "innocent"]
+        );
+        let options = &cfg.servers[0].parameters["port"].options;
+        // Read as the strings the author meant, in document order, label
+        // included -- a numeric LABEL is the same class as a numeric value.
+        assert_eq!(
+            options
+                .iter()
+                .map(|o| (o.value.as_str(), o.label.as_str()))
+                .collect::<Vec<_>>(),
+            vec![("8080", "Primary"), ("9090", "2"), ("true", "Enabled")]
+        );
+    }
+
     #[test]
     fn a_repaired_placeholder_still_registers_as_a_parameter() {
         let cfg = parse_mcp_config(

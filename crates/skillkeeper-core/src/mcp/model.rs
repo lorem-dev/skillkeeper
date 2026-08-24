@@ -150,6 +150,11 @@ pub struct McpParameter {
 /// - A null label (`read:` with nothing after the colon) is the empty label.
 ///   A blank row in a select is an authoring mistake the author sees the
 ///   moment they look at it; refusing the file is not proportionate to it.
+/// - A non-string scalar, in either position: `8080: "Port 8080"` is a NUMBER
+///   to a YAML parser and a string to the author who wrote it. Insisting on
+///   strings made one such entry take down every server in the file, which
+///   is the same disproportion as the two null forms above. See
+///   [`ScalarString`].
 fn de_options<'de, D>(deserializer: D) -> Result<Vec<McpOption>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -172,10 +177,12 @@ where
 
         fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
             let mut out = Vec::new();
-            while let Some((value, label)) = map.next_entry::<String, Option<String>>()? {
+            while let Some((value, label)) =
+                map.next_entry::<ScalarString, Option<ScalarString>>()?
+            {
                 out.push(McpOption {
-                    label: label.unwrap_or_default(),
-                    value,
+                    label: label.map(|l| l.0).unwrap_or_default(),
+                    value: value.0,
                 });
             }
             Ok(out)
@@ -191,6 +198,60 @@ where
     }
 
     deserializer.deserialize_any(OptionsVisitor)
+}
+
+/// A YAML scalar read as the string the author meant.
+///
+/// YAML scalars are untyped: `read` and `8080` and `true` all look like values
+/// an author would put in an option map, and only one of them parses as a
+/// string. Because [`crate::mcp::config::parse_mcp_config`] deserializes the
+/// whole document, refusing the other two threw away every server in the file
+/// over one entry -- so they are converted instead, exactly as the two null
+/// forms are. Nothing downstream cares: an option value and its label are
+/// strings by the time anything reads them, and a numeric-looking value hashes
+/// like any other string.
+struct ScalarString(String);
+
+impl<'de> serde::Deserialize<'de> for ScalarString {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de::Visitor;
+        use std::fmt;
+
+        struct ScalarVisitor;
+
+        impl Visitor<'_> for ScalarVisitor {
+            type Value = ScalarString;
+
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("a string, number or boolean")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                Ok(ScalarString(v.to_string()))
+            }
+
+            fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<Self::Value, E> {
+                Ok(ScalarString(v.to_string()))
+            }
+
+            fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Self::Value, E> {
+                Ok(ScalarString(v.to_string()))
+            }
+
+            fn visit_f64<E: serde::de::Error>(self, v: f64) -> Result<Self::Value, E> {
+                Ok(ScalarString(v.to_string()))
+            }
+
+            fn visit_bool<E: serde::de::Error>(self, v: bool) -> Result<Self::Value, E> {
+                Ok(ScalarString(v.to_string()))
+            }
+        }
+
+        deserializer.deserialize_any(ScalarVisitor)
+    }
 }
 
 /// A single MCP server definition. `type` selects the transport; the remaining

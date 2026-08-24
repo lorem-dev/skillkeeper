@@ -146,6 +146,20 @@ fn transport_str(t: McpTransport) -> &'static str {
     }
 }
 
+/// Author-supplied text with its control characters removed, for anything on
+/// its way to a terminal.
+///
+/// A `mcp.yml` comes out of a cloned repository, so every string in it is
+/// untrusted text: `\r` alone lets its author overwrite the line SkillKeeper
+/// just printed, and an escape sequence can colour or reposition the reader's
+/// terminal. This was applied to a description's prose, link text and URL and
+/// not to a server's `name`, which `mcp list` and the ambiguous-preset error
+/// print from the same file -- so the rule that had a stated reason to live at
+/// one boundary was in fact enforced on part of it.
+fn printable(text: &str) -> String {
+    text.chars().filter(|c| !c.is_control()).collect()
+}
+
 /// Render description spans for a terminal: a link becomes its text followed by
 /// its URL in parentheses.
 ///
@@ -161,7 +175,7 @@ fn transport_str(t: McpTransport) -> &'static str {
 /// cannot cover the prose around it.
 fn render_spans_for_terminal(spans: &[DescriptionSpan]) -> String {
     fn push_printable(out: &mut String, text: &str) {
-        out.extend(text.chars().filter(|c| !c.is_control()));
+        out.push_str(&printable(text));
     }
     let mut out = String::new();
     for span in spans {
@@ -417,7 +431,7 @@ fn find_preset(presets: Vec<PresetEntry>, name: &str) -> Result<PresetEntry, Cli
     if matches.len() > 1 {
         let labels: Vec<String> = matches
             .iter()
-            .map(|p| format!("{} ({})", preset_label(p), p.origin))
+            .map(|p| format!("{} ({})", printable(&preset_label(p)), p.origin))
             .collect();
         return Err(CliError(format!(
             "Ambiguous MCP preset name \"{name}\"; candidates: {}",
@@ -568,7 +582,7 @@ pub fn list(ctx: &McpCtx, out: &mut dyn Write, err: &mut dyn Write) -> Result<i3
         writeln!(
             out,
             "{}  origin={}  type={}  source={source}",
-            preset_label(p),
+            printable(&preset_label(p)),
             p.origin,
             transport_str(p.def.transport),
         )?;
@@ -1596,6 +1610,22 @@ mod tests {
             out.contains("See docs (https://mcp.example.com/mcp)."),
             "got {out}"
         );
+    }
+
+    /// A server's `name` is repository-authored too, and `mcp list` prints it
+    /// from the same file the descriptions come from. `\r` plus an erase-line
+    /// sequence lets its author overwrite the line SkillKeeper just wrote, so
+    /// the whole listing can be made to say something else. The strip covered
+    /// descriptions and not this.
+    #[test]
+    fn a_preset_name_reaches_the_terminal_without_its_control_characters() {
+        let hostile = "safe\r\u{1b}[2KFAKE: everything is fine";
+        let cleaned = printable(hostile);
+        assert!(
+            !cleaned.chars().any(char::is_control),
+            "no control character may survive: {cleaned:?}"
+        );
+        assert_eq!(cleaned, "safe[2KFAKE: everything is fine");
     }
 
     /// `mcp.yml` is repository-authored text on its way to a terminal. The

@@ -365,6 +365,33 @@ mod tests {
         assert_eq!(d[0].severity, Severity::Warning);
     }
 
+    /// The boundary itself, in the only way that cannot drift: a description of
+    /// EXACTLY the budget warns about nothing AND comes back from truncation
+    /// untouched, asserted side by side. SK018's message promises the text
+    /// "will be truncated", so a warning at a length truncation leaves alone
+    /// would be a warning about something that does not happen. Relaxing
+    /// `lint.rs`'s comparison to `>=` used to leave the entire crate suite
+    /// green.
+    #[test]
+    fn a_description_exactly_at_the_budget_neither_warns_nor_truncates() {
+        let exact = "x".repeat(crate::mcp::markup::DESCRIPTION_BUDGET);
+        let def = McpServerDef {
+            description: Some(exact.clone()),
+            ..http_def()
+        };
+        assert_eq!(lint_mcp_preset(&def), Vec::new());
+
+        let spans = crate::mcp::markup::parse_description(&exact);
+        assert_eq!(
+            crate::mcp::markup::truncate_spans(
+                spans.clone(),
+                crate::mcp::markup::DESCRIPTION_BUDGET
+            ),
+            spans,
+            "truncation must leave a description at the budget alone"
+        );
+    }
+
     #[test]
     fn a_long_url_does_not_count_toward_the_budget() {
         let long = format!("[ok](https://mcp.example.com/{})", "p".repeat(400));
