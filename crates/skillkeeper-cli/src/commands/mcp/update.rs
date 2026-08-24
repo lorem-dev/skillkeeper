@@ -6,7 +6,8 @@ use std::io::Write;
 use skillkeeper_core::mcp::params::{invalid_option_values, migrate_option_values};
 use skillkeeper_core::mcp::{
     hash_mcp_def, install_mcp_instance, missing_params, parse_skmcp, parse_skmcp_params,
-    remove_mcp_instance, supports_oauth, InstallMcpArgs, McpIdentity, RemoveMcpArgs,
+    remove_mcp_instance, supports_oauth, supports_transport, InstallMcpArgs, McpIdentity,
+    RemoveMcpArgs,
 };
 use skillkeeper_core::models::Scope;
 use skillkeeper_core::state::state::load_state;
@@ -14,7 +15,9 @@ use skillkeeper_core::state::state::load_state;
 use crate::error::CliError;
 
 use super::args::{collect_params, identity_matches, kinds_for, UpdateScope};
-use super::hints::{accepted_option_values, note_line, parameter_description, parameter_hint};
+use super::hints::{
+    accepted_option_values, note_line, parameter_description, parameter_hint, transport_str,
+};
 use super::presets::list_presets;
 use super::target::resolve_mcp_target;
 use super::{McpCtx, ALL_MCP_AGENTS};
@@ -156,6 +159,26 @@ pub fn update(
             // The overrides above are already known to be in the option set,
             // so this only ever migrates what came off disk.
             let option_notes = migrate_option_values(&current.def, &mut merged);
+            // The source may have changed transport since this instance was
+            // installed, to one this agent cannot express. `install` gates on
+            // this; without the same gate here the remove below succeeds, the
+            // writer then refuses the transport, and a working instance is
+            // gone along with the values stored for it. Reported and skipped
+            // like the oauth case directly below, for the same reason: the
+            // run left the state exactly as it found it.
+            if !supports_transport(scope.agent, current.def.transport) {
+                writeln!(
+                    out,
+                    "Skipped {} ({}): cannot express the {} transport. Remove it with mcp remove {} --agent {} if it is no longer wanted.",
+                    entry.name,
+                    scope.agent,
+                    transport_str(current.def.transport),
+                    entry.name,
+                    scope.agent
+                )?;
+                skipped = true;
+                continue;
+            }
             // Rewritten without its auth block, this server would look
             // updated and fail to authenticate. Declining is the honest
             // outcome -- and it must happen before the remove below, or the
@@ -619,6 +642,73 @@ mod tests {
         // Untouched: not rewritten without its auth, and NOT deleted by the
         // remove half of the reinstall -- the gate runs before the remove.
         assert_eq!(app.fs.read_file("/proj/.vscode/mcp.json").unwrap(), before);
+    }
+
+    /// The sibling of the oauth case above, and the one that was missing:
+    /// `install` gates on the transport, `update` did not. Codex takes stdio
+    /// and http and refuses sse, so a source edited to sse reaches the update
+    /// as an ordinary pending change -- and the remove ran before the writer
+    /// got a chance to refuse it.
+    #[test]
+    fn update_declines_a_transport_the_agent_cannot_express_without_deleting_it() {
+        let app = TestApp::new(plain_http_fs());
+        seed_state(&app.fs);
+        let mut sink = Vec::new();
+        let mut sink2 = Vec::new();
+        install(
+            &app.ctx(),
+            "remote",
+            Some(PROJECT),
+            &["codex".to_string()],
+            &[],
+            false,
+            &mut sink,
+            &mut sink2,
+        )
+        .unwrap();
+        let before = app.fs.read_file("/proj/.codex/config.toml").unwrap();
+        assert!(before.contains("remote_1"), "not installed:\n{before}");
+
+        // The source switches to the one transport codex cannot express.
+        app.fs
+            .write_file(
+                "/repos/r1/mcp.yml",
+                "version: 1\nservers:\n  - name: remote\n    type: sse\n    url: https://example.com/events\n",
+            )
+            .unwrap();
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = update(
+            &app.ctx(),
+            None,
+            Some(PROJECT),
+            &["codex".to_string()],
+            false,
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 0, "a declined update must not fail the command");
+        let out = String::from_utf8(out).unwrap();
+        assert!(
+            out.contains("Skipped remote_1 (codex): cannot express the sse transport."),
+            "no transport skip on the update path:\n{out}"
+        );
+        assert!(
+            out.contains("mcp remove remote_1 --agent codex"),
+            "the skip names no remedy:\n{out}"
+        );
+        assert!(String::from_utf8(err).unwrap().is_empty());
+        // The whole point: the instance is still there. The gate runs before
+        // the remove, so a writer that would have refused the reinstall never
+        // gets the chance to leave nothing behind.
+        assert_eq!(
+            app.fs.read_file("/proj/.codex/config.toml").unwrap(),
+            before
+        );
     }
 
     #[test]
