@@ -820,6 +820,48 @@ msgstr "组件"
 msgid "mcp.managementTitle"
 msgstr "管理"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "客户端 ID"
+
+msgid "mcp.field.callbackPort"
+msgstr "回调端口"
+
+msgid "mcp.field.scopes"
+msgstr "作用域"
+
+msgid "mcp.scopePlaceholder"
+msgstr "作用域"
+
+msgid "mcp.addScope"
+msgstr "添加作用域"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper 仅存储公开的客户端字段。请通过代理本身登录。客户端密钥永远不会保存在此处。"
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth 仅适用于 http 和 sse 服务器。"
+
+msgid "mcp.error.clientIdBlank"
+msgstr "客户端 ID 不能为空。"
+
+msgid "mcp.error.callbackPortRange"
+msgstr "回调端口必须在 1 到 65535 之间。"
+
+msgid "mcp.error.scopeBlank"
+msgstr "作用域不能为空。"
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} 无法存储 OAuth 客户端,因此此服务器将无法进行身份验证。"
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} 不支持 {field},因此未写入。"
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex 已将其 OAuth 回调端口设置为 {found},因此保持不变,而不是设置为 {wanted}。"
+
 msgid "settings.comingSoon"
 msgstr "设置界面即将推出。"
 

@@ -182,7 +182,7 @@ mod tests {
         names.sort_unstable();
         assert_eq!(
             names,
-            ["args", "command", "env", "headers", "name", "rules", "type", "url"]
+            ["args", "command", "env", "headers", "name", "oauth", "rules", "type", "url"]
         );
     }
 

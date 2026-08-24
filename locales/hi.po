@@ -901,6 +901,48 @@ msgstr "घटक"
 msgid "mcp.managementTitle"
 msgstr "प्रबंधन"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "क्लाइंट ID"
+
+msgid "mcp.field.callbackPort"
+msgstr "कॉलबैक पोर्ट"
+
+msgid "mcp.field.scopes"
+msgstr "स्कोप"
+
+msgid "mcp.scopePlaceholder"
+msgstr "स्कोप"
+
+msgid "mcp.addScope"
+msgstr "स्कोप जोड़ें"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper केवल सार्वजनिक क्लाइंट फ़ील्ड सहेजता है। एजेंट के माध्यम से ही साइन इन करें; क्लाइंट सीक्रेट यहां कभी सहेजा नहीं जाता।"
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth केवल http और sse सर्वर पर लागू होता है।"
+
+msgid "mcp.error.clientIdBlank"
+msgstr "क्लाइंट ID खाली नहीं हो सकता।"
+
+msgid "mcp.error.callbackPortRange"
+msgstr "कॉलबैक पोर्ट 1 से 65535 के बीच होना चाहिए।"
+
+msgid "mcp.error.scopeBlank"
+msgstr "स्कोप खाली नहीं हो सकता।"
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} OAuth क्लाइंट सहेज नहीं सकता, इसलिए यह सर्वर प्रमाणित नहीं होगा।"
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} {field} का समर्थन नहीं करता; इसे नहीं लिखा गया।"
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex पहले से ही अपना OAuth कॉलबैक पोर्ट {found} पर सेट करता है, इसलिए इसे {wanted} पर सेट करने के बजाय जस का तस छोड़ दिया गया।"
+
 msgid "settings.comingSoon"
 msgstr "सेटिंग्स स्क्रीन जल्द आ रही है।"
 

@@ -51,7 +51,7 @@ pub fn hash_mcp_def(def: &McpServerDef) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::model::McpTransport;
+    use crate::mcp::model::{McpOauth, McpTransport};
     use std::collections::BTreeMap;
 
     fn http(name: &str, url: Option<&str>, rules: Option<&str>) -> McpServerDef {
@@ -64,6 +64,25 @@ mod tests {
             args: None,
             env: None,
             rules: rules.map(str::to_string),
+            oauth: None,
+        }
+    }
+
+    fn http_oauth_def(scopes: Vec<String>) -> McpServerDef {
+        McpServerDef {
+            name: "remote".to_string(),
+            transport: McpTransport::Http,
+            url: Some("https://mcp.example.com/mcp".to_string()),
+            headers: None,
+            command: None,
+            args: None,
+            env: None,
+            rules: None,
+            oauth: Some(McpOauth {
+                client_id: None,
+                callback_port: None,
+                scopes,
+            }),
         }
     }
 
@@ -91,6 +110,7 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            oauth: None,
         };
         let b = McpServerDef {
             name: "x".to_string(),
@@ -101,6 +121,7 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            oauth: None,
         };
         assert_eq!(canonical_mcp_json(&a), canonical_mcp_json(&b));
     }
@@ -145,6 +166,7 @@ mod tests {
             args: Some(vec!["--a".to_string(), "--b".to_string()]),
             env: Some(e1),
             rules: None,
+            oauth: None,
         };
         let b = McpServerDef {
             name: "x".to_string(),
@@ -155,6 +177,7 @@ mod tests {
             args: Some(vec!["--a".to_string(), "--b".to_string()]),
             env: Some(e2),
             rules: None,
+            oauth: None,
         };
         assert_eq!(hash_mcp_def(&a), hash_mcp_def(&b));
     }
@@ -170,6 +193,7 @@ mod tests {
             args: Some(vec!["--a".to_string(), "--b".to_string()]),
             env: None,
             rules: None,
+            oauth: None,
         };
         let b = McpServerDef {
             name: "x".to_string(),
@@ -180,6 +204,7 @@ mod tests {
             args: Some(vec!["--b".to_string(), "--a".to_string()]),
             env: None,
             rules: None,
+            oauth: None,
         };
         assert_ne!(hash_mcp_def(&a), hash_mcp_def(&b));
     }
@@ -194,6 +219,19 @@ mod tests {
         assert_eq!(
             hash_mcp_def(&def),
             format!("sha256:{}", sha256(r#"{"type":"http","url":"u"}"#))
+        );
+    }
+
+    #[test]
+    fn changing_a_scope_changes_the_hash() {
+        let mut a = http_oauth_def(vec!["read".to_string()]);
+        let b = http_oauth_def(vec!["read".to_string(), "write".to_string()]);
+        assert_ne!(hash_mcp_def(&a), hash_mcp_def(&b));
+        a.oauth.as_mut().expect("oauth").scopes = vec!["write".to_string(), "read".to_string()];
+        assert_ne!(
+            hash_mcp_def(&a),
+            hash_mcp_def(&b),
+            "scope order is significant and must not be sorted away"
         );
     }
 }

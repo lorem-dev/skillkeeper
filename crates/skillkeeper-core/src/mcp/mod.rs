@@ -12,6 +12,7 @@ pub mod discovery;
 pub mod gitignore_ensure;
 pub mod hashing;
 pub mod install;
+pub mod lint;
 pub mod model;
 pub mod naming;
 pub mod params;
@@ -24,7 +25,7 @@ pub use gitignore_ensure::ensure_gitignore;
 pub use hashing::{canonical_mcp_json, hash_mcp_def};
 pub use install::{
     install_mcp_instance, remove_mcp_instance, InstallMcpArgs, McpIdentity, McpInstallError,
-    RemoveMcpArgs,
+    McpInstallOutcome, RemoveMcpArgs,
 };
 pub use model::{McpPresetOrigin, McpServerDef, McpTransport};
 pub use naming::{allocate_instance_name, to_snake_case};
@@ -37,6 +38,6 @@ pub use skmcp::{
     SkmcpFile, SKMCP_FILE, SKMCP_PARAMS_FILE, SKMCP_SCHEMA,
 };
 pub use writers::{
-    mcp_destination, supports_transport, writer_for, McpConfigWriter, McpDestination,
-    McpDestinationTarget, WriterError,
+    mcp_destination, supports_oauth, supports_transport, writer_for, McpConfigWriter,
+    McpDestination, McpDestinationTarget, UpsertNote, UpsertOutcome, WriterError,
 };

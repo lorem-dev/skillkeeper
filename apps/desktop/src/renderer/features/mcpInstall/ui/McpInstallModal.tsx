@@ -24,7 +24,9 @@ import { Modal, Button, TextField, Checkbox, Tooltip } from '@/shared/ui';
 import { ProjectSelect } from '@/entities/project';
 import { ALL_AGENTS, AGENT_LABELS, applyScope } from '@/domain';
 import { supportsTransport } from '../lib/supportsTransport';
+import { supportsOauth } from '../lib/supportsOauth';
 import { buildInstallBatches } from '../lib/buildBatches';
+import { installNotesToMessages } from '../lib/installNotesToMessages';
 import './McpInstallModal.scss';
 
 export interface McpInstallModalProps {
@@ -77,11 +79,16 @@ export function McpInstallModal({
 
   /** Reason text for a disabled agent checkbox, or undefined when selectable. */
   function disabledReason(agent: AgentKind): string | undefined {
-    if (supportsTransport(agent, preset.def.type)) return undefined;
-    return t('mcp.transportUnsupported', {
-      agent: AGENT_LABELS[agent],
-      transport: t(`mcp.protocol.${preset.def.type}`),
-    });
+    if (!supportsTransport(agent, preset.def.type)) {
+      return t('mcp.transportUnsupported', {
+        agent: AGENT_LABELS[agent],
+        transport: t(`mcp.protocol.${preset.def.type}`),
+      });
+    }
+    if (preset.def.oauth !== undefined && !supportsOauth(agent)) {
+      return t('mcp.oauthUnsupported', { agent: AGENT_LABELS[agent] });
+    }
+    return undefined;
   }
 
   function toggleAgent(agent: AgentKind): void {
@@ -107,6 +114,8 @@ export function McpInstallModal({
     if (result.skipped.length > 0) {
       notify(t('mcp.skippedAgents', { count: String(result.skipped.length) }), 'info');
     }
+    // Deduplicated: two agents dropping the same field must not say it twice.
+    for (const message of installNotesToMessages(result.installed, t)) notify(message, 'info');
     onClose();
   }
 

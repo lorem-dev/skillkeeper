@@ -68,6 +68,10 @@ servers:
     args: [<string>, ...]     # optional, stdio
     env:                      # optional, stdio
       <VAR_NAME>: <value>
+    oauth:                    # optional, http/sse
+      clientId: <string>
+      callbackPort: <number>
+      scopes: [<string>, ...]
     rules: <string>           # optional guidance body
 ```
 
@@ -298,31 +302,37 @@ destinations below is written; every agent supports both, not only codex:
 | cursor   | `<project>/.cursor/mcp.json`   | `~/.cursor/mcp.json`                              | stdio, http, sse | `mcpServers`   |
 | copilot  | `<project>/.vscode/mcp.json`   | `~/.config/github-copilot/mcp-config.json`        | stdio, http, sse | `servers`      |
 | opencode | `<project>/opencode.json`      | `~/.config/opencode/opencode.json`                | stdio, http, sse | `mcp`          |
-| codex    | (not available)                 | `~/.codex/config.toml`                            | stdio only       | `mcp_servers`  |
+| codex    | `<project>/.codex/config.toml` | `~/.codex/config.toml`                            | stdio, http      | `mcp_servers`  |
 
 Writers only touch their own container key and the server entries they own;
 other keys and other servers already in the file are preserved. Output key
 order is sorted, so re-writing the same content is a no-op diff.
 
-Codex differs from the other four agents in two ways:
+Codex differs from the other four agents in a few ways:
 
-- **Global only**: every agent can be installed user-wide with `--global`, but
-  Codex has no project-scoped MCP config at all, so it is global *only* --
-  `mcp install --agent codex` and `mcp update --agent codex` without `--global`
-  are both refused. An install for
-  Codex always writes to `~/.codex/config.toml`, `~/.codex/skills/.skmcp.yml`,
-  and `~/.codex/skills/.skmcp.params.yml` - never into a project - regardless
-  of which project directory the command was run from. This is intentional and
-  applies to the guidance target too (`~/AGENTS.md`): Codex has only a single
-  global MCP config, so a Codex MCP server is shared across every project.
-  Keeping its ledger, parameter values, instance-name allocation, and rules
-  global is what keeps that one config coherent (for example, it lets
-  instance names stay unique in the single `config.toml`). Note this differs
+- **The CLI requires `--global`**: `mcp install --agent codex` and
+  `mcp update --agent codex` without `--global` are both refused by the CLI,
+  even though Codex's native destination resolution (the table above) can
+  resolve a real project-scoped path. This is a restriction of the CLI
+  command, not of Codex itself. From the CLI, an install for Codex always
+  writes to `~/.codex/config.toml`, `~/.codex/skills/.skmcp.yml`, and
+  `~/.codex/skills/.skmcp.params.yml` - never into a project - regardless of
+  which project directory the command was run from. This also applies to the
+  guidance target (`~/AGENTS.md`) for a CLI-driven install. Note this differs
   from Codex *skill* guidance, which is project-scoped (`<project>/AGENTS.md`)
-  because skills are per-project files - MCP servers are not.
-- **stdio only**: Codex's native config cannot express `http` or `sse`
-  servers. Installing a non-stdio preset for Codex is skipped rather than
-  attempted, and is reported back as a skipped install.
+  because skills are per-project files - MCP servers written by the CLI are
+  not.
+- **A project-scoped config is honored only for trusted projects**: Codex
+  reads a project-scoped `<project>/.codex/config.toml` in addition to its
+  global file, but only for a project the user has marked trusted from
+  within Codex itself. SkillKeeper has no way to see that trust state, so it
+  writes the project-scoped file regardless of it rather than pretending to
+  verify something it cannot see.
+- **`sse` is not supported**: Codex's native config can express `stdio` and
+  `http` servers. Whether its remote client also accepts `sse` is
+  unverified, so this project does not write a config shape it has not
+  confirmed works; installing an `sse` preset for Codex is skipped rather
+  than attempted, and is reported back as a skipped install.
 
 The Codex writer round-trips `~/.codex/config.toml` through a TOML
 parser/serializer. That preserves table structure and values but does
@@ -342,6 +352,121 @@ byte-for-byte instead of failing on it or dropping it, so neither install order
 loses data. Note that a `#` comment is not valid JSON, so a file holding both a
 hook block and MCP servers is still not readable by opencode itself; avoid
 installing global opencode hooks and global opencode MCP servers together.
+
+## OAuth
+
+An `oauth` block on an `http` or `sse` server definition carries the OAuth
+*client configuration* the agent needs to sign in to that server. It is
+meaningful only for those two transports, never for `stdio`.
+
+```yaml
+oauth:
+  clientId: example-client
+  callbackPort: 4321
+  scopes: [read, write]
+```
+
+- `clientId` - a pre-registered OAuth client id. Absent leaves the agent to
+  register one dynamically.
+- `callbackPort` - a fixed loopback port for the redirect URI. Absent lets
+  the agent choose its own.
+- `scopes` - the requested scopes. Declared as a list because the agents
+  disagree on the wire type it is rendered as (see "Per-agent rendering"
+  below); an empty list is the same as omitting the field.
+
+### SkillKeeper writes configuration; the agent signs in
+
+SkillKeeper never performs the OAuth flow itself: it does not open a
+browser, does not run a callback server, and does not obtain, store, or
+refresh a token. Every agent runs its own authorization flow and keeps the
+resulting token in its own store - Claude Code in the system keychain,
+OpenCode in its own credentials file, Codex behind its own sign-in command -
+so a token SkillKeeper obtained could not be placed anywhere useful. Writing
+the client configuration and leaving the sign-in to the agent is exactly how
+SkillKeeper already treats every other MCP field.
+
+### A client secret is never stored
+
+`oauth` carries only public-client fields: `clientId`, `callbackPort`, and
+`scopes`. There is no `clientSecret` field. SkillKeeper's configuration is
+committed to repositories and synchronized between machines, so a secret
+placed in it would leak by construction. A user with a confidential client
+supplies the secret through their own agent's command instead, which routes
+it to the platform keychain rather than to a file SkillKeeper can see.
+
+### Per-agent rendering
+
+`scopes` is stored as a list because the agents do not agree on the wire
+type: Claude Code takes one space-separated string, while Cursor and Codex
+take an array. A list converts to both without loss.
+
+| Agent | Native key | Client id | Scopes | Callback port |
+|---|---|---|---|---|
+| Claude Code | `oauth` | `clientId` | space-separated string | `callbackPort` |
+| Cursor | `auth` | `CLIENT_ID` | array | not supported; dropped and reported |
+| OpenCode | `oauth` | `clientId` | not written; unverified whether OpenCode accepts a scopes field | not supported; dropped and reported |
+| Codex | `[mcp_servers.<name>.oauth]`, `scopes` in the server table | `client_id` | array, beside `url`, not inside `oauth` | see "Codex" below |
+| Copilot | not supported | - | - | - |
+
+A field an agent's native config cannot express is omitted rather than
+guessed at, and the omission is reported back as a note next to the install
+result, the same way a skipped agent already is.
+
+Installing an oauth-carrying preset for Copilot skips Copilot outright and
+reports why, rather than writing a server that looks installed and cannot
+authenticate.
+
+### Codex
+
+Codex nests the client id in its own table and keeps scopes beside `url`,
+not inside the `oauth` table:
+
+```toml
+[mcp_servers.remote]
+url = "https://mcp.example.com/mcp"
+scopes = ["read", "write"]
+
+[mcp_servers.remote.oauth]
+client_id = "example-client"
+```
+
+A `callbackPort` also writes two keys at the root of `config.toml`, not
+inside the server table, because that is where Codex reads them from:
+
+```toml
+mcp_oauth_callback_port = 4321
+mcp_oauth_callback_url = "http://localhost:4321/callback"
+```
+
+They are written together, derived from one value, and only when both are
+absent or already hold the values SkillKeeper would write. If a different
+value is already there, SkillKeeper writes the server but leaves the two
+keys alone and reports the conflict: a half-written pair, or overwriting a
+value another server or the user depends on, is worse than leaving it for
+the user to resolve by hand. Uninstalling the server never removes these
+keys either, for the same reason - they are not SkillKeeper's to delete.
+
+Codex also gates its remote MCP client behind an experimental feature flag:
+
+```toml
+[features]
+rmcp_client = true
+```
+
+SkillKeeper does not write it: enabling an experimental feature in someone's
+configuration is not a decision this project makes for them. Set it
+yourself before installing a remote server for Codex.
+
+### Lint codes
+
+`repo lint` reports three warnings for a malformed `oauth` block: `SK015`
+(an `oauth` block on a `stdio` transport), `SK016` (a blank `clientId`), and
+`SK017` (a `callbackPort` of `0`). All three are warnings, not errors - a
+repository you only consume still resolves and installs with a bad auth
+block on one preset, the same as any other lint warning. Authoring the
+preset yourself, in the desktop editor or through the CLI's own preset
+parsing, rejects the same input outright, since you are the one who can fix
+it. See [CLI Reference](cli.md#repo-lint) for the full table of codes.
 
 ## Rules (guidance)
 

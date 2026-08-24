@@ -976,6 +976,48 @@ msgstr "Компоненты"
 msgid "mcp.managementTitle"
 msgstr "Менеджмент"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "ID клиента"
+
+msgid "mcp.field.callbackPort"
+msgstr "Порт обратного вызова"
+
+msgid "mcp.field.scopes"
+msgstr "Области доступа"
+
+msgid "mcp.scopePlaceholder"
+msgstr "область"
+
+msgid "mcp.addScope"
+msgstr "Добавить область"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper хранит только публичные поля клиента. Выполните вход через самого агента; секрет клиента здесь никогда не сохраняется."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth применяется только к серверам http и sse."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "ID клиента не может быть пустым."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "Порт обратного вызова должен быть от 1 до 65535."
+
+msgid "mcp.error.scopeBlank"
+msgstr "Область не может быть пустой."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} не может сохранить OAuth-клиента, поэтому этот сервер не сможет пройти аутентификацию."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} не поддерживает {field}; оно не было записано."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex уже устанавливает порт обратного вызова OAuth на {found}, поэтому он остался без изменений вместо установки на {wanted}."
+
 msgid "settings.comingSoon"
 msgstr "Экран настроек скоро появится."
 

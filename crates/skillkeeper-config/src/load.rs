@@ -398,6 +398,7 @@ mcp:
                 ]),
                 env: None,
                 rules: None,
+                oauth: None,
             }]
         );
 
@@ -619,6 +620,7 @@ notifications:
                 args: None,
                 env: None,
                 rules: None,
+                oauth: None,
             }]
         );
     }

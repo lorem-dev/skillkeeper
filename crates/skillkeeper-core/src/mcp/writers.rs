@@ -27,6 +27,7 @@
 
 use std::collections::BTreeMap;
 
+use serde::Serialize;
 use serde_json::{Map, Value};
 use thiserror::Error;
 
@@ -40,11 +41,49 @@ use crate::models::{AgentKind, Scope};
 #[error("{0}")]
 pub struct WriterError(pub String);
 
+/// Something worth telling the user about an otherwise successful upsert.
+///
+/// Structured rather than a formatted sentence: the renderer localizes these
+/// into 18 catalogs, so the writer must not bake English prose into them. The
+/// serialized form is a discriminated union the bridge already handles.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(
+    test,
+    ts(
+        export,
+        export_to = "../../../apps/desktop/src/renderer/services/bridge/generated/core/"
+    )
+)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum UpsertNote {
+    /// The agent cannot express this field, so it was not written. `field` is
+    /// the canonical name (`"callbackPort"`, `"scopes"`), not a native key.
+    DroppedField { field: String },
+    /// Codex already sets its global callback port to something else, so it was
+    /// left alone.
+    CodexCallbackConflict { found: u16, wanted: u16 },
+}
+
+/// The result of an upsert: the rewritten config text, plus any notes. A note
+/// is not an error -- the server is written -- but it must reach the user,
+/// because a silently dropped auth field reads as configured when it is not.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UpsertOutcome {
+    pub text: String,
+    pub notes: Vec<UpsertNote>,
+}
+
 /// Translates a rendered [`McpServerDef`] into one agent's native MCP config
 /// text. All operations are pure text transforms (no I/O).
 pub trait McpConfigWriter {
     /// Add server `name`, or replace it if already present.
-    fn upsert(&self, text: &str, name: &str, def: &McpServerDef) -> Result<String, WriterError>;
+    fn upsert(
+        &self,
+        text: &str,
+        name: &str,
+        def: &McpServerDef,
+    ) -> Result<UpsertOutcome, WriterError>;
     /// Drop server `name`. No-op (returns `text` unchanged) if absent.
     fn remove(&self, text: &str, name: &str) -> Result<String, WriterError>;
     /// All server names currently present, owned or not.
@@ -73,8 +112,9 @@ fn str_map_to_toml(map: &BTreeMap<String, String>) -> toml::Table {
         .collect()
 }
 
-/// The claude/cursor/copilot server shape: a `type`-tagged object.
-fn to_standard_server_json(def: &McpServerDef) -> Result<Value, WriterError> {
+/// The plain claude/cursor/copilot server shape: a `type`-tagged object with no
+/// auth block. The base each per-agent wrapper below starts from.
+fn to_plain_server_json(def: &McpServerDef) -> Result<Value, WriterError> {
     if def.transport == McpTransport::Stdio {
         let command = def
             .command
@@ -112,9 +152,81 @@ fn to_standard_server_json(def: &McpServerDef) -> Result<Value, WriterError> {
     Ok(Value::Object(obj))
 }
 
+/// Copilot's shape: the plain object with no auth block. Copilot cannot express
+/// an OAuth client ([`supports_oauth`]), and every path that reaches a writer
+/// gates on that first -- `mcp install` and `mcp update` in the CLI, `mcp:apply`
+/// and `mcp:update` in the desktop -- so a def carrying an oauth block is
+/// declined before it gets here and there is nothing to note.
+fn to_copilot_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>), WriterError> {
+    Ok((to_plain_server_json(def)?, Vec::new()))
+}
+
+/// Claude Code's shape: an `oauth` object with camelCase keys, whose `scopes`
+/// is the single space-separated string of RFC 6749 section 3.3.
+fn to_claude_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>), WriterError> {
+    let mut value = to_plain_server_json(def)?;
+    let Some(oauth) = &def.oauth else {
+        return Ok((value, Vec::new()));
+    };
+    let mut block = Map::new();
+    if let Some(client_id) = &oauth.client_id {
+        block.insert("clientId".into(), Value::String(client_id.clone()));
+    }
+    if let Some(port) = oauth.callback_port {
+        block.insert("callbackPort".into(), Value::Number(port.into()));
+    }
+    if !oauth.scopes.is_empty() {
+        block.insert("scopes".into(), Value::String(oauth.scopes.join(" ")));
+    }
+    if !block.is_empty() {
+        if let Value::Object(obj) = &mut value {
+            obj.insert("oauth".into(), Value::Object(block));
+        }
+    }
+    Ok((value, Vec::new()))
+}
+
+/// Cursor's shape: an `auth` object whose client id key is `CLIENT_ID` and
+/// whose `scopes` is an array. Cursor has no callback-port setting, so that
+/// field is dropped with a note.
+fn to_cursor_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>), WriterError> {
+    let mut value = to_plain_server_json(def)?;
+    let Some(oauth) = &def.oauth else {
+        return Ok((value, Vec::new()));
+    };
+    let mut notes = Vec::new();
+    let mut block = Map::new();
+    if let Some(client_id) = &oauth.client_id {
+        block.insert("CLIENT_ID".into(), Value::String(client_id.clone()));
+    }
+    if !oauth.scopes.is_empty() {
+        block.insert(
+            "scopes".into(),
+            Value::Array(
+                oauth
+                    .scopes
+                    .iter()
+                    .map(|s| Value::String(s.clone()))
+                    .collect(),
+            ),
+        );
+    }
+    if oauth.callback_port.is_some() {
+        notes.push(UpsertNote::DroppedField {
+            field: "callbackPort".to_string(),
+        });
+    }
+    if !block.is_empty() {
+        if let Value::Object(obj) = &mut value {
+            obj.insert("auth".into(), Value::Object(block));
+        }
+    }
+    Ok((value, notes))
+}
+
 /// The opencode server shape: `local` (stdio) with `command` as an array and
 /// `env` renamed `environment`, or `remote` (http and sse both map to `remote`).
-fn to_opencode_server_json(def: &McpServerDef) -> Result<Value, WriterError> {
+fn to_opencode_server_json(def: &McpServerDef) -> Result<(Value, Vec<UpsertNote>), WriterError> {
     if def.transport == McpTransport::Stdio {
         let command = def
             .command
@@ -131,7 +243,7 @@ fn to_opencode_server_json(def: &McpServerDef) -> Result<Value, WriterError> {
         if let Some(env) = &def.env {
             obj.insert("environment".into(), str_map_to_json(env));
         }
-        return Ok(Value::Object(obj));
+        return Ok((Value::Object(obj), Vec::new()));
     }
     let url = def.url.as_ref().ok_or_else(|| {
         WriterError(format!(
@@ -146,10 +258,32 @@ fn to_opencode_server_json(def: &McpServerDef) -> Result<Value, WriterError> {
     if let Some(headers) = &def.headers {
         obj.insert("headers".into(), str_map_to_json(headers));
     }
-    Ok(Value::Object(obj))
+    let mut notes = Vec::new();
+    if let Some(oauth) = &def.oauth {
+        let mut block = Map::new();
+        if let Some(client_id) = &oauth.client_id {
+            block.insert("clientId".into(), Value::String(client_id.clone()));
+        }
+        if oauth.callback_port.is_some() {
+            notes.push(UpsertNote::DroppedField {
+                field: "callbackPort".to_string(),
+            });
+        }
+        // Whether opencode accepts a scopes field, and under what name, is
+        // unverified; omit it and say so rather than guess a key.
+        if !oauth.scopes.is_empty() {
+            notes.push(UpsertNote::DroppedField {
+                field: "scopes".to_string(),
+            });
+        }
+        if !block.is_empty() {
+            obj.insert("oauth".into(), Value::Object(block));
+        }
+    }
+    Ok((Value::Object(obj), notes))
 }
 
-type ShapeFn = fn(&McpServerDef) -> Result<Value, WriterError>;
+type ShapeFn = fn(&McpServerDef) -> Result<(Value, Vec<UpsertNote>), WriterError>;
 
 /// A JSON writer keyed on `container_key` (`mcpServers`, `servers`, `mcp`),
 /// mapping each server def through `to_server`.
@@ -184,16 +318,25 @@ fn serialize_json(root: Map<String, Value>) -> String {
 // regions are lifted (see [`lift_regions`]); every other non-JSON byte stays in
 // the text and is still rejected by [`parse_json_root`].
 impl McpConfigWriter for JsonWriter {
-    fn upsert(&self, text: &str, name: &str, def: &McpServerDef) -> Result<String, WriterError> {
+    fn upsert(
+        &self,
+        text: &str,
+        name: &str,
+        def: &McpServerDef,
+    ) -> Result<UpsertOutcome, WriterError> {
         let (json_text, regions) = lift_regions(text);
         let mut root = parse_json_root(&json_text)?;
         let mut container = match root.get(self.container_key) {
             Some(Value::Object(existing)) => existing.clone(),
             _ => Map::new(),
         };
-        container.insert(name.to_string(), (self.to_server)(def)?);
+        let (server, notes) = (self.to_server)(def)?;
+        container.insert(name.to_string(), server);
         root.insert(self.container_key.to_string(), Value::Object(container));
-        Ok(restore_regions(&serialize_json(root), &regions))
+        Ok(UpsertOutcome {
+            text: restore_regions(&serialize_json(root), &regions),
+            notes,
+        })
     }
 
     fn remove(&self, text: &str, name: &str) -> Result<String, WriterError> {
@@ -280,6 +423,27 @@ fn to_codex_server_object(def: &McpServerDef) -> Result<toml::Value, WriterError
                     toml::Value::Table(str_map_to_toml(headers)),
                 );
             }
+            if let Some(oauth) = &def.oauth {
+                // Codex reads `scopes` from the server table itself, and takes
+                // the client id from a nested `oauth` table in snake_case.
+                if !oauth.scopes.is_empty() {
+                    obj.insert(
+                        "scopes".into(),
+                        toml::Value::Array(
+                            oauth
+                                .scopes
+                                .iter()
+                                .map(|s| toml::Value::String(s.clone()))
+                                .collect(),
+                        ),
+                    );
+                }
+                if let Some(client_id) = &oauth.client_id {
+                    let mut nested = toml::Table::new();
+                    nested.insert("client_id".into(), toml::Value::String(client_id.clone()));
+                    obj.insert("oauth".into(), toml::Value::Table(nested));
+                }
+            }
             Ok(toml::Value::Table(obj))
         }
         // Codex's support for sse over its remote client is unverified; keep it
@@ -291,8 +455,50 @@ fn to_codex_server_object(def: &McpServerDef) -> Result<toml::Value, WriterError
     }
 }
 
+const CODEX_CALLBACK_PORT_KEY: &str = "mcp_oauth_callback_port";
+const CODEX_CALLBACK_URL_KEY: &str = "mcp_oauth_callback_url";
+
+/// Apply codex's two top-level OAuth callback keys.
+///
+/// These are global, unlike every other native write SkillKeeper makes, which
+/// stays inside the table it owns. So the rules are deliberately conservative:
+/// write both or neither (the url is derived from the port, and a half-written
+/// pair is worse than none), write only when absent or already equal, and never
+/// remove -- another server or the user may depend on them.
+fn apply_codex_callback_keys(root: &mut toml::Table, port: u16) -> Vec<UpsertNote> {
+    let want_url = format!("http://localhost:{port}/callback");
+    let existing = root
+        .get(CODEX_CALLBACK_PORT_KEY)
+        .and_then(toml::Value::as_integer);
+    match existing {
+        Some(found) if found != i64::from(port) => {
+            return vec![UpsertNote::CodexCallbackConflict {
+                // A port outside u16 cannot have been written by us; clamp for
+                // reporting rather than panicking on a hand-edited config.
+                found: u16::try_from(found).unwrap_or(u16::MAX),
+                wanted: port,
+            }];
+        }
+        _ => {}
+    }
+    root.insert(
+        CODEX_CALLBACK_PORT_KEY.to_string(),
+        toml::Value::Integer(i64::from(port)),
+    );
+    root.insert(
+        CODEX_CALLBACK_URL_KEY.to_string(),
+        toml::Value::String(want_url),
+    );
+    Vec::new()
+}
+
 impl McpConfigWriter for CodexTomlWriter {
-    fn upsert(&self, text: &str, name: &str, def: &McpServerDef) -> Result<String, WriterError> {
+    fn upsert(
+        &self,
+        text: &str,
+        name: &str,
+        def: &McpServerDef,
+    ) -> Result<UpsertOutcome, WriterError> {
         let mut root = parse_toml_root(text)?;
         let mut container = match root.get(CODEX_CONTAINER_KEY) {
             Some(toml::Value::Table(existing)) => existing.clone(),
@@ -303,7 +509,13 @@ impl McpConfigWriter for CodexTomlWriter {
             CODEX_CONTAINER_KEY.to_string(),
             toml::Value::Table(container),
         );
-        toml::to_string(&toml::Value::Table(root)).map_err(|e| WriterError(e.to_string()))
+        let mut notes = Vec::new();
+        if let Some(port) = def.oauth.as_ref().and_then(|o| o.callback_port) {
+            notes.extend(apply_codex_callback_keys(&mut root, port));
+        }
+        let text =
+            toml::to_string(&toml::Value::Table(root)).map_err(|e| WriterError(e.to_string()))?;
+        Ok(UpsertOutcome { text, notes })
     }
 
     fn remove(&self, text: &str, name: &str) -> Result<String, WriterError> {
@@ -343,15 +555,15 @@ pub fn writer_for(agent: AgentKind) -> Box<dyn McpConfigWriter> {
     match agent {
         AgentKind::Claude => Box::new(JsonWriter {
             container_key: "mcpServers",
-            to_server: to_standard_server_json,
+            to_server: to_claude_server_json,
         }),
         AgentKind::Cursor => Box::new(JsonWriter {
             container_key: "mcpServers",
-            to_server: to_standard_server_json,
+            to_server: to_cursor_server_json,
         }),
         AgentKind::Copilot => Box::new(JsonWriter {
             container_key: "servers",
-            to_server: to_standard_server_json,
+            to_server: to_copilot_server_json,
         }),
         AgentKind::Opencode => Box::new(JsonWriter {
             container_key: "mcp",
@@ -369,6 +581,15 @@ pub fn supports_transport(agent: AgentKind, t: McpTransport) -> bool {
         return t != McpTransport::Sse;
     }
     true
+}
+
+/// Whether `agent` can express a static OAuth client configuration in its
+/// native config. Copilot cannot in the surfaces SkillKeeper writes for, so a
+/// preset carrying an oauth block skips it rather than being written without
+/// its auth -- a server that looks installed and cannot authenticate is worse
+/// than one that was never written.
+pub fn supports_oauth(agent: AgentKind) -> bool {
+    agent != AgentKind::Copilot
 }
 
 /// Inputs needed to resolve an agent's native MCP config destination.
@@ -450,6 +671,7 @@ pub fn mcp_destination(
 mod tests {
     use super::*;
     use crate::hooks::region::{insert_region, wrap_region, InsertMode, WrapRegionOptions};
+    use crate::mcp::model::McpOauth;
 
     fn stdio_def() -> McpServerDef {
         let mut env = BTreeMap::new();
@@ -466,6 +688,7 @@ mod tests {
             ]),
             env: Some(env),
             rules: None,
+            oauth: None,
         }
     }
 
@@ -479,6 +702,7 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            oauth: None,
         }
     }
 
@@ -494,6 +718,7 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            oauth: None,
         }
     }
 
@@ -507,6 +732,7 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            oauth: None,
         }
     }
 
@@ -524,7 +750,7 @@ mod tests {
     fn json_upserts_a_stdio_server_into_empty_text() {
         for (agent, container_key) in JSON_AGENTS {
             let writer = writer_for(agent);
-            let text = writer.upsert("", "github_1", &stdio_def()).unwrap();
+            let text = writer.upsert("", "github_1", &stdio_def()).unwrap().text;
             let parsed = parse(&text);
             let server = &parsed[container_key]["github_1"];
             assert_eq!(server["type"], "stdio");
@@ -540,7 +766,8 @@ mod tests {
             let writer = writer_for(agent);
             let text = writer
                 .upsert("", "bare_1", &stdio_def_no_args_env())
-                .unwrap();
+                .unwrap()
+                .text;
             let parsed = parse(&text);
             let server = &parsed[container_key]["bare_1"];
             assert!(server.get("args").is_none());
@@ -553,7 +780,10 @@ mod tests {
     fn json_shapes_http_and_sse() {
         for (agent, container_key) in JSON_AGENTS {
             let writer = writer_for(agent);
-            let http_text = writer.upsert("", "remote_http_1", &http_def()).unwrap();
+            let http_text = writer
+                .upsert("", "remote_http_1", &http_def())
+                .unwrap()
+                .text;
             let http = parse(&http_text);
             assert_eq!(http[container_key]["remote_http_1"]["type"], "http");
             assert_eq!(
@@ -565,7 +795,7 @@ mod tests {
                 "Bearer x"
             );
 
-            let sse_text = writer.upsert("", "remote_sse_1", &sse_def()).unwrap();
+            let sse_text = writer.upsert("", "remote_sse_1", &sse_def()).unwrap().text;
             let sse = parse(&sse_text);
             assert_eq!(sse[container_key]["remote_sse_1"]["type"], "sse");
             assert!(sse[container_key]["remote_sse_1"].get("headers").is_none());
@@ -581,7 +811,10 @@ mod tests {
                 container_key: { "user_server": { "type": "stdio", "command": "user-defined" } },
             })
             .to_string();
-            let text = writer.upsert(&existing, "github_1", &stdio_def()).unwrap();
+            let text = writer
+                .upsert(&existing, "github_1", &stdio_def())
+                .unwrap()
+                .text;
             let parsed = parse(&text);
             assert_eq!(parsed["someOtherTopLevelKey"]["keep"], true);
             assert_eq!(
@@ -596,8 +829,11 @@ mod tests {
     fn json_remove_and_existing_names() {
         for (agent, container_key) in JSON_AGENTS {
             let writer = writer_for(agent);
-            let with_one = writer.upsert("", "github_1", &stdio_def()).unwrap();
-            let with_two = writer.upsert(&with_one, "other_1", &http_def()).unwrap();
+            let with_one = writer.upsert("", "github_1", &stdio_def()).unwrap().text;
+            let with_two = writer
+                .upsert(&with_one, "other_1", &http_def())
+                .unwrap()
+                .text;
 
             let mut names = writer.existing_names(&with_two).unwrap();
             names.sort();
@@ -618,10 +854,214 @@ mod tests {
         }
     }
 
+    // ---- per-agent oauth shapes ----
+
+    fn oauth_def(client_id: Option<&str>, port: Option<u16>, scopes: Vec<&str>) -> McpServerDef {
+        McpServerDef {
+            name: "remote".to_string(),
+            transport: McpTransport::Http,
+            url: Some("https://mcp.example.com/mcp".to_string()),
+            headers: None,
+            command: None,
+            args: None,
+            env: None,
+            rules: None,
+            oauth: Some(McpOauth {
+                callback_port: port,
+                client_id: client_id.map(str::to_string),
+                scopes: scopes.into_iter().map(str::to_string).collect(),
+            }),
+        }
+    }
+
+    #[test]
+    fn claude_writes_oauth_with_camel_case_and_space_joined_scopes() {
+        let def = oauth_def(Some("example-client"), Some(8432), vec!["read", "write"]);
+        let out = writer_for(AgentKind::Claude)
+            .upsert("", "remote", &def)
+            .expect("upsert");
+        let root: Value = serde_json::from_str(&out.text).expect("json");
+        let oauth = &root["mcpServers"]["remote"]["oauth"];
+        assert_eq!(oauth["clientId"], "example-client");
+        assert_eq!(oauth["callbackPort"], 8432);
+        assert_eq!(oauth["scopes"], "read write");
+        assert!(out.notes.is_empty());
+    }
+
+    #[test]
+    fn cursor_writes_auth_with_screaming_keys_and_an_array_of_scopes() {
+        let def = oauth_def(Some("example-client"), Some(8432), vec!["read", "write"]);
+        let out = writer_for(AgentKind::Cursor)
+            .upsert("", "remote", &def)
+            .expect("upsert");
+        let root: Value = serde_json::from_str(&out.text).expect("json");
+        let auth = &root["mcpServers"]["remote"]["auth"];
+        assert_eq!(auth["CLIENT_ID"], "example-client");
+        assert_eq!(auth["scopes"], serde_json::json!(["read", "write"]));
+        assert!(auth.get("callbackPort").is_none());
+        assert!(
+            auth.get("CLIENT_SECRET").is_none(),
+            "a secret is never written"
+        );
+        assert_eq!(
+            out.notes,
+            vec![UpsertNote::DroppedField {
+                field: "callbackPort".to_string()
+            }]
+        );
+    }
+
+    #[test]
+    fn a_scope_containing_a_space_survives_the_claude_join_unambiguously() {
+        // Guards the canonical-list decision: a joined string must never be the
+        // stored form, and a scope with a space must not silently become two.
+        let def = oauth_def(None, None, vec!["read write"]);
+        let out = writer_for(AgentKind::Claude)
+            .upsert("", "remote", &def)
+            .expect("upsert");
+        let root: Value = serde_json::from_str(&out.text).expect("json");
+        assert_eq!(
+            root["mcpServers"]["remote"]["oauth"]["scopes"],
+            "read write"
+        );
+    }
+
+    #[test]
+    fn opencode_writes_a_client_id_and_notes_what_it_cannot_take() {
+        let def = oauth_def(Some("example-client"), Some(8432), vec!["read"]);
+        let out = writer_for(AgentKind::Opencode)
+            .upsert("", "remote", &def)
+            .expect("upsert");
+        let root: Value = serde_json::from_str(&out.text).expect("json");
+        assert_eq!(root["mcp"]["remote"]["oauth"]["clientId"], "example-client");
+        assert!(out.notes.contains(&UpsertNote::DroppedField {
+            field: "callbackPort".to_string()
+        }));
+        assert!(out.notes.contains(&UpsertNote::DroppedField {
+            field: "scopes".to_string()
+        }));
+    }
+
+    #[test]
+    fn codex_writes_client_id_in_a_nested_table_and_scopes_beside_the_url() {
+        let def = oauth_def(Some("example-client"), None, vec!["read", "write"]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert("", "remote", &def)
+            .expect("upsert");
+        let root: toml::Table = toml::from_str(&out.text).expect("toml");
+        let server = root["mcp_servers"]["remote"].as_table().expect("table");
+        assert_eq!(server["url"].as_str(), Some("https://mcp.example.com/mcp"));
+        assert_eq!(
+            server["scopes"].as_array().expect("array").len(),
+            2,
+            "scopes sit in the server table, not inside oauth"
+        );
+        let oauth_table = server["oauth"].as_table().expect("nested oauth table");
+        assert_eq!(
+            oauth_table.keys().collect::<Vec<_>>(),
+            vec!["client_id"],
+            "codex does not read scopes (or anything else) from the nested oauth \
+             table; a stray key there would silently request no scopes"
+        );
+        assert_eq!(
+            server["oauth"]["client_id"].as_str(),
+            Some("example-client")
+        );
+    }
+
+    #[test]
+    fn codex_writes_the_callback_pair_when_absent() {
+        let def = oauth_def(Some("example-client"), Some(8432), vec![]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert("", "remote", &def)
+            .expect("upsert");
+        let root: toml::Table = toml::from_str(&out.text).expect("toml");
+        assert_eq!(root["mcp_oauth_callback_port"].as_integer(), Some(8432));
+        assert_eq!(
+            root["mcp_oauth_callback_url"].as_str(),
+            Some("http://localhost:8432/callback"),
+            "the url is derived from the port and the pair is always consistent"
+        );
+        assert!(out.notes.is_empty());
+    }
+
+    #[test]
+    fn codex_leaves_a_conflicting_callback_port_alone_and_says_so() {
+        let existing = "mcp_oauth_callback_port = 9999\n";
+        let def = oauth_def(Some("example-client"), Some(8432), vec![]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert(existing, "remote", &def)
+            .expect("upsert");
+        let root: toml::Table = toml::from_str(&out.text).expect("toml");
+        assert_eq!(
+            root["mcp_oauth_callback_port"].as_integer(),
+            Some(9999),
+            "a global key we did not set is not ours to rewrite"
+        );
+        assert!(
+            root["mcp_servers"]["remote"].is_table(),
+            "the server is still written"
+        );
+        assert_eq!(
+            out.notes,
+            vec![UpsertNote::CodexCallbackConflict {
+                found: 9999,
+                wanted: 8432
+            }]
+        );
+    }
+
+    #[test]
+    fn codex_removing_a_server_leaves_the_callback_pair_in_place() {
+        let def = oauth_def(Some("example-client"), Some(8432), vec![]);
+        let written = writer_for(AgentKind::Codex)
+            .upsert("", "remote", &def)
+            .expect("upsert");
+        let after = writer_for(AgentKind::Codex)
+            .remove(&written.text, "remote")
+            .expect("remove");
+        let root: toml::Table = toml::from_str(&after).expect("toml");
+        assert_eq!(root["mcp_oauth_callback_port"].as_integer(), Some(8432));
+    }
+
+    #[test]
+    fn codex_accepts_a_callback_port_that_already_matches() {
+        let existing = "mcp_oauth_callback_port = 8432\n";
+        let def = oauth_def(None, Some(8432), vec![]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert(existing, "remote", &def)
+            .expect("upsert");
+        assert!(out.notes.is_empty());
+    }
+
+    #[test]
+    fn codex_never_enables_the_experimental_feature_flag_itself() {
+        // Turning on an experimental feature flag in a user's config is not a
+        // decision SkillKeeper makes silently; the docs tell the user to set it.
+        let def = oauth_def(Some("example-client"), Some(8432), vec!["read"]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert("", "remote", &def)
+            .expect("upsert");
+        let root: toml::Table = toml::from_str(&out.text).expect("toml");
+        assert!(root.get("features").is_none());
+        assert!(!out.text.contains("rmcp_client"));
+    }
+
+    #[test]
+    fn codex_writes_no_callback_keys_when_the_preset_has_no_port() {
+        let def = oauth_def(Some("example-client"), None, vec!["read"]);
+        let out = writer_for(AgentKind::Codex)
+            .upsert("", "remote", &def)
+            .expect("upsert");
+        let root: toml::Table = toml::from_str(&out.text).expect("toml");
+        assert!(root.get(CODEX_CALLBACK_PORT_KEY).is_none());
+        assert!(root.get(CODEX_CALLBACK_URL_KEY).is_none());
+    }
+
     #[test]
     fn opencode_maps_stdio_to_local() {
         let writer = writer_for(AgentKind::Opencode);
-        let text = writer.upsert("", "github_1", &stdio_def()).unwrap();
+        let text = writer.upsert("", "github_1", &stdio_def()).unwrap().text;
         let parsed = parse(&text);
         let server = &parsed["mcp"]["github_1"];
         assert_eq!(server["type"], "local");
@@ -638,7 +1078,8 @@ mod tests {
         let writer = writer_for(AgentKind::Opencode);
         let text = writer
             .upsert("", "bare_1", &stdio_def_no_args_env())
-            .unwrap();
+            .unwrap()
+            .text;
         let parsed = parse(&text);
         let server = &parsed["mcp"]["bare_1"];
         assert_eq!(server["type"], "local");
@@ -650,7 +1091,10 @@ mod tests {
     #[test]
     fn opencode_maps_http_and_sse_to_remote() {
         let writer = writer_for(AgentKind::Opencode);
-        let http_text = writer.upsert("", "remote_http_1", &http_def()).unwrap();
+        let http_text = writer
+            .upsert("", "remote_http_1", &http_def())
+            .unwrap()
+            .text;
         let http = parse(&http_text);
         let s = &http["mcp"]["remote_http_1"];
         assert_eq!(s["type"], "remote");
@@ -658,7 +1102,7 @@ mod tests {
         assert_eq!(s["headers"]["Authorization"], "Bearer x");
         assert_eq!(s["enabled"], true);
 
-        let sse_text = writer.upsert("", "remote_sse_1", &sse_def()).unwrap();
+        let sse_text = writer.upsert("", "remote_sse_1", &sse_def()).unwrap().text;
         let sse = parse(&sse_text);
         let s = &sse["mcp"]["remote_sse_1"];
         assert_eq!(s["type"], "remote");
@@ -675,7 +1119,10 @@ mod tests {
             "mcp": { "user_server": { "type": "remote", "url": "https://user.example", "enabled": true } },
         })
         .to_string();
-        let text = writer.upsert(&existing, "github_1", &stdio_def()).unwrap();
+        let text = writer
+            .upsert(&existing, "github_1", &stdio_def())
+            .unwrap()
+            .text;
         let parsed = parse(&text);
         assert_eq!(parsed["theme"], "dark");
         assert_eq!(parsed["mcp"]["user_server"]["url"], "https://user.example");
@@ -710,7 +1157,10 @@ mod tests {
         let block = hook_block("a1b2c3d4e5f6");
         let existing = format!("{{\n  \"theme\": \"dark\"\n}}\n{block}\n");
 
-        let text = writer.upsert(&existing, "github_1", &stdio_def()).unwrap();
+        let text = writer
+            .upsert(&existing, "github_1", &stdio_def())
+            .unwrap()
+            .text;
 
         assert!(text.contains(&block), "hook region lost: {text}");
         let parsed = parse(&json_body(&text));
@@ -724,8 +1174,11 @@ mod tests {
     fn opencode_remove_keeps_an_existing_hook_region_verbatim() {
         let writer = writer_for(AgentKind::Opencode);
         let block = hook_block("a1b2c3d4e5f6");
-        let installed = writer.upsert("", "github_1", &stdio_def()).unwrap();
-        let with_two = writer.upsert(&installed, "other_1", &http_def()).unwrap();
+        let installed = writer.upsert("", "github_1", &stdio_def()).unwrap().text;
+        let with_two = writer
+            .upsert(&installed, "other_1", &http_def())
+            .unwrap()
+            .text;
         let with_hook = insert_region(&with_two, &block, InsertMode::Append);
 
         // existing_names must see through the region too: reconcile calls it, and
@@ -770,7 +1223,8 @@ mod tests {
 
             let text = writer
                 .upsert(&region_only, "github_1", &stdio_def())
-                .unwrap();
+                .unwrap()
+                .text;
             assert!(text.contains(&block), "{agent:?} lost the hook region");
             let parsed = parse(&json_body(&text));
             assert!(parsed[container_key].get("github_1").is_some(), "{agent:?}");
@@ -808,17 +1262,21 @@ mod tests {
         // Order 1: hook region first (it is the whole file), MCP server second.
         let hook_first = writer
             .upsert(&format!("{block}\n"), "github_1", &stdio_def())
-            .unwrap();
+            .unwrap()
+            .text;
 
         // Order 2: MCP server first, then the region appended after it -- what
         // the delimited-text apply path does to an existing file -- then two more
         // MCP writes over the top.
         let mcp_first = insert_region(
-            &writer.upsert("", "github_1", &stdio_def()).unwrap(),
+            &writer.upsert("", "github_1", &stdio_def()).unwrap().text,
             &block,
             InsertMode::Append,
         );
-        let mcp_first = writer.upsert(&mcp_first, "other_1", &http_def()).unwrap();
+        let mcp_first = writer
+            .upsert(&mcp_first, "other_1", &http_def())
+            .unwrap()
+            .text;
         let mcp_first = writer.remove(&mcp_first, "other_1").unwrap();
 
         for text in [&hook_first, &mcp_first] {
@@ -827,7 +1285,7 @@ mod tests {
             // Idempotent: rewriting the same server changes nothing, so repeated
             // installs cannot accumulate or drift the region.
             assert_eq!(
-                &writer.upsert(text, "github_1", &stdio_def()).unwrap(),
+                &writer.upsert(text, "github_1", &stdio_def()).unwrap().text,
                 text
             );
         }
@@ -839,11 +1297,11 @@ mod tests {
     #[test]
     fn codex_round_trips_a_stdio_server() {
         let writer = writer_for(AgentKind::Codex);
-        let text = writer.upsert("", "github_1", &stdio_def()).unwrap();
+        let text = writer.upsert("", "github_1", &stdio_def()).unwrap().text;
         assert!(text.contains("[mcp_servers.github_1]"));
         assert_eq!(writer.existing_names(&text).unwrap(), vec!["github_1"]);
         // Re-upserting the same def yields identical text.
-        let again = writer.upsert(&text, "github_1", &stdio_def()).unwrap();
+        let again = writer.upsert(&text, "github_1", &stdio_def()).unwrap().text;
         assert_eq!(again, text);
     }
 
@@ -852,7 +1310,8 @@ mod tests {
         let writer = writer_for(AgentKind::Codex);
         let text = writer
             .upsert("", "bare_1", &stdio_def_no_args_env())
-            .unwrap();
+            .unwrap()
+            .text;
         assert!(!text.contains("args"));
         assert!(!text.contains("env"));
     }
@@ -869,7 +1328,10 @@ mod tests {
             "",
         ]
         .join("\n");
-        let text = writer.upsert(&existing, "github_1", &stdio_def()).unwrap();
+        let text = writer
+            .upsert(&existing, "github_1", &stdio_def())
+            .unwrap()
+            .text;
         assert!(text.contains("[model]"));
         assert!(text.contains("name = \"gpt-5\""));
         assert!(text.contains("[mcp_servers.user_server]"));
@@ -880,10 +1342,11 @@ mod tests {
     #[test]
     fn codex_remove_and_existing_names() {
         let writer = writer_for(AgentKind::Codex);
-        let with_one = writer.upsert("", "github_1", &stdio_def()).unwrap();
+        let with_one = writer.upsert("", "github_1", &stdio_def()).unwrap().text;
         let with_two = writer
             .upsert(&with_one, "other_1", &stdio_def_no_args_env())
-            .unwrap();
+            .unwrap()
+            .text;
 
         let removed = writer.remove(&with_two, "github_1").unwrap();
         assert!(!removed.contains("[mcp_servers.github_1]"));
@@ -913,6 +1376,7 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            oauth: None,
         }
     }
 
@@ -921,7 +1385,7 @@ mod tests {
         let out = CodexTomlWriter
             .upsert("", "remote", &codex_http_def())
             .expect("upsert");
-        let root: toml::Table = toml::from_str(&out).expect("valid toml");
+        let root: toml::Table = toml::from_str(&out.text).expect("valid toml");
         let server = root["mcp_servers"]["remote"]
             .as_table()
             .expect("server table");
@@ -954,6 +1418,7 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            oauth: None,
         };
         let bad_http = McpServerDef {
             name: "x".to_string(),
@@ -964,6 +1429,7 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            oauth: None,
         };
         let claude = writer_for(AgentKind::Claude);
         assert!(claude.upsert("", "x", &bad_stdio).is_err());
@@ -991,6 +1457,19 @@ mod tests {
             assert!(supports_transport(agent, McpTransport::Stdio));
             assert!(supports_transport(agent, McpTransport::Http));
             assert!(supports_transport(agent, McpTransport::Sse));
+        }
+    }
+
+    #[test]
+    fn only_copilot_cannot_express_an_oauth_client() {
+        assert!(!supports_oauth(AgentKind::Copilot));
+        for agent in [
+            AgentKind::Claude,
+            AgentKind::Cursor,
+            AgentKind::Codex,
+            AgentKind::Opencode,
+        ] {
+            assert!(supports_oauth(agent), "{agent:?} should support oauth");
         }
     }
 

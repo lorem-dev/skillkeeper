@@ -820,6 +820,48 @@ msgstr "元件"
 msgid "mcp.managementTitle"
 msgstr "管理"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "用戶端 ID"
+
+msgid "mcp.field.callbackPort"
+msgstr "回呼連接埠"
+
+msgid "mcp.field.scopes"
+msgstr "範圍"
+
+msgid "mcp.scopePlaceholder"
+msgstr "範圍"
+
+msgid "mcp.addScope"
+msgstr "新增範圍"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper 僅儲存公開的用戶端欄位。請透過代理本身登入。用戶端密鑰絕不會儲存在此處。"
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth 僅適用於 http 和 sse 伺服器。"
+
+msgid "mcp.error.clientIdBlank"
+msgstr "用戶端 ID 不得為空。"
+
+msgid "mcp.error.callbackPortRange"
+msgstr "回呼連接埠必須介於 1 到 65535 之間。"
+
+msgid "mcp.error.scopeBlank"
+msgstr "範圍不得為空。"
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} 無法儲存 OAuth 用戶端,因此此伺服器將無法進行驗證。"
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} 不支援 {field},因此未寫入。"
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex 已將其 OAuth 回呼連接埠設為 {found},因此保持不變,而非設為 {wanted}。"
+
 msgid "settings.comingSoon"
 msgstr "設定畫面即將推出。"
 

@@ -18,14 +18,16 @@ use std::io::Write;
 
 use clap::Subcommand;
 use skillkeeper_agents::AdapterRegistry;
+use skillkeeper_config::schema::McpOauth as ConfigOauth;
 use skillkeeper_config::{McpPreset, McpTransport as ConfigTransport};
 use skillkeeper_core::git_remote::normalize_remote;
 use skillkeeper_core::mcp::discovery::preset_group_dirs;
+use skillkeeper_core::mcp::model::McpOauth;
 use skillkeeper_core::mcp::{
     hash_mcp_def, install_mcp_instance, mcp_destination, missing_params, parse_mcp_config,
-    parse_skmcp, parse_skmcp_params, remove_mcp_instance, supports_transport, InstallMcpArgs,
-    McpDestinationTarget, McpIdentity, McpServerDef, McpTransport, RemoveMcpArgs, SkmcpEntry,
-    SKMCP_FILE, SKMCP_PARAMS_FILE,
+    parse_skmcp, parse_skmcp_params, remove_mcp_instance, supports_oauth, supports_transport,
+    InstallMcpArgs, McpDestinationTarget, McpIdentity, McpServerDef, McpTransport, RemoveMcpArgs,
+    SkmcpEntry, UpsertNote, SKMCP_FILE, SKMCP_PARAMS_FILE,
 };
 use skillkeeper_core::models::{AgentKind, AgentTarget, Scope};
 use skillkeeper_core::ports::{FsPort, HostEnv};
@@ -146,12 +148,39 @@ fn transport_str(t: McpTransport) -> &'static str {
     }
 }
 
+/// One line for a writer note, shaped like the `Skipped ...` lines beside it:
+/// what the agent could not do, and what happened instead. Printed to stdout
+/// with the install it belongs to -- the install succeeded, so this is not an
+/// error, but a dropped auth field must not be silent.
+fn note_line(agent: AgentKind, note: &UpsertNote) -> String {
+    match note {
+        UpsertNote::DroppedField { field } => {
+            format!("Note {agent}: cannot express \"{field}\"; it was not written.")
+        }
+        UpsertNote::CodexCallbackConflict { found, wanted } => format!(
+            "Note {agent}: oauth callback port is already {found}; left alone (this server asked for {wanted})."
+        ),
+    }
+}
+
 /// Map a config manual-preset transport onto the core transport.
 fn to_core_transport(t: ConfigTransport) -> McpTransport {
     match t {
         ConfigTransport::Stdio => McpTransport::Stdio,
         ConfigTransport::Http => McpTransport::Http,
         ConfigTransport::Sse => McpTransport::Sse,
+    }
+}
+
+/// Map a config manual-preset oauth block onto the core one. The two structs
+/// mirror each other field-for-field (see the comment on
+/// `skillkeeper_config::McpOauth` for why they are mirrored rather than shared),
+/// so this is a copy, not a reinterpretation.
+fn to_core_oauth(o: &ConfigOauth) -> McpOauth {
+    McpOauth {
+        callback_port: o.callback_port,
+        client_id: o.client_id.clone(),
+        scopes: o.scopes.clone(),
     }
 }
 
@@ -167,6 +196,10 @@ fn preset_to_def(preset: &McpPreset) -> McpServerDef {
         args: preset.args.clone(),
         env: preset.env.clone(),
         rules: preset.rules.clone(),
+        // Carried through like every neighbour above: dropping it here would
+        // silently install a manual preset without the auth it asked for, and
+        // would keep the `supports_oauth` gate below from ever seeing one.
+        oauth: preset.oauth.as_ref().map(to_core_oauth),
     }
 }
 
@@ -525,6 +558,12 @@ pub fn install(
             )?;
             continue;
         }
+        // Written without its auth block, this server would look installed and
+        // fail to authenticate. Skipping is the honest outcome.
+        if preset.def.oauth.is_some() && !supports_oauth(agent) {
+            writeln!(out, "Skipped {agent}: cannot express an oauth client.")?;
+            continue;
+        }
         // Codex's MCP config is user-wide; a project-scope request for it
         // cannot be honoured, so refuse rather than silently install globally.
         if agent == AgentKind::Codex && scope == Scope::Project {
@@ -535,7 +574,7 @@ pub fn install(
             continue;
         }
         let target = resolve_mcp_target(ctx, agent, scope, project_path, project_path)?;
-        let instance_name = install_mcp_instance(
+        let outcome = install_mcp_instance(
             ctx.fs,
             &InstallMcpArgs {
                 agent,
@@ -560,9 +599,12 @@ pub fn install(
         any_installed = true;
         writeln!(
             out,
-            "Installed: {instance_name} ({agent}) -> {}",
-            target.native_path
+            "Installed: {} ({agent}) -> {}",
+            outcome.instance_name, target.native_path
         )?;
+        for note in &outcome.notes {
+            writeln!(out, "{}", note_line(agent, note))?;
+        }
     }
 
     Ok(if any_installed { 0 } else { 1 })
@@ -711,6 +753,9 @@ pub fn update(
 
     let mut updated = 0usize;
     let mut failed = false;
+    // An update this run declined but did not fail on. Tracked only so the
+    // summary below does not claim there was nothing to update.
+    let mut skipped = false;
 
     for scope in &scopes {
         if !ctx.registry.has(scope.agent) {
@@ -767,6 +812,24 @@ pub fn update(
             for (key, value) in &override_params {
                 merged.insert(key.clone(), value.clone());
             }
+            // Rewritten without its auth block, this server would look
+            // updated and fail to authenticate. Declining is the honest
+            // outcome -- and it must happen before the remove below, or the
+            // instance would be deleted and not put back.
+            //
+            // Reported like `install`'s skip and NOT counted as a failure: no
+            // user can make copilot speak OAuth, so failing here would make
+            // every later `mcp update` exit non-zero over a state the run left
+            // exactly as it found it, breaking any scripted invocation for good.
+            if current.def.oauth.is_some() && !supports_oauth(scope.agent) {
+                writeln!(
+                    out,
+                    "Skipped {} ({}): cannot express an oauth client. Remove it with mcp remove {} --agent {} if it is no longer wanted.",
+                    entry.name, scope.agent, entry.name, scope.agent
+                )?;
+                skipped = true;
+                continue;
+            }
             let missing = missing_params(&current.def, Some(&merged));
             if !missing.is_empty() {
                 writeln!(
@@ -792,7 +855,7 @@ pub fn update(
                 },
             )
             .map_err(|e| CliError(e.to_string()))?;
-            install_mcp_instance(
+            let outcome = install_mcp_instance(
                 ctx.fs,
                 &InstallMcpArgs {
                     agent: scope.agent,
@@ -821,10 +884,13 @@ pub fn update(
             .map_err(|e| CliError(e.to_string()))?;
             updated += 1;
             writeln!(out, "Updated: {} ({})", entry.name, scope.agent)?;
+            for note in &outcome.notes {
+                writeln!(out, "{}", note_line(scope.agent, note))?;
+            }
         }
     }
 
-    if updated == 0 && !failed {
+    if updated == 0 && !failed && !skipped {
         writeln!(out, "No MCP updates available.")?;
     }
     Ok(if failed { 1 } else { 0 })
@@ -974,6 +1040,44 @@ mod tests {
         )
     }
 
+    /// A MemFs with one repo carrying an http preset with an oauth client and
+    /// no params.
+    fn oauth_fs() -> MemFs {
+        MemFs::new().with_file(
+            "/repos/r1/mcp.yml",
+            "version: 1\nservers:\n  - name: remote\n    type: http\n    url: https://example.com/mcp\n    oauth:\n      clientId: sk-client\n      callbackPort: 8432\n",
+        )
+    }
+
+    /// A MemFs with one repo carrying a plain http preset: no oauth, no params.
+    /// The "before" state for an update that gains an oauth block.
+    fn plain_http_fs() -> MemFs {
+        MemFs::new().with_file(
+            "/repos/r1/mcp.yml",
+            "version: 1\nservers:\n  - name: remote\n    type: http\n    url: https://example.com/mcp\n",
+        )
+    }
+
+    /// A manual (config-defined) http preset carrying an oauth client.
+    fn manual_oauth_preset() -> McpPreset {
+        McpPreset {
+            id: "abc123".to_string(),
+            name: "manual-remote".to_string(),
+            r#type: ConfigTransport::Http,
+            url: Some("https://example.com/mcp".to_string()),
+            headers: None,
+            command: None,
+            args: None,
+            env: None,
+            rules: None,
+            oauth: Some(ConfigOauth {
+                callback_port: Some(8432),
+                client_id: Some("sk-client".to_string()),
+                scopes: vec!["repo".to_string()],
+            }),
+        }
+    }
+
     fn seed_state(fs: &MemFs) {
         let state = AppState {
             version: STATE_VERSION,
@@ -1065,6 +1169,77 @@ mod tests {
             .fs
             .exists(&format!("/proj/.claude/skills/{SKMCP_FILE}"))
             .unwrap());
+    }
+
+    #[test]
+    fn install_skips_copilot_for_an_oauth_preset_and_still_writes_claude() {
+        let app = TestApp::new(oauth_fs());
+        seed_state(&app.fs);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(
+            &app.ctx(),
+            "remote",
+            Some(PROJECT),
+            &["copilot".to_string(), "claude".to_string()],
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 0);
+        let out = String::from_utf8(out).unwrap();
+
+        // Skipped for oauth, not for the transport -- copilot takes http fine.
+        assert!(
+            out.contains("Skipped copilot: cannot express an oauth client."),
+            "expected an oauth skip, got:\n{out}"
+        );
+        assert!(!out.contains("transport"), "wrong skip reason:\n{out}");
+        assert!(!out.contains("(copilot)"), "copilot was installed:\n{out}");
+        // Nothing was written for copilot: no half-configured server, and no
+        // ledger entry claiming one.
+        assert!(!app.fs.exists("/proj/.vscode/mcp.json").unwrap());
+        assert!(!app
+            .fs
+            .exists(&format!("/proj/.github/skills/{SKMCP_FILE}"))
+            .unwrap());
+
+        // Claude, which can express it, was written with the oauth block.
+        assert!(out.contains("Installed: remote_1 (claude) ->"));
+        let native = app.fs.read_file("/proj/.mcp.json").unwrap();
+        assert!(native.contains("\"oauth\""), "no oauth block:\n{native}");
+        assert!(native.contains("sk-client"));
+        assert!(native.contains("8432"));
+    }
+
+    #[test]
+    fn install_prints_a_writer_note_for_a_field_the_agent_cannot_express() {
+        let app = TestApp::new(oauth_fs());
+        seed_state(&app.fs);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(
+            &app.ctx(),
+            "remote",
+            Some(PROJECT),
+            &["cursor".to_string()],
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 0);
+        let out = String::from_utf8(out).unwrap();
+
+        assert!(out.contains("Installed: remote_1 (cursor) ->"));
+        // Cursor has no callback-port setting; the drop is reported, not hidden.
+        assert!(
+            out.contains("Note cursor: cannot express \"callbackPort\""),
+            "expected the dropped-field note, got:\n{out}"
+        );
     }
 
     #[test]
@@ -1256,6 +1431,154 @@ mod tests {
         let native = app.fs.read_file("/proj/.mcp.json").unwrap();
         assert!(native.contains("--verbose"));
         assert!(native.contains("abc")); // stored token preserved
+    }
+
+    #[test]
+    fn a_manual_presets_oauth_block_survives_the_conversion_to_a_def() {
+        let mut app = TestApp::new(MemFs::new());
+        app.manual = vec![manual_oauth_preset()];
+        seed_state(&app.fs);
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = install(
+            &app.ctx(),
+            "manual-remote",
+            Some(PROJECT),
+            &["copilot".to_string(), "claude".to_string()],
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 0);
+        let out = String::from_utf8(out).unwrap();
+
+        // Claude got the whole block, values intact.
+        let native = app.fs.read_file("/proj/.mcp.json").unwrap();
+        assert!(
+            native.contains("\"oauth\""),
+            "the manual preset lost its oauth block:\n{native}"
+        );
+        assert!(native.contains("sk-client"));
+        assert!(native.contains("8432"));
+        assert!(native.contains("repo"));
+
+        // And the gate can SEE it, which it cannot when the field is dropped
+        // during the conversion.
+        assert!(
+            out.contains("Skipped copilot: cannot express an oauth client."),
+            "the oauth gate never saw the manual preset:\n{out}"
+        );
+    }
+
+    #[test]
+    fn update_declines_to_rewrite_a_copilot_instance_that_gained_an_oauth_block() {
+        let app = TestApp::new(plain_http_fs());
+        seed_state(&app.fs);
+        let mut sink = Vec::new();
+        let mut sink2 = Vec::new();
+        // Installed while the preset had no oauth, which copilot can express.
+        install(
+            &app.ctx(),
+            "remote",
+            Some(PROJECT),
+            &["copilot".to_string()],
+            &[],
+            false,
+            &mut sink,
+            &mut sink2,
+        )
+        .unwrap();
+        let before = app.fs.read_file("/proj/.vscode/mcp.json").unwrap();
+        assert!(before.contains("remote_1"));
+
+        // The source gains an oauth block copilot cannot express.
+        app.fs
+            .write_file("/repos/r1/mcp.yml", "version: 1\nservers:\n  - name: remote\n    type: http\n    url: https://example.com/mcp\n    oauth:\n      clientId: sk-client\n      callbackPort: 8432\n")
+            .unwrap();
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = update(
+            &app.ctx(),
+            None,
+            Some(PROJECT),
+            &["copilot".to_string()],
+            false,
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        // Reported, not failed: nothing the user can do makes copilot speak
+        // OAuth, so a non-zero exit here would never clear and would break
+        // every scripted `mcp update` from now on.
+        assert_eq!(code, 0, "a declined update must not fail the command");
+        let out = String::from_utf8(out).unwrap();
+        assert!(
+            out.contains("Skipped remote_1 (copilot): cannot express an oauth client."),
+            "no oauth skip on the update path:\n{out}"
+        );
+        // The remedy is named, and it is the command that actually exists.
+        assert!(
+            out.contains("mcp remove remote_1 --agent copilot"),
+            "the skip names no remedy:\n{out}"
+        );
+        // Reported on stdout like `install`'s skip, not as an error.
+        assert!(String::from_utf8(err).unwrap().is_empty());
+        // And it does not then claim there was nothing to update.
+        assert!(!out.contains("No MCP updates available."), "{out}");
+        // Untouched: not rewritten without its auth, and NOT deleted by the
+        // remove half of the reinstall -- the gate runs before the remove.
+        assert_eq!(app.fs.read_file("/proj/.vscode/mcp.json").unwrap(), before);
+    }
+
+    #[test]
+    fn update_prints_a_writer_note_for_a_field_the_agent_cannot_express() {
+        let app = TestApp::new(plain_http_fs());
+        seed_state(&app.fs);
+        let mut sink = Vec::new();
+        let mut sink2 = Vec::new();
+        install(
+            &app.ctx(),
+            "remote",
+            Some(PROJECT),
+            &["cursor".to_string()],
+            &[],
+            false,
+            &mut sink,
+            &mut sink2,
+        )
+        .unwrap();
+
+        // Cursor CAN express an oauth client, minus the callback port.
+        app.fs
+            .write_file("/repos/r1/mcp.yml", "version: 1\nservers:\n  - name: remote\n    type: http\n    url: https://example.com/mcp\n    oauth:\n      clientId: sk-client\n      callbackPort: 8432\n")
+            .unwrap();
+
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = update(
+            &app.ctx(),
+            None,
+            Some(PROJECT),
+            &["cursor".to_string()],
+            false,
+            &[],
+            false,
+            &mut out,
+            &mut err,
+        )
+        .unwrap();
+        assert_eq!(code, 0);
+        let out = String::from_utf8(out).unwrap();
+        assert!(out.contains("Updated: remote_1 (cursor)"));
+        assert!(
+            out.contains("Note cursor: cannot express \"callbackPort\""),
+            "the update path dropped the writer note:\n{out}"
+        );
     }
 
     #[test]

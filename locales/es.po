@@ -955,6 +955,48 @@ msgstr "Componentes"
 msgid "mcp.managementTitle"
 msgstr "Gestión"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "ID de cliente"
+
+msgid "mcp.field.callbackPort"
+msgstr "Puerto de devolución de llamada"
+
+msgid "mcp.field.scopes"
+msgstr "Ámbitos"
+
+msgid "mcp.scopePlaceholder"
+msgstr "ámbito"
+
+msgid "mcp.addScope"
+msgstr "Añadir ámbito"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper solo almacena los campos públicos del cliente. Inicia sesión a través del propio agente; el secreto de cliente nunca se guarda aquí."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth solo se aplica a servidores http y sse."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "El ID de cliente no puede estar vacío."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "El puerto de devolución de llamada debe estar entre 1 y 65535."
+
+msgid "mcp.error.scopeBlank"
+msgstr "Un ámbito no puede estar vacío."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} no puede almacenar un cliente OAuth, por lo que este servidor no podría autenticarse."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} no admite {field}; no se escribió."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex ya establece su puerto de devolución de llamada de OAuth en {found}, por lo que se dejó como estaba en lugar de establecerlo en {wanted}."
+
 msgid "settings.comingSoon"
 msgstr "La pantalla de ajustes llegará pronto."
 

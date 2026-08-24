@@ -13,5 +13,7 @@ export type { McpServerDef } from './McpServerDef';
 export type { McpTransport } from './McpTransport';
 export type { McpPresetOrigin } from './McpPresetOrigin';
 export type { McpIdentity } from './McpIdentity';
+export type { McpOauth } from './McpOauth';
+export type { UpsertNote } from './UpsertNote';
 export type { Scope } from './Scope';
 export type { AgentTarget } from './AgentTarget';

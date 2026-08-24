@@ -955,6 +955,48 @@ msgstr "Componenti"
 msgid "mcp.managementTitle"
 msgstr "Gestione"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "ID client"
+
+msgid "mcp.field.callbackPort"
+msgstr "Porta di callback"
+
+msgid "mcp.field.scopes"
+msgstr "Ambiti"
+
+msgid "mcp.scopePlaceholder"
+msgstr "ambito"
+
+msgid "mcp.addScope"
+msgstr "Aggiungi ambito"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper memorizza solo i campi pubblici del client. Accedi tramite l'agente stesso; un client secret non viene mai salvato qui."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth si applica solo ai server http e sse."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "L'ID client non può essere vuoto."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "La porta di callback deve essere compresa tra 1 e 65535."
+
+msgid "mcp.error.scopeBlank"
+msgstr "Un ambito non può essere vuoto."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} non può memorizzare un client OAuth, quindi questo server non riuscirebbe ad autenticarsi."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} non supporta {field}; non è stato scritto."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex imposta già la sua porta di callback OAuth su {found}, quindi è stata lasciata invariata invece di essere impostata su {wanted}."
+
 msgid "settings.comingSoon"
 msgstr "La schermata delle impostazioni arriverà a breve."
 

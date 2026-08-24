@@ -886,6 +886,48 @@ msgstr "Komponenten"
 msgid "mcp.managementTitle"
 msgstr "Verwaltung"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "Client-ID"
+
+msgid "mcp.field.callbackPort"
+msgstr "Callback-Port"
+
+msgid "mcp.field.scopes"
+msgstr "Bereiche"
+
+msgid "mcp.scopePlaceholder"
+msgstr "Bereich"
+
+msgid "mcp.addScope"
+msgstr "Bereich hinzufügen"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper speichert nur die öffentlichen Client-Felder. Melden Sie sich über den Agenten selbst an; ein Client-Secret wird hier nie gespeichert."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth gilt nur für http- und sse-Server."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "Die Client-ID darf nicht leer sein."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "Der Callback-Port muss zwischen 1 und 65535 liegen."
+
+msgid "mcp.error.scopeBlank"
+msgstr "Ein Bereich darf nicht leer sein."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} kann keinen OAuth-Client speichern, daher würde sich dieser Server nicht authentifizieren."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} unterstützt {field} nicht; es wurde nicht geschrieben."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex legt seinen OAuth-Callback-Port bereits auf {found} fest, daher wurde er unverändert gelassen, statt ihn auf {wanted} zu setzen."
+
 msgid "settings.comingSoon"
 msgstr "Einstellungen folgen in Kürze."
 

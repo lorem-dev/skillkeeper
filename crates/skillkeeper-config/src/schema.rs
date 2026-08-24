@@ -456,6 +456,48 @@ pub enum McpTransport {
     Sse,
 }
 
+/// OAuth client configuration for a remote MCP server preset.
+///
+/// This mirrors `skillkeeper_core::mcp::model::McpOauth` field-for-field and
+/// serde-attribute-for-attribute rather than importing it: that type's
+/// `ts_rs::TS` derive is `cfg(test)`-gated in `skillkeeper-core`, so it is
+/// absent when core is compiled as this crate's ordinary (non-dev)
+/// dependency, and deriving `TS` on `McpPreset` with an imported `McpOauth`
+/// field fails to compile. The `mcp_oauth_serializes_identically_to_core`
+/// test below guards the two definitions from drifting apart.
+///
+/// Public-client fields only. A client secret is deliberately absent and must
+/// never be added: SkillKeeper's config is committed and synchronized, so a
+/// secret placed here leaks by construction. A user with a confidential
+/// client supplies the secret through their agent's own command, which
+/// stores it in the platform keychain.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(
+    test,
+    ts(
+        export,
+        export_to = "../../../apps/desktop/src/renderer/services/bridge/generated/config/",
+        optional_fields
+    )
+)]
+#[serde(rename_all = "camelCase")]
+pub struct McpOauth {
+    /// Fixed loopback port for the redirect URI. Absent lets the agent choose.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub callback_port: Option<u16>,
+    /// Pre-registered OAuth client id. Absent leaves the agent to register
+    /// dynamically.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<String>,
+    /// Requested scopes, canonically a list because the agents disagree on the
+    /// wire type: Claude Code takes one space-separated string, Cursor and
+    /// Codex take arrays. A list converts to both without loss; a string does
+    /// not, since splitting is not reversible when a scope contains a space.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub scopes: Vec<String>,
+}
+
 /// A manually-defined MCP server preset. Mirrors the TS `mcpPresetSchema`.
 ///
 /// `id`, `name` and `type` are required; `id` and `name` must be non-empty
@@ -487,6 +529,10 @@ pub struct McpPreset {
     pub env: Option<BTreeMap<String, String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rules: Option<String>,
+    /// OAuth client configuration. Meaningful only for `http` and `sse`; a
+    /// block on a `stdio` preset is a lint warning, never a silent drop.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub oauth: Option<McpOauth>,
 }
 
 /// MCP section.
@@ -614,5 +660,60 @@ mod tests {
         );
         let yaml = serde_yaml_ng::to_string(&parsed).unwrap();
         assert!(yaml.contains("sshKeyPath: /home/u/.ssh/id_ed25519"));
+    }
+
+    #[test]
+    fn a_preset_round_trips_its_oauth_block() {
+        let json = r#"{
+            "id": "p1",
+            "name": "remote",
+            "type": "http",
+            "url": "https://mcp.example.com/mcp",
+            "oauth": { "clientId": "example-client", "callbackPort": 8432, "scopes": ["read"] }
+        }"#;
+        let preset: McpPreset = serde_json::from_str(json).expect("deserialize");
+        let oauth = preset.oauth.as_ref().expect("oauth present");
+        assert_eq!(oauth.client_id.as_deref(), Some("example-client"));
+        assert_eq!(oauth.callback_port, Some(8432));
+        assert_eq!(oauth.scopes, vec!["read".to_string()]);
+    }
+
+    #[test]
+    fn a_preset_without_oauth_stays_absent_rather_than_defaulting_to_a_block() {
+        let json = r#"{"id":"p1","name":"local","type":"stdio","command":"srv"}"#;
+        let preset: McpPreset = serde_json::from_str(json).expect("deserialize");
+        assert!(preset.oauth.is_none());
+        assert!(!serde_json::to_string(&preset)
+            .expect("serialize")
+            .contains("oauth"));
+    }
+
+    #[test]
+    fn mcp_oauth_serializes_identically_to_core() {
+        // Guards the mirrored struct (chosen over a cross-crate import because
+        // core's `TS` derive is cfg(test)-gated and unavailable to this
+        // crate's own ts-rs export) against drifting from
+        // `skillkeeper_core::mcp::model::McpOauth`.
+        let core = skillkeeper_core::mcp::model::McpOauth {
+            callback_port: Some(8432),
+            client_id: Some("example-client".to_string()),
+            scopes: vec!["read".to_string(), "write".to_string()],
+        };
+        let mirrored = McpOauth {
+            callback_port: Some(8432),
+            client_id: Some("example-client".to_string()),
+            scopes: vec!["read".to_string(), "write".to_string()],
+        };
+        assert_eq!(
+            serde_json::to_string(&core).expect("serialize core"),
+            serde_json::to_string(&mirrored).expect("serialize mirrored"),
+        );
+
+        let empty_core = skillkeeper_core::mcp::model::McpOauth::default();
+        let empty_mirrored = McpOauth::default();
+        assert_eq!(
+            serde_json::to_string(&empty_core).expect("serialize core"),
+            serde_json::to_string(&empty_mirrored).expect("serialize mirrored"),
+        );
     }
 }

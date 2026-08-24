@@ -910,6 +910,48 @@ msgstr "Composants"
 msgid "mcp.managementTitle"
 msgstr "Gestion"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "ID client"
+
+msgid "mcp.field.callbackPort"
+msgstr "Port de rappel"
+
+msgid "mcp.field.scopes"
+msgstr "Portées"
+
+msgid "mcp.scopePlaceholder"
+msgstr "portée"
+
+msgid "mcp.addScope"
+msgstr "Ajouter une portée"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper ne stocke que les champs publics du client. Connectez-vous via l'agent lui-même ; un secret client n'est jamais enregistré ici."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth ne s'applique qu'aux serveurs http et sse."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "L'ID client ne peut pas être vide."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "Le port de rappel doit être compris entre 1 et 65535."
+
+msgid "mcp.error.scopeBlank"
+msgstr "Une portée ne peut pas être vide."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} ne peut pas stocker de client OAuth, donc ce serveur ne pourrait pas s'authentifier."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} ne prend pas en charge {field} ; il n'a pas été écrit."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex définit déjà son port de rappel OAuth sur {found}, il a donc été laissé tel quel plutôt que d'être défini sur {wanted}."
+
 msgid "settings.comingSoon"
 msgstr "L'écran des paramètres arrive bientôt."
 

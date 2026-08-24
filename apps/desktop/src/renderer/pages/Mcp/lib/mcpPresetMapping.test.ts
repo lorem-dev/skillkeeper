@@ -103,4 +103,39 @@ describe('toManualPreset', () => {
     expect(manual.args).toBeUndefined();
     expect(manual.env).toBeUndefined();
   });
+
+  it('carries an oauth block through unchanged', () => {
+    const preset: McpPreset = {
+      id: 'repo:repo-1:devtools:linear',
+      origin: 'repo',
+      name: 'linear',
+      def: {
+        name: 'linear',
+        type: 'http',
+        url: 'https://api.linear.app',
+        oauth: { clientId: 'abc', callbackPort: 8432, scopes: ['read', 'write'] },
+      },
+      hash: 'sha256:y',
+      params: [],
+      hasRules: false,
+      repoId: 'repo-1',
+    };
+
+    const manual = toManualPreset(preset);
+    expect(manual.oauth).toEqual({ clientId: 'abc', callbackPort: 8432, scopes: ['read', 'write'] });
+  });
+
+  it('leaves oauth undefined when the def has none', () => {
+    const preset: McpPreset = {
+      id: 'manual-1',
+      origin: 'manual',
+      name: 'github',
+      def: { name: 'github', type: 'stdio', command: 'github-mcp' },
+      hash: 'sha256:x',
+      params: [],
+      hasRules: false,
+    };
+
+    expect(toManualPreset(preset).oauth).toBeUndefined();
+  });
 });

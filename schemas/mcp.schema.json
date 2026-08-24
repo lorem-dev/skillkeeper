@@ -1,5 +1,35 @@
 {
   "$defs": {
+    "McpOauth": {
+      "description": "OAuth client configuration for a remote MCP server.\n\nPublic-client fields only. A client secret is deliberately absent and must\nnever be added: SkillKeeper's config is committed and synchronized, so a\nsecret placed here leaks by construction. A user with a confidential client\nsupplies the secret through their agent's own command, which stores it in\nthe platform keychain.",
+      "properties": {
+        "callbackPort": {
+          "description": "Fixed loopback port for the redirect URI. Absent lets the agent choose.",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "clientId": {
+          "description": "Pre-registered OAuth client id. Absent leaves the agent to register\ndynamically.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scopes": {
+          "description": "Requested scopes, canonically a list because the agents disagree on the\nwire type: Claude Code takes one space-separated string, Cursor and\nCodex take arrays. A list converts to both without loss; a string does\nnot, since splitting is not reversible when a scope contains a space.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "McpServerDef": {
       "allOf": [
         {
@@ -93,6 +123,17 @@
           "description": "Preset name, unique within the file. Becomes the basis of the installed\ninstance's name.",
           "minLength": 1,
           "type": "string"
+        },
+        "oauth": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/McpOauth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "OAuth client configuration. Meaningful only for `http` and `sse`."
         },
         "rules": {
           "description": "Usage guidance written into the agent's guidance file on install, the\nsame way skill guidance is.",

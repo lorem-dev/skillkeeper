@@ -955,6 +955,48 @@ msgstr "Komponenty"
 msgid "mcp.managementTitle"
 msgstr "Zarządzanie"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "ID klienta"
+
+msgid "mcp.field.callbackPort"
+msgstr "Port zwrotny"
+
+msgid "mcp.field.scopes"
+msgstr "Zakresy"
+
+msgid "mcp.scopePlaceholder"
+msgstr "zakres"
+
+msgid "mcp.addScope"
+msgstr "Dodaj zakres"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper przechowuje tylko publiczne pola klienta. Zaloguj się przez samego agenta; sekret klienta nigdy nie jest tutaj zapisywany."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth dotyczy tylko serwerów http i sse."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "ID klienta nie może być puste."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "Port zwrotny musi mieścić się między 1 a 65535."
+
+msgid "mcp.error.scopeBlank"
+msgstr "Zakres nie może być pusty."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} nie może przechować klienta OAuth, więc ten serwer nie będzie mógł się uwierzytelnić."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} nie obsługuje {field}; nie zostało to zapisane."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex już ustawia port zwrotny OAuth na {found}, więc pozostał bez zmian zamiast zostać ustawionym na {wanted}."
+
 msgid "settings.comingSoon"
 msgstr "Ekran ustawień będzie dostępny wkrótce."
 

@@ -910,6 +910,62 @@ msgstr "Компоненте"
 msgid "mcp.managementTitle"
 msgstr "Управљање"
 
+#, fuzzy
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+#, fuzzy
+msgid "mcp.field.clientId"
+msgstr "ID клијента"
+
+#, fuzzy
+msgid "mcp.field.callbackPort"
+msgstr "Повратни порт"
+
+#, fuzzy
+msgid "mcp.field.scopes"
+msgstr "Обими"
+
+#, fuzzy
+msgid "mcp.scopePlaceholder"
+msgstr "обим"
+
+#, fuzzy
+msgid "mcp.addScope"
+msgstr "Додај обим"
+
+#, fuzzy
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper чува само јавна поља клијента. Пријавите се преко самог агента; тајна клијента се овде никада не чува."
+
+#, fuzzy
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth се односи само на http и sse сервере."
+
+#, fuzzy
+msgid "mcp.error.clientIdBlank"
+msgstr "ID клијента не сме бити празан."
+
+#, fuzzy
+msgid "mcp.error.callbackPortRange"
+msgstr "Повратни порт мора бити између 1 и 65535."
+
+#, fuzzy
+msgid "mcp.error.scopeBlank"
+msgstr "Обим не сме бити празан."
+
+#, fuzzy
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} не може да сачува OAuth клијента, па се овај сервер неће аутентификовати."
+
+#, fuzzy
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} не подржава {field}; то није записано."
+
+#, fuzzy
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex већ поставља свој OAuth повратни порт на {found}, па је остављен непромењен уместо да буде постављен на {wanted}."
+
 msgid "settings.comingSoon"
 msgstr "Екран подешавања ускоро стиже."
 

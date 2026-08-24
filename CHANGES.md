@@ -2,6 +2,19 @@
 
 ## Development
 
+### Added
+
+- An MCP server definition can carry an `oauth` block for the agent's
+  sign-in. See
+  [MCP Servers](https://lorem-dev.github.io/skillkeeper/latest/usage/mcp/#oauth).
+- Codex MCP presets can use the `http` transport, not just `stdio`. See
+  [MCP Servers](https://lorem-dev.github.io/skillkeeper/latest/usage/mcp/#per-agent-native-destinations).
+
+### Fixed
+
+- Codex now resolves a real project-scoped `.codex/config.toml` instead of
+  always writing the global config.
+
 ## Version 0.6.0
 
 ### Added

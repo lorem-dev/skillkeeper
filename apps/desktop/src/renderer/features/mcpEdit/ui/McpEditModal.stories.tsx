@@ -46,3 +46,53 @@ export const InvalidParamSyntax: Story = {
     },
   },
 };
+
+// An http preset with no oauth section filled in -- shows the empty oauth
+// fields (client id, callback port, no scopes) with no errors.
+export const OauthEmpty: Story = {
+  args: {
+    preset: {
+      id: 'preset-oauth-empty',
+      name: 'oauth-empty',
+      type: 'http',
+      url: 'https://mcp.example.com/mcp',
+    },
+  },
+};
+
+// An http preset with a fully filled oauth block: client id, a callback
+// port, and two scopes.
+export const OauthFilled: Story = {
+  args: {
+    preset: {
+      id: 'preset-oauth-filled',
+      name: 'oauth-filled',
+      type: 'http',
+      url: 'https://mcp.example.com/mcp',
+      oauth: {
+        clientId: 'example-client',
+        callbackPort: 8432,
+        scopes: ['read', 'write'],
+      },
+    },
+  },
+};
+
+// An invalid oauth block: the callback port is out of range and the client
+// id is blank (whitespace only), so both field-level errors show at once and
+// Save stays disabled.
+export const OauthInvalid: Story = {
+  args: {
+    preset: {
+      id: 'preset-oauth-invalid',
+      name: 'oauth-invalid',
+      type: 'http',
+      url: 'https://mcp.example.com/mcp',
+      oauth: {
+        clientId: ' ',
+        callbackPort: 70000,
+        scopes: [],
+      },
+    },
+  },
+};

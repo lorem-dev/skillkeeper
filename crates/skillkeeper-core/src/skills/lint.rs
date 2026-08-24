@@ -6,16 +6,26 @@
 //! per-skill check. The rest are conditions that are silent today -- a declared
 //! hook with no `HOOK.md`, an `executables:` entry matching no file -- plus the
 //! resolver's own warnings, reclassified with a code and a severity so a caller
-//! can turn them into an exit status.
+//! can turn them into an exit status. It also lints the `oauth` block of every
+//! MCP preset reachable from a resolved skill (`crate::mcp::lint`), so a bad
+//! auth block is reported without failing resolution over it.
 //!
 //! Reporting only. Nothing here changes what resolves or installs.
 
 use serde::Serialize;
 
+use crate::mcp::discovery::preset_group_dirs;
+use crate::mcp::lint::lint_mcp_preset;
 use crate::ports::FsPort;
 use crate::skills::group_path::skill_path;
 use crate::skills::requires::RequiresGraph;
 use crate::skills::resolver::resolve_skills;
+
+/// The `mcp.yml`/`mcp.yaml` file names, in precedence order. Mirrors
+/// `skillkeeper-cli`'s private `MCP_FILE_NAMES` (`commands::mcp`);
+/// duplicated rather than shared because core cannot depend on the cli
+/// crate.
+const MCP_FILE_NAMES: [&str; 2] = ["mcp.yml", "mcp.yaml"];
 
 /// Whether a diagnostic means "this will not work" or "look at this".
 ///
@@ -47,7 +57,7 @@ impl Severity {
 /// One finding from [`lint_repository`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Diagnostic {
-    /// The stable diagnostic code (`SK001`..`SK014`), fixed by the spec. A
+    /// The stable diagnostic code (`SK001`..`SK017`), fixed by the spec. A
     /// caller should match on this, not on `message`.
     pub code: &'static str,
     /// Whether this stops the repository from installing as written.
@@ -256,6 +266,16 @@ pub fn lint_repository(fs: &dyn FsPort, repo_root: &str) -> Vec<Diagnostic> {
         }
     }
 
+    // MCP preset oauth checks: the repository root (no group), plus every
+    // group directory `preset_group_dirs` derives from the skills that
+    // actually resolved. A stray `mcp.yml` outside that reach contributes
+    // nothing, the same discovery `skillkeeper mcp list` uses.
+    let mut mcp_dirs = vec![String::new()];
+    mcp_dirs.extend(preset_group_dirs(&resolved.skills));
+    for dir in &mcp_dirs {
+        out.extend(mcp_preset_diagnostics(fs, repo_root, dir));
+    }
+
     out.sort_by(|a, b| {
         a.severity
             .cmp(&b.severity)
@@ -293,6 +313,45 @@ fn uses_flat_requires(fs: &dyn FsPort, repo_root: &str, manifest_file: &str) -> 
             if block.get("requires").is_some_and(|v| !v.is_null())
     );
     has_flat && !has_nested
+}
+
+/// MCP preset oauth diagnostics for one repository-relative directory: `""`
+/// for the repository root, or a group directory from
+/// [`preset_group_dirs`]. Reads and parses the first `mcp.yml`/`mcp.yaml`
+/// found there, silently skipping one that is absent or does not parse -- a
+/// malformed `mcp.yml` is outside this pass, which only lints the `oauth`
+/// block of servers that DID parse. Each finding from
+/// [`lint_mcp_preset`] comes back with `file` filled in, naming the preset
+/// file it came from, relative to the repository root.
+fn mcp_preset_diagnostics(fs: &dyn FsPort, repo_root: &str, dir: &str) -> Vec<Diagnostic> {
+    for file_name in MCP_FILE_NAMES {
+        let relative_file = if dir.is_empty() {
+            file_name.to_string()
+        } else {
+            format!("{dir}/{file_name}")
+        };
+        let full_path = format!("{repo_root}/{relative_file}");
+        if !fs.exists(&full_path).unwrap_or(false) {
+            continue;
+        }
+        let Ok(text) = fs.read_file(&full_path) else {
+            return Vec::new();
+        };
+        let Ok(config) = crate::mcp::parse_mcp_config(&text) else {
+            return Vec::new();
+        };
+        let mut out = Vec::new();
+        for server in &config.servers {
+            for diag in lint_mcp_preset(server) {
+                out.push(Diagnostic {
+                    file: Some(relative_file.clone()),
+                    ..diag
+                });
+            }
+        }
+        return out;
+    }
+    Vec::new()
 }
 
 #[cfg(test)]
@@ -553,5 +612,86 @@ mod tests {
             codes(&lint_repository(&fs, "/repo")),
             vec!["SK001", "SK014"]
         );
+    }
+
+    #[test]
+    fn reports_an_oauth_block_on_a_root_stdio_preset_as_sk015() {
+        let fs = MemFs::new()
+            .with_file("/repo/a/SKILL.md", "---\nname: a\n---\nx\n")
+            .with_file(
+                "/repo/mcp.yml",
+                "version: 1\nservers:\n  - name: local\n    type: stdio\n    command: npx\n    oauth: {}\n",
+            );
+        let diags = lint_repository(&fs, "/repo");
+        assert_eq!(codes(&diags), vec!["SK015"]);
+        assert_eq!(diags[0].severity, Severity::Warning);
+        assert_eq!(diags[0].file.as_deref(), Some("mcp.yml"));
+        assert!(diags[0].message.contains("stdio"));
+    }
+
+    #[test]
+    fn reports_a_blank_client_id_and_a_zero_port_as_sk016_and_sk017() {
+        let fs = MemFs::new()
+            .with_file("/repo/a/SKILL.md", "---\nname: a\n---\nx\n")
+            .with_file(
+                "/repo/mcp.yml",
+                "version: 1\nservers:\n  - name: remote\n    type: http\n    url: https://example.com/mcp\n    oauth:\n      clientId: \"   \"\n      callbackPort: 0\n",
+            );
+        let diags = lint_repository(&fs, "/repo");
+        assert_eq!(codes(&diags), vec!["SK016", "SK017"]);
+        assert!(diags.iter().all(|d| d.severity == Severity::Warning));
+    }
+
+    #[test]
+    fn finds_an_mcp_preset_in_a_resolved_skills_group_directory() {
+        let fs = MemFs::new()
+            .with_file("/repo/g/a/SKILL.md", "---\nname: a\n---\nx\n")
+            .with_file(
+                "/repo/g/mcp.yml",
+                "version: 1\nservers:\n  - name: local\n    type: stdio\n    command: npx\n    oauth: {}\n",
+            );
+        let diags = lint_repository(&fs, "/repo");
+        assert_eq!(codes(&diags), vec!["SK015"]);
+        assert_eq!(diags[0].file.as_deref(), Some("g/mcp.yml"));
+    }
+
+    #[test]
+    fn ignores_an_mcp_yml_outside_any_resolved_skills_reach() {
+        // Same property `preset_group_dirs` pins: a directory that is not an
+        // ancestor of any resolved skill is unreachable, so a bad oauth block
+        // sitting there is invisible to lint -- the same discovery this pass
+        // shares with `skillkeeper mcp list`, not a bug.
+        let fs = MemFs::new()
+            .with_file("/repo/a/SKILL.md", "---\nname: a\n---\nx\n")
+            .with_file(
+                "/repo/vendor/mcp.yml",
+                "version: 1\nservers:\n  - name: local\n    type: stdio\n    command: npx\n    oauth: {}\n",
+            );
+        assert!(lint_repository(&fs, "/repo").is_empty());
+    }
+
+    #[test]
+    fn an_mcp_preset_warning_sorts_after_a_skill_level_error() {
+        let fs = MemFs::new()
+            .with_file(
+                "/repo/a/SKILL.md",
+                "---\nname: a\nskillkeeper:\n  requires:\n    - ghost\n---\nx\n",
+            )
+            .with_file(
+                "/repo/mcp.yml",
+                "version: 1\nservers:\n  - name: local\n    type: stdio\n    command: npx\n    oauth: {}\n",
+            );
+        assert_eq!(
+            codes(&lint_repository(&fs, "/repo")),
+            vec!["SK001", "SK015"]
+        );
+    }
+
+    #[test]
+    fn ignores_an_invalid_mcp_yml_rather_than_failing_the_whole_lint() {
+        let fs = MemFs::new()
+            .with_file("/repo/a/SKILL.md", "---\nname: a\n---\nx\n")
+            .with_file("/repo/mcp.yml", "version: 1\nservers: not-a-list\n");
+        assert!(lint_repository(&fs, "/repo").is_empty());
     }
 }

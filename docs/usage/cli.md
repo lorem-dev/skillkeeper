@@ -107,6 +107,9 @@ Exit codes:
 | `SK012` | warning | A duplicate entry in a dependency list. |
 | `SK013` | warning | An `executables:` entry names a path absent from the skill body. |
 | `SK014` | warning | A manifest field was coerced, dropped, or re-quoted. |
+| `SK015` | warning | An MCP preset's `oauth` block is present on a `stdio` transport. |
+| `SK016` | warning | An MCP preset's `oauth.clientId` is present but blank. |
+| `SK017` | warning | An MCP preset's `oauth.callbackPort` is present and `0`. |
 
 Codes are stable and are what a script should match on; the message text is
 not.

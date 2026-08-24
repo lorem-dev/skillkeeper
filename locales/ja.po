@@ -820,6 +820,48 @@ msgstr "コンポーネント"
 msgid "mcp.managementTitle"
 msgstr "管理"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "クライアントID"
+
+msgid "mcp.field.callbackPort"
+msgstr "コールバックポート"
+
+msgid "mcp.field.scopes"
+msgstr "スコープ"
+
+msgid "mcp.scopePlaceholder"
+msgstr "スコープ"
+
+msgid "mcp.addScope"
+msgstr "スコープを追加"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper は公開クライアントフィールドのみを保存します。エージェント自体でサインインしてください。クライアントシークレットはここには保存されません。"
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth は http と sse のサーバーにのみ適用されます。"
+
+msgid "mcp.error.clientIdBlank"
+msgstr "クライアントIDは空にできません。"
+
+msgid "mcp.error.callbackPortRange"
+msgstr "コールバックポートは1から65535の間である必要があります。"
+
+msgid "mcp.error.scopeBlank"
+msgstr "スコープは空にできません。"
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} は OAuth クライアントを保存できないため、このサーバーは認証されません。"
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} は {field} をサポートしていないため、書き込まれませんでした。"
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex はすでに OAuth のコールバックポートを {found} に設定しているため、{wanted} に設定する代わりにそのままにされました。"
+
 msgid "settings.comingSoon"
 msgstr "設定画面は近日公開予定です。"
 

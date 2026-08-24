@@ -4,13 +4,13 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
-import type { McpTransport } from '@/services/bridge';
+import type { McpOauth, McpTransport } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
 import type { Translator } from '@/systems/i18n';
 import { Button, Icon, Modal, TextField, Select } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui';
-import { validatePreset } from '../lib/validate';
-import type { KeyValueRow, McpPresetDraft, McpTransportDraft } from '../lib/validate';
+import { oauthFromDraft, validatePreset } from '../lib/validate';
+import type { KeyValueRow, McpOauthDraft, McpPresetDraft, McpTransportDraft } from '../lib/validate';
 import './McpEditModal.scss';
 
 /**
@@ -30,6 +30,7 @@ export interface ManualMcpPreset {
   readonly args?: string[];
   readonly env?: Record<string, string>;
   readonly rules?: string;
+  readonly oauth?: McpOauth;
 }
 
 export interface McpEditModalProps {
@@ -57,6 +58,8 @@ function transportOptions(t: Translator): SelectOption[] {
   ];
 }
 
+const EMPTY_OAUTH_DRAFT: McpOauthDraft = { callbackPort: '', clientId: '', scopes: [] };
+
 const EMPTY_DRAFT: McpPresetDraft = {
   name: '',
   type: 'stdio',
@@ -66,7 +69,18 @@ const EMPTY_DRAFT: McpPresetDraft = {
   args: [],
   env: [],
   rules: '',
+  oauth: EMPTY_OAUTH_DRAFT,
 };
+
+/** Converts a saved `McpOauth` (or its absence) back into editable text-field state. */
+function oauthDraftFromOauth(oauth: McpOauth | undefined): McpOauthDraft {
+  if (oauth === undefined) return EMPTY_OAUTH_DRAFT;
+  return {
+    callbackPort: oauth.callbackPort !== undefined ? String(oauth.callbackPort) : '',
+    clientId: oauth.clientId ?? '',
+    scopes: oauth.scopes !== undefined ? [...oauth.scopes] : [],
+  };
+}
 
 function recordToRows(record: Readonly<Record<string, string>> | undefined): KeyValueRow[] {
   return record === undefined ? [] : Object.entries(record).map(([key, value]) => ({ key, value }));
@@ -93,6 +107,7 @@ function draftFromPreset(preset: ManualMcpPreset | undefined): McpPresetDraft {
     args: preset.args !== undefined ? [...preset.args] : [],
     env: recordToRows(preset.env),
     rules: preset.rules ?? '',
+    oauth: oauthDraftFromOauth(preset.oauth),
   };
 }
 
@@ -232,6 +247,7 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
       args: type === 'stdio' && draft.args.some((a) => a !== '') ? draft.args.filter((a) => a !== '') : undefined,
       env: type === 'stdio' ? rowsToRecord(draft.env) : undefined,
       rules: draft.rules.trim() === '' ? undefined : draft.rules,
+      oauth: type === 'http' || type === 'sse' ? oauthFromDraft(draft.oauth) : undefined,
     };
     const servers = config?.mcp.servers ?? [];
     const next = preset !== undefined ? servers.map((s) => (s.id === id ? built : s)) : [...servers, built];
@@ -290,6 +306,34 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
                 addLabel={t('mcp.addHeader')}
                 removeLabel={t('mcp.remove')}
                 invalidIndex={rowIndexFor('headers')}
+              />
+            </div>
+            <div className="sk-mcp-edit__field">
+              <span className="sk-mcp-edit__label">{t('mcp.field.oauth')}</span>
+              <p className="sk-mcp-edit__help">{t('mcp.oauthHelp')}</p>
+              <TextField
+                value={draft.oauth.clientId}
+                invalid={errorFor('oauth.clientId') !== undefined}
+                placeholder={t('mcp.field.clientId')}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, oauth: { ...d.oauth, clientId: e.target.value } }))
+                }
+              />
+              <TextField
+                value={draft.oauth.callbackPort}
+                invalid={errorFor('oauth.callbackPort') !== undefined}
+                placeholder={t('mcp.field.callbackPort')}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, oauth: { ...d.oauth, callbackPort: e.target.value } }))
+                }
+              />
+              <ArgsEditor
+                args={draft.oauth.scopes}
+                onChange={(scopes) => setDraft((d) => ({ ...d, oauth: { ...d.oauth, scopes } }))}
+                argumentPlaceholder={t('mcp.scopePlaceholder')}
+                addArgumentLabel={t('mcp.addScope')}
+                removeLabel={t('mcp.remove')}
+                invalidIndex={rowIndexFor('scopes')}
               />
             </div>
           </>

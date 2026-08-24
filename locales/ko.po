@@ -946,6 +946,48 @@ msgstr "컴포넌트"
 msgid "mcp.managementTitle"
 msgstr "관리"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "클라이언트 ID"
+
+msgid "mcp.field.callbackPort"
+msgstr "콜백 포트"
+
+msgid "mcp.field.scopes"
+msgstr "범위"
+
+msgid "mcp.scopePlaceholder"
+msgstr "범위"
+
+msgid "mcp.addScope"
+msgstr "범위 추가"
+
+msgid "mcp.oauthHelp"
+msgstr "SkillKeeper는 공개 클라이언트 필드만 저장합니다. 에이전트 자체에서 로그인하세요. 클라이언트 시크릿은 여기에 저장되지 않습니다."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "OAuth는 http 및 sse 서버에만 적용됩니다."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "클라이언트 ID는 비워둘 수 없습니다."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "콜백 포트는 1에서 65535 사이여야 합니다."
+
+msgid "mcp.error.scopeBlank"
+msgstr "범위는 비워둘 수 없습니다."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent}는 OAuth 클라이언트를 저장할 수 없으므로 이 서버는 인증되지 않습니다."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent}는 {field}을(를) 지원하지 않으므로 기록되지 않았습니다."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "Codex는 이미 OAuth 콜백 포트를 {found}(으)로 설정했으므로 {wanted}(으)로 설정하는 대신 그대로 두었습니다."
+
 msgid "settings.comingSoon"
 msgstr "설정 화면은 곧 제공됩니다."
 

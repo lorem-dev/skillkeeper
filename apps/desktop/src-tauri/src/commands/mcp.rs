@@ -32,9 +32,9 @@ use skillkeeper_core::mcp::discovery::preset_group_dirs;
 use skillkeeper_core::mcp::{
     hash_mcp_def, install_mcp_instance, mcp_destination, missing_params, parse_mcp_config,
     parse_skmcp, parse_skmcp_params, remove_mcp_instance, serialize_skmcp, serialize_skmcp_params,
-    supports_transport, writer_for, InstallMcpArgs, McpDestinationTarget, McpIdentity,
-    McpServerDef, McpTransport, RemoveMcpArgs, SkmcpEntry, SkmcpFile, SKMCP_FILE,
-    SKMCP_PARAMS_FILE,
+    supports_oauth, supports_transport, writer_for, InstallMcpArgs, McpDestinationTarget,
+    McpIdentity, McpServerDef, McpTransport, RemoveMcpArgs, SkmcpEntry, SkmcpFile, UpsertNote,
+    SKMCP_FILE, SKMCP_PARAMS_FILE,
 };
 use skillkeeper_core::models::{AgentKind, AgentTarget, Scope};
 use skillkeeper_core::ports::{FsPort, HostEnv};
@@ -237,20 +237,51 @@ pub struct AvailableMcp {
     pub hash: String,
 }
 
+/// Why `apply` declined an operation. Mirrors the TS `McpSkipped.reason`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum McpSkipReason {
+    /// The agent's native config cannot express the def's transport, or the
+    /// operation belongs to a batch the agent cannot serve at this scope.
+    Transport,
+    /// The agent cannot express an OAuth client at all, so writing the server
+    /// would leave it looking installed and unable to authenticate.
+    Oauth,
+}
+
 /// One operation `apply` declined to perform: an install whose transport the
-/// agent cannot express, or any operation in a codex batch that arrived at
-/// project scope (codex's native config is user-wide only). Mirrors the TS
-/// `McpSkipped`.
+/// agent cannot express, an install carrying an oauth client the agent cannot
+/// express, or any operation in a codex batch that arrived at project scope
+/// (codex's native config is user-wide only). Mirrors the TS `McpSkipped`.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct McpSkipped {
     pub agent: AgentKind,
-    /// The preset's source name for an install, the instance name for a remove.
+    /// The preset's source name for anything carrying a def (an install or an
+    /// update), the instance name for a remove.
     pub source: String,
+    /// Which rule declined it, so the renderer can say why rather than only how
+    /// many.
+    pub reason: McpSkipReason,
     /// The transport that could not be expressed. Absent for a skipped remove,
-    /// which carries no def and so no transport.
+    /// which carries no def and so no transport, and for an oauth skip, whose
+    /// transport was perfectly expressible.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transport: Option<McpTransport>,
+}
+
+/// One install `apply` performed, and anything the writer could not express
+/// while doing it. Mirrors the TS `McpInstalled`.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct McpInstalled {
+    pub agent: AgentKind,
+    /// The name the server was written under.
+    pub instance_name: String,
+    /// Writer notes, empty when nothing was dropped. The install succeeded, so
+    /// these are not errors -- but a silently dropped auth field reads as
+    /// configured when it is not, so the renderer shows them.
+    pub notes: Vec<UpsertNote>,
 }
 
 /// Outcome of [`apply`]: `{ ok: true, installed, removed, skipped }` or
@@ -259,8 +290,9 @@ pub struct McpSkipped {
 #[serde(rename_all = "camelCase")]
 pub struct ApplyMcpResult {
     pub ok: bool,
+    /// One entry per installed target, in the order they were written.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub installed: Option<usize>,
+    pub installed: Option<Vec<McpInstalled>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub removed: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -270,7 +302,7 @@ pub struct ApplyMcpResult {
 }
 
 impl ApplyMcpResult {
-    fn ok(installed: usize, removed: usize, skipped: Vec<McpSkipped>) -> Self {
+    fn ok(installed: Vec<McpInstalled>, removed: usize, skipped: Vec<McpSkipped>) -> Self {
         Self {
             ok: true,
             installed: Some(installed),
@@ -326,17 +358,24 @@ pub struct McpInstall {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMcpResult {
     pub ok: bool,
+    /// One entry per updated instance, in the order they were written. Same
+    /// shape as `apply`'s `installed`, because an update IS a reinstall and its
+    /// writer notes matter for exactly the same reason.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated: Option<usize>,
+    pub updated: Option<Vec<McpInstalled>>,
+    /// Updates declined, with the same reasons `apply` uses.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub skipped: Option<Vec<McpSkipped>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
 
 impl UpdateMcpResult {
-    fn ok(updated: usize) -> Self {
+    fn ok(updated: Vec<McpInstalled>, skipped: Vec<McpSkipped>) -> Self {
         Self {
             ok: true,
             updated: Some(updated),
+            skipped: Some(skipped),
             error: None,
         }
     }
@@ -345,6 +384,7 @@ impl UpdateMcpResult {
         Self {
             ok: false,
             updated: None,
+            skipped: None,
             error: Some(error),
         }
     }
@@ -631,8 +671,10 @@ fn resolve_install_values(
 
 /// `mcp:apply` -- apply install/remove batches for a project across agents.
 /// Removes run before installs (so a re-install onto the same instance name
-/// starts clean); an install whose transport the agent cannot express is skipped
-/// and reported. Never throws across the boundary. Port of the TS `applyMcp`.
+/// starts clean); an install the agent cannot express -- its transport, or an
+/// oauth client at all -- is skipped and reported, and every install that DID
+/// run carries the writer's notes back out. Never throws across the boundary.
+/// Port of the TS `applyMcp`.
 pub fn apply(ctx: &AppContext, args: ApplyMcpArgs) -> ApplyMcpResult {
     let _guard = lock(ctx);
     match apply_inner(ctx, &args) {
@@ -645,8 +687,8 @@ pub fn apply(ctx: &AppContext, args: ApplyMcpArgs) -> ApplyMcpResult {
 fn apply_inner(
     ctx: &AppContext,
     args: &ApplyMcpArgs,
-) -> Result<(usize, usize, Vec<McpSkipped>), String> {
-    let mut installed = 0usize;
+) -> Result<(Vec<McpInstalled>, usize, Vec<McpSkipped>), String> {
+    let mut installed: Vec<McpInstalled> = Vec::new();
     let mut removed = 0usize;
     let mut skipped: Vec<McpSkipped> = Vec::new();
 
@@ -680,12 +722,24 @@ fn apply_inner(
                 skipped.push(McpSkipped {
                     agent: batch.agent,
                     source: ins.identity.source.clone(),
+                    reason: McpSkipReason::Transport,
                     transport: Some(ins.def.transport),
                 });
                 continue;
             }
+            // Written without its auth block, this server would look installed
+            // and fail to authenticate. Skipping is the honest outcome.
+            if ins.def.oauth.is_some() && !supports_oauth(batch.agent) {
+                skipped.push(McpSkipped {
+                    agent: batch.agent,
+                    source: ins.identity.source.clone(),
+                    reason: McpSkipReason::Oauth,
+                    transport: None,
+                });
+                continue;
+            }
             let values = resolve_install_values(ctx, args, ins);
-            install_mcp_instance(
+            let outcome = install_mcp_instance(
                 &ctx.fs,
                 &InstallMcpArgs {
                     agent: batch.agent,
@@ -707,7 +761,11 @@ fn apply_inner(
                 },
             )
             .map_err(|e| e.to_string())?;
-            installed += 1;
+            installed.push(McpInstalled {
+                agent: batch.agent,
+                instance_name: outcome.instance_name,
+                notes: outcome.notes,
+            });
         }
     }
 
@@ -1007,18 +1065,38 @@ fn preflight_inner(ctx: &AppContext, args: &McpUpdatePreflightArgs) -> Result<Ve
 /// instance and reinstall under the SAME name with the NEW def. Param values are
 /// resolved server-side (the instance's own stored values merged under any
 /// renderer-supplied newly-required params); the reinstall refreshes the ledger
-/// hash automatically. Port of the TS `updateMcp`.
+/// hash automatically. An update the agent cannot express -- an oauth client it
+/// has no setting for -- is declined and reported instead of rewriting the
+/// server without its auth, and every update that DID run carries the writer's
+/// notes back out. Port of the TS `updateMcp`.
 pub fn update(ctx: &AppContext, args: UpdateMcpArgs) -> UpdateMcpResult {
     let _guard = lock(ctx);
     match update_inner(ctx, &args) {
-        Ok(updated) => UpdateMcpResult::ok(updated),
+        Ok((updated, skipped)) => UpdateMcpResult::ok(updated, skipped),
         Err(e) => UpdateMcpResult::err(e),
     }
 }
 
-fn update_inner(ctx: &AppContext, args: &UpdateMcpArgs) -> Result<usize, String> {
-    let mut updated = 0usize;
+fn update_inner(
+    ctx: &AppContext,
+    args: &UpdateMcpArgs,
+) -> Result<(Vec<McpInstalled>, Vec<McpSkipped>), String> {
+    let mut updated: Vec<McpInstalled> = Vec::new();
+    let mut skipped: Vec<McpSkipped> = Vec::new();
     for u in &args.updates {
+        // Rewritten without its auth block, this server would look updated and
+        // fail to authenticate. Declining is the honest outcome -- and it must
+        // happen before the remove below, or the instance would be deleted and
+        // not put back.
+        if u.def.oauth.is_some() && !supports_oauth(u.agent) {
+            skipped.push(McpSkipped {
+                agent: u.agent,
+                source: u.identity.source.clone(),
+                reason: McpSkipReason::Oauth,
+                transport: None,
+            });
+            continue;
+        }
         let target = resolve_mcp_target(ctx, u.agent, args.scope, &u.project_path, &u.project_id)?;
         let stored = read_stored_params(ctx, &target, &u.instance_name)?;
         let mut values = stored.unwrap_or_default();
@@ -1037,7 +1115,7 @@ fn update_inner(ctx: &AppContext, args: &UpdateMcpArgs) -> Result<usize, String>
             },
         )
         .map_err(|e| e.to_string())?;
-        install_mcp_instance(
+        let outcome = install_mcp_instance(
             &ctx.fs,
             &InstallMcpArgs {
                 agent: u.agent,
@@ -1061,9 +1139,13 @@ fn update_inner(ctx: &AppContext, args: &UpdateMcpArgs) -> Result<usize, String>
             },
         )
         .map_err(|e| e.to_string())?;
-        updated += 1;
+        updated.push(McpInstalled {
+            agent: u.agent,
+            instance_name: outcome.instance_name,
+            notes: outcome.notes,
+        });
     }
-    Ok(updated)
+    Ok((updated, skipped))
 }
 
 // ---------------------------------------------------------------------------
@@ -1126,6 +1208,7 @@ mod tests {
     use skillkeeper_core::hooks::region::{
         insert_region, lift_regions, wrap_region, InsertMode, WrapRegionOptions,
     };
+    use skillkeeper_core::mcp::model::McpOauth;
     use skillkeeper_core::models::{
         AppState, Project, Repository, RepositoryKind, Transport, STATE_VERSION,
     };
@@ -1241,6 +1324,7 @@ mod tests {
             args: Some(vec!["-y".to_string(), "server".to_string()]),
             env: Some(values(&[("TOKEN", "{token}")])),
             rules: None,
+            oauth: None,
         }
     }
 
@@ -1263,6 +1347,20 @@ mod tests {
             args: None,
             env: None,
             rules: None,
+            oauth: None,
+        }
+    }
+
+    /// The same http def carrying an oauth client. Copilot cannot express one
+    /// at all; cursor can, minus the callback port.
+    fn oauth_http_def() -> McpServerDef {
+        McpServerDef {
+            oauth: Some(McpOauth {
+                callback_port: Some(8432),
+                client_id: Some("sk-client".to_string()),
+                scopes: vec!["repo".to_string()],
+            }),
+            ..http_def()
         }
     }
 
@@ -1446,7 +1544,7 @@ mod tests {
             ),
         );
         assert!(result.ok, "apply failed: {:?}", result.error);
-        assert_eq!(result.installed, Some(1));
+        assert_eq!(result.installed.as_ref().map(Vec::len), Some(1));
         assert_eq!(result.removed, Some(0));
         assert_eq!(result.skipped.as_ref().map(Vec::len), Some(0));
 
@@ -1637,7 +1735,7 @@ mod tests {
             },
         );
         assert!(updated.ok, "update failed: {:?}", updated.error);
-        assert_eq!(updated.updated, Some(1));
+        assert_eq!(updated.updated.as_ref().map(Vec::len), Some(1));
 
         let native = std::fs::read_to_string(Path::new(&proj.path()).join(".mcp.json")).unwrap();
         assert!(native.contains("acme"));
@@ -1671,7 +1769,7 @@ mod tests {
             },
         );
         assert!(result.ok, "global apply failed: {:?}", result.error);
-        assert_eq!(result.installed, Some(1));
+        assert_eq!(result.installed.as_ref().map(Vec::len), Some(1));
 
         // Native config in the home, ledger under the agent's global skills root.
         let native = std::fs::read_to_string(app.home.join(".claude.json"))
@@ -1711,7 +1809,7 @@ mod tests {
             "codex project install failed: {:?}",
             result.error
         );
-        assert_eq!(result.installed, Some(1));
+        assert_eq!(result.installed.as_ref().map(Vec::len), Some(1));
         assert_eq!(result.skipped.as_ref().map(Vec::len), Some(0));
 
         // Native config written under the project, not the home.
@@ -1768,7 +1866,7 @@ mod tests {
             "codex project install failed: {:?}",
             result.error
         );
-        assert_eq!(result.installed, Some(1));
+        assert_eq!(result.installed.as_ref().map(Vec::len), Some(1));
 
         let listed = installs(&app.ctx);
         let entry = listed
@@ -1808,7 +1906,7 @@ mod tests {
             "project install failed: {:?}",
             installed.error
         );
-        assert_eq!(installed.installed, Some(1));
+        assert_eq!(installed.installed.as_ref().map(Vec::len), Some(1));
 
         let result = apply(
             &app.ctx,
@@ -1877,7 +1975,7 @@ mod tests {
             },
         );
         assert!(updated.ok, "global update failed: {:?}", updated.error);
-        assert_eq!(updated.updated, Some(1));
+        assert_eq!(updated.updated.as_ref().map(Vec::len), Some(1));
 
         // Native config reflects the new def; the stored token is preserved.
         let native = std::fs::read_to_string(app.home.join(".claude.json")).unwrap();
@@ -1954,7 +2052,7 @@ mod tests {
             }]),
         );
         assert!(installed.ok, "global apply failed: {:?}", installed.error);
-        assert_eq!(installed.installed, Some(1));
+        assert_eq!(installed.installed.as_ref().map(Vec::len), Some(1));
 
         let text = std::fs::read_to_string(&native).unwrap();
         assert!(text.contains(&block), "hook region lost: {text}");
@@ -2063,7 +2161,7 @@ mod tests {
             },
         );
         assert!(result.ok, "codex apply failed: {:?}", result.error);
-        assert_eq!(result.installed, Some(1));
+        assert_eq!(result.installed.as_ref().map(Vec::len), Some(1));
 
         // Native config is TOML under the (temp) home .codex dir.
         let toml = std::fs::read_to_string(app.home.join(".codex/config.toml"))
@@ -2100,12 +2198,216 @@ mod tests {
             },
         );
         assert!(result.ok);
-        assert_eq!(result.installed, Some(0));
+        assert_eq!(result.installed.as_ref().map(Vec::len), Some(0));
         let skipped = result.skipped.expect("skipped list present");
         assert_eq!(skipped.len(), 1);
         assert_eq!(skipped[0].agent, AgentKind::Codex);
         assert_eq!(skipped[0].source, "github");
         assert_eq!(skipped[0].transport, Some(McpTransport::Sse));
+        assert_eq!(skipped[0].reason, McpSkipReason::Transport);
         assert!(installs(&app.ctx).is_empty());
+    }
+
+    #[test]
+    fn update_declines_a_copilot_instance_that_gained_an_oauth_block() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        // Installed while the preset had no oauth, which copilot can express.
+        assert!(
+            apply(
+                &app.ctx,
+                apply_args(
+                    &proj,
+                    vec![McpBatch {
+                        agent: AgentKind::Copilot,
+                        install: vec![install_req(http_def(), &[])],
+                        remove: vec![],
+                    }],
+                ),
+            )
+            .ok
+        );
+        let native_path = Path::new(&proj.path()).join(".vscode/mcp.json");
+        let before = std::fs::read_to_string(&native_path).expect("native config written");
+        assert!(before.contains("github_1"));
+
+        // The preset gains an oauth block copilot cannot express.
+        let result = update(
+            &app.ctx,
+            UpdateMcpArgs {
+                scope: Scope::Project,
+                updates: vec![McpUpdateReq {
+                    project_id: "proj-1".to_string(),
+                    project_path: proj.path(),
+                    agent: AgentKind::Copilot,
+                    instance_name: "github_1".to_string(),
+                    identity: identity(),
+                    def: oauth_http_def(),
+                    values: values(&[]),
+                }],
+            },
+        );
+        assert!(result.ok, "update failed: {:?}", result.error);
+        assert_eq!(result.updated.as_ref().map(Vec::len), Some(0));
+        let skipped = result.skipped.expect("skipped list present");
+        assert_eq!(skipped.len(), 1);
+        assert_eq!(skipped[0].agent, AgentKind::Copilot);
+        assert_eq!(skipped[0].source, "github");
+        assert_eq!(skipped[0].reason, McpSkipReason::Oauth);
+        assert_eq!(skipped[0].transport, None);
+
+        // Untouched: not rewritten without its auth, and NOT deleted by the
+        // remove half of the reinstall -- the gate runs before the remove.
+        assert_eq!(
+            std::fs::read_to_string(&native_path).expect("native config still there"),
+            before
+        );
+        assert_eq!(installs(&app.ctx).len(), 1);
+    }
+
+    #[test]
+    fn update_carries_the_writer_notes_on_the_updated_target() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        assert!(
+            apply(
+                &app.ctx,
+                apply_args(
+                    &proj,
+                    vec![McpBatch {
+                        agent: AgentKind::Cursor,
+                        install: vec![install_req(http_def(), &[])],
+                        remove: vec![],
+                    }],
+                ),
+            )
+            .ok
+        );
+
+        // Cursor CAN express an oauth client, minus the callback port.
+        let result = update(
+            &app.ctx,
+            UpdateMcpArgs {
+                scope: Scope::Project,
+                updates: vec![McpUpdateReq {
+                    project_id: "proj-1".to_string(),
+                    project_path: proj.path(),
+                    agent: AgentKind::Cursor,
+                    instance_name: "github_1".to_string(),
+                    identity: identity(),
+                    def: oauth_http_def(),
+                    values: values(&[]),
+                }],
+            },
+        );
+        assert!(result.ok, "update failed: {:?}", result.error);
+        assert_eq!(result.skipped.as_ref().map(Vec::len), Some(0));
+        let updated = result.updated.expect("updated list present");
+        assert_eq!(updated.len(), 1);
+        assert_eq!(updated[0].agent, AgentKind::Cursor);
+        assert_eq!(updated[0].instance_name, "github_1");
+        assert_eq!(
+            updated[0].notes,
+            vec![UpsertNote::DroppedField {
+                field: "callbackPort".to_string()
+            }]
+        );
+    }
+
+    #[test]
+    fn apply_skips_copilot_for_an_oauth_preset_and_still_writes_claude() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        let result = apply(
+            &app.ctx,
+            apply_args(
+                &proj,
+                vec![
+                    McpBatch {
+                        agent: AgentKind::Copilot,
+                        install: vec![install_req(oauth_http_def(), &[])],
+                        remove: vec![],
+                    },
+                    McpBatch {
+                        agent: AgentKind::Claude,
+                        install: vec![install_req(oauth_http_def(), &[])],
+                        remove: vec![],
+                    },
+                ],
+            ),
+        );
+        assert!(result.ok, "apply failed: {:?}", result.error);
+
+        let skipped = result.skipped.expect("skipped list present");
+        assert_eq!(skipped.len(), 1);
+        assert_eq!(skipped[0].agent, AgentKind::Copilot);
+        assert_eq!(skipped[0].source, "github");
+        // Skipped over oauth, not the transport -- copilot takes http fine.
+        assert_eq!(skipped[0].reason, McpSkipReason::Oauth);
+        assert_eq!(skipped[0].transport, None);
+
+        // Nothing was written for copilot: no server that looks installed and
+        // cannot authenticate, and no ledger entry claiming one.
+        assert!(!Path::new(&proj.path()).join(".vscode/mcp.json").exists());
+        assert!(installs(&app.ctx)
+            .iter()
+            .all(|i| i.agent != AgentKind::Copilot));
+
+        // Claude, which can express it, was written WITH the oauth block.
+        let installed = result.installed.expect("installed list present");
+        assert_eq!(installed.len(), 1);
+        assert_eq!(installed[0].agent, AgentKind::Claude);
+        assert!(installed[0].notes.is_empty());
+        let native = std::fs::read_to_string(Path::new(&proj.path()).join(".mcp.json"))
+            .expect("native config written");
+        assert!(native.contains("\"oauth\""), "no oauth block:\n{native}");
+        assert!(native.contains("sk-client"));
+        assert!(native.contains("8432"));
+    }
+
+    #[test]
+    fn apply_carries_the_writer_notes_on_the_installed_target() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        let result = apply(
+            &app.ctx,
+            apply_args(
+                &proj,
+                vec![McpBatch {
+                    agent: AgentKind::Cursor,
+                    install: vec![install_req(oauth_http_def(), &[])],
+                    remove: vec![],
+                }],
+            ),
+        );
+        assert!(result.ok, "apply failed: {:?}", result.error);
+
+        // Cursor has no callback-port setting. The note rides out on the
+        // per-target install record the renderer reads.
+        let installed = result.installed.expect("installed list present");
+        assert_eq!(installed.len(), 1);
+        assert_eq!(installed[0].agent, AgentKind::Cursor);
+        assert_eq!(installed[0].instance_name, "github_1");
+        assert_eq!(
+            installed[0].notes,
+            vec![UpsertNote::DroppedField {
+                field: "callbackPort".to_string()
+            }]
+        );
+
+        // The note is serialized for the renderer as a tagged union member.
+        let json = serde_json::to_value(&installed[0]).expect("serializes");
+        assert_eq!(
+            json["notes"][0],
+            serde_json::json!({ "kind": "droppedField", "field": "callbackPort" })
+        );
     }
 }

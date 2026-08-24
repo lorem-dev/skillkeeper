@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use regex::{Captures, Regex};
 use thiserror::Error;
 
-use crate::mcp::model::McpServerDef;
+use crate::mcp::model::{McpOauth, McpServerDef};
 
 /// Matches a `{param}` placeholder; capture group 1 is the parameter name.
 fn placeholder_re() -> Regex {
@@ -18,7 +18,9 @@ fn placeholder_re() -> Regex {
 }
 
 /// Every string field of an MCP server definition that may contain `{param}`
-/// placeholders: url, header values, command, args, env values, and rules.
+/// placeholders: url, header values, command, args, env values, rules, and the
+/// oauth client id and scopes. `oauth.callback_port` is numeric and is
+/// deliberately not scanned.
 fn string_fields(def: &McpServerDef) -> Vec<&str> {
     let mut out: Vec<&str> = Vec::new();
     if let Some(url) = &def.url {
@@ -38,6 +40,12 @@ fn string_fields(def: &McpServerDef) -> Vec<&str> {
     }
     if let Some(rules) = &def.rules {
         out.push(rules);
+    }
+    if let Some(oauth) = &def.oauth {
+        if let Some(client_id) = &oauth.client_id {
+            out.push(client_id);
+        }
+        out.extend(oauth.scopes.iter().map(String::as_str));
     }
     out
 }
@@ -168,6 +176,11 @@ pub fn render_params(
             .map(|args| args.iter().map(|arg| render(arg)).collect()),
         env: render_record(&def.env),
         rules: def.rules.as_deref().map(&render),
+        oauth: def.oauth.as_ref().map(|oauth| McpOauth {
+            callback_port: oauth.callback_port,
+            client_id: oauth.client_id.as_deref().map(&render),
+            scopes: oauth.scopes.iter().map(|s| render(s)).collect(),
+        }),
     };
 
     let missing = missing.into_inner();
@@ -190,6 +203,22 @@ mod tests {
             .collect()
     }
 
+    /// A minimal http-transport definition with no placeholders of its own, so
+    /// oauth-focused tests can add exactly the placeholders they care about.
+    fn http_def() -> McpServerDef {
+        McpServerDef {
+            name: "remote".to_string(),
+            transport: McpTransport::Http,
+            url: Some("https://example.com/mcp".to_string()),
+            headers: None,
+            command: None,
+            args: None,
+            env: None,
+            rules: None,
+            oauth: None,
+        }
+    }
+
     fn sample_def() -> McpServerDef {
         McpServerDef {
             name: "github".to_string(),
@@ -200,6 +229,7 @@ mod tests {
             args: None,
             env: None,
             rules: Some("host={host}".to_string()),
+            oauth: None,
         }
     }
 
@@ -219,6 +249,7 @@ mod tests {
             args: Some(vec!["{a}".to_string()]),
             env: Some(map(&[("E", "{b}")])),
             rules: None,
+            oauth: None,
         };
         assert_eq!(parse_params(&def), vec!["a", "b"]);
     }
@@ -251,6 +282,7 @@ mod tests {
             args: Some(vec!["{a}".to_string()]),
             env: None,
             rules: None,
+            oauth: None,
         };
         let out = render_params(&def, &map(&[("a", "A")])).unwrap();
         assert_eq!(out.args, Some(vec!["A".to_string()]));
@@ -285,5 +317,49 @@ mod tests {
         assert_eq!(missing_params(&def, None), vec!["host", "token"]);
         // A stored key present but empty still counts as present (not missing).
         assert!(missing_params(&def, Some(&map(&[("host", "h"), ("token", "")]))).is_empty());
+    }
+
+    #[test]
+    fn a_client_id_placeholder_is_a_parameter() {
+        let mut def = http_def();
+        def.oauth = Some(McpOauth {
+            client_id: Some("{org_client}".to_string()),
+            callback_port: Some(8432),
+            scopes: vec!["{tier}_read".to_string()],
+        });
+        assert_eq!(
+            parse_params(&def),
+            vec!["org_client".to_string(), "tier".to_string()]
+        );
+    }
+
+    #[test]
+    fn rendering_substitutes_into_the_client_id_and_scopes() {
+        let mut def = http_def();
+        def.oauth = Some(McpOauth {
+            client_id: Some("{org_client}".to_string()),
+            callback_port: Some(8432),
+            scopes: vec!["{tier}_read".to_string()],
+        });
+        let mut values = BTreeMap::new();
+        values.insert("org_client".to_string(), "abc".to_string());
+        values.insert("tier".to_string(), "admin".to_string());
+        let out = render_params(&def, &values).expect("render");
+        let oauth = out.oauth.expect("oauth survives rendering");
+        assert_eq!(oauth.client_id.as_deref(), Some("abc"));
+        assert_eq!(oauth.scopes, vec!["admin_read".to_string()]);
+        assert_eq!(oauth.callback_port, Some(8432));
+    }
+
+    #[test]
+    fn a_missing_oauth_parameter_is_reported_like_any_other() {
+        let mut def = http_def();
+        def.oauth = Some(McpOauth {
+            client_id: Some("{org_client}".to_string()),
+            callback_port: None,
+            scopes: Vec::new(),
+        });
+        let err = render_params(&def, &BTreeMap::new()).expect_err("missing value");
+        assert!(err.to_string().contains("org_client"));
     }
 }

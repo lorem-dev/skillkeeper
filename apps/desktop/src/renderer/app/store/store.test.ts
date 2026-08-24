@@ -541,10 +541,10 @@ describe('useSkillkeeperStore', () => {
         listAvailableSkills: async () => ({ skills: [], warnings: [] }),
         reconcileSkills: async () => [],
         listAvailableMcp: async () => ({ mcp: [], warnings: [] }),
-        applyMcp: async () => ({ ok: true as const, installed: 0, removed: 0, skipped: [] }),
+        applyMcp: async () => ({ ok: true as const, installed: [], removed: 0, skipped: [] }),
         listMcpInstalls: async () => [],
         reconcileMcp: async () => [],
-        updateMcp: async () => ({ ok: true as const, updated: 0 }),
+        updateMcp: async () => ({ ok: true as const, updated: [], skipped: [] }),
         mcpUpdatePreflight: async () => ({ ok: true as const, missingParams: [] }),
         detectProjectAgents: async () => [],
         applySkillChanges: async () => ({ ok: true as const, installed: 0, removed: 0 }),
@@ -641,10 +641,10 @@ describe('useSkillkeeperStore', () => {
         listAvailableSkills: async () => ({ skills: [], warnings: [] }),
         reconcileSkills: async () => [],
         listAvailableMcp: async () => ({ mcp: [], warnings: [] }),
-        applyMcp: async () => ({ ok: true as const, installed: 0, removed: 0, skipped: [] }),
+        applyMcp: async () => ({ ok: true as const, installed: [], removed: 0, skipped: [] }),
         listMcpInstalls: async () => [],
         reconcileMcp: async () => [],
-        updateMcp: async () => ({ ok: true as const, updated: 0 }),
+        updateMcp: async () => ({ ok: true as const, updated: [], skipped: [] }),
         mcpUpdatePreflight: async () => ({ ok: true as const, missingParams: [] }),
         detectProjectAgents: async () => [],
         applySkillChanges: async () => ({ ok: true as const, installed: 0, removed: 0 }),
@@ -1151,7 +1151,7 @@ describe('useSkillkeeperStore', () => {
 
     beforeEach(() => {
       vi.mocked(bridgeClient.applyMcp).mockReset();
-      vi.mocked(bridgeClient.applyMcp).mockResolvedValue({ ok: true, installed: 0, removed: 1, skipped: [] });
+      vi.mocked(bridgeClient.applyMcp).mockResolvedValue({ ok: true, installed: [], removed: 1, skipped: [] });
       vi.mocked(bridgeClient.listMcpInstalls).mockReset();
       vi.mocked(bridgeClient.listMcpInstalls).mockResolvedValue([unrelatedInstall]);
       vi.mocked(bridgeClient.listAvailableMcp).mockReset();

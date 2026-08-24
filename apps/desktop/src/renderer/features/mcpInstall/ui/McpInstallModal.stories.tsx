@@ -62,6 +62,25 @@ const manualStdioPreset: McpPreset = {
   hasRules: false,
 };
 
+const oauthHttpPreset: McpPreset = {
+  id: 'manual-oauth-1',
+  origin: 'manual',
+  name: 'oauth-server',
+  def: {
+    name: 'oauth-server',
+    type: 'http',
+    url: 'https://mcp.example.com/mcp',
+    oauth: {
+      clientId: 'example-client',
+      callbackPort: 8432,
+      scopes: ['read', 'write'],
+    },
+  },
+  hash: 'sha256:manual-oauth',
+  params: [],
+  hasRules: false,
+};
+
 // Repo http preset with two params -- every agent (including codex, whose
 // TOML config now expresses http) is selectable.
 export const RepoHttpWithParams: Story = {
@@ -105,4 +124,15 @@ export const UpdateFlowKnownParams: Story = {
     preselectedProjectId: 'proj-2',
     initialValues: { workspace: 'acme-workspace' },
   },
+};
+
+// An http preset carrying an oauth block: Copilot cannot store a static
+// oauth client (`supportsOauth`), so its checkbox is disabled with a
+// tooltip explaining why, while every other agent stays selectable.
+export const OauthPresetSkipsCopilot: Story = {
+  render: (args) => {
+    useSeedProjects();
+    return <McpInstallModal {...args} />;
+  },
+  args: { preset: oauthHttpPreset },
 };

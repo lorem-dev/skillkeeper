@@ -955,6 +955,48 @@ msgstr "Componentes"
 msgid "mcp.managementTitle"
 msgstr "Gestão"
 
+msgid "mcp.field.oauth"
+msgstr "OAuth"
+
+msgid "mcp.field.clientId"
+msgstr "ID do cliente"
+
+msgid "mcp.field.callbackPort"
+msgstr "Porta de retorno de chamada"
+
+msgid "mcp.field.scopes"
+msgstr "Âmbitos"
+
+msgid "mcp.scopePlaceholder"
+msgstr "âmbito"
+
+msgid "mcp.addScope"
+msgstr "Adicionar âmbito"
+
+msgid "mcp.oauthHelp"
+msgstr "O SkillKeeper armazena apenas os campos públicos do cliente. Inicie sessão através do próprio agente; um segredo de cliente nunca é guardado aqui."
+
+msgid "mcp.error.oauthOnStdio"
+msgstr "O OAuth aplica-se apenas a servidores http e sse."
+
+msgid "mcp.error.clientIdBlank"
+msgstr "O ID do cliente não pode ficar em branco."
+
+msgid "mcp.error.callbackPortRange"
+msgstr "A porta de retorno de chamada deve estar entre 1 e 65535."
+
+msgid "mcp.error.scopeBlank"
+msgstr "Um âmbito não pode ficar em branco."
+
+msgid "mcp.oauthUnsupported"
+msgstr "{agent} não consegue armazenar um cliente OAuth, portanto este servidor não conseguiria autenticar-se."
+
+msgid "mcp.oauthFieldDropped"
+msgstr "{agent} não suporta {field}; não foi escrito."
+
+msgid "mcp.codexCallbackConflict"
+msgstr "O Codex já define a sua porta de retorno de chamada OAuth como {found}, portanto foi deixada inalterada em vez de ser definida como {wanted}."
+
 msgid "settings.comingSoon"
 msgstr "O ecrã de definições chega em breve."
 

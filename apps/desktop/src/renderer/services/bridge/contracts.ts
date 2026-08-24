@@ -13,6 +13,7 @@ import type {
   Scope,
 } from './generated/core';
 import type { AppUpdateOffer } from './generated/AppUpdateOffer';
+import type { UpsertNote } from './generated/core/UpsertNote';
 
 // -- editors -----------------------------------------------------------------
 
@@ -212,22 +213,40 @@ export interface ApplyMcpArgs {
 
 /**
  * One operation `applyMcp` declined to perform: an install whose transport the
- * agent cannot express, or any operation in a codex batch that arrived at
- * project scope (codex's native config is user-wide only).
+ * agent cannot express, an install carrying an oauth client the agent cannot
+ * express, or any operation in a codex batch that arrived at project scope
+ * (codex's native config is user-wide only).
  */
 export interface McpSkipped {
   readonly agent: AgentKind;
   /** The preset's source name for an install, the instance name for a remove. */
   readonly source: string;
-  /** The transport that could not be expressed; absent for a skipped remove. */
+  /** Which rule declined it. */
+  readonly reason: 'transport' | 'oauth';
+  /**
+   * The transport that could not be expressed; absent for a skipped remove and
+   * for an oauth skip, whose transport was perfectly expressible.
+   */
   readonly transport?: McpTransport;
+}
+
+/** One install `applyMcp` performed, and what the writer could not express. */
+export interface McpInstalled {
+  readonly agent: AgentKind;
+  readonly instanceName: string;
+  /**
+   * Writer notes, empty when nothing was dropped. The install succeeded, so
+   * these are not errors -- but a silently dropped auth field reads as
+   * configured when it is not, so they are shown.
+   */
+  readonly notes: readonly UpsertNote[];
 }
 
 /** Result of applyMcp. Never thrown across the bridge boundary. */
 export type ApplyMcpResult =
   | {
       readonly ok: true;
-      readonly installed: number;
+      readonly installed: readonly McpInstalled[];
       readonly removed: number;
       readonly skipped: McpSkipped[];
     }
@@ -271,7 +290,13 @@ export interface UpdateMcpArgs {
 
 /** Result of updateMcp. Never thrown across the bridge boundary. */
 export type UpdateMcpResult =
-  { readonly ok: true; readonly updated: number } | { readonly ok: false; readonly error: string };
+  | {
+      readonly ok: true;
+      /** One entry per updated instance; an update is a reinstall, notes and all. */
+      readonly updated: readonly McpInstalled[];
+      readonly skipped: McpSkipped[];
+    }
+  | { readonly ok: false; readonly error: string };
 
 /** Arguments for mcpUpdatePreflight. */
 export interface McpUpdatePreflightArgs {
