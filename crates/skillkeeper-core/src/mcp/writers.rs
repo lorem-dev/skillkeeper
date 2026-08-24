@@ -67,6 +67,12 @@ fn str_map_to_json(map: &BTreeMap<String, String>) -> Value {
     )
 }
 
+fn str_map_to_toml(map: &BTreeMap<String, String>) -> toml::Table {
+    map.iter()
+        .map(|(k, v)| (k.clone(), toml::Value::String(v.clone())))
+        .collect()
+}
+
 /// The claude/cursor/copilot server shape: a `type`-tagged object.
 fn to_standard_server_json(def: &McpServerDef) -> Result<Value, WriterError> {
     if def.transport == McpTransport::Stdio {
@@ -226,8 +232,9 @@ impl McpConfigWriter for JsonWriter {
 const CODEX_CONTAINER_KEY: &str = "mcp_servers";
 
 /// The codex native MCP config writer: `~/.codex/config.toml`, TOML table
-/// `[mcp_servers.<name>]`. Codex only supports the `stdio` transport;
-/// [`Self::upsert`] rejects a non-stdio def as a defensive check.
+/// `[mcp_servers.<name>]`. Codex supports the `stdio` and `http` transports;
+/// [`Self::upsert`] rejects `sse` as a defensive check (see
+/// [`supports_transport`]).
 struct CodexTomlWriter;
 
 fn parse_toml_root(text: &str) -> Result<toml::Table, WriterError> {
@@ -238,36 +245,50 @@ fn parse_toml_root(text: &str) -> Result<toml::Table, WriterError> {
 }
 
 fn to_codex_server_object(def: &McpServerDef) -> Result<toml::Value, WriterError> {
-    if def.transport != McpTransport::Stdio {
-        return Err(WriterError(format!(
-            "codex only supports the stdio transport, got \"{}\"",
+    match def.transport {
+        McpTransport::Stdio => {
+            let command = def.command.as_ref().ok_or_else(|| {
+                WriterError("stdio server definition requires \"command\"".into())
+            })?;
+            let mut obj = toml::Table::new();
+            obj.insert("command".into(), toml::Value::String(command.clone()));
+            if let Some(args) = &def.args {
+                obj.insert(
+                    "args".into(),
+                    toml::Value::Array(
+                        args.iter()
+                            .map(|a| toml::Value::String(a.clone()))
+                            .collect(),
+                    ),
+                );
+            }
+            if let Some(env) = &def.env {
+                obj.insert("env".into(), toml::Value::Table(str_map_to_toml(env)));
+            }
+            Ok(toml::Value::Table(obj))
+        }
+        McpTransport::Http => {
+            let url = def
+                .url
+                .as_ref()
+                .ok_or_else(|| WriterError("http server definition requires \"url\"".into()))?;
+            let mut obj = toml::Table::new();
+            obj.insert("url".into(), toml::Value::String(url.clone()));
+            if let Some(headers) = &def.headers {
+                obj.insert(
+                    "http_headers".into(),
+                    toml::Value::Table(str_map_to_toml(headers)),
+                );
+            }
+            Ok(toml::Value::Table(obj))
+        }
+        // Codex's support for sse over its remote client is unverified; keep it
+        // rejected so `supports_transport` and this writer never disagree.
+        McpTransport::Sse => Err(WriterError(format!(
+            "codex does not support the {} transport",
             transport_str(def.transport)
-        )));
+        ))),
     }
-    let command = def
-        .command
-        .as_ref()
-        .ok_or_else(|| WriterError("stdio server definition requires \"command\"".into()))?;
-    let mut obj = toml::Table::new();
-    obj.insert("command".into(), toml::Value::String(command.clone()));
-    if let Some(args) = &def.args {
-        obj.insert(
-            "args".into(),
-            toml::Value::Array(
-                args.iter()
-                    .map(|a| toml::Value::String(a.clone()))
-                    .collect(),
-            ),
-        );
-    }
-    if let Some(env) = &def.env {
-        let table: toml::Table = env
-            .iter()
-            .map(|(k, v)| (k.clone(), toml::Value::String(v.clone())))
-            .collect();
-        obj.insert("env".into(), toml::Value::Table(table));
-    }
-    Ok(toml::Value::Table(obj))
 }
 
 impl McpConfigWriter for CodexTomlWriter {
@@ -340,11 +361,12 @@ pub fn writer_for(agent: AgentKind) -> Box<dyn McpConfigWriter> {
     }
 }
 
-/// Whether `agent`'s native config can express transport `t`. Codex is
-/// stdio-only.
+/// Whether `agent`'s native config can express transport `t`. Codex supports
+/// stdio and http; whether its remote client accepts sse is unverified, so sse
+/// stays unsupported rather than being written on a guess.
 pub fn supports_transport(agent: AgentKind, t: McpTransport) -> bool {
     if agent == AgentKind::Codex {
-        return t == McpTransport::Stdio;
+        return t != McpTransport::Sse;
     }
     true
 }
@@ -880,10 +902,49 @@ mod tests {
         assert_eq!(writer.existing_names("").unwrap(), Vec::<String>::new());
     }
 
+    // A codex-specific http fixture: the shared `http_def()` above is reused by
+    // many non-codex tests with its own url/headers, so this stays separate
+    // rather than repurposing it.
+    fn codex_http_def() -> McpServerDef {
+        let mut headers = BTreeMap::new();
+        headers.insert("X-Api-Version".to_string(), "2".to_string());
+        McpServerDef {
+            name: "remote".to_string(),
+            transport: McpTransport::Http,
+            url: Some("https://mcp.example.com/mcp".to_string()),
+            headers: Some(headers),
+            command: None,
+            args: None,
+            env: None,
+            rules: None,
+        }
+    }
+
     #[test]
-    fn codex_rejects_a_non_stdio_def() {
-        let writer = writer_for(AgentKind::Codex);
-        assert!(writer.upsert("", "remote_http_1", &http_def()).is_err());
+    fn codex_writes_an_http_server_with_its_url_and_headers() {
+        let out = CodexTomlWriter
+            .upsert("", "remote", &codex_http_def())
+            .expect("upsert");
+        let root: toml::Table = toml::from_str(&out).expect("valid toml");
+        let server = root["mcp_servers"]["remote"]
+            .as_table()
+            .expect("server table");
+        assert_eq!(server["url"].as_str(), Some("https://mcp.example.com/mcp"));
+        assert_eq!(server["http_headers"]["X-Api-Version"].as_str(), Some("2"));
+        assert!(server.get("command").is_none());
+    }
+
+    #[test]
+    fn codex_supports_the_http_transport() {
+        assert!(supports_transport(AgentKind::Codex, McpTransport::Http));
+    }
+
+    #[test]
+    fn codex_still_rejects_sse_until_it_is_verified() {
+        assert!(!supports_transport(AgentKind::Codex, McpTransport::Sse));
+        let mut def = codex_http_def();
+        def.transport = McpTransport::Sse;
+        assert!(CodexTomlWriter.upsert("", "remote", &def).is_err());
     }
 
     #[test]
@@ -921,9 +982,9 @@ mod tests {
     }
 
     #[test]
-    fn supports_transport_gates_codex_to_stdio() {
+    fn supports_transport_gates_codex_to_stdio_and_http() {
         assert!(supports_transport(AgentKind::Codex, McpTransport::Stdio));
-        assert!(!supports_transport(AgentKind::Codex, McpTransport::Http));
+        assert!(supports_transport(AgentKind::Codex, McpTransport::Http));
         assert!(!supports_transport(AgentKind::Codex, McpTransport::Sse));
         for agent in [
             AgentKind::Claude,
