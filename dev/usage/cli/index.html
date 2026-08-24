@@ -1736,10 +1736,48 @@ always exactly one parseable array, including on a <code>2</code> exit, where it
 <td>warning</td>
 <td>A manifest field was coerced, dropped, or re-quoted.</td>
 </tr>
+<tr>
+<td><code>SK015</code></td>
+<td>warning</td>
+<td>An MCP preset's <code>oauth</code> block is present on a <code>stdio</code> transport.</td>
+</tr>
+<tr>
+<td><code>SK016</code></td>
+<td>warning</td>
+<td>An MCP preset's <code>oauth.clientId</code> is present but blank.</td>
+</tr>
+<tr>
+<td><code>SK017</code></td>
+<td>warning</td>
+<td>An MCP preset's <code>oauth.callbackPort</code> is present and <code>0</code>.</td>
+</tr>
+<tr>
+<td><code>SK018</code></td>
+<td>warning</td>
+<td>An MCP preset's (or parameter's) description is longer than 128 visible characters; it will be truncated.</td>
+</tr>
+<tr>
+<td><code>SK019</code></td>
+<td>warning</td>
+<td>An MCP preset's <code>parameters</code> entry names something no <code>{param}</code> placeholder uses.</td>
+</tr>
+<tr>
+<td><code>SK021</code></td>
+<td>warning</td>
+<td>An MCP preset's description contains link-like text (<code>[...](...)</code>) that is not a valid <code>http</code>/<code>https</code> link; it will be shown literally.</td>
+</tr>
+<tr>
+<td><code>SK022</code></td>
+<td>warning</td>
+<td>An MCP preset parameter's <code>options</code> has more than one entry with the same value.</td>
+</tr>
 </tbody>
 </table>
+<p><code>SK020</code> is deliberately unassigned.</p>
 <p>Codes are stable and are what a script should match on; the message text is
-not.</p>
+not. See <a href="../mcp/#descriptions-and-parameter-metadata">MCP Servers</a> for the
+description, parameter, and option rules <code>SK018</code>, <code>SK019</code>, <code>SK021</code>, and
+<code>SK022</code> enforce.</p>
 <hr />
 <h2 id="skillkeeper-skill">skillkeeper skill<a class="headerlink" href="#skillkeeper-skill" title="Permanent link">&para;</a></h2>
 <p>Manage skills.</p>
@@ -1900,7 +1938,8 @@ those discovered in tracked repositories.</p>
 </code></pre></div>
 <p>Install an MCP preset for one or more agents.</p>
 <p>An agent whose native config cannot express the preset's transport is skipped
-with a notice rather than attempted -- Codex, for example, supports <code>stdio</code> only.
+with a notice rather than attempted -- Codex, for example, does not support <code>sse</code>,
+so an <code>sse</code>-only preset is skipped for Codex even if it installs for other agents.
 The command exits non-zero when it installed nothing at all, so a single-agent
 install that was skipped reports failure, while a multi-agent install that
 succeeded for at least one agent reports success.</p>
@@ -1912,8 +1951,7 @@ succeeded for at least one agent reports success.</p>
 <li><code>--project &lt;dir&gt;</code> - project directory (default: the current directory).
   Mutually exclusive with <code>--global</code>.</li>
 <li><code>--global</code> - install for the whole user, in every project, instead of one
-  project directory. Mutually exclusive with <code>--project</code>. Required for <code>codex</code>,
-  whose MCP config is user-wide.</li>
+  project directory. Mutually exclusive with <code>--project</code>.</li>
 </ul>
 <h3 id="mcp-remove">mcp remove<a class="headerlink" href="#mcp-remove" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>skillkeeper mcp remove &lt;instance-name&gt; --agent &lt;agent&gt; [--project &lt;dir&gt;] [--global]
@@ -1937,9 +1975,7 @@ for any newly required placeholders.</p>
 <li><code>--project &lt;dir&gt;</code> - project directory (default: the current directory);
   ignored with <code>--all</code>. Mutually exclusive with <code>--global</code>.</li>
 <li><code>--global</code> - act on the user-wide installs instead of a project's. Mutually
-  exclusive with <code>--project</code> and <code>--all</code>. Required for <code>codex</code>, whose MCP config
-  is user-wide: <code>--agent codex</code> at project scope is refused, the same way
-  <code>mcp install</code> refuses it.</li>
+  exclusive with <code>--project</code> and <code>--all</code>.</li>
 </ul>
 <hr />
 <h2 id="skillkeeper-version">skillkeeper version<a class="headerlink" href="#skillkeeper-version" title="Permanent link">&para;</a></h2>

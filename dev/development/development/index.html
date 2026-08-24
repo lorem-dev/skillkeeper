@@ -1380,7 +1380,8 @@ in the diff rather than because the fixture moved.</p>
   suite is deliberately CommonJS so no <code>--experimental-vm-modules</code> is needed.</li>
 <li><strong>Isolation belongs to the harness.</strong> <code>Sandbox</code> (in <code>e2e/src/cli.ts</code>) always
   sets throwaway <code>HOME</code> <em>and</em> <code>XDG_CONFIG_HOME</code>. The first relocates the agents'
-  global roots (a Codex MCP install always writes to <code>~/.codex/config.toml</code>, and
+  global roots (a global-scope Codex MCP install writes to
+  <code>~/.codex/config.toml</code>, a project-scoped one to <code>&lt;project&gt;/.codex/config.toml</code>, and
   global-scope skill installs write under <code>~</code>); the second relocates <code>state.json</code>
   and <code>config.yaml</code>. Forgetting either would edit the real machine, so specs never
   spawn the binary themselves -- always go through <code>Sandbox</code>.</li>
