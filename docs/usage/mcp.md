@@ -137,8 +137,8 @@ Both files exist for real in the
 [skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo)
 fixture repository:
 [`mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/mcp.yml)
-declares five ungrouped presets covering all three transports, with and without
-parameters, headers, and `rules`;
+declares seven ungrouped presets covering all three transports, with and
+without parameters, headers, `rules`, and `oauth`;
 [`tooling/mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/mcp.yml)
 declares one preset in the `tooling` group.
 

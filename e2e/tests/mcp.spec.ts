@@ -21,7 +21,10 @@ describe('mcp', () => {
 
   it('discovers the root presets and the group-scoped one', () => {
     const listed = sandbox.runOk(['mcp', 'list']).stdout;
-    for (const name of ['filesystem', 'github', 'bare-stdio', 'docs-http', 'events-sse']) {
+    for (const name of [
+      'filesystem', 'github', 'bare-stdio', 'docs-http', 'events-sse',
+      'oauth-http', 'oauth-stdio-invalid',
+    ]) {
       expect(listed).toContain(name);
     }
     // Load-bearing: a group's mcp.yml is only found when that group holds at
@@ -32,7 +35,7 @@ describe('mcp', () => {
     // first path segment, so a preset's group is the full directory path.
     expect(listed).toContain('platform/lint/lint-registry');
     expect(listed).toContain('platform/lint/rust/rust-registry');
-    expect(listed.trim().split('\n')).toHaveLength(8);
+    expect(listed.trim().split('\n')).toHaveLength(10);
   });
 
   describe('install', () => {
@@ -207,12 +210,17 @@ describe('mcp', () => {
       expect(res.output).toContain('--project');
     });
 
-    it('tells the user to pass --global for codex', () => {
-      const res = sandbox.run([
+    it('installs a project-scoped config for codex instead of refusing', () => {
+      // Codex used to be coerced to global scope no matter what was asked; a
+      // project-scoped install now lands in the project's own
+      // .codex/config.toml, not the refusal this used to print.
+      const res = sandbox.runOk([
         'mcp', 'install', 'bare-stdio', '--agent', 'codex', '--project', project,
       ]);
-      expect(res.status).not.toBe(0);
-      expect(res.output).toContain('--global');
+      expect(res.stdout).toContain('(codex) ->');
+      expect(existsSync(join(project, '.codex', 'config.toml'))).toBe(true);
+      // Nothing was written to the user-wide config.
+      expect(existsSync(join(sandbox.home, '.codex', 'config.toml'))).toBe(false);
     });
   });
 });
