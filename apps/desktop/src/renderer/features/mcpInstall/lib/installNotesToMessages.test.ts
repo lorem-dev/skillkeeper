@@ -96,4 +96,48 @@ describe('installNotesToMessages', () => {
       'mcp.oauthFieldDropped|{"agent":"OpenCode","field":"scopes"}',
     ]);
   });
+
+  it('maps an optionSubstituted note to mcp.note.optionSubstituted with the parameter and the substituted value', () => {
+    const targets = [
+      installed({ agent: 'cursor', notes: [{ kind: 'optionSubstituted', parameter: 'region', value: 'us-east' }] }),
+    ];
+    expect(installNotesToMessages(targets, stubTranslator)).toEqual([
+      'mcp.note.optionSubstituted|{"parameter":"region","value":"us-east"}',
+    ]);
+  });
+
+  it('maps an optionsEmpty note to mcp.note.optionsEmpty with the parameter', () => {
+    const targets = [installed({ agent: 'claude', notes: [{ kind: 'optionsEmpty', parameter: 'region' }] })];
+    expect(installNotesToMessages(targets, stubTranslator)).toEqual([
+      'mcp.note.optionsEmpty|{"parameter":"region"}',
+    ]);
+  });
+
+  it('deduplicates two installs reporting the same optionSubstituted note into a single message', () => {
+    const targets = [
+      installed({
+        agent: 'cursor',
+        instanceName: 'instance-1',
+        notes: [{ kind: 'optionSubstituted', parameter: 'region', value: 'us-east' }],
+      }),
+      installed({
+        agent: 'cursor',
+        instanceName: 'instance-2',
+        notes: [{ kind: 'optionSubstituted', parameter: 'region', value: 'us-east' }],
+      }),
+    ];
+    expect(installNotesToMessages(targets, stubTranslator)).toEqual([
+      'mcp.note.optionSubstituted|{"parameter":"region","value":"us-east"}',
+    ]);
+  });
+
+  it('deduplicates two installs reporting the same optionsEmpty note into a single message', () => {
+    const targets = [
+      installed({ agent: 'claude', instanceName: 'instance-1', notes: [{ kind: 'optionsEmpty', parameter: 'region' }] }),
+      installed({ agent: 'claude', instanceName: 'instance-2', notes: [{ kind: 'optionsEmpty', parameter: 'region' }] }),
+    ];
+    expect(installNotesToMessages(targets, stubTranslator)).toEqual([
+      'mcp.note.optionsEmpty|{"parameter":"region"}',
+    ]);
+  });
 });

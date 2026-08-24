@@ -39,7 +39,7 @@ const EMPTY_MCP_PRESET: McpPreset = {
   id: '',
   origin: 'manual',
   name: '',
-  def: { name: '', type: 'stdio' },
+  def: { name: '', type: 'stdio', parameters: {} },
   hash: '',
   params: [],
   hasRules: false,

@@ -1593,7 +1593,12 @@ export const useSkillkeeperStore = create<SkillkeeperStore>((set, get) => ({
       const manualDefs = get().config?.mcp.servers ?? [];
       const manual = await Promise.all(
         manualDefs.map(async (preset): Promise<McpPreset> => {
-          const { id, ...def } = preset;
+          const { id, ...rest } = preset;
+          // The manual-preset editor never authors `parameters` (see
+          // `skillkeeper_config::McpPreset`'s doc comment), so an empty map is
+          // the honest value here, not a placeholder standing in for missing
+          // data.
+          const def: McpServerDef = { ...rest, parameters: {} };
           return {
             id,
             origin: 'manual',

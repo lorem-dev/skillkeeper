@@ -72,6 +72,12 @@ servers:
       clientId: <string>
       callbackPort: <number>
       scopes: [<string>, ...]
+    description: <string>     # optional, shown wherever this preset is listed
+    parameters:                # optional, keyed by parameter name
+      <param-name>:
+        description: <string>  # optional, prose -- see "Descriptions" below
+        options:                # optional, mapping of value to label; order matters
+          <value>: <label>
     rules: <string>           # optional guidance body
 ```
 
@@ -176,6 +182,97 @@ is read as the map `{personal_token: null}` rather than as text. SkillKeeper
 recovers the intended string and reads the file anyway, but it reports a
 warning naming the line, because the same spelling means something else to
 every other YAML tool. Quoting silences it.
+
+## Descriptions and parameter metadata
+
+A server, and each of its parameters, may carry a `description`: a short line
+of prose shown wherever the preset (or its parameter prompt) is listed. A
+parameter may also carry `options`, restricting it to a fixed set of values
+and giving each one a label.
+
+```yaml
+version: 1
+servers:
+  - name: docs-remote
+    type: http
+    url: "https://mcp.example.com/mcp"
+    description: "Docs search over the [team wiki](https://mcp.example.com/wiki)."
+    parameters:
+      region:
+        description: "Which regional endpoint to query."
+        options:
+          us: United States
+          eu: Europe
+      token:
+        description: "A personal access token."
+```
+
+`parameters` is **additive metadata, not a declaration**: the set of
+parameters still comes from scanning every string field for `{name}`
+placeholders, exactly as described above. A placeholder with no `parameters`
+entry behaves exactly as it always has, and an existing `mcp.yml` with no
+`parameters` block does not change meaning. An entry in `parameters` naming
+something no placeholder uses is never an error - it is a lint warning
+(`SK019`), and nothing else changes. See
+[CLI Reference](cli.md#repo-lint) for the full table of lint codes.
+
+### Description markup
+
+A description is prose, not a template: it is deliberately **not** scanned
+for `{param}` placeholders, so writing `{name}` inside one renders as those
+literal characters and never becomes an input field.
+
+Exactly one markup form is recognized: `[text](http://...)` or
+`[text](https://...)`. Everything else stays literal text, including every
+other URL scheme, a protocol-relative or relative URL, a URL containing `(`
+or whitespace, an empty or whitespace-only label, and unbalanced brackets. A
+link immediately followed by more text is still a link. Falling back to
+literal text on anything unrecognized is deliberate: a construct SkillKeeper
+does not recognize can never turn into a live link. A description containing
+link-like text that failed to parse is a lint warning (`SK021`), never an
+error.
+
+### Truncation
+
+A description is truncated to 128 VISIBLE characters, hard. A link's URL
+never counts toward that budget - only its visible text does. An ellipsis is
+appended only when something was actually removed. When the budget runs out
+in the middle of a link's text, the text is cut and the link is **kept**,
+still pointing at the same URL, rather than dropped entirely - dropping it
+could swallow the only link a description has. There is deliberately no way
+to read the truncated remainder. A description longer than the budget is a
+lint warning (`SK018`).
+
+### Options: validation and migration
+
+`options` is written as a mapping of value to label, and its **order
+matters**: it decides which option is chosen when a stored value disappears
+(see below), so reordering the mapping is treated as a change to the server,
+the same as changing any other field.
+
+A parameter's value must be one of its `options`. This is enforced on both
+surfaces: the CLI (`mcp install`, `mcp update`) rejects a value that is not
+one of the options, and the desktop app's install form only lets you pick one
+of them. Two options sharing the same value is a lint warning (`SK022`).
+
+Updating an installed instance can leave a stored value that the new
+definition's `options` no longer offers (an author removed or renamed a
+choice). This is never silent:
+
+- If the parameter still has options, the stored value is replaced by the
+  **first** option, and the substitution is reported.
+- If the parameter's `options` is now empty, the stored value is left
+  untouched - clearing it could break a working install - and a warning is
+  reported instead.
+
+### The desktop preset editor does not author this
+
+Described parameters and option lists exist only in a hand-written
+`mcp.yml`. The desktop's preset editor - used for the user's own manual
+presets - gained a `description` field on the server and nothing else. It
+creates neither a `parameters` map nor an `options` list; giving one of a
+manual preset's parameters a description or a restricted set of options is
+not possible from the interface.
 
 ## Install, update, and remove
 

@@ -67,4 +67,7 @@ export type {
   McpPresetOrigin,
   McpOauth,
   UpsertNote,
+  DescriptionSpan,
+  McpOption,
+  McpParameter,
 } from './generated/core';

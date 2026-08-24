@@ -2,7 +2,14 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useSkillkeeperStore, scanMcpParams, repoMcpPresetId } from '@/app/store';
 import { seedStore } from '@/app/store/storyState';
 import type { SkillKeeperConfig, McpPreset } from '@/app/store';
-import type { AvailableMcp, McpInstall, Project, ProjectInfo, Repository } from '@/services/bridge';
+import type {
+  AvailableMcp,
+  McpInstall,
+  McpServerDef,
+  Project,
+  ProjectInfo,
+  Repository,
+} from '@/services/bridge';
 import { ManagementPage } from './ManagementPage';
 
 const meta: Meta<typeof ManagementPage> = { title: 'pages/ManagementPage', component: ManagementPage };
@@ -63,13 +70,14 @@ const AVAILABLE: AvailableMcp[] = [
       type: 'http',
       url: 'https://api.linear.app/{workspace}/mcp',
       headers: { Authorization: 'Bearer {token}' },
+      parameters: {},
     },
     hash: 'sha256:repo-linear',
   },
   {
     repoId: 'repo-1',
     remote: 'git@github.com:acme/team-skills.git',
-    def: { name: 'live-feed', type: 'sse', url: 'https://mcp.example.com/sse/stream' },
+    def: { name: 'live-feed', type: 'sse', url: 'https://mcp.example.com/sse/stream', parameters: {} },
     hash: 'sha256:repo-feed',
   },
   // A nested group: renders as a "platform" branch containing a "lint"
@@ -79,7 +87,13 @@ const AVAILABLE: AvailableMcp[] = [
     repoId: 'repo-1',
     remote: 'git@github.com:acme/team-skills.git',
     group: 'platform/lint',
-    def: { name: 'rustfmt-check', type: 'stdio', command: 'rustfmt-mcp', args: ['--check'] },
+    def: {
+      name: 'rustfmt-check',
+      type: 'stdio',
+      command: 'rustfmt-mcp',
+      args: ['--check'],
+      parameters: {},
+    },
     hash: 'sha256:repo-rustfmt',
   },
 ];
@@ -101,7 +115,10 @@ const MANUAL_HASH = 'sha256:manual-current';
  */
 function buildMcpPresets(config: SkillKeeperConfig, available: readonly AvailableMcp[]): McpPreset[] {
   const manual: McpPreset[] = config.mcp.servers.map((preset): McpPreset => {
-    const { id, ...def } = preset;
+    const { id, ...rest } = preset;
+    // The manual-preset editor never authors `parameters`; see the matching
+    // comment in `store.ts`'s `refreshMcpPresets`.
+    const def: McpServerDef = { ...rest, parameters: {} };
     return {
       id,
       origin: 'manual',

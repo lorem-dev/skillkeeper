@@ -35,6 +35,7 @@ import type {
   AppUpdateProgress,
   AppUpdateReady,
   AppUpdateFailed,
+  DescriptionSpan,
 } from './types';
 
 /** The typed transport surface the renderer uses to reach the Rust backend. */
@@ -58,6 +59,11 @@ export interface BridgeClient {
   reconcileMcp(): Promise<McpInstall[]>;
   updateMcp(args: UpdateMcpArgs): Promise<UpdateMcpResult>;
   mcpUpdatePreflight(args: McpUpdatePreflightArgs): Promise<McpUpdatePreflightResult>;
+  /** Parse AND truncate each description in `descriptions` (the server's own,
+   *  and each parameter's) in one round trip, in the same order they were
+   *  given -- the one place markup parsing and the 128-character budget are
+   *  applied, so no renderer surface re-implements either. */
+  mcpDescriptionSpans(descriptions: string[]): Promise<DescriptionSpan[][]>;
   detectProjectAgents(path: string): Promise<AgentKind[]>;
   applySkillChanges(args: ApplyArgs): Promise<ApplyResult>;
   onSkillsProgress(callback: (progress: ApplyProgress) => void): () => void;
@@ -66,6 +72,10 @@ export interface BridgeClient {
   openConfigInEditor(editorId: string): Promise<OpenResult>;
   /** Open a URL in the OS default browser (e.g. the online documentation). */
   openExternal(url: string): Promise<OpenResult>;
+  /** Open a URL taken from a parsed MCP description link's own `url` in the OS
+   *  default browser. The backend rejects anything that is not http or https;
+   *  callers must never pass anything other than a link span's own `url`. */
+  openExternalUrl(url: string): Promise<void>;
   onConfigChanged(callback: (result: LoadConfigResult) => void): () => void;
   /** Subscribe to application-menu / Settings-shortcut navigation. Returns an unsubscribe fn. */
   onMenuNavigate(callback: (view: string) => void): () => void;
@@ -252,6 +262,8 @@ export const bridgeClient: BridgeClient = {
   reconcileMcp: () => invoke<McpInstall[]>('mcp_reconcile'),
   updateMcp: (args) => invoke<UpdateMcpResult>('mcp_update', { args }),
   mcpUpdatePreflight: (args) => invoke<McpUpdatePreflightResult>('mcp_update_preflight', { args }),
+  mcpDescriptionSpans: (descriptions) =>
+    invoke<DescriptionSpan[][]>('mcp_description_spans', { descriptions }),
   detectProjectAgents: (path) => invoke<AgentKind[]>('projects_detect_agents', { path }),
   applySkillChanges: (args) => invoke<ApplyResult>('skills_apply', { args }),
   onSkillsProgress: (callback) => subscribe<ApplyProgress>('skills:progress', callback),
@@ -259,6 +271,7 @@ export const bridgeClient: BridgeClient = {
   listEditors: () => invoke<EditorOption[]>('editors_list'),
   openConfigInEditor: (editorId) => invoke<OpenResult>('open_config_in_editor', { editorId }),
   openExternal: (url) => invoke<OpenResult>('open_external', { url }),
+  openExternalUrl: (url) => invoke<void>('open_external_url', { url }),
   onConfigChanged: (callback) => subscribe<LoadConfigResult>('config:changed', callback),
   onMenuNavigate: (callback) => subscribe<string>('menu:navigate', callback),
   onMenuAbout: (callback) => subscribe<void>('menu:about', () => callback()),

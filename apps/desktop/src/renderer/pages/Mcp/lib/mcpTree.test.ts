@@ -37,7 +37,7 @@ function project(over: Partial<Project> & { id: string; name: string }): Project
 function preset(over: Partial<McpPreset> & { id: string; name: string }): McpPreset {
   return {
     origin: 'repo',
-    def: { name: over.name, type: 'stdio', command: 'run' },
+    def: { name: over.name, type: 'stdio', command: 'run', parameters: {} },
     hash: `sha256:${over.id}`,
     params: [],
     hasRules: false,

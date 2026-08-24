@@ -110,9 +110,17 @@ Exit codes:
 | `SK015` | warning | An MCP preset's `oauth` block is present on a `stdio` transport. |
 | `SK016` | warning | An MCP preset's `oauth.clientId` is present but blank. |
 | `SK017` | warning | An MCP preset's `oauth.callbackPort` is present and `0`. |
+| `SK018` | warning | An MCP preset's (or parameter's) description is longer than 128 visible characters; it will be truncated. |
+| `SK019` | warning | An MCP preset's `parameters` entry names something no `{param}` placeholder uses. |
+| `SK021` | warning | An MCP preset's description contains link-like text (`[...](...)`) that is not a valid `http`/`https` link; it will be shown literally. |
+| `SK022` | warning | An MCP preset parameter's `options` has more than one entry with the same value. |
+
+`SK020` is deliberately unassigned.
 
 Codes are stable and are what a script should match on; the message text is
-not.
+not. See [MCP Servers](mcp.md#descriptions-and-parameter-metadata) for the
+description, parameter, and option rules `SK018`, `SK019`, `SK021`, and
+`SK022` enforce.
 
 ---
 

@@ -7,7 +7,7 @@ import { buildProjectMcpPlan } from './mcpPlan';
 function preset(over: Partial<McpPreset> & { id: string; name: string }): McpPreset {
   return {
     origin: 'repo',
-    def: { name: over.name, type: 'stdio', command: 'run' },
+    def: { name: over.name, type: 'stdio', command: 'run', parameters: {} },
     hash: `sha256:${over.id}`,
     params: [],
     hasRules: false,
@@ -59,7 +59,12 @@ describe('buildProjectMcpPlan', () => {
   it('excludes an agent whose native config cannot express the instance transport', () => {
     const installs = [install({ instanceName: 'github_1', agent: 'claude' })];
     const presets = [
-      preset({ id: 'p1', name: 'github', remote: 'r', def: { name: 'github', type: 'sse', url: 'https://x' } }),
+      preset({
+        id: 'p1',
+        name: 'github',
+        remote: 'r',
+        def: { name: 'github', type: 'sse', url: 'https://x', parameters: {} },
+      }),
     ];
 
     // codex accepts stdio and http but rejects sse; cursor accepts every
@@ -85,6 +90,7 @@ describe('buildProjectMcpPlan', () => {
           type: 'http',
           url: 'https://mcp.example.com/mcp',
           oauth: { clientId: 'example-client', scopes: ['read'] },
+          parameters: {},
         },
       }),
     ];
@@ -110,6 +116,7 @@ describe('buildProjectMcpPlan', () => {
           type: 'http',
           url: 'https://mcp.example.com/mcp',
           oauth: { clientId: 'example-client', scopes: ['read'] },
+          parameters: {},
         },
       }),
     ];

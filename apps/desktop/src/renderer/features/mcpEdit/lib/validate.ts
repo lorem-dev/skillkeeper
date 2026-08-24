@@ -58,6 +58,7 @@ export interface McpPresetDraft {
   readonly args: readonly string[];
   readonly env: readonly KeyValueRow[];
   readonly rules: string;
+  readonly description: string;
   readonly oauth: McpOauthDraft;
 }
 

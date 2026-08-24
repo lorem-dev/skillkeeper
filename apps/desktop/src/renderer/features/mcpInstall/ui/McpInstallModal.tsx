@@ -18,9 +18,10 @@
 import { useEffect, useState } from 'react';
 import { useSkillkeeperStore } from '@/app/store';
 import type { McpPreset } from '@/app/store';
-import type { AgentKind } from '@/services/bridge';
+import { bridgeClient } from '@/services/bridge';
+import type { AgentKind, DescriptionSpan } from '@/services/bridge';
 import { useTranslator } from '@/systems/i18n';
-import { Modal, Button, TextField, Checkbox, Tooltip } from '@/shared/ui';
+import { Modal, Button, TextField, Checkbox, Tooltip, Select, DescriptionText } from '@/shared/ui';
 import { ProjectSelect } from '@/entities/project';
 import { ALL_AGENTS, AGENT_LABELS, applyScope } from '@/domain';
 import { supportsTransport } from '../lib/supportsTransport';
@@ -28,6 +29,8 @@ import { supportsOauth } from '../lib/supportsOauth';
 import { buildInstallBatches } from '../lib/buildBatches';
 import { installNotesToMessages } from '../lib/installNotesToMessages';
 import { mcpSkipsToMessages } from '../lib/mcpSkipsToMessages';
+import { descriptionQueries, spansForServer, spansForParam } from '../lib/descriptionSpanQueries';
+import { paramValueValid } from '../lib/paramValueValid';
 import './McpInstallModal.scss';
 
 export interface McpInstallModalProps {
@@ -42,6 +45,14 @@ export interface McpInstallModalProps {
    *  passes nothing and every param starts empty. */
   readonly initialValues?: Record<string, string>;
   readonly onClose: () => void;
+  /**
+   * Fetches parsed description spans for the server and its parameters, in
+   * the order `descriptionQueries` produces them. Defaults to
+   * `bridgeClient.mcpDescriptionSpans`; this is a seam for stories/tests,
+   * since the real bridge command is unavailable outside Tauri -- it is not
+   * something production code overrides.
+   */
+  readonly getDescriptionSpans?: (descriptions: string[]) => Promise<DescriptionSpan[][]>;
 }
 
 export function McpInstallModal({
@@ -50,6 +61,7 @@ export function McpInstallModal({
   preselectedProjectId,
   initialValues,
   onClose,
+  getDescriptionSpans = bridgeClient.mcpDescriptionSpans,
 }: McpInstallModalProps) {
   const projects = useSkillkeeperStore((s) => s.projects);
   const projectInfo = useSkillkeeperStore((s) => s.projectInfo);
@@ -61,6 +73,11 @@ export function McpInstallModal({
   const [agents, setAgents] = useState<AgentKind[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  // Populated once per open by a single `mcp_description_spans` call (see
+  // `descriptionQueries`/`spansForServer`/`spansForParam`); empty until that
+  // resolves, which reads as "no description yet" the same way "none
+  // authored" does -- both render nothing.
+  const [descriptionSpans, setDescriptionSpans] = useState<DescriptionSpan[][]>([]);
 
   // Reset the form every time the modal opens -- mirrors SkillInstallModal's
   // reset-on-open effect. Deliberately keyed only on `open` (not on
@@ -68,15 +85,40 @@ export function McpInstallModal({
   // across renders): a mounted, still-open modal is never expected to swap
   // its preset out from under the user mid-edit.
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     setProjectId(preselectedProjectId ?? '');
     setAgents([]);
     const seeded: Record<string, string> = {};
     for (const param of preset.params) seeded[param] = initialValues?.[param] ?? '';
     setValues(seeded);
     setBusy(false);
+    setDescriptionSpans([]);
+    // Alive-flag guard (mirrors `SkillInstallModal`'s agent-detection effect):
+    // open A, close, open B before A's spans resolve must not land A's
+    // descriptions on B's parameters. The command is synchronous work on the
+    // backend, so in practice this is a sub-frame race, not a lasting one --
+    // but it is still the last path to a silently wrong description.
+    let alive = true;
+    void getDescriptionSpans(descriptionQueries(preset))
+      .then((spans) => {
+        if (alive) setDescriptionSpans(spans);
+      })
+      .catch(() => {
+        // Best-effort: a failed fetch just leaves every description
+        // unrendered, exactly like "none authored" -- the rest of the form
+        // (project, agents, parameter values) is unaffected either way.
+      });
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  /** Hands a link span's own `url` to the backend opener; never called with
+   *  anything else (see `DescriptionText`'s doc comment). */
+  function openLink(url: string): void {
+    void bridgeClient.openExternalUrl(url);
+  }
 
   /** Reason text for a disabled agent checkbox, or undefined when selectable. */
   function disabledReason(agent: AgentKind): string | undefined {
@@ -97,7 +139,9 @@ export function McpInstallModal({
     setAgents((prev) => (prev.includes(agent) ? prev.filter((a) => a !== agent) : [...prev, agent]));
   }
 
-  const allParamsFilled = preset.params.every((param) => (values[param] ?? '').trim() !== '');
+  const allParamsFilled = preset.params.every((param) =>
+    paramValueValid(preset.def.parameters[param], values[param] ?? ''),
+  );
   const canConfirm = projectId !== '' && agents.length > 0 && allParamsFilled && !busy;
 
   async function confirm(): Promise<void> {
@@ -121,6 +165,10 @@ export function McpInstallModal({
     onClose();
   }
 
+  // Truncated AND parsed by the backend already (see `descriptionSpans`'
+  // doc comment) -- never re-truncated or re-parsed here.
+  const serverSpans = spansForServer(preset, descriptionSpans);
+
   return (
     <Modal
       open={open}
@@ -129,6 +177,10 @@ export function McpInstallModal({
       className="sk-mcp-install"
     >
       <div className="sk-mcp-install__form">
+        {serverSpans !== undefined && (
+          <DescriptionText spans={serverSpans} onOpenLink={openLink} className="sk-mcp-install__description" />
+        )}
+
         <label className="sk-mcp-install__field">
           <span className="sk-mcp-install__label">{t('mcp.field.project')}</span>
           <ProjectSelect
@@ -170,19 +222,38 @@ export function McpInstallModal({
         {preset.params.length > 0 && (
           <div className="sk-mcp-install__params">
             <span className="sk-mcp-install__label">{t('mcp.field.parameters')}</span>
-            {preset.params.map((param) => (
-              <label className="sk-mcp-install__field" key={param}>
-                <span className="sk-mcp-install__param-label">{param}</span>
-                <TextField
-                  value={values[param] ?? ''}
-                  disabled={busy}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setValues((v) => ({ ...v, [param]: next }));
-                  }}
-                />
-              </label>
-            ))}
+            {preset.params.map((param) => {
+              const meta = preset.def.parameters[param];
+              const options = meta?.options ?? [];
+              const paramSpans = spansForParam(preset, descriptionSpans, param);
+              return (
+                <label className="sk-mcp-install__field" key={param}>
+                  <span className="sk-mcp-install__param-label">{param}</span>
+                  {paramSpans !== undefined && (
+                    <DescriptionText spans={paramSpans} onOpenLink={openLink} className="sk-mcp-install__param-help" />
+                  )}
+                  {options.length > 0 ? (
+                    <Select
+                      options={options.map((o) => ({ value: o.value, label: o.label }))}
+                      value={values[param] ?? ''}
+                      onChange={(next) => setValues((v) => ({ ...v, [param]: next }))}
+                      placeholder={t('mcp.param.choosePlaceholder')}
+                      ariaLabel={param}
+                      disabled={busy}
+                    />
+                  ) : (
+                    <TextField
+                      value={values[param] ?? ''}
+                      disabled={busy}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setValues((v) => ({ ...v, [param]: next }));
+                      }}
+                    />
+                  )}
+                </label>
+              );
+            })}
           </div>
         )}
 

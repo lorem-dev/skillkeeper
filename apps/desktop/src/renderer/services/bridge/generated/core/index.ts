@@ -17,3 +17,6 @@ export type { McpOauth } from './McpOauth';
 export type { UpsertNote } from './UpsertNote';
 export type { Scope } from './Scope';
 export type { AgentTarget } from './AgentTarget';
+export type { DescriptionSpan } from './DescriptionSpan';
+export type { McpOption } from './McpOption';
+export type { McpParameter } from './McpParameter';

@@ -30,6 +30,11 @@ export interface ManualMcpPreset {
   readonly args?: string[];
   readonly env?: Record<string, string>;
   readonly rules?: string;
+  /** A short summary, shown wherever this preset is listed. May contain one
+   *  markup form, a link. The manual-preset editor authors this field and
+   *  nothing else from the parameters design -- no `parameters`, no
+   *  `options` editor; see the design spec's stated non-goal. */
+  readonly description?: string;
   readonly oauth?: McpOauth;
 }
 
@@ -69,6 +74,7 @@ const EMPTY_DRAFT: McpPresetDraft = {
   args: [],
   env: [],
   rules: '',
+  description: '',
   oauth: EMPTY_OAUTH_DRAFT,
 };
 
@@ -119,6 +125,7 @@ function draftFromPreset(preset: ManualMcpPreset | undefined): McpPresetDraft {
     args: preset.args !== undefined ? [...preset.args] : [],
     env: recordToRows(preset.env),
     rules: preset.rules ?? '',
+    description: preset.description ?? '',
     oauth: oauthDraftFromOauth(preset.oauth),
   };
 }
@@ -272,6 +279,7 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
       args: type === 'stdio' && draft.args.some((a) => a !== '') ? draft.args.filter((a) => a !== '') : undefined,
       env: type === 'stdio' ? rowsToRecord(draft.env) : undefined,
       rules: draft.rules.trim() === '' ? undefined : draft.rules,
+      description: draft.description.trim() === '' ? undefined : draft.description.trim(),
       oauth: type === 'http' || type === 'sse' ? oauthFromDraft(draft.oauth) : undefined,
     };
     const servers = config?.mcp.servers ?? [];
@@ -302,6 +310,15 @@ export function McpEditModal({ open, preset, onDelete, onClose }: McpEditModalPr
             onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
           />
           {errorFor('name') !== undefined && <span className="sk-mcp-edit__error">{errorFor('name')}</span>}
+        </label>
+
+        <label className="sk-mcp-edit__field">
+          <span className="sk-mcp-edit__label">{t('mcp.field.description')}</span>
+          <TextField
+            value={draft.description}
+            placeholder={t('mcp.descriptionPlaceholder')}
+            onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+          />
         </label>
 
         <label className="sk-mcp-edit__field sk-mcp-edit__field--bounded">

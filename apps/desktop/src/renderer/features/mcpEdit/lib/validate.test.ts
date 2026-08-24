@@ -18,6 +18,7 @@ const emptyDraft: McpPresetDraft = {
   args: [],
   env: [],
   rules: '',
+  description: '',
   oauth: emptyOauthDraft,
 };
 

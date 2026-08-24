@@ -546,6 +546,7 @@ describe('useSkillkeeperStore', () => {
         reconcileMcp: async () => [],
         updateMcp: async () => ({ ok: true as const, updated: [], skipped: [] }),
         mcpUpdatePreflight: async () => ({ ok: true as const, missingParams: [] }),
+        mcpDescriptionSpans: async () => [],
         detectProjectAgents: async () => [],
         applySkillChanges: async () => ({ ok: true as const, installed: 0, removed: 0 }),
         onSkillsProgress: () => () => {},
@@ -553,6 +554,7 @@ describe('useSkillkeeperStore', () => {
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
         openExternal: async () => ({ ok: true }),
+        openExternalUrl: async () => {},
         onConfigChanged: () => () => {},
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
@@ -646,6 +648,7 @@ describe('useSkillkeeperStore', () => {
         reconcileMcp: async () => [],
         updateMcp: async () => ({ ok: true as const, updated: [], skipped: [] }),
         mcpUpdatePreflight: async () => ({ ok: true as const, missingParams: [] }),
+        mcpDescriptionSpans: async () => [],
         detectProjectAgents: async () => [],
         applySkillChanges: async () => ({ ok: true as const, installed: 0, removed: 0 }),
         onSkillsProgress: () => () => {},
@@ -653,6 +656,7 @@ describe('useSkillkeeperStore', () => {
         listEditors: async () => [],
         openConfigInEditor: async () => ({ ok: true }),
         openExternal: async () => ({ ok: true }),
+        openExternalUrl: async () => {},
         onConfigChanged: () => () => {},
         onMenuNavigate: () => () => {},
         onMenuAbout: () => () => {},
@@ -1033,7 +1037,7 @@ describe('useSkillkeeperStore', () => {
       repoId: 'repo-1',
       remote: 'https://github.com/example/skills',
       group: 'devtools',
-      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}' },
+      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}', parameters: {} },
       hash: 'sha256:repo-hash',
     };
 
@@ -1261,7 +1265,7 @@ describe('useSkillkeeperStore', () => {
       id: 'repo:repo-1:devtools:linear',
       origin: 'repo',
       name: 'linear',
-      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}' },
+      def: { name: 'linear', type: 'http', url: 'https://api.linear.app/{workspace}', parameters: {} },
       hash: 'sha256:current',
       params: ['workspace'],
       hasRules: false,
@@ -1274,7 +1278,7 @@ describe('useSkillkeeperStore', () => {
       id: 'manual-1',
       origin: 'manual',
       name: 'github',
-      def: { name: 'github', type: 'stdio', command: 'github-mcp' },
+      def: { name: 'github', type: 'stdio', command: 'github-mcp', parameters: {} },
       hash: 'sha256:manual-current',
       params: [],
       hasRules: false,
@@ -1344,6 +1348,7 @@ describe('useSkillkeeperStore', () => {
         url: 'https://api.linear.app/{workspace}/mcp',
         headers: { Authorization: 'Bearer {token}', 'X-Env': 'prod' },
         rules: 'Use {token} only for the {workspace} workspace.',
+        parameters: {},
       };
       expect(scanMcpParams(linear)).toEqual(['token', 'workspace']);
 
@@ -1353,10 +1358,16 @@ describe('useSkillkeeperStore', () => {
         command: 'github-mcp',
         args: ['--token', '{gh_token}', '--repo', '{repo}'],
         env: { GH_HOST: 'github.com', GH_TOKEN: '{gh_token}' },
+        parameters: {},
       };
       expect(scanMcpParams(github)).toEqual(['gh_token', 'repo']);
 
-      const plain: McpServerDef = { name: 'plain', type: 'sse', url: 'https://example.com/sse' };
+      const plain: McpServerDef = {
+        name: 'plain',
+        type: 'sse',
+        url: 'https://example.com/sse',
+        parameters: {},
+      };
       expect(scanMcpParams(plain)).toEqual([]);
     });
 
@@ -1375,6 +1386,7 @@ describe('useSkillkeeperStore', () => {
           callbackPort: 8432,
           scopes: ['read', 'org:{org_slug}'],
         },
+        parameters: {},
       };
       expect(scanMcpParams(remote)).toEqual(['org_client', 'org_slug']);
 
@@ -1385,6 +1397,7 @@ describe('useSkillkeeperStore', () => {
         type: 'http',
         url: 'https://mcp.example.com/mcp',
         oauth: { callbackPort: 8432, scopes: [] },
+        parameters: {},
       };
       expect(scanMcpParams(portOnly)).toEqual([]);
     });
@@ -1397,15 +1410,20 @@ describe('useSkillkeeperStore', () => {
     });
 
     it('hashMcpDefInRenderer emits a sha256 digest that ignores the def name', async () => {
-      const a: McpServerDef = { name: 'one', type: 'http', url: 'https://example.com' };
-      const b: McpServerDef = { name: 'two', type: 'http', url: 'https://example.com' };
+      const a: McpServerDef = { name: 'one', type: 'http', url: 'https://example.com', parameters: {} };
+      const b: McpServerDef = { name: 'two', type: 'http', url: 'https://example.com', parameters: {} };
       const hashA = await hashMcpDefInRenderer(a);
       expect(hashA).toMatch(/^sha256:[0-9a-f]{64}$/);
       // `name` is excluded from the hash, so these must collide.
       expect(hashA).toBe(await hashMcpDefInRenderer(b));
       // A change to a hashed field must change the digest.
       expect(hashA).not.toBe(
-        await hashMcpDefInRenderer({ name: 'one', type: 'http', url: 'https://other.example.com' }),
+        await hashMcpDefInRenderer({
+          name: 'one',
+          type: 'http',
+          url: 'https://other.example.com',
+          parameters: {},
+        }),
       );
     });
   });

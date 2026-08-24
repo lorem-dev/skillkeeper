@@ -34,6 +34,7 @@ function draft(over: Partial<McpPresetDraft>): McpPresetDraft {
     args: [],
     env: [],
     rules: '',
+    description: '',
     oauth: { callbackPort: '', clientId: '', scopes: [] },
     ...over,
   };

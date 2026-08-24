@@ -9,6 +9,9 @@
   [MCP Servers](https://lorem-dev.github.io/skillkeeper/latest/usage/mcp/#oauth).
 - Codex MCP presets can use the `http` transport, not just `stdio`. See
   [MCP Servers](https://lorem-dev.github.io/skillkeeper/latest/usage/mcp/#per-agent-native-destinations).
+- An MCP server (and its parameters) can carry a `description`, and a
+  parameter can be restricted to a set of labeled `options`. See
+  [MCP Servers](https://lorem-dev.github.io/skillkeeper/latest/usage/mcp/#descriptions-and-parameter-metadata).
 
 ### Fixed
 

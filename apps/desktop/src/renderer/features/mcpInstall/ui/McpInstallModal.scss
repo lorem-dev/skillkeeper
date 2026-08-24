@@ -26,6 +26,16 @@
   font-family: monospace;
 }
 
+.sk-mcp-install__description {
+  font-size: 13px;
+  color: var(--sk-color-label-2);
+}
+
+.sk-mcp-install__param-help {
+  font-size: 12px;
+  color: var(--sk-color-label-2);
+}
+
 .sk-mcp-install__agents {
   display: flex;
   flex-wrap: wrap;

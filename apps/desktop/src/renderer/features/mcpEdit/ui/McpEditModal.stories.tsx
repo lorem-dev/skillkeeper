@@ -33,6 +33,33 @@ export const EditHttpWithParamsAndRules: Story = {
   },
 };
 
+// The description field, empty: a preset with nothing authored in it, shown
+// with its placeholder.
+export const DescriptionEmpty: Story = {
+  args: {
+    preset: {
+      id: 'preset-description-empty',
+      name: 'ticket-tracker',
+      type: 'http',
+      url: 'https://mcp.example.com/mcp',
+    },
+  },
+};
+
+// The description field, filled: the short summary shown wherever this
+// preset is listed (see `ManualMcpPreset.description`'s doc comment).
+export const DescriptionFilled: Story = {
+  args: {
+    preset: {
+      id: 'preset-description-filled',
+      name: 'ticket-tracker',
+      type: 'http',
+      url: 'https://mcp.example.com/mcp',
+      description: 'Connects to your team ticket tracker over HTTP.',
+    },
+  },
+};
+
 // Invalid state: required fields are filled, but the url contains a
 // malformed {param} placeholder, so validatePreset flags it and Save stays
 // disabled.

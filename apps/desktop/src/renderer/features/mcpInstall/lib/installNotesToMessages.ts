@@ -17,9 +17,30 @@
  * store context) so this stays a pure function, testable with a stub
  * translator.
  */
-import type { McpInstalled } from '@/services/bridge';
+import type { McpInstalled, UpsertNote } from '@/services/bridge';
 import type { Translator } from '@/systems/i18n';
 import { AGENT_LABELS } from '@/domain';
+
+/**
+ * Renders one writer note as a localized message. A `switch` over `note.kind`
+ * with a case per variant and no `default` -- matching the pattern used for
+ * `McpTreeItem.kind` in `pages/Mcp/lib/mcpItemPreset.ts` -- so that adding a
+ * fifth `UpsertNote` variant without handling it here is a compile error
+ * (`noImplicitReturns`/`noFallthroughCasesInSwitch`), not a silently wrong
+ * branch.
+ */
+function messageForNote(note: UpsertNote, agent: McpInstalled['agent'], t: Translator): string {
+  switch (note.kind) {
+    case 'droppedField':
+      return t('mcp.oauthFieldDropped', { agent: AGENT_LABELS[agent], field: note.field });
+    case 'codexCallbackConflict':
+      return t('mcp.codexCallbackConflict', { found: String(note.found), wanted: String(note.wanted) });
+    case 'optionSubstituted':
+      return t('mcp.note.optionSubstituted', { parameter: note.parameter, value: note.value });
+    case 'optionsEmpty':
+      return t('mcp.note.optionsEmpty', { parameter: note.parameter });
+  }
+}
 
 /**
  * Converts every writer note across `targets` into a localized message,
@@ -30,11 +51,7 @@ export function installNotesToMessages(targets: readonly McpInstalled[], t: Tran
   const messages = new Set<string>();
   for (const target of targets) {
     for (const note of target.notes) {
-      messages.add(
-        note.kind === 'droppedField'
-          ? t('mcp.oauthFieldDropped', { agent: AGENT_LABELS[target.agent], field: note.field })
-          : t('mcp.codexCallbackConflict', { found: String(note.found), wanted: String(note.wanted) }),
-      );
+      messages.add(messageForNote(note, target.agent, t));
     }
   }
   return [...messages];

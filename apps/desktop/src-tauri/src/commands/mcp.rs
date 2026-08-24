@@ -29,6 +29,10 @@ use tauri::State;
 
 use skillkeeper_agents::PROJECT_DIR_ENV;
 use skillkeeper_core::mcp::discovery::preset_group_dirs;
+use skillkeeper_core::mcp::markup::{
+    parse_description, truncate_spans, DescriptionSpan, DESCRIPTION_BUDGET,
+};
+use skillkeeper_core::mcp::params::{invalid_option_values, migrate_option_values};
 use skillkeeper_core::mcp::{
     hash_mcp_def, install_mcp_instance, mcp_destination, missing_params, parse_mcp_config,
     parse_skmcp, parse_skmcp_params, remove_mcp_instance, serialize_skmcp, serialize_skmcp_params,
@@ -668,11 +672,15 @@ fn resolve_install_values(
 }
 
 /// `mcp:apply` -- apply install/remove batches for a project across agents.
-/// Removes run before installs (so a re-install onto the same instance name
-/// starts clean); an install the agent cannot express -- its transport, or an
-/// oauth client at all -- is skipped and reported, and every install that DID
-/// run carries the writer's notes back out. Never throws across the boundary.
-/// Port of the TS `applyMcp`.
+/// Every install request is validated against its preset's option-constrained
+/// parameters BEFORE anything is touched: an out-of-options value is an
+/// error, not a skip, and nothing is written when one is found (the renderer
+/// already blocks this client-side, so a value reaching here means that
+/// check was bypassed). Removes run before installs (so a re-install onto the
+/// same instance name starts clean); an install the agent cannot express --
+/// its transport, or an oauth client at all -- is skipped and reported, and
+/// every install that DID run carries the writer's notes back out. Never
+/// throws across the boundary. Port of the TS `applyMcp`.
 pub fn apply(ctx: &AppContext, args: ApplyMcpArgs) -> ApplyMcpResult {
     let _guard = lock(ctx);
     match apply_inner(ctx, &args) {
@@ -686,6 +694,27 @@ fn apply_inner(
     ctx: &AppContext,
     args: &ApplyMcpArgs,
 ) -> Result<(Vec<McpInstalled>, usize, Vec<McpSkipped>), String> {
+    // Validate every install request's values against its preset's options
+    // BEFORE any batch below removes or writes anything. This is an error,
+    // not a per-agent `McpSkipped`: an invalid option value is a property of
+    // the preset, not of one agent's native config, so it applies to every
+    // target in this call. The renderer already blocks this through
+    // `paramValueValid`, so a value reaching here means something bypassed
+    // the interface.
+    for batch in &args.batches {
+        for ins in &batch.install {
+            let values = resolve_install_values(ctx, args, ins);
+            if let Some((parameter, value)) =
+                invalid_option_values(&ins.def, &values).into_iter().next()
+            {
+                return Err(format!(
+                    "Invalid value \"{value}\" for mcp param \"{parameter}\" in \"{}\".",
+                    ins.identity.source
+                ));
+            }
+        }
+    }
+
     let mut installed: Vec<McpInstalled> = Vec::new();
     let mut removed = 0usize;
     let mut skipped: Vec<McpSkipped> = Vec::new();
@@ -1062,8 +1091,12 @@ fn preflight_inner(ctx: &AppContext, args: &McpUpdatePreflightArgs) -> Result<Ve
 /// `mcp:update` -- update installed instances in place: for each, remove the old
 /// instance and reinstall under the SAME name with the NEW def. Param values are
 /// resolved server-side (the instance's own stored values merged under any
-/// renderer-supplied newly-required params); the reinstall refreshes the ledger
-/// hash automatically. An update the agent cannot express -- an oauth client it
+/// renderer-supplied newly-required params), then migrated back in line with
+/// the new def's option-constrained parameters BEFORE the old instance is
+/// removed -- a value an earlier install recorded may no longer be offered,
+/// and the resulting `OptionSubstituted`/`OptionsEmpty` notes flow out
+/// alongside the writer's own notes; the reinstall refreshes the ledger hash
+/// automatically. An update the agent cannot express -- an oauth client it
 /// has no setting for -- is declined and reported instead of rewriting the
 /// server without its auth, and every update that DID run carries the writer's
 /// notes back out. Port of the TS `updateMcp`.
@@ -1101,6 +1134,12 @@ fn update_inner(
         for (key, value) in &u.values {
             values.insert(key.clone(), value.clone());
         }
+        // Bring a stored option value back in line with the new def's options
+        // before the destructive remove below: a value an earlier install may
+        // have recorded is no longer guaranteed to be offered, and the remove
+        // below would otherwise delete the instance without first fixing up
+        // the value that gets reinstalled under the same name.
+        let option_notes = migrate_option_values(&u.def, &mut values);
         remove_mcp_instance(
             &ctx.fs,
             &RemoveMcpArgs {
@@ -1137,13 +1176,33 @@ fn update_inner(
             },
         )
         .map_err(|e| e.to_string())?;
+        let mut notes = option_notes;
+        notes.extend(outcome.notes);
         updated.push(McpInstalled {
             agent: u.agent,
             instance_name: outcome.instance_name,
-            notes: outcome.notes,
+            notes,
         });
     }
     Ok((updated, skipped))
+}
+
+// ---------------------------------------------------------------------------
+// mcp:description-spans (new; no Electron precedent)
+// ---------------------------------------------------------------------------
+
+/// Parse and truncate a batch of raw MCP descriptions into spans, in the SAME
+/// order as `descriptions`. Origin-agnostic: the renderer reads repo-discovered
+/// presets from `AvailableMcp` and manual presets straight out of `config.yaml`
+/// in its own store, so it hands both kinds of raw strings through this one
+/// command rather than parsing either in TypeScript. One parser and one
+/// 128-character budget, shared by every description surface -- so there is
+/// exactly one way to ask, and no surface can show more than the others.
+fn description_spans(descriptions: &[String]) -> Vec<Vec<DescriptionSpan>> {
+    descriptions
+        .iter()
+        .map(|d| truncate_spans(parse_description(d), DESCRIPTION_BUDGET))
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -1197,6 +1256,14 @@ pub async fn mcp_update_preflight(
     blocking(&ctx, move |c| update_preflight(c, args)).await
 }
 
+/// `mcp:description-spans` -- parse and truncate a batch of raw descriptions,
+/// one round trip when a modal opens. No `AppContext` needed: this is a pure
+/// parse, not a filesystem read, so it needs no `blocking` wrapper either.
+#[tauri::command]
+pub fn mcp_description_spans(descriptions: Vec<String>) -> Vec<Vec<DescriptionSpan>> {
+    description_spans(&descriptions)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1206,7 +1273,7 @@ mod tests {
     use skillkeeper_core::hooks::region::{
         insert_region, lift_regions, wrap_region, InsertMode, WrapRegionOptions,
     };
-    use skillkeeper_core::mcp::model::McpOauth;
+    use skillkeeper_core::mcp::model::{McpOauth, McpOption, McpParameter};
     use skillkeeper_core::models::{
         AppState, Project, Repository, RepositoryKind, Transport, STATE_VERSION,
     };
@@ -1372,6 +1439,54 @@ mod tests {
         McpServerDef {
             transport: McpTransport::Sse,
             url: Some("https://mcp.example.com/mcp".to_string()),
+            ..http_def()
+        }
+    }
+
+    /// A def carrying one option-constrained parameter, "choice" (accepted
+    /// values alpha/beta, in that order). Not tied to any `{placeholder}`: the
+    /// option check applies to a stored value regardless of whether it is
+    /// ever rendered.
+    fn choice_def() -> McpServerDef {
+        let mut parameters = BTreeMap::new();
+        parameters.insert(
+            "choice".to_string(),
+            McpParameter {
+                description: None,
+                options: vec![
+                    McpOption {
+                        value: "alpha".to_string(),
+                        label: "Alpha".to_string(),
+                    },
+                    McpOption {
+                        value: "beta".to_string(),
+                        label: "Beta".to_string(),
+                    },
+                ],
+            },
+        );
+        McpServerDef {
+            parameters,
+            ..http_def()
+        }
+    }
+
+    /// The same def with "alpha" dropped from the options, leaving only
+    /// "beta" -- an updated source whose stored "alpha" value must migrate.
+    fn choice_def_alpha_dropped() -> McpServerDef {
+        let mut parameters = BTreeMap::new();
+        parameters.insert(
+            "choice".to_string(),
+            McpParameter {
+                description: None,
+                options: vec![McpOption {
+                    value: "beta".to_string(),
+                    label: "Beta".to_string(),
+                }],
+            },
+        );
+        McpServerDef {
+            parameters,
             ..http_def()
         }
     }
@@ -1748,6 +1863,195 @@ mod tests {
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].instance_name, "github_1");
         assert_eq!(listed[0].hash, hash_mcp_def(&stdio_token_org_def()));
+    }
+
+    // ---- option values ----
+
+    #[test]
+    fn apply_rejects_a_value_outside_the_options_and_writes_nothing() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        let result = apply(
+            &app.ctx,
+            apply_args(
+                &proj,
+                vec![McpBatch {
+                    agent: AgentKind::Claude,
+                    install: vec![install_req(choice_def(), &[("choice", "nope")])],
+                    remove: vec![],
+                }],
+            ),
+        );
+
+        assert!(!result.ok, "an out-of-options value must be rejected");
+        let error = result.error.unwrap_or_default();
+        assert!(error.contains("choice"), "got {error}");
+        assert!(error.contains("nope"), "got {error}");
+
+        // A refusal is not a partial install: the check must run before any
+        // agent is touched, so neither the native config nor the ledger
+        // exists. A check that ran AFTER the write would still return
+        // `ok: false` here and this would be the only thing to catch it.
+        assert!(!Path::new(&proj.path()).join(".mcp.json").exists());
+        assert!(!Path::new(&proj.path())
+            .join(".claude/skills")
+            .join(SKMCP_FILE)
+            .exists());
+    }
+
+    #[test]
+    fn apply_accepts_a_value_that_is_one_of_the_options() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        let result = apply(
+            &app.ctx,
+            apply_args(
+                &proj,
+                vec![McpBatch {
+                    agent: AgentKind::Claude,
+                    install: vec![install_req(choice_def(), &[("choice", "alpha")])],
+                    remove: vec![],
+                }],
+            ),
+        );
+        assert!(result.ok, "apply failed: {:?}", result.error);
+    }
+
+    #[test]
+    fn update_migrates_a_stored_option_no_longer_offered_and_reports_it() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        assert!(
+            apply(
+                &app.ctx,
+                apply_args(
+                    &proj,
+                    vec![McpBatch {
+                        agent: AgentKind::Claude,
+                        install: vec![install_req(choice_def(), &[("choice", "alpha")])],
+                        remove: vec![],
+                    }],
+                ),
+            )
+            .ok
+        );
+
+        let updated = update(
+            &app.ctx,
+            UpdateMcpArgs {
+                scope: Scope::Project,
+                updates: vec![McpUpdateReq {
+                    project_id: "proj-1".to_string(),
+                    project_path: proj.path(),
+                    agent: AgentKind::Claude,
+                    instance_name: "github_1".to_string(),
+                    identity: identity(),
+                    def: choice_def_alpha_dropped(),
+                    values: BTreeMap::new(),
+                }],
+            },
+        );
+        assert!(updated.ok, "update failed: {:?}", updated.error);
+        let updated_list = updated.updated.expect("updated list");
+        assert_eq!(updated_list.len(), 1);
+        assert!(
+            updated_list[0].notes.iter().any(|n| matches!(
+                n,
+                UpsertNote::OptionSubstituted { parameter, value }
+                    if parameter == "choice" && value == "beta"
+            )),
+            "got {:?}",
+            updated_list[0].notes
+        );
+
+        // Assert the substitution actually landed in the stored params, not
+        // just in the returned note: a migration call that ran after the
+        // destructive reinstall (or was skipped entirely) would still leave
+        // this check passing if only the returned note were inspected.
+        let params_text = std::fs::read_to_string(
+            Path::new(&proj.path())
+                .join(".claude/skills")
+                .join(SKMCP_PARAMS_FILE),
+        )
+        .expect("params file written");
+        let stored = parse_skmcp_params(&params_text);
+        assert_eq!(
+            stored.get("github_1").and_then(|m| m.get("choice")),
+            Some(&"beta".to_string())
+        );
+    }
+
+    #[test]
+    fn update_reports_an_empty_option_set_and_keeps_the_stored_value() {
+        let app = TempAppData::new();
+        let proj = ProjectDir::new();
+        seed_project(&app, &proj);
+
+        assert!(
+            apply(
+                &app.ctx,
+                apply_args(
+                    &proj,
+                    vec![McpBatch {
+                        agent: AgentKind::Claude,
+                        install: vec![install_req(choice_def(), &[("choice", "alpha")])],
+                        remove: vec![],
+                    }],
+                ),
+            )
+            .ok
+        );
+
+        let mut emptied_options = choice_def();
+        emptied_options
+            .parameters
+            .get_mut("choice")
+            .unwrap()
+            .options
+            .clear();
+
+        let updated = update(
+            &app.ctx,
+            UpdateMcpArgs {
+                scope: Scope::Project,
+                updates: vec![McpUpdateReq {
+                    project_id: "proj-1".to_string(),
+                    project_path: proj.path(),
+                    agent: AgentKind::Claude,
+                    instance_name: "github_1".to_string(),
+                    identity: identity(),
+                    def: emptied_options,
+                    values: BTreeMap::new(),
+                }],
+            },
+        );
+        assert!(updated.ok, "update failed: {:?}", updated.error);
+        let updated_list = updated.updated.expect("updated list");
+        assert!(
+            updated_list[0].notes.iter().any(
+                |n| matches!(n, UpsertNote::OptionsEmpty { parameter } if parameter == "choice")
+            ),
+            "got {:?}",
+            updated_list[0].notes
+        );
+
+        let params_text = std::fs::read_to_string(
+            Path::new(&proj.path())
+                .join(".claude/skills")
+                .join(SKMCP_PARAMS_FILE),
+        )
+        .expect("params file written");
+        let stored = parse_skmcp_params(&params_text);
+        assert_eq!(
+            stored.get("github_1").and_then(|m| m.get("choice")),
+            Some(&"alpha".to_string())
+        );
     }
 
     // ---- global scope ----
@@ -2410,6 +2714,62 @@ mod tests {
         assert_eq!(
             json["notes"][0],
             serde_json::json!({ "kind": "droppedField", "field": "callbackPort" })
+        );
+    }
+
+    // ---- description_spans ----
+
+    #[test]
+    fn description_spans_preserve_input_order() {
+        // Each input parses to a distinguishable text span; a reordering (e.g.
+        // reversing the output) would silently mislabel every description once
+        // the renderer zips this against its own parameter list.
+        let inputs = vec![
+            "first".to_string(),
+            "second".to_string(),
+            "third".to_string(),
+        ];
+        let out = description_spans(&inputs);
+        assert_eq!(
+            out,
+            vec![
+                vec![DescriptionSpan::Text {
+                    text: "first".to_string()
+                }],
+                vec![DescriptionSpan::Text {
+                    text: "second".to_string()
+                }],
+                vec![DescriptionSpan::Text {
+                    text: "third".to_string()
+                }],
+            ]
+        );
+    }
+
+    #[test]
+    fn an_empty_input_list_returns_an_empty_list() {
+        assert!(description_spans(&[]).is_empty());
+    }
+
+    #[test]
+    fn an_empty_string_returns_an_empty_span_list_not_an_error() {
+        let out = description_spans(&["".to_string()]);
+        assert_eq!(out, vec![Vec::<DescriptionSpan>::new()]);
+    }
+
+    #[test]
+    fn every_description_is_truncated_to_the_same_budget() {
+        // The full string must never reach the renderer -- this is the one
+        // place the 128-character budget is enforced, so a description longer
+        // than it must come back cut (visible length is the budget plus the
+        // 3-character ellipsis truncate_spans appends), exactly as the CLI's own
+        // render path does.
+        let long = "x".repeat(DESCRIPTION_BUDGET + 50);
+        let out = description_spans(&[long]);
+        assert_eq!(out.len(), 1);
+        assert_eq!(
+            skillkeeper_core::mcp::visible_len(&out[0]),
+            DESCRIPTION_BUDGET + 3
         );
     }
 }
