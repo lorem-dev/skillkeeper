@@ -983,7 +983,6 @@ msgid "mcp.note.optionSubstituted"
 msgstr "{parameter} више не прихвата сачувану вредност, па је уместо ње изабрано {value}."
 
 #, fuzzy
-#, fuzzy
 msgid "mcp.error.invalidOption"
 msgstr "Изаберите једну од понуђених вредности."
 

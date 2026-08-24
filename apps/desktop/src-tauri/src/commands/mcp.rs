@@ -344,7 +344,9 @@ pub struct McpInstallIdentity {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct McpInstall {
-    /// The tracked project's id, or `"global"` for the (codex) global scope.
+    /// The tracked project's id, or `"global"` for the reserved global bucket.
+    /// Every agent can be installed at either scope; the parenthetical this
+    /// used to carry named codex, from when codex alone was forced to global.
     pub project_id: String,
     pub agent: AgentKind,
     pub instance_name: String,
@@ -437,17 +439,15 @@ struct McpTarget {
     params_path: String,
     /// Per-agent guidance file(s) that MCP `rules` blocks install into.
     guidance_files: Vec<String>,
-    /// The scope these paths were actually resolved at. Gate anything that
-    /// depends on where the write lands -- the `.gitignore` entry above all --
-    /// on THIS, never on the requested scope, or the two can disagree.
+    /// The scope these paths were resolved at. Carried on the target so that
+    /// anything depending on where the write lands -- the `.gitignore` entry
+    /// above all -- reads it from the same value that chose the paths.
+    ///
+    /// It equals the requested scope for every agent. It did not while Codex
+    /// was forced to global, which is what the indirection here existed for;
+    /// that rule is gone, and keeping a function to express the equality only
+    /// suggested a difference that cannot occur.
     scope: Scope,
-}
-
-/// The scope an MCP write for `agent` really lands at. Kept as a named function
-/// because callers must gate on the RESOLVED scope rather than the requested
-/// one; today they coincide for every agent.
-fn resolved_mcp_scope(_agent: AgentKind, requested: Scope) -> Scope {
-    requested
 }
 
 /// Resolve where one MCP install for `agent` writes at `scope`: the native
@@ -461,8 +461,7 @@ fn resolve_mcp_target(
     project_path: &str,
     project_id: &str,
 ) -> Result<McpTarget, String> {
-    let resolved = resolved_mcp_scope(agent, scope);
-    let target = match resolved {
+    let target = match scope {
         Scope::Global => AgentTarget::global(agent),
         Scope::Project => AgentTarget::project(agent, Some(project_id)),
     };
@@ -472,7 +471,7 @@ fn resolve_mcp_target(
     };
     let native = mcp_destination(
         agent,
-        resolved,
+        scope,
         &McpDestinationTarget {
             project_path: Some(project_path.to_string()),
             home_dir: Some(ctx.env.home_dir().to_string()),
@@ -490,7 +489,7 @@ fn resolve_mcp_target(
         ledger_path: format!("{dest_root}/{SKMCP_FILE}"),
         params_path: format!("{dest_root}/{SKMCP_PARAMS_FILE}"),
         guidance_files: vec![guidance_file],
-        scope: resolved,
+        scope,
     })
 }
 
@@ -2849,7 +2848,10 @@ mod tests {
         assert!(toml.contains("npx"));
         assert!(toml.contains("abc"));
 
-        // Codex is global-scoped and takes no gitignore.
+        // No .gitignore is touched at GLOBAL scope, for any agent: there is
+        // no project repository to write one into. Codex is not special here
+        // any more -- the sibling tests in this file install it at project
+        // scope and assert the .gitignore entry it does get there.
         let listed = installs(&app.ctx);
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].agent, AgentKind::Codex);

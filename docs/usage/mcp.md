@@ -143,8 +143,10 @@ Both files exist for real in the
 [skillkeeper-test-repo](https://github.com/lorem-dev/skillkeeper-test-repo)
 fixture repository:
 [`mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/mcp.yml)
-declares seven ungrouped presets covering all three transports, with and
-without parameters, headers, `rules`, and `oauth`;
+declares nine ungrouped presets covering all three transports, with and
+without parameters, headers, `rules`, `oauth`, descriptions and
+option-constrained parameters -- including two invalid on purpose, for the
+lint checks;
 [`tooling/mcp.yml`](https://github.com/lorem-dev/skillkeeper-test-repo/blob/main/tooling/mcp.yml)
 declares one preset in the `tooling` group.
 
@@ -561,9 +563,10 @@ yourself before installing a remote server for Codex.
 
 ### Lint codes
 
-`repo lint` reports three warnings for a malformed `oauth` block: `SK015`
-(an `oauth` block on a `stdio` transport), `SK016` (a blank `clientId`), and
-`SK017` (a `callbackPort` of `0`). All three are warnings, not errors - a
+`repo lint` reports three warnings for a malformed `oauth` block: `SK015`,
+`SK016` and `SK017`. Their exact conditions live in one place, the lint table
+in the [CLI reference](cli.md), so that a wording change cannot land in one
+page and not the other. All three are warnings, not errors - a
 repository you only consume still resolves and installs with a bad auth
 block on one preset, the same as any other lint warning. Authoring the
 preset yourself in the desktop editor is different: it rejects the same

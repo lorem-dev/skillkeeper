@@ -146,9 +146,11 @@ describe('mcp', () => {
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('Skipped codex');
     expect(result.stdout).toContain('sse');
-    // Codex MCP installs are global, so a mistaken write would land in the
-    // sandbox HOME rather than the project. Neither may appear.
+    // A mistaken write could now land at EITHER scope: codex takes a project
+    // config as of this branch, so checking only HOME would miss the more
+    // likely of the two. Neither may appear.
     expect(existsSync(join(sandbox.home, '.codex', 'config.toml'))).toBe(false);
+    expect(existsSync(join(project, '.codex', 'config.toml'))).toBe(false);
   });
 
   it('removes an instance from the native config and both ledgers', () => {

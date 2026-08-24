@@ -160,7 +160,8 @@ Two things about the design are worth knowing before adding a spec:
   suite is deliberately CommonJS so no `--experimental-vm-modules` is needed.
 - **Isolation belongs to the harness.** `Sandbox` (in `e2e/src/cli.ts`) always
   sets throwaway `HOME` *and* `XDG_CONFIG_HOME`. The first relocates the agents'
-  global roots (a Codex MCP install always writes to `~/.codex/config.toml`, and
+  global roots (a global-scope Codex MCP install writes to
+  `~/.codex/config.toml`, a project-scoped one to `<project>/.codex/config.toml`, and
   global-scope skill installs write under `~`); the second relocates `state.json`
   and `config.yaml`. Forgetting either would edit the real machine, so specs never
   spawn the binary themselves -- always go through `Sandbox`.
