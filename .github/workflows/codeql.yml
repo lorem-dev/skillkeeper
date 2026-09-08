@@ -1,0 +1,140 @@
+# CodeQL code scanning with the `security-and-quality` query suite.
+#
+# Two jobs, deliberately split:
+#
+#   analyze  javascript-typescript + actions. Blocking. Neither needs a build,
+#            so the whole matrix finishes in a few minutes. The `actions`
+#            extractor is the reason this workflow earns its keep here: it
+#            reads the workflow files themselves and flags script injection in
+#            `run:` blocks and unpinned third-party actions, which the release
+#            pipeline has a lot of surface for.
+#
+#   rust     Advisory only, and only on pushes to develop. The Rust extractor
+#            is newer than the others and the workspace links a webview, so a
+#            failure here says more about the extractor than about the code.
+#            Both CodeQL steps are `continue-on-error`, and a trailing step
+#            turns a failure into a `::warning::` annotation -- the job stays
+#            green and nothing downstream blocks on it. Findings still reach
+#            the Security tab when the run succeeds.
+#
+# The scheduled run matters as much as the push runs: CodeQL ships new queries
+# continuously, and without it a file that stopped changing is only ever
+# scanned by the rules that existed the day it was last touched.
+
+name: CodeQL
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+  schedule:
+    # Monday, off the hour: GitHub sheds load from cron runs scheduled exactly
+    # on :00, and a delayed security scan is a scan that ran against a commit
+    # nobody is looking at any more.
+    - cron: '27 4 * * 1'
+
+# Same shape as ci.yml: one run per pull request (or per branch), newest only.
+concurrency:
+  group: codeql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Nothing is granted by default; each job asks for exactly what it needs.
+permissions: {}
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      # Upload the SARIF results to the Security tab.
+      security-events: write
+      contents: read
+      # The uploader reads workflow run metadata to attach results to the run.
+      actions: read
+
+    strategy:
+      # One language failing should not hide the other language's findings.
+      fail-fast: false
+      matrix:
+        language:
+          - javascript-typescript
+          - actions
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          # No LFS and no submodules on purpose. CodeQL reads source, not
+          # binary assets, and examples/test-repo is a fixture whose contents
+          # are deliberately odd -- scanning it would fill the Security tab
+          # with findings about code this repository does not ship.
+          lfs: false
+          submodules: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          # Neither extractor compiles anything.
+          build-mode: none
+          # The default suite is security-only. `security-and-quality` adds the
+          # maintainability and correctness queries on top of it.
+          queries: security-and-quality
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
+
+  rust:
+    name: Analyze rust (advisory)
+    # Pushes to develop only. Not on pull requests (it must never gate a
+    # merge), not on main (develop reaches main through a merge, so main sees
+    # nothing develop has not already been scanned for).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          lfs: false
+          submodules: false
+
+      - name: Initialize CodeQL
+        id: init
+        uses: github/codeql-action/init@v4
+        # Advisory: an extractor that cannot model the workspace must not turn
+        # the run red.
+        continue-on-error: true
+        with:
+          languages: rust
+          # The Rust extractor builds its project model from cargo metadata
+          # rather than from a compiled artifact, so the webkit2gtk stack the
+          # ci.yml rust job installs is not needed here.
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Perform CodeQL analysis
+        id: analyze
+        uses: github/codeql-action/analyze@v4
+        continue-on-error: true
+        with:
+          category: /language:rust
+
+      - name: Report an advisory failure as a warning
+        # `continue-on-error` alone leaves a silent green job, which is how an
+        # advisory check quietly stops running for months. Surface it instead.
+        if: steps.init.outcome == 'failure' || steps.analyze.outcome == 'failure'
+        run: |
+          echo "::warning title=CodeQL Rust analysis failed::The advisory Rust scan did not complete (init=${{ steps.init.outcome }}, analyze=${{ steps.analyze.outcome }}). This does not fail the build; the Security tab keeps the results of the last successful run."

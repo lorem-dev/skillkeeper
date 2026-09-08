@@ -1,0 +1,87 @@
+# Dependabot version updates.
+#
+# Every ecosystem targets `develop`, not the default branch: `feature/* ->
+# develop -> main` means a dependency bump landing on main would be a direct
+# commit to the release branch, which the branching rules in AGENTS.md forbid.
+#
+# One caveat that `target-branch` cannot solve: Dependabot *security* updates
+# are always opened against the default branch (`main`), and setting
+# `target-branch` here does not move them. That is acceptable -- backmerge.yml
+# carries main back into develop -- but it does mean a security bump and a
+# version bump for the same package arrive on different branches.
+#
+# Grouping is deliberate. Ungrouped, this repository would open something like
+# fifteen pull requests a week across three ecosystems, each one costing a full
+# CI run (which includes a Rust workspace build). Minor and patch updates are
+# batched into a single pull request per ecosystem; majors stay separate,
+# because those are the ones that need a human to read a changelog.
+
+version: 2
+
+updates:
+  # ---------------------------------------------------------------- actions --
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+    ignore:
+      # Pinned to an exact Rust version that must move together with
+      # rust-toolchain.toml (see the comment there). A pull request bumping
+      # only the action would desync the CI toolchain from the local one --
+      # exactly the failure that pin was introduced to prevent. Bump both by
+      # hand.
+      - dependency-name: dtolnay/rust-toolchain
+
+  # ------------------------------------------------------------------ cargo --
+  - package-ecosystem: cargo
+    # The workspace root. Dependabot resolves through Cargo.toml's `members`,
+    # so this one entry covers all five crates plus apps/desktop/src-tauri.
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      cargo-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # -------------------------------------------------------------------- npm --
+  - package-ecosystem: npm
+    # pnpm workspace root. The single pnpm-lock.yaml covers apps/desktop and
+    # packages/i18n, so per-package entries would only duplicate work. e2e/ is
+    # intentionally absent: it is not a workspace package (see the note in
+    # e2e/package.json) and declares no dependencies of its own.
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
