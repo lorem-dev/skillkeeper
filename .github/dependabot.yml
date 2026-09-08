@@ -32,9 +32,18 @@ updates:
     commit-message:
       prefix: 'chore(deps)'
     groups:
+      # Minor and patch only, the same as the two ecosystems below. Without
+      # this the group batched everything: its first run put six updates in one
+      # pull request, three of them majors -- tauri-action v0.6.2 to v1.0.0,
+      # setup-uv v7.6.0 to v10.0.1, and the checkout/setup-node/artifact v5-to-
+      # v7 line. tauri-action appears only in release.yml and setup-uv only in
+      # docs.yml, and neither workflow runs on a pull request, so a green check
+      # said nothing about either. A major there has to arrive alone, where its
+      # own changelog is the thing under review.
       github-actions:
-        patterns:
-          - '*'
+        update-types:
+          - minor
+          - patch
     ignore:
       # Pinned to an exact Rust version that must move together with
       # rust-toolchain.toml (see the comment there). A pull request bumping
@@ -85,3 +94,13 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # @types/node's major tracks the Node major, and this project pins Node
+      # 24 in `engines` and in every workflow. Taking the types for 26 while
+      # running 24 makes tsc accept APIs the runtime does not have: the type
+      # check goes green and the failure moves to run time, which is the one
+      # place these types exist to keep it out of. Bump this together with the
+      # runtime, not ahead of it.
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
