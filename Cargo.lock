@@ -4235,7 +4235,7 @@ checksum = "8ee5873ec9cce0195efcb7a4e9507a04cd49aec9c83d0389df45b1ef7ba2e649"
 
 [[package]]
 name = "skillkeeper"
-version = "0.7.0"
+version = "0.7.1-rc.1"
 dependencies = [
  "aes 0.9.3",
  "argon2",
@@ -4270,14 +4270,14 @@ dependencies = [
 
 [[package]]
 name = "skillkeeper-agents"
-version = "0.7.0"
+version = "0.7.1-rc.1"
 dependencies = [
  "skillkeeper-core",
 ]
 
 [[package]]
 name = "skillkeeper-cli"
-version = "0.7.0"
+version = "0.7.1-rc.1"
 dependencies = [
  "clap",
  "serde",
@@ -4290,7 +4290,7 @@ dependencies = [
 
 [[package]]
 name = "skillkeeper-config"
-version = "0.7.0"
+version = "0.7.1-rc.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -4302,7 +4302,7 @@ dependencies = [
 
 [[package]]
 name = "skillkeeper-core"
-version = "0.7.0"
+version = "0.7.1-rc.1"
 dependencies = [
  "hex",
  "regex",
