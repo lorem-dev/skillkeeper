@@ -303,7 +303,13 @@ export function App() {
             drag/traffic-light zone, so it renders a draggable panel there. */}
           <Sidebar dragRegion={platform === 'mac'}>
             {NAV_ITEMS.map(({ id, key }) => (
-              <SidebarItem key={id} icon={<Icon name={id} />} active={activeView === id} onClick={() => goTo(id)}>
+              <SidebarItem
+                key={id}
+                icon={<Icon name={id} />}
+                active={activeView === id}
+                onClick={() => goTo(id)}
+                data-testid={`nav-${id}`}
+              >
                 {t(key)}
               </SidebarItem>
             ))}

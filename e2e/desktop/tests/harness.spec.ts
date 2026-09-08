@@ -4,11 +4,15 @@
  * (`app.emit`, `app.clipboard`) actually work end to end -- not just by
  * construction.
  *
- * The first test does NOT assert on a rendered repository row -- `repo-row`
- * is a later task's testid, not this one's. Once it exists, that task
- * tightens this same scenario onto it; until then, "the backend answered
- * with the scenario's data" is proven at the bridge boundary instead of the
- * DOM.
+ * The first test asserts on a rendered `repo-row` (Task 4's testid): the
+ * repository the scenario seeds shows up in the Repositories page, proving
+ * the scenario's data reaches all the way to the DOM, not just the bridge
+ * boundary `app.calls('repositories_list')` alone would prove. `repositories_
+ * describe` (the card's branch/skill-count badges) is mocked here too --
+ * `RepositoriesPage` fetches it for every listed repository on mount
+ * (`refreshRepoInfo`), and it carries no default in `harness/commands.ts` (see
+ * that file's doc comment): unlike `repositories_list`, it is not part of
+ * `store.loadAll`'s startup round trip.
  *
  * The other two are self-tests of the fixture itself, not of the app: five
  * later tasks compose specs against `app.emit`/`app.clipboard` (one
@@ -38,12 +42,18 @@ test.use({
         branch: 'main',
       },
     ],
+    responses: {
+      repositories_describe: { branch: 'main', skillCount: 0 },
+    },
   }),
 });
 
 test('a scenario decides what the backend returns', async ({ app, page }) => {
   await app.goto();
   await expect(page.getByTestId('app-shell')).toBeVisible();
+  await page.getByTestId('nav-repositories').click();
+  const row = page.getByTestId('repo-row').filter({ has: page.locator('[data-repo-name="demo"]') });
+  await expect(row).toBeVisible();
   const calls = await app.calls('repositories_list');
   expect(calls.length).toBeGreaterThan(0);
 });

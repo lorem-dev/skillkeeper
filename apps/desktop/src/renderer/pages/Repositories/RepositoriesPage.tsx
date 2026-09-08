@@ -148,10 +148,12 @@ export function RepositoriesPage() {
       }
     >
       {repositories.length === 0 ? (
-        <p className="sk-empty">{t('repositories.empty')}</p>
+        <p className="sk-empty" data-testid="repositories-page">
+          {t('repositories.empty')}
+        </p>
       ) : (
         <>
-          <div className="sk-repo-list">
+          <div className="sk-repo-list" data-testid="repositories-page">
             <AnimatePresence mode="popLayout" initial={animate}>
               {filtered.map((r, i) => (
                 <motion.div
@@ -163,6 +165,7 @@ export function RepositoriesPage() {
                   animate="animate"
                   exit="exit"
                   data-repo-id={r.id}
+                  data-testid="repo-row"
                   className={cx('sk-repo-card-anchor', highlightRepoId === r.id && 'sk-repo-card-anchor--highlight')}
                 >
                   <RepositoryCard
