@@ -43,7 +43,7 @@
     "@eslint/js": "10.0.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/jest": "30.0.0",
-    "@types/node": "24.13.3",
+    "@types/node": "26.4.1",
     "@vitest/coverage-v8": "4.1.11",
     "eslint": "10.8.1",
     "eslint-config-prettier": "10.1.8",
