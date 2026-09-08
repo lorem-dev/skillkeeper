@@ -25,18 +25,13 @@ interface RecordedCall {
 /** The spec-facing handle onto one test's scripted backend. */
 export interface App {
   /**
-   * Zeroes animation/transition durations, then navigates to the app's root.
-   * Call once per test, before any assertion or interaction.
+   * Navigates to the app's root. Call once per test, before any assertion or
+   * interaction.
    *
-   * `reducedMotion: 'reduce'` (see `playwright.config.ts`) is a media-query
-   * hint that `motion` only honours where a component asks for it -- this is
-   * belt-and-braces on top of that, so a click can never land mid-transition
-   * regardless of whether the component checked. The stylesheet is added
-   * right after the document exists (immediately post-navigation, before
-   * control returns to the spec), not literally before `page.goto` --
-   * `addStyleTag` writes into the CURRENT document, and a full navigation
-   * replaces that document, so anything added beforehand would not survive
-   * the trip anyway.
+   * The animation/transition-zeroing stylesheet is NOT applied here -- it is
+   * installed once, per test, via `installAnimationZeroing`'s
+   * `page.addInitScript` (see that function's doc comment for why `goto`
+   * itself is too late for it).
    */
   goto(): Promise<void>;
   /**
@@ -55,18 +50,52 @@ export interface App {
   clipboard(): Promise<string[]>;
 }
 
+/**
+ * Zeroes animation/transition durations for every document this `page` ever
+ * navigates to, from the very first paint.
+ *
+ * `reducedMotion: 'reduce'` (see `playwright.config.ts`) is a media-query
+ * hint that `motion` only honours where a component asks for it -- this is
+ * belt-and-braces on top of that, so a click can never land mid-transition
+ * regardless of whether the component checked.
+ *
+ * This MUST be a `page.addInitScript`, not a post-navigation
+ * `page.addStyleTag`: `addInitScript` re-runs on every navigation, before any
+ * of the page's own scripts -- exactly the "beats every lazily imported
+ * route" guarantee `installHarness.ts` relies on for the backend mocks, and
+ * the same guarantee an entrance animation needs here. A style added AFTER
+ * `page.goto()` resolves (`load`, by default) arrives long after the
+ * document exists and after the app's own scripts started -- an entrance
+ * animation triggered on initial mount can start, and finish, before that
+ * style ever lands. Since `document.documentElement` may not exist yet at
+ * the moment an init script first runs, this falls back to `DOMContentLoaded`
+ * when it does not.
+ */
+async function installAnimationZeroing(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const css = `*, *::before, *::after {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+    }`;
+    function insert(): void {
+      const style = document.createElement('style');
+      style.textContent = css;
+      document.documentElement.appendChild(style);
+    }
+    if (document.documentElement) {
+      insert();
+    } else {
+      document.addEventListener('DOMContentLoaded', insert, { once: true });
+    }
+  });
+}
+
 function buildApp(page: Page): App {
   return {
     async goto() {
       await page.goto('/');
-      await page.addStyleTag({
-        content: `*, *::before, *::after {
-          animation-duration: 0s !important;
-          animation-delay: 0s !important;
-          transition-duration: 0s !important;
-          transition-delay: 0s !important;
-        }`,
-      });
     },
     async emit(name, payload) {
       await page.evaluate(
@@ -106,6 +135,7 @@ export const test = base.extend<Fixtures>({
   scenario: [defaultScenario(), { option: true }],
   app: async ({ page, scenario }, use) => {
     await installHarness(page, scenario);
+    await installAnimationZeroing(page);
     await use(buildApp(page));
     // Fail loudly rather than let an unmocked command hide behind a caught
     // rejection (see `installHarness.ts`'s `__SKK_E2E_UNMOCKED__` note).
