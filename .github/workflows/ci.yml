@@ -44,7 +44,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # Fetch LFS blobs (png/ttf/woff2): the icon generator and the font
           # assets read real bytes, not the LFS pointer text.
@@ -97,7 +97,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # Fetch LFS blobs (png/ttf/woff2): the icon generator and the font
           # assets read real bytes, not the LFS pointer text.
@@ -228,7 +228,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # Nothing this job reads is LFS-tracked today, but fetch the blobs
           # anyway: if a fixture or an asset the CLI touches ever becomes
