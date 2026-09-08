@@ -114,7 +114,7 @@ export function defaultResponses(scenario: Scenario): Record<string, unknown> {
     onboarding_get: scenario.onboarding,
     repositories_list: scenario.repositories,
     skills_reconcile: scenario.installs,
-    skills_available: { skills: [], warnings: [] },
+    skills_available: { skills: scenario.skills, warnings: [] },
     projects_list: scenario.projects,
     mcp_reconcile: scenario.mcpInstalls,
     get_app_version: '0.0.0-e2e',

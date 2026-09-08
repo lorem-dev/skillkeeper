@@ -20,6 +20,9 @@
  *   projects     -> Project[]
  *   installs     -> InstallManifest[]
  *   mcpInstalls  -> McpInstall[]
+ *   skills       -> AvailableSkill[] (the `skills_available` catalog; its
+ *                   `warnings` half stays a fixed empty array in
+ *                   `commands.ts` -- nothing here needed one yet)
  *
  * This is the minimal shape Task 2's command table needs (see
  * `commands.ts`'s `defaultResponses`). A later task extends this file to add
@@ -38,6 +41,9 @@ export interface Scenario {
   readonly projects: readonly unknown[];
   readonly installs: readonly unknown[];
   readonly mcpInstalls: readonly unknown[];
+  /** The `skills_available` catalog (installable skills across all tracked
+   *  repositories), independent of `installs` (what is already installed). */
+  readonly skills: readonly unknown[];
   /**
    * Per-command overrides, merged over `commands.ts`'s defaults. A value here
    * is plain data for now (see the file-level note on why a function value
@@ -79,6 +85,7 @@ export function defaultScenario(): Scenario {
     projects: [],
     installs: [],
     mcpInstalls: [],
+    skills: [],
     responses: {},
     events: {},
   };

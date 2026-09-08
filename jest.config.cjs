@@ -4,8 +4,9 @@
 // Unit tests stay on Vitest (`vitest.config.ts`, `pnpm test:cov`) -- these
 // three runners cover different layers and never overlap:
 //
-//   Vitest  pure logic, in-process, coverage-gated at 90%
-//   Jest    the built `skillkeeper` binary against a real Git working tree
+//   Vitest      pure logic, in-process, coverage-gated at 90%
+//   Jest        the built `skillkeeper` binary against a real Git working tree
+//   Playwright  the built renderer bundle in Chromium, against a scripted backend
 //
 // This file is `.cjs` on purpose: the root package.json sets `"type": "module"`,
 // so a `.js` config would be ESM and Jest's config loader plus ts-jest's

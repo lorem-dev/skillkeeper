@@ -31,10 +31,16 @@ Thumbs.db
 # Storybook
 apps/desktop/storybook-static/
 
-# Playwright
-/test-results/
-/playwright-report/
-/blob-report/
+# Playwright: `outputDir`'s default walks up from the config file's directory
+# (e2e/desktop/) to the nearest package.json and appends test-results/ to
+# THAT directory -- today that lands at the repository root (e2e/desktop/ has
+# no package.json of its own), but that is one `e2e/desktop/package.json` away
+# from moving to e2e/desktop/test-results/ (see e2e/cli/package.json for a
+# sibling suite that already has one). No leading slash, so these match
+# wherever it actually lands rather than assuming which.
+test-results/
+playwright-report/
+blob-report/
 
 # Documentation site (mkdocs + uv): uv caches the tools globally, but keep any
 # local Python virtualenv and the rendered static site out of git.

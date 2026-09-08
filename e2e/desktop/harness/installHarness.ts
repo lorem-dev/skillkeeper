@@ -71,6 +71,13 @@ export async function installHarness(page: Page, scenario: Scenario): Promise<vo
 
     (window as unknown as Record<string, unknown>).__SKK_E2E_CALLS__ = [];
     (window as unknown as Record<string, unknown>).__SKK_E2E_CLIPBOARD__ = [];
+    // Every command name the callback below could not answer, in call order.
+    // `store.loadAll` and several call sites swallow a rejection (into
+    // `store.error`, a caught background-task status, or a `.then(ok, () =>
+    // undefined)`), so an unmocked command does not reliably surface anywhere
+    // a test's DOM assertions can see it -- a test that needs to know reads
+    // this array directly instead.
+    (window as unknown as Record<string, unknown>).__SKK_E2E_UNMOCKED__ = [];
     const label = arg.scenario.windowLabel || 'main';
     (window as unknown as Record<string, unknown>).__SKK_E2E_WINDOW_LABEL__ = label;
 
@@ -89,6 +96,8 @@ export async function installHarness(page: Page, scenario: Scenario): Promise<vo
         const calls = (window as unknown as Record<string, unknown>).__SKK_E2E_CALLS__ as unknown[];
         calls.push({ cmd, args });
         if (!Object.prototype.hasOwnProperty.call(arg.responses, cmd)) {
+          const unmocked = (window as unknown as Record<string, unknown>).__SKK_E2E_UNMOCKED__ as string[];
+          unmocked.push(cmd);
           throw new Error(`${arg.unknownCommandPrefix}${cmd}`);
         }
         return arg.responses[cmd];
