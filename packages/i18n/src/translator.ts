@@ -18,9 +18,19 @@ export interface Translator {
   plural(baseKey: string, count: number, vars?: Vars): string;
 }
 
-/** Replace all `{name}` tokens in `template` with values from `vars`. */
+/**
+ * Replace all `{name}` tokens in `template` with values from `vars`.
+ *
+ * The name may not contain a brace of either kind. Excluding `{` as well as
+ * `}` is what keeps this linear: a body that could cross an opening brace
+ * makes every `{` in the template a candidate start that scans to the end of
+ * the string before failing, which is quadratic -- 40k braces took over two
+ * seconds. Placeholder names never contain a brace, so nothing is lost, and a
+ * stray `{` in a hand-authored catalog now costs that one brace instead of
+ * swallowing the real placeholder behind it.
+ */
 export function interpolate(template: string, vars: Vars): string {
-  return template.replace(/\{([^}]+)\}/g, (_match, name: string) => {
+  return template.replace(/\{([^{}]+)\}/g, (_match, name: string) => {
     const value = vars[name];
     return value !== undefined ? value : `{${name}}`;
   });
