@@ -172,7 +172,17 @@ if (sections.length === 0) {
 }
 
 const notesPath = join(ROOT, 'RELEASE_NOTES.md');
-const existing = existsSync(notesPath) ? readFileSync(notesPath, 'utf8').trimEnd() : '';
+// Read it and handle the absence, rather than asking whether it exists and
+// then reading it: the two-step form is a race, and the answer to "does it
+// exist" is already in the read's own failure.
+let existing = '';
+try {
+  existing = readFileSync(notesPath, 'utf8').trimEnd();
+} catch (error) {
+  if (error.code !== 'ENOENT') {
+    throw error;
+  }
+}
 const downloads = `## Downloads\n\n${sections.join('\n\n')}`;
 const body = existing.length > 0 ? `${existing}\n\n${downloads}\n` : `${downloads}\n`;
 
