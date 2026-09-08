@@ -94,3 +94,13 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # @types/node's major tracks the Node major, and this project pins Node
+      # 24 in `engines` and in every workflow. Taking the types for 26 while
+      # running 24 makes tsc accept APIs the runtime does not have: the type
+      # check goes green and the failure moves to run time, which is the one
+      # place these types exist to keep it out of. Bump this together with the
+      # runtime, not ahead of it.
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
