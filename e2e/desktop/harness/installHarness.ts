@@ -70,6 +70,10 @@ export async function installHarness(page: Page, scenario: Scenario): Promise<vo
     const { mockIPC, mockWindows } = modFactory({});
 
     (window as unknown as Record<string, unknown>).__SKK_E2E_CALLS__ = [];
+    // Writes recorded by the clipboard stub below, in write order. A spec
+    // reads this through `fixture.ts`'s `app.clipboard()` to assert a copy
+    // action without a real OS clipboard (there is none in a headless
+    // Chromium run, and the Clipboard API needs a user gesture besides).
     (window as unknown as Record<string, unknown>).__SKK_E2E_CLIPBOARD__ = [];
     // Every command name the callback below could not answer, in call order.
     // `store.loadAll` and several call sites swallow a rejection (into
@@ -85,6 +89,14 @@ export async function installHarness(page: Page, scenario: Scenario): Promise<vo
     // label is 'ssh-unlock' -- see Scenario's doc comment on windowLabel.
     mockWindows(label);
 
+    // The clipboard-manager plugin command `writeText` invokes -- see
+    // `@tauri-apps/plugin-clipboard-manager`'s `writeText`. Handled as a fixed
+    // stub rather than a `commands.ts` table entry: a copy action's payload is
+    // whatever the app computed at click time, not scenario data, and the
+    // recording needs to happen for every scenario without each one having to
+    // opt in.
+    const CLIPBOARD_WRITE_TEXT = 'plugin:clipboard-manager|write_text';
+
     // `shouldMockEvents: true` routes every `plugin:event|listen` /
     // `plugin:event|emit` / `plugin:event|unlisten` invoke to mockIPC's own
     // in-page listener registry instead of to the callback below. Without it,
@@ -95,6 +107,12 @@ export async function installHarness(page: Page, scenario: Scenario): Promise<vo
       (cmd, args) => {
         const calls = (window as unknown as Record<string, unknown>).__SKK_E2E_CALLS__ as unknown[];
         calls.push({ cmd, args });
+        if (cmd === CLIPBOARD_WRITE_TEXT) {
+          const clipboard = (window as unknown as Record<string, unknown>).__SKK_E2E_CLIPBOARD__ as string[];
+          const text = (args as { text?: unknown } | undefined)?.text;
+          clipboard.push(typeof text === 'string' ? text : '');
+          return null;
+        }
         if (!Object.prototype.hasOwnProperty.call(arg.responses, cmd)) {
           const unmocked = (window as unknown as Record<string, unknown>).__SKK_E2E_UNMOCKED__ as string[];
           unmocked.push(cmd);

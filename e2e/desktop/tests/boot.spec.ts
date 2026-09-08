@@ -1,12 +1,9 @@
-import { test, expect } from '@playwright/test';
-import { installHarness } from '../harness/installHarness.js';
-import { defaultScenario } from '../harness/scenario.js';
+import { test, expect } from '../harness/fixture';
 
-test('the application mounts against the scripted backend', async ({ page }) => {
+test('the application mounts against the scripted backend', async ({ app, page }) => {
   const failures: string[] = [];
   page.on('pageerror', (e) => failures.push(e.message));
-  await installHarness(page, defaultScenario());
-  await page.goto('/');
+  await app.goto();
   // `<App/>` mounts inside main.tsx's `bridgeClient.init().finally(...)`,
   // which runs its callback on rejection too -- so `app-shell` appearing does
   // NOT by itself prove the harness answered anything. `toBeVisible()` also

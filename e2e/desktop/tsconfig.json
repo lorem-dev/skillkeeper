@@ -12,11 +12,32 @@
   // the browser, and stays ESM (the repository root is "type": "module" and
   // this directory has no package.json of its own to override that), which is
   // what lets installHarness.ts use `import.meta.url`.
+  //
+  // "moduleResolution": "bundler" (Task 3), not "NodeNext": `scenario.ts`
+  // imports its field types straight from the ts-rs-generated sources under
+  // `apps/desktop/src/renderer/services/bridge/generated/**` rather than
+  // hand-rolling approximations, and those generated files -- authored for
+  // Vite's bundler resolution, same as the rest of `apps/desktop` -- import
+  // each other with no file extension. `tsc` type-checks a whole program, not
+  // file-by-file, so once anything in this directory reaches into that tree,
+  // EVERY file on the way is checked under this tsconfig's resolution mode;
+  // under "NodeNext" that turns every one of those extensionless sibling
+  // imports into an error in a generated file this suite does not own and
+  // must not edit. "bundler" accepts both a bare specifier and an explicit
+  // `.js` extension pointing at a `.ts` source, so it resolves that tree
+  // cleanly without changing how this directory's OWN files are written --
+  // they keep the explicit `.js` extension throughout, which also still
+  // matches how Node actually resolves them at runtime (the "type": "module"
+  // requirement `.js`-on-`.ts` served under `NodeNext`), this option just
+  // stops REQUIRING it. Playwright's runtime never consults this setting at
+  // all (see the note above: esbuild transpiles per file and does not
+  // validate module resolution the way `tsc` does), so this is purely a
+  // type-checking/editor concern.
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2023", "DOM"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "types": ["node"],
     "strict": true,
     "noUncheckedIndexedAccess": true,

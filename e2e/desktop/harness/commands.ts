@@ -51,6 +51,24 @@ export const UNKNOWN_COMMAND_PREFIX = 'e2e-harness: unmocked command ';
  *                               view's initial fit/resize, independent of
  *                               whether the terminal panel is open.
  *
+ * TASK 3 ADDITION -- terminal_start: `TerminalView`'s mount effect awaits
+ * `startWithRetry(() => bridgeClient.startTerminal(...))`
+ * (`systems/terminal/startShell.ts`), which retries an unmocked/rejecting
+ * call up to `START_ATTEMPTS` (3) times with a real `setTimeout`
+ * (`START_RETRY_MS`, 750ms) between attempts before settling into
+ * `setTerminalError`. Left unmocked, every boot -- not just this suite's, any
+ * spec's -- pays that ~1.5s of real timers running in the background before
+ * the rejection is swallowed into store state, which is exactly the kind of
+ * nondeterministic, timer-driven tail this suite's "no timers, no randomness"
+ * rule exists to rule out; it also used to be invisible to `boot.spec.ts`
+ * (caught locally, no page error, no assertion touches `terminalOpen`), which
+ * is why Task 2's `__SKK_E2E_UNMOCKED__` array was the only thing that caught
+ * it. Mocked here so `defaultScenario()` is a genuinely complete startup and
+ * the fixture's post-test "nothing went unmocked" assertion (`fixture.ts`)
+ * never has to carry an exemption list for it. The value is the retained
+ * scrollback the renderer replays into the terminal on start; empty string is
+ * a valid "freshly started, nothing buffered yet" answer.
+ *
  * `boot.spec.ts` would pass with only those three mocked -- `loadAll`'s
  * Promise.all would simply reject and `store.error` would be set. This table
  * mocks the rest of `loadAll`'s round trip anyway, because a boot test that
@@ -76,14 +94,31 @@ export const UNKNOWN_COMMAND_PREFIX = 'e2e-harness: unmocked command ';
  *                             either -- included for the same reason as the
  *                             `loadAll` set above).
  *
+ * TASK 3 ADDITION -- mcp_list_available: NOT part of startup (`loadAll` never
+ * calls it -- only `refreshMcpPresets`, run after a repository
+ * add/update/sync or when the MCP page reads its catalog). Mocked here anyway
+ * so a scenario's `mcpAvailable` catalog (the MCP counterpart of `skills`
+ * above) is answered the moment a later task's flow reaches for it, the same
+ * way `skills_available` is answered though nothing in `boot.spec.ts` needs
+ * it either.
+ *
+ * TASK 3 ADDITION -- app_update_check: fires once, unconditionally, every
+ * boot (`useAppUpdateSchedule`'s startup check), independent of the
+ * scenario's `updates.mode`. `store.runAppUpdateCheck` wraps the call in
+ * try/catch, so `boot.spec.ts`'s page-error-based assertions never needed
+ * this mocked -- but that same try/catch is exactly what let it slip past
+ * unnoticed into `__SKK_E2E_UNMOCKED__` until Task 3's fixture started
+ * asserting that array empty after every test (see `fixtures/base.ts`).
+ * Answered here for the same "complete startup" reason as `terminal_start`
+ * above, with the least eventful `CheckOutcome`: no offer, and `suppressed:
+ * true` so a spec never has to reason about `checkAppUpdate`'s network-gate
+ * semantics by accident.
+ *
  * Commands that need no entry at all, and why:
  *   - `window_is_maximized` / `window:maximizeChanged` (WindowChrome): only
  *     called when `hostPlatform(bridgeClient.platform) !== 'mac'`;
  *     `defaultScenario` reports `platform: 'darwin'`, so WindowChrome renders
  *     nothing and never calls either.
- *   - `app_update_check` (useAppUpdateSchedule's one-time startup check):
- *     DOES fire once loading settles, but `store.runAppUpdateCheck` wraps the
- *     call in try/catch, same as the `loadAll` set above.
  *   - Every repository/project/MCP mutation and every `plugin:event|*`
  *     listener registration: `mockIPC` is called with
  *     `{ shouldMockEvents: true }` (see `installHarness.ts`), so `listen()`
@@ -96,6 +131,7 @@ export function defaultResponses(scenario: Scenario): Record<string, unknown> {
     platform: scenario.platform,
     onboarding_menu_sync: null,
     terminal_resize: null,
+    terminal_start: '',
     config_get: {
       config: scenario.config,
       validity: {
@@ -117,6 +153,8 @@ export function defaultResponses(scenario: Scenario): Record<string, unknown> {
     skills_available: { skills: scenario.skills, warnings: [] },
     projects_list: scenario.projects,
     mcp_reconcile: scenario.mcpInstalls,
+    mcp_list_available: { mcp: scenario.mcpAvailable, warnings: [] },
+    app_update_check: { offer: null, suppressed: true },
     get_app_version: '0.0.0-e2e',
     ...scenario.responses,
   };
