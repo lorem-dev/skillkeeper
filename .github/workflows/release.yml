@@ -503,7 +503,7 @@ jobs:
         run: node scripts/release-notes.mjs
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: dist-all
 
