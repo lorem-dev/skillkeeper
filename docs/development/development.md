@@ -158,7 +158,7 @@ Two things about the design are worth knowing before adding a spec:
   overlap: Vitest runs pure logic in-process under the coverage gate, Jest drives
   a subprocess against the filesystem. Jest's config is `jest.config.cjs`, and the
   suite is deliberately CommonJS so no `--experimental-vm-modules` is needed.
-- **Isolation belongs to the harness.** `Sandbox` (in `e2e/src/cli.ts`) always
+- **Isolation belongs to the harness.** `Sandbox` (in `e2e/cli/src/cli.ts`) always
   sets throwaway `HOME` *and* `XDG_CONFIG_HOME`. The first relocates the agents'
   global roots (a global-scope Codex MCP install writes to
   `~/.codex/config.toml`, a project-scoped one to `<project>/.codex/config.toml`, and
