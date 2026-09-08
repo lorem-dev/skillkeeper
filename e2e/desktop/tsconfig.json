@@ -1,0 +1,36 @@
+{
+  // Like e2e/cli/tsconfig.json, this suite is deliberately its own TypeScript
+  // scope: it is not a pnpm workspace package (pnpm-workspace.yaml globs only
+  // packages/* and apps/*), so it does not extend tsconfig.base.json and is
+  // not part of `pnpm typecheck` (which is per-workspace-package). Playwright
+  // Test transpiles these files with esbuild at run time and does not type-check
+  // them; this file exists for editor support and for anyone who runs `tsc
+  // --noEmit -p e2e/desktop/tsconfig.json` by hand.
+  //
+  // Unlike e2e/cli (Node-only, CommonJS), this suite needs DOM types for the
+  // `page.addInitScript` payloads in harness/installHarness.ts, which run in
+  // the browser, and stays ESM (the repository root is "type": "module" and
+  // this directory has no package.json of its own to override that), which is
+  // what lets installHarness.ts use `import.meta.url`.
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "noEmit": true
+  },
+  "include": ["**/*.ts"]
+}

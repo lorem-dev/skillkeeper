@@ -1,6 +1,8 @@
-// Jest drives the end-to-end suite in `e2e/` only. Unit tests stay on Vitest
-// (`vitest.config.ts`, `pnpm test:cov`) -- the two runners cover different
-// layers and never overlap:
+// Jest drives the end-to-end suite in `e2e/cli/` only; `e2e/desktop/` is
+// Playwright's (see e2e/desktop/playwright.config.ts), driving the renderer in
+// Chromium against a scripted backend rather than a real Git working tree.
+// Unit tests stay on Vitest (`vitest.config.ts`, `pnpm test:cov`) -- these
+// three runners cover different layers and never overlap:
 //
 //   Vitest  pure logic, in-process, coverage-gated at 90%
 //   Jest    the built `skillkeeper` binary against a real Git working tree

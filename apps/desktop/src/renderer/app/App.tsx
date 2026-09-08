@@ -292,6 +292,7 @@ export function App() {
       <div
         className={cx('sk-app', `sk-app--${platform}`, onboardingActive && 'sk-app--onboarding')}
         data-anim={animationMode}
+        data-testid="app-shell"
       >
         <WindowChrome />
         <ConfigBanner />
