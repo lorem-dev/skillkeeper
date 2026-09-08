@@ -28,7 +28,7 @@ gettext = "0.4"
 interprocess = "2.4"
 ssh-key = { version = "0.6", features = ["encryption", "crypto", "getrandom"] }
 zeroize = "1"
-argon2 = { version = "0.5", default-features = false, features = ["alloc"] }
+argon2 = { version = "0.6", default-features = false, features = ["alloc"] }
 sha1 = "0.11.0"
 sha2 = "0.11.0"
 hex = { workspace = true }
