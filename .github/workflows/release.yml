@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # check-tag-branch.mjs asks whether the tag is reachable from main or
           # develop, which needs the full history and those branch refs -- a
@@ -57,7 +57,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Node.js 22
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           # This job only runs node scripts/check-version.mjs and never installs
@@ -143,7 +143,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # The desktop build needs real binary assets (LFS-tracked fonts and
           # icon source PNGs), not LFS pointer files.
@@ -195,7 +195,7 @@ jobs:
         run: corepack enable
 
       - name: Set up Node.js 22 with pnpm cache
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: pnpm
@@ -266,7 +266,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Build the app (Tauri)
-        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           # macOS signing is injected via $GITHUB_ENV by "Configure Apple code
           # signing" above, and only when a certificate secret is set. The
@@ -454,7 +454,7 @@ jobs:
       # dir (linux/windows) and the cross-target dir (macOS --target).
       # -----------------------------------------------------------------------
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: skillkeeper-${{ github.ref_name }}-${{ matrix.target }}
           path: |
@@ -488,10 +488,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Node.js 22
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           # This job runs only node scripts (release notes) plus gh/gpg and
@@ -503,7 +503,7 @@ jobs:
         run: node scripts/release-notes.mjs
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: dist-all
 
