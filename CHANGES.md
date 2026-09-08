@@ -2,6 +2,8 @@
 
 ## Development
 
+## Version 0.7.1-rc.1
+
 ### Changed
 
 - Updated bundled dependencies, including the SHA-256, Argon2, AES and TOML
