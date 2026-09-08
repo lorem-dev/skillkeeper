@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createTranslator } from './index.js';
-import { createTranslatorFrom } from './translator.js';
+import { createTranslatorFrom, interpolate } from './translator.js';
 import type { Catalog } from './index.js';
 
 describe('createTranslator', () => {
@@ -127,5 +127,31 @@ describe('createTranslator', () => {
     const result = t('skills.count', {});
     // The {n} token must be preserved as-is in the output.
     expect(result).toContain('{n}');
+  });
+});
+
+describe('interpolate', () => {
+  it('replaces a placeholder and leaves an unknown one alone', () => {
+    expect(interpolate('{a} and {b}', { a: 'x' })).toBe('x and {b}');
+  });
+
+  it('does not let a stray opening brace swallow the placeholder after it', () => {
+    // The catalogs are hand-authored, so a lone `{` in a message is a typo that
+    // will happen. It must cost the author that one brace, not the placeholder
+    // behind it -- and the same property is what keeps the scan linear below.
+    expect(interpolate('{ {n}', { n: '3' })).toBe('{ 3');
+  });
+
+  it('stays linear on a run of opening braces', () => {
+    // A placeholder pattern whose body can cross an opening brace backtracks
+    // once per starting position, which is quadratic: 20k braces took ~600ms
+    // and 40k takes seconds. Bounding the body to non-brace characters makes a
+    // failed start fail immediately, so the same input is sub-millisecond. The
+    // margin here is three orders of magnitude; this only fires on a rewrite
+    // that reintroduces the backtracking.
+    const pathological = '{'.repeat(40_000);
+    const started = performance.now();
+    expect(interpolate(pathological, {})).toBe(pathological);
+    expect(performance.now() - started).toBeLessThan(500);
   });
 });

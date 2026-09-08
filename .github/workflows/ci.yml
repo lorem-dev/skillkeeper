@@ -12,6 +12,13 @@ on:
       - develop
   pull_request:
 
+# Every job here only reads the repository and runs the gates, so the token
+# needs nothing beyond that. The workflow-level grant is the whole story: with
+# no job overriding it, none of the three can escalate, and a future job that
+# does need more has to say so where a reviewer will see it.
+permissions:
+  contents: read
+
 # One run per branch (or per pull request), and only the newest of them. Without
 # this, nothing ever cancelled a superseded run: a push to a branch with an open
 # pull request starts TWO runs of three jobs for the same commit -- one for the
@@ -150,12 +157,12 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" .apt-cache
 
       - name: Set up Rust toolchain (stable + rustfmt + clippy)
-        uses: dtolnay/rust-toolchain@1.97.1
+        uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
         with:
           components: rustfmt, clippy
 
       - name: Cache cargo registry and target
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           # Without this a failing run saves nothing, so the retry after a red
           # build recompiles the whole dependency graph from scratch.
@@ -234,10 +241,10 @@ jobs:
           submodules: true
 
       - name: Set up Rust toolchain (stable)
-        uses: dtolnay/rust-toolchain@1.97.1
+        uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
 
       - name: Cache cargo registry and target
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           cache-on-failure: true
 

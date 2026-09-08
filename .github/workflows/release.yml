@@ -28,6 +28,12 @@ on:
     tags:
       - 'v*'
 
+# Nothing by default: this workflow signs and publishes release artifacts, so
+# a job that has not stated what it needs must not inherit a token that can
+# write to the repository. Each job below grants itself the minimum, and
+# `publish` is the only one that can write anything.
+permissions: {}
+
 jobs:
   # ---------------------------------------------------------------------------
   # Guard: the pushed tag must match every package.json, tauri.conf.json, and
@@ -36,6 +42,10 @@ jobs:
   verify-version:
     name: Verify tag provenance and version
     runs-on: ubuntu-latest
+
+    # Reads the tag, the branch refs, and the version manifests. Nothing else.
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -77,6 +87,14 @@ jobs:
     name: Build ${{ matrix.target }}
     needs: verify-version
     runs-on: ${{ matrix.os }}
+
+    # Checks out and bundles; it never touches the release. Uploading the build
+    # artifacts goes through the runner's own artifact token, not this one, so
+    # read access is genuinely all this job needs even though it is the job
+    # holding the signing secrets.
+    permissions:
+      contents: read
+
     # A full leg takes 6 to 12 minutes; a hang (as on v0.3.0-rc.3, where apt sat
     # on the dpkg lock for 19 minutes) should end the job, not the six-hour
     # default.
@@ -156,12 +174,12 @@ jobs:
             librsvg2-dev
 
       - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@1.97.1
+        uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
         with:
           targets: ${{ matrix.target }}
 
       - name: Cache cargo registry and target
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           key: ${{ matrix.target }}
           # Restore only, never save. A run reads caches from its own ref, the
@@ -248,7 +266,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Build the app (Tauri)
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
         env:
           # macOS signing is injected via $GITHUB_ENV by "Configure Apple code
           # signing" above, and only when a certificate secret is set. The
@@ -575,7 +593,7 @@ jobs:
         run: node scripts/release-downloads.mjs "$GITHUB_REF_NAME" dist
 
       - name: Create GitHub release and attach artifacts
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           files: dist/*
           body_path: RELEASE_NOTES.md
