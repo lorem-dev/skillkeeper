@@ -1,0 +1,22 @@
+// Project-local editor settings. Only entries that make the editor agree with
+// the repository's own gates belong here; personal preferences stay in the
+// user settings file.
+{
+  "lsp": {
+    "eslint": {
+      "settings": {
+        // eslint.config.mjs deliberately ignores scripts/, **/*.config.*, the
+        // ts-rs-generated bindings, and the examples/test-repo submodule. The
+        // language server lints whatever file is open regardless, so opening
+        // one of those put a diagnostic on line 1 -- "File ignored because of a
+        // matching ignore pattern" -- which is noise, not a finding.
+        //
+        // The server derives ESLint's `warnIgnored` from this setting
+        // (`onIgnoredFiles !== "off"`), and Zed does not send the key at all
+        // unless it is set here, which leaves it undefined and therefore
+        // truthy. Naming it explicitly is the fix.
+        "onIgnoredFiles": "off"
+      }
+    }
+  }
+}
