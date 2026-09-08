@@ -2,6 +2,13 @@
 
 ## Development
 
+### Changed
+
+- Updated bundled dependencies, including the SHA-256, Argon2, AES and TOML
+  implementations. No behaviour changes: the hashing and key-derivation test
+  vectors are unchanged, so existing skill hashes and PPK keys read exactly as
+  before.
+
 ## Version 0.7.0
 
 ### Added
