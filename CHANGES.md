@@ -40,6 +40,8 @@
 
 ## Development
 
+## Version 0.7.2
+
 ### Added
 
 - Statically linked musl builds of the CLI for Linux x64 and arm64
