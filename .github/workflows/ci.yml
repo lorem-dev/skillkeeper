@@ -82,6 +82,9 @@ jobs:
       - name: Type-check
         run: pnpm typecheck
 
+      - name: Check formatting
+        run: pnpm format:check
+
       - name: Test with coverage (90% gate)
         # vitest run --coverage enforces the thresholds defined in vitest.config.ts.
         # The build fails if lines or branches fall below 90%.
@@ -269,3 +272,58 @@ jobs:
         env:
           SKILLKEEPER_E2E_PIN_FIXTURE: '1'
         run: pnpm test:e2e
+
+  desktop-e2e:
+    name: Desktop UI (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          lfs: false
+          submodules: false
+
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Set up Node.js with pnpm cache
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate localization catalogs
+        run: pnpm run i18n
+
+      # Keyed on the Playwright version: a browser build is ~150MB and only
+      # changes when the package does.
+      - name: Cache the Playwright browser
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      # No separate "build the renderer" step here: playwright.config.ts
+      # chains `frontend:build` into the webServer command so every run
+      # boots a fresh bundle, and a build failure surfaces as the webServer
+      # failing to come up. A second, earlier build step would only repeat
+      # that work.
+      - name: Run the desktop UI suite
+        run: pnpm test:e2e:desktop
+
+      - name: Upload the report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

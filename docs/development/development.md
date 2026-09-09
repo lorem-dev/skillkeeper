@@ -62,7 +62,7 @@ TypeScript side (run from the repository root):
 |------------------|-------------------------------------------------|
 | `pnpm test`      | Run the TypeScript tests (`vitest run`).        |
 | `pnpm test:cov`  | Run tests with v8 coverage report.              |
-| `pnpm test:e2e`  | Run the end-to-end suite against the built CLI.  |
+| `pnpm test:e2e`  | Run both end-to-end suites: the CLI, then the desktop UI.  |
 | `pnpm lint`      | Run ESLint.                                      |
 | `pnpm typecheck` | Type-check the TypeScript packages.             |
 | `pnpm format`    | Run Prettier.                                    |
@@ -121,15 +121,29 @@ The TypeScript side uses Vitest. The **90% lines and branches** coverage gate
 
 ### End-to-end tests
 
-In-memory fakes make the unit tests fast and deterministic, but they cannot catch
-a regression that lives in the wiring between the CLI, the agent adapters, and a
-real filesystem -- an adapter resolving the wrong destination root, say, or a
-skill that resolves under `MemFs` but not on disk. The end-to-end suite covers
-exactly that layer: it drives the real `skillkeeper` binary against a real Git
-working tree and asserts on the files it produces.
+The end-to-end work is two independent suites under `e2e/`, each covering a
+layer the unit tests cannot: `e2e/cli` drives the real `skillkeeper` binary
+against a real Git working tree, and `e2e/desktop` drives the renderer in a
+real Chromium browser. Run both with:
 
 ```
 pnpm test:e2e
+```
+
+which is `pnpm test:e2e:cli && pnpm test:e2e:desktop`. They can also be run
+independently.
+
+#### CLI suite
+
+In-memory fakes make the unit tests fast and deterministic, but they cannot catch
+a regression that lives in the wiring between the CLI, the agent adapters, and a
+real filesystem -- an adapter resolving the wrong destination root, say, or a
+skill that resolves under `MemFs` but not on disk. This suite covers exactly
+that layer: it drives the real `skillkeeper` binary against a real Git working
+tree and asserts on the files it produces.
+
+```
+pnpm test:e2e:cli
 ```
 
 That script initializes the `examples/test-repo` submodule, force-pulls it to the
@@ -141,15 +155,18 @@ in the diff rather than because the fixture moved.
 Layout:
 
 ```
-e2e/
-  package.json       scopes the directory to CommonJS (the repo root is ESM)
-  tsconfig.json      its own TypeScript scope; ts-jest type-checks as it transpiles
-  src/cli.ts         the Sandbox harness: the only way a spec invokes the CLI
+e2e/cli/
+  package.json             scopes the directory to CommonJS (the repo root is ESM)
+  tsconfig.json            its own TypeScript scope; ts-jest type-checks as it transpiles
+  src/cli.ts               the Sandbox harness: the only way a spec invokes the CLI
   tests/
-    fixture.spec.ts  the submodule is present and still the shape the suite assumes
-    skills.spec.ts   resolution schemes, executables, guidance, hooks
-    mcp.spec.ts      preset discovery, parameters, ledgers, the Codex skip
-    repair.spec.ts   verify -> repair -> verify, and the bounds on repair
+    fixture.spec.ts        the submodule is present and still the shape the suite assumes
+    skills.spec.ts         resolution schemes, executables, guidance, hooks
+    mcp.spec.ts            preset discovery, parameters, ledgers, the Codex skip
+    mcp-oauth.spec.ts      the oauth flow for an mcp server
+    mcp-parameters.spec.ts descriptions and option parameters on an mcp install
+    repair.spec.ts         verify -> repair -> verify, and the bounds on repair
+    requires.spec.ts       repo lint
 ```
 
 Two things about the design are worth knowing before adding a spec:
@@ -169,6 +186,46 @@ Two things about the design are worth knowing before adding a spec:
 The `check-fixture-repo` local skill wraps this suite and explains how to read a
 failure: whether the fixture drifted, the product changed, or the harness leaked.
 It is part of `pre-release-check`.
+
+#### Desktop UI suite
+
+The desktop renderer has its own wiring risk: a component that only ever ran
+against in-memory Vitest mocks can still call a Tauri command with the wrong
+name or shape and fail solely in a real browser. This suite covers that layer
+with Playwright, driving the renderer in Chromium against a scripted backend
+that answers the same `invoke` calls the real Tauri backend would. It touches
+no filesystem, git, or network, and never spawns the `skillkeeper` binary or a
+real repository.
+
+```
+pnpm test:e2e:desktop
+```
+
+`e2e/desktop/playwright.config.ts` chains `vite build` into the `vite preview`
+server it starts, so every run boots a fresh renderer bundle rather than a
+stale one from an earlier build.
+
+Layout:
+
+```
+e2e/desktop/
+  playwright.config.ts
+  tsconfig.json
+  harness/
+    fixture.ts            re-exports the scenario-driven test/expect every spec imports
+    scenario.ts           the scripted backend's fixture data for one run
+    commands.ts           the default command table a scenario's responses merge over
+    installHarness.ts     installs the scripted `invoke` handler into the page
+  fixtures/
+    base.ts               the Playwright fixture implementation (the `app` object)
+    skills.ts, mcp.ts, projects.ts, repositories.ts, settings.ts
+                          per-page scenario data
+  tests/
+    boot.spec.ts          the application mounts against the scripted backend
+    harness.spec.ts       an unmocked command fails loudly rather than hanging
+    skills.spec.ts, mcp.spec.ts, projects.spec.ts, repositories.spec.ts,
+    settings.spec.ts      one page each
+```
 
 ## TypeScript
 
