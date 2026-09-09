@@ -51,6 +51,10 @@ export interface ChangeBadgeProps {
    */
   readonly tabIndex?: number;
   readonly className?: string;
+  /** Test id for the badge. Generic passthrough -- ChangeBadge has no product
+   *  knowledge of it, a caller sets it for the flows that need it (e.g. the
+   *  skill-install modal's "required" marker on a dependency row). */
+  readonly 'data-testid'?: string;
 }
 
 // Black = knocked out of the mask, so the glyph shows the background through.
@@ -78,7 +82,7 @@ const GLYPH: Record<ChangeBadgeKind, ReactNode> = {
   ),
 };
 
-export function ChangeBadge({ kind, label, onClick, tabIndex, className }: ChangeBadgeProps) {
+export function ChangeBadge({ kind, label, onClick, tabIndex, className, 'data-testid': testId }: ChangeBadgeProps) {
   // Unique per instance so multiple badges never collide on the mask id.
   const maskId = `sk-change-badge-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const glyph = (
@@ -94,7 +98,7 @@ export function ChangeBadge({ kind, label, onClick, tabIndex, className }: Chang
   return (
     <Tooltip content={label}>
       {onClick === undefined ? (
-        <span className={classes} role="img" aria-label={label}>
+        <span className={classes} role="img" aria-label={label} data-testid={testId}>
           {glyph}
         </span>
       ) : (
@@ -103,6 +107,7 @@ export function ChangeBadge({ kind, label, onClick, tabIndex, className }: Chang
           tabIndex={tabIndex}
           className={cx(classes, 'sk-change-badge--button')}
           aria-label={label}
+          data-testid={testId}
           onClick={(e) => {
             // The badge owns this click; the row behind it must not also act on
             // it (e.g. a TreeView leaf row toggles its checkbox on click).

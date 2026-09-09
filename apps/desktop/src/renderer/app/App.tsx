@@ -321,6 +321,7 @@ export function App() {
               icon={<Icon name="skills" />}
               className={cx('sk-sidebar-item--group', skillsOpen && 'sk-sidebar-item--group--open')}
               onClick={() => setSkillsOpen((open) => !open)}
+              data-testid="nav-group-skills"
             >
               {t('nav.skills')}
               <Icon name="chevron-right" size={14} className="sk-nav-group__chevron" />
@@ -339,6 +340,7 @@ export function App() {
                     className="sk-sidebar-item--sub"
                     active={activeView === 'skills-components'}
                     onClick={() => goTo('skills-components')}
+                    data-testid="nav-skills-components"
                   >
                     {t('skills.componentsTitle')}
                   </SidebarItem>
@@ -346,6 +348,7 @@ export function App() {
                     className="sk-sidebar-item--sub"
                     active={activeView === 'skills-management'}
                     onClick={() => goTo('skills-management')}
+                    data-testid="nav-skills-management"
                   >
                     {t('skills.managementTitle')}
                   </SidebarItem>

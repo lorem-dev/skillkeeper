@@ -174,12 +174,24 @@ export function buildRepoTree(available: readonly AvailableSkill[], repos: reado
     const children = nestByGroup(skills, {
       groupOf: (s) => s.group,
       compare: byName,
-      makeLeaves: (s) => [{ id: repoSkillKey(repo.id, s.group, s.name), label: s.name, icon: skillIcon }],
+      makeLeaves: (s) => [
+        {
+          id: repoSkillKey(repo.id, s.group, s.name),
+          label: s.name,
+          icon: skillIcon,
+          // e2e (flows 2/3/11, `skills.spec.ts`): the browse tree's skill row.
+          rowTestId: 'skill-row',
+          identity: { attr: 'skill-id', value: s.name },
+        },
+      ],
       makeGroup: (path, label, kids) => ({
         id: repoGroupNodeId(repo.id, path),
         label,
         icon: groupIcon,
         children: kids,
+        // e2e (flow 2): a group or nested group in the browse tree.
+        rowTestId: 'skill-group',
+        identity: { attr: 'group-id', value: path },
       }),
     });
 
@@ -218,6 +230,11 @@ export function buildProjectTree(
             id: projectSkillKey(scope.id, repo.id, s.group, s.name),
             label: s.name,
             icon: skillIcon,
+            // e2e (flows 3/11): `buildProjectTree` is used ONLY by
+            // `SkillInstallModal`'s own step-2 tree, so its leaf carries the
+            // modal-scoped checkbox id rather than the browse tree's `skill-row`.
+            rowTestId: 'skill-install-checkbox',
+            identity: { attr: 'skill-id', value: s.name },
           },
         ],
         makeGroup: (path, label, kids) => ({
@@ -452,6 +469,11 @@ export function buildProjectModel(
           label: entry.name,
           icon: skillIcon,
           muted: status === 'orphan',
+          // e2e (flow 2, `skills.spec.ts`): the Skills Management page's browse
+          // tree's skill row -- same kind as `buildRepoTree`'s leaf, since both
+          // are a row representing a skill in a catalog tree.
+          rowTestId: 'skill-row',
+          identity: { attr: 'skill-id', value: entry.name },
         };
       };
 
@@ -465,6 +487,9 @@ export function buildProjectModel(
           icon: groupIcon,
           muted: kids.every((k) => k.muted === true),
           children: kids,
+          // e2e (flow 2): a group or nested group in the browse tree.
+          rowTestId: 'skill-group',
+          identity: { attr: 'group-id', value: path },
         }),
       });
 
