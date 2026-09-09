@@ -11,7 +11,11 @@
  */
 import { withScenario } from '../harness/scenario.js';
 import type { Scenario } from '../harness/scenario.js';
-import type { Repository, Project, InstallManifest } from '../../../apps/desktop/src/renderer/services/bridge/generated/core/index.js';
+import type {
+  Repository,
+  Project,
+  InstallManifest,
+} from '../../../apps/desktop/src/renderer/services/bridge/generated/core/index.js';
 import type { AvailableSkill, ApplyResult } from '../../../apps/desktop/src/renderer/services/bridge/contracts.js';
 
 /** The one repository every scenario below resolves its skills from. */

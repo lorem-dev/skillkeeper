@@ -19,9 +19,21 @@
  * enough" fixture; the renderer would reject the same payload from the real
  * backend.
  */
-import type { SkillKeeperConfig, OnboardingState, SectionValidity } from '../../../apps/desktop/src/renderer/services/bridge/generated/config/index.js';
-import type { Repository, Project, InstallManifest } from '../../../apps/desktop/src/renderer/services/bridge/generated/core/index.js';
-import type { AvailableSkill, AvailableMcp, McpInstall } from '../../../apps/desktop/src/renderer/services/bridge/contracts.js';
+import type {
+  SkillKeeperConfig,
+  OnboardingState,
+  SectionValidity,
+} from '../../../apps/desktop/src/renderer/services/bridge/generated/config/index.js';
+import type {
+  Repository,
+  Project,
+  InstallManifest,
+} from '../../../apps/desktop/src/renderer/services/bridge/generated/core/index.js';
+import type {
+  AvailableSkill,
+  AvailableMcp,
+  McpInstall,
+} from '../../../apps/desktop/src/renderer/services/bridge/contracts.js';
 
 export interface Scenario {
   /** `process.platform` as the Rust backend reports it: 'darwin' | 'win32' | 'linux'. */

@@ -157,12 +157,7 @@ export function RepoAddButton() {
             <Button variant="secondary" onClick={cancel}>
               {t('common.close')}
             </Button>
-            <Button
-              variant="primary"
-              data-testid="repo-add-submit"
-              onClick={submit}
-              disabled={!valid || submitting}
-            >
+            <Button variant="primary" data-testid="repo-add-submit" onClick={submit} disabled={!valid || submitting}>
               {t('repositories.add')}
             </Button>
           </div>

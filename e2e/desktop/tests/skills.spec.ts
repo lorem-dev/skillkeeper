@@ -155,9 +155,7 @@ test.describe('a skill with dependencies', () => {
     await page.getByTestId('nav-skills-components').click();
     await expect(page.getByTestId('skills-page')).toBeVisible();
 
-    const dependent = page
-      .getByTestId('skill-row')
-      .filter({ has: page.locator('[data-skill-id="needs-dependency"]') });
+    const dependent = page.getByTestId('skill-row').filter({ has: page.locator('[data-skill-id="needs-dependency"]') });
     await dependent.click();
 
     await page.getByTestId('skill-install-open').click();

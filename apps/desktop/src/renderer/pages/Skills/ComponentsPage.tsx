@@ -209,7 +209,13 @@ export function SkillsComponentsPage() {
           <Button key="reset" variant="secondary" glass onClick={() => resetSkillsSelection('repositories')}>
             {t('skills.action.reset')}
           </Button>,
-          <Button key="add" variant="primary" glass onClick={() => setInstallOpen(true)} data-testid="skill-install-open">
+          <Button
+            key="add"
+            variant="primary"
+            glass
+            onClick={() => setInstallOpen(true)}
+            data-testid="skill-install-open"
+          >
             {t('skills.action.add')}
           </Button>,
         ]

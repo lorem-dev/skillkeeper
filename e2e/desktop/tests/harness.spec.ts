@@ -100,9 +100,7 @@ test('app.emit dispatches to a page-registered listener', async ({ app, page }) 
 
   await app.emit('e2e-self-test', { hello: 'world' });
 
-  const received = await page.evaluate(
-    () => (window as unknown as Record<string, unknown>).__E2E_SELF_TEST_RECEIVED__,
-  );
+  const received = await page.evaluate(() => (window as unknown as Record<string, unknown>).__E2E_SELF_TEST_RECEIVED__);
   expect(received).toEqual({ event: 'e2e-self-test', payload: { hello: 'world' } });
 });
 

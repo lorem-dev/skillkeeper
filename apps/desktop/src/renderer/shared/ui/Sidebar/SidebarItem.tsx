@@ -17,14 +17,7 @@ export interface SidebarItemProps {
   readonly 'data-testid'?: string;
 }
 
-export function SidebarItem({
-  icon,
-  children,
-  active,
-  onClick,
-  className,
-  'data-testid': testId,
-}: SidebarItemProps) {
+export function SidebarItem({ icon, children, active, onClick, className, 'data-testid': testId }: SidebarItemProps) {
   return (
     <button
       type="button"

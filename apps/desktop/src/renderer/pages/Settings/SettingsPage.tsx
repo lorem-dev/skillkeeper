@@ -184,11 +184,7 @@ export function SettingsPage() {
         </FormSection>
 
         <div ref={appUpdatesSectionRef} data-settings-section="app-updates">
-          <FormSection
-            title={t('settings.section.appUpdates')}
-            data-testid="settings-section"
-            sectionId="app-updates"
-          >
+          <FormSection title={t('settings.section.appUpdates')} data-testid="settings-section" sectionId="app-updates">
             {/* The cadence belongs on the row, not in a section footer: the row
                 would otherwise be an empty expanse with a button pinned to its
                 right edge, and the explanation would float loose underneath
