@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { spansToKeyedParts } from './DescriptionText';
-import type { DescriptionSpan } from './DescriptionText';
+import { spansToKeyedParts } from './spansToKeyedParts';
+import type { DescriptionSpan } from './spansToKeyedParts';
 
 describe('spansToKeyedParts', () => {
   it('keeps text and link spans in order with stable keys', () => {
