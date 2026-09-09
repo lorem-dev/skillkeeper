@@ -75,3 +75,40 @@ export function cloneFails(message: string): Scenario {
     },
   });
 }
+
+/**
+ * The repository already on the page BEFORE the add flow runs, for
+ * `duplicateFails()` below -- same identity (id/url) as `demoRepository()` so
+ * a submit of the same URL is genuinely the duplicate the real backend would
+ * reject (`add`, `apps/desktop/src-tauri/src/commands/repositories.rs`: "if
+ * `state.repositories.iter().any(|r| r.url == url)` -> `RepoResult::err
+ * ("duplicate")`").
+ */
+function existingRepository(): Repository {
+  return demoRepository();
+}
+
+/**
+ * The scenario for "a repository that already exists": one repository is
+ * already tracked (seeded via `scenario.repositories`, exactly like a normal
+ * page load would show it, including its own `repositories_describe`
+ * answer), and `repositories_add` answers the SAME "duplicate" error the real
+ * backend returns for a URL already in `AppState.repositories`. This is the
+ * regression case for the bug where the add form inferred success by
+ * checking whether ANY repository with the submitted URL was present in the
+ * store -- which a pre-existing duplicate satisfies just as well as a
+ * genuine new row would, so the false-positive check swallowed this error
+ * silently instead of surfacing it.
+ */
+export function duplicateFails(): Scenario {
+  const repository = existingRepository();
+  const failed: RepoResult = { ok: false, error: 'duplicate' };
+  const info: RepoInfo = { branch: 'main', skillCount: 0 };
+  return withScenario({
+    repositories: [repository],
+    responses: {
+      repositories_add: failed,
+      repositories_describe: info,
+    },
+  });
+}

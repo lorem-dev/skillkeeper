@@ -9,7 +9,7 @@
  * whole file.
  */
 import { test, expect } from '../harness/fixture';
-import { oneRepository, cloneFails } from '../fixtures/repositories';
+import { oneRepository, cloneFails, duplicateFails } from '../fixtures/repositories';
 
 test.describe('adding a repository', () => {
   test.use({ scenario: oneRepository() });
@@ -40,5 +40,22 @@ test.describe('a repository that will not clone', () => {
     await page.getByTestId('repo-add-submit').click();
     await expect(page.getByTestId('repo-add-error')).toContainText('authentication failed');
     await expect(page.getByTestId('repo-row')).toHaveCount(0);
+  });
+});
+
+test.describe('a repository that already exists', () => {
+  test.use({ scenario: duplicateFails() });
+
+  test('a duplicate repository reports the error and adds no second row', async ({ app, page }) => {
+    await app.goto();
+    await page.getByTestId('nav-repositories').click();
+    // The one pre-existing repository, seeded by the scenario -- confirms the
+    // page starts with exactly one row before the duplicate submit runs.
+    await expect(page.getByTestId('repo-row')).toHaveCount(1);
+    await page.getByTestId('repo-add-button').click();
+    await page.getByTestId('repo-add-url').fill('https://example.invalid/demo.git');
+    await page.getByTestId('repo-add-submit').click();
+    await expect(page.getByTestId('repo-add-error')).toBeVisible();
+    await expect(page.getByTestId('repo-row')).toHaveCount(1);
   });
 });

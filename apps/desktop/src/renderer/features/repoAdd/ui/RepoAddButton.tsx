@@ -84,9 +84,17 @@ export function RepoAddButton() {
     // `addRepository` (app/store/store.ts) chains add -> clone -> describe and
     // never rejects on a backend failure -- it calls `notify` and resolves.
     // The only way to tell success from an add-level failure back here is to
-    // check, once it settles, whether the row actually landed: `notify`'s
-    // `set()` calls happen synchronously inside that same async chain, so by
-    // the time this await resolves the store already reflects the outcome.
+    // check, once it settles, whether a row for THIS submit actually landed:
+    // `notify`'s `set()` calls happen synchronously inside that same async
+    // chain, so by the time this await resolves the store already reflects
+    // the outcome. Matching by url ALONE is not enough -- a "duplicate" add
+    // failure (the real backend's answer for a URL already tracked, see
+    // `add` in `apps/desktop/src-tauri/src/commands/repositories.rs`) leaves
+    // a pre-existing row with that same url in place, which a bare url match
+    // would misread as this submit's own success. Snapshotting the ids
+    // present before the call and requiring the matched row's id to be NEW
+    // rules that out.
+    const idsBefore = new Set(useSkillkeeperStore.getState().repositories.map((r) => r.id));
     const notificationsBefore = useSkillkeeperStore.getState().notifications.length;
     void addRepository(trimmedUrl, trimmedName)
       .then(() => {
@@ -94,7 +102,7 @@ export function RepoAddButton() {
         // applying its outcome now would stomp a different attempt's state.
         if (submitToken.current !== token) return;
         const state = useSkillkeeperStore.getState();
-        const wasAdded = state.repositories.some((r) => r.url === trimmedUrl);
+        const wasAdded = state.repositories.some((r) => r.url === trimmedUrl && !idsBefore.has(r.id));
         setSubmitting(false);
         if (wasAdded) {
           setOpen(false);
