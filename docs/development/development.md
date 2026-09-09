@@ -30,7 +30,8 @@ git submodule update --init
 ```
 
 Nothing compiles, lints, or unit-tests against it, so the ordinary commands below
-work without it -- only `pnpm test:e2e` needs it.
+work without it -- of the end-to-end suites, only `pnpm test:e2e:cli` needs it
+(`pnpm test:e2e:desktop` does not, and `pnpm test:e2e` runs both).
 
 ## Monorepo structure
 
