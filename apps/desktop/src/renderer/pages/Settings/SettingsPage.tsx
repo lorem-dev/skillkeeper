@@ -109,11 +109,12 @@ export function SettingsPage() {
     >
       <motion.div
         className="sk-settings"
+        data-testid="settings-page"
         initial={animate ? { opacity: 0 } : false}
         animate={{ opacity: 1 }}
         transition={{ duration: SK_DURATION.medium * scale, ease: SK_EASE }}
       >
-        <FormSection title={t('settings.section.general')}>
+        <FormSection title={t('settings.section.general')} data-testid="settings-section" sectionId="general">
           <LanguageThemeFields languageClassName="sk-settings-language" />
           <FormRow label={t('settings.animations')} description={t('settings.animationsHint')}>
             <SegmentedControl
@@ -125,7 +126,7 @@ export function SettingsPage() {
           </FormRow>
         </FormSection>
 
-        <FormSection title={t('settings.section.repositories')}>
+        <FormSection title={t('settings.section.repositories')} data-testid="settings-section" sectionId="repositories">
           <GitRow
             value={config.repositories.gitPath}
             label={t('settings.git')}
@@ -160,7 +161,7 @@ export function SettingsPage() {
           </FormRow>
         </FormSection>
 
-        <FormSection title={t('settings.section.projects')}>
+        <FormSection title={t('settings.section.projects')} data-testid="settings-section" sectionId="projects">
           <FormRow label={t('settings.projects.checkInterval')}>
             <IntervalStepper
               minutes={config.projects.checkIntervalMinutes}
@@ -174,7 +175,7 @@ export function SettingsPage() {
           </FormRow>
         </FormSection>
 
-        <FormSection title={t('settings.section.onboarding')}>
+        <FormSection title={t('settings.section.onboarding')} data-testid="settings-section" sectionId="onboarding">
           <FormRow description={t('settings.onboarding.restartHint')}>
             <Button variant="secondary" onClick={start}>
               {t('settings.onboarding.restart.button')}
@@ -183,7 +184,7 @@ export function SettingsPage() {
         </FormSection>
 
         <div ref={appUpdatesSectionRef} data-settings-section="app-updates">
-          <FormSection title={t('settings.section.appUpdates')}>
+          <FormSection title={t('settings.section.appUpdates')} data-testid="settings-section" sectionId="app-updates">
             {/* The cadence belongs on the row, not in a section footer: the row
                 would otherwise be an empty expanse with a button pinned to its
                 right edge, and the explanation would float loose underneath

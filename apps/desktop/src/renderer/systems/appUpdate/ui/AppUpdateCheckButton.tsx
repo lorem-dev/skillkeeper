@@ -59,7 +59,12 @@ export function AppUpdateCheckButton({ offerUpdateNow = false }: AppUpdateCheckB
 
   return (
     <>
-      <Button variant="secondary" onClick={() => void handleClick()} disabled={checking}>
+      <Button
+        variant="secondary"
+        onClick={() => void handleClick()}
+        disabled={checking}
+        data-testid="app-update-check-button"
+      >
         {t('appUpdate.checkNow')}
       </Button>
       {showUpdateNow && (

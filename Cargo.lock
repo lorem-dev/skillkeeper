@@ -1278,7 +1278,7 @@ dependencies = [
  "cc",
  "memchr",
  "rustc_version",
- "toml 1.1.4+spec-1.1.0",
+ "toml 1.1.5+spec-1.1.0",
  "vswhom",
  "winreg 0.55.0",
 ]
@@ -4235,7 +4235,7 @@ checksum = "8ee5873ec9cce0195efcb7a4e9507a04cd49aec9c83d0389df45b1ef7ba2e649"
 
 [[package]]
 name = "skillkeeper"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "aes 0.9.3",
  "argon2",
@@ -4270,14 +4270,14 @@ dependencies = [
 
 [[package]]
 name = "skillkeeper-agents"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "skillkeeper-core",
 ]
 
 [[package]]
 name = "skillkeeper-cli"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "clap",
  "serde",
@@ -4290,7 +4290,7 @@ dependencies = [
 
 [[package]]
 name = "skillkeeper-config"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -4302,7 +4302,7 @@ dependencies = [
 
 [[package]]
 name = "skillkeeper-core"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "hex",
  "regex",
@@ -4312,7 +4312,7 @@ dependencies = [
  "serde_yaml_ng",
  "sha2 0.11.0",
  "thiserror 2.0.20",
- "toml 1.1.4+spec-1.1.0",
+ "toml 1.1.5+spec-1.1.0",
  "ts-rs",
 ]
 
@@ -4811,7 +4811,7 @@ dependencies = [
  "tauri-plugin",
  "tauri-utils",
  "thiserror 2.0.20",
- "toml 1.1.4+spec-1.1.0",
+ "toml 1.1.5+spec-1.1.0",
  "url",
 ]
 
@@ -4897,7 +4897,7 @@ dependencies = [
  "serde_with",
  "swift-rs",
  "thiserror 2.0.20",
- "toml 1.1.4+spec-1.1.0",
+ "toml 0.9.12+spec-1.1.0",
  "url",
  "urlpattern",
  "uuid",
@@ -4912,7 +4912,7 @@ checksum = "cc65d45c68858bfe420dd29e834b5d15dbecf8a07a8a16cf4d532c7b1f69d4b6"
 dependencies = [
  "dunce",
  "embed-resource",
- "toml 1.1.4+spec-1.1.0",
+ "toml 1.1.5+spec-1.1.0",
 ]
 
 [[package]]
@@ -5098,9 +5098,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "1.1.4+spec-1.1.0"
+version = "1.1.5+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3aace63f4bbcdfc2c965b059de67119c89c4017a70d633be6c104910f67056f5"
+checksum = "12c0ba9680044b4ce98d391a62094047eada0d64860b80166c39f4a6b5640785"
 dependencies = [
  "indexmap 2.14.0",
  "serde_core",

@@ -96,7 +96,9 @@ export function UpdateReadyDialog({ platform = bridgeClient.platform }: UpdateRe
 
   return (
     <Modal open={open} onClose={handleCancel} title={t('appUpdate.readyTitle')} className="sk-update-ready">
-      <p className="sk-update-body">{t('appUpdate.readyBody', { version })}</p>
+      <p className="sk-update-body" data-testid="app-update-status">
+        {t('appUpdate.readyBody', { version })}
+      </p>
       {path !== null && <p className="sk-update-path">{t('appUpdate.readyPath', { path })}</p>}
       <p className="sk-update-hint">{t('appUpdate.readyHint')}</p>
       {showMacFallback && (

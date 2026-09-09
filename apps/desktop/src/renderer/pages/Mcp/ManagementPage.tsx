@@ -126,11 +126,11 @@ export function ManagementPage() {
   }, [projects]);
 
   const decorated = useMemo(() => {
-    function renderBadge(label: string, tone: 'accent' | 'neutral', onClick: () => void): ReactNode {
+    function renderBadge(label: string, tone: 'accent' | 'neutral', onClick: () => void, testId?: string): ReactNode {
       return (
         <span className="sk-mcp-badgewrap" onClick={(e) => e.stopPropagation()}>
           <Tooltip content={label}>
-            <button type="button" className="sk-mcp-badge-btn" onClick={onClick}>
+            <button type="button" className="sk-mcp-badge-btn" onClick={onClick} data-testid={testId}>
               <Badge tone={tone}>{label}</Badge>
             </button>
           </Tooltip>
@@ -148,13 +148,14 @@ export function ManagementPage() {
         case 'repo-preset':
           return (
             <span className="sk-mcp-badge-group">
-              {renderBadge(t('mcp.installMcp'), 'accent', () => openInstall(item.preset))}
+              {renderBadge(t('mcp.installMcp'), 'accent', () => openInstall(item.preset), 'mcp-install-open')}
             </span>
           );
         case 'installed':
           return (
             <span className="sk-mcp-badge-group">
-              {item.updatable && renderBadge(t('mcp.update'), 'accent', () => startMcpUpdate(item.installs))}
+              {item.updatable &&
+                renderBadge(t('mcp.update'), 'accent', () => startMcpUpdate(item.installs), 'mcp-update-open')}
               {renderBadge(t('mcp.delete'), 'neutral', () => requestDeleteInstalls(name, item.installs))}
             </span>
           );
@@ -311,45 +312,57 @@ export function ManagementPage() {
         </div>
       }
     >
-      {/* An empty tree has two causes now that the Global root can be filtered
-          out too (before this it was always present, so `baseTree` was never
-          empty): there is nothing installed at all, or the filters excluded
-          everything there is. Only the first is "no MCP servers yet"; the second
-          must say so and carry a reset, since this page has no in-tree footer
-          reset to fall back on at all. */}
-      {baseTree.length === 0 ? (
-        filtering ? (
-          <div className="sk-empty-filtered">
-            <p className="sk-empty">{t('mcp.emptyFiltered')}</p>
-            <Button variant="secondary" onClick={clearFilters}>
-              {t('skills.resetFilters')}
-            </Button>
-          </div>
-        ) : (
-          <p className="sk-empty">{t('mcp.empty')}</p>
-        )
-      ) : (
-        <>
-          <TreeView
-            className="sk-mcp-management-tree"
-            nodes={decorated}
-            onSelect={handleSelect}
-            defaultExpandedIds={expandedIds}
-            onExpandedChange={(ids) => setMcpUi({ expandedIds: ids })}
-            ariaLabel={t('mcp.managementTitle')}
-          />
-          {searching && (
-            <div className="sk-list-footer">
-              <SearchSummary
-                foundLabel={t.plural('mcp.searchFound', shownMcp)}
-                totalLabel={t.plural('mcp.searchTotal', totalMcp)}
-                showAllLabel={t('mcp.showAll')}
-                onShowAll={() => setQuery('')}
-              />
+      {/* e2e (flows 7, 8, 12, `mcp.spec.ts`): a stable anchor for "the MCP
+          Management page is showing", mirroring `pages/Skills/ManagementPage.tsx`'s
+          `skills-page` -- one wrapper around both branches below rather than
+          one testid per branch, since there is no single element common to
+          both that would otherwise need it. `.sk-mcp-page-body`
+          (ManagementPage.scss) replicates `Page`'s own `.sk-page__body` flex
+          layout so this wrapper is transparent to rendering -- a test id must
+          never change what renders; see that class's own doc comment (it
+          also explains why `.sk-list-footer`'s bottom-pinning depended on
+          this). */}
+      <div className="sk-mcp-page-body" data-testid="mcp-page">
+        {/* An empty tree has two causes now that the Global root can be filtered
+            out too (before this it was always present, so `baseTree` was never
+            empty): there is nothing installed at all, or the filters excluded
+            everything there is. Only the first is "no MCP servers yet"; the second
+            must say so and carry a reset, since this page has no in-tree footer
+            reset to fall back on at all. */}
+        {baseTree.length === 0 ? (
+          filtering ? (
+            <div className="sk-empty-filtered">
+              <p className="sk-empty">{t('mcp.emptyFiltered')}</p>
+              <Button variant="secondary" onClick={clearFilters}>
+                {t('skills.resetFilters')}
+              </Button>
             </div>
-          )}
-        </>
-      )}
+          ) : (
+            <p className="sk-empty">{t('mcp.empty')}</p>
+          )
+        ) : (
+          <>
+            <TreeView
+              className="sk-mcp-management-tree"
+              nodes={decorated}
+              onSelect={handleSelect}
+              defaultExpandedIds={expandedIds}
+              onExpandedChange={(ids) => setMcpUi({ expandedIds: ids })}
+              ariaLabel={t('mcp.managementTitle')}
+            />
+            {searching && (
+              <div className="sk-list-footer">
+                <SearchSummary
+                  foundLabel={t.plural('mcp.searchFound', shownMcp)}
+                  totalLabel={t.plural('mcp.searchTotal', totalMcp)}
+                  showAllLabel={t('mcp.showAll')}
+                  onShowAll={() => setQuery('')}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {modals}
     </Page>

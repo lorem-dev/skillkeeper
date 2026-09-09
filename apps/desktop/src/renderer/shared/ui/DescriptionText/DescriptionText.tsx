@@ -34,6 +34,10 @@ export interface DescriptionTextProps {
    *  value. */
   readonly onOpenLink: (url: string) => void;
   readonly className?: string;
+  /** Test id for the rendered span. Generic passthrough -- DescriptionText
+   *  has no product knowledge of it, a caller sets it only for the flows
+   *  that need it. */
+  readonly 'data-testid'?: string;
 }
 
 /** One span plus a stable React key. Keyed by position: spans never reorder
@@ -45,9 +49,9 @@ export function spansToKeyedParts(spans: readonly DescriptionSpan[]): KeyedDescr
   return spans.map((span, index) => ({ ...span, key: String(index) }));
 }
 
-export function DescriptionText({ spans, onOpenLink, className }: DescriptionTextProps) {
+export function DescriptionText({ spans, onOpenLink, className, 'data-testid': testId }: DescriptionTextProps) {
   return (
-    <span className={cx('sk-description', className)}>
+    <span className={cx('sk-description', className)} data-testid={testId}>
       {spansToKeyedParts(spans).map((part) =>
         part.kind === 'text' ? (
           <span key={part.key}>{part.text}</span>

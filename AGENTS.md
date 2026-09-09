@@ -88,15 +88,21 @@ All of these must pass before a pull request is ready.
 ### End-to-end suite
 
 ```bash
-pnpm test:e2e   # Jest, drives the built CLI against examples/test-repo
+pnpm test:e2e:cli   # Jest, drives the built CLI against examples/test-repo
 ```
 
 Separate from the gate above because it needs the fixture submodule and a
 `cargo build`. It covers what the in-memory fakes cannot: the real binary against
 a real working tree. Run it after touching resolution, install, hooks, guidance,
-or MCP. Specs live in `e2e/tests/`, the harness in `e2e/src/cli.ts`; the runner is
+or MCP. Specs live in `e2e/cli/tests/`, the harness in `e2e/cli/src/cli.ts`; the runner is
 Jest (not Vitest) and the suite is scoped to CommonJS -- see
 [docs/development/development.md](./docs/development/development.md#end-to-end-tests).
+
+There is a second, independent suite, `pnpm test:e2e:desktop` (Playwright,
+drives the renderer against a scripted backend; no filesystem, git, or
+network). `pnpm test:e2e` runs both in sequence. See the same section of
+[docs/development/development.md](./docs/development/development.md#end-to-end-tests)
+for its layout.
 
 **Build the CLI with `cargo build -p skillkeeper-cli`, never a bare
 `cargo build`.** Two crates in this workspace produce a binary named
@@ -108,7 +114,7 @@ Jest (not Vitest) and the suite is scoped to CommonJS -- see
 Run the desktop app from that path expecting the CLI and you get a GUI process
 waiting in the window event loop: no output, no error, indistinguishable from a
 hang. Building the CLI package puts the right binary back, cache or not, so
-`pnpm test:e2e` is safe on this (it builds the CLI package and then asserts the
+`pnpm test:e2e:cli` is safe on this (it builds the CLI package and then asserts the
 binary answers `--version`). A hand-run `./target/debug/skillkeeper` right after
 working on the desktop app is where this bites.
 
@@ -317,7 +323,9 @@ more accurately.
 Design specs and implementation plans live in `.superpowers/` which is
 git-ignored. When planning a multi-step task, write a plan there first. The
 `superpowers:writing-plans` skill guides the process. CHANGES.md entries are
-planned at the plan stage, not after the fact.
+planned at the plan stage, not after the fact -- and planned against the rules
+block at the top of `CHANGES.md`, which decides what earns an entry at all.
+Most of a plan's tasks earn none.
 
 ---
 

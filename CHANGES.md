@@ -1,6 +1,51 @@
 # SkillKeeper Changelog
 
+<!--
+  RULES FOR THIS FILE. Read them before adding an entry.
+
+  Audience: someone deciding whether to upgrade. Not a commit log, and not a
+  record of how the code got this way -- that belongs in commit messages and
+  code comments, both of which survive and are searchable.
+
+  LIMITS per version section, counting every bullet across its subsections:
+    soft  10  -- aim for this. Over it, look for entries to merge or cut.
+    hard  50  -- a release must not ship with more. Merge related entries into
+                 one that names the feature, or cut what does not affect a
+                 user.
+
+  What goes in:
+    - A feature, option or command a user can now use.
+    - A change in behaviour they would otherwise be surprised by.
+    - A fix for something that was BROKEN IN A RELEASED VERSION.
+    - A removal, or anything needing action on upgrade.
+
+  What stays out:
+    - Anything fixed before it ever shipped. If a released version never had
+      the bug, the changelog has nothing to say about it. Before the first
+      release, that is every fix.
+    - Refactoring, test changes, CI, internal renames, dependency bumps with
+      no user-visible effect.
+    - The reasoning behind a change. One clause of why is fine when it changes
+      what a reader does; an essay is not.
+
+  Form:
+    - One entry per user-visible thing. Present tense, active voice.
+    - Name the command or option in backticks, so it is greppable.
+    - Wrap at 80 columns. ASCII only (see AGENTS.md).
+
+  Sections: `## Development` collects unreleased entries. `bump-version`
+  promotes it to `## Version <v>` and `release-notes.mjs` extracts that section
+  for the GitHub release, so the heading format matters.
+-->
+
 ## Development
+
+## Version 0.7.1
+
+### Changed
+
+- Adding a repository that fails now keeps the dialog open and states the
+  reason, instead of closing and leaving only a notification.
 
 ## Version 0.7.0
 

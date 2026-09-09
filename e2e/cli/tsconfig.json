@@ -10,7 +10,7 @@
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2023"],
-    // node16 rather than the deprecated node10: e2e/package.json declares this
+    // node16 rather than the deprecated node10: e2e/cli/package.json declares this
     // directory CommonJS, so node16 emits require() while staying a current,
     // non-deprecated setting under TypeScript 6.
     "module": "node16",

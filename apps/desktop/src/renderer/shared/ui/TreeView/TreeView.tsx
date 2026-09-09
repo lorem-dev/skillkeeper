@@ -54,6 +54,22 @@ export interface TreeNode {
   readonly selectable?: boolean;
   /** Dim the row (e.g. an orphaned skill whose source is gone). */
   readonly muted?: boolean;
+  /**
+   * Test id for this row (a KIND, e.g. `skill-row` -- never a per-instance
+   * value). Generic passthrough: TreeView has no product knowledge of what it
+   * means, a caller (e.g. `entities/skill`'s tree builders) sets it only for
+   * the nodes an e2e flow needs to reach. Rendered on the `treeitem` element,
+   * which already carries `aria-checked` in checkbox mode, so a specific row
+   * found this way can also be asserted checked/unchecked directly.
+   */
+  readonly rowTestId?: string;
+  /**
+   * An identity data-attribute for this row (e.g. `{ attr: 'skill-id', value:
+   * 'lint-basic' }` renders `data-skill-id="lint-basic"`), placed on the row's
+   * label -- a CHILD of the row, never the row itself, per the e2e
+   * identity-is-a-separate-attribute convention. Generic, like `rowTestId`.
+   */
+  readonly identity?: { readonly attr: string; readonly value: string };
 }
 
 export interface TreeViewProps {
@@ -422,6 +438,10 @@ export function TreeView({
     const labelText = typeof node.label === 'string' ? node.label : undefined;
     if (isOpen) everOpened.current.add(node.id);
     const mountChildren = isOpen || everOpened.current.has(node.id);
+    // See the TreeNode doc comment: both are markup-only passthroughs with no
+    // meaning to TreeView itself.
+    const identityAttrs: Record<string, string> =
+      node.identity !== undefined ? { [`data-${node.identity.attr}`]: node.identity.value } : {};
 
     return (
       <li
@@ -433,6 +453,7 @@ export function TreeView({
           checkState === null ? undefined : checkState === 'indeterminate' ? 'mixed' : checkState === 'checked'
         }
         className="sk-tree__item"
+        data-testid={node.rowTestId}
       >
         <div
           ref={(el) => {
@@ -478,7 +499,7 @@ export function TreeView({
             <span className="sk-tree__chevron sk-tree__chevron--spacer" aria-hidden="true" />
           )}
           {node.icon !== undefined && <span className="sk-tree__icon">{node.icon}</span>}
-          <span className="sk-tree__label" title={labelText}>
+          <span className="sk-tree__label" title={labelText} {...identityAttrs}>
             {node.label}
           </span>
           {renderCount(node, depth, hasChildren)}

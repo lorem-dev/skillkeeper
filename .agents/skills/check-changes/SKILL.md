@@ -32,11 +32,21 @@ release.
    Open `CHANGES.md` and extract every bullet under `## Development`.
 
 4. **Cross-reference.**
-   For each commit that represents a user-visible change (type `feat`, `fix`,
-   `refactor`, or `perf`), check whether a corresponding bullet exists in the
-   Development section. A bullet does not need to quote the commit message
-   verbatim -- it only needs to describe the same change at a short summary
-   level.
+   `CHANGES.md` opens with a comment block stating what qualifies for an entry.
+   Read it first; it is authoritative and the rules below restate only what
+   this check needs.
+
+   A commit needs a bullet when it adds something a user can use, changes
+   behaviour they would be surprised by, removes something, or fixes a bug
+   that was BROKEN IN A RELEASED VERSION. A bullet does not need to quote the
+   commit message -- it only needs to describe the same change.
+
+   A commit does NOT need one when it is refactoring, a test, CI, an internal
+   rename, or a dependency bump with no user-visible effect. Nor when it fixes
+   a bug that never shipped: if the last released version did not have the
+   defect, the changelog has nothing to say about it. That case is common on a
+   long branch and is the one most often reported as a false gap -- check the
+   bug's origin before flagging a missing entry, not just the commit's type.
 
 5. **Check each bullet against the length rule.**
    Per the "Changelog Entries" section of CONTRIBUTING.md, a bullet is at most
@@ -45,15 +55,23 @@ release.
    ones that exceed it, with their count. Do not measure released `## Version`
    sections -- a section is frozen once cut and is never rewritten.
 
-6. **Report findings.**
+6. **Check the section against the entry-count limits.**
+   `CHANGES.md`'s comment block sets a soft limit of **10** bullets per version
+   section and a hard limit of **50**, counting every bullet across its
+   subsections. Report the count. Over the soft limit, name the entries that
+   look mergeable or cuttable. Over the hard limit, say plainly that the
+   release must not ship until they are merged or cut.
+
+7. **Report findings.**
    - List commits with NO changelog entry (missing entries -- these must be
      added).
    - List changelog bullets that appear to describe nothing in the commit
      history (stale or speculative entries -- flag for author review).
    - List bullets over the 25-word limit, each with its count, and propose a
      shorter wording.
+   - Report the section's bullet count against the soft and hard limits.
    - If everything matches, report "CHANGES.md is current."
 
-7. **Do not edit CHANGES.md automatically.**
+8. **Do not edit CHANGES.md automatically.**
    Propose the missing bullets in your report and let the developer apply them.
    The developer owns the changelog wording.

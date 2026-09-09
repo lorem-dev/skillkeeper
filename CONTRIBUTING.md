@@ -42,6 +42,10 @@ Every user-visible change gets a bullet under `## Development` in
 [`CHANGES.md`](CHANGES.md), grouped under `### Added`, `### Changed`, or
 `### Fixed`.
 
+`CHANGES.md` opens with a comment block stating what qualifies for an entry and
+what does not. That block is authoritative; read it before adding a bullet. The
+rules below are additional, not a summary of it.
+
 **Rules:**
 
 - Keep each bullet to 25 words or fewer, counted as whitespace-separated

@@ -119,7 +119,9 @@ export function RepositoryCard({
     <Card className="sk-repo-card">
       <div className="sk-repo-card__main">
         <span className="sk-repo-card__name-row">
-          <span className="sk-repo-card__name">{repository.name}</span>
+          <span className="sk-repo-card__name" data-repo-name={repository.name}>
+            {repository.name}
+          </span>
           <AnimatePresence mode="wait" initial={false}>
             {indicatorKey !== null && (
               <motion.span
@@ -164,6 +166,7 @@ export function RepositoryCard({
                   <button
                     type="button"
                     className="sk-repo-card__branch"
+                    data-testid="repo-row-branch"
                     onClick={onBranchClick}
                     aria-label={branchCopyLabel}
                   >
