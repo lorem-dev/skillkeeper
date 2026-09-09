@@ -12,7 +12,18 @@
  */
 import { test, expect } from '../harness/fixture';
 import type { Page } from '@playwright/test';
-import { flatAndGrouped, installable, withDependency } from '../fixtures/skills';
+import {
+  flatAndGrouped,
+  installable,
+  withDependency,
+  flatSkillLeafId,
+  groupedSkillGroupId,
+  nestedSkillGroupId,
+  installableSkillRowId,
+  installableSkillInstallCheckboxId,
+  needsDependencySkillRowId,
+  dependedOnSkillInstallCheckboxId,
+} from '../fixtures/skills';
 
 /**
  * A `skill-group` row identified by its `data-group-id`, found via its
@@ -40,15 +51,17 @@ test.describe('browsing skills', () => {
     // name, and expanding it is what reveals the flat skill and the group.
     await page.getByText('skills-repo', { exact: true }).click();
 
-    const flatSkill = page.getByTestId('skill-row').filter({ has: page.locator('[data-skill-id="flat-skill"]') });
+    const flatSkill = page
+      .getByTestId('skill-row')
+      .filter({ has: page.locator(`[data-skill-id="${flatSkillLeafId()}"]`) });
     await expect(flatSkill).toBeVisible();
 
-    const group = groupRow(page, 'platform');
+    const group = groupRow(page, groupedSkillGroupId());
     await expect(group).toBeVisible();
 
     // Expanding the group reveals the nested group underneath it.
     await group.click();
-    const nestedGroup = groupRow(page, 'platform/lint');
+    const nestedGroup = groupRow(page, nestedSkillGroupId());
     await expect(nestedGroup).toBeVisible();
   });
 });
@@ -64,7 +77,9 @@ test.describe('installing a skill', () => {
 
     // Checking the skill row (a leaf click toggles its checkbox -- see
     // `TreeView`'s `activateRow`) reveals the dock's "Install" button.
-    const row = page.getByTestId('skill-row').filter({ has: page.locator('[data-skill-id="installable-skill"]') });
+    const row = page
+      .getByTestId('skill-row')
+      .filter({ has: page.locator(`[data-skill-id="${installableSkillRowId()}"]`) });
     await row.click();
 
     await page.getByTestId('skill-install-open').click();
@@ -81,7 +96,7 @@ test.describe('installing a skill', () => {
     // hand pick (`seedInstallSelection`).
     const checkbox = page
       .getByTestId('skill-install-checkbox')
-      .filter({ has: page.locator('[data-skill-id="installable-skill"]') });
+      .filter({ has: page.locator(`[data-skill-id="${installableSkillInstallCheckboxId()}"]`) });
     await expect(checkbox).toHaveAttribute('aria-checked', 'true');
 
     // Save is a double-confirm: the first click only arms it.
@@ -155,7 +170,9 @@ test.describe('a skill with dependencies', () => {
     await page.getByTestId('nav-skills-components').click();
     await expect(page.getByTestId('skills-page')).toBeVisible();
 
-    const dependent = page.getByTestId('skill-row').filter({ has: page.locator('[data-skill-id="needs-dependency"]') });
+    const dependent = page
+      .getByTestId('skill-row')
+      .filter({ has: page.locator(`[data-skill-id="${needsDependencySkillRowId()}"]`) });
     await dependent.click();
 
     await page.getByTestId('skill-install-open').click();
@@ -165,7 +182,7 @@ test.describe('a skill with dependencies', () => {
 
     const dependencyRow = page
       .getByTestId('skill-install-checkbox')
-      .filter({ has: page.locator('[data-skill-id="depended-on-skill"]') });
+      .filter({ has: page.locator(`[data-skill-id="${dependedOnSkillInstallCheckboxId()}"]`) });
     await expect(dependencyRow).toHaveAttribute('aria-checked', 'true');
     await expect(dependencyRow.getByTestId('skill-install-required-badge')).toBeVisible();
 

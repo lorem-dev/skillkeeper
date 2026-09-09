@@ -75,16 +75,14 @@ export function Toasts() {
             key={toast.id}
             type="button"
             className="sk-toasts__item"
-            // e2e (flow 12, `mcp.spec.ts`): the mcp update preflight refusal
-            // this task guards against surfaces as a toast, not a modal (see
-            // `pages/Mcp/useMcpActions.tsx`'s `startMcpUpdateAsync`) -- this
-            // is the one addressable DOM surface it reaches. Deliberately not
-            // conditioned on `toast` content: `Toasts` is generic, cross-
-            // cutting UI with no MCP knowledge, and every spec that reaches
-            // this asserts against exactly one active toast, so a KIND-only
-            // testid (every toast gets it) is sufficient without teaching
-            // this component about any one caller's message.
-            data-testid="mcp-update-error"
+            // `Toasts` is generic, cross-cutting UI with no feature knowledge
+            // -- the testid names the KIND ("a toast"), never any one
+            // caller's identity, exactly like every other generic component
+            // in this suite. A spec that needs a specific toast (e.g. flow
+            // 12's mcp update preflight refusal, `mcp.spec.ts`) scopes further
+            // by the toast's own text, which `resolveNotification` renders
+            // below.
+            data-testid="toast"
             // A toast that carries documentation opens it, since the toast is
             // gone in five seconds and the log entry behind it is easy to miss.
             // Without one, clicking just dismisses, as before.

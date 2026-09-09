@@ -161,7 +161,7 @@ test.describe('an mcp update the agent cannot express', () => {
     // 'transport'`); `runMcpUpdate` (`useMcpActions.tsx`) turns that into an
     // info-level `notify`, which surfaces as a toast -- there is no modal in
     // this path at all, so there is nothing to press Confirm on.
-    const toast = page.getByTestId('mcp-update-error');
+    const toast = page.getByTestId('toast');
     await expect(toast).toContainText('Codex');
     await expect(toast).toContainText('http');
 
