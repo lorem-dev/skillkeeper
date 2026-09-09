@@ -21,7 +21,10 @@ test.describe('tracking a project', () => {
       .getByTestId('project-card')
       .filter({ has: page.locator('[data-project-id="tracked-project-id"]') });
     await expect(card).toBeVisible();
-    await expect(card.getByTestId('project-card-agents')).toBeVisible();
+    // Asserts the label text, not just visibility: `agentCount: 2`
+    // (`fixtures/projects.ts`) is set specifically to make this badge
+    // render at all, so its actual count should be read back too.
+    await expect(card.getByTestId('project-card-agents')).toHaveText('2 agents');
   });
 });
 

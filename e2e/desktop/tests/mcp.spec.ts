@@ -101,7 +101,16 @@ test.describe('installing an mcp server with a description and an option paramet
     await page.getByTestId('mcp-install-submit').click();
     await expect(modal).toBeHidden();
 
-    expect(await app.calls('mcp_apply')).toHaveLength(1);
+    const applyCalls = await app.calls('mcp_apply');
+    expect(applyCalls).toHaveLength(1);
+    // Not just "was called once" -- a Select that always submitted its FIRST
+    // option (United States) regardless of the click above would pass that
+    // check too. This confirms the chosen option ("Europe", value `eu`)
+    // actually reached `mcp_apply`'s payload.
+    const { batches } = (
+      applyCalls[0] as { args: { batches: readonly { install: readonly { values: Record<string, string> }[] }[] } }
+    ).args;
+    expect(batches.flatMap((batch) => batch.install).map((install) => install.values)).toEqual([{ region: 'eu' }]);
   });
 });
 
@@ -165,9 +174,19 @@ test.describe('an mcp update the agent cannot express', () => {
     await expect(toast).toContainText('Codex');
     await expect(toast).toContainText('http');
 
-    // The point of the 0.7.0 fix: `update_inner` skips codex's write and
-    // `continue`s BEFORE `remove_mcp_instance` for it, so the instance is
-    // never removed -- the row must still be there afterward.
+    // What this proves, and what it does not: the skip message reaches the
+    // user and `mcp_update` was called exactly once -- both asserted below.
+    // It does NOT prove the instance survived the update on the backend: this
+    // scenario's `mcp_installs` (`fixtures/mcp.ts`'s `installedInstance()`)
+    // answers with the same fixed row regardless of what `mcp_update` itself
+    // returned, so `row` being visible here is the harness's fixed answer,
+    // not a falsifiable check on `updateMcp`'s effect. Making it falsifiable
+    // needs `mcp_installs` to answer differently before and after
+    // `mcp_update` runs -- a sequenced/gated-response mechanism this harness
+    // does not have (see `fixtures/base.ts`'s `emit()` doc comment; that
+    // mechanism is scoped as its own, unbuilt, task). The claim that the
+    // instance is never removed -- the actual point of the 0.7.0 fix -- is
+    // covered instead by `update_inner`'s own Rust tests.
     await expect(row).toBeVisible();
 
     expect(await app.calls('mcp_update')).toHaveLength(1);
