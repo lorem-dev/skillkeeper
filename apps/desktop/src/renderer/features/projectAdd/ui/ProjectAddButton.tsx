@@ -31,7 +31,7 @@ export function ProjectAddButton() {
   }
 
   return (
-    <Button variant="primary" glass loading={busy} onClick={() => void pick()}>
+    <Button variant="primary" glass loading={busy} data-testid="project-add-button" onClick={() => void pick()}>
       {t('projects.add')}
     </Button>
   );

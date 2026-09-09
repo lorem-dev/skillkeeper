@@ -101,7 +101,7 @@ export function ProjectCard({
 }: ProjectCardProps) {
   const washHue = hueFromName(project.name);
   return (
-    <Card className="sk-project-card">
+    <Card className="sk-project-card" data-testid="project-card">
       {/* Decorative left wash: a blurred, scaled copy of the project icon when
           there is one, else a soft colour field keyed to the project name. It
           fades to transparent toward the centre. The name-keyed gradient is
@@ -135,7 +135,9 @@ export function ProjectCard({
       <ProjectIcon iconUrl={iconUrl} name={project.name} size={18} className="sk-project-card__leading-icon" />
       <div className="sk-project-card__main">
         <span className="sk-project-card__name-row">
-          <span className="sk-project-card__name">{truncateEnd(project.name, NAME_MAX)}</span>
+          <span className="sk-project-card__name" data-project-id={project.id}>
+            {truncateEnd(project.name, NAME_MAX)}
+          </span>
           <AnimatePresence initial={false}>
             {missing === true && (
               <motion.span
@@ -146,7 +148,11 @@ export function ProjectCard({
                 transition={transitionFast}
               >
                 <Tooltip content={missingLabel}>
-                  <span className="sk-project-card__missing-dot" aria-label={missingLabel} />
+                  <span
+                    className="sk-project-card__missing-dot"
+                    aria-label={missingLabel}
+                    data-testid="project-card-folder-missing"
+                  />
                 </Tooltip>
               </motion.span>
             )}
@@ -191,7 +197,9 @@ export function ProjectCard({
               )}
               {agentsLabel !== undefined && (
                 <Tooltip content={agentsHint ?? ''}>
-                  <Badge tone="neutral">{agentsLabel}</Badge>
+                  <Badge tone="neutral" data-testid="project-card-agents">
+                    {agentsLabel}
+                  </Badge>
                 </Tooltip>
               )}
             </>

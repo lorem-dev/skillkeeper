@@ -175,10 +175,16 @@ export function McpInstallModal({
       onClose={busy ? () => {} : onClose}
       title={t('mcp.installTitle', { name: preset.name })}
       className="sk-mcp-install"
+      data-testid="mcp-install-modal"
     >
       <div className="sk-mcp-install__form">
         {serverSpans !== undefined && (
-          <DescriptionText spans={serverSpans} onOpenLink={openLink} className="sk-mcp-install__description" />
+          <DescriptionText
+            spans={serverSpans}
+            onOpenLink={openLink}
+            className="sk-mcp-install__description"
+            data-testid="mcp-install-description"
+          />
         )}
 
         <label className="sk-mcp-install__field">
@@ -227,8 +233,19 @@ export function McpInstallModal({
               const options = meta?.options ?? [];
               const paramSpans = spansForParam(preset, descriptionSpans, param);
               return (
-                <label className="sk-mcp-install__field" key={param}>
-                  <span className="sk-mcp-install__param-label">{param}</span>
+                // e2e (flow 7, `mcp.spec.ts`): the field's kind (input or
+                // select) sits on this row's own testid; `data-param-name` (on
+                // the child label span below, never this row itself, per the
+                // e2e identity-is-a-separate-attribute convention) names which
+                // parameter it is.
+                <label
+                  className="sk-mcp-install__field"
+                  key={param}
+                  data-testid={options.length > 0 ? 'mcp-param-select' : 'mcp-param-input'}
+                >
+                  <span className="sk-mcp-install__param-label" data-param-name={param}>
+                    {param}
+                  </span>
                   {paramSpans !== undefined && (
                     <DescriptionText spans={paramSpans} onOpenLink={openLink} className="sk-mcp-install__param-help" />
                   )}
@@ -271,7 +288,12 @@ export function McpInstallModal({
           <Button variant="secondary" disabled={busy} onClick={onClose}>
             {t('mcp.cancel')}
           </Button>
-          <Button variant="primary" disabled={!canConfirm} onClick={() => void confirm()}>
+          <Button
+            variant="primary"
+            disabled={!canConfirm}
+            onClick={() => void confirm()}
+            data-testid="mcp-install-submit"
+          >
             {t('mcp.install')}
           </Button>
         </div>

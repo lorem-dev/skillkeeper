@@ -20,8 +20,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-/** Repository root, from this file's location (e2e/src -> ../..). */
-export const REPO_ROOT = resolve(__dirname, '..', '..');
+/** Repository root, from this file's location (e2e/cli/src -> ../../..). */
+export const REPO_ROOT = resolve(__dirname, '..', '..', '..');
 
 /** The fixture submodule's working tree. */
 export const FIXTURE_DIR = join(REPO_ROOT, 'examples', 'test-repo');
@@ -43,7 +43,7 @@ export interface CliResult {
 export function assertCliBuilt(): void {
   if (!existsSync(CLI_BIN)) {
     throw new Error(
-      `CLI not built at ${CLI_BIN}. Run "pnpm test:e2e", which builds it first, ` +
+      `CLI not built at ${CLI_BIN}. Run "pnpm test:e2e:cli", which builds it first, ` +
         'or "cargo build -p skillkeeper-cli".',
     );
   }

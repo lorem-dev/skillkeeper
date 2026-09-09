@@ -75,6 +75,14 @@ export function Toasts() {
             key={toast.id}
             type="button"
             className="sk-toasts__item"
+            // `Toasts` is generic, cross-cutting UI with no feature knowledge
+            // -- the testid names the KIND ("a toast"), never any one
+            // caller's identity, exactly like every other generic component
+            // in this suite. A spec that needs a specific toast (e.g. flow
+            // 12's mcp update preflight refusal, `mcp.spec.ts`) scopes further
+            // by the toast's own text, which `resolveNotification` renders
+            // below.
+            data-testid="toast"
             // A toast that carries documentation opens it, since the toast is
             // gone in five seconds and the log entry behind it is easy to miss.
             // Without one, clicking just dismisses, as before.

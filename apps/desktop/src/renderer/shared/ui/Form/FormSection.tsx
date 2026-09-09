@@ -15,12 +15,33 @@ export interface FormSectionProps {
   /** FormRows (or any rows). */
   readonly children: ReactNode;
   readonly className?: string;
+  /** Test id for this section container (a KIND, e.g. `settings-section` --
+   *  never a per-instance value). Generic passthrough: FormSection has no
+   *  product knowledge of it, a caller sets it only for the flows that need
+   *  it. */
+  readonly 'data-testid'?: string;
+  /** An identity for this section (e.g. `general`), rendered as
+   *  `data-section-id` on the title -- a CHILD of the section, never the
+   *  section itself, per the e2e identity-is-a-separate-attribute convention
+   *  (mirrors `TreeNode.identity`). Only meaningful when `title` is set. */
+  readonly sectionId?: string;
 }
 
-export function FormSection({ title, footer, children, className }: FormSectionProps) {
+export function FormSection({
+  title,
+  footer,
+  children,
+  className,
+  'data-testid': testId,
+  sectionId,
+}: FormSectionProps) {
   return (
-    <section className={cx('sk-form-section', className)}>
-      {title !== undefined && <h2 className="sk-form-section__title">{title}</h2>}
+    <section className={cx('sk-form-section', className)} data-testid={testId}>
+      {title !== undefined && (
+        <h2 className="sk-form-section__title" data-section-id={sectionId}>
+          {title}
+        </h2>
+      )}
       <div className="sk-form-section__body" role="group">
         {children}
       </div>

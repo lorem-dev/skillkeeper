@@ -31,6 +31,9 @@ export interface ModalProps {
   readonly title?: ReactNode;
   readonly children?: ReactNode;
   readonly className?: string;
+  /** Test id for the dialog element. Generic passthrough -- Modal has no
+   *  product knowledge of it, a caller sets it for the flows that need it. */
+  readonly 'data-testid'?: string;
 }
 
 // Height of a top/bottom fade block when that edge has hidden content.
@@ -55,7 +58,7 @@ function updateFades(viewport: HTMLDivElement, scrim: HTMLDivElement): void {
   scrim.style.setProperty('--sk-modal-fade-bottom', hasHiddenBottom ? `${FADE_PX}px` : '0px');
 }
 
-export function Modal({ open, onClose, title, children, className }: ModalProps) {
+export function Modal({ open, onClose, title, children, className, 'data-testid': testId }: ModalProps) {
   const scrimRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -119,6 +122,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
                 animate="animate"
                 exit="exit"
                 onClick={(e) => e.stopPropagation()}
+                data-testid={testId}
               >
                 {title !== undefined && <div className="sk-modal__title">{title}</div>}
                 <div className="sk-modal__body">{children}</div>

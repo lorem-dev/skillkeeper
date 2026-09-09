@@ -13,15 +13,18 @@ export interface SidebarItemProps {
   readonly active?: boolean;
   readonly onClick?: () => void;
   readonly className?: string;
+  /** Test id for driving navigation from an E2E spec (e.g. `nav-repositories`). */
+  readonly 'data-testid'?: string;
 }
 
-export function SidebarItem({ icon, children, active, onClick, className }: SidebarItemProps) {
+export function SidebarItem({ icon, children, active, onClick, className, 'data-testid': testId }: SidebarItemProps) {
   return (
     <button
       type="button"
       className={cx('sk-sidebar-item', active === true && 'sk-sidebar-item--active', className)}
       onClick={onClick}
       aria-current={active === true ? 'page' : undefined}
+      data-testid={testId}
     >
       {icon !== undefined && (
         <span className="sk-sidebar-item__icon" aria-hidden="true">

@@ -24,7 +24,7 @@ its own README explains what each fixture drives.
 
 ## Isolation
 
-The suite never touches the developer's machine state. `e2e/src/cli.ts` is the
+The suite never touches the developer's machine state. `e2e/cli/src/cli.ts` is the
 only way a spec can invoke the CLI, and it always sets **both**:
 
 - `XDG_CONFIG_HOME`, which relocates `state.json` and `config.yaml`
@@ -42,13 +42,13 @@ the machine -- which is why the harness owns them rather than each spec.
 ### 1. Run the suite
 
 ```bash
-pnpm test:e2e
+pnpm test:e2e:cli
 ```
 
 That is the whole check. The script behind it
 (`scripts/e2e-prepare.mjs`) initializes the fixture submodule, force-pulls it to
 the tip of its branch, and builds `target/debug/skillkeeper`; Jest then runs the
-specs in `e2e/tests/`.
+specs in `e2e/cli/tests/`.
 
 Set `SKILLKEEPER_E2E_PIN_FIXTURE=1` to run against the fixture commit this
 repository pins instead of pulling. CI does that for reproducibility; locally
@@ -61,11 +61,13 @@ to look:
 
 | spec | covers | a failure means |
 |---|---|---|
-| `e2e/tests/fixture.spec.ts` | the submodule is checked out, ASCII-only, and still has the manifests and file modes the rest of the suite assumes | the **fixture** drifted |
-| `e2e/tests/skills.spec.ts` | resolution schemes, `.skid.yml` identity, nested body paths, selective `+x`, guidance precedence, hook merge and consent, the delimited-text region, and both silent-failure modes of the resolver | the **product** changed |
-| `e2e/tests/mcp.spec.ts` | preset discovery including the group-scoped file, parameter substitution, both ledger files, the `.gitignore` guard for the secrets file, rules rendering, instance-name allocation, the Codex stdio-only skip, and removal | the **product** changed |
-| `e2e/tests/repair.spec.ts` | `verify` -> `repair` -> `verify`, directory pruning, the bounds that keep repair inside the repaired skill, and uninstall reversing hooks and guidance | the **product** changed |
-| `e2e/tests/requires.spec.ts` | skill dependencies: every `repo lint` code the `requires` group triggers, the single-document `--json` form, both target-misuse exits, the transitive install closure, and the uninstall breakage report | the **product** changed |
+| `e2e/cli/tests/fixture.spec.ts` | the submodule is checked out, ASCII-only, and still has the manifests and file modes the rest of the suite assumes | the **fixture** drifted |
+| `e2e/cli/tests/skills.spec.ts` | resolution schemes, `.skid.yml` identity, nested body paths, selective `+x`, guidance precedence, hook merge and consent, the delimited-text region, and both silent-failure modes of the resolver | the **product** changed |
+| `e2e/cli/tests/mcp.spec.ts` | preset discovery including the group-scoped file, parameter substitution, both ledger files, the `.gitignore` guard for the secrets file, rules rendering, instance-name allocation, the Codex stdio-only skip, and removal | the **product** changed |
+| `e2e/cli/tests/mcp-oauth.spec.ts` | the oauth preset's exact per-agent native shape, the copilot skip, that no agent's config ever carries a client secret, and `repo lint` on the deliberately invalid oauth preset | the **product** changed |
+| `e2e/cli/tests/mcp-parameters.spec.ts` | link rendering, description truncation, option-value validation on install, and every mcp lint warning a description or parameter can trigger | the **product** changed |
+| `e2e/cli/tests/repair.spec.ts` | `verify` -> `repair` -> `verify`, directory pruning, the bounds that keep repair inside the repaired skill, and uninstall reversing hooks and guidance | the **product** changed |
+| `e2e/cli/tests/requires.spec.ts` | skill dependencies: every `repo lint` code the `requires` group triggers, the single-document `--json` form, both target-misuse exits, the transitive install closure, and the uninstall breakage report | the **product** changed |
 
 If `fixture.spec.ts` fails, fix or re-pin the fixture. If it passes and another
 spec fails, the CLI's behaviour moved and the fixture is telling you so.
@@ -90,7 +92,7 @@ git -C examples/test-repo status --porcelain  # expect clean
 ```
 
 Every spec runs the CLI with throwaway `HOME` and `XDG_CONFIG_HOME`
-(`e2e/src/cli.ts`), so a dirty tree here means a test wrote somewhere it should
+(`e2e/cli/src/cli.ts`), so a dirty tree here means a test wrote somewhere it should
 not have -- a blocker, and a harness defect rather than a product one.
 
 Note that a force-pull may legitimately leave the submodule pointer moved; that
@@ -103,7 +105,7 @@ commit the bump on its own.
 Jest already reports per-test results, so summarize rather than restate:
 
 ```
-pnpm test:e2e:            PASS / FAIL (N passed, N failed of 51)
+pnpm test:e2e:cli:        PASS / FAIL (N passed, N failed of 67)
 failing spec(s):          <file> -> <test name>
 attributed to:            fixture drift / product change / harness defect
 working tree clean after: yes / no

@@ -152,6 +152,10 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             <ChangeBadge
               kind={isDependency ? 'add-dependency' : 'add'}
               label={isDependency ? t('skills.status.addDependency') : t('skills.status.add')}
+              // e2e (flow 11, `skills.spec.ts`): marks a dependency the modal
+              // selected on the user's behalf, distinct from a skill the user
+              // checked directly.
+              data-testid={isDependency ? 'skill-install-required-badge' : undefined}
             />
           );
         else detail = undefined;
@@ -205,6 +209,7 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
       onClose={busy ? () => {} : onClose}
       title={t('skills.install.title')}
       className={step === 'tree' ? 'sk-skill-modal sk-skill-modal--wide' : 'sk-skill-modal'}
+      data-testid="skill-install-modal"
     >
       {step === 'project' ? (
         <div className="sk-skill-modal__step">
@@ -261,7 +266,16 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             />
           </div>
           {busy && progress !== null && (
-            <div className="sk-skill-modal__progress">
+            // e2e (flow 3, `skills.spec.ts`): the section a `skills:progress`
+            // event driven through `app.emit` lands in -- the spec reads the
+            // nested `ProgressBar`'s `aria-valuenow` (via its `role`, not a
+            // second test id: one id naming this whole section is enough, and
+            // a separate `skill-install-result` id here would just name the
+            // same element twice under two ids for two halves of one check).
+            // The FLOW's actual result -- did the install succeed -- is
+            // `skill-install-modal` becoming hidden once `save()` resolves;
+            // this section only proves the emitted event was received.
+            <div className="sk-skill-modal__progress" data-testid="skill-install-progress">
               <ProgressBar
                 value={progress.total > 0 ? progress.done / progress.total : undefined}
                 label={t('skills.install.installing')}
@@ -276,7 +290,12 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             <Button variant="secondary" disabled={busy} onClick={() => setStep('project')}>
               {t('skills.install.back')}
             </Button>
-            <Button variant="primary" disabled={!canSave} onClick={() => void save()}>
+            <Button
+              variant="primary"
+              disabled={!canSave}
+              onClick={() => void save()}
+              data-testid="skill-install-submit"
+            >
               {confirming ? t('skills.install.confirm') : t('skills.action.save')}
             </Button>
           </div>

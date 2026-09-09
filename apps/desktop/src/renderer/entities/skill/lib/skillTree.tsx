@@ -174,13 +174,39 @@ export function buildRepoTree(available: readonly AvailableSkill[], repos: reado
     const children = nestByGroup(skills, {
       groupOf: (s) => s.group,
       compare: byName,
-      makeLeaves: (s) => [{ id: repoSkillKey(repo.id, s.group, s.name), label: s.name, icon: skillIcon }],
-      makeGroup: (path, label, kids) => ({
-        id: repoGroupNodeId(repo.id, path),
-        label,
-        icon: groupIcon,
-        children: kids,
-      }),
+      makeLeaves: (s) => {
+        const id = repoSkillKey(repo.id, s.group, s.name);
+        return [
+          {
+            id,
+            label: s.name,
+            icon: skillIcon,
+            // e2e (flows 2/3/11, `skills.spec.ts`): the browse tree's skill row.
+            rowTestId: 'skill-row',
+            // The leaf's own unique tree-node id, never a bare name -- see
+            // `mcpTree.tsx`'s "ROW IDENTITY" comment. Two repositories can
+            // each offer a skill of the same name (or the same skill can show
+            // once under Global and once under a project), and a bare name
+            // would make `[data-skill-id="..."]` match more than one row in
+            // exactly those cases.
+            identity: { attr: 'skill-id', value: id },
+          },
+        ];
+      },
+      makeGroup: (path, label, kids) => {
+        const id = repoGroupNodeId(repo.id, path);
+        return {
+          id,
+          label,
+          icon: groupIcon,
+          children: kids,
+          // e2e (flow 2): a group or nested group in the browse tree.
+          rowTestId: 'skill-group',
+          // The group's own unique tree-node id, not the repo-relative path
+          // alone -- same reasoning as the leaf identity above.
+          identity: { attr: 'group-id', value: id },
+        };
+      },
     });
 
     nodes.push({ id: repoNodeId(repo.id), label: repo.name, icon: repoIcon, selectable: false, children });
@@ -213,13 +239,26 @@ export function buildProjectTree(
       const children = nestByGroup(skills, {
         groupOf: (s) => s.group,
         compare: byName,
-        makeLeaves: (s) => [
-          {
-            id: projectSkillKey(scope.id, repo.id, s.group, s.name),
-            label: s.name,
-            icon: skillIcon,
-          },
-        ],
+        makeLeaves: (s) => {
+          const id = projectSkillKey(scope.id, repo.id, s.group, s.name);
+          return [
+            {
+              id,
+              label: s.name,
+              icon: skillIcon,
+              // e2e (flows 3/11): `buildProjectTree` is used ONLY by
+              // `SkillInstallModal`'s own step-2 tree, so its leaf carries the
+              // modal-scoped checkbox id rather than the browse tree's `skill-row`.
+              rowTestId: 'skill-install-checkbox',
+              // The leaf's own unique tree-node id, never a bare name -- see
+              // `mcpTree.tsx`'s "ROW IDENTITY" comment. This tree spans ALL
+              // selected repositories (`SkillInstallModal`'s step 2), so two
+              // repositories offering a same-named skill would otherwise make
+              // `[data-skill-id="..."]` match more than one row.
+              identity: { attr: 'skill-id', value: id },
+            },
+          ];
+        },
         makeGroup: (path, label, kids) => ({
           id: projectGroupNodeId(scope.id, repo.id, path),
           label,
@@ -452,6 +491,16 @@ export function buildProjectModel(
           label: entry.name,
           icon: skillIcon,
           muted: status === 'orphan',
+          // e2e (flow 2, `skills.spec.ts`): the Skills Management page's browse
+          // tree's skill row -- same kind as `buildRepoTree`'s leaf, since both
+          // are a row representing a skill in a catalog tree.
+          rowTestId: 'skill-row',
+          // The leaf's own unique tree-node id, never a bare name -- see
+          // `mcpTree.tsx`'s "ROW IDENTITY" comment. This tree spans Global and
+          // every tracked project, so the same skill name can legitimately
+          // show once per scope; a bare name would make
+          // `[data-skill-id="..."]` match more than one row.
+          identity: { attr: 'skill-id', value: leafId },
         };
       };
 
@@ -459,13 +508,21 @@ export function buildProjectModel(
         groupOf: (it) => it.entry.group,
         compare: (a, b) => a.entry.name.localeCompare(b.entry.name),
         makeLeaves: (it) => [makeLeaf(it)],
-        makeGroup: (path, label, kids) => ({
-          id: projectGroupNodeId(scope.id, repoId, path),
-          label,
-          icon: groupIcon,
-          muted: kids.every((k) => k.muted === true),
-          children: kids,
-        }),
+        makeGroup: (path, label, kids) => {
+          const id = projectGroupNodeId(scope.id, repoId, path);
+          return {
+            id,
+            label,
+            icon: groupIcon,
+            muted: kids.every((k) => k.muted === true),
+            children: kids,
+            // e2e (flow 2): a group or nested group in the browse tree.
+            rowTestId: 'skill-group',
+            // The group's own unique tree-node id, not the repo-relative path
+            // alone -- same reasoning as the leaf identity above.
+            identity: { attr: 'group-id', value: id },
+          };
+        },
       });
 
       repoNodes.push({

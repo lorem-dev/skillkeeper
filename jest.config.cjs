@@ -1,18 +1,21 @@
-// Jest drives the end-to-end suite in `e2e/` only. Unit tests stay on Vitest
-// (`vitest.config.ts`, `pnpm test:cov`) -- the two runners cover different
-// layers and never overlap:
+// Jest drives the end-to-end suite in `e2e/cli/` only; `e2e/desktop/` is
+// Playwright's (see e2e/desktop/playwright.config.ts), driving the renderer in
+// Chromium against a scripted backend rather than a real Git working tree.
+// Unit tests stay on Vitest (`vitest.config.ts`, `pnpm test:cov`) -- these
+// three runners cover different layers and never overlap:
 //
-//   Vitest  pure logic, in-process, coverage-gated at 90%
-//   Jest    the built `skillkeeper` binary against a real Git working tree
+//   Vitest      pure logic, in-process, coverage-gated at 90%
+//   Jest        the built `skillkeeper` binary against a real Git working tree
+//   Playwright  the built renderer bundle in Chromium, against a scripted backend
 //
 // This file is `.cjs` on purpose: the root package.json sets `"type": "module"`,
 // so a `.js` config would be ESM and Jest's config loader plus ts-jest's
-// CommonJS transform are simplest kept out of ESM entirely. See e2e/tsconfig.json.
+// CommonJS transform are simplest kept out of ESM entirely. See e2e/cli/tsconfig.json.
 /** @type {import('jest').Config} */
 module.exports = {
   rootDir: __dirname,
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/e2e/tests/**/*.spec.ts'],
+  testMatch: ['<rootDir>/e2e/cli/tests/**/*.spec.ts'],
   // Jest's module map otherwise walks the whole tree and trips over duplicate
   // package.json names: `.claude/worktrees/*` holds full checkouts of this same
   // repository (git worktrees for parallel branches), and the fixture submodule
@@ -21,7 +24,7 @@ module.exports = {
   haste: { retainAllFiles: false },
   watchPathIgnorePatterns: ['<rootDir>/.claude/', '<rootDir>/target/'],
   transform: {
-    '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/e2e/tsconfig.json' }],
+    '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/e2e/cli/tsconfig.json' }],
   },
   // Each spec adds a repository, installs skills, and shells out to git; the
   // default 5s is far too tight for real process work on a cold cache.

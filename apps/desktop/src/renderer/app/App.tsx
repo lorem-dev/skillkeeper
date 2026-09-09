@@ -292,6 +292,7 @@ export function App() {
       <div
         className={cx('sk-app', `sk-app--${platform}`, onboardingActive && 'sk-app--onboarding')}
         data-anim={animationMode}
+        data-testid="app-shell"
       >
         <WindowChrome />
         <ConfigBanner />
@@ -302,7 +303,13 @@ export function App() {
             drag/traffic-light zone, so it renders a draggable panel there. */}
           <Sidebar dragRegion={platform === 'mac'}>
             {NAV_ITEMS.map(({ id, key }) => (
-              <SidebarItem key={id} icon={<Icon name={id} />} active={activeView === id} onClick={() => goTo(id)}>
+              <SidebarItem
+                key={id}
+                icon={<Icon name={id} />}
+                active={activeView === id}
+                onClick={() => goTo(id)}
+                data-testid={`nav-${id}`}
+              >
                 {t(key)}
               </SidebarItem>
             ))}
@@ -314,6 +321,7 @@ export function App() {
               icon={<Icon name="skills" />}
               className={cx('sk-sidebar-item--group', skillsOpen && 'sk-sidebar-item--group--open')}
               onClick={() => setSkillsOpen((open) => !open)}
+              data-testid="nav-group-skills"
             >
               {t('nav.skills')}
               <Icon name="chevron-right" size={14} className="sk-nav-group__chevron" />
@@ -332,6 +340,7 @@ export function App() {
                     className="sk-sidebar-item--sub"
                     active={activeView === 'skills-components'}
                     onClick={() => goTo('skills-components')}
+                    data-testid="nav-skills-components"
                   >
                     {t('skills.componentsTitle')}
                   </SidebarItem>
@@ -339,6 +348,7 @@ export function App() {
                     className="sk-sidebar-item--sub"
                     active={activeView === 'skills-management'}
                     onClick={() => goTo('skills-management')}
+                    data-testid="nav-skills-management"
                   >
                     {t('skills.managementTitle')}
                   </SidebarItem>
@@ -356,6 +366,7 @@ export function App() {
               icon={<Icon name="mcp" />}
               className={cx('sk-sidebar-item--group', mcpOpen && 'sk-sidebar-item--group--open')}
               onClick={() => setMcpOpen((open) => !open)}
+              data-testid="nav-group-mcp"
             >
               {t('nav.mcp')}
               <Icon name="chevron-right" size={14} className="sk-nav-group__chevron" />
@@ -374,6 +385,7 @@ export function App() {
                     className="sk-sidebar-item--sub"
                     active={activeView === 'mcp-components'}
                     onClick={() => goTo('mcp-components')}
+                    data-testid="nav-mcp-components"
                   >
                     {t('mcp.componentsTitle')}
                   </SidebarItem>
@@ -381,6 +393,7 @@ export function App() {
                     className="sk-sidebar-item--sub"
                     active={activeView === 'mcp-management'}
                     onClick={() => goTo('mcp-management')}
+                    data-testid="nav-mcp-management"
                   >
                     {t('mcp.managementTitle')}
                   </SidebarItem>
@@ -392,6 +405,7 @@ export function App() {
               icon={<Icon name="settings" />}
               active={activeView === 'settings'}
               onClick={() => goTo('settings')}
+              data-testid="nav-settings"
             >
               {t('nav.settings')}
             </SidebarItem>

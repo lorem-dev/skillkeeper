@@ -1,7 +1,7 @@
 /**
  * MCP descriptions and options end to end: link rendering, description
  * truncation, option-value validation on install, and every mcp lint
- * warning. Model of `e2e/tests/mcp.spec.ts`; reuses the same fixture and
+ * warning. Model of `e2e/cli/tests/mcp.spec.ts`; reuses the same fixture and
  * harness rather than building a second one.
  *
  * The fixtures this exercises are `docs-linked` (a linked description plus a

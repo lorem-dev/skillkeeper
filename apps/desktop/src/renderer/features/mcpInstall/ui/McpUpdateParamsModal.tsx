@@ -100,7 +100,13 @@ export function McpUpdateParamsModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={t('mcp.update')} className="sk-mcp-install">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('mcp.update')}
+      className="sk-mcp-install"
+      data-testid="mcp-update-modal"
+    >
       <div className="sk-mcp-install__form">
         <div className="sk-mcp-install__params">
           <span className="sk-mcp-install__label">{t('mcp.field.parameters')}</span>
@@ -110,8 +116,19 @@ export function McpUpdateParamsModal({
             const paramSpans = spansForParam(preset, descriptionSpans, param);
             const value = values[param] ?? '';
             return (
-              <label className="sk-mcp-install__field" key={param}>
-                <span className="sk-mcp-install__param-label">{param}</span>
+              // e2e (flow 8, `mcp.spec.ts`): the field's kind (input or
+              // select) sits on this row's own testid; `data-param-name` (on
+              // the child label span, never this row itself, per the e2e
+              // identity-is-a-separate-attribute convention) names which
+              // parameter it is. Mirrors `McpInstallModal`'s identical field.
+              <label
+                className="sk-mcp-install__field"
+                key={param}
+                data-testid={options.length > 0 ? 'mcp-param-select' : 'mcp-param-input'}
+              >
+                <span className="sk-mcp-install__param-label" data-param-name={param}>
+                  {param}
+                </span>
                 {paramSpans !== undefined && (
                   <DescriptionText spans={paramSpans} onOpenLink={openLink} className="sk-mcp-install__param-help" />
                 )}
@@ -145,7 +162,7 @@ export function McpUpdateParamsModal({
           <Button variant="secondary" onClick={onClose}>
             {t('mcp.cancel')}
           </Button>
-          <Button variant="primary" disabled={!allFilled} onClick={confirm}>
+          <Button variant="primary" disabled={!allFilled} onClick={confirm} data-testid="mcp-update-submit">
             {t('mcp.update')}
           </Button>
         </div>

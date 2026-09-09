@@ -716,57 +716,68 @@ export function SkillsManagementPage() {
       }
       dock={dock}
     >
-      {/* An empty tree has two causes now that the Global root can be filtered
-          out too (before this it was always present, so `baseTree` was never
-          empty): nothing is tracked at all, or the filters excluded everything
-          that is. Only the first is "no projects tracked yet"; the second must
-          say so and carry its own reset, since the footer that normally holds
-          one is inside the non-empty branch. */}
-      {baseTree.length === 0 ? (
-        filtering ? (
-          <div className="sk-empty-filtered">
-            <p className="sk-empty">{t('skills.emptyFiltered')}</p>
-            <Button variant="secondary" onClick={clearFilters}>
-              {t('skills.resetFilters')}
-            </Button>
-          </div>
-        ) : (
-          <p className="sk-empty">{t('skills.emptyProjects')}</p>
-        )
-      ) : (
-        <>
-          <TreeView
-            className="sk-skills-tree"
-            nodes={decorated}
-            checkable
-            checkedIds={selection.shown}
-            dependencyIds={selection.dependency}
-            onCheckedChange={onCheckedChange}
-            defaultExpandedIds={expandedIds}
-            onExpandedChange={(ids) => setSkillsUi({ expandedIds: ids })}
-            ariaLabel={t('skills.managementTitle')}
-          />
-          {(searching || filtering) && (
-            <div className="sk-list-footer">
-              {searching && (
-                <SearchSummary
-                  foundLabel={t.plural('skills.searchFound', shownSkills)}
-                  totalLabel={t.plural('skills.searchTotal', totalSkills)}
-                  showAllLabel={t('skills.showAll')}
-                  onShowAll={() => setQuery('')}
-                />
-              )}
-              {filtering && (
-                <div className="sk-skills-filter-reset">
-                  <Button variant="secondary" onClick={clearFilters}>
-                    {t('skills.resetFilters')}
-                  </Button>
-                </div>
-              )}
+      {/* e2e (flow 2, `skills.spec.ts`): a stable anchor for "the Skills
+          Management page is showing", mirroring `repositories-page` -- one
+          wrapper around both branches below rather than one testid per
+          branch, since (unlike Repositories) there is no single element common
+          to both that would otherwise need it. `sk-skills-page-body`
+          (SkillsPage.scss) replicates `Page`'s own `.sk-page__body` flex
+          layout so this wrapper is transparent to rendering -- a test id must
+          never change what renders; see that class's own doc comment (it also
+          explains why `.sk-list-footer`'s bottom-pinning depended on this). */}
+      <div className="sk-skills-page-body" data-testid="skills-page">
+        {/* An empty tree has two causes now that the Global root can be filtered
+            out too (before this it was always present, so `baseTree` was never
+            empty): nothing is tracked at all, or the filters excluded everything
+            that is. Only the first is "no projects tracked yet"; the second must
+            say so and carry its own reset, since the footer that normally holds
+            one is inside the non-empty branch. */}
+        {baseTree.length === 0 ? (
+          filtering ? (
+            <div className="sk-empty-filtered">
+              <p className="sk-empty">{t('skills.emptyFiltered')}</p>
+              <Button variant="secondary" onClick={clearFilters}>
+                {t('skills.resetFilters')}
+              </Button>
             </div>
-          )}
-        </>
-      )}
+          ) : (
+            <p className="sk-empty">{t('skills.emptyProjects')}</p>
+          )
+        ) : (
+          <>
+            <TreeView
+              className="sk-skills-tree"
+              nodes={decorated}
+              checkable
+              checkedIds={selection.shown}
+              dependencyIds={selection.dependency}
+              onCheckedChange={onCheckedChange}
+              defaultExpandedIds={expandedIds}
+              onExpandedChange={(ids) => setSkillsUi({ expandedIds: ids })}
+              ariaLabel={t('skills.managementTitle')}
+            />
+            {(searching || filtering) && (
+              <div className="sk-list-footer">
+                {searching && (
+                  <SearchSummary
+                    foundLabel={t.plural('skills.searchFound', shownSkills)}
+                    totalLabel={t.plural('skills.searchTotal', totalSkills)}
+                    showAllLabel={t('skills.showAll')}
+                    onShowAll={() => setQuery('')}
+                  />
+                )}
+                {filtering && (
+                  <div className="sk-skills-filter-reset">
+                    <Button variant="secondary" onClick={clearFilters}>
+                      {t('skills.resetFilters')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
       <AgentChoiceModal
         open={agentChoiceOpen}
         scopeIds={needsAgents}
