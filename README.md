@@ -44,7 +44,9 @@ for updates. Supported agents: Claude, Codex, Copilot, Cursor, and OpenCode.
 
 **CLI** (`skillkeeper`) -- one line, using only tools already on your system. The
 script detects your platform, downloads the matching CLI archive from the latest
-release, and adds the binary to your PATH.
+release, and adds the binary to your PATH. On Linux it reads the host's glibc and
+picks between the glibc build and the statically linked musl one, so it installs
+a binary that runs on old distributions too.
 
 macOS / Linux:
 
@@ -61,8 +63,9 @@ irm https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install
 See [Getting Started](https://lorem-dev.github.io/skillkeeper/latest/getting-started/)
 for other options.
 
-Hitting an install problem (for example macOS reporting the app as "damaged")?
-See [Troubleshooting](https://lorem-dev.github.io/skillkeeper/latest/troubleshooting/).
+Hitting an install problem -- macOS reporting the app as "damaged", or a Linux
+``GLIBC_2.34' not found`` on start? See
+[Troubleshooting](https://lorem-dev.github.io/skillkeeper/latest/troubleshooting/).
 
 ---
 

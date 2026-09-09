@@ -111,35 +111,47 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # `musl_target` is the extra, statically linked CLI-only target this
+          # leg also builds. It is empty everywhere but Linux: the desktop
+          # bundle links the system WebKitGTK stack and cannot be static, and
+          # only glibc's symbol versioning creates the problem musl solves.
+          # See the "Build the CLI (static)" step for the full reasoning.
+          #
           # macOS Apple Silicon
           - os: macos-latest
             target: aarch64-apple-darwin
             args: '--target aarch64-apple-darwin'
+            musl_target: ''
           # macOS Intel (cross-compiled on the arm64 runner)
           - os: macos-latest
             target: x86_64-apple-darwin
             args: '--target x86_64-apple-darwin'
+            musl_target: ''
           # Linux x64. ubuntu-22.04 keeps the AppImage's glibc floor low for
           # broader distro compatibility.
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             args: ''
+            musl_target: x86_64-unknown-linux-musl
           # Linux arm64, built natively on the arm64 runner (free for public
           # repositories). Same 22.04 image as the x64 leg, so both AppImages
           # share a glibc floor.
           - os: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
             args: ''
+            musl_target: aarch64-unknown-linux-musl
           # Windows x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             args: ''
+            musl_target: ''
           # Windows arm64 (cross-compiled on the x64 runner, as macOS Intel is).
           # Only the Rust target changes; Node, pnpm and the frontend build stay
           # on the x64 image.
           - os: windows-latest
             target: aarch64-pc-windows-msvc
             args: '--target aarch64-pc-windows-msvc'
+            musl_target: ''
 
     steps:
       - name: Checkout repository
@@ -167,6 +179,14 @@ jobs:
           # documented subset. A missing patchelf fails the arm64 leg, and
           # `publish` needs every leg -- so the whole release is blocked to save
           # one small download.
+          # Deliberately no musl-tools. rustc links the musl targets
+          # self-contained (it ships musl's libc.a and crt objects with
+          # rust-std) and drives the link through the plain host `cc`, so the
+          # pure-Rust CLI never invokes musl-gcc. Nor would the package buy
+          # future-proofing: if a crate in that tree ever grew a C dependency,
+          # `cc` looks for `aarch64-linux-musl-gcc` on the arm64 leg, which
+          # musl-tools does not ship -- that case needs a real per-arch musl
+          # cross toolchain, not this.
           sudo apt-get install -y -o DPkg::Lock::Timeout=300 \
             patchelf \
             libwebkit2gtk-4.1-dev \
@@ -176,7 +196,8 @@ jobs:
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
         with:
-          targets: ${{ matrix.target }}
+          # Both this leg's target and, on Linux, its static musl companion.
+          targets: ${{ matrix.musl_target != '' && format('{0},{1}', matrix.target, matrix.musl_target) || matrix.target }}
 
       - name: Cache cargo registry and target
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
@@ -442,6 +463,39 @@ jobs:
           tar -czf "dist-cli/skillkeeper-cli-${{ matrix.target }}.tar.gz" \
             -C "target/${{ matrix.target }}/release" skillkeeper
 
+      # -----------------------------------------------------------------------
+      # Second Linux CLI: statically linked against musl.
+      #
+      # The gnu binary above is linked on this runner's glibc (2.35 on the
+      # 22.04 images). glibc versions its symbols and is only forward
+      # compatible, so that binary will not start on an older host -- it dies
+      # with "libc.so.6: version `GLIBC_2.34' not found" before main() runs.
+      # A musl build carries its own libc and depends on nothing, which puts
+      # the whole distro question to rest for the CLI.
+      #
+      # This costs one extra `cargo build` and no new tooling: every crate in
+      # the CLI's tree is pure Rust (git is a subprocess, there is no TLS or
+      # OpenSSL), so the static link needs no C sysroot. It is published
+      # ALONGSIDE the gnu archive, not instead of it -- install.sh picks
+      # between them from the host's glibc, and existing pinned installs keep
+      # resolving the asset name they already know.
+      #
+      # Keep the glibc floor in scripts/install.sh and docs/ in step with the
+      # runner image above; the `check-glibc-floor` skill verifies that.
+      # -----------------------------------------------------------------------
+      - name: Build the CLI (static, musl)
+        if: matrix.musl_target != ''
+        shell: bash
+        run: cargo build --release -p skillkeeper-cli --target ${{ matrix.musl_target }}
+
+      - name: Archive the CLI (tar.gz, musl)
+        if: matrix.musl_target != ''
+        shell: bash
+        run: |
+          mkdir -p dist-cli
+          tar -czf "dist-cli/skillkeeper-cli-${{ matrix.musl_target }}.tar.gz" \
+            -C "target/${{ matrix.musl_target }}/release" skillkeeper
+
       - name: Archive the CLI (zip)
         if: matrix.os == 'windows-latest'
         shell: pwsh
@@ -528,6 +582,34 @@ jobs:
             \) -print0)
           echo "Staged $(find dist -type f | wc -l) files:"
           ls -1 dist
+
+      # The staging step above only rejects DUPLICATE basenames, and
+      # upload-artifact is set to `warn` on no files found -- so a matrix or
+      # `if:` regression that silently skips one archive step would publish a
+      # release missing that asset, and nothing would fail. That is not a
+      # cosmetic gap: scripts/install.sh reacts to a missing musl archive by
+      # falling back to the glibc one with a warning, so an old-distribution
+      # host would install a binary that cannot start. Name every CLI archive
+      # the two installers can ask for and fail the release if one is absent.
+      - name: Verify every CLI archive was built
+        run: |
+          missing=''
+          for a in \
+            skillkeeper-cli-aarch64-apple-darwin.tar.gz \
+            skillkeeper-cli-x86_64-apple-darwin.tar.gz \
+            skillkeeper-cli-x86_64-unknown-linux-gnu.tar.gz \
+            skillkeeper-cli-aarch64-unknown-linux-gnu.tar.gz \
+            skillkeeper-cli-x86_64-unknown-linux-musl.tar.gz \
+            skillkeeper-cli-aarch64-unknown-linux-musl.tar.gz \
+            skillkeeper-cli-x86_64-pc-windows-msvc.zip \
+            skillkeeper-cli-aarch64-pc-windows-msvc.zip; do
+            [ -f "dist/$a" ] || missing="$missing $a"
+          done
+          if [ -n "$missing" ]; then
+            for a in $missing; do echo "::error::Missing release asset: $a"; done
+            exit 1
+          fi
+          echo "All 8 CLI archives present."
 
       # The mcp.yml JSON Schema is generated from the Rust types by `cargo test`
       # and committed, so it ships straight from the checkout -- no build leg

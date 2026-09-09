@@ -163,6 +163,11 @@ jobs:
         uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
         with:
           components: rustfmt, clippy
+          # The two musl targets the release builds the static CLI for, in the
+          # same comma-separated form release.yml passes. Installing them here
+          # means a broken toolchain pin or a mistyped target list fails on a
+          # pull request instead of on the tag, where it would kill the release.
+          targets: x86_64-unknown-linux-musl,aarch64-unknown-linux-musl
 
       - name: Cache cargo registry and target
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
@@ -207,6 +212,22 @@ jobs:
 
       - name: Test workspace
         run: cargo test --workspace
+
+      # The release publishes a statically linked CLI for Linux (see the
+      # "Build the CLI (static, musl)" step in release.yml). Without this, the
+      # first musl link of any change happens on the tag -- and a failure there
+      # stops `publish`, so the tag is dead and has to be deleted and re-cut.
+      #
+      # x64 gets a full `build`, which actually links, because that is what the
+      # release does. arm64 gets `check`: `cargo check` never invokes the
+      # linker, so it cross-compiles here without an aarch64 musl linker, while
+      # still proving the target is installed and the tree compiles for it.
+      # Only the CLI is built -- the desktop app links the system WebKitGTK and
+      # cannot be static.
+      - name: Build the CLI for musl (release parity)
+        run: |
+          cargo build -p skillkeeper-cli --target x86_64-unknown-linux-musl
+          cargo check -p skillkeeper-cli --target aarch64-unknown-linux-musl
 
       # `cargo test` WRITES the generated artifacts (ts-rs bindings, the mcp.yml
       # JSON Schema) rather than asserting them, so a commit that changes a Rust

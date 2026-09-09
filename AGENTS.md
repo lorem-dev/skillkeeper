@@ -390,7 +390,7 @@ backend events via `listen`. It imports the ts-rs-generated types under
 
 ## Local Development Skills
 
-Seven skills live under `.agents/skills/`. Invoke them when the situation calls
+Eight skills live under `.agents/skills/`. Invoke them when the situation calls
 for it:
 
 | Skill | When to use |
@@ -401,7 +401,8 @@ for it:
 | `run-tests-and-linters` | Before marking any task done -- run the full gate (lint, typecheck, test:cov at 90%). |
 | `check-fixture-repo` | After touching resolution, install, hooks, guidance, or MCP -- drive the built CLI against the `examples/test-repo` fixture end to end, in a throwaway state dir. The only check that exercises the real binary against a real working tree. |
 | `check-licenses` | After editing any `package.json` or `Cargo.toml` -- verify all npm and cargo dependencies are license-compliant and update LICENSE. |
-| `pre-release-check` | Before cutting a release -- runs the five `check-*` and `run-*` skills above (not `bump-version`) plus version-bump and commit-format checks. |
+| `check-glibc-floor` | After touching the release workflow's Linux legs, `scripts/install.sh`, or the stated system requirements -- verify the glibc floor agrees everywhere it is written and the static musl CLI is still published. The runner image is the source of truth. |
+| `pre-release-check` | Before cutting a release -- runs the six `check-*` and `run-*` skills above (not `bump-version`) plus version-bump and commit-format checks. |
 
 ---
 
