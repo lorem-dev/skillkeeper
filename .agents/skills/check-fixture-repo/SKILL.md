@@ -42,7 +42,7 @@ the machine -- which is why the harness owns them rather than each spec.
 ### 1. Run the suite
 
 ```bash
-pnpm test:e2e
+pnpm test:e2e:cli
 ```
 
 That is the whole check. The script behind it
@@ -64,6 +64,8 @@ to look:
 | `e2e/cli/tests/fixture.spec.ts` | the submodule is checked out, ASCII-only, and still has the manifests and file modes the rest of the suite assumes | the **fixture** drifted |
 | `e2e/cli/tests/skills.spec.ts` | resolution schemes, `.skid.yml` identity, nested body paths, selective `+x`, guidance precedence, hook merge and consent, the delimited-text region, and both silent-failure modes of the resolver | the **product** changed |
 | `e2e/cli/tests/mcp.spec.ts` | preset discovery including the group-scoped file, parameter substitution, both ledger files, the `.gitignore` guard for the secrets file, rules rendering, instance-name allocation, the Codex stdio-only skip, and removal | the **product** changed |
+| `e2e/cli/tests/mcp-oauth.spec.ts` | the oauth preset's exact per-agent native shape, the copilot skip, that no agent's config ever carries a client secret, and `repo lint` on the deliberately invalid oauth preset | the **product** changed |
+| `e2e/cli/tests/mcp-parameters.spec.ts` | link rendering, description truncation, option-value validation on install, and every mcp lint warning a description or parameter can trigger | the **product** changed |
 | `e2e/cli/tests/repair.spec.ts` | `verify` -> `repair` -> `verify`, directory pruning, the bounds that keep repair inside the repaired skill, and uninstall reversing hooks and guidance | the **product** changed |
 | `e2e/cli/tests/requires.spec.ts` | skill dependencies: every `repo lint` code the `requires` group triggers, the single-document `--json` form, both target-misuse exits, the transitive install closure, and the uninstall breakage report | the **product** changed |
 
@@ -103,7 +105,7 @@ commit the bump on its own.
 Jest already reports per-test results, so summarize rather than restate:
 
 ```
-pnpm test:e2e:            PASS / FAIL (N passed, N failed of 51)
+pnpm test:e2e:cli:        PASS / FAIL (N passed, N failed of 67)
 failing spec(s):          <file> -> <test name>
 attributed to:            fixture drift / product change / harness defect
 working tree clean after: yes / no

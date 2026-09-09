@@ -43,7 +43,7 @@ export interface CliResult {
 export function assertCliBuilt(): void {
   if (!existsSync(CLI_BIN)) {
     throw new Error(
-      `CLI not built at ${CLI_BIN}. Run "pnpm test:e2e", which builds it first, ` +
+      `CLI not built at ${CLI_BIN}. Run "pnpm test:e2e:cli", which builds it first, ` +
         'or "cargo build -p skillkeeper-cli".',
     );
   }

@@ -1,7 +1,7 @@
 // Prepare the end-to-end run: make sure the fixture submodule is present and up
 // to date, then build the binary the specs drive.
 //
-//     node scripts/e2e-prepare.mjs        (run for you by `pnpm test:e2e`)
+//     node scripts/e2e-prepare.mjs        (run for you by `pnpm test:e2e:cli`)
 //
 // By default the fixture is force-pulled, not just initialized: the specs assert
 // against the current fixture, and a stale checkout fails for reasons that have
