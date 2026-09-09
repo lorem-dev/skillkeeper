@@ -45,8 +45,12 @@ Verify that all project documentation is accurate and up to date.
    (e.g., `1.0.0`) must match the version in root `package.json`.
 
 6. **Check CHANGES.md structure.**
-   Confirm the file starts with a `## Development` section and that previous
-   release sections follow the `## Version X.Y.Z` heading format (no date).
+   Confirm the file carries its rules comment block, that `## Development` is
+   the first heading after it, and that previous release sections follow the
+   `## Version X.Y.Z` heading format (no date). The block sits above
+   `## Development` on purpose: `release-notes.mjs` extracts only from a
+   `## Version` heading to the next `## `, so anything above the first one
+   never reaches a GitHub release.
 
 7. **Report.**
    List every issue found (missing files, broken nav links, stale commands,

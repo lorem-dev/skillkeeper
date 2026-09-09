@@ -323,7 +323,9 @@ more accurately.
 Design specs and implementation plans live in `.superpowers/` which is
 git-ignored. When planning a multi-step task, write a plan there first. The
 `superpowers:writing-plans` skill guides the process. CHANGES.md entries are
-planned at the plan stage, not after the fact.
+planned at the plan stage, not after the fact -- and planned against the rules
+block at the top of `CHANGES.md`, which decides what earns an entry at all.
+Most of a plan's tasks earn none.
 
 ---
 
