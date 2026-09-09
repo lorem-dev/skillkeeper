@@ -4,9 +4,17 @@
  */
 import { withScenario } from '../harness/scenario.js';
 import type { Scenario } from '../harness/scenario.js';
-import type { SkillKeeperConfig } from '../../../apps/desktop/src/renderer/services/bridge/generated/config/index.js';
+import type {
+  SkillKeeperConfig,
+  SectionValidity,
+} from '../../../apps/desktop/src/renderer/services/bridge/generated/config/index.js';
 import type { AppUpdateOffer } from '../../../apps/desktop/src/renderer/services/bridge/generated/AppUpdateOffer.js';
 import type { SshKeyDto } from '../../../apps/desktop/src/renderer/services/bridge/contracts.js';
+
+/** The warning `config_get` reports alongside `invalidSection()`'s
+ *  `repositories: 'invalid'`. Exported so the spec can assert its exact text
+ *  reaches `ConfigBanner` rather than merely asserting the banner exists. */
+export const REPOSITORIES_INVALID_WARNING = 'repositories: gitPath must not be empty';
 
 /**
  * `SettingsPage`'s mount round trip: `OpenConfigButton` (the toolbar's editor
@@ -52,6 +60,30 @@ function config(): SkillKeeperConfig {
  *  `SectionValidity` is all-valid (see `config()`'s doc comment). */
 export function settingsPage(): Scenario {
   return withScenario({ config: config(), responses: settingsPageStartupResponses() });
+}
+
+/** The counterpart to `settingsPage()`: same config, but `repositories` is
+ *  reported invalid with one warning -- so the invalid-config banner
+ *  (`ConfigBanner`) has something to actually show, giving the valid case
+ *  above a contrasting negative to be meaningful against. */
+export function invalidSection(): Scenario {
+  const validity: SectionValidity = {
+    general: 'valid',
+    updates: 'valid',
+    agents: 'valid',
+    executables: 'valid',
+    security: 'valid',
+    notifications: 'valid',
+    repositories: 'invalid',
+    projects: 'valid',
+    mcp: 'valid',
+  };
+  return withScenario({
+    config: config(),
+    validity,
+    configWarnings: [REPOSITORIES_INVALID_WARNING],
+    responses: settingsPageStartupResponses(),
+  });
 }
 
 /**

@@ -9,7 +9,7 @@
  * Skills/MCP it has no sub-items to expand first.
  */
 import { test, expect } from '../harness/fixture';
-import { settingsPage, offeredUpdate } from '../fixtures/settings';
+import { settingsPage, invalidSection, offeredUpdate, REPOSITORIES_INVALID_WARNING } from '../fixtures/settings';
 
 test.describe('the settings page', () => {
   test.use({ scenario: settingsPage() });
@@ -31,8 +31,26 @@ test.describe('the settings page', () => {
     // The scenario's `config_get` reports every section 'valid' (see
     // `fixtures/settings.ts`'s `settingsPage`); the user-visible sign of that
     // is that the invalid-config banner (`ConfigBanner`, `role="alert"`)
-    // never appears.
+    // never appears. This assertion only has power to fail paired with the
+    // "an invalid section" test below, which drives the same banner from the
+    // opposite scenario -- on its own it would pass even if `config_get`'s
+    // validity never reached the UI at all.
     await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+});
+
+test.describe('an invalid section', () => {
+  test.use({ scenario: invalidSection() });
+
+  test('the config banner reports the invalid section and its warning', async ({ app, page }) => {
+    await app.goto();
+
+    // `ConfigBanner` is mounted app-wide (`App.tsx`, alongside `WindowChrome`),
+    // not scoped to the Settings page, so it is already visible on the
+    // default Projects view -- no navigation needed for this assertion.
+    const banner = page.getByRole('alert');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText(REPOSITORIES_INVALID_WARNING);
   });
 });
 

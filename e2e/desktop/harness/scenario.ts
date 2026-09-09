@@ -19,7 +19,7 @@
  * enough" fixture; the renderer would reject the same payload from the real
  * backend.
  */
-import type { SkillKeeperConfig, OnboardingState } from '../../../apps/desktop/src/renderer/services/bridge/generated/config/index.js';
+import type { SkillKeeperConfig, OnboardingState, SectionValidity } from '../../../apps/desktop/src/renderer/services/bridge/generated/config/index.js';
 import type { Repository, Project, InstallManifest } from '../../../apps/desktop/src/renderer/services/bridge/generated/core/index.js';
 import type { AvailableSkill, AvailableMcp, McpInstall } from '../../../apps/desktop/src/renderer/services/bridge/contracts.js';
 
@@ -31,6 +31,18 @@ export interface Scenario {
    *  not decoration -- default 'main'. */
   readonly windowLabel: string;
   readonly config: SkillKeeperConfig;
+  /** Per-section validity `config_get` reports alongside `config` (see
+   *  `harness/commands.ts`'s `defaultResponses`). `store.setConfig` reads
+   *  this straight off the result into `configValidity`, and `ConfigBanner`
+   *  reads it back -- a scenario that wants the invalid-config banner visible
+   *  sets one section here to `'invalid'` (and usually pairs it with a
+   *  `configWarnings` entry, since `ConfigBanner` lists `configWarnings`
+   *  underneath the banner text). */
+  readonly validity: SectionValidity;
+  /** Warnings `config_get` reports alongside `validity` -- one human-readable
+   *  line per invalid section, by convention (see `LoadConfigResult`'s own
+   *  doc comment), though nothing enforces that count here. */
+  readonly configWarnings: readonly string[];
   readonly onboarding: OnboardingState;
   readonly repositories: readonly Repository[];
   readonly projects: readonly Project[];
@@ -89,6 +101,22 @@ function emptyManifest(): InstallManifest[] {
   return [];
 }
 
+/** Every config section reported valid -- the default `config_get` validity,
+ *  matching what a config that parsed cleanly resolves to. */
+function allValidValidity(): SectionValidity {
+  return {
+    general: 'valid',
+    updates: 'valid',
+    agents: 'valid',
+    executables: 'valid',
+    security: 'valid',
+    notifications: 'valid',
+    repositories: 'valid',
+    projects: 'valid',
+    mcp: 'valid',
+  };
+}
+
 /**
  * A scenario with a clean, empty-but-valid backend: no repositories, no
  * projects, no installs, onboarding already completed (so the guided tour
@@ -103,6 +131,8 @@ export function defaultScenario(): Scenario {
     platform: 'darwin',
     windowLabel: 'main',
     config: emptyConfig(),
+    validity: allValidValidity(),
+    configWarnings: [],
     onboarding: { version: 1, completed: true, step: 'done' },
     repositories: [],
     projects: [],
