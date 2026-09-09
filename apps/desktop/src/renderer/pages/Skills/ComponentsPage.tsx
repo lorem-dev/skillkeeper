@@ -256,8 +256,10 @@ export function SkillsComponentsPage() {
       {/* e2e (flows 3/11, `skills.spec.ts`): a stable anchor for "the Skills
           Components page is showing" -- see `ManagementPage.tsx`'s matching
           `skills-page` wrapper for why this is one wrapper rather than one
-          testid per branch. */}
-      <div data-testid="skills-page">
+          testid per branch. `sk-skills-page-body` (SkillsPage.scss) replicates
+          `Page`'s own `.sk-page__body` flex layout so this wrapper is
+          transparent to rendering -- see that class's own doc comment. */}
+      <div className="sk-skills-page-body" data-testid="skills-page">
         {baseTree.length === 0 ? (
           <p className="sk-empty">{t('skills.emptyRepositories')}</p>
         ) : (

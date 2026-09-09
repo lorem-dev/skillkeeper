@@ -40,6 +40,35 @@ export interface App {
    * `listen()`/`emit()` use internally (see `installHarness.ts`'s
    * `shouldMockEvents` note) -- e.g. to drive `skills:progress` at a moment
    * the spec chooses, not whenever a real backend operation would have.
+   *
+   * LIMITATION, found by Task 5: this cannot land inside a window bounded by a
+   * SYNCHRONOUSLY-resolving mocked command. `installHarness.ts`'s mocked
+   * `invoke` (the real `@tauri-apps/api/mocks`, read from its own `.cjs`
+   * source) is a plain synchronous callback wrapped in an `async` function
+   * with no internal `await` -- so a store action chaining two or three such
+   * calls (e.g. `applySkills`'s `skills_apply` then `skills_list`) resolves
+   * end to end within a single microtask drain, faster than a second,
+   * separate Playwright round trip (this method included) can ever arrive: by
+   * the time its own `page.evaluate` call reaches the page, the listener the
+   * spec meant to reach has usually already been unregistered. Confirmed with
+   * a four-point diagnostic (`page.evaluate` sampling DOM state after zero,
+   * one, and several microtask/macrotask ticks) before concluding this, not
+   * assumed. There is no way to widen that window from a scenario today --
+   * `Scenario.responses` values are plain, already-resolved data (see this
+   * file's own doc comment on why), not a deferred/gated response a spec
+   * could release on demand.
+   *
+   * Worked example / the only known way around it today:
+   * `e2e/desktop/tests/skills.spec.ts`'s "installing a skill" test inlines the
+   * exact same `plugin:event|emit` invoke call this method makes, sequenced
+   * against the triggering click by microtask ticks (`await
+   * Promise.resolve()`) inside ONE `page.evaluate` -- deterministic JS
+   * ordering, not a timing guess. Read that spec before reaching for a
+   * standalone `app.emit` call anywhere a store action might resolve this
+   * fast (the MCP install flow's `applyMcp`/`updateMcp` are likely candidates:
+   * same synchronous-mock shape). A proper fix -- a scenario-level
+   * gated/deferred response a spec can release on demand -- is intentionally
+   * NOT built here; it is scoped as its own task.
    */
   emit(name: string, payload: unknown): Promise<void>;
   /** Every recorded invocation of `command`, as its `args`, in call order.

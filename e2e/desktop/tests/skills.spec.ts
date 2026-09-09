@@ -102,8 +102,12 @@ test.describe('installing a skill', () => {
     // ordering, not a timing guess -- unlike a real wait, it cannot be
     // "almost long enough". The emitted event is dispatched through the exact
     // same `plugin:event|emit` invoke call `harness/fixture.ts`'s `app.emit`
-    // uses, so this exercises the identical wire path.
-    const resultValueNow = await page.evaluate(async () => {
+    // uses (see that file's doc comment, which now records this limit), so
+    // this exercises the identical wire path. The payload matches the
+    // authoritative `ApplyProgress` shape (`contracts.ts`) in full, including
+    // `label` -- the modal renders it, so an approximated payload would be a
+    // silent product-code path this spec never actually exercises.
+    const progressValueNow = await page.evaluate(async () => {
       const submit = document.querySelector('[data-testid="skill-install-submit"]') as HTMLButtonElement;
       submit.click();
       // One tick for `applySkills`'s synchronous `set({ skillApply: ... })`
@@ -116,15 +120,29 @@ test.describe('installing a skill', () => {
       ).__TAURI_INTERNALS__;
       await internals.invoke('plugin:event|emit', {
         event: 'skills:progress',
-        payload: { done: 1, total: 1 },
+        payload: { done: 1, total: 1, label: 'Installing installable-skill' },
       });
       // One more tick for the emitted update to commit before the apply's own
       // (already in-flight) resolution clears it again.
       await Promise.resolve();
-      return document.querySelector('[data-testid="skill-install-result"]')?.getAttribute('aria-valuenow') ?? null;
+      return (
+        document
+          .querySelector('[data-testid="skill-install-progress"] [role="progressbar"]')
+          ?.getAttribute('aria-valuenow') ?? null
+      );
     });
 
-    expect(resultValueNow).toBe('100');
+    // Proves the emitted event was received: the progress section reflects
+    // the {done: 1, total: 1} the spec pushed, not whatever `skills_apply`'s
+    // own (much faster) resolution would have shown on its own.
+    expect(progressValueNow).toBe('100');
+
+    // The flow's actual result -- a successful apply -- is the modal closing
+    // (`SkillInstallModal.save()` calls `onClose()` only once every op's
+    // `applySkills` call resolves `ok: true`). Web-first: by now the apply has
+    // long since settled (a real round trip past the evaluate above), so this
+    // is asserting a stable end state, not racing a transient one.
+    await expect(page.getByTestId('skill-install-modal')).toBeHidden();
   });
 });
 
@@ -152,5 +170,23 @@ test.describe('a skill with dependencies', () => {
       .filter({ has: page.locator('[data-skill-id="depended-on-skill"]') });
     await expect(dependencyRow).toHaveAttribute('aria-checked', 'true');
     await expect(dependencyRow.getByTestId('skill-install-required-badge')).toBeVisible();
+
+    // The design doc's rule for this flow (`installSelection.ts`'s own header
+    // comment) is that the apply plan is built from the DERIVED checked set,
+    // never the user's hand pick alone -- the mistake that would draw the
+    // dependency correctly and then install none of it. `needs-dependency`
+    // alone is the only hand pick (`skillKeys`); if the plan were built from
+    // that instead of `derived.shown`, `depended-on-skill` would be silently
+    // missing from `skills_apply`'s `install` list below. Submitting and
+    // reading the actually-recorded call is what catches that regression --
+    // asserting the checkbox/badge above only proves the tree DRAWS the
+    // dependency, not that applying it INSTALLS the dependency too.
+    await page.getByTestId('skill-install-submit').click();
+    await page.getByTestId('skill-install-submit').click();
+
+    const calls = await app.calls('skills_apply');
+    expect(calls).toHaveLength(1);
+    const { install } = (calls[0] as { args: { install: readonly { name: string }[] } }).args;
+    expect(install.map((ref) => ref.name).sort()).toEqual(['depended-on-skill', 'needs-dependency']);
   });
 });

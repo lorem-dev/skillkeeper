@@ -266,14 +266,19 @@ export function SkillInstallModal({ open, onClose, skillKeys }: SkillInstallModa
             />
           </div>
           {busy && progress !== null && (
+            // e2e (flow 3, `skills.spec.ts`): the section a `skills:progress`
+            // event driven through `app.emit` lands in -- the spec reads the
+            // nested `ProgressBar`'s `aria-valuenow` (via its `role`, not a
+            // second test id: one id naming this whole section is enough, and
+            // a separate `skill-install-result` id here would just name the
+            // same element twice under two ids for two halves of one check).
+            // The FLOW's actual result -- did the install succeed -- is
+            // `skill-install-modal` becoming hidden once `save()` resolves;
+            // this section only proves the emitted event was received.
             <div className="sk-skill-modal__progress" data-testid="skill-install-progress">
               <ProgressBar
                 value={progress.total > 0 ? progress.done / progress.total : undefined}
                 label={t('skills.install.installing')}
-                // e2e (flow 3, `skills.spec.ts`): asserts the result of a
-                // `skills:progress` event driven through `app.emit` via
-                // `aria-valuenow`, once the spec's {done, total} lands here.
-                data-testid="skill-install-result"
               />
               <span className="sk-skill-modal__progress-label">{progress.label}</span>
             </div>
