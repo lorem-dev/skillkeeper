@@ -1,7 +1,6 @@
 /**
  * Flows 4 and 10 (Projects page): tracking a project, and a project whose
- * folder has gone missing. See `.superpowers/specs/2026-09-09-desktop-ui-e2e-
- * design.md`'s "The flows" section.
+ * folder has gone missing.
  *
  * Projects is the default view (`App.tsx`'s `activeView` starts at
  * 'projects'), so unlike the Repositories and Skills specs, neither test

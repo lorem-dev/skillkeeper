@@ -1,6 +1,5 @@
 /**
- * Scenarios for the Settings page and the self-update surface (flows 5 and 6
- * -- see `.superpowers/specs/2026-09-09-desktop-ui-e2e-design.md`).
+ * Scenarios for the Settings page and the self-update surface (flows 5 and 6).
  */
 import { withScenario } from '../harness/scenario.js';
 import type { Scenario } from '../harness/scenario.js';

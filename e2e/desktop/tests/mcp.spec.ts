@@ -4,10 +4,9 @@
  * installed instance whose preflight reports a missing parameter, and
  * updating one whose update SKIPS an agent that cannot express its
  * transport -- the regression test for the 0.7.0 fix "Updating an MCP
- * server no longer deletes it when the new definition cannot be installed"
- * (see `.superpowers/sdd/2026-09-09-desktop-ui-e2e/task-8-brief.md`, and
- * `task-8-report.md`'s fix-round notes for why flow 12 is NOT a preflight
- * refusal -- that mechanism cannot occur for this cause).
+ * server no longer deletes it when the new definition cannot be installed".
+ * Flow 12 is NOT a preflight refusal -- that mechanism cannot occur for this
+ * cause; the comment on the flow itself explains why.
  *
  * MCP is a two-level sidebar group exactly like Skills (see `App.tsx`'s
  * `NAV_ITEMS` comment): `nav-group-mcp` must be expanded before either of

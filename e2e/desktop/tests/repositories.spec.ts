@@ -1,7 +1,6 @@
 /**
  * Flows 1 and 9 (Repositories page): adding a repository, and a repository
- * that fails to add at all. See `.superpowers/specs/2026-09-09-desktop-ui-e2e-
- * design.md`'s "The flows" section.
+ * that fails to add at all.
  *
  * Each flow needs its own scenario (`repositories_add` answers success in one,
  * failure in the other), so each gets its own `describe` block: `test.use`

@@ -1,9 +1,7 @@
 /**
  * Flows 5 and 6 (Settings and self-update): opening Settings renders every
  * section against an all-valid config, and an offered update completes into
- * the "ready to install" status once `appUpdate:ready` arrives. See
- * `.superpowers/specs/2026-09-09-desktop-ui-e2e-design.md`'s "The flows"
- * section.
+ * the "ready to install" status once `appUpdate:ready` arrives.
  *
  * Settings is a FLAT sidebar item (`nav-settings`), not a group -- unlike
  * Skills/MCP it has no sub-items to expand first.

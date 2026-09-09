@@ -1,6 +1,5 @@
 /**
- * Scenarios for the Repositories page's add flow (flows 1 and 9 -- see
- * `.superpowers/specs/2026-09-09-desktop-ui-e2e-design.md`).
+ * Scenarios for the Repositories page's add flow (flows 1 and 9).
  *
  * Neither `repositories_add`, `repositories_clone`, nor `repositories_describe`
  * has a default answer in `harness/commands.ts`: none of the three is part of

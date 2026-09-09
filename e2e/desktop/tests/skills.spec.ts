@@ -1,8 +1,7 @@
 /**
  * Flows 2, 3 and 11 (Skills pages): browsing the catalog, installing a skill
  * through `SkillInstallModal`, and a skill whose dependency must be selected
- * alongside it. See `.superpowers/specs/2026-09-09-desktop-ui-e2e-design.md`'s
- * "The flows" section.
+ * alongside it.
  *
  * Skills and MCP are not flat sidebar items (see `App.tsx`'s `NAV_ITEMS`
  * comment): the Skills group header must be expanded first, then one of its

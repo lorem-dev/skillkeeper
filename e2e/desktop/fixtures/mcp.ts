@@ -1,8 +1,5 @@
 /**
- * Scenarios for the MCP pages (flows 7, 8 and 12 -- see
- * `.superpowers/sdd/2026-09-09-desktop-ui-e2e/task-8-brief.md`, and the
- * fix-round notes appended to `task-8-report.md` for how flow 12's mechanism
- * and the row-identity scheme below changed after review). All three run on
+ * Scenarios for the MCP pages (flows 7, 8 and 12). All three run on
  * `nav-mcp-management` (`App.tsx`'s two-level MCP sidebar group, and the
  * only MCP page `useMcpActions`'s Install/Update badges are wired into with
  * the testids this task adds).

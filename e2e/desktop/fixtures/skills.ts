@@ -1,6 +1,5 @@
 /**
- * Scenarios for the Skills pages (flows 2, 3 and 11 -- see
- * `.superpowers/specs/2026-09-09-desktop-ui-e2e-design.md`).
+ * Scenarios for the Skills pages (flows 2, 3 and 11).
  *
  * `projects_detect_agents`, `skills_apply` and `skills_list` carry no default
  * answer in `harness/commands.ts`: none is part of `store.loadAll`'s startup

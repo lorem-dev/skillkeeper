@@ -1,6 +1,5 @@
 /**
- * Scenarios for the Projects page (flows 4 and 10 -- see
- * `.superpowers/specs/2026-09-09-desktop-ui-e2e-design.md`).
+ * Scenarios for the Projects page (flows 4 and 10).
  *
  * `App`'s `activeView` starts at `'projects'` (see `App.tsx`), so `ProjectsPage`
  * mounts on every `app.goto()` with no navigation click needed, unlike the
