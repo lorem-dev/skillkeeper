@@ -402,6 +402,7 @@ export function App() {
               icon={<Icon name="settings" />}
               active={activeView === 'settings'}
               onClick={() => goTo('settings')}
+              data-testid="nav-settings"
             >
               {t('nav.settings')}
             </SidebarItem>
