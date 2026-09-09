@@ -20,12 +20,9 @@
  * `DescriptionSpan[]` value satisfies it structurally.
  */
 import { cx } from '../../lib';
+import { spansToKeyedParts } from './spansToKeyedParts';
+import type { DescriptionSpan } from './spansToKeyedParts';
 import './DescriptionText.scss';
-
-/** One piece of a parsed description: plain text, or a link with its own
- *  display text and target url. Structurally identical to the backend's
- *  generated `DescriptionSpan`. */
-export type DescriptionSpan = { kind: 'text'; text: string } | { kind: 'link'; text: string; url: string };
 
 export interface DescriptionTextProps {
   readonly spans: readonly DescriptionSpan[];
@@ -38,15 +35,6 @@ export interface DescriptionTextProps {
    *  has no product knowledge of it, a caller sets it only for the flows
    *  that need it. */
   readonly 'data-testid'?: string;
-}
-
-/** One span plus a stable React key. Keyed by position: spans never reorder
- *  once parsed, so a position-based key stays distinct even when two link
- *  spans repeat the same text and url. */
-export type KeyedDescriptionSpan = DescriptionSpan & { readonly key: string };
-
-export function spansToKeyedParts(spans: readonly DescriptionSpan[]): KeyedDescriptionSpan[] {
-  return spans.map((span, index) => ({ ...span, key: String(index) }));
 }
 
 export function DescriptionText({ spans, onOpenLink, className, 'data-testid': testId }: DescriptionTextProps) {

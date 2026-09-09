@@ -10,7 +10,7 @@ members = [
 
 [workspace.package]
 edition = "2021"
-version = "0.7.1"
+version = "0.7.2"
 license = "Apache-2.0"
 
 [workspace.dependencies]
@@ -23,4 +23,15 @@ hex = "0.4"
 thiserror = "2"
 uuid = { version = "1", features = ["v4"] }
 regex = "1"
-ts-rs = "12"
+# `no-serde-warnings` silences one diagnostic class: ts-rs warns and skips when
+# it meets a serde attribute it cannot model, and `McpParameter::options` uses
+# `deserialize_with` (see `mcp::model::de_options`) which ts-rs has no concept
+# of. Skipping it is correct -- the field always SERIALIZES back as a plain
+# list, so the emitted `Array<McpOption>` is right -- but the warning printed on
+# every `cargo clippy` run regardless.
+#
+# Nothing is lost by silencing it. The generated bindings are committed and CI's
+# "Fail on stale generated artifacts" step diffs them, so if ts-rs ever emits a
+# different shape for this field the build fails with an error instead of a
+# warning nobody reads.
+ts-rs = { version = "12", features = ["no-serde-warnings"] }

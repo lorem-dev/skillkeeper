@@ -46,14 +46,25 @@ if (!existsSync(distDir)) {
 const url = (name) =>
   `https://github.com/${REPO}/releases/download/${encodeURIComponent(rawTag)}/${encodeURIComponent(name)}`;
 
-/** Rust target triple -> human platform, for the CLI archives. */
+/**
+ * Rust target triple -> human platform, for the CLI archives.
+ *
+ * `note` disambiguates two archives that are otherwise the same platform. Linux
+ * ships two builds per architecture and the difference decides whether the
+ * binary starts at all, so it has to be on the label: the gnu one is linked
+ * against the release runner's glibc, the musl one is static and depends on no
+ * libc. Keep the stated glibc version in step with the runner image in
+ * .github/workflows/release.yml (the `check-glibc-floor` skill verifies it).
+ */
 const CLI_TARGETS = {
   'aarch64-apple-darwin': { os: 'macOS', arch: 'Apple Silicon', rank: 1 },
   'x86_64-apple-darwin': { os: 'macOS', arch: 'Intel', rank: 2 },
   'x86_64-pc-windows-msvc': { os: 'Windows', arch: 'x64', rank: 3 },
   'aarch64-pc-windows-msvc': { os: 'Windows', arch: 'arm64', rank: 4 },
-  'x86_64-unknown-linux-gnu': { os: 'Linux', arch: 'x64', rank: 5 },
-  'aarch64-unknown-linux-gnu': { os: 'Linux', arch: 'arm64', rank: 6 },
+  'x86_64-unknown-linux-gnu': { os: 'Linux', arch: 'x64', rank: 5, note: 'glibc 2.35+' },
+  'aarch64-unknown-linux-gnu': { os: 'Linux', arch: 'arm64', rank: 6, note: 'glibc 2.35+' },
+  'x86_64-unknown-linux-musl': { os: 'Linux', arch: 'x64', rank: 7, note: 'static, musl' },
+  'aarch64-unknown-linux-musl': { os: 'Linux', arch: 'arm64', rank: 8, note: 'static, musl' },
 };
 
 /** Desktop bundle extension -> the format shown in the label. */
@@ -104,7 +115,7 @@ for (const name of readdirSync(distDir).sort()) {
     if (known) {
       cli.push({
         name,
-        label: `CLI ${known.os} ${known.arch}`,
+        label: known.note ? `CLI ${known.os} ${known.arch} (${known.note})` : `CLI ${known.os} ${known.arch}`,
         rank: known.rank,
       });
     } else {
@@ -150,7 +161,10 @@ if (cli.length > 0) {
       '```\n\n' +
       '```powershell\n' +
       `irm https://raw.githubusercontent.com/${REPO}/main/scripts/install.ps1 | iex\n` +
-      '```',
+      '```\n\n' +
+      'On Linux the script reads the host glibc and picks between the gnu and ' +
+      'musl builds on its own; choose between them by hand only for a manual ' +
+      'download.',
   );
 }
 
