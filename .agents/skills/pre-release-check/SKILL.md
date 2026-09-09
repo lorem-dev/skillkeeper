@@ -2,9 +2,9 @@
 name: pre-release-check
 description: >
   Gate a release by running check-changes, check-docs, run-tests-and-linters,
-  check-licenses, and check-fixture-repo, plus verifying the version bump and
-  that all commits since the last release follow the conventional-commits
-  format.
+  check-licenses, check-fixture-repo, and check-glibc-floor, plus verifying the
+  version bump and that all commits since the last release follow the
+  conventional-commits format.
 ---
 
 # pre-release-check
@@ -13,7 +13,7 @@ Run the full release gate. All checks must pass before tagging a release.
 
 ## Steps
 
-### 1. Run the five component skills
+### 1. Run the six component skills
 
 Run each skill in order and collect its result (PASS or FAIL with details):
 
@@ -25,7 +25,13 @@ Run each skill in order and collect its result (PASS or FAIL with details):
    against a real working tree, so it catches wiring regressions the unit tests
    (which run against an in-memory filesystem) cannot see.
 4. **check-docs** -- README.md, docs/ nav, command accuracy, version refs.
-5. **check-changes** -- CHANGES.md Development section vs. commit history.
+5. **check-glibc-floor** -- the Linux glibc floor agrees across the release
+   workflow, `scripts/install.sh`, docs/, and the download labels, and the musl
+   CLI is still published. Belongs in the release gate because the floor is set
+   by the runner image the release itself builds on: a bumped image quietly
+   invalidates every stated version, and a raised floor strands hosts that the
+   self-updater will still offer the update to.
+6. **check-changes** -- CHANGES.md Development section vs. commit history.
 
 If check-licenses, run-tests-and-linters, or check-fixture-repo fails, report the
 failure and stop. The remaining checks can still be reported for completeness,
@@ -86,6 +92,7 @@ check-licenses:            PASS / FAIL
 run-tests-and-linters:     PASS / FAIL
 check-fixture-repo:        PASS / FAIL
 check-docs:                PASS / FAIL
+check-glibc-floor:         PASS / FAIL
 check-changes:             PASS / FAIL
 tag provenance (branch):   PASS / FAIL
 version bump consistent:   PASS / FAIL

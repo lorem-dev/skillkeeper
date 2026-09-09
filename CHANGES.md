@@ -40,6 +40,23 @@
 
 ## Development
 
+### Added
+
+- Statically linked musl builds of the CLI for Linux x64 and arm64
+  (`skillkeeper-cli-*-unknown-linux-musl.tar.gz`), published alongside the
+  existing glibc ones. They depend on no system libc, so the CLI now runs on
+  distributions below glibc 2.35.
+
+### Fixed
+
+- The install script picks the Linux build from the host's own glibc, instead of
+  always downloading the glibc one and leaving older distributions with a binary
+  that exits with ``GLIBC_2.34' not found``. Override the choice with
+  `SKILLKEEPER_LIBC=gnu` or `SKILLKEEPER_LIBC=musl`. The desktop app is
+  unaffected and keeps its glibc 2.35 floor: it links the distribution's
+  WebKitGTK, so it has no static build. See
+  [System requirements](https://lorem-dev.github.io/skillkeeper/latest/getting-started/#system-requirements).
+
 ## Version 0.7.1
 
 ### Changed

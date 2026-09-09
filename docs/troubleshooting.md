@@ -66,6 +66,40 @@ Make sure the install directory is on your PATH, then verify with
 `skillkeeper version`. See the [CLI Reference](usage/cli.md) for the available
 commands.
 
+### Linux: "version `GLIBC_2.34' not found" when running skillkeeper
+
+```
+/home/you/.local/bin/skillkeeper: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.34' not found (required by /home/you/.local/bin/skillkeeper)
+```
+
+The install worked and the binary is on disk; it cannot start. The glibc build
+of the CLI is linked against glibc 2.35, and a newer glibc runs older binaries
+but not the reverse, so it needs 2.35 or newer. Nothing is corrupt and
+reinstalling changes nothing.
+
+Use the statically linked musl build instead, which carries its own libc:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install.sh | SKILLKEEPER_LIBC=musl sh
+```
+
+Current releases pick that build automatically, so the variable is only there to
+override a wrong guess. A release older than the musl archives has no musl build
+to install at all; there, build from source
+(`cargo install --path crates/skillkeeper-cli`), which links against the glibc
+you already have.
+
+Upgrading glibc in place is not the fix: the distribution release pins the
+version and every binary on the system links it, so the supported route is a
+full distribution upgrade using that distribution's own tool (Ubuntu 20.04 to
+22.04 or later, Debian 11 to 12; note that even RHEL 9 ships 2.34, below the
+floor). Installing glibc from a third-party repository or building it into
+`/usr` is a known way to leave userspace unusable and needing a rescue
+environment. On a host you cannot upgrade, use the musl build.
+
+The desktop app has the same floor and no musl build, because it links the
+distribution's WebKitGTK.
+
 ## Skills
 
 ### An orange `!` marker on an installed skill

@@ -11,6 +11,20 @@
   Node.js 24+ and pnpm 11 are only needed to build the desktop app's
   renderer, not the CLI.
 
+## System requirements
+
+| Platform | Requirement |
+|---|---|
+| Linux, CLI | Any distribution. Two builds ship: glibc (needs glibc 2.35 or newer) and static musl (needs no system libc). The install script picks one. |
+| Linux, desktop app | glibc 2.35 or newer, plus WebKitGTK 4.1 and libsoup 3. No static build: the app links that stack from the distribution. |
+| macOS | 11 or newer, Intel or Apple Silicon. |
+| Windows | 10 or newer, x64 or arm64. |
+
+The glibc floor is where the release binaries are linked, not a policy choice;
+check yours with `ldd --version`. Building from source links against the glibc
+the host already has, so its floor is the Rust toolchain's own, far lower. For a
+host below the floor, see [Troubleshooting](troubleshooting.md).
+
 ## Installation
 
 SkillKeeper ships two front ends over the same core:
@@ -42,6 +56,10 @@ irm https://raw.githubusercontent.com/lorem-dev/skillkeeper/main/scripts/install
 
 Override the install directory with `SKILLKEEPER_INSTALL_DIR`, or pin a specific
 release with `SKILLKEEPER_VERSION` (for example `v0.1.1`).
+
+On Linux it also reads the host's glibc and takes the static musl build when
+that is below 2.35 or absent, as on Alpine. Both builds are the same CLI;
+override the choice with `SKILLKEEPER_LIBC=gnu` or `SKILLKEEPER_LIBC=musl`.
 
 ### CLI: build from source
 
