@@ -9,7 +9,7 @@
  * whole file.
  */
 import { test, expect } from '../harness/fixture';
-import { oneRepository, cloneFails, duplicateFails } from '../fixtures/repositories';
+import { oneRepository, cloneFails, duplicateFails, addNeverResolves } from '../fixtures/repositories';
 
 test.describe('adding a repository', () => {
   test.use({ scenario: oneRepository() });
@@ -57,5 +57,33 @@ test.describe('a repository that already exists', () => {
     await page.getByTestId('repo-add-submit').click();
     await expect(page.getByTestId('repo-add-error')).toBeVisible();
     await expect(page.getByTestId('repo-row')).toHaveCount(1);
+  });
+});
+
+test.describe('cancelling an add while it is still in flight', () => {
+  test.use({ scenario: addNeverResolves() });
+
+  // Regression for RepoAddButton.tsx: cancelling out of (or dismissing) the
+  // dialog while a submit's `addRepository` call is still outstanding used to
+  // leave `submitting` stuck `true` forever -- neither the stale-token early
+  // return in the `.then`/`.catch` handlers nor `cancel()` itself reset it, so
+  // the Add button stayed disabled on reopen with no way to recover short of
+  // navigating away (which unmounts the form). `repositories_add` never
+  // settles in this scenario (`addNeverResolves`), so the submit is
+  // genuinely still in flight when Close is clicked, not merely fast enough
+  // to look that way.
+  test('the add button is usable again after cancelling mid-flight', async ({ app, page }) => {
+    await app.goto();
+    await page.getByTestId('nav-repositories').click();
+    await page.getByTestId('repo-add-button').click();
+    await page.getByTestId('repo-add-url').fill('https://example.invalid/demo.git');
+    await page.getByTestId('repo-add-submit').click();
+    // Confirms the submit is genuinely in flight before cancelling out of it.
+    await expect(page.getByTestId('repo-add-submit')).toBeDisabled();
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByTestId('repo-add-form')).toBeHidden();
+    await page.getByTestId('repo-add-button').click();
+    await page.getByTestId('repo-add-url').fill('https://example.invalid/demo.git');
+    await expect(page.getByTestId('repo-add-submit')).toBeEnabled();
   });
 });

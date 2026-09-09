@@ -13,6 +13,26 @@ import type { Scenario } from './scenario.js';
 export const UNKNOWN_COMMAND_PREFIX = 'e2e-harness: unmocked command ';
 
 /**
+ * A `Scenario.responses` value meaning "this command's invoke never
+ * settles" -- `installHarness.ts`'s mocked callback returns a `Promise` that
+ * neither resolves nor rejects for it, instead of the value normally looked
+ * up in the response table. For a spec that needs to observe UI state WHILE a
+ * command is still in flight (e.g. cancelling a form before its submit's
+ * promise has a chance to settle), where a plain, already-resolved answer
+ * (see `Scenario`'s own doc comment on why `responses` is plain data) would
+ * settle the call within the same microtask drain the click that triggered it
+ * runs in -- long before Playwright's own round trip could ever observe the
+ * in-flight state.
+ *
+ * Deliberately narrower than a general gated/deferred response mechanism
+ * (see `fixtures/base.ts`'s `emit()` doc comment on why that broader "release
+ * on demand" mechanism is its own, unbuilt, task): a promise answered with
+ * this sentinel has no way to ever be released, so it only suits a spec that
+ * never needs the call to complete.
+ */
+export const NEVER_RESOLVES = 'e2e-harness: never resolves';
+
+/**
  * Default answers keyed by the backend command name as written in
  * `apps/desktop/src/renderer/services/bridge/client.ts`. A scenario's
  * `responses` are merged over this table (see `Scenario` in `scenario.ts`);

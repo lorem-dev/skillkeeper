@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
 import type { Scenario } from './scenario.js';
-import { UNKNOWN_COMMAND_PREFIX, defaultResponses } from './commands.js';
+import { NEVER_RESOLVES, UNKNOWN_COMMAND_PREFIX, defaultResponses } from './commands.js';
 
 /**
  * `@tauri-apps/api/mocks` (`mockIPC`, `mockWindows`) cannot be `import`ed from
@@ -38,6 +38,8 @@ interface HarnessInit {
   readonly scenario: Scenario;
   readonly responses: Record<string, unknown>;
   readonly unknownCommandPrefix: string;
+  /** See `commands.ts`'s `NEVER_RESOLVES` doc comment. */
+  readonly neverResolves: string;
   readonly mocksSource: string;
 }
 
@@ -54,6 +56,7 @@ export async function installHarness(page: Page, scenario: Scenario): Promise<vo
     scenario,
     responses: defaultResponses(scenario),
     unknownCommandPrefix: UNKNOWN_COMMAND_PREFIX,
+    neverResolves: NEVER_RESOLVES,
     mocksSource: TAURI_MOCKS_SOURCE,
   };
 
@@ -128,7 +131,12 @@ export async function installHarness(page: Page, scenario: Scenario): Promise<vo
           unmocked.push({ cmd, message });
           throw new Error(message);
         }
-        return arg.responses[cmd];
+        const response = arg.responses[cmd];
+        // See `commands.ts`'s `NEVER_RESOLVES` doc comment: a scenario opts a
+        // command into this instead of an ordinary answer when a spec needs
+        // to observe the app WHILE that command's invoke is still pending.
+        if (response === arg.neverResolves) return new Promise(() => undefined);
+        return response;
       },
       { shouldMockEvents: true },
     );

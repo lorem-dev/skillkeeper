@@ -12,6 +12,7 @@
  */
 import { withScenario } from '../harness/scenario.js';
 import type { Scenario } from '../harness/scenario.js';
+import { NEVER_RESOLVES } from '../harness/commands.js';
 import type { Repository } from '../../../apps/desktop/src/renderer/services/bridge/generated/core/index.js';
 import type { RepoResult, RepoInfo } from '../../../apps/desktop/src/renderer/services/bridge/contracts.js';
 
@@ -109,6 +110,24 @@ export function duplicateFails(): Scenario {
     responses: {
       repositories_add: failed,
       repositories_describe: info,
+    },
+  });
+}
+
+/**
+ * The scenario for "cancel an add while it is in flight": `repositories_add`
+ * never settles (see `harness/commands.ts`'s `NEVER_RESOLVES`), so a spec can
+ * submit, observe the form's in-flight `submitting` state, cancel out of it,
+ * and reopen the dialog -- all while that original call is still outstanding,
+ * exactly like dismissing the form during a slow clone in real use.
+ * `repositories_clone`/`repositories_describe` stay unmocked on purpose, same
+ * as `cloneFails()` above: `addRepository`'s chain never reaches them while
+ * `repositories_add` itself has not resolved.
+ */
+export function addNeverResolves(): Scenario {
+  return withScenario({
+    responses: {
+      repositories_add: NEVER_RESOLVES,
     },
   });
 }

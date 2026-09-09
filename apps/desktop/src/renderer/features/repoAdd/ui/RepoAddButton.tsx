@@ -5,6 +5,7 @@ import { deriveRepoName, MAX_REPO_NAME_LENGTH } from '@/entities/repository';
 import { resolveNotification } from '@/systems/notifications';
 import { Button, Modal, TextField } from '@/shared/ui';
 import { asSchemeUrl, scpPortMistake } from '../lib/remoteHint';
+import { newestErrorSince } from '../lib/notificationCutoff';
 import './RepoAddButton.scss';
 
 /**
@@ -59,6 +60,7 @@ export function RepoAddButton() {
   const cancel = (): void => {
     submitToken.current += 1;
     setOpen(false);
+    setSubmitting(false);
     reset();
   };
 
@@ -95,7 +97,13 @@ export function RepoAddButton() {
     // present before the call and requiring the matched row's id to be NEW
     // rules that out.
     const idsBefore = new Set(useSkillkeeperStore.getState().repositories.map((r) => r.id));
-    const notificationsBefore = useSkillkeeperStore.getState().notifications.length;
+    // The id of the newest notification logged so far, not the log's length:
+    // `notify` (`app/store/store.ts`) caps the log at `NOTIFICATION_LOG_LIMIT`
+    // (500), so once it is full the array's length stays put while entries
+    // shift left as new ones are appended -- a length snapshot would then read
+    // back an empty slice for a genuinely new entry (see `newestErrorSince`'s
+    // doc comment). Anchoring on this entry's id survives that shift.
+    const lastNotificationIdBefore = useSkillkeeperStore.getState().notifications.at(-1)?.id;
     void addRepository(trimmedUrl, trimmedName)
       .then(() => {
         // The user cancelled or restarted the form before this settled --
@@ -112,7 +120,7 @@ export function RepoAddButton() {
         // Not added: the failure is the newest error `notify`d since this
         // submit started (the add call notifies with the raw backend error,
         // never a rejection -- see the comment above).
-        const failure = state.notifications.slice(notificationsBefore).find((n) => n.level === 'error');
+        const failure = newestErrorSince(state.notifications, lastNotificationIdBefore);
         setSubmitError(failure !== undefined ? resolveNotification(failure, t) : '');
       })
       .catch((err: unknown) => {
