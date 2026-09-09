@@ -25,6 +25,25 @@
   margin: 0 var(--sk-space-3);
 }
 
+// The e2e `mcp-page` test id (ManagementPage.tsx) sits on a wrapper `<div>`
+// around the page body's content (empty state, or tree + footer) --
+// introduced only to give both branches one common anchor. That wrapper is a
+// new element in what was `Page`'s own `.sk-page__body` flex context
+// (`shared/ui/Page/Page.scss`): without this class it becomes a plain block
+// box, and `.sk-list-footer`'s `margin-top: auto` below stops pinning the
+// footer to the bottom of a short tree, since `margin: auto` only resolves
+// against a flex/grid container. Replicates `.sk-page__body`'s own flex
+// properties exactly (not its padding, which stays on the real
+// `.sk-page__body` parent) so the wrapper is transparent to layout -- a test
+// id must never change what renders. Mirrors
+// `pages/Skills/SkillsPage.scss`'s `.sk-skills-page-body`.
+.sk-mcp-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-5);
+  flex: 1 0 auto;
+}
+
 // Spacer between the (sticky) toolbar and the tree. Mirrors McpPage.scss's/
 // ComponentsPage.scss's own tree spacer.
 .sk-mcp-management-tree {

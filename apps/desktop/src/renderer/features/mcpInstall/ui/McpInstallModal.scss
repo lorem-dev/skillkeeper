@@ -36,6 +36,16 @@
   color: var(--sk-color-label-2);
 }
 
+// The preflight-refusal message shown inside `McpUpdateParamsModal` (the
+// 0.7.0 regression case: the source changed to something the agent's config
+// cannot express). Tinted like the other destructive/error surfaces
+// (`app/App.scss`'s `.sk-state--error`), not the neutral `__param-help`
+// hint above -- this is a real failure, not a disabled-button explanation.
+.sk-mcp-install__error {
+  font-size: 13px;
+  color: var(--sk-red);
+}
+
 .sk-mcp-install__agents {
   display: flex;
   flex-wrap: wrap;

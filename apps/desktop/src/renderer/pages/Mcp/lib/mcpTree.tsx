@@ -334,7 +334,23 @@ export function buildMcpProjectTree(
     const rowsFor = (p: RepoPreset): TreeNode[] => {
       const presetLeafId = mcpProjectPresetLeafId(scope.id, p.id);
       items.set(presetLeafId, { kind: 'repo-preset', preset: p });
-      const presetLeaf: TreeNode = { id: presetLeafId, label: p.name, icon: mcpIcon };
+      const presetLeaf: TreeNode = {
+        id: presetLeafId,
+        label: p.name,
+        icon: mcpIcon,
+        // e2e (flow 7, `mcp.spec.ts`): the Management page's per-scope "install
+        // this preset" row. Tagged only here, NOT on the matched "installed"
+        // row rendered beside it a few lines down and NOT on the top-level
+        // catalog leaf above -- a preset with an existing install renders
+        // BOTH this row and that one side by side under the same repo node,
+        // so tagging every occurrence of a preset's name in this tree with
+        // the same `data-mcp-name` would make `.filter({ has: ... })` match
+        // more than one row wherever that overlap exists. The flow that reads
+        // this tag only ever targets a preset with no install yet, so the
+        // ambiguity never arises for it.
+        rowTestId: 'mcp-server-row',
+        identity: { attr: 'mcp-name', value: p.name },
+      };
 
       const matches = projectInstalls.filter((inst) => identityMatchesRepoPreset(inst.identity, p));
       const byInstance = new Map<string, McpInstall[]>();
@@ -411,7 +427,19 @@ export function buildMcpProjectTree(
         const id = mcpInstalledLeafId(scope.id, key);
         const updatable = mcpInstallHasUpdate(first, presets);
         items.set(id, { kind: 'installed', installs: group, updatable });
-        return { id, label: instanceDisplayName(first.identity.source, first.instanceName), icon: mcpIconInstalled };
+        return {
+          id,
+          label: instanceDisplayName(first.identity.source, first.instanceName),
+          icon: mcpIconInstalled,
+          // e2e (flows 8, 12, `mcp.spec.ts`): the Management page's installed
+          // row for a manual preset's instance -- the Update badge's target.
+          // A manual preset has no per-project "install row" duplicate (see
+          // this function's own doc comment), so this is the only row this
+          // instance's name ever renders as, unlike the repo-preset case
+          // above.
+          rowTestId: 'mcp-server-row',
+          identity: { attr: 'mcp-name', value: first.identity.source },
+        };
       });
 
     // Unlinked: installs matching no current preset, bucketed by source/remote.

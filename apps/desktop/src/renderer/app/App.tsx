@@ -366,6 +366,7 @@ export function App() {
               icon={<Icon name="mcp" />}
               className={cx('sk-sidebar-item--group', mcpOpen && 'sk-sidebar-item--group--open')}
               onClick={() => setMcpOpen((open) => !open)}
+              data-testid="nav-group-mcp"
             >
               {t('nav.mcp')}
               <Icon name="chevron-right" size={14} className="sk-nav-group__chevron" />
@@ -384,6 +385,7 @@ export function App() {
                     className="sk-sidebar-item--sub"
                     active={activeView === 'mcp-components'}
                     onClick={() => goTo('mcp-components')}
+                    data-testid="nav-mcp-components"
                   >
                     {t('mcp.componentsTitle')}
                   </SidebarItem>
@@ -391,6 +393,7 @@ export function App() {
                     className="sk-sidebar-item--sub"
                     active={activeView === 'mcp-management'}
                     onClick={() => goTo('mcp-management')}
+                    data-testid="nav-mcp-management"
                   >
                     {t('mcp.managementTitle')}
                   </SidebarItem>
