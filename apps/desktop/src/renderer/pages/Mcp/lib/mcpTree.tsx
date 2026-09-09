@@ -50,6 +50,25 @@
  * `<groupPath>` is the full `/`-joined group prefix up to that level (e.g.
  * `platform` then `platform/lint`), not just the last segment, so a branch
  * at each nesting level gets a distinct id.
+ *
+ * ROW IDENTITY (e2e): every leaf `buildMcpProjectTree` emits carries
+ * `rowTestId: 'mcp-server-row'` and `identity: { attr: 'mcp-name', value:
+ * <the leaf's OWN id from the scheme above> }` -- the id, never a bare
+ * display name (a preset's `.name`, or an install's `identity.source`).
+ * Two different leaves routinely share the same name in this tree: a repo
+ * preset's per-project "install this again" row (`rowsFor`'s `presetLeaf`)
+ * renders beside its own matched "installed" row the moment one instance
+ * exists, and the SAME preset can render once per scope root shown (Global
+ * and every tracked project). A name-keyed identity would make
+ * `.filter({ has: page.locator('[data-mcp-name="..."]') })` match more than
+ * one row in exactly those (common) cases; the leaf's own id is already
+ * guaranteed unique by construction (see the disjoint id-family list above),
+ * so reusing it costs nothing and removes the ambiguity outright rather than
+ * relying on a scenario/flow never triggering it. A spec/fixture computing an
+ * expected value calls the same id-builder (`mcpProjectPresetLeafId`,
+ * `mcpInstalledLeafId` + `instanceKey`, `mcpUnlinkedLeafId`, or
+ * `mcpManualLeafId`) this module exports for exactly that purpose, rather
+ * than guessing the format.
  */
 import { Icon } from '@/shared/ui';
 import type { TreeNode } from '@/shared/ui';
@@ -166,8 +185,12 @@ function identityKey(identity: McpInstall['identity']): string {
 
 /** A stable grouping key for one logical installed instance: the same
  *  (identity, instance-config name) pair across every agent it is installed
- *  for collapses into one row. */
-function instanceKey(identity: McpInstall['identity'], instanceName: string): string {
+ *  for collapses into one row. Exported (mirrors `repoMcpPresetId`'s own
+ *  precedent) so an e2e fixture/spec can compute the exact
+ *  `mcpInstalledLeafId`/`mcpUnlinkedLeafId` a scenario's install will render
+ *  as -- e.g. `mcpInstalledLeafId(scope.id, instanceKey(install.identity,
+ *  install.instanceName))` -- instead of guessing the format. */
+export function instanceKey(identity: McpInstall['identity'], instanceName: string): string {
   return `${identityKey(identity)}|${instanceName}`;
 }
 
@@ -309,7 +332,17 @@ export function buildMcpProjectTree(
     .map((p) => {
       const id = mcpManualLeafId(p.id);
       items.set(id, { kind: 'manual-preset', preset: p });
-      return { id, label: p.name, icon: mcpIcon };
+      // e2e: the top-level catalog leaf for a manual preset, shown once
+      // regardless of scope. `id` (not `p.name`) is the identity value --
+      // see this function's own doc comment on row identity for why every
+      // leaf below uses its own id rather than a bare display name.
+      return {
+        id,
+        label: p.name,
+        icon: mcpIcon,
+        rowTestId: 'mcp-server-row',
+        identity: { attr: 'mcp-name', value: id },
+      };
     });
 
   const byRepo = new Map<string, RepoPreset[]>();
@@ -338,18 +371,16 @@ export function buildMcpProjectTree(
         id: presetLeafId,
         label: p.name,
         icon: mcpIcon,
-        // e2e (flow 7, `mcp.spec.ts`): the Management page's per-scope "install
-        // this preset" row. Tagged only here, NOT on the matched "installed"
-        // row rendered beside it a few lines down and NOT on the top-level
-        // catalog leaf above -- a preset with an existing install renders
-        // BOTH this row and that one side by side under the same repo node,
-        // so tagging every occurrence of a preset's name in this tree with
-        // the same `data-mcp-name` would make `.filter({ has: ... })` match
-        // more than one row wherever that overlap exists. The flow that reads
-        // this tag only ever targets a preset with no install yet, so the
-        // ambiguity never arises for it.
+        // e2e (flow 7, `mcp.spec.ts`): the Management page's per-scope
+        // "install this preset" row. `presetLeafId` (`scope.id` +
+        // `p.id`) is already the row's own unique tree-node id -- using it
+        // as the identity value, rather than the bare (non-unique) preset
+        // name, is what lets this row and the matched "installed" row
+        // rendered beside it (same preset, same scope, once an instance
+        // exists) both carry `mcp-server-row` without either becoming
+        // ambiguous to `.filter({ has: ... })`.
         rowTestId: 'mcp-server-row',
-        identity: { attr: 'mcp-name', value: p.name },
+        identity: { attr: 'mcp-name', value: presetLeafId },
       };
 
       const matches = projectInstalls.filter((inst) => identityMatchesRepoPreset(inst.identity, p));
@@ -370,7 +401,16 @@ export function buildMcpProjectTree(
         const id = mcpInstalledLeafId(scope.id, key);
         const updatable = mcpInstallHasUpdate(first, presets);
         items.set(id, { kind: 'installed', installs: group, updatable });
-        return { id, label: instanceDisplayName(first.identity.source, first.instanceName), icon: mcpIconInstalled };
+        return {
+          id,
+          label: instanceDisplayName(first.identity.source, first.instanceName),
+          icon: mcpIconInstalled,
+          // e2e: the installed row for a repo preset's instance, distinct
+          // from `presetLeaf` above by its own unique id (see this
+          // function's doc comment).
+          rowTestId: 'mcp-server-row',
+          identity: { attr: 'mcp-name', value: id },
+        };
       });
 
       return [presetLeaf, ...instanceLeaves];
@@ -433,12 +473,10 @@ export function buildMcpProjectTree(
           icon: mcpIconInstalled,
           // e2e (flows 8, 12, `mcp.spec.ts`): the Management page's installed
           // row for a manual preset's instance -- the Update badge's target.
-          // A manual preset has no per-project "install row" duplicate (see
-          // this function's own doc comment), so this is the only row this
-          // instance's name ever renders as, unlike the repo-preset case
-          // above.
+          // `id` (not `first.identity.source`) is the identity value -- see
+          // this function's own doc comment on row identity.
           rowTestId: 'mcp-server-row',
-          identity: { attr: 'mcp-name', value: first.identity.source },
+          identity: { attr: 'mcp-name', value: id },
         };
       });
 
@@ -464,7 +502,16 @@ export function buildMcpProjectTree(
       const id = mcpUnlinkedLeafId(scope.id, key);
       items.set(id, { kind: 'unlinked', installs: group });
       const label = instanceDisplayName(first.identity.source, first.instanceName);
-      const leaf: TreeNode = { id, label, icon: mcpIcon, muted: true };
+      // e2e: the unlinked-instance row -- `id` (not the display label) is
+      // the identity value, see this function's doc comment.
+      const leaf: TreeNode = {
+        id,
+        label,
+        icon: mcpIcon,
+        muted: true,
+        rowTestId: 'mcp-server-row',
+        identity: { attr: 'mcp-name', value: id },
+      };
       const bucket = byGroupKey.get(groupKey);
       if (bucket !== undefined) bucket.rows.push({ leaf, sortLabel: label });
       else byGroupKey.set(groupKey, { label: unlinkedGroupLabel(first.identity), rows: [{ leaf, sortLabel: label }] });

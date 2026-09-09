@@ -1,45 +1,40 @@
 /**
  * Flows 7, 8 and 12 (MCP pages): installing a preset with a description and
- * an option-constrained parameter, updating an installed instance whose
- * preflight accepts it, and updating one whose preflight refuses it -- the
- * regression test for the 0.7.0 fix "Updating an MCP server no longer
- * deletes it when the new definition cannot be installed" (see
- * `.superpowers/sdd/2026-09-09-desktop-ui-e2e/task-8-brief.md`, and
- * `../fixtures/mcp.ts`'s own doc comment for why every scenario here targets
- * the Global scope rather than a tracked project).
+ * an option-constrained parameter into a tracked project, updating an
+ * installed instance whose preflight reports a missing parameter, and
+ * updating one whose update SKIPS an agent that cannot express its
+ * transport -- the regression test for the 0.7.0 fix "Updating an MCP
+ * server no longer deletes it when the new definition cannot be installed"
+ * (see `.superpowers/sdd/2026-09-09-desktop-ui-e2e/task-8-brief.md`, and
+ * `task-8-report.md`'s fix-round notes for why flow 12 is NOT a preflight
+ * refusal -- that mechanism cannot occur for this cause).
  *
  * MCP is a two-level sidebar group exactly like Skills (see `App.tsx`'s
- * `NAV_ITEMS` comment): `nav-group-mcp` must be expanded before either of its
- * two sub-items (`nav-mcp-components`, `nav-mcp-management`) is clickable.
- * All three flows below use `nav-mcp-management` -- the page whose Install
- * and Update badges (`useMcpActions`) carry this task's testids.
+ * `NAV_ITEMS` comment): `nav-group-mcp` must be expanded before either of
+ * its two sub-items (`nav-mcp-components`, `nav-mcp-management`) is
+ * clickable. All three flows below use `nav-mcp-management` -- the page
+ * whose Install and Update badges (`useMcpActions`) carry this task's
+ * testids.
  */
 import { test, expect } from '../harness/fixture';
-import { withParameters, updatable, preflightRefuses } from '../fixtures/mcp';
+import type { Page } from '@playwright/test';
+import {
+  withParameters,
+  withParametersInstallRowId,
+  updatable,
+  transportSkipped,
+  installedInstanceRowId,
+} from '../fixtures/mcp';
 
-test.describe('an mcp update the agent cannot express', () => {
-  test.use({ scenario: preflightRefuses('codex cannot express the http transport') });
-
-  test('leaves the instance alone', async ({ app, page }) => {
-    await app.goto();
-    await page.getByTestId('nav-group-mcp').click();
-    await page.getByTestId('nav-mcp-management').click();
-    await expect(page.getByTestId('mcp-page')).toBeVisible();
-
-    const row = page.getByTestId('mcp-server-row').filter({
-      has: page.locator('[data-mcp-name="github"]'),
-    });
-    await expect(row).toBeVisible();
-
-    await row.getByTestId('mcp-update-open').click();
-    await page.getByTestId('mcp-update-submit').click();
-
-    await expect(page.getByTestId('mcp-update-error')).toContainText('cannot express');
-    // The point of the 0.7.0 fix: the removal must not have happened.
-    await expect(row).toBeVisible();
-    expect(await app.calls('mcp_update')).toHaveLength(0);
-  });
-});
+/**
+ * A `mcp-server-row` identified by its own (now-unique) `data-mcp-name`
+ * tree-node id -- see `pages/Mcp/lib/mcpTree.tsx`'s "ROW IDENTITY" comment
+ * and `fixtures/mcp.ts`'s `withParametersInstallRowId`/
+ * `installedInstanceRowId` for why this is an id, not a bare preset name.
+ */
+function mcpRow(page: Page, rowId: string) {
+  return page.getByTestId('mcp-server-row').filter({ has: page.locator(`[data-mcp-name="${rowId}"]`) });
+}
 
 test.describe('installing an mcp server with a description and an option parameter', () => {
   test.use({ scenario: withParameters() });
@@ -50,13 +45,18 @@ test.describe('installing an mcp server with a description and an option paramet
     await page.getByTestId('nav-mcp-management').click();
     await expect(page.getByTestId('mcp-page')).toBeVisible();
 
-    // The Global scope root is already expanded (it is a tree root, per
-    // `ManagementPage.tsx`'s `rootIds(baseTree)` seed); the repo node nested
-    // under it is not -- mirroring `skills.spec.ts`'s "browsing skills" flow,
-    // expanding it reveals the preset's install row.
-    await page.getByText('mcp-repo', { exact: true }).click();
+    // The tracked project's own root is already expanded (it is a tree
+    // root); the repo node nested under it is not -- mirroring
+    // `skills.spec.ts`'s "browsing skills" flow, expanding it reveals the
+    // preset's install row. Global's own root ALSO shows a copy of the same
+    // repo/preset (every repo preset gets an install row per scope shown),
+    // so the click is scoped to the "Demo" project's own branch -- its
+    // `[role="treeitem"]` is the only one whose (accumulated, nested) text
+    // contains "Demo" at all.
+    const demoRoot = page.locator('[role="treeitem"]').filter({ hasText: 'Demo' });
+    await demoRoot.getByText('mcp-repo', { exact: true }).click();
 
-    const row = page.getByTestId('mcp-server-row').filter({ has: page.locator('[data-mcp-name="github"]') });
+    const row = mcpRow(page, withParametersInstallRowId());
     await row.getByTestId('mcp-install-open').click();
 
     const modal = page.getByTestId('mcp-install-modal');
@@ -82,7 +82,7 @@ test.describe('installing an mcp server with a description and an option paramet
     // filter combobox is also on screen, and a substring match on "Project"
     // would otherwise resolve to both.
     await modal.getByRole('combobox', { name: 'Project', exact: true }).click();
-    await page.getByRole('option', { name: 'Global' }).click();
+    await page.getByRole('option', { name: 'Demo' }).click();
     // The native checkbox input is visually hidden (`Checkbox.scss`'s
     // `.sk-checkbox__input`, zero-size + opacity 0 -- the styled box is a
     // sibling), so it never becomes Playwright-"visible" itself; clicking its
@@ -105,7 +105,7 @@ test.describe('installing an mcp server with a description and an option paramet
   });
 });
 
-test.describe('updating an mcp server with a passing preflight', () => {
+test.describe('updating an mcp server with a missing parameter', () => {
   test.use({ scenario: updatable() });
 
   test('a missing parameter is asked for and the update proceeds', async ({ app, page }) => {
@@ -114,30 +114,62 @@ test.describe('updating an mcp server with a passing preflight', () => {
     await page.getByTestId('nav-mcp-management').click();
     await expect(page.getByTestId('mcp-page')).toBeVisible();
 
-    const row = page.getByTestId('mcp-server-row').filter({ has: page.locator('[data-mcp-name="github"]') });
+    const row = mcpRow(page, installedInstanceRowId());
     await expect(row).toBeVisible();
 
+    // The preflight runs eagerly, before any modal opens (see
+    // `useMcpActions.tsx`'s `startMcpUpdateAsync`); it reports the source's
+    // new `{token}` placeholder missing from this instance's stored params,
+    // which is what opens `McpUpdateParamsModal` with exactly that field.
     await row.getByTestId('mcp-update-open').click();
-    await expect(page.getByTestId('mcp-update-modal')).toBeVisible();
 
-    // The first Confirm press is what runs the preflight (see
-    // `McpUpdateParamsModal`'s own doc comment); it reports the source's new
-    // `{token}` placeholder missing from this instance's stored params.
-    await page.getByTestId('mcp-update-submit').click();
+    const modal = page.getByTestId('mcp-update-modal');
+    await expect(modal).toBeVisible();
 
     const tokenField = page.getByTestId('mcp-param-input').filter({ has: page.locator('[data-param-name="token"]') });
     await expect(tokenField).toBeVisible();
     await tokenField.locator('input').fill('secret-token');
 
-    // The second press confirms with the filled-in value.
     await page.getByTestId('mcp-update-submit').click();
-
-    await expect(page.getByTestId('mcp-update-modal')).toBeHidden();
-    await expect(page.getByTestId('mcp-update-error')).toHaveCount(0);
+    await expect(modal).toBeHidden();
 
     const calls = await app.calls('mcp_update');
     expect(calls).toHaveLength(1);
     const { updates } = (calls[0] as { args: { updates: readonly { values: Record<string, string> }[] } }).args;
     expect(updates[0]?.values).toEqual({ token: 'secret-token' });
+  });
+});
+
+test.describe('an mcp update the agent cannot express', () => {
+  test.use({ scenario: transportSkipped() });
+
+  test('leaves the instance alone and reports why', async ({ app, page }) => {
+    await app.goto();
+    await page.getByTestId('nav-group-mcp').click();
+    await page.getByTestId('nav-mcp-management').click();
+    await expect(page.getByTestId('mcp-page')).toBeVisible();
+
+    const row = mcpRow(page, installedInstanceRowId());
+    await expect(row).toBeVisible();
+
+    // The preflight accepts the update outright (nothing is missing --
+    // `preflight_inner` never checks transport support), so no params modal
+    // opens at all: the click runs the update straight through.
+    await row.getByTestId('mcp-update-open').click();
+
+    // `updateMcp` succeeds overall but skips codex specifically (`reason:
+    // 'transport'`); `runMcpUpdate` (`useMcpActions.tsx`) turns that into an
+    // info-level `notify`, which surfaces as a toast -- there is no modal in
+    // this path at all, so there is nothing to press Confirm on.
+    const toast = page.getByTestId('mcp-update-error');
+    await expect(toast).toContainText('Codex');
+    await expect(toast).toContainText('http');
+
+    // The point of the 0.7.0 fix: `update_inner` skips codex's write and
+    // `continue`s BEFORE `remove_mcp_instance` for it, so the instance is
+    // never removed -- the row must still be there afterward.
+    await expect(row).toBeVisible();
+
+    expect(await app.calls('mcp_update')).toHaveLength(1);
   });
 });

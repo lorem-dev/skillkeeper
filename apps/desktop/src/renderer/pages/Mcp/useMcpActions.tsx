@@ -14,7 +14,7 @@ import { useTranslator } from '@/systems/i18n';
 import { applyScope } from '@/domain';
 import type { ApplyScope } from '@/domain';
 import { bridgeClient } from '@/services/bridge';
-import type { McpInstall, McpUpdatePreflightResult, McpUpdateReq } from '@/services/bridge';
+import type { McpInstall, McpUpdateReq } from '@/services/bridge';
 import { Button, Modal } from '@/shared/ui';
 import { McpCard } from '@/entities/mcp';
 import { McpEditModal } from '@/features/mcpEdit';
@@ -84,16 +84,14 @@ export function useMcpActions(): McpActions {
   const [editOpen, setEditOpen] = useState(false);
   const [editingPreset, setEditingPreset] = useState<ManualMcpPreset | undefined>(undefined);
   const [installTarget, setInstallTarget] = useState<{ preset: McpPreset; projectId?: string } | null>(null);
-  // The pending update's target; null means the confirm modal is closed.
-  // Unlike before, this opens as soon as the Update badge is clicked --
-  // BEFORE any preflight call -- so `McpUpdateParamsModal` itself decides
-  // when to preflight (its own Confirm button) and can show a refusal inline
-  // instead of a toast that could fire with no modal open at all. Closing
-  // WITHOUT confirming aborts the update -- no `McpUpdateParamsModal`
-  // `onConfirm` call means `runMcpUpdate` never runs.
+  // The pending update's target, once the preflight has determined which
+  // params are missing (prompt open); null means closed. Closing WITHOUT
+  // confirming aborts the update -- no `McpUpdateParamsModal` `onConfirm` call
+  // means `runMcpUpdate` never runs.
   const [updateTarget, setUpdateTarget] = useState<{
     scope: ApplyScope;
     installs: readonly McpInstall[];
+    missingParams: string[];
     // The preset being updated TO, carried so the prompt can render each
     // parameter's description and its accepted options rather than a bare
     // text field -- see `McpUpdateParamsModal`.
@@ -162,54 +160,54 @@ export function useMcpActions(): McpActions {
     [projects, mcpPresets, updateMcp, notify, t],
   );
 
-  // Update entry point: opens the confirm modal immediately -- resolving the
-  // scope/preset is synchronous, so there is nothing to await before the
-  // modal can appear. The preflight itself runs from inside
-  // `McpUpdateParamsModal`, via `preflightUpdate` below (passed as its
-  // `onPreflight` prop), the first time its Confirm button is pressed.
-  const startMcpUpdate = useCallback(
-    (toUpdate: readonly McpInstall[]): void => {
+  // Update entry point: preflight every affected agent's instance (one per
+  // `toUpdate` entry) against the preset's current def, then either update
+  // directly (nothing missing) or open the params modal for the UNION of
+  // missing names across all of them. Closing that modal without confirming
+  // aborts -- `updateTarget` is simply cleared, `runMcpUpdate` never runs.
+  const startMcpUpdateAsync = useCallback(
+    async (toUpdate: readonly McpInstall[]): Promise<void> => {
       const first = toUpdate[0];
       if (first === undefined) return;
       const scope = applyScope(first.projectId, projects);
       if (scope === null) return;
       const preset = matchMcpPreset(first, mcpPresets);
       if (preset === undefined) return;
-      setUpdateTarget({ scope, installs: toUpdate, preset });
+      const results = await Promise.all(
+        toUpdate.map((inst) =>
+          bridgeClient.mcpUpdatePreflight({
+            projectId: scope.projectId,
+            projectPath: scope.projectPath,
+            agent: inst.agent,
+            instanceName: inst.instanceName,
+            def: preset.def,
+            scope: scope.scope,
+          }),
+        ),
+      );
+      const missing = new Set<string>();
+      for (const r of results) {
+        if (!r.ok) {
+          notify(r.error, 'error');
+          return;
+        }
+        for (const p of r.missingParams) missing.add(p);
+      }
+      if (missing.size === 0) {
+        await runMcpUpdate(toUpdate, {});
+        return;
+      }
+      setUpdateTarget({ scope, installs: toUpdate, missingParams: [...missing].sort(), preset });
     },
-    [projects, mcpPresets],
+    [projects, mcpPresets, notify, runMcpUpdate],
   );
 
-  // Preflights every instance `updateTarget` affects (one call per agent
-  // target) against the preset's current def: the UNION of missing param
-  // names across all of them if every one accepts the update, or the first
-  // refusal encountered -- mirrors the old `startMcpUpdateAsync`'s
-  // aggregation, just run from inside the modal instead of before it opens.
-  // `updateTarget` is read fresh on every call (closed over via the
-  // dependency array), so a stale target from an already-closed modal can
-  // never be preflighted.
-  const preflightUpdate = useCallback(async (): Promise<McpUpdatePreflightResult> => {
-    const target = updateTarget;
-    if (target === null) return { ok: false, error: '' };
-    const results = await Promise.all(
-      target.installs.map((inst) =>
-        bridgeClient.mcpUpdatePreflight({
-          projectId: target.scope.projectId,
-          projectPath: target.scope.projectPath,
-          agent: inst.agent,
-          instanceName: inst.instanceName,
-          def: target.preset.def,
-          scope: target.scope.scope,
-        }),
-      ),
-    );
-    const missing = new Set<string>();
-    for (const r of results) {
-      if (!r.ok) return r;
-      for (const p of r.missingParams) missing.add(p);
-    }
-    return { ok: true, missingParams: [...missing].sort() };
-  }, [updateTarget]);
+  const startMcpUpdate = useCallback(
+    (toUpdate: readonly McpInstall[]): void => {
+      void startMcpUpdateAsync(toUpdate);
+    },
+    [startMcpUpdateAsync],
+  );
 
   // Removes one leaf's installed instances (installed or unlinked): all share
   // the same project (the tree groups installs by project node), so the first
@@ -315,7 +313,7 @@ export function useMcpActions(): McpActions {
       <McpUpdateParamsModal
         open={updateTarget !== null}
         preset={updateTarget?.preset ?? EMPTY_MCP_PRESET}
-        onPreflight={preflightUpdate}
+        missingParams={updateTarget?.missingParams ?? []}
         onConfirm={(values) => {
           const target = updateTarget;
           setUpdateTarget(null);

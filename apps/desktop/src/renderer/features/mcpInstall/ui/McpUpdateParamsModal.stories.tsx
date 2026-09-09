@@ -4,24 +4,11 @@
  * parameter is a `Select`, not a text field, so a value outside the option set
  * cannot be submitted from here -- and the description the author wrote for
  * that parameter is shown above it.
- *
- * The preflight now runs from INSIDE the modal (its own Confirm button), not
- * before it opens -- see the component's own doc comment. Each story's
- * `onPreflight` resolves as if the backend had already found the params named
- * below missing, so press Confirm once in the Storybook canvas to reveal the
- * fields these stories are named for.
  */
 import type { Meta, StoryObj } from '@storybook/react';
 import type { McpPreset } from '@/app/store';
 import type { DescriptionSpan } from '@/services/bridge';
 import { McpUpdateParamsModal } from './McpUpdateParamsModal';
-
-/** Resolves as an accepted preflight reporting `missing` as the params still
- *  needed -- what a real `onPreflight` reports once the backend has checked
- *  every affected instance's stored values against the new source def. */
-function acceptedPreflight(missing: string[]): () => Promise<{ ok: true; missingParams: string[] }> {
-  return async () => ({ ok: true, missingParams: missing });
-}
 
 const meta = {
   title: 'features/McpUpdateParamsModal',
@@ -81,26 +68,16 @@ const spans = fakeSpans({
 // The newly required parameter carries `options`, so it is a Select with its
 // description above it. Update stays disabled until a value is picked.
 export const OptionConstrainedParameter: Story = {
-  args: { preset, onPreflight: acceptedPreflight(['access']), getDescriptionSpans: spans },
+  args: { preset, missingParams: ['access'], getDescriptionSpans: spans },
 };
 
 // A described parameter with no options stays a text field, exactly as before
 // options existed.
 export const DescribedFreeTextParameter: Story = {
-  args: { preset, onPreflight: acceptedPreflight(['workspace']), getDescriptionSpans: spans },
+  args: { preset, missingParams: ['workspace'], getDescriptionSpans: spans },
 };
 
 // Both at once, which is what a def introducing two placeholders produces.
 export const BothKinds: Story = {
-  args: { preset, onPreflight: acceptedPreflight(['access', 'workspace']), getDescriptionSpans: spans },
-};
-
-// The 0.7.0 regression case: the source changed to something the agent's
-// native config cannot express. Confirm to see the refusal render inline.
-export const PreflightRefused: Story = {
-  args: {
-    preset,
-    onPreflight: async () => ({ ok: false, error: 'codex cannot express the http transport' }),
-    getDescriptionSpans: spans,
-  },
+  args: { preset, missingParams: ['access', 'workspace'], getDescriptionSpans: spans },
 };
