@@ -134,7 +134,7 @@ export function ProjectsPage() {
         </span>
       }
     >
-      <div className="sk-project-list">
+      <div className="sk-project-list" data-testid="projects-page">
         <GlobalScopeCard
           name={t('scope.global')}
           hint={t('scope.globalHint')}
