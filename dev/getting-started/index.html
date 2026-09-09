@@ -360,6 +360,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#system-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System requirements
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1013,6 +1024,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#system-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System requirements
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1171,6 +1193,37 @@
   Node.js 24+ and pnpm 11 are only needed to build the desktop app's
   renderer, not the CLI.</li>
 </ul>
+<h2 id="system-requirements">System requirements<a class="headerlink" href="#system-requirements" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux, CLI</td>
+<td>Any distribution. Two builds ship: glibc (needs glibc 2.35 or newer) and static musl (needs no system libc). The install script picks one.</td>
+</tr>
+<tr>
+<td>Linux, desktop app</td>
+<td>glibc 2.35 or newer, plus WebKitGTK 4.1 and libsoup 3. No static build: the app links that stack from the distribution.</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td>11 or newer, Intel or Apple Silicon.</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>10 or newer, x64 or arm64.</td>
+</tr>
+</tbody>
+</table>
+<p>The glibc floor is where the release binaries are linked, not a policy choice;
+check yours with <code>ldd --version</code>. Building from source links against the glibc
+the host already has, so its floor is the Rust toolchain's own, far lower. For a
+host below the floor, see <a href="../troubleshooting/">Troubleshooting</a>.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>SkillKeeper ships two front ends over the same core:</p>
 <ul>
@@ -1193,6 +1246,9 @@ your PATH. It uses only tools already on your system (nothing to install first).
 </code></pre></div>
 <p>Override the install directory with <code>SKILLKEEPER_INSTALL_DIR</code>, or pin a specific
 release with <code>SKILLKEEPER_VERSION</code> (for example <code>v0.1.1</code>).</p>
+<p>On Linux it also reads the host's glibc and takes the static musl build when
+that is below 2.35 or absent, as on Alpine. Both builds are the same CLI;
+override the choice with <code>SKILLKEEPER_LIBC=gnu</code> or <code>SKILLKEEPER_LIBC=musl</code>.</p>
 <h3 id="cli-build-from-source">CLI: build from source<a class="headerlink" href="#cli-build-from-source" title="Permanent link">&para;</a></h3>
 <p>The <code>skillkeeper</code> CLI is a Rust binary in this workspace. Build it with cargo:</p>
 <div class="highlight"><pre><span></span><code>cargo build --release -p skillkeeper-cli
