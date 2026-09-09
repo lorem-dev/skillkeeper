@@ -871,6 +871,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="End-to-end tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#desktop-ui-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desktop UI suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1101,6 +1129,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="End-to-end tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#desktop-ui-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desktop UI suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1229,7 +1285,8 @@ pnpm install
 <div class="highlight"><pre><span></span><code>git submodule update --init
 </code></pre></div>
 <p>Nothing compiles, lints, or unit-tests against it, so the ordinary commands below
-work without it -- only <code>pnpm test:e2e</code> needs it.</p>
+work without it -- of the end-to-end suites, only <code>pnpm test:e2e:cli</code> needs it
+(<code>pnpm test:e2e:desktop</code> does not, and <code>pnpm test:e2e</code> runs both).</p>
 <h2 id="monorepo-structure">Monorepo structure<a class="headerlink" href="#monorepo-structure" title="Permanent link">&para;</a></h2>
 <p>SkillKeeper has two workspaces. A Cargo (Rust) workspace holds the domain crates
 under <code>crates/</code> (<code>skillkeeper-core</code>, <code>skillkeeper-config</code>, <code>skillkeeper-agents</code>,
@@ -1290,7 +1347,7 @@ resolves the Rust dependencies on first build.</p>
 </tr>
 <tr>
 <td><code>pnpm test:e2e</code></td>
-<td>Run the end-to-end suite against the built CLI.</td>
+<td>Run both end-to-end suites: the CLI, then the desktop UI.</td>
 </tr>
 <tr>
 <td><code>pnpm lint</code></td>
@@ -1348,13 +1405,22 @@ discovery independently.</p>
 <p>The TypeScript side uses Vitest. The <strong>90% lines and branches</strong> coverage gate
 (<code>pnpm test:cov</code>) applies to <code>packages/i18n</code>; CI fails below this threshold.</p>
 <h3 id="end-to-end-tests">End-to-end tests<a class="headerlink" href="#end-to-end-tests" title="Permanent link">&para;</a></h3>
+<p>The end-to-end work is two independent suites under <code>e2e/</code>, each covering a
+layer the unit tests cannot: <code>e2e/cli</code> drives the real <code>skillkeeper</code> binary
+against a real Git working tree, and <code>e2e/desktop</code> drives the renderer in a
+real Chromium browser. Run both with:</p>
+<div class="highlight"><pre><span></span><code>pnpm test:e2e
+</code></pre></div>
+<p>which is <code>pnpm test:e2e:cli &amp;&amp; pnpm test:e2e:desktop</code>. They can also be run
+independently.</p>
+<h4 id="cli-suite">CLI suite<a class="headerlink" href="#cli-suite" title="Permanent link">&para;</a></h4>
 <p>In-memory fakes make the unit tests fast and deterministic, but they cannot catch
 a regression that lives in the wiring between the CLI, the agent adapters, and a
 real filesystem -- an adapter resolving the wrong destination root, say, or a
-skill that resolves under <code>MemFs</code> but not on disk. The end-to-end suite covers
-exactly that layer: it drives the real <code>skillkeeper</code> binary against a real Git
-working tree and asserts on the files it produces.</p>
-<div class="highlight"><pre><span></span><code>pnpm test:e2e
+skill that resolves under <code>MemFs</code> but not on disk. This suite covers exactly
+that layer: it drives the real <code>skillkeeper</code> binary against a real Git working
+tree and asserts on the files it produces.</p>
+<div class="highlight"><pre><span></span><code>pnpm test:e2e:cli
 </code></pre></div>
 <p>That script initializes the <code>examples/test-repo</code> submodule, force-pulls it to the
 tip of its branch, builds <code>target/debug/skillkeeper</code>, and then runs the specs.
@@ -1362,15 +1428,18 @@ Set <code>SKILLKEEPER_E2E_PIN_FIXTURE=1</code> to run against the fixture commit
 repository pins instead of pulling -- CI does that, so a build fails for reasons
 in the diff rather than because the fixture moved.</p>
 <p>Layout:</p>
-<div class="highlight"><pre><span></span><code>e2e/
-  package.json       scopes the directory to CommonJS (the repo root is ESM)
-  tsconfig.json      its own TypeScript scope; ts-jest type-checks as it transpiles
-  src/cli.ts         the Sandbox harness: the only way a spec invokes the CLI
+<div class="highlight"><pre><span></span><code>e2e/cli/
+  package.json             scopes the directory to CommonJS (the repo root is ESM)
+  tsconfig.json            its own TypeScript scope; ts-jest type-checks as it transpiles
+  src/cli.ts               the Sandbox harness: the only way a spec invokes the CLI
   tests/
-    fixture.spec.ts  the submodule is present and still the shape the suite assumes
-    skills.spec.ts   resolution schemes, executables, guidance, hooks
-    mcp.spec.ts      preset discovery, parameters, ledgers, the Codex skip
-    repair.spec.ts   verify -&gt; repair -&gt; verify, and the bounds on repair
+    fixture.spec.ts        the submodule is present and still the shape the suite assumes
+    skills.spec.ts         resolution schemes, executables, guidance, hooks
+    mcp.spec.ts            preset discovery, parameters, ledgers, the Codex skip
+    mcp-oauth.spec.ts      the oauth flow for an mcp server
+    mcp-parameters.spec.ts descriptions and option parameters on an mcp install
+    repair.spec.ts         verify -&gt; repair -&gt; verify, and the bounds on repair
+    requires.spec.ts       repo lint
 </code></pre></div>
 <p>Two things about the design are worth knowing before adding a spec:</p>
 <ul>
@@ -1378,7 +1447,7 @@ in the diff rather than because the fixture moved.</p>
   overlap: Vitest runs pure logic in-process under the coverage gate, Jest drives
   a subprocess against the filesystem. Jest's config is <code>jest.config.cjs</code>, and the
   suite is deliberately CommonJS so no <code>--experimental-vm-modules</code> is needed.</li>
-<li><strong>Isolation belongs to the harness.</strong> <code>Sandbox</code> (in <code>e2e/src/cli.ts</code>) always
+<li><strong>Isolation belongs to the harness.</strong> <code>Sandbox</code> (in <code>e2e/cli/src/cli.ts</code>) always
   sets throwaway <code>HOME</code> <em>and</em> <code>XDG_CONFIG_HOME</code>. The first relocates the agents'
   global roots (a global-scope Codex MCP install writes to
   <code>~/.codex/config.toml</code>, a project-scoped one to <code>&lt;project&gt;/.codex/config.toml</code>, and
@@ -1389,6 +1458,38 @@ in the diff rather than because the fixture moved.</p>
 <p>The <code>check-fixture-repo</code> local skill wraps this suite and explains how to read a
 failure: whether the fixture drifted, the product changed, or the harness leaked.
 It is part of <code>pre-release-check</code>.</p>
+<h4 id="desktop-ui-suite">Desktop UI suite<a class="headerlink" href="#desktop-ui-suite" title="Permanent link">&para;</a></h4>
+<p>The desktop renderer has its own wiring risk: a component that only ever ran
+against in-memory Vitest mocks can still call a Tauri command with the wrong
+name or shape and fail solely in a real browser. This suite covers that layer
+with Playwright, driving the renderer in Chromium against a scripted backend
+that answers the same <code>invoke</code> calls the real Tauri backend would. It touches
+no filesystem, git, or network, and never spawns the <code>skillkeeper</code> binary or a
+real repository.</p>
+<div class="highlight"><pre><span></span><code>pnpm test:e2e:desktop
+</code></pre></div>
+<p><code>e2e/desktop/playwright.config.ts</code> chains <code>vite build</code> into the <code>vite preview</code>
+server it starts, so every run boots a fresh renderer bundle rather than a
+stale one from an earlier build.</p>
+<p>Layout:</p>
+<div class="highlight"><pre><span></span><code>e2e/desktop/
+  playwright.config.ts
+  tsconfig.json
+  harness/
+    fixture.ts            re-exports the scenario-driven test/expect every spec imports
+    scenario.ts           the scripted backend's fixture data for one run
+    commands.ts           the default command table a scenario's responses merge over
+    installHarness.ts     installs the scripted `invoke` handler into the page
+  fixtures/
+    base.ts               the Playwright fixture implementation (the `app` object)
+    skills.ts, mcp.ts, projects.ts, repositories.ts, settings.ts
+                          per-page scenario data
+  tests/
+    boot.spec.ts          the application mounts against the scripted backend
+    harness.spec.ts       an unmocked command fails loudly rather than hanging
+    skills.spec.ts, mcp.spec.ts, projects.spec.ts, repositories.spec.ts,
+    settings.spec.ts      one page each
+</code></pre></div>
 <h2 id="typescript">TypeScript<a class="headerlink" href="#typescript" title="Permanent link">&para;</a></h2>
 <p>The renderer and <code>packages/i18n</code> use TypeScript in strict mode with
 <code>noUncheckedIndexedAccess: true</code>. The renderer's backend types are generated
