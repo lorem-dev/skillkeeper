@@ -22,6 +22,12 @@ interface RecordedCall {
   readonly args: unknown;
 }
 
+/** One entry of `window.__SKK_E2E_UNMOCKED__` -- see `installHarness.ts`. */
+export interface UnmockedCommand {
+  readonly cmd: string;
+  readonly message: string;
+}
+
 /** The spec-facing handle onto one test's scripted backend. */
 export interface App {
   /**
@@ -77,6 +83,24 @@ export interface App {
   /** Every clipboard write recorded so far (see `installHarness.ts`'s
    *  clipboard stub), in write order. */
   clipboard(): Promise<string[]>;
+  /**
+   * Every command the scripted backend could not answer so far, in call
+   * order, as recorded by `installHarness.ts`'s mocked `invoke` (see
+   * `window.__SKK_E2E_UNMOCKED__`). Reading this directly -- rather than only
+   * relying on the fixture's own post-test guard below -- is how a spec
+   * proves what the guard actually captured: the `cmd` name AND the exact
+   * `message` the thrown `Error` carried, so an assertion against
+   * `UNKNOWN_COMMAND_PREFIX` (`harness/commands.ts`) is checking the real
+   * runtime string, not a value re-derived to match it.
+   *
+   * Every other spec in this suite leaves this empty for its whole run --
+   * the fixture's own teardown (below) fails the test the instant anything
+   * goes unmocked, so there is nothing left here to read afterwards. Calling
+   * this is only meaningful in a spec that also sets `expectUnmocked`, the
+   * one escape hatch that tells that teardown to expect specific commands
+   * here instead of failing on them.
+   */
+  unmocked(): Promise<UnmockedCommand[]>;
 }
 
 /**
@@ -150,19 +174,64 @@ function buildApp(page: Page): App {
         () => ((window as unknown as Record<string, unknown>).__SKK_E2E_CLIPBOARD__ ?? []) as string[],
       );
     },
+    async unmocked() {
+      return page.evaluate(
+        () => ((window as unknown as Record<string, unknown>).__SKK_E2E_UNMOCKED__ ?? []) as UnmockedCommand[],
+      );
+    },
   };
+}
+
+/** True when `actual` and `expected` name exactly the same commands, ignoring
+ *  order (repeated calls to the same never-mocked command all belong to one
+ *  name) but NOT count of distinct names or membership -- unlike a subset or
+ *  "at least" check, `['a']` against a recorded `['a', 'b']` is a mismatch,
+ *  and so is `['a']` against a recorded `[]`. Used only by `expectUnmocked`'s
+ *  teardown check below; see that option's doc comment for why an exact match
+ *  is the point. */
+function sameCommandNames(actual: readonly string[], expected: readonly string[]): boolean {
+  const a = [...new Set(actual)].sort();
+  const b = [...new Set(expected)].sort();
+  return a.length === b.length && a.every((name, i) => name === b[i]);
 }
 
 interface Fixtures {
   /** The backend data for this test. Override per spec (or per describe
    *  block) with `test.use({ scenario: withScenario({ ... }) })`. */
   scenario: Scenario;
+  /**
+   * The exact set of command names this test expects `__SKK_E2E_UNMOCKED__`
+   * to hold once the test body finishes -- default `[]`, i.e. every ordinary
+   * spec still asserts the array is empty, unchanged from before this option
+   * existed.
+   *
+   * This is the ONLY way to stop the `app` fixture's teardown (below) from
+   * failing a test over an unmocked command; it is deliberately not a
+   * permissive "allow list" -- the teardown requires the recorded command
+   * names to match `expectUnmocked` EXACTLY (same names, same count; see
+   * `sameCommandNames`), so `expectUnmocked: ['x']` still fails the test if
+   * the harness recorded `['x', 'y']` (a second, unrelated command also went
+   * unmocked -- the hatch does not launder that away) or recorded nothing at
+   * all (the guard silently stopped firing -- the exact failure mode this
+   * option exists to make demonstrable, see `harness.spec.ts`'s "a command
+   * with no scripted answer" describe block). A hatch that only suppressed
+   * failure, rather than requiring an exact match, would itself become a
+   * place a future regression could hide unnoticed -- which is precisely the
+   * silence this suite's other assertions exist to rule out.
+   *
+   * Override per spec (or per describe block) with
+   * `test.use({ expectUnmocked: ['command_name'] })`, exactly like `scenario`
+   * above. Read what was actually recorded (both the command name and the
+   * exact message text) via `app.unmocked()`.
+   */
+  expectUnmocked: readonly string[];
   app: App;
 }
 
 export const test = base.extend<Fixtures>({
   scenario: [defaultScenario(), { option: true }],
-  app: async ({ page, scenario }, use) => {
+  expectUnmocked: [[], { option: true }],
+  app: async ({ page, scenario, expectUnmocked }, use) => {
     await installHarness(page, scenario);
     await installAnimationZeroing(page);
     await use(buildApp(page));
@@ -174,12 +243,21 @@ export const test = base.extend<Fixtures>({
     // or the renderer started calling a new one this harness has not caught
     // up with -- either way, a passing test that hit this is the wrong
     // outcome, not a flake to retry away (see `playwright.config.ts`'s
-    // `retries: 0`).
-    const unmocked = await page.evaluate(
-      () => (window as unknown as Record<string, unknown>).__SKK_E2E_UNMOCKED__ as string[] | undefined,
-    );
-    if (unmocked && unmocked.length > 0) {
-      throw new Error(`e2e harness: unmocked command(s) reached the backend: ${unmocked.join(', ')}`);
+    // `retries: 0`). `expectUnmocked` (default `[]`) is the one escape hatch,
+    // and it is checked for an EXACT match, not merely "at most these" -- see
+    // that option's own doc comment above.
+    const unmocked = ((await page.evaluate(
+      () => (window as unknown as Record<string, unknown>).__SKK_E2E_UNMOCKED__ as UnmockedCommand[] | undefined,
+    )) ?? []) as UnmockedCommand[];
+    const commandNames = unmocked.map((entry) => entry.cmd);
+    if (!sameCommandNames(commandNames, expectUnmocked)) {
+      if (expectUnmocked.length === 0) {
+        throw new Error(`e2e harness: unmocked command(s) reached the backend: ${commandNames.join(', ')}`);
+      }
+      throw new Error(
+        `e2e harness: expected exactly [${expectUnmocked.join(', ')}] to go unmocked, ` +
+          `but recorded [${commandNames.join(', ')}]`,
+      );
     }
   },
 });

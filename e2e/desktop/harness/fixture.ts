@@ -9,4 +9,4 @@
  * split.
  */
 export { test, expect } from '../fixtures/base.js';
-export type { App } from '../fixtures/base.js';
+export type { App, UnmockedCommand } from '../fixtures/base.js';

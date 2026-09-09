@@ -75,12 +75,18 @@ export async function installHarness(page: Page, scenario: Scenario): Promise<vo
     // action without a real OS clipboard (there is none in a headless
     // Chromium run, and the Clipboard API needs a user gesture besides).
     (window as unknown as Record<string, unknown>).__SKK_E2E_CLIPBOARD__ = [];
-    // Every command name the callback below could not answer, in call order.
-    // `store.loadAll` and several call sites swallow a rejection (into
-    // `store.error`, a caught background-task status, or a `.then(ok, () =>
-    // undefined)`), so an unmocked command does not reliably surface anywhere
-    // a test's DOM assertions can see it -- a test that needs to know reads
-    // this array directly instead.
+    // Every unmocked command the callback below could not answer, in call
+    // order, as `{ cmd, message }` -- `message` is the exact string the
+    // thrown `Error` carried (`${unknownCommandPrefix}${cmd}`), kept
+    // alongside the bare name rather than reconstructed by a reader, so a
+    // spec asserting on it (Task 9's `harness.spec.ts` demonstration) is
+    // checking what the harness actually produced, not restating the same
+    // template a second time. `store.loadAll` and several call sites swallow
+    // a rejection (into `store.error`, a caught background-task status, or a
+    // `.then(ok, () => undefined)`), so an unmocked command does not reliably
+    // surface anywhere a test's DOM assertions can see it -- a test that
+    // needs to know reads this array directly (via `fixture.ts`'s
+    // `app.unmocked()`) instead.
     (window as unknown as Record<string, unknown>).__SKK_E2E_UNMOCKED__ = [];
     const label = arg.scenario.windowLabel || 'main';
     (window as unknown as Record<string, unknown>).__SKK_E2E_WINDOW_LABEL__ = label;
@@ -114,9 +120,13 @@ export async function installHarness(page: Page, scenario: Scenario): Promise<vo
           return null;
         }
         if (!Object.prototype.hasOwnProperty.call(arg.responses, cmd)) {
-          const unmocked = (window as unknown as Record<string, unknown>).__SKK_E2E_UNMOCKED__ as string[];
-          unmocked.push(cmd);
-          throw new Error(`${arg.unknownCommandPrefix}${cmd}`);
+          const unmocked = (window as unknown as Record<string, unknown>).__SKK_E2E_UNMOCKED__ as {
+            cmd: string;
+            message: string;
+          }[];
+          const message = `${arg.unknownCommandPrefix}${cmd}`;
+          unmocked.push({ cmd, message });
+          throw new Error(message);
         }
         return arg.responses[cmd];
       },
