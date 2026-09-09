@@ -40,7 +40,7 @@
 
 ## Development
 
-## Version 0.7.1-rc.2
+## Version 0.7.1
 
 ### Changed
 
