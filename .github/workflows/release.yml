@@ -57,7 +57,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Node.js 22
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           # This job only runs node scripts/check-version.mjs and never installs
@@ -216,7 +216,7 @@ jobs:
         run: corepack enable
 
       - name: Set up Node.js 22 with pnpm cache
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: pnpm
@@ -545,7 +545,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Node.js 22
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           # This job runs only node scripts (release notes) plus gh/gpg and
